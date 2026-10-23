@@ -43,8 +43,8 @@ if approved:
         raise SystemExit('Qualification must be passed=true for the exact built proxy SHA-256')
     shutil.copyfile(approved, root / 'proxy/qualification.json')
     qualified = True
-(root / 'gate-status.json').write_text(json.dumps({'releaseQualified': qualified,
-    'status': 'qualified' if qualified else 'staged-awaiting-final-acceptance'}, indent=2))
+(root / 'gate-status.json').write_text(json.dumps({'backendQualified': qualified, 'releaseQualified': False,
+    'status': 'awaiting-final-package-and-desktop-acceptance' if qualified else 'staged-awaiting-final-acceptance'}, indent=2))
 PYGATE
 cp packaging/lain packaging/lain.service.in "$out/packaging/"
 cp scripts/install-linux.sh "$out/install-linux.sh"

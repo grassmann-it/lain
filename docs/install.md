@@ -29,11 +29,13 @@ Für einen vergleichbaren Releasebuild einen sauberen Commit und dieselben
 Toolchains verwenden. Die Manifestprüfung allein ersetzt die Backend-Abnahme
 nach `docs/execution.md` nicht. Ohne endgültigen Abnahmebeleg ist das Ergebnis
 nur ein Staging-Paket: `gate-status.json` enthält `releaseQualified: false` und
-es wird keine `qualification.json` erzeugt. Für ein abgenommenes Paket
+es wird keine `qualification.json` erzeugt. Für ein backendabgenommenes Paket
 `LAIN_QUALIFICATION_FILE=/absolute/approved/qualification.json` setzen. Dieser
 Beleg muss `passed: true` und den exakten `sha256` des neu gebauten Proxys
 enthalten; ein abweichender Beleg lässt den Build fehlschlagen. Der Publisher
-setzt niemals selbst ein positives Abnahmeergebnis.
+setzt niemals selbst ein positives Abnahmeergebnis. Ein positiver Backendbeleg
+setzt nur `backendQualified: true`; `releaseQualified` bleibt bis zur getrennten
+Paket-, Desktop- und installierten Workflow-Abnahme `false`.
 
 Falls der Lockstand bewusst aktualisiert werden muss:
 
