@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable><OutputType>Exe</OutputType></PropertyGroup>
+  <PropertyGroup><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable><OutputType>Exe</OutputType><StartupObject>Lain.Usage.Tests.CrashProcess</StartupObject></PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
