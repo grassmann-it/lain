@@ -1,8 +1,8 @@
-# Provider quota acceptance — 2026-10-23
+# Provider quota acceptance — 2026-10-23–24
 
-Status: **fixture quota/Usage UX accepted; installed Desktop verification pending**.
-Static review, public-source research, real-provider verification and actual
-rendered tile inspection are complete.
+Status: **accepted within the verified scope below**. Static/source review,
+real-provider observations, fixture tile/Usage checks and installed Desktop
+rendered verification are complete.
 A successful synthetic test is not evidence of a successful provider response.
 
 ## Scope and acceptance criteria
@@ -16,7 +16,7 @@ label. MiMo must distinguish an unsupported quota integration from a failed fetc
 | --- | --- | --- |
 | Percentage semantics | A valid provider percentage is usable even if absolute quantities are unknown; it never becomes token, request or credit counts. Explicit `percent` / 100 normalization is percentage points only. | Common DTO and integrated service inspected: percentage-only success accepted; labels/percentage forwarded to DTO. Actual Z.ai/Kimi semantics verified below. |
 | Unknown and zero | Missing, malformed, negative and non-finite quantities are unknown; a real zero is retained. Invalid percentages do not draw empty/full budget bars. | Adapter/static review; root reports 98 quota assertions passing. Actual zero remaining observed on Kimi. |
-| Window identity | A reset change and provider array reordering do not move last-good history to another window. | Z.ai uses type/unit/number identity. Kimi uses canonical named windows; review found index-based ambiguous legacy windows, then q2 restricted fallback to a single legacy window. |
+| Window identity | A reset change and provider array reordering do not move last-good history to another window. | Z.ai uses stable type/unit/number identity for distinct tuples observed live. Identical duplicate tuples still require occurrence suffixes, so arbitrary duplicate-row reordering is not qualified. Kimi uses canonical named windows; review found index-based ambiguous legacy windows, then q2 restricted fallback to a single legacy window. |
 | Freshness | Failed/partial refresh retains identifiable last-good data as stale; observed time and last success remain distinguishable. | Integrated service and fixture assertions inspected; actual amber Last known row and separate Checked/source timestamps rendered. |
 | Unsupported | A provider without an adapter shows unsupported/manual lookup, without a failed-network implication or a fabricated available balance. | Integrated `QuotaService.Project` inspected: unsupported provider projects `unsupported` with unknown quantities and console guidance for direct MiMo. |
 | Overview | Budget use is salient without opening an account; account name, limiting window, consumed percentage and known reset are understandable. | Run4 tile screenshots inspected at 1120×780 and 800×560; see evidence below. |
@@ -26,8 +26,9 @@ label. MiMo must distinguish an unsupported quota integration from a failed fetc
 
 Read-only reference: `~/.local/share/modelcoach/provider_status.py` was inspected
 for schema context only. No modelcoach quota cache is consumed by the implementation
-or this review; no credentials were read and no user service was changed by this
-reviewer.
+or this review. No credential contents were exposed or reused for requests and
+no user service was changed by this reviewer. The later legacy investigation used
+read-only file hashes/modes, not credential parsing or provider requests.
 
 ## Z.ai window-label evidence
 
@@ -133,8 +134,10 @@ above remains applicable. The final fixture tile captures supersede these prelim
 
 ### Tile and Usage fixture evidence
 
-Root-owned run `/tmp/lain-quota-ui-evidence-4/evidence.json` completed with
-**222 checks and 48 screenshots, PASS**. Source `24fe90f`; Desktop assembly SHA-256
+Root-owned final run `/tmp/lain-quota-ui-evidence-5/evidence.json` completed with
+**226 checks and 48 screenshots, PASS**. The visually inspected preceding run4
+passed 222 checks and 48 screenshots at source `24fe90f`; both runs use Desktop
+assembly SHA-256
 `1B5F54B1DF533C7328172B1B77F818637BC01ABA94F1F15C4859C2D3F0C1260B`.
 The reviewer inspected actual PNGs, not just element counts:
 
@@ -153,4 +156,70 @@ Desktop claim follows from fixture screenshots alone. The installed host is
 separately confirmed by
 [`quota-host-installed.json`](../tests/acceptance/evidence/quota-host-installed.json):
 Z.ai/Kimi rows `ok`, MiMo `unsupported`, usage/credentials/legacy service/config
-unchanged. Final installed Desktop captures remain pending.
+unchanged. Installed Desktop verification is recorded below.
+
+
+Runtime font verification separately inspected in
+`/tmp/lain-font-runtime-probe/run.log`: the actual displayed Overview, Provider
+budgets and Personal Codex controls resolve `IBM Plex Sans Condensed SemiBold`,
+and the lain wordmark resolves `Oxanium SemiBold`. Four regular/semibold font
+lookup assertions also pass. The visual suspicion of fallback typography was
+therefore not confirmed and is closed.
+
+
+### Installed Desktop and CLI verification
+
+The reviewer inspected
+[`quota-ui-installed.json`](../tests/acceptance/evidence/quota-ui-installed.json)
+and [`quota-desktop-installed.json`](../tests/acceptance/evidence/quota-desktop-installed.json),
+alongside actual installed screenshots under
+`/tmp/lain-quota-installed-gui-check/`:
+`overview-1500x1000.png`, Z.ai/Kimi closed and technical-detail views at
+1120×780, and first/reopened Usage at 1120×780.
+
+The real installed closed tiles visibly contain both Z.ai windows (5% and 30%
+consumed at this observation) and all three Kimi windows (100%, 78.87%, 68.8%),
+with units, remaining quantities/percentages, reset and Checked times. Expanded
+technical details show the same identities, source, last-success times and
+amounts as the host snapshot. They preserve provider values instead of estimating
+a fresh balance when a reset time passes. MiMo remains explicitly unsupported.
+No blocking quota layout defect was found in these installed captures.
+
+The installed harness passed on the production Desktop DLL
+`cb775d4f9c917c50851b35c9cbef6b42ddb1dd771b3420e8a6a051358cede4b8`.
+It records 22 screenshots at 1120×780 and 1500×1000. The minimum 800×560 behavior
+is qualified by the production-control fixture, not by this installed run.
+Usage retains 1 request, 81,986 total tokens and cursor 2 across window close and
+reopen within the same harness process. The host/proxy remain available while the
+window is closed. Desktop/CLI installation preserves additive quota fields;
+service operations and inference requests are zero in this verification.
+
+The installed harness is GET-only for observations, with native tile/detail
+expansion and Usage filter application. It does not exercise credential checks,
+login, browser opening, quota-refresh actions or account mutation against the
+real service. Background host activity is not disabled or attributed to the
+harness. These boundaries do not weaken the directly verified Z.ai/Kimi display
+fix, but prevent broader claims about unrelated account operations.
+
+### Legacy guard discrepancy: logs, not credential/config changes
+
+A later comparison against the private baseline captured at 19:17 on 2026-10-23
+reported **4 added, 4 removed and 0 changed persistent paths**. The reviewer
+independently classified every differing path without printing file contents:
+all eight are rotating error-response `.log` files under `oauth/logs/`.
+The removed names carry timestamps 16:31–17:02; the added files have modification
+times 21:20:03–04, before this late quota/UI installation. Both snapshots retain
+10 error logs. Logging configuration has request logging disabled; the core's
+default error-log retention is 10 and deletes the oldest error logs.
+
+This metadata is consistent with ordinary error-log retention. It does not prove
+who generated those requests; log bodies were not inspected. There is no evidence
+that the baseline was sanitized. Independently compared hashes/modes of the
+three non-log OAuth credential files, legacy binary and legacy configuration
+remain unchanged. The root separately verifies unchanged legacy service PID.
+
+Consequently, **all persistent legacy files unchanged is not a valid claim** for
+this comparison. The accurate claim is unchanged credential/configuration/binary
+files, with four old and four new runtime error logs. Earlier zero-difference
+reports remain evidence only for their own comparison time. No legacy file or
+service was modified by this review.
