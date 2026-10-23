@@ -101,3 +101,22 @@ the exact artifact's qualification report. The Codex external-profile format was
 queried: W5 supplied an isolated run of installed Codex 0.162.1 confirming
 `--profile lain` loads `lain.config.toml`; no nested `[profiles.lain]` is needed
 for that tested build. This is peer evidence, not a second independent live run.
+
+The independent Core auth/crash probe exited 0 on snapshot artifact SHA-256
+`683c610548b185669c1a638fb27dba6eb239ef7c08f1b84f58f36f44655d82ad`:
+management and inference tokens were mutually rejected at the other audience;
+a SIGKILL after the first stream output preserved the already fsynced dispatch
+and source identity through restart; no terminal usage was fabricated; a later
+request was recorded normally. This artifact was **not accepted as the full
+synthetic gate**: W2 separately found completion-marker ordering failure, requiring
+a new build and repeat checks. Final own-login code is also not in this artifact.
+
+```sh
+python3 tests/acceptance/core_probe.py --core /absolute/lain-proxy --report /tmp/lain-core-independent.json
+dotnet test tests/usage/Lain.Usage.Tests.csproj --no-build --no-restore --nologo -v minimal
+```
+
+W11 independently built and ran the usage suite: **9 passed, 0 failed, 0 skipped**.
+These include restart/replay, kill-before-transaction-commit, pending unknown usage,
+and time-zone boundary assertions. The test runner required local socket permission;
+its sandbox abort was rerun successfully and is not counted as a product failure.

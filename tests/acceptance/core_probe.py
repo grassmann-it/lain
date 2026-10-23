@@ -3,6 +3,7 @@
 Reuses the provider/process fixture but asserts boundaries outside its suite.
 """
 import argparse
+import hashlib
 import http.client
 import json
 from pathlib import Path
@@ -69,13 +70,16 @@ def main():
     parser.add_argument('--core', required=True)
     parser.add_argument('--report', required=True)
     args = parser.parse_args()
+    core_hash = hashlib.sha256(Path(args.core).read_bytes()).hexdigest()
     results = []
     for name, function in [('management-and-inference-auth', auth_probe), ('kill-after-dispatch-restart', crash_probe)]:
         try:
             results.append({'name': name, 'passed': True, 'evidence': function(args.core)})
         except Exception as error:
             results.append({'name': name, 'passed': False, 'error': type(error).__name__, 'detail': str(error) if isinstance(error, AssertionError) else 'probe execution failed'})
-    report = {'syntheticOnly': True, 'passed': all(result['passed'] for result in results), 'checks': results}
+    unchanged = core_hash == hashlib.sha256(Path(args.core).read_bytes()).hexdigest()
+    report = {'syntheticOnly': True, 'coreSha256': core_hash, 'binaryUnchanged': unchanged,
+              'passed': unchanged and all(result['passed'] for result in results), 'checks': results}
     Path(args.report).write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
     return 0 if report['passed'] else 1
