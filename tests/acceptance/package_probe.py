@@ -27,6 +27,7 @@ def main():
     args = parser.parse_args()
     package = Path(args.package).resolve(strict=True)
     with socket.socket() as probe:
+        probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         probe.bind(('127.0.0.1', 18418))
     checks = []
     with tempfile.TemporaryDirectory(prefix='lain-w11-package-') as temporary:

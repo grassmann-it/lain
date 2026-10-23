@@ -42,6 +42,7 @@ def main():
     if not command:
         raise ValueError('Provide host launch command after --')
     with socket.socket() as reserve:
+        reserve.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         reserve.bind(('127.0.0.1', 18418))
     with tempfile.TemporaryDirectory(prefix='lain-w11-host-') as temporary:
         root = Path(temporary)
