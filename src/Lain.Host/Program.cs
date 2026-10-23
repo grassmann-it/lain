@@ -122,7 +122,7 @@ app.MapPost(Api.Prefix + "/service/{action}", async (string action, Cancellation
 });
 using var shutdown = new CancellationTokenSource();
 var quotaLoop = quota.RunAsync(shutdown.Token);
-if (qualified && File.Exists(Path.Combine(paths.Root, "active-profile.json")) && repository.Snapshot.Revision == repository.Snapshot.AppliedRevision)
+if (qualified && File.Exists(Path.Combine(paths.Root, "active-profile.json")))
 {
  try {
   using var active = JsonDocument.Parse(File.ReadAllText(Path.Combine(paths.Root, "active-profile.json")));
