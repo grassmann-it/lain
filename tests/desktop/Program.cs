@@ -214,7 +214,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Wait(() => HasText("ready", true), "main window ready");
     }
     private T[] Controls<T>() where T : Control => window.GetVisualDescendants().OfType<T>().Where(c => c.IsVisible).ToArray();
-    private TextBox Input(string watermark) => Controls<TextBox>().Single(x => Equals(x.Watermark, watermark));
+    private TextBox Input(string watermark) => Controls<TextBox>().Single(x => Equals(x.PlaceholderText, watermark));
     private bool HasText(string value, bool contains = false) => Controls<TextBlock>().Any(t => contains ? t.Text?.Contains(value, StringComparison.OrdinalIgnoreCase) == true : t.Text == value);
     private bool UsageConnected() => HasText("Connected · source: lain host / persistent usage API");
     private Task ClickUsageApply() => Click(Controls<Button>().Any(b => Equals(b.Content, "Apply filters")) ? "Apply filters" : "Apply");
