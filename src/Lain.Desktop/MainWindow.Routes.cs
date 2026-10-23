@@ -37,16 +37,21 @@ public sealed partial class MainWindow
         var provider = new ComboBox { ItemsSource = providers, SelectedItem = _routeProvider, MinWidth = 132 };
         var visibility = new ComboBox { ItemsSource = new[] { "All visibility", "Visible", "Hidden" }, SelectedItem = _routeVisibility, MinWidth = 116, IsVisible = !_showModelCatalog };
         var state = new ComboBox { ItemsSource = new[] { "All states", "Enabled", "Disabled" }, SelectedItem = _routeState, MinWidth = 104, IsVisible = !_showModelCatalog };
-        var filters = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto"), ColumnSpacing = 8 };
-        filters.Children.Add(search); Grid.SetColumn(provider, 1); filters.Children.Add(provider);
-        Grid.SetColumn(visibility, 2); filters.Children.Add(visibility); Grid.SetColumn(state, 3); filters.Children.Add(state);
+        Avalonia.Automation.AutomationProperties.SetName(search, "Search model routes and catalog");
+        Avalonia.Automation.AutomationProperties.SetName(provider, "Filter by provider");
+        Avalonia.Automation.AutomationProperties.SetName(visibility, "Filter route visibility");
+        Avalonia.Automation.AutomationProperties.SetName(state, "Filter route state");
+        var filters = new StackPanel { Spacing = 8 };
+        filters.Children.Add(search);
+        filters.Children.Add(Ui.Row(provider, visibility, state));
         panel.Children.Add(filters);
 
         var count = Ui.Text("", 12, Ui.Muted);
         var rows = new StackPanel { Spacing = 0 };
         var table = new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), ClipToBounds = true, Child = rows };
         panel.Children.Add(count);
-        panel.Children.Add(new ScrollViewer { HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = table });
+        panel.Children.Add(table);
+        var compact = _page.Bounds.Width < 820;
         void Populate()
         {
             rows.Children.Clear();
@@ -54,20 +59,27 @@ public sealed partial class MainWindow
             string Accounts(string[] ids) => string.Join(", ", ids.Select(id => cfg.Accounts.FirstOrDefault(a => a.Id == id)?.Name ?? id));
             if (_showModelCatalog)
             {
-                rows.Children.Add(RouteTableHeader("Model ID", "Provider", "Available accounts", "Source", ""));
+                rows.Children.Add(RouteTableHeader(compact, compact ? "Model / provider" : "Model ID", "Provider", "Available accounts", "Source", ""));
                 var found = _models.Where(m => (_routeProvider == "All providers" || m.Provider == _routeProvider)
                     && Matches($"{m.Id} {m.Provider} {m.Source} {Accounts(m.AccountIds)}")).OrderBy(m => m.Provider).ThenBy(m => m.Id).ToArray();
                 count.Text = $"{found.Length} of {_models.Length} models · Choose a model to create a route. Catalog entries do not expose a client alias automatically.";
                 foreach (var model in found)
                 {
                     var add = CompactRouteButton("Use model", () => EditRoute(null, model));
-                    rows.Children.Add(RouteTableRow(RouteCell(model.Id, false, true), RouteCell(model.Provider), RouteCell(Accounts(model.AccountIds)), RouteCell(model.Source, true), add));
+                    Avalonia.Automation.AutomationProperties.SetName(add, $"Create route for {model.Id}");
+                    Control identity = RouteCell(model.Id, false, true);
+                    if (compact)
+                    {
+                        var label = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
+                        label.Children.Add(identity); label.Children.Add(RouteCell(model.Provider, true)); identity = label;
+                    }
+                    rows.Children.Add(RouteTableRow(compact, identity, RouteCell(model.Provider), RouteCell(Accounts(model.AccountIds)), RouteCell(model.Source, true), add));
                 }
                 if (found.Length == 0) rows.Children.Add(RouteEmptyRow(_models.Length == 0 ? "No model catalog is available. You can still create a route by entering its model ID." : "No models match these filters."));
             }
             else
             {
-                rows.Children.Add(RouteTableHeader("Alias / upstream model", "Provider", "Account binding", "Visibility / state", ""));
+                rows.Children.Add(RouteTableHeader(compact, "Alias / upstream model", "Provider", "Account binding", "Visibility / state", ""));
                 var found = cfg.Routes.Where(r => (_routeProvider == "All providers" || r.Provider == _routeProvider)
                     && (_routeVisibility == "All visibility" || r.Visible == (_routeVisibility == "Visible"))
                     && (_routeState == "All states" || r.Enabled == (_routeState == "Enabled"))
@@ -77,6 +89,7 @@ public sealed partial class MainWindow
                 {
                     var identity = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
                     identity.Children.Add(RouteCell(route.Alias, false, true)); identity.Children.Add(RouteCell(route.UpstreamModel, true));
+                    if (compact) identity.Children.Add(RouteCell(route.Provider, true));
                     var binding = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
                     binding.Children.Add(RouteCell(Accounts(route.AccountIds)));
                     binding.Children.Add(RouteCell(route.Pooled ? $"Explicit pool · {route.AccountIds.Length} accounts" : "Strict · one account", true));
@@ -84,11 +97,12 @@ public sealed partial class MainWindow
                     status.Children.Add(RouteCell(route.Visible ? "Visible" : "Hidden", !route.Visible));
                     status.Children.Add(RouteCell(route.Enabled ? "Enabled" : "Disabled", true));
                     var edit = CompactRouteButton("Edit", () => EditRoute(route));
+                    Avalonia.Automation.AutomationProperties.SetName(edit, $"Edit route {route.Alias}");
                     var remove = CompactRouteButton("×", () => ConfirmRemoval(route.Alias, async () => { _configuration = await _client.RemoveRouteAsync(cfg.Revision, route.Id, _lifetime.Token); }));
                     ToolTip.SetTip(remove, $"Remove {route.Alias}");
                     Avalonia.Automation.AutomationProperties.SetName(remove, $"Remove route {route.Alias}");
                     var actions = Ui.Row(edit, remove); actions.Spacing = 4; actions.VerticalAlignment = VerticalAlignment.Center;
-                    rows.Children.Add(RouteTableRow(identity, RouteCell(route.Provider), binding, status, actions));
+                    rows.Children.Add(RouteTableRow(compact, identity, RouteCell(route.Provider), binding, status, actions));
                 }
                 if (found.Length == 0) rows.Children.Add(RouteEmptyRow(cfg.Routes.Length == 0 ? "No routes yet. Create a route to give a model a client alias and an account binding." : "No routes match these filters."));
             }
@@ -97,6 +111,13 @@ public sealed partial class MainWindow
         provider.SelectionChanged += (_, _) => { _routeProvider = provider.SelectedItem as string ?? "All providers"; Populate(); };
         visibility.SelectionChanged += (_, _) => { _routeVisibility = visibility.SelectedItem as string ?? "All visibility"; Populate(); };
         state.SelectionChanged += (_, _) => { _routeState = state.SelectedItem as string ?? "All states"; Populate(); };
+        panel.SizeChanged += (_, _) =>
+        {
+            var nextCompact = panel.Bounds.Width < 820;
+            if (compact == nextCompact) return;
+            compact = nextCompact;
+            Populate();
+        };
         Populate();
         return panel;
     }
@@ -118,16 +139,20 @@ public sealed partial class MainWindow
         return button;
     }
 
-    private static Border RouteTableRow(params Control[] cells)
+    private static Border RouteTableRow(bool compact, params Control[] cells)
     {
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("2.1*,110,1.7*,118,105"), ColumnSpacing = 14, MinWidth = 780 };
-        for (var i = 0; i < cells.Length; i++) { Grid.SetColumn(cells[i], i); grid.Children.Add(cells[i]); }
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions(compact ? "1.4*,0,1.1*,86,89" : "2.1*,110,1.7*,118,105"), ColumnSpacing = compact ? 6 : 14 };
+        for (var i = 0; i < cells.Length; i++)
+        {
+            if (compact && i == 1) cells[i].IsVisible = false;
+            Grid.SetColumn(cells[i], i); grid.Children.Add(cells[i]);
+        }
         return new Border { Padding = new Thickness(14, 7), MinHeight = 49, BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Child = grid };
     }
 
-    private static Border RouteTableHeader(params string[] titles)
+    private static Border RouteTableHeader(bool compact, params string[] titles)
     {
-        var header = RouteTableRow(titles.Select(t => (Control)RouteCell(t, true)).ToArray());
+        var header = RouteTableRow(compact, titles.Select(t => (Control)RouteCell(t, true)).ToArray());
         header.Background = Ui.Surface; header.MinHeight = 34; header.Padding = new Thickness(14, 8);
         return header;
     }
