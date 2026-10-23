@@ -1,6 +1,8 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
@@ -28,16 +30,46 @@ public sealed partial class MainWindow
         var selected = cfg.Profiles.FirstOrDefault(p => p.Id == _selectedProfileId) ?? cfg.Profiles[0];
         _selectedProfileId = selected.Id;
         var list = new StackPanel { Spacing = 4 };
+        var detailHost = new ContentControl();
+        var selectors = new Dictionary<string, Button>();
+        var detailActions = new List<Button>();
+        void SelectProfile(ProfileDto profile)
+        {
+            if (_busy) return;
+            _selectedProfileId = profile.Id;
+            foreach (var (id, selector) in selectors)
+            {
+                selector.Background = id == profile.Id ? Brush.Parse("#263750") : Brushes.Transparent;
+                selector.BorderBrush = id == profile.Id ? Ui.Accent : Brushes.Transparent;
+            }
+            foreach (var action in detailActions) _actions.Remove(action);
+            detailActions.Clear();
+            detailHost.Content = ProfileDetails(cfg, profile, detailActions);
+        }
         foreach (var profile in cfg.Profiles)
         {
-            var button = Ui.Button("", () => { _selectedProfileId = profile.Id; Render(); });
+            var button = Ui.Button("", () => SelectProfile(profile));
             button.Content = new StackPanel { Spacing = 3, Children = { Ui.Text(profile.Name, 13), Ui.Text($"{profile.RouteIds.Length} routes", 12, Ui.Muted) } };
+            AutomationProperties.SetName(button, $"{profile.Name}, {profile.RouteIds.Length} routes");
             button.HorizontalAlignment = HorizontalAlignment.Stretch;
             button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
-            button.Background = profile.Id == selected.Id ? Brush.Parse("#263750") : Brushes.Transparent;
-            button.BorderBrush = profile.Id == selected.Id ? Ui.Accent : Brushes.Transparent;
+            selectors.Add(profile.Id, button);
             list.Children.Add(button);
         }
+        SelectProfile(selected);
+        var layout = new Grid { ColumnDefinitions = new ColumnDefinitions("200,*"), ColumnSpacing = 14 };
+        layout.Children.Add(Ui.Card(new ScrollViewer { MaxHeight = 470, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = list }));
+        Grid.SetColumn(detailHost, 1);
+        layout.Children.Add(detailHost);
+        panel.Children.Add(layout);
+        return panel;
+    }
+
+    private Control ProfileDetails(ConfigurationDto cfg, ProfileDto selected, List<Button> detailActions)
+    {
+        var apply = Action("Apply profile", async () => { _configuration = await _client.ApplyProfileAsync(cfg.Revision, selected.Id, _lifetime.Token); }, $"Profile '{selected.Name}' applied.");
+        var export = Action("Export profile…", () => ExportProfileAsync(selected), "Profile exported without credentials.");
+        detailActions.AddRange([apply, export]);
         var routes = new StackPanel { Spacing = 0 };
         foreach (var id in selected.RouteIds)
         {
@@ -48,19 +80,13 @@ public sealed partial class MainWindow
         var details = Ui.Stack(Ui.Text(selected.Name, 18),
             Ui.Text($"{selected.RouteIds.Length} selected routes  ·  Default: {cfg.Routes.FirstOrDefault(r => r.Id == selected.DefaultRouteId)?.Alias ?? "None"}", 12, Ui.Muted),
             ProfileWrap(Ui.Button("Edit selection", () => EditProfile(selected)),
-                Action("Apply profile", async () => { _configuration = await _client.ApplyProfileAsync(cfg.Revision, selected.Id, _lifetime.Token); }, $"Profile '{selected.Name}' applied."),
+                apply,
                 Ui.Button("Connect Codex…", () => ShowCodexExport(selected))),
             new ScrollViewer { MaxHeight = 310, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = routes },
-            ProfileWrap(Action("Export profile…", () => ExportProfileAsync(selected), "Profile exported without credentials."),
+            ProfileWrap(export,
                 Ui.Button("Remove…", () => ConfirmRemoval(selected.Name, async () => { _configuration = await _client.RemoveProfileAsync(cfg.Revision, selected.Id, _lifetime.Token); }))));
         details.Spacing = 12;
-        var layout = new Grid { ColumnDefinitions = new ColumnDefinitions("200,*"), ColumnSpacing = 14 };
-        layout.Children.Add(Ui.Card(new ScrollViewer { MaxHeight = 470, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = list }));
-        var detailCard = Ui.Card(details);
-        Grid.SetColumn(detailCard, 1);
-        layout.Children.Add(detailCard);
-        panel.Children.Add(layout);
-        return panel;
+        return Ui.Card(details);
     }
 
     private void ShowCodexExport(ProfileDto profile)
@@ -70,6 +96,8 @@ public sealed partial class MainWindow
         var launcher = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin", "lain");
         var executable = Ui.Input(File.Exists(launcher) ? launcher : "", "/absolute/path/to/lain");
         var folder = Ui.Input(hint: "Choose or enter an existing parent folder");
+        AutomationProperties.SetName(folder, "Destination parent folder");
+        AutomationProperties.SetName(executable, "lain command-line executable");
         var pick = Ui.Button("Browse…", async () => {
             try
             {
@@ -140,15 +168,19 @@ public sealed partial class MainWindow
         _editing = true;
         var name = Ui.Input(profile?.Name, "Profile name");
         var search = Ui.Input(hint: "Search routes, providers or models");
+        AutomationProperties.SetName(search, "Search profile routes, providers or models");
+        AutomationProperties.SetName(name, "Profile name");
         var count = Ui.Text("", 12, Ui.Muted);
         var empty = Ui.Text("No routes match this search.", 13, Ui.Muted);
         var defaults = new ComboBox { ItemsSource = new[] { "None" }.Concat(cfg.Routes.Select(r => r.Alias)).ToArray(), SelectedIndex = profile?.DefaultRouteId is { } id ? Array.FindIndex(cfg.Routes, r => r.Id == id) + 1 : 0 };
+        AutomationProperties.SetName(defaults, "Default route");
         var defaultHint = Ui.Text("", 12, Ui.Muted);
         var routeList = new StackPanel { Spacing = 0 };
         var choices = cfg.Routes.Select(route => {
             var box = new CheckBox { IsChecked = profile?.RouteIds.Contains(route.Id) ?? false,
                 HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
                 Content = ProfileRouteContent(route.Alias, $"{route.Provider} / {route.UpstreamModel}", false), MinHeight = 42 };
+            AutomationProperties.SetName(box, $"{route.Alias}, {route.Provider}, {route.UpstreamModel}");
             var row = new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(8, 0), Child = box };
             routeList.Children.Add(row);
             return (Route: route, Box: box, Row: row);
