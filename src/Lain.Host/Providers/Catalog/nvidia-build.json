@@ -1,0 +1,156 @@
+{
+  "id": "nvidia-build",
+  "name": "NVIDIA Build",
+  "summary": "NVIDIA-hosted StepFun Step 5 Preview for development and evaluation. Own credentials required; real access has not been tested.",
+  "accountUrl": "https://build.nvidia.com/stepfun-ai/step-5-preview",
+  "documentationUrl": "https://docs.api.nvidia.com/nim/reference/stepfun-ai-step-5-preview-infer",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "Own API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true,
+      "help": "Create your own API key on the official account page. Never paste keys into logs or usage records."
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Developer access",
+      "description": "Use your own NVIDIA account and join the NVIDIA Developer Program.",
+      "url": "https://developer.nvidia.com/developer-program"
+    },
+    {
+      "title": "Create API key",
+      "description": "Open the model page and generate your own NVIDIA API key.",
+      "url": "https://build.nvidia.com/stepfun-ai/step-5-preview"
+    },
+    {
+      "title": "Configure route",
+      "description": "Use https://integrate.api.nvidia.com/v1 and model stepfun-ai/step-5-preview. Keep development/evaluation usage separate from production licensing.",
+      "url": null
+    },
+    {
+      "title": "Verify account limits",
+      "description": "Check your account entitlement and actual limits. No remaining-budget API or fixed free token allowance has been verified.",
+      "url": null
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "developer",
+      "name": "Developer prototyping access",
+      "kind": "free",
+      "scope": "account",
+      "unit": "unknown",
+      "limits": [
+        {
+          "kind": "rate",
+          "value": null,
+          "unit": "requests/minute",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        },
+        {
+          "kind": "rate",
+          "value": null,
+          "unit": "tokens/minute",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        },
+        {
+          "kind": "concurrency",
+          "value": null,
+          "unit": "requests",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        }
+      ],
+      "notes": "Official free API access for prototyping; not an unlimited allowance. Exact account limits, expiry and remaining budget unknown. The separate 90-day Enterprise evaluation and self-hosted GPU allowance are not hosted API token credits."
+    }
+  ],
+  "routes": [
+    {
+      "id": "nvidia-build:step-5-preview",
+      "model": "stepfun-ai/step-5-preview",
+      "name": "Step 5 Preview via NVIDIA",
+      "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "developer"
+      ],
+      "capabilities": {
+        "contextWindow": 1000000,
+        "maximumOutput": 1048576,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": true,
+        "structuredOutput": null,
+        "reasoningModes": [
+          "always-on"
+        ]
+      },
+      "modelFamily": "step-5",
+      "manufacturer": "StepFun",
+      "inferenceProvider": "NVIDIA",
+      "gateway": "NVIDIA Build",
+      "pricingClass": "free",
+      "freeOnlyEligible": true,
+      "freeOnlyEnforcement": "Pin the official developer endpoint and this route. Do not configure paid fallback. Developer entitlement and actual remaining allowance require account verification.",
+      "publisher": "StepFun",
+      "publisherType": "manufacturer",
+      "sources": [
+        {
+          "url": "https://build.nvidia.com/stepfun-ai/step-5-preview",
+          "title": "NVIDIA Build Step 5 Preview",
+          "checkedAt": "2026-10-23T22:13:05Z",
+          "notes": null
+        },
+        {
+          "url": "https://docs.api.nvidia.com/nim/reference/stepfun-ai-step-5-preview-infer",
+          "title": "NVIDIA Step 5 Preview inference API",
+          "checkedAt": "2026-10-23T22:13:05Z",
+          "notes": null
+        }
+      ],
+      "restrictions": [
+        "Development/evaluation entitlement is not production authorization.",
+        "At most eight images per request; video and audio unsupported on this hosted route.",
+        "max_tokens includes reasoning and answer; prompt plus output must fit the context window. The schema permits up to 1,048,576, not an independent guaranteed output allocation.",
+        "Reasoning remains enabled. Do not send enable_thinking=false as a reasoning disable switch. Preserve assistant reasoning_content and tool_call_id on continuations.",
+        "Streaming uses SSE data events ending with [DONE]; reasoning, content and tool calls arrive as deltas.",
+        "The published context value is 1M tokens; actual usable context and concurrency depend on hosting configuration. Structured output and adjustable reasoning effort are not verified for this route."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://build.nvidia.com/stepfun-ai/step-5-preview",
+      "title": "NVIDIA Build Step 5 Preview",
+      "checkedAt": "2026-10-23T22:13:05Z",
+      "notes": null
+    },
+    {
+      "url": "https://docs.api.nvidia.com/nim/reference/stepfun-ai-step-5-preview-infer",
+      "title": "NVIDIA Step 5 Preview inference API",
+      "checkedAt": "2026-10-23T22:13:05Z",
+      "notes": null
+    },
+    {
+      "url": "https://docs.api.nvidia.com/nim/docs/product",
+      "title": "NVIDIA NIM product FAQ",
+      "checkedAt": "2026-10-23T22:13:05Z",
+      "notes": null
+    }
+  ],
+  "restrictions": [
+    "Own NVIDIA API key required.",
+    "Free access is intended for prototyping/development/testing/research/evaluation. Production use requires qualification under current NVIDIA terms.",
+    "No official hosted-API quota endpoint or fixed remaining allowance verified.",
+    "No account registration, key creation, trial activation or purchase is performed by lain."
+  ],
+  "adapterState": "available",
+  "liveVerification": "not_tested",
+  "quotaSupport": "unsupported"
+}

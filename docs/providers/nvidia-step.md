@@ -21,11 +21,18 @@ Routen, Inferenzanbieter und abrechnende Konten.
 
 Die [Build-Modellseite][nv-build] nennt die vollständige Modell-ID, den
 `POST /v1/chat/completions`-Aufruf, Bearer-Authentifizierung, `stream` und SSE,
-Text-/Bildeingaben, Tool Calling, Reasoning und **1M Kontext**. Der Beispielwert
-`max_tokens: 4096` ist kein belegtes maximales Ausgabelimit. Die [Modellkarte][nv-card]
-nennt builderseitig bis zu 1M Ausgabe, relativiert aber nutzbaren Kontext und
-Parallelität nach Hostingkonfiguration. Deshalb wird kein 1M-Ausgabelimit als
-Garantie der gehosteten Route übernommen; Route-Ausgabelimit bleibt unbekannt.
+Text-/Bildeingaben, Tool Calling, Reasoning und **1M Kontext**. Die [Inference-API-Referenz][nv-infer] belegt `max_tokens` von 1 bis
+1.048.576 (Standard 4096), einschließlich Reasoning und Antwort. Prompt plus
+Ausgabe müssen ins Kontextfenster passen; dies ist keine unabhängige zusätzliche
+Ausgabezuteilung. Die Route unterstützt höchstens acht Bilder und ausdrücklich
+kein Video/Audio. `tool_choice` unterstützt `auto`, `none`, `required` und eine
+benannte Funktion. Bei Fortsetzungen sind `reasoning_content` und passende
+`tool_call_id` zu erhalten. Reasoning bleibt auf diesem Checkpoint aktiv;
+`enable_thinking=false` darf nicht als funktionierende Abschaltung behandelt
+werden. SSE läuft bis `data: [DONE]`; Reasoning, Inhalt und Toolaufrufe kommen
+als Deltas. Konkrete Reasoning-Effort-Stufen der NVIDIA-Route bleiben unbekannt.
+Die [Modellkarte][nv-card] relativiert nutzbaren Kontext und Parallelität nach
+Hostingkonfiguration.
 
 [NVIDIAs FAQ][nv-faq] bestätigt kostenlosen Zugang zu NIM-API-Endpunkten für
 Prototyping über das NVIDIA Developer Program. Entwicklung, Tests, Forschung und
@@ -125,6 +132,7 @@ Konfiguration nicht, bleiben aber als fehlend sichtbar.
 
 [nv-build]: https://build.nvidia.com/stepfun-ai/step-5-preview
 [nv-card]: https://build.nvidia.com/stepfun-ai/step-5-preview/modelcard
+[nv-infer]: https://docs.api.nvidia.com/nim/reference/stepfun-ai-step-5-preview-infer
 [nv-faq]: https://docs.api.nvidia.com/nim/docs/product
 [step-model]: https://platform.stepfun.com/docs/zh/guides/models/step-5-preview.md
 [step-payg]: https://platform.stepfun.com/docs/zh/quickstart/overview.md

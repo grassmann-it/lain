@@ -1,0 +1,447 @@
+{
+  "id": "stepfun",
+  "name": "StepFun",
+  "summary": "Direct StepFun PAYG and Step Plan use separate endpoints and budgets. Own credentials required; real access has not been tested.",
+  "accountUrl": "https://platform.stepfun.com",
+  "documentationUrl": "https://platform.stepfun.com/docs/zh/guides/models/step-5-preview.md",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "Own API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true,
+      "help": "Create your own API key on the official account page. Never paste keys into logs or usage records."
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Own account",
+      "description": "Use your own StepFun platform account; complete any required identity verification.",
+      "url": "https://platform.stepfun.com"
+    },
+    {
+      "title": "Own API key",
+      "description": "Create an API key for your own account/project.",
+      "url": "https://platform.stepfun.com/interface-key"
+    },
+    {
+      "title": "Choose budget route",
+      "description": "PAYG uses https://api.stepfun.com/v1; Step Plan uses https://api.stepfun.com/step_plan/v1. No automatic cross-budget fallback.",
+      "url": null
+    },
+    {
+      "title": "Step Plan eligibility",
+      "description": "Use Step Plan only with an existing eligible subscription and a supported integration. Review current terms and tool documentation.",
+      "url": "https://platform.stepfun.com/docs/zh/agreement/step-plan.md"
+    },
+    {
+      "title": "Quota scope",
+      "description": "Only the PAYG account balance API is documented. Step Plan remaining credits and resets stay unknown; use the console.",
+      "url": null
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "payg",
+      "name": "Pay as you go API",
+      "kind": "payg",
+      "scope": "account",
+      "unit": "CNY",
+      "limits": [
+        {
+          "kind": "rate",
+          "value": null,
+          "unit": "requests/minute",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        },
+        {
+          "kind": "rate",
+          "value": null,
+          "unit": "tokens/minute",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        },
+        {
+          "kind": "concurrency",
+          "value": null,
+          "unit": "requests",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        }
+      ],
+      "notes": "Separate prepaid/postpaid account balance. Actual tier depends on cumulative cash recharge and account type; vouchers do not determine tier. No free entitlement inferred."
+    },
+    {
+      "id": "step-plan-mini",
+      "name": "Step Plan Mini",
+      "kind": "subscription",
+      "scope": "account",
+      "unit": "credits",
+      "includedAmount": 400000000,
+      "resetDescription": "Allocated monthly; unused credits expire at period end without rollover. Actual account reset unknown.",
+      "recurringPrice": 49,
+      "currency": "CNY",
+      "priceInterval": "month",
+      "limits": [
+        {
+          "kind": "rate",
+          "value": null,
+          "unit": "requests/minute",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        },
+        {
+          "kind": "rate",
+          "value": null,
+          "unit": "tokens/minute",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        },
+        {
+          "kind": "concurrency",
+          "value": null,
+          "unit": "requests",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        }
+      ],
+      "notes": "Offer, not an observed account budget. Quarter/year prepayment still allocates monthly. Step 5 peak consumption doubles on weekdays 09–12 and 14–18 Beijing. Add-ons expire independently after 30 days. Legacy subscriptions may differ."
+    },
+    {
+      "id": "step-plan-plus",
+      "name": "Step Plan Plus",
+      "kind": "subscription",
+      "scope": "account",
+      "unit": "credits",
+      "includedAmount": 1600000000,
+      "resetDescription": "Allocated monthly; unused credits expire at period end without rollover. Actual account reset unknown.",
+      "recurringPrice": 99,
+      "currency": "CNY",
+      "priceInterval": "month",
+      "limits": [
+        {
+          "kind": "rate",
+          "value": null,
+          "unit": "requests/minute",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        },
+        {
+          "kind": "rate",
+          "value": null,
+          "unit": "tokens/minute",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        },
+        {
+          "kind": "concurrency",
+          "value": null,
+          "unit": "requests",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        }
+      ],
+      "notes": "Offer, not an observed account budget. Quarter/year prepayment still allocates monthly. Step 5 peak consumption doubles on weekdays 09–12 and 14–18 Beijing. Add-ons expire independently after 30 days. Legacy subscriptions may differ."
+    },
+    {
+      "id": "step-plan-pro",
+      "name": "Step Plan Pro",
+      "kind": "subscription",
+      "scope": "account",
+      "unit": "credits",
+      "includedAmount": 8000000000,
+      "resetDescription": "Allocated monthly; unused credits expire at period end without rollover. Actual account reset unknown.",
+      "recurringPrice": 199,
+      "currency": "CNY",
+      "priceInterval": "month",
+      "limits": [
+        {
+          "kind": "rate",
+          "value": null,
+          "unit": "requests/minute",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        },
+        {
+          "kind": "rate",
+          "value": null,
+          "unit": "tokens/minute",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        },
+        {
+          "kind": "concurrency",
+          "value": null,
+          "unit": "requests",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        }
+      ],
+      "notes": "Offer, not an observed account budget. Quarter/year prepayment still allocates monthly. Step 5 peak consumption doubles on weekdays 09–12 and 14–18 Beijing. Add-ons expire independently after 30 days. Legacy subscriptions may differ."
+    },
+    {
+      "id": "step-plan-max",
+      "name": "Step Plan Max",
+      "kind": "subscription",
+      "scope": "account",
+      "unit": "credits",
+      "includedAmount": 40000000000,
+      "resetDescription": "Allocated monthly; unused credits expire at period end without rollover. Actual account reset unknown.",
+      "recurringPrice": 699,
+      "currency": "CNY",
+      "priceInterval": "month",
+      "limits": [
+        {
+          "kind": "rate",
+          "value": null,
+          "unit": "requests/minute",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        },
+        {
+          "kind": "rate",
+          "value": null,
+          "unit": "tokens/minute",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        },
+        {
+          "kind": "concurrency",
+          "value": null,
+          "unit": "requests",
+          "scope": "account",
+          "notes": "Actual account limit has not been verified."
+        }
+      ],
+      "notes": "Offer, not an observed account budget. Quarter/year prepayment still allocates monthly. Step 5 peak consumption doubles on weekdays 09–12 and 14–18 Beijing. Add-ons expire independently after 30 days. Legacy subscriptions may differ."
+    }
+  ],
+  "routes": [
+    {
+      "id": "stepfun:step-5-preview:payg:chat",
+      "model": "step-5-preview",
+      "name": "Step 5 Preview PAYG",
+      "baseUrl": "https://api.stepfun.com/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": 1000000,
+        "maximumOutput": 64000,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": true,
+        "structuredOutput": true,
+        "reasoningModes": [
+          "low",
+          "medium",
+          "high"
+        ]
+      },
+      "modelFamily": "step-5",
+      "manufacturer": "StepFun",
+      "inferenceProvider": "StepFun",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "StepFun",
+      "publisherType": "manufacturer",
+      "sources": [
+        {
+          "url": "https://platform.stepfun.com/docs/zh/guides/models/step-5-preview.md",
+          "title": "Step 5 Preview model specifications",
+          "checkedAt": "2026-10-23T22:13:05Z",
+          "notes": null
+        },
+        {
+          "url": "https://platform.stepfun.com/docs/zh/quickstart/overview.md",
+          "title": "StepFun PAYG quickstart",
+          "checkedAt": "2026-10-23T22:13:05Z",
+          "notes": null
+        }
+      ],
+      "restrictions": [
+        "Paid API route must be explicitly configured.",
+        "Model specifications state 1M context and 64k output; these are documented shorthand values, not a tested account allocation. Chat uses reasoning_effort; Messages uses output_config.effort."
+      ]
+    },
+    {
+      "id": "stepfun:step-5-preview:plan:chat",
+      "model": "step-5-preview",
+      "name": "Step 5 Preview Step Plan",
+      "baseUrl": "https://api.stepfun.com/step_plan/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "step-plan-mini",
+        "step-plan-plus",
+        "step-plan-pro",
+        "step-plan-max"
+      ],
+      "capabilities": {
+        "contextWindow": 1000000,
+        "maximumOutput": 64000,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": true,
+        "structuredOutput": true,
+        "reasoningModes": [
+          "low",
+          "medium",
+          "high"
+        ]
+      },
+      "modelFamily": "step-5",
+      "manufacturer": "StepFun",
+      "inferenceProvider": "StepFun",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "StepFun",
+      "publisherType": "manufacturer",
+      "sources": [
+        {
+          "url": "https://platform.stepfun.com/docs/zh/guides/models/step-5-preview.md",
+          "title": "Step 5 Preview model specifications",
+          "checkedAt": "2026-10-23T22:13:05Z",
+          "notes": null
+        },
+        {
+          "url": "https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api.md",
+          "title": "Step Plan reasoning API",
+          "checkedAt": "2026-10-23T22:13:05Z",
+          "notes": null
+        }
+      ],
+      "restrictions": [
+        "Plan is limited to supported or explicitly compatible integration methods; current official docs cover direct API and named coding/agent tools.",
+        "Do not resell, share a subscription with third parties, impersonate supported tools or bypass limits using proxies/token rotation.",
+        "No automatic fallback to PAYG when subscription credits are exhausted.",
+        "Credits are not tokens; monthly credits expire without rollover. Step 5 peak-period credit consumption is doubled; legacy plans may differ.",
+        "Model specifications state 1M context and 64k output; these are documented shorthand values, not a tested account allocation. Chat uses reasoning_effort; Messages uses output_config.effort."
+      ]
+    },
+    {
+      "id": "stepfun:step-5-preview:plan:messages",
+      "model": "step-5-preview",
+      "name": "Step 5 Preview Step Plan",
+      "baseUrl": "https://api.stepfun.com/step_plan",
+      "protocol": "anthropic-messages",
+      "billingPlanIds": [
+        "step-plan-mini",
+        "step-plan-plus",
+        "step-plan-pro",
+        "step-plan-max"
+      ],
+      "capabilities": {
+        "contextWindow": 1000000,
+        "maximumOutput": 64000,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": true,
+        "structuredOutput": true,
+        "reasoningModes": [
+          "low",
+          "medium",
+          "high"
+        ]
+      },
+      "modelFamily": "step-5",
+      "manufacturer": "StepFun",
+      "inferenceProvider": "StepFun",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "StepFun",
+      "publisherType": "manufacturer",
+      "sources": [
+        {
+          "url": "https://platform.stepfun.com/docs/zh/guides/models/step-5-preview.md",
+          "title": "Step 5 Preview model specifications",
+          "checkedAt": "2026-10-23T22:13:05Z",
+          "notes": null
+        },
+        {
+          "url": "https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api.md",
+          "title": "Step Plan reasoning API",
+          "checkedAt": "2026-10-23T22:13:05Z",
+          "notes": null
+        }
+      ],
+      "restrictions": [
+        "Plan is limited to supported or explicitly compatible integration methods; current official docs cover direct API and named coding/agent tools.",
+        "Do not resell, share a subscription with third parties, impersonate supported tools or bypass limits using proxies/token rotation.",
+        "No automatic fallback to PAYG when subscription credits are exhausted.",
+        "Credits are not tokens; monthly credits expire without rollover. Step 5 peak-period credit consumption is doubled; legacy plans may differ.",
+        "Anthropic SDK appends /v1/messages; the SDK base URL must not end in /v1.",
+        "Model specifications state 1M context and 64k output; these are documented shorthand values, not a tested account allocation. Chat uses reasoning_effort; Messages uses output_config.effort."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://platform.stepfun.com/docs/zh/guides/models/step-5-preview.md",
+      "title": "Step 5 Preview model specifications",
+      "checkedAt": "2026-10-23T22:13:05Z",
+      "notes": null
+    },
+    {
+      "url": "https://platform.stepfun.com/docs/zh/quickstart/overview.md",
+      "title": "StepFun PAYG quickstart",
+      "checkedAt": "2026-10-23T22:13:05Z",
+      "notes": null
+    },
+    {
+      "url": "https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api.md",
+      "title": "Step Plan reasoning API",
+      "checkedAt": "2026-10-23T22:13:05Z",
+      "notes": null
+    },
+    {
+      "url": "https://platform.stepfun.com/docs/zh/step-plan/pricing.md",
+      "title": "Step Plan pricing",
+      "checkedAt": "2026-10-23T22:13:05Z",
+      "notes": null
+    },
+    {
+      "url": "https://platform.stepfun.com/docs/zh/api-reference/accounts/get.md",
+      "title": "StepFun account balance API",
+      "checkedAt": "2026-10-23T22:13:05Z",
+      "notes": null
+    },
+    {
+      "url": "https://platform.stepfun.com/docs/zh/agreement/step-plan.md",
+      "title": "Step Plan paid-service agreement, effective 2026-05-25",
+      "checkedAt": "2026-10-23T22:13:05Z",
+      "notes": null
+    },
+    {
+      "url": "https://platform.stepfun.com/docs/zh/step-plan/tool-integrations.md",
+      "title": "Step Plan supported tool integrations",
+      "checkedAt": "2026-10-23T22:13:05Z",
+      "notes": null
+    },
+    {
+      "url": "https://platform.stepfun.com/docs/zh/guides/pricing/rate-limits.md",
+      "title": "StepFun PAYG rate limits",
+      "checkedAt": "2026-10-23T22:13:05Z",
+      "notes": null
+    }
+  ],
+  "restrictions": [
+    "Own user credentials required. PAYG account funds and Step Plan subscription credits are separate.",
+    "No account creation, subscription or purchase is performed by lain.",
+    "Plan is limited to supported or explicitly compatible integration methods; current official docs cover direct API and named coding/agent tools.",
+    "Do not resell, share a subscription with third parties, impersonate supported tools or bypass limits using proxies/token rotation.",
+    "No automatic fallback to PAYG when subscription credits are exhausted.",
+    "Credits are not tokens; monthly credits expire without rollover. Step 5 peak-period credit consumption is doubled; legacy plans may differ."
+  ],
+  "adapterState": "available",
+  "liveVerification": "not_tested",
+  "quotaSupport": "partial"
+}
