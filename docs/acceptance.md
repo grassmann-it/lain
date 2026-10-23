@@ -33,10 +33,10 @@ rotation, restart, configuration write, or queue consumption is authorized.
 
 | Gate | Required independent evidence | Status |
 | --- | --- | --- |
-| A provenance | Manifest-bound source/build/license and private owned processes/ports | Pending |
-| A identity | Two distinct credentials for one provider, strict HTTP pinning on 429/deactivation, explicit pool behavior | Pending |
-| A durability | Dispatch persisted before send; sync completion usage; restart/replay; write failure, crash and unknown coverage | Pending |
-| A protocol | Nonstream, SSE, harmless tool + continuation, cancel; synthetic retry counted as one request and multiple attempts | Pending |
+| A provenance | Manifest-bound source/build/license and private owned processes/ports | Fresh-worktree 1463-input source manifest passed; exact final binary checked |
+| A identity | Two distinct credentials for one provider, strict HTTP pinning on 429/deactivation, explicit pool behavior | W2 final synthetic suite passed; real routes pending |
+| A durability | Dispatch persisted before send; sync completion usage; restart/replay; write failure, crash and unknown coverage | W2 final suite + independent Core crash/auth + 9 SQLite tests passed |
+| A protocol | Nonstream, SSE, harmless tool + continuation, cancel; synthetic retry counted as one request and multiple attempts | Chat, Responses translation, native Messages synthetic tests passed; real probes pending |
 | B host | Unauthorized local API rejected, revision races rejected, failure distinguishes desired/applied revision | HTTP auth, concurrency, pending revision passed; failed live apply/restart pending |
 | B data/privacy | SQLite restart and dedup; no headers/credentials/payloads in usage/export/errors; unknown amounts serialized null | Pending |
 | B accounts/quota | API/Codex snapshot import, no refresh token; separate same-provider accounts, isolated quota failure/last-good | Pending |
@@ -120,3 +120,23 @@ W11 independently built and ran the usage suite: **9 passed, 0 failed, 0 skipped
 These include restart/replay, kill-before-transaction-commit, pending unknown usage,
 and time-zone boundary assertions. The test runner required local socket permission;
 its sandbox abort was rerun successfully and is not counted as a product failure.
+
+## Final synthetic Core gate
+
+The consolidated final candidate is SHA-256
+`8edf8abf666e3c15f1a04c20c841a969d35229f09e7de5265755ab704cf9dfc0`.
+W2 retained that exact artifact and all **15 synthetic checks passed**, including
+Chat/SSE/tool continuation, Responses translation, native Anthropic Messages
+SSE/tool continuation, omitted-token null semantics, strict 429 and disabled-account
+binding, explicit pool retry, credential lifecycle, cancellation, startup failure,
+crash, and dispatch/terminal journal write failures. W11 inspected the report and
+independently reran auth and kill-after-dispatch/restart against the retained
+artifact: **both passed**, and its hash was unchanged before/after execution.
+The committed [independent report](../tests/acceptance/evidence/core-final.json)
+contains no credentials or payloads.
+
+A fresh W11 checkout merged from main passed `python3 scripts/build-core-verify.py`:
+**1463 pinned inputs verified**. An earlier missing ignored upstream template
+was found independently and corrected before this pass. This gate permits the
+authorized short real-provider probes; it is not a real-provider/desktop/package
+acceptance or a claim of independently proven real OAuth renewal.
