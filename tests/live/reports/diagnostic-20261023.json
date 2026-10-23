@@ -1,0 +1,218 @@
+{
+  "date": "2026-10-23",
+  "qualifiedSha256": "8edf8abf666e3c15f1a04c20c841a969d35229f09e7de5265755ab704cf9dfc0",
+  "privateStateDirectory": "/tmp/lain-reference-dxo_a12c",
+  "qualificationPassed": false,
+  "inferenceRequestsTotal": 5,
+  "codexSuccesses": 2,
+  "commandGptFailures": 2,
+  "commandGlmFailures": 1,
+  "automaticInferenceRetries": 0,
+  "commandGptDiagnostic": {
+    "statusCode": 403,
+    "error": {
+      "code": "insufficient_quota",
+      "type": "permission_error",
+      "message": "HTML error body omitted."
+    }
+  },
+  "commandQuota": [
+    {
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "budgetPoolId": null,
+      "source": "https://api.commandcode.ai/alpha/billing/credits#monthlyCredits",
+      "state": "ok",
+      "observedAt": "2026-10-23T18:03:36.7547577+00:00",
+      "lastSuccessAt": "2026-10-23T18:03:36.7547577+00:00",
+      "resetsAt": "2026-11-22T00:36:41+00:00",
+      "unit": "USD-Credits",
+      "used": 65.885326695,
+      "limit": 150,
+      "remaining": 84.114673305,
+      "sharedWithLegacy": true,
+      "error": null
+    },
+    {
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "budgetPoolId": null,
+      "source": "https://api.commandcode.ai/alpha/billing/credits#purchasedCredits",
+      "state": "ok",
+      "observedAt": "2026-10-23T18:03:36.7547577+00:00",
+      "lastSuccessAt": "2026-10-23T18:03:36.7547577+00:00",
+      "resetsAt": null,
+      "unit": "USD-Credits",
+      "used": null,
+      "limit": null,
+      "remaining": 0,
+      "sharedWithLegacy": true,
+      "error": null
+    },
+    {
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "budgetPoolId": null,
+      "source": "https://api.commandcode.ai/alpha/billing/credits#freeCredits",
+      "state": "ok",
+      "observedAt": "2026-10-23T18:03:36.7547577+00:00",
+      "lastSuccessAt": "2026-10-23T18:03:36.7547577+00:00",
+      "resetsAt": null,
+      "unit": "USD-Credits",
+      "used": null,
+      "limit": null,
+      "remaining": 0,
+      "sharedWithLegacy": true,
+      "error": null
+    },
+    {
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "budgetPoolId": null,
+      "source": "https://api.commandcode.ai/alpha/billing/credits#fiveHour",
+      "state": "ok",
+      "observedAt": "2026-10-23T18:03:36.7547577+00:00",
+      "lastSuccessAt": "2026-10-23T18:03:36.7547577+00:00",
+      "resetsAt": "2026-10-23T19:00:09.023+00:00",
+      "unit": "USD-Credits",
+      "used": 7.401111835,
+      "limit": 45,
+      "remaining": 37.598888165,
+      "sharedWithLegacy": true,
+      "error": null
+    },
+    {
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "budgetPoolId": null,
+      "source": "https://api.commandcode.ai/alpha/billing/credits#weekly",
+      "state": "ok",
+      "observedAt": "2026-10-23T18:03:36.7547577+00:00",
+      "lastSuccessAt": "2026-10-23T18:03:36.7547577+00:00",
+      "resetsAt": "2026-10-29T00:57:50.672+00:00",
+      "unit": "USD-Credits",
+      "used": 65.885326695,
+      "limit": 90,
+      "remaining": 24.114673304999997,
+      "sharedWithLegacy": true,
+      "error": null
+    },
+    {
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "budgetPoolId": null,
+      "source": "https://commandcode.ai/docs/plans/pro#model-monthly-remaining-unknown",
+      "state": "unknown",
+      "observedAt": "2026-10-23T18:03:36.7547577+00:00",
+      "lastSuccessAt": null,
+      "resetsAt": null,
+      "unit": "USD",
+      "used": null,
+      "limit": null,
+      "remaining": null,
+      "sharedWithLegacy": true,
+      "error": null
+    }
+  ],
+  "restartEvidence": {
+    "state": "completed-partial-provider-evidence",
+    "originalThreePreserved": true,
+    "fourAttemptRecordsPreserved": true,
+    "beforeTotals": {
+      "requests": 4,
+      "attempts": 4,
+      "errors": 2,
+      "tokens": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "total": null
+      },
+      "unknownUsageAttempts": 2
+    },
+    "afterTotals": {
+      "requests": 4,
+      "attempts": 4,
+      "errors": 2,
+      "tokens": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "total": null
+      },
+      "unknownUsageAttempts": 2
+    },
+    "completeBefore": true,
+    "completeAfter": true,
+    "cliBefore": {
+      "passed": true,
+      "command": "dotnet Lain.Cli.dll usage --from FROM --to TO --timezone UTC --json",
+      "window": {
+        "from": "2026-10-23T17:57:04.193825+00:00",
+        "to": "2026-10-23T18:58:04.193825+00:00",
+        "timeZone": "UTC"
+      },
+      "totals": {
+        "requests": 4,
+        "attempts": 4,
+        "errors": 2,
+        "tokens": {
+          "input": null,
+          "output": null,
+          "cached": null,
+          "reasoning": null,
+          "total": null
+        },
+        "unknownUsageAttempts": 2
+      },
+      "groupsMatch": true
+    },
+    "cliAfter": {
+      "passed": true,
+      "command": "dotnet Lain.Cli.dll usage --from FROM --to TO --timezone UTC --json",
+      "window": {
+        "from": "2026-10-23T17:57:04.193825+00:00",
+        "to": "2026-10-23T18:58:04.193825+00:00",
+        "timeZone": "UTC"
+      },
+      "totals": {
+        "requests": 4,
+        "attempts": 4,
+        "errors": 2,
+        "tokens": {
+          "input": null,
+          "output": null,
+          "cached": null,
+          "reasoning": null,
+          "total": null
+        },
+        "unknownUsageAttempts": 2
+      },
+      "groupsMatch": true
+    }
+  },
+  "commandGlm": {
+    "route": "cmd-glm-5.3",
+    "upstreamModel": "zai-org/GLM-5.3",
+    "requestsSent": 1,
+    "continuationSent": false,
+    "providerError": {
+      "statusCode": 403,
+      "code": "insufficient_quota",
+      "type": "permission_error",
+      "message": "HTML error body omitted.",
+      "bodyClassification": {
+        "html": true,
+        "cloudflare": true,
+        "cloudflare1010": true,
+        "challenge": false,
+        "accessDenied": true,
+        "cdnForbidden": false,
+        "titleClass": "Access denied"
+      },
+      "retryAfter": null,
+      "cfMitigatedChallenge": false,
+      "proxyNormalizes403Code": true
+    }
+  },
+  "conclusion": "Command inference blocked by Cloudflare 1010 Access denied; normalized insufficient_quota does not prove quota exhaustion. Account and rolling-window balances remain positive; per-model remaining is unknown. Codex reference succeeded. Existing four terminal records and exact CLI/API totals survived own host restart.",
+  "ownProcessesStopped": true,
+  "rawProviderBodyStored": false,
+  "additionalProviderCallsAfterFailure": 0
+}

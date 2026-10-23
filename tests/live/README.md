@@ -103,3 +103,24 @@ daily/account/model groups must match exactly, including unknown JSON null
 values. The CLI uses the same private `LAIN_HOME` and Host API; no second
 collector or direct database access is introduced. This is also the command
 documented by `skills/lain-usage/SKILL.md`.
+
+## Explicit follow-up diagnostics
+
+`diagnose_reference.py` is separately authorized work, not an automatic retry.
+It sends one tiny nonstream Command request and optionally queries on-demand
+Command quota through the Host adapter. Its `--verify-only` mode sends zero
+inference/quota requests and verifies preserved records, restart and real
+CLI/API parity. `command_glm_reference.py` explicitly selects the already
+imported `cmd-glm-5.3` route on the same account for at most two stream/tool
+requests, stopping after the first failure. It is not an automatic fallback.
+
+Observed follow-up evidence is in `reports/diagnostic-20261023.json`. Command
+returned HTML Cloudflare 1010 / Access denied, while account and rolling-window
+balances were positive. The Core normalizes 403 to `insufficient_quota`; this
+code alone must not be treated as actual budget exhaustion. HTML classification
+reports only booleans and known title classes. Raw bodies and arbitrary titles
+are omitted; exact own credential values and identities are redacted from error
+fields. Two successful Codex calls and two failed Command GPT calls were verified
+unchanged across own Host restart, with exact CLI/API totals and groups matching.
+The later GLM first request also failed at Cloudflare and its continuation was
+not sent. This evidence does not mark final A qualification passed.
