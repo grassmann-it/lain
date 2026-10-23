@@ -50,7 +50,7 @@ für eine flüchtige Queue erfinden.
 ## Mengen, Zeiten, Kontingente und Kosten
 
 - Input-/Output-/Cache-/Reasoningwerte behalten die belegte Anbietersemantik;
-  Teilmengen werden nicht erneut zum Total addiert. Unbekannte Werte sind nicht null.
+  Teilmengen werden nicht erneut zum Total addiert. Unbekannte Werte werden als JSON `null`, niemals als gemessene `0` ausgegeben.
 - Tagesgrenzen und Zeitraumfilter verwenden eine ausgewiesene Zeitzone. Späte
   Ereignisse korrigieren betroffene Aggregate nachvollziehbar.
 - Latenz und Zeit bis zur ersten Ausgabe benötigen passende Zeitstempel. Tokens
@@ -59,6 +59,15 @@ für eine flüchtige Queue erfinden.
 - Quota-Snapshots führen Einheit, Account-/Poolscope, Quelle, Beobachtungszeit,
   Reset und Zustand. Veralteter letzter Erfolg bleibt von einer frischen Antwort
   unterscheidbar. Ein Fehler eines Accounts verdeckt keine anderen Accounts.
+- `windowLabel` benennt das belegte Budgetfenster, `usedPercent` hält einen
+  ausdrücklich gemeldeten Verbrauchsprozentsatz unabhängig von Mengenwerten.
+  Fehlende Mengen werden nicht aus Prozentwerten als Tokens/Credits erfunden;
+  Prozentpunkte dürfen mit Einheit `percent` auf 100 normalisiert werden.
+- `unsupported` bedeutet, dass kein geprüfter Abruf für den Anbieter vorhanden
+  ist; es ist kein Verbindungsfehler. `error` und `stale` bleiben tatsächlichen
+  Abruffehlern beziehungsweise überalterten Beobachtungen vorbehalten.
+- Fenster werden nicht addiert. Eine Übersicht darf das knappste bekannte
+  Fenster hervorheben, muss dabei das Fenster und verbleibende Budgets nennen.
 - Aboentgelt, enthaltene Nutzung, gekaufte API-Credits, geschätzte Tokenkosten
   und tatsächliche Abrechnung sind verschiedene Größen. Gemeinsame Budgets
   werden in Gesamtansichten nur einmal berücksichtigt.

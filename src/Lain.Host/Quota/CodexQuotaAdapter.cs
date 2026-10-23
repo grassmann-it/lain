@@ -27,7 +27,7 @@ public sealed class CodexQuotaAdapter(HttpClient client) : IQuotaAdapter
                 WindowLabel: JsonFields.Number(window, "limit_window_seconds") switch
                 {
                     18000 => "5 hours", 604800 => "7 days",
-                    { } seconds => $"{TimeSpan.FromSeconds(seconds).TotalHours:0.##}-hour window",
+                    { } seconds => $"{seconds / 3600:0.##}-hour window",
                     _ => key == "primary_window" ? "Primary window" : "Secondary window"
                 }, UsedPercent: used));
         }

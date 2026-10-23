@@ -1,0 +1,80 @@
+{
+  "passed": true,
+  "observedAt": "2026-10-23T21:06:51.2406498+00:00",
+  "providerGetRequests": 2,
+  "inferenceRequests": 0,
+  "results": [
+    {
+      "provider": "zai",
+      "readings": [
+        {
+          "source": "https://api.z.ai/api/monitor/usage/quota/limit#CREDIT_LIMIT/unit/3/number/5",
+          "unit": "credits",
+          "used": 434,
+          "limit": 12000,
+          "remaining": 11565,
+          "resetsAt": "2026-10-24T00:04:27.105+00:00",
+          "budgetPoolId": null,
+          "inheritAccountPool": false,
+          "windowLabel": "Credits \u00B7 5 hours",
+          "usedPercent": 3
+        },
+        {
+          "source": "https://api.z.ai/api/monitor/usage/quota/limit#CREDIT_LIMIT/unit/6/number/1",
+          "unit": "credits",
+          "used": 17929,
+          "limit": 60000,
+          "remaining": 42070,
+          "resetsAt": "2026-10-29T18:28:30.982+00:00",
+          "budgetPoolId": null,
+          "inheritAccountPool": false,
+          "windowLabel": "Credits \u00B7 7 days",
+          "usedPercent": 29
+        }
+      ],
+      "credentialUnchanged": true
+    },
+    {
+      "provider": "kimi",
+      "readings": [
+        {
+          "source": "https://api.kimi.com/coding/v1/usages#limit_5h",
+          "unit": "percent",
+          "used": 100,
+          "limit": 100,
+          "remaining": 0,
+          "resetsAt": "2026-10-23T21:59:22+00:00",
+          "budgetPoolId": null,
+          "inheritAccountPool": true,
+          "windowLabel": "5 hours",
+          "usedPercent": 100
+        },
+        {
+          "source": "https://api.kimi.com/coding/v1/usages#limit_month_total",
+          "unit": "percent",
+          "used": 78.86999999999999,
+          "limit": 100,
+          "remaining": 21.13000000000001,
+          "resetsAt": "2026-10-27T00:00:00+00:00",
+          "budgetPoolId": null,
+          "inheritAccountPool": true,
+          "windowLabel": "Monthly total",
+          "usedPercent": 78.86999999999999
+        },
+        {
+          "source": "https://api.kimi.com/coding/v1/usages#limit_month_code",
+          "unit": "percent",
+          "used": 68.8,
+          "limit": 100,
+          "remaining": 31.200000000000003,
+          "resetsAt": "2026-10-27T00:00:00+00:00",
+          "budgetPoolId": null,
+          "inheritAccountPool": true,
+          "windowLabel": "Monthly coding",
+          "usedPercent": 68.8
+        }
+      ],
+      "credentialUnchanged": true
+    }
+  ]
+}
