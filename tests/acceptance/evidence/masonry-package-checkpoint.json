@@ -1,0 +1,97 @@
+{
+  "format": 1,
+  "result": "PASS",
+  "checkpoint": {
+    "name": "masonry-20261024",
+    "desktopSourceCommit": "850cdc3ad8a643fd2576e143592a9fd2245577be",
+    "evidenceCommit": "b6d9b74cdc9c395fc9dc965895e1ddd7616cacff",
+    "reviewCommit": "175e80896fd1bc544175a5dac955abc94e8b6cb1",
+    "checkpointQualified": true,
+    "uiAccepted": true,
+    "expansionQualified": false,
+    "releaseQualified": false,
+    "scope": "Standalone installed masonry UI checkpoint; excludes later Inspector, analysis and provider expansion",
+    "sourcePackageManifestSha256": "1e6f378d6367a2995da748a90569cc879527233638a335fdb7dfce06ad3ddd61"
+  },
+  "componentSourceCommits": {
+    "cli": "d9cfc2f7bfec7f4e77fe3cbf818135a3a0472755",
+    "desktop": "850cdc3ad8a643fd2576e143592a9fd2245577be",
+    "host": "de872b77a75676db52274512df2e3233aa15d58e"
+  },
+  "componentInformationalVersions": {
+    "cli": "1.0.0+d9cfc2f.d9cfc2f7bfec7f4e77fe3cbf818135a3a0472755",
+    "desktop": "1.0.0+850cdc3",
+    "host": "1.0.0+de872b7"
+  },
+  "componentAssemblySha256": {
+    "cli": "4a82c318e1a703e120fea3695cfa2580b0c50f1aeb0104b8d4610c709db9bf21",
+    "host": "f2618f5029258fd85ad1b8d513f6101a5d9d81a64866df38c6b131d31b7e270f",
+    "desktop": "7ca4fb2032f37e7c1eeb88b137d48afa4d18c35f6028f5d073d8e04c572d245a"
+  },
+  "componentDirectoryFileCounts": {
+    "desktop": 228,
+    "cli": 193,
+    "host": 340,
+    "proxy": 9
+  },
+  "componentDirectoryManifestSha256": {
+    "desktop": "9e77811d6f256608f9f7fedf7f2ae45601454be929137f80dee84961eb2fac1f",
+    "cli": "2439037a7894d2bfd5e84a305f01cc4c96239f8f05a9472bab08f717333bfa4e",
+    "host": "1feda614471a34c7b76221b3d77e88b7888ce04f39afbd515318b7e3d5fa09c8",
+    "proxy": "086519858aa0feaa8412cca6e4bf63239f77b3018d71f1b5dd488b257b4c0236"
+  },
+  "proxySha256": "8edf8abf666e3c15f1a04c20c841a969d35229f09e7de5265755ab704cf9dfc0",
+  "stagedAndInstalledComponentsMatchedAtFinalization": true,
+  "fontNoticeEntriesVerified": 4,
+  "fixtureChecks": 250,
+  "fixtureScreenshots": 48,
+  "installedScreenshots": 22,
+  "installedRequests": 1,
+  "installedTotalTokens": 81986,
+  "installedCursor": 2,
+  "evidence": [
+    {
+      "path": "acceptance/evidence/masonry-ui-installed.json",
+      "sourcePath": "tests/acceptance/evidence/masonry-ui-installed.json",
+      "sourceCommit": "b6d9b74cdc9c395fc9dc965895e1ddd7616cacff",
+      "sha256": "f8335cc9c37d3123f7355d350d5792377f62457e2f0e144a8e70daa86c7a3c88"
+    },
+    {
+      "path": "acceptance/evidence/masonry-desktop-installed.json",
+      "sourcePath": "tests/acceptance/evidence/masonry-desktop-installed.json",
+      "sourceCommit": "b6d9b74cdc9c395fc9dc965895e1ddd7616cacff",
+      "sha256": "4a974a4e4752835a2f764ac5afc9de33132880b164a1ff4233a692b54a843e03"
+    },
+    {
+      "path": "acceptance/evidence/masonry-fixture.json",
+      "sourceLocation": "/tmp/lain-masonry-ui-evidence/evidence.json",
+      "sha256": "0713f65a460842f7b23f299ed9e1f28909e09c00ae50a3a7a9225b59b864938e",
+      "scope": "Debug fixture assembly; in-memory HTTP, not the installed Release DLL"
+    },
+    {
+      "path": "acceptance/masonry-review.md",
+      "sourcePath": "docs/expansion-review.md",
+      "sourceCommit": "175e80896fd1bc544175a5dac955abc94e8b6cb1",
+      "sourceFileSha256": "0358e07f72e818e6a918e18584345d6c84ef3977572d781111285d686e9bc993",
+      "sha256": "32e305a8e39f6564d41a614ccb3d2d6c5e5afb4da2853fab75a6c8d7b2fb396e",
+      "scope": "Masonry sections excerpted; expansion implementation is excluded"
+    }
+  ],
+  "limits": [
+    "No rebuild, service/window action, installed metadata write or live inference performed by finalization.",
+    "Installed GUI reopen occurs within one process; no restart/migration claim.",
+    "Update-operation preservation applies only to its reported interval.",
+    "Debug fixture assembly differs from installed Release assembly.",
+    "Historical application acceptance describes its recorded prior component versions."
+  ],
+  "archivePath": "/home/tomka/Desktop/lain/artifacts/lain-linux-x64-0.1.0-masonry-20261024.tar.gz",
+  "archiveSha256": "443a1d929abf405d86c334d80e0c09f34b61d2482f71ea61fdb3f08ecdeeedf6",
+  "packageManifestSha256": "2c0b17ed0a00a3c38f73ce0915c0b8c2b3e24b580bfb35ce9544be0ae7bed5bf",
+  "originalArchiveHashesPreserved": {
+    "/home/tomka/Desktop/lain/artifacts/lain-linux-x64-0.1.0.tar.gz.sha256": "fa6b76b4c3080adc4d44ad5f984800cc3859180970cd4a09ab65bdf1e48e9edb",
+    "/home/tomka/Desktop/lain/artifacts/lain-linux-x64-0.1.0-pre-redesign.tar.gz": "0c1095d92906fb2b14fb770778c6867aed450e2e2a1589f737976a2e330b59ac",
+    "/home/tomka/Desktop/lain/artifacts/lain-linux-x64-0.1.0-pre-redesign.tar.gz.sha256": "ddc4abf79912c6cbf8879a0123fa8d5af120c55410e9d117e7af4f2a46cb066f",
+    "/home/tomka/Desktop/lain/artifacts/lain-linux-x64-0.1.0.tar.gz": "5fa37c47362d339442fcacdff003085be64916f33be764be000ff73d5630dd00"
+  },
+  "installedGateMetadataChanged": false
+}
