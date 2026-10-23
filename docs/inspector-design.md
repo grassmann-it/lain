@@ -137,23 +137,25 @@ replay and non-advancing synthetic viewer gaps. Its collector and known replay
 workaround were not reused. The simpler HTTP pull transport is an implementation
 choice for this first integration; SSE is not required or claimed.
 
-The integrator ran the focused synthetic suite and independent Host boundary
-suite on 2026-10-24. The Host implementation is `d94a7cf`, integrated as
-`3b63bcb`; the independent boundary suite is `963154d`, integrated as `a41432c`.
-Both builds finished with zero warnings and errors:
+The integrator reran the focused synthetic suite and independent Host boundary
+suite on 2026-10-24 after the receipt-age and normalization correction `540b2af`,
+integrated as `ad29d94`. The original Host implementation is `d94a7cf`, integrated
+as `3b63bcb`; the independent boundary suite is `963154d`, integrated as `a41432c`.
+Both builds finished with zero warnings and errors. The combined rerun log is
+`/tmp/lain-inspector-age-regression.log`:
 
-- `tests/inspector/Inspector.Tests.csproj`: 27 assertions passed; log
-  `/tmp/lain-expansion-tests/Inspector.Tests-integrated.log`.
+- `tests/inspector/Inspector.Tests.csproj`: 32 assertions passed.
 - `tests/inspection/host/InspectorIntegration.csproj`: 80 assertions passed,
-  fake HTTP only; log
-  `/tmp/lain-expansion-tests/InspectorIntegration-integrated.log`.
+  fake HTTP only.
 
 These cover provenance/conflicts, grouping, zero/null, source generations,
 filtered cursor progression, cardinality/byte/monotonic-age bounds, collector
-envelope failures and split credential/tool-content removal. The follow-up
-normalization, slow-trickle, delayed-flush and mixed-age regression cases were
-added after those runs; their execution awaits the serialized integration slot.
-No worker-side build or service run is claimed for that follow-up. A passing
-unit suite alone does not establish provider parser coverage, a working packaged
-inspector or real UI grouping; those need integrated own-core and private-Xvfb
-evidence.
+envelope failures, split credential/tool-content removal, normalized metadata,
+canonical source IDs, slow-trickle, delayed-flush and mixed-age retention.
+The earlier 27/80 baseline logs remain at
+`/tmp/lain-expansion-tests/Inspector.Tests-integrated.log` and
+`/tmp/lain-expansion-tests/InspectorIntegration-integrated.log`.
+These runs were performed in the integrator's serialized slot; no worker-side
+build or service run is claimed. A passing unit suite alone does not establish
+provider parser coverage, a working packaged inspector or real UI grouping;
+those need integrated own-core and private-Xvfb evidence.

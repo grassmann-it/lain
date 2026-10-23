@@ -20,13 +20,11 @@ Collector/wire and launched-core checks are independently owned by
 `tests/inspection`. These focused tests alone do not qualify actual transports,
 provider parser coverage or a working packaged UI.
 
-The integrator built and ran the original `d94a7cf` implementation (integrated
-as `3b63bcb`) on 2026-10-24: zero warnings/errors and 27 passing assertions,
-recorded in `/tmp/lain-expansion-tests/Inspector.Tests-integrated.log`.
-The independent Host boundary suite passed 80 fake-HTTP assertions in
-`/tmp/lain-expansion-tests/InspectorIntegration-integrated.log`.
-
-Follow-up cases for normalized credential markers, slow pending-text trickles,
-completion-flush receipt age, mixed old/new tails and canonical source identities
-were added after that run. Their execution remains pending in the integrator's
-serialized slot; this worker has not run a build or assertions for the follow-up.
+The integrator rebuilt and reran follow-up `540b2af` (integrated as `ad29d94`) on
+2026-10-24: zero warnings/errors, 32 focused assertions and 80 independent Host
+fake-HTTP assertions passed. The combined log is
+`/tmp/lain-inspector-age-regression.log`.
+This includes normalized credential markers, slow pending-text trickles,
+completion-flush receipt age, mixed old/new tails and canonical source identities.
+Execution was coordinated in the integrator's serialized slot; this worker did
+not run an additional build or test pass.
