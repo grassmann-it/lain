@@ -8,7 +8,8 @@ up only those paths and children. All credentials are fixed synthetic values.
 ```sh
 python3 -m unittest discover -s tests/backend -p 'test_*.py' -v
 python3 tests/backend/qualify.py --core /absolute/path/lain-proxy \
-  --report /tmp/lain-qualification.json --examples /tmp/lain-event-examples.json
+  --report /tmp/lain-qualification.json --examples /tmp/lain-event-examples.json \
+  --batch-fixture /tmp/lain-source-batch.json --qualified-artifact /tmp/lain-qualified-core
 ```
 
 The self-tests validate the fixture. Only `qualify.py` tests the actual Core.
@@ -17,15 +18,17 @@ exact binary SHA-256 and each measured result. A synthetic pass does not imply
 real-provider approval or completion of package A. Read `pending` and
 `docs/backend-qualification.md` before allowing dependent live work.
 
-The fake provider understands OpenAI Chat Completions. The Core runner tests
-client Chat Completions and Responses SSE, including translation from Responses
-tool-call items into Chat tool messages and back. It does not simulate a Codex
-OAuth or Command Code transport. The fixture marker is a synthetic user message,
+The fake provider understands OpenAI Chat Completions and Anthropic Messages.
+The Core runner tests client Chat Completions and Responses SSE, including
+translation from Responses tool-call items into Chat tool messages and back,
+plus native Messages streams and tool-result continuation through the Claude API
+executor. It does not simulate a Codex OAuth or Command Code transport.
+The fixture marker is a synthetic user message,
 not an internal routing header. Observations retain only scenario/account IDs,
 model, stream/tool-result flags, status and disconnect state.
 
 `Run` in `qualify.py` is reusable by independent acceptance checks. Its public
-helpers are `post`, `responses`, `get`, `events`, `start`, `stop`; `provider`
+helpers are `post`, `responses`, `messages`, `get`, `events`, `start`, `stop`; `provider`
 exposes sanitized `snapshot()` observations. `Run` always owns its resources.
 
 The write-failure test uses Linux `resource.prlimit` on only its own Core child.
