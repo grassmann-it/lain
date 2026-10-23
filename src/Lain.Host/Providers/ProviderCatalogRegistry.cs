@@ -63,7 +63,7 @@ public sealed class ProviderCatalogRegistry
         }
         foreach (var route in provider.Routes)
         {
-            Identity(route.Id); Text(route.Model); Text(route.Name); Text(route.Protocol); Url(route.BaseUrl);
+            Identity(route.Id); Text(route.Model); Text(route.Name); Text(route.Protocol); EndpointUrl(route.BaseUrl);
             if (route.Capabilities is null || route.BillingPlanIds is null || route.BillingPlanIds.Any(id => !provider.BillingPlans.Any(p => p.Id == id)))
                 throw new InvalidDataException("Provider route references an unknown billing plan.");
             if (route.Capabilities.ContextWindow is <= 0 || route.Capabilities.MaximumOutput is <= 0)
@@ -93,5 +93,16 @@ public sealed class ProviderCatalogRegistry
     {
         if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || !string.IsNullOrEmpty(uri.UserInfo))
             throw new InvalidDataException("Provider documentation and endpoints must use HTTPS without credentials.");
+    }
+    private static void EndpointUrl(string? value)
+    {
+        // Catalog templates are documentation. Runtime transport validation separately substitutes and validates
+        // the account-scoped value before any request; a placeholder is never an executable endpoint.
+        var concrete = value?.Replace("{WorkspaceId}", "catalog-workspace", StringComparison.Ordinal)
+            .Replace("{workspaceId}", "catalog-workspace", StringComparison.Ordinal)
+            .Replace("{accountId}", "catalog-account", StringComparison.Ordinal);
+        if (concrete is not null && (concrete.Contains('{') || concrete.Contains('}')))
+            throw new InvalidDataException("Unknown provider endpoint template field.");
+        Url(concrete);
     }
 }
