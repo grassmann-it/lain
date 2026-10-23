@@ -16,4 +16,5 @@ cat > "$temp/ProviderTests.csproj" <<XML
   </ItemGroup>
 </Project>
 XML
-dotnet run --project "$temp/ProviderTests.csproj" --verbosity quiet -- "$root"
+dotnet build "$temp/ProviderTests.csproj" -m:1 -p:BuildInParallel=false -nr:false --verbosity quiet
+dotnet run --project "$temp/ProviderTests.csproj" --no-build --no-restore --verbosity quiet -- "$root"

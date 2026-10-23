@@ -17,4 +17,5 @@ cat > "$temp/ProviderTests.csproj" <<EOF
   </ItemGroup>
 </Project>
 EOF
-dotnet run --project "$temp/ProviderTests.csproj" --verbosity quiet
+dotnet build "$temp/ProviderTests.csproj" -m:1 -p:BuildInParallel=false -nr:false --verbosity quiet
+dotnet run --project "$temp/ProviderTests.csproj" --no-build --no-restore --verbosity quiet

@@ -9,4 +9,5 @@ cat > "$temp/Tests.csproj" <<EOF
   <ItemGroup><Compile Include="$root/src/Lain.Core/*.cs" /><Compile Include="$root/src/Lain.Host/Providers/SyntheticXaiConfiguration.cs" /><Compile Include="$root/src/Lain.Host/Quota/QuotaContracts.cs" /><Compile Include="$root/src/Lain.Host/Quota/QuotaHttp.cs" /><Compile Include="$root/src/Lain.Host/Quota/SyntheticQuotaAdapter.cs" /><Compile Include="$root/tests/providers-synthetic-xai/Program.cs" /></ItemGroup>
 </Project>
 EOF
-dotnet run --project "$temp/Tests.csproj" --verbosity quiet -- "$root/src/Lain.Host/Providers/Catalog"
+dotnet build "$temp/Tests.csproj" -m:1 -p:BuildInParallel=false -nr:false --verbosity quiet
+dotnet run --project "$temp/Tests.csproj" --no-build --no-restore --verbosity quiet -- "$root/src/Lain.Host/Providers/Catalog"
