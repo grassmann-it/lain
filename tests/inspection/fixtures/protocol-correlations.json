@@ -103,7 +103,7 @@
         "parentWorkerId": "parent-fixture",
         "previousResponseId": "resp-fixture-previous",
         "toolCallId": "call-fixture",
-        "evidence": "request_metadata"
+        "evidence": "request_body"
       }
     },
     {
