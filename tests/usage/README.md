@@ -13,6 +13,16 @@ For a complete sanitized journal envelope from the isolated core, run
 This helper ingests/reopens/replays the unchanged journal ten times and emits
 only aggregate counts. It deliberately rejects subset fixtures with sequence gaps.
 
+Observed normal-phase integration on 2026-10-23: the qualification runner's
+complete 400-event envelope from core SHA-256
+`683c610548b185669c1a638fb27dba6eb239ef7c08f1b84f58f36f44655d82ad`
+passed unchanged replay/reopen ten times. Result: cursor 400, complete true,
+200 requests, 200 attempts, 0 errors, 2 accounts, 2200 input / 1400 output /
+3600 total tokens; cached and reasoning remained null. This confirms the normal
+fake-upstream journal-to-SQLite path for that core build. It does not qualify
+other scenarios, newer core builds, or real providers; backend qualification
+remained open because of a separately observed streaming-order defect.
+
 ## Host integration
 
 The host references `Microsoft.Data.Sqlite` version **10.0.12** and embeds
