@@ -1,0 +1,327 @@
+{
+  "id": "poe",
+  "name": "Poe",
+  "summary": "Official user API with shared account points across public bots and models.",
+  "accountUrl": "https://poe.com/api/keys",
+  "documentationUrl": "https://creator.poe.com/docs/external-applications/external-application-guide",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "Poe API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true,
+      "help": null
+    },
+    {
+      "id": "oauthClientId",
+      "label": "Registered Poe OAuth client ID",
+      "kind": "client-id",
+      "required": false,
+      "secret": false,
+      "help": "Optional: OAuth preparation requires a registered client and an application callback."
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Create your API key",
+      "description": "Sign in and create a user API key. Store it with the official API base URL https://api.poe.com/v1.",
+      "url": "https://poe.com/api/keys"
+    },
+    {
+      "title": "Check paid access",
+      "description": "Paid API models require an active subscription or add-on points. Confirm current account-specific pricing; no minimum subscription price is assumed.",
+      "url": "https://poe.com/subscription_plans"
+    },
+    {
+      "title": "Optional official OAuth",
+      "description": "Register an application client; use authorization code, S256 PKCE and state. Host callback and secure key persistence are integration work.",
+      "url": "https://poe.com/api/clients"
+    },
+    {
+      "title": "Review bot publisher",
+      "description": "Review publisher and official marking before allowing a bot to spend your account points. A model name does not establish who operates it.",
+      "url": "https://poe.com"
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "poe-subscription",
+      "name": "Poe subscription points",
+      "kind": "subscription",
+      "scope": "user_account",
+      "unit": "points",
+      "includedAmount": null,
+      "resetDescription": "Allocation and reset depend on the account plan; unavailable in the balance response.",
+      "notes": "Subscription and add-on points share the same reported balance. Plan price and point allocation are unknown without account evidence."
+    },
+    {
+      "id": "poe-addon",
+      "name": "Poe add-on points",
+      "kind": "payg",
+      "scope": "user_account",
+      "unit": "points",
+      "notes": "One-time purchased points; not a free trial. Balance response does not separate their amount or expiry from plan points."
+    }
+  ],
+  "routes": [
+    {
+      "id": "poe:gpt-5.4:chat",
+      "model": "gpt-5.4",
+      "name": "GPT-5.4 via Poe (chat)",
+      "baseUrl": "https://api.poe.com/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "poe-subscription",
+        "poe-addon"
+      ],
+      "capabilities": {
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": true,
+        "structuredOutput": false,
+        "reasoningModes": [
+          "none",
+          "low",
+          "medium",
+          "high",
+          "xhigh"
+        ]
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "OpenAI",
+      "inferenceProvider": null,
+      "gateway": "Poe",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "OpenAI",
+      "publisherType": "provider_reported",
+      "sources": [
+        {
+          "url": "https://creator.poe.com/docs/external-applications/openai-compatible-api",
+          "title": "Poe OpenAI compatibility",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Chat and Responses capability semantics differ; unsupported Chat fields can be ignored."
+        },
+        {
+          "url": "https://api.poe.com/v1/models",
+          "title": "Poe live public model metadata",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Public unauthenticated snapshot checked; model pricing null is not proof of free access."
+        }
+      ],
+      "restrictions": [
+        "Publisher is reported by Poe; official publisher status and actual inference operator are not independently verified.",
+        "Chat response_format/strict schema unsupported; Responses text.format is a separate feature.",
+        "No live credential-backed connection test."
+      ]
+    },
+    {
+      "id": "poe:gpt-5.4:responses",
+      "model": "gpt-5.4",
+      "name": "GPT-5.4 via Poe (responses)",
+      "baseUrl": "https://api.poe.com/v1",
+      "protocol": "openai-responses",
+      "billingPlanIds": [
+        "poe-subscription",
+        "poe-addon"
+      ],
+      "capabilities": {
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": true,
+        "structuredOutput": null,
+        "reasoningModes": [
+          "none",
+          "low",
+          "medium",
+          "high",
+          "xhigh"
+        ]
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "OpenAI",
+      "inferenceProvider": null,
+      "gateway": "Poe",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "OpenAI",
+      "publisherType": "provider_reported",
+      "sources": [
+        {
+          "url": "https://creator.poe.com/docs/external-applications/openai-compatible-api",
+          "title": "Poe OpenAI compatibility",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Chat and Responses capability semantics differ; unsupported Chat fields can be ignored."
+        },
+        {
+          "url": "https://api.poe.com/v1/models",
+          "title": "Poe live public model metadata",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Public unauthenticated snapshot checked; model pricing null is not proof of free access."
+        }
+      ],
+      "restrictions": [
+        "Publisher is reported by Poe; official publisher status and actual inference operator are not independently verified.",
+        "Chat response_format/strict schema unsupported; Responses text.format is a separate feature.",
+        "No live credential-backed connection test."
+      ]
+    },
+    {
+      "id": "poe:claude-sonnet-4.6:chat",
+      "model": "claude-sonnet-4.6",
+      "name": "Claude-Sonnet-4.6 via Poe (chat)",
+      "baseUrl": "https://api.poe.com/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "poe-subscription",
+        "poe-addon"
+      ],
+      "capabilities": {
+        "contextWindow": 983040,
+        "maximumOutput": 128000,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": true,
+        "structuredOutput": false,
+        "reasoningModes": null
+      },
+      "modelFamily": "claude",
+      "manufacturer": "Anthropic",
+      "inferenceProvider": null,
+      "gateway": "Poe",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "Anthropic",
+      "publisherType": "provider_reported",
+      "sources": [
+        {
+          "url": "https://creator.poe.com/docs/external-applications/openai-compatible-api",
+          "title": "Poe OpenAI compatibility",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Chat and Responses capability semantics differ; unsupported Chat fields can be ignored."
+        },
+        {
+          "url": "https://api.poe.com/v1/models",
+          "title": "Poe live public model metadata",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Public unauthenticated snapshot checked; model pricing null is not proof of free access."
+        }
+      ],
+      "restrictions": [
+        "Publisher is reported by Poe; official publisher status and actual inference operator are not independently verified.",
+        "Chat response_format/strict schema unsupported; Responses text.format is a separate feature.",
+        "No live credential-backed connection test."
+      ]
+    },
+    {
+      "id": "poe:claude-sonnet-4.6:responses",
+      "model": "claude-sonnet-4.6",
+      "name": "Claude-Sonnet-4.6 via Poe (responses)",
+      "baseUrl": "https://api.poe.com/v1",
+      "protocol": "openai-responses",
+      "billingPlanIds": [
+        "poe-subscription",
+        "poe-addon"
+      ],
+      "capabilities": {
+        "contextWindow": 983040,
+        "maximumOutput": 128000,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": true,
+        "structuredOutput": null,
+        "reasoningModes": null
+      },
+      "modelFamily": "claude",
+      "manufacturer": "Anthropic",
+      "inferenceProvider": null,
+      "gateway": "Poe",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "Anthropic",
+      "publisherType": "provider_reported",
+      "sources": [
+        {
+          "url": "https://creator.poe.com/docs/external-applications/openai-compatible-api",
+          "title": "Poe OpenAI compatibility",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Chat and Responses capability semantics differ; unsupported Chat fields can be ignored."
+        },
+        {
+          "url": "https://api.poe.com/v1/models",
+          "title": "Poe live public model metadata",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Public unauthenticated snapshot checked; model pricing null is not proof of free access."
+        }
+      ],
+      "restrictions": [
+        "Publisher is reported by Poe; official publisher status and actual inference operator are not independently verified.",
+        "Chat response_format/strict schema unsupported; Responses text.format is a separate feature.",
+        "No live credential-backed connection test."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://creator.poe.com/docs/external-applications/external-application-guide",
+      "title": "Poe external applications",
+      "checkedAt": "2026-10-24T00:00:00Z",
+      "notes": "User API keys spend the owning user account points; paid models require a subscription or add-on points."
+    },
+    {
+      "url": "https://creator.poe.com/docs/external-applications/openai-compatible-api",
+      "title": "Poe OpenAI compatibility",
+      "checkedAt": "2026-10-24T00:00:00Z",
+      "notes": "Chat and Responses capability semantics differ; unsupported Chat fields can be ignored."
+    },
+    {
+      "url": "https://creator.poe.com/docs/external-applications/sign-in-with-poe",
+      "title": "Sign in with Poe (OAuth)",
+      "checkedAt": "2026-10-24T00:00:00Z",
+      "notes": "Authorization code with mandatory S256 PKCE; token response is an API key, not a refresh token."
+    },
+    {
+      "url": "https://creator.poe.com/api-reference/getCurrentBalance",
+      "title": "Poe current balance",
+      "checkedAt": "2026-10-24T00:00:00Z",
+      "notes": "Combined plan and add-on balance only; no allocation, reset, or expiry fields."
+    },
+    {
+      "url": "https://creator.poe.com/api-reference/getPointsHistory",
+      "title": "Poe usage history",
+      "checkedAt": "2026-10-24T00:00:00Z",
+      "notes": "30 days; maximum 100 rows/page; cursor query_id; creation_time is microseconds."
+    },
+    {
+      "url": "https://creator.poe.com/api-reference/listModels",
+      "title": "Poe model list",
+      "checkedAt": "2026-10-24T00:00:00Z",
+      "notes": "owned_by is a publisher claim, not independent verification of manufacturer-operated inference."
+    },
+    {
+      "url": "https://api.poe.com/v1/models",
+      "title": "Poe live public model metadata",
+      "checkedAt": "2026-10-24T00:00:00Z",
+      "notes": "Public unauthenticated snapshot checked; model pricing null is not proof of free access."
+    }
+  ],
+  "restrictions": [
+    "All user API calls spend the API key owner account balance; do not treat this as an unlimited model flat rate.",
+    "Points are not tokens or USD. Account-wide history includes API, Chat, and Canvas App usage, not only lain.",
+    "No automatic signup, subscription, purchase, client registration, or OAuth flow.",
+    "Poe documents 500 requests/minute per user; remaining request rate headers are separate from points.",
+    "A null model pricing field may mean free OR request-priced; unknown costs cannot enter free-only routing."
+  ],
+  "adapterState": "prepared",
+  "liveVerification": "not_tested",
+  "quotaSupport": "available"
+}

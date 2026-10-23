@@ -1,0 +1,603 @@
+{
+  "id": "opencode-go",
+  "name": "OpenCode Go / Go Plus",
+  "summary": "Coding-agent subscription with model-dependent usage accounting and concurrent plan windows.",
+  "accountUrl": "https://opencode.ai/console",
+  "documentationUrl": "https://opencode.ai/v2/docs/console/go/",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "OpenCode workspace API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true,
+      "help": null
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Choose the workspace",
+      "description": "Use a single-member workspace and select the desired Go or Go Plus subscription yourself.",
+      "url": "https://opencode.ai/console"
+    },
+    {
+      "title": "Create a key",
+      "description": "Copy a personal workspace API key with Models Request permission. Store only in the secret store.",
+      "url": "https://opencode.ai/v2/docs/console/api/"
+    },
+    {
+      "title": "Choose an explicit protocol route",
+      "description": "Select the endpoint family from the model table; Chat, Responses, Anthropic and Gemini are not interchangeable.",
+      "url": "https://opencode.ai/v2/docs/console/go/"
+    },
+    {
+      "title": "Keep Extra Usage disabled",
+      "description": "Extra Usage can spend PAYG credits after allowance exhaustion. Enabling paid overflow requires deliberate user configuration.",
+      "url": "https://opencode.ai/console"
+    },
+    {
+      "title": "View current allowance",
+      "description": "Until a public Go allowance schema is verified, show the live balance and reset as unknown and link to Console.",
+      "url": "https://opencode.ai/console"
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "opencode-go",
+      "name": "Go",
+      "kind": "subscription",
+      "scope": "workspace_plan",
+      "unit": "weighted_plan_allowance",
+      "recurringPrice": 10,
+      "currency": "USD",
+      "priceInterval": "month",
+      "resetDescription": "5-hour, weekly and monthly constraints. Current usage and exact resets are not verified by an API.",
+      "limits": [
+        {
+          "kind": "plan_allowance",
+          "value": 20,
+          "unit": "percent_of_model_monthly_allowance",
+          "window": "5 hours",
+          "scope": "workspace_plan",
+          "notes": "Concurrent constraints on the plan; never sum across windows or model table rows."
+        },
+        {
+          "kind": "plan_allowance",
+          "value": 50,
+          "unit": "percent_of_model_monthly_allowance",
+          "window": "weekly",
+          "scope": "workspace_plan",
+          "notes": "Concurrent constraints on the plan; never sum across windows or model table rows."
+        },
+        {
+          "kind": "plan_allowance",
+          "value": 100,
+          "unit": "percent_of_model_monthly_allowance",
+          "window": "monthly",
+          "scope": "workspace_plan",
+          "notes": "Concurrent constraints on the plan; never sum across windows or model table rows."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 15,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:step-5-preview",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 15,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:glm-5.3",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 60,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:glm-5.3-flash",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 15,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:kimi-k3",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 15,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:kimi-k3.1-pro",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 15,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:gpt-6-luna",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 15,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:claude-haiku-5-5",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 15,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:qwen3.8-max",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 30,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:gemini-4-argon-contributor",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        }
+      ],
+      "notes": "Single-member workspace subscription. Model-specific accounting references must not be added into an account dollar total. Current documentation does not publish a machine-readable cross-model aggregation formula."
+    },
+    {
+      "id": "opencode-go-plus",
+      "name": "Go Plus",
+      "kind": "subscription",
+      "scope": "workspace_plan",
+      "unit": "weighted_plan_allowance",
+      "recurringPrice": 40,
+      "currency": "USD",
+      "priceInterval": "month",
+      "resetDescription": "5-hour, weekly and monthly constraints. Current usage and exact resets are not verified by an API.",
+      "limits": [
+        {
+          "kind": "plan_allowance",
+          "value": 20,
+          "unit": "percent_of_model_monthly_allowance",
+          "window": "5 hours",
+          "scope": "workspace_plan",
+          "notes": "Concurrent constraints on the plan; never sum across windows or model table rows."
+        },
+        {
+          "kind": "plan_allowance",
+          "value": 50,
+          "unit": "percent_of_model_monthly_allowance",
+          "window": "weekly",
+          "scope": "workspace_plan",
+          "notes": "Concurrent constraints on the plan; never sum across windows or model table rows."
+        },
+        {
+          "kind": "plan_allowance",
+          "value": 100,
+          "unit": "percent_of_model_monthly_allowance",
+          "window": "monthly",
+          "scope": "workspace_plan",
+          "notes": "Concurrent constraints on the plan; never sum across windows or model table rows."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 60,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:step-5-preview",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 120,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:glm-5.3",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 180,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:glm-5.3-flash",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 60,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:kimi-k3",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 60,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:kimi-k3.1-pro",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 60,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:gpt-6-luna",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 60,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:claude-haiku-5-5",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 60,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:qwen3.8-max",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        },
+        {
+          "kind": "model_allowance_reference",
+          "value": 120,
+          "unit": "USD_equivalent",
+          "window": "monthly",
+          "scope": "model:gemini-4-argon-contributor",
+          "notes": "Model-dependent reference for plan allowance accounting; not independently spendable cash or an additional model budget."
+        }
+      ],
+      "notes": "Single-member workspace subscription. Model-specific accounting references must not be added into an account dollar total. Current documentation does not publish a machine-readable cross-model aggregation formula."
+    }
+  ],
+  "routes": [
+    {
+      "id": "opencode-go:step-5-preview",
+      "model": "step-5-preview",
+      "name": "Step 5 Preview via OpenCode Go",
+      "baseUrl": "https://opencode.ai/inference/go/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "opencode-go",
+        "opencode-go-plus"
+      ],
+      "capabilities": {},
+      "modelFamily": "step",
+      "manufacturer": "StepFun",
+      "inferenceProvider": null,
+      "gateway": "OpenCode",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "OpenCode",
+      "publisherType": "gateway",
+      "sources": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "title": "OpenCode Go official plans, limits and endpoint table",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Go $10/month; Go Plus $40/month. Allowances vary per model. 5-hour 20%, weekly 50%, monthly 100%; not additive budgets. No verified public allowance response shape."
+        }
+      ],
+      "restrictions": [
+        "Actual inference provider is undisclosed; OpenCode is the gateway and workspace billing service.",
+        "Only typical coding-agent traffic; identify lain/1.0 and preserve a stable conversation session header.",
+        "Route capabilities remain unknown until qualified for this endpoint; no live credential-backed connection test."
+      ]
+    },
+    {
+      "id": "opencode-go:glm-5.3",
+      "model": "glm-5.3",
+      "name": "GLM-5.3 via OpenCode Go",
+      "baseUrl": "https://opencode.ai/inference/go/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "opencode-go",
+        "opencode-go-plus"
+      ],
+      "capabilities": {},
+      "modelFamily": "glm",
+      "manufacturer": "Z.ai",
+      "inferenceProvider": null,
+      "gateway": "OpenCode",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "OpenCode",
+      "publisherType": "gateway",
+      "sources": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "title": "OpenCode Go official plans, limits and endpoint table",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Go $10/month; Go Plus $40/month. Allowances vary per model. 5-hour 20%, weekly 50%, monthly 100%; not additive budgets. No verified public allowance response shape."
+        }
+      ],
+      "restrictions": [
+        "Actual inference provider is undisclosed; OpenCode is the gateway and workspace billing service.",
+        "Only typical coding-agent traffic; identify lain/1.0 and preserve a stable conversation session header.",
+        "Route capabilities remain unknown until qualified for this endpoint; no live credential-backed connection test."
+      ]
+    },
+    {
+      "id": "opencode-go:glm-5.3-flash",
+      "model": "glm-5.3-flash",
+      "name": "GLM-5.3-Flash via OpenCode Go",
+      "baseUrl": "https://opencode.ai/inference/go/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "opencode-go",
+        "opencode-go-plus"
+      ],
+      "capabilities": {},
+      "modelFamily": "glm",
+      "manufacturer": "Z.ai",
+      "inferenceProvider": null,
+      "gateway": "OpenCode",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "OpenCode",
+      "publisherType": "gateway",
+      "sources": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "title": "OpenCode Go official plans, limits and endpoint table",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Go $10/month; Go Plus $40/month. Allowances vary per model. 5-hour 20%, weekly 50%, monthly 100%; not additive budgets. No verified public allowance response shape."
+        }
+      ],
+      "restrictions": [
+        "Actual inference provider is undisclosed; OpenCode is the gateway and workspace billing service.",
+        "Only typical coding-agent traffic; identify lain/1.0 and preserve a stable conversation session header.",
+        "Route capabilities remain unknown until qualified for this endpoint; no live credential-backed connection test."
+      ]
+    },
+    {
+      "id": "opencode-go:kimi-k3",
+      "model": "kimi-k3",
+      "name": "Kimi K3 via OpenCode Go",
+      "baseUrl": "https://opencode.ai/inference/go/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "opencode-go",
+        "opencode-go-plus"
+      ],
+      "capabilities": {},
+      "modelFamily": "kimi",
+      "manufacturer": "Moonshot AI",
+      "inferenceProvider": null,
+      "gateway": "OpenCode",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "OpenCode",
+      "publisherType": "gateway",
+      "sources": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "title": "OpenCode Go official plans, limits and endpoint table",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Go $10/month; Go Plus $40/month. Allowances vary per model. 5-hour 20%, weekly 50%, monthly 100%; not additive budgets. No verified public allowance response shape."
+        }
+      ],
+      "restrictions": [
+        "Actual inference provider is undisclosed; OpenCode is the gateway and workspace billing service.",
+        "Only typical coding-agent traffic; identify lain/1.0 and preserve a stable conversation session header.",
+        "Route capabilities remain unknown until qualified for this endpoint; no live credential-backed connection test."
+      ]
+    },
+    {
+      "id": "opencode-go:kimi-k3.1-pro",
+      "model": "kimi-k3.1-pro",
+      "name": "Kimi K3.1 Pro via OpenCode Go",
+      "baseUrl": "https://opencode.ai/inference/go/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "opencode-go",
+        "opencode-go-plus"
+      ],
+      "capabilities": {},
+      "modelFamily": "kimi",
+      "manufacturer": "Moonshot AI",
+      "inferenceProvider": null,
+      "gateway": "OpenCode",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "OpenCode",
+      "publisherType": "gateway",
+      "sources": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "title": "OpenCode Go official plans, limits and endpoint table",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Go $10/month; Go Plus $40/month. Allowances vary per model. 5-hour 20%, weekly 50%, monthly 100%; not additive budgets. No verified public allowance response shape."
+        }
+      ],
+      "restrictions": [
+        "Actual inference provider is undisclosed; OpenCode is the gateway and workspace billing service.",
+        "Only typical coding-agent traffic; identify lain/1.0 and preserve a stable conversation session header.",
+        "Route capabilities remain unknown until qualified for this endpoint; no live credential-backed connection test."
+      ]
+    },
+    {
+      "id": "opencode-go:gpt-6-luna",
+      "model": "gpt-6-luna",
+      "name": "GPT 6 Luna via OpenCode Go",
+      "baseUrl": "https://opencode.ai/inference/go/openai/v1",
+      "protocol": "openai-responses",
+      "billingPlanIds": [
+        "opencode-go",
+        "opencode-go-plus"
+      ],
+      "capabilities": {},
+      "modelFamily": "gpt",
+      "manufacturer": "OpenAI",
+      "inferenceProvider": null,
+      "gateway": "OpenCode",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "OpenCode",
+      "publisherType": "gateway",
+      "sources": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "title": "OpenCode Go official plans, limits and endpoint table",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Go $10/month; Go Plus $40/month. Allowances vary per model. 5-hour 20%, weekly 50%, monthly 100%; not additive budgets. No verified public allowance response shape."
+        }
+      ],
+      "restrictions": [
+        "Actual inference provider is undisclosed; OpenCode is the gateway and workspace billing service.",
+        "Only typical coding-agent traffic; identify lain/1.0 and preserve a stable conversation session header.",
+        "Route capabilities remain unknown until qualified for this endpoint; no live credential-backed connection test."
+      ]
+    },
+    {
+      "id": "opencode-go:claude-haiku-5-5",
+      "model": "claude-haiku-5-5",
+      "name": "Claude Haiku 5.5 via OpenCode Go",
+      "baseUrl": "https://opencode.ai/inference/go/anthropic/v1",
+      "protocol": "anthropic-messages",
+      "billingPlanIds": [
+        "opencode-go",
+        "opencode-go-plus"
+      ],
+      "capabilities": {},
+      "modelFamily": "claude",
+      "manufacturer": "Anthropic",
+      "inferenceProvider": null,
+      "gateway": "OpenCode",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "OpenCode",
+      "publisherType": "gateway",
+      "sources": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "title": "OpenCode Go official plans, limits and endpoint table",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Go $10/month; Go Plus $40/month. Allowances vary per model. 5-hour 20%, weekly 50%, monthly 100%; not additive budgets. No verified public allowance response shape."
+        }
+      ],
+      "restrictions": [
+        "Actual inference provider is undisclosed; OpenCode is the gateway and workspace billing service.",
+        "Only typical coding-agent traffic; identify lain/1.0 and preserve a stable conversation session header.",
+        "Route capabilities remain unknown until qualified for this endpoint; no live credential-backed connection test."
+      ]
+    },
+    {
+      "id": "opencode-go:qwen3.8-max",
+      "model": "qwen3.8-max",
+      "name": "Qwen3.8 Max via OpenCode Go",
+      "baseUrl": "https://opencode.ai/inference/go/anthropic/v1",
+      "protocol": "anthropic-messages",
+      "billingPlanIds": [
+        "opencode-go",
+        "opencode-go-plus"
+      ],
+      "capabilities": {},
+      "modelFamily": "qwen",
+      "manufacturer": "Alibaba",
+      "inferenceProvider": null,
+      "gateway": "OpenCode",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "OpenCode",
+      "publisherType": "gateway",
+      "sources": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "title": "OpenCode Go official plans, limits and endpoint table",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Go $10/month; Go Plus $40/month. Allowances vary per model. 5-hour 20%, weekly 50%, monthly 100%; not additive budgets. No verified public allowance response shape."
+        }
+      ],
+      "restrictions": [
+        "Actual inference provider is undisclosed; OpenCode is the gateway and workspace billing service.",
+        "Only typical coding-agent traffic; identify lain/1.0 and preserve a stable conversation session header.",
+        "Route capabilities remain unknown until qualified for this endpoint; no live credential-backed connection test."
+      ]
+    },
+    {
+      "id": "opencode-go:gemini-4-argon-contributor",
+      "model": "gemini-4-argon-contributor",
+      "name": "Gemini 4 Argon Contributor via OpenCode Go",
+      "baseUrl": "https://opencode.ai/inference/go/google/v1beta",
+      "protocol": "gemini",
+      "billingPlanIds": [
+        "opencode-go",
+        "opencode-go-plus"
+      ],
+      "capabilities": {},
+      "modelFamily": "gemini",
+      "manufacturer": "Google",
+      "inferenceProvider": null,
+      "gateway": "OpenCode",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "publisher": "OpenCode",
+      "publisherType": "gateway",
+      "sources": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "title": "OpenCode Go official plans, limits and endpoint table",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Go $10/month; Go Plus $40/month. Allowances vary per model. 5-hour 20%, weekly 50%, monthly 100%; not additive budgets. No verified public allowance response shape."
+        }
+      ],
+      "restrictions": [
+        "Actual inference provider is undisclosed; OpenCode is the gateway and workspace billing service.",
+        "Only typical coding-agent traffic; identify lain/1.0 and preserve a stable conversation session header.",
+        "Route capabilities remain unknown until qualified for this endpoint; no live credential-backed connection test.",
+        "Blocked by default: workspace owner must allow paid endpoints that train on request data. Temporary 2x allowance is excluded from stable plan facts."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://opencode.ai/v2/docs/console/go/",
+      "title": "OpenCode Go official plans, limits and endpoint table",
+      "checkedAt": "2026-10-24T00:00:00Z",
+      "notes": "Go $10/month; Go Plus $40/month. Allowances vary per model. 5-hour 20%, weekly 50%, monthly 100%; not additive budgets. No verified public allowance response shape."
+    },
+    {
+      "url": "https://opencode.ai/v2/docs/console/api/",
+      "title": "OpenCode API keys",
+      "checkedAt": "2026-10-24T00:00:00Z",
+      "notes": "Keys are workspace scoped; permissions can restrict model access and usage reads."
+    },
+    {
+      "url": "https://opencode.ai/v2/docs/console/api/inference/",
+      "title": "OpenCode inference protocols",
+      "checkedAt": "2026-10-24T00:00:00Z",
+      "notes": "Each model uses one API family; external free-tier access restrictions apply."
+    },
+    {
+      "url": "https://opencode.ai/inference/go/v1/models",
+      "title": "OpenCode Go public model list",
+      "checkedAt": "2026-10-24T00:00:00Z",
+      "notes": "Minimal OpenAI-shaped response; owned_by=opencode does not identify actual inference provider or protocol."
+    }
+  ],
+  "restrictions": [
+    "Go and Go Plus require a single-member workspace; not generic consumer chat subscriptions.",
+    "No verified public Go allowance/history endpoint. API key Usage Read permission alone does not establish a usable endpoint or payload shape.",
+    "Estimated request counts are examples, not limits. Model USD allowances are reference weights, not an additive cash balance.",
+    "No permanently-free or trial plan is claimed. Temporary free models are excluded from prepared external routes.",
+    "Model availability, region and workspace privacy restrictions can change.",
+    "No automatic account creation, purchase, or paid fallback configuration."
+  ],
+  "adapterState": "prepared",
+  "liveVerification": "not_tested",
+  "quotaSupport": "unsupported"
+}
