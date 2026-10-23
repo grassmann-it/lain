@@ -63,6 +63,7 @@ internal sealed class SmokeApp : Application
             try { await scenario.Run(); lifetime.Shutdown(0); }
             catch (Exception error)
             {
+                await scenario.SaveFailureEvidence(error);
                 await File.WriteAllTextAsync(Path.Combine(Scenario.Output, "failure.txt"), error.ToString());
                 Console.Error.WriteLine("FAIL desktop smoke: " + error.Message);
                 lifetime.Shutdown(1);
@@ -301,17 +302,72 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     {
         foreach (var (width, height) in new[] { (1120, 780), (800, 560) })
         {
-            window.Width = width; window.Height = height;
-            await Task.Delay(130); window.UpdateLayout();
+            var matches = await ResizeViewport(width, height);
             if (reveal is not null) { reveal(); await Task.Delay(80); window.UpdateLayout(); }
-            Check(Math.Abs(window.Bounds.Width - width) < 2 && Math.Abs(window.Bounds.Height - height) < 2, $"{page} viewport {width}x{height}");
-            var file = $"{page}-{width}x{height}.png";
-            using var bitmap = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96, 96));
-            bitmap.Render(window); bitmap.Save(Path.Combine(Output, file));
-            screenshots.Add(new { page, width, height, file });
+            // Capture before asserting: a constrained or late resize must leave an image and actual geometry.
+            var actual = window.Bounds.Size;
+            var suffix = matches ? "" : $"-actual-{Math.Ceiling(actual.Width)}x{Math.Ceiling(actual.Height)}";
+            var file = $"{page}-{width}x{height}{suffix}.png";
+            SaveWindowImage(file);
+            screenshots.Add(new { page, width, height, actualWidth = actual.Width, actualHeight = actual.Height, file });
+            if (!matches)
+                await File.WriteAllTextAsync(Path.Combine(Output, $"{page}-{width}x{height}-layout.json"), JsonSerializer.Serialize(LayoutEvidence(), new JsonSerializerOptions { WriteIndented = true }));
+            Check(matches, $"{page} viewport {width}x{height}; actual bounds {actual.Width:0.##}x{actual.Height:0.##}, client {window.ClientSize.Width:0.##}x{window.ClientSize.Height:0.##}; image {file}");
         }
-        window.Width = 1120; window.Height = 780;
-        await Task.Delay(100);
+        await ResizeViewport(1120, 780);
+    }
+
+    private async Task<bool> ResizeViewport(int width, int height)
+    {
+        window.Width = width; window.Height = height;
+        var watch = Stopwatch.StartNew();
+        var stable = 0;
+        while (watch.ElapsedMilliseconds < 2000)
+        {
+            // X11 configure events and Avalonia layout run asynchronously after Width/Height change.
+            await Task.Delay(40);
+            window.UpdateLayout();
+            var matches = Math.Abs(window.Bounds.Width - width) < 2 && Math.Abs(window.Bounds.Height - height) < 2;
+            stable = matches ? stable + 1 : 0;
+            if (stable >= 3) return true;
+        }
+        return false;
+    }
+
+    private object LayoutEvidence() => new
+    {
+        requestedWidth = window.Width, requestedHeight = window.Height,
+        actualWidth = window.Bounds.Width, actualHeight = window.Bounds.Height,
+        clientWidth = window.ClientSize.Width, clientHeight = window.ClientSize.Height,
+        window.MinWidth, window.MinHeight,
+        maxWidth = double.IsFinite(window.MaxWidth) ? window.MaxWidth : (double?)null,
+        maxHeight = double.IsFinite(window.MaxHeight) ? window.MaxHeight : (double?)null,
+        desiredWidth = window.DesiredSize.Width, desiredHeight = window.DesiredSize.Height,
+        window.WindowState, window.RenderScaling, window.IsVisible
+    };
+
+    private void SaveWindowImage(string file)
+    {
+        var width = Math.Max(1, (int)Math.Ceiling(window.Bounds.Width));
+        var height = Math.Max(1, (int)Math.Ceiling(window.Bounds.Height));
+        using var bitmap = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96, 96));
+        bitmap.Render(window); bitmap.Save(Path.Combine(Output, file));
+    }
+
+    public async Task SaveFailureEvidence(Exception error)
+    {
+        try
+        {
+            Directory.CreateDirectory(Output);
+            if (window is null) return;
+            window.UpdateLayout();
+            SaveWindowImage("failure.png");
+            await File.WriteAllTextAsync(Path.Combine(Output, "failure-evidence.json"), JsonSerializer.Serialize(new
+            {
+                error = error.ToString(), layout = LayoutEvidence(), checks, screenshots, requests = fixture.Requests
+            }, new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception diagnosticError) { Console.Error.WriteLine("Failure evidence could not be saved: " + diagnosticError.Message); }
     }
     private void Check(bool condition, string name)
     {
