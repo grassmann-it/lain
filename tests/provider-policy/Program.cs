@@ -66,6 +66,10 @@ Check(catalog.FindRoute("test-provider", "free-route")?.Model == "free-model", "
 Throws<InvalidDataException>(() => new ProviderCatalogRegistry([descriptor, descriptor]), "duplicate provider rejected");
 Throws<InvalidDataException>(() => ProviderCatalogRegistry.Parse("{}"), "missing manifest properties rejected");
 Throws<InvalidDataException>(() => new ProviderCatalogRegistry([descriptor with { AccountUrl = "https://secret@example.test" }]), "credential-bearing URL rejected");
+Check(new ProviderCatalogRegistry([descriptor with { Routes = [descriptor.Routes[0] with { BaseUrl = "https://{WorkspaceId}.example.test/v1" }] }]).Snapshot().Providers.Length == 1,
+    "documented workspace hostname template can be loaded");
+Throws<InvalidDataException>(() => new ProviderCatalogRegistry([descriptor with { Routes = [descriptor.Routes[0] with { BaseUrl = "https://{unknown}.example.test/v1" }] }]),
+    "unrecognized endpoint templates rejected");
 
 var directory = Path.Combine(Path.GetTempPath(), "lain-policy-" + Guid.NewGuid().ToString("N"));
 try
