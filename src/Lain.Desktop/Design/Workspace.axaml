@@ -101,6 +101,14 @@
   <Style Selector="ComboBox">
     <Setter Property="HorizontalAlignment" Value="Stretch" />
   </Style>
+  <!-- Row content supplies its own vertical spacing; avoid adding Semi's
+       general-purpose list padding around the compact account table. -->
+  <Style Selector="ListBox ListBoxItem">
+    <Setter Property="Padding" Value="10,1" />
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
   <Style Selector="CheckBox, ToggleSwitch">
     <Setter Property="FontSize" Value="13" />
     <Setter Property="MinHeight" Value="28" />
