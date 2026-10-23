@@ -39,7 +39,8 @@ public sealed record InspectorEventQuery(string? SourceId = null, long After = 0
 public sealed record InspectorLimitsDto(
     int MaxStreams = 256, int MaxEvents = 8192, long ContentBytes = 33554432,
     long PerStreamBytes = 1048576, int MaxEventBytes = 262144,
-    int ContentTtlSeconds = 120, int TerminalTtlSeconds = 60, int MaxPageSize = 500);
+    int ContentTtlSeconds = 120, int TerminalTtlSeconds = 60, int MaxPageSize = 500,
+    string ContentPolicy = "redacted_output_only_v1");
 
 public sealed record InspectorStreamDto(
     string Id, string Scope, string RequestId, string? AttemptId,
@@ -59,7 +60,7 @@ public sealed record InspectorEventDto(
     string? ToolCallId = null, string? ToolName = null, string? State = null,
     int? StatusCode = null, TokenCounts? Tokens = null,
     AttemptMeasurementsDto? Measurements = null, bool Truncated = false,
-    string? GapReason = null, string? RequestedModel = null);
+    string? GapReason = null, string? RequestedModel = null, string? RedactionState = null);
 
 public sealed record InspectorSnapshotDto(
     int ContractVersion, string SourceId, DateTimeOffset ObservedAt, string State,

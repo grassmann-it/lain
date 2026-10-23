@@ -8,7 +8,7 @@ public sealed record ProviderDescriptorDto(
     ProviderCredentialFieldDto[] Credentials, ProviderSetupStepDto[] SetupSteps,
     ProviderBillingPlanDto[] BillingPlans, ProviderRouteDescriptorDto[] Routes,
     ProviderSourceDto[] Sources, string[] Restrictions,
-    string AdapterState = "available", string LiveVerification = "not_tested",
+    string AdapterState = "prepared", string LiveVerification = "not_tested",
     string QuotaSupport = "unsupported");
 
 public sealed record ProviderSourceDto(string Url, string Title, DateTimeOffset? CheckedAt = null, string? Notes = null);
@@ -36,10 +36,11 @@ public sealed record ProviderRouteDescriptorDto(
     string? ModelFamily = null, string? Manufacturer = null, string? InferenceProvider = null,
     string? Gateway = null, string PricingClass = "unknown", bool FreeOnlyEligible = false,
     string? FreeOnlyEnforcement = null, string? Publisher = null, string? PublisherType = null,
-    ProviderSourceDto[]? Sources = null, string[]? Restrictions = null);
+    ProviderSourceDto[]? Sources = null, string[]? Restrictions = null,
+    string FreeOnlyEnforcementKind = "unsupported");
 
 /// <summary>CostPolicy is configured or free_only. Fallback routes are explicit; unknown price never qualifies as free.</summary>
-public sealed record RoutingPolicyDto(string CostPolicy = "configured", string[]? FallbackRouteIds = null);
+public sealed record RoutingPolicyDto(string CostPolicy = "configured", string[]? FallbackRouteIds = null, bool AllowPaidFallback = false);
 
 public sealed record ProviderOnboardingDto(
     int ContractVersion, string ProviderId, string State, ProviderDescriptorDto Descriptor,
