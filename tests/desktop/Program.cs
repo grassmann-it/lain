@@ -32,7 +32,7 @@ internal static class Program
             Console.Error.WriteLine("Refusing GUI startup: use tests/desktop/run-private-xvfb.sh (private Xvfb required).");
             return 2;
         }
-        return AppBuilder.Configure<SmokeApp>().UsePlatformDetect().StartWithClassicDesktopLifetime(args);
+        return AppBuilder.Configure<SmokeApp>().UsePlatformDetect().WithInterFont().StartWithClassicDesktopLifetime(args);
     }
 }
 
@@ -88,7 +88,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await CaptureBoth("overview");
         await Click("Accounts"); await CaptureBoth("accounts");
         await Click("Connect Codex");
-        await Wait(() => HasText("Sign-in · waiting"), "login waiting");
+        await Wait(() => HasText("Waiting for authorization"), "login waiting");
         await CaptureBoth("login");
         await Wait(() => HasText("Codex account connected."), "login completion", 6000);
         Check(fixture.LoginPolls > 0, "login polled fake provider");
@@ -100,13 +100,13 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         accountName.Focus();
         Check(accountName.IsFocused, "account input accepts keyboard focus");
         accountName.Text = "Command account";
-        Input("Provider identifier, e.g. command-code").Text = "command-code";
+        Input("e.g. command-code").Text = "command-code";
         Input("https://…/v1").Text = "https://example.invalid/v1";
         Input("API key").Text = "fake-test-key-never-a-secret";
         await Click("Add account");
         await Wait(() => fixture.Config.Accounts.Length == Fixture.InitialAccounts + 1, "account added");
         await Click("Disable"); Check(fixture.EnableCalls == 1, "account disabled");
-        await Click("Import existing setup"); Input("/path/to/config.yaml").Text = "/fixture/config.yaml";
+        await Click("Import setup…"); Input("/path/to/config.yaml").Text = "/fixture/config.yaml";
         await Click("Import");
         Check(fixture.Imports == 1 && HasText("snapshot warning", true), "import and warning preserved");
 
@@ -122,14 +122,15 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Click("Profiles"); await Click("Create profile");
         Input("Profile name").Text = "Focus";
         Controls<CheckBox>().First().IsChecked = true;
+        await CaptureBoth("profile-editor");
         await Click("Save profile");
         await Wait(() => fixture.Config.Profiles.Length == Fixture.InitialProfiles + 1, "revisioned profile saved");
-        await CaptureBoth("profiles"); await Click("Apply");
+        await CaptureBoth("profiles"); await Click("Apply profile");
         Check(fixture.ApplyCalls == 1, "profile applied");
         await Click("Connect Codex…");
         Input("/absolute/path/to/lain").Text = "/usr/bin/true";
         var export = Path.Combine(Output, "export"); Directory.CreateDirectory(export);
-        Input("Choose or enter an export destination").Text = export;
+        Input("Choose or enter an existing parent folder").Text = export;
         await Click("Export Codex connection");
         await Wait(() => HasText("Ready for Codex"), "Codex export ready");
         Check(fixture.ExportCalls == 1 && Directory.GetFiles(export, "lain.config.toml", SearchOption.AllDirectories).Length == 1, "fake Codex artifacts exported");
