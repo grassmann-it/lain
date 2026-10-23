@@ -115,7 +115,13 @@ public sealed partial class ProviderCatalogView : UserControl
             {
                 var title = Ui.Text(route.Name, 13);
                 title.FontWeight = FontWeight.SemiBold;
-                routes.Children.Add(Ui.Card(new StackPanel { Spacing = 7, Children = { title, FactRows(route.Facts) } }));
+                var routeDetails = new Expander
+                {
+                    Header = title, Content = FactRows(route.Facts),
+                    HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch
+                };
+                AutomationProperties.SetName(routeDetails, $"{provider.Name}: {route.Name} capabilities");
+                routes.Children.Add(routeDetails);
             }
             details.Children.Add(Ui.Section("Protocols and model capabilities", routes, "Capabilities belong to the concrete route. Unreported capabilities remain unknown."));
         }
@@ -156,6 +162,11 @@ public sealed partial class ProviderCatalogView : UserControl
         expander.Resources["ExpanderContentPadding"] = new Thickness(12, 0, 12, 12);
         expander.Resources["ExpanderContentMinLength"] = 0d;
         AutomationProperties.SetName(expander, $"Provider {provider.Name}");
+        expander.TemplateApplied += (_, applied) =>
+        {
+            if (applied.NameScope.Find<ToggleButton>("ExpanderHeader") is { } toggle)
+                AutomationProperties.SetName(toggle, $"{provider.Name} setup and capabilities");
+        };
         expander.PropertyChanged += (_, change) =>
         {
             if (change.Property != Expander.IsExpandedProperty) return;
