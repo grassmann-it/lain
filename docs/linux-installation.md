@@ -14,8 +14,14 @@ notices; if publishing from different source commits, first verify their NuGet
 lock graphs agree with the restored graphs. The helper compares each source
 commit's lockfile with the checkout and records its hash. It requires an executable
 launcher, DLL, deps file and runtime configuration for each component, and checks
-that the claimed informational version occurs in its DLL and ends in the supplied
-source commit (at least seven characters).
+the complete claimed informational version is serialized in its DLL as a .NET
+string attribute. A prefix of an SDK-extended version is refused. Supported
+revision formats are one source SHA (at least seven characters), or
+`<shortsha>.<fullsha>` when both identify the same supplied source commit.
+The existing CLI from `d9cfc2f` has actual version
+`1.0.0+d9cfc2f.d9cfc2f7bfec7f4e77fe3cbf818135a3a0472755`; pass this complete
+value. For new publishes, `-p:IncludeSourceRevisionInInformationalVersion=false`
+keeps an explicitly supplied `InformationalVersion` unchanged.
 
 From the integrated checkout, with new absolute output paths:
 

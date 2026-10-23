@@ -27,6 +27,21 @@ def files(path):
     return {str(p.relative_to(path)): digest(p) for p in sorted(path.rglob("*")) if p.is_file()}
 
 
+def serialized_version(version):
+    """Single-string .NET custom attribute blob, including exact string length."""
+    value = version.encode("utf-8")
+    size = len(value)
+    if size < 0x80:
+        length = bytes([size])
+    elif size < 0x4000:
+        length = bytes([(size >> 8) | 0x80, size & 0xff])
+    elif size < 0x20000000:
+        length = bytes([(size >> 24) | 0xc0, (size >> 16) & 0xff, (size >> 8) & 0xff, size & 0xff])
+    else:
+        raise ValueError("version string too long")
+    return b"\x01\x00" + length + value + b"\x00\x00"
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("base", type=Path)
@@ -66,14 +81,17 @@ def main():
         _, commit, version = getattr(args, component)
         commit = subprocess.check_output(["git", "rev-parse", commit + "^{commit}"], cwd=root, text=True).strip()
         suffix = version.partition("+")[2]
-        if len(suffix) < 7 or not commit.startswith(suffix):
-            parser.error(component + " informational version must end in its source commit (at least 7 hex characters)")
+        revisions = suffix.split(".")
+        if not (len(revisions) in (1, 2) and all(
+                7 <= len(revision) <= len(commit) and commit.startswith(revision) for revision in revisions)
+                and (len(revisions) == 1 or revisions[1] == commit)):
+            parser.error(component + " informational version must contain its source SHA, or short SHA plus the same full SHA")
         for name in (project, project + ".dll", project + ".deps.json", project + ".runtimeconfig.json"):
             if not (publish / name).is_file():
                 parser.error("incomplete publish: " + str(publish / name))
         if not os.access(publish / project, os.X_OK):
             parser.error("launcher must be executable: " + component)
-        if version.encode() not in (publish / (project + ".dll")).read_bytes():
+        if serialized_version(version) not in (publish / (project + ".dll")).read_bytes():
             parser.error("claimed informational version missing from published assembly: " + component)
         if not (root / "src" / project / "obj/project.assets.json").is_file():
             parser.error("restore the current locked graph first: " + project)

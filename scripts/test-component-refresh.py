@@ -21,6 +21,11 @@ def snapshot(path):
     return {str(p.relative_to(path)): digest(p) for p in path.rglob("*") if p.is_file()}
 
 
+def version_blob(value):
+    # ECMA-335 custom attribute prolog, SerString byte length, value, zero named args.
+    return b"fixture DLL\x01\x00" + bytes([len(value)]) + value.encode() + b"\x00\x00end"
+
+
 with tempfile.TemporaryDirectory(prefix="lain-component-refresh-") as temp:
     work = Path(temp)
     repo = work / "repo"
@@ -57,7 +62,9 @@ with tempfile.TemporaryDirectory(prefix="lain-component-refresh-") as temp:
     subprocess.run(["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
                     "commit", "-qm", "fixture"], cwd=repo, check=True)
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
-    version = "1.0.0+" + commit[:7]
+    short_version = "1.0.0+" + commit[:7]
+    versions = {"cli": short_version + "." + commit, "host": short_version,
+                "desktop": "1.0.0+" + commit}
     base = work / "base"
     for name in (*projects, "proxy", "notices"):
         (base / name).mkdir(parents=True)
@@ -75,9 +82,10 @@ with tempfile.TemporaryDirectory(prefix="lain-component-refresh-") as temp:
     manifest()
     command = [sys.executable, str(repo / "invoke.py"), core, str(base), "OUTPUT"]
     for component, project in projects.items():
+        version = versions[component]
         publish = work / (component + "-publish")
         publish.mkdir()
-        for name, content in ((project, b"synthetic launcher"), (project + ".dll", version.encode()),
+        for name, content in ((project, b"synthetic launcher"), (project + ".dll", version_blob(version)),
                               (project + ".deps.json", b"{}"), (project + ".runtimeconfig.json", b"{}")):
             (publish / name).write_bytes(content)
         (publish / project).chmod(0o700)
@@ -87,8 +95,8 @@ with tempfile.TemporaryDirectory(prefix="lain-component-refresh-") as temp:
             shutil.copyfile(font / "OFL.txt", dest / "OFL.txt")
         command.extend(["--" + component, str(publish), commit, version])
 
-    def run(name, success, expected=""):
-        cmd = command.copy()
+    def run(name, success, expected="", override=None):
+        cmd = (override or command).copy()
         cmd[4] = str(work / name)
         result = subprocess.run(cmd, capture_output=True, text=True,
                                 env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
@@ -108,6 +116,7 @@ with tempfile.TemporaryDirectory(prefix="lain-component-refresh-") as temp:
     info = json.loads((out / "build-info.json").read_text())
     assert info["backendQualificationCommit"] == "preserve-me"
     assert all(value == commit for value in info["componentSourceCommits"].values())
+    assert info["componentInformationalVersions"] == versions
     notices = json.loads((out / "notices/inventory.json").read_text())
     assert len(notices["bundledFonts"]) == 1
     assert (out / "notices/fonts/FixtureFamily/OFL.txt").read_bytes() == (font / "OFL.txt").read_bytes()
@@ -116,10 +125,18 @@ with tempfile.TemporaryDirectory(prefix="lain-component-refresh-") as temp:
         assert tar.getmember("success/proxy/lain-proxy").uid == 0
     assert Path(str(archive) + ".sha256").read_text().split()[0] == digest(archive)
     run("success", False, "must not exist")
+    partial = command.copy()
+    partial[partial.index("--cli") + 3] = short_version
+    run("truncated-sdk-version", False, "claimed informational version missing", partial)
+    mismatch = command.copy()
+    mismatch[mismatch.index("--cli") + 3] = short_version + "." + ("0" if commit[0] != "0" else "1") + commit[1:]
+    run("mismatched-sdk-revision", False, "same full SHA", mismatch)
+    mismatch[mismatch.index("--cli") + 3] = "1.0.0+" + ("0" if commit[0] != "0" else "1") + commit[1:7] + "." + commit
+    run("mismatched-short-revision", False, "same full SHA", mismatch)
     dll = work / "host-publish/Lain.Host.dll"
     dll.write_text("wrong provenance")
     run("wrong-version", False, "claimed informational version missing")
-    dll.write_text(version)
+    dll.write_bytes(version_blob(versions["host"]))
     lock = repo / "src/Lain.Host/packages.lock.json"
     lock.write_text('{"version":1,"dependencies":{"changed":{}}}')
     run("wrong-lock", False, "different lockfiles")
