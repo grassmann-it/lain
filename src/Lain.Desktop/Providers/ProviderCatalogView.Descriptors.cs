@@ -98,7 +98,7 @@ public sealed partial class ProviderCatalogView
             new("Price class", Human(route.PricingClass)),
             new("Free-only routing", Join(
                 route.FreeOnlyEligible && route.PricingClass == "free" ? "Documented free access" : "Paid or unknown pricing is excluded",
-                "Strict free-only routing is unavailable until provider cost controls are qualified. Catalog documentation alone does not enable it.",
+                "Strict free-only access requires qualified runtime controls; availability differs by route. Catalog documentation alone does not enable it.",
                 route.FreeOnlyEnforcement)),
             new("Context window / maximum output", $"{Tokens(capabilities.ContextWindow)} / {Tokens(capabilities.MaximumOutput)}"),
             new("Tools / streaming / reasoning", $"{Support(capabilities.Tools)} / {Support(capabilities.Streaming)} / {Support(capabilities.Reasoning)}"),
