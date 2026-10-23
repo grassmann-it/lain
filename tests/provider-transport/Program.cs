@@ -51,10 +51,17 @@ try
     var descriptor = catalog.Find("opencode-go")!.Routes.First(r => r.Protocol == "anthropic-messages");
     state = accounts.AddApi(state.Revision,new("OpenCode fixture","opencode-go","fake-second-key",descriptor.BaseUrl,descriptor.Id));
     var directAccount = state.Accounts.Single(a => a.Provider == "opencode-go");
-    state = state with { Routes = [new("fixture-route","fixture-alias",descriptor.Model,"opencode-go",[directAccount.Id],ProviderRouteId:descriptor.Id)] };
+    var chats = catalog.Find("opencode-go")!.Routes.Where(r => r.Protocol == "openai-chat").Take(2).ToArray();
+    foreach (var chat in chats) state = accounts.AddApi(state.Revision,new("Shared OpenCode","opencode-go","fake-second-key",chat.BaseUrl,chat.Id));
+    Check(state.Accounts.Count(a => a.Provider == "opencode-go") == 1);
+    using (var sharedSecret = JsonDocument.Parse(secrets.ReadAccount(directAccount.Id)))
+        Check(sharedSecret.RootElement.GetProperty("transports").GetArrayLength() == 2);
+    state = state with { Routes = [new("fixture-route","fixture-alias",descriptor.Model,"opencode-go",[directAccount.Id],ProviderRouteId:descriptor.Id),
+        .. chats.Select((chat,index) => new RouteDto("chat-"+index,"chat-alias-"+index,chat.Model,"opencode-go",[directAccount.Id],ProviderRouteId:chat.Id))] };
     var writer = new ProxyConfigurationWriter(paths,secrets,new ProviderCostPolicy(catalog));
     writer.Write(state);
     Check(writer.QualifiedProviderRouteIds.Contains("fixture-route"));
+    Check(writer.RouteCredentials["chat-0"][directAccount.Id] == writer.RouteCredentials["chat-1"][directAccount.Id]);
     var yaml = File.ReadAllText(paths.ProxyConfig);
     Check(yaml.Contains("x-opencode-session") && yaml.Contains("$CPA-SESSION-ID") && yaml.Contains("/inference/go/anthropic"));
     var headers = "User-Agent\0lain/1.0\0x-opencode-session\0$CPA-SESSION-ID\0";
