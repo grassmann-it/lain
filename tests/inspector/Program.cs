@@ -68,6 +68,9 @@ var bare = new InspectorTextRedactor();
 bare.Push("sk-ABCD", DateTimeOffset.UtcNow);
 bare.Push("EFGHijkl rest", DateTimeOffset.UtcNow);
 Check(bare.Push(null, DateTimeOffset.UtcNow, final: true).Text == "[redacted] rest", "split credential-shaped token cannot emit its suffix");
+Check(InspectorTextRedactor.Metadata("api\u200bkey=synthetic-hidden-value") is null &&
+    InspectorTextRedactor.Identity("sk-\u200bSYNTHETICIDENTITY") is null,
+    "metadata credential checks run after control and format normalization");
 
 var capacity = Start(new(MaxStreams: 1, MaxEvents: 2));
 capacity.Ingest(Event(1)); capacity.Ingest(Event(2, attempt: "other"));
@@ -90,6 +93,34 @@ Check(!Content(expiry).Contains("pending-tail"), "pending redaction buffer share
 clock.Advance(TimeSpan.FromSeconds(2));
 Check(expiry.Snapshot().Streams.Length == 0, "terminal metadata and content expire together");
 
+var trickleClock = new TestClock();
+var trickle = Start(new(ContentTtlSeconds: 2), trickleClock);
+trickle.Ingest(Event(1)); trickle.Ingest(Event(2, "text_delta", text: "old-trickled-content"));
+trickleClock.Advance(TimeSpan.FromSeconds(1.5));
+trickle.Ingest(Event(3, "text_delta", text: "-later-piece"));
+trickleClock.Advance(TimeSpan.FromSeconds(1));
+trickle.Ingest(Event(4, "attempt_finished") with { Outcome = "success" });
+Check(!Content(trickle).Contains("old-trickled-content"), "later short deltas cannot refresh pending content lifetime");
+
+var flushClock = new TestClock();
+var flushed = Start(new(ContentTtlSeconds: 2), flushClock);
+flushed.Ingest(Event(1)); flushed.Ingest(Event(2, "text_delta", text: "old-flushed-content"));
+flushClock.Advance(TimeSpan.FromSeconds(1.5));
+flushed.Ingest(Event(3, "metadata"));
+flushed.Ingest(Event(4, "attempt_finished") with { Outcome = "success" });
+flushClock.Advance(TimeSpan.FromSeconds(0.6));
+Check(!Content(flushed).Contains("old-flushed-content") && flushed.Events().Events.Any(value => value.Kind == "metadata"),
+    "completion flush keeps original receipt age even behind newer metadata cursors");
+
+var mixedClock = new TestClock();
+var mixed = Start(new(ContentTtlSeconds: 2), mixedClock);
+mixed.Ingest(Event(1)); mixed.Ingest(Event(2, "text_delta", text: "held-seed"));
+mixedClock.Advance(TimeSpan.FromSeconds(1));
+mixed.Ingest(Event(3, "text_delta", text: new string('n', 150)));
+mixedClock.Advance(TimeSpan.FromSeconds(1.1));
+mixed.Ingest(Event(4, "attempt_finished") with { Outcome = "success" });
+Check(Content(mixed) == new string('n', 128), "emitted old prefix expires while newer held content keeps its own receipt age");
+
 var restart = Start(); restart.Ingest(Event(1));
 var old = restart.Snapshot(); restart.BeginSource("core-two"); restart.MarkConnected();
 var reset = restart.Events(new(old.SourceId, old.Cursor));
@@ -97,6 +128,9 @@ Check(reset.SourceId != old.SourceId && reset.Truncated && reset.GapReason == "s
 Check(restart.Snapshot().Streams.Single().State == "unknown" && restart.Snapshot().Streams.Single().LastCursor == 0, "old active metadata has unknown outcome and no new-generation cursor");
 restart.Ingest(Event(1, request: "new-request", attempt: "new-attempt"));
 Check(restart.Snapshot().Streams.Any(value => value.RequestId == "new-request"), "new core sequence starts independently");
+var sourceRejected = false;
+try { restart.BeginSource("core-\u200bhidden"); } catch (InvalidDataException) { sourceRejected = true; }
+Check(sourceRejected, "source generations reject identities changed by normalization");
 var rejected = 0;
 foreach (var query in new[] { new InspectorEventQuery(After: -1), new InspectorEventQuery(After: 1), new InspectorEventQuery(Limit: 501), new InspectorEventQuery(restart.Snapshot().SourceId, long.MaxValue) })
     try { restart.Events(query); } catch (ArgumentException) { rejected++; }

@@ -60,7 +60,7 @@ public sealed class InspectorCollector(HttpClient client, InspectorStore store, 
 
     private static void ValidateEnvelope(CoreInspectorBatch batch)
     {
-        if (InspectorTextRedactor.Identity(batch.InstanceId) is null || batch.Events is null || batch.Events.Length > BatchSize ||
+        if (InspectorTextRedactor.Identity(batch.InstanceId) is not { } safeSource || safeSource != batch.InstanceId || batch.Events is null || batch.Events.Length > BatchSize ||
             batch.EarliestCursor < 0 || batch.HighWatermark < 0 || batch.NextCursor < 0 || batch.NextCursor > batch.HighWatermark || batch.DroppedCount < 0 ||
             batch.EarliestCursor > batch.HighWatermark && batch.EarliestCursor - batch.HighWatermark > 1)
             throw new InvalidDataException("Invalid owned inspector envelope.");

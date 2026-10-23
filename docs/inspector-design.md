@@ -60,6 +60,8 @@ The public `sourceId` is a Host ring generation, not the Core instance ID. It
 changes after a Host restart or a changed Core instance. Core sequences are
 deduplicated before assigning Host cursors; deferred sanitized text can add a
 display event, so the two cursor spaces intentionally differ.
+Source identities that would change during control/format normalization are
+rejected, so distinct upstream generations cannot collapse onto one identity.
 
 Resume with a positive `after` requires `sourceId`. A mismatched source yields
 `truncated=true`, `gapReason=source_changed` and the current retained tail.
@@ -89,8 +91,12 @@ rejected. Active descriptors are preferred: completed/unknown retained metadata
 is evicted first, and excess new active streams are dropped with coverage loss.
 
 Retention uses monotonic time from Host ingestion, including pending redaction
-buffers. Expiry is evaluated on reads and collection passes, including failed
-passes. Terminal descriptor removal also removes its content, so content can
+buffers. New deltas and completion flushes preserve the original receipt age of
+held characters. An emitted chunk uses its oldest contributing receipt; newer
+characters in the remaining holdback keep their own age. Event expiry therefore
+checks receipt age independently of cursor order. Expiry is evaluated on reads
+and collection passes, including failed passes. Terminal descriptor removal
+also removes its content, so content can
 expire earlier than the maximum. There is no secure-erasure or exact-GC-time
 claim. A pull-only viewer cannot make inference wait, retain an unbounded pause
 backlog or allocate an extra unbounded event queue.
@@ -117,7 +123,8 @@ handles markers split across deltas and is flushed at observed completion.
 Credential continuations are dropped until their delimiter; authorization
 lines, oversized chunks and gaps discard through the next newline. This may
 delay short display output and remove benign text. It never changes the Core's
-first-output timing measurements. Metadata has its own length/identity checks.
+first-output timing measurements. Metadata has its own length/identity checks;
+credential checks run after control/format normalization.
 Pattern sanitization cannot identify arbitrary secrets written as ordinary
 prose; it is a lossy display transform, not a confidentiality classifier. No raw
 fallback is returned on a sanitizer failure.
@@ -130,11 +137,23 @@ replay and non-advancing synthetic viewer gaps. Its collector and known replay
 workaround were not reused. The simpler HTTP pull transport is an implementation
 choice for this first integration; SSE is not required or claimed.
 
-Focused synthetic cases are prepared in `tests/inspector`; independent Core and
-collector-boundary checks live in `tests/inspection`. The focused cases cover
-provenance/conflicts, grouping, zero/null, duplicate/source-reset behavior,
-filtered cursor progression, cardinality/byte/monotonic-age bounds and split
-credential/tool-content removal. Build and execution are left to the serialized
-integration slot. A passing unit suite alone does not establish provider parser
-coverage, a working packaged inspector or real UI grouping; those need the
-integrated own-core and private-Xvfb evidence.
+The integrator ran the focused synthetic suite and independent Host boundary
+suite on 2026-10-24. The Host implementation is `d94a7cf`, integrated as
+`3b63bcb`; the independent boundary suite is `963154d`, integrated as `a41432c`.
+Both builds finished with zero warnings and errors:
+
+- `tests/inspector/Inspector.Tests.csproj`: 27 assertions passed; log
+  `/tmp/lain-expansion-tests/Inspector.Tests-integrated.log`.
+- `tests/inspection/host/InspectorIntegration.csproj`: 80 assertions passed,
+  fake HTTP only; log
+  `/tmp/lain-expansion-tests/InspectorIntegration-integrated.log`.
+
+These cover provenance/conflicts, grouping, zero/null, source generations,
+filtered cursor progression, cardinality/byte/monotonic-age bounds, collector
+envelope failures and split credential/tool-content removal. The follow-up
+normalization, slow-trickle, delayed-flush and mixed-age regression cases were
+added after those runs; their execution awaits the serialized integration slot.
+No worker-side build or service run is claimed for that follow-up. A passing
+unit suite alone does not establish provider parser coverage, a working packaged
+inspector or real UI grouping; those need integrated own-core and private-Xvfb
+evidence.

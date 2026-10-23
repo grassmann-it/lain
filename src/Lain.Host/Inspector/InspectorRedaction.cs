@@ -20,18 +20,20 @@ internal sealed class InspectorTextRedactor
         @"(?i)\b(?:sk[-_][a-z0-9_-]{4,}|AIza[a-z0-9_-]{8,}|gh[pousr]_[a-z0-9]{8,}|xox[baprs]-[a-z0-9-]{6,}|eyJ[a-z0-9_-]{4,}\.[a-z0-9_.-]*)",
         RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, TimeSpan.FromMilliseconds(50));
     private string pending = "";
+    private List<long> pendingReceipts = [];
     private bool discardCredential;
     private bool discardLine;
 
     public bool HasPending => pending.Length != 0;
+    public long? OldestReceipt => pendingReceipts.Count == 0 ? null : pendingReceipts[0];
     public DateTimeOffset? LastObservedAt { get; private set; }
 
-    public (string? Text, bool Removed) Push(string? value, DateTimeOffset at, bool final = false)
+    public (string? Text, bool Removed, long? ReceivedAt) Push(string? value, DateTimeOffset at, bool final = false, long receivedAt = 0)
     {
         if (value?.Length > MaximumInputChars)
         {
             ResetAfterGap();
-            return (null, true);
+            return (null, true, null);
         }
         LastObservedAt = value is null ? LastObservedAt : at;
         var input = Inert(value ?? "");
@@ -44,6 +46,7 @@ internal sealed class InspectorTextRedactor
             else { input = input[end..]; discardCredential = discardLine = false; }
         }
         pending += input;
+        pendingReceipts.AddRange(Enumerable.Repeat(receivedAt, input.Length));
         var marker = Marker.Match(pending);
         while (marker.Success)
         {
@@ -52,7 +55,7 @@ internal sealed class InspectorTextRedactor
             var wholeLine = pending.AsSpan(marker.Index).StartsWith("authorization", StringComparison.OrdinalIgnoreCase);
             var end = wholeLine ? pending.IndexOf('\n', start) : FindDelimiter(pending, start);
             if (end < 0) { end = pending.Length; discardCredential = !final; discardLine = wholeLine; }
-            pending = pending[..marker.Index] + "[redacted]" + pending[end..];
+            ReplaceCredential(marker.Index, end);
             marker = Marker.Match(pending);
         }
         var credential = Credential.Match(pending);
@@ -60,25 +63,38 @@ internal sealed class InspectorTextRedactor
         {
             var end = FindDelimiter(pending, credential.Index);
             if (end < 0) { end = pending.Length; discardCredential = !final; }
-            pending = pending[..credential.Index] + "[redacted]" + pending[end..];
+            ReplaceCredential(credential.Index, end);
             credential = Credential.Match(pending);
         }
         var length = final ? pending.Length : Math.Max(0, pending.Length - Holdback);
         if (length > 0 && length < pending.Length && char.IsHighSurrogate(pending[length - 1])) length--;
         var result = length == 0 ? null : pending[..length];
+        var resultReceipt = length == 0 ? (long?)null : pendingReceipts[0];
         pending = pending[length..];
+        // Keep receipt ages only for the bounded tail. A later delta or finish
+        // must not give older held text a new retention lifetime.
+        pendingReceipts = pendingReceipts.GetRange(length, pendingReceipts.Count - length);
         if (final) discardCredential = discardLine = false;
-        return (result, false);
+        return (result, false, resultReceipt);
     }
 
-    public void Clear() { pending = ""; discardCredential = discardLine = false; LastObservedAt = null; }
+    private void ReplaceCredential(int start, int end)
+    {
+        const string replacement = "[redacted]";
+        var receivedAt = pendingReceipts[start];
+        pending = pending[..start] + replacement + pending[end..];
+        pendingReceipts.RemoveRange(start, end - start);
+        pendingReceipts.InsertRange(start, Enumerable.Repeat(receivedAt, replacement.Length));
+    }
+
+    public void Clear() { pending = ""; pendingReceipts = []; discardCredential = discardLine = false; LastObservedAt = null; }
     public void ResetAfterGap() { Clear(); discardCredential = discardLine = true; }
 
     public static string? Metadata(string? value, int maximum = 256)
     {
-        if (string.IsNullOrWhiteSpace(value) || value.Length > maximum || Marker.IsMatch(value) || Credential.IsMatch(value)) return null;
+        if (string.IsNullOrWhiteSpace(value) || value.Length > maximum) return null;
         var clean = Inert(value);
-        return clean.Length == 0 ? null : clean;
+        return clean.Length == 0 || Marker.IsMatch(clean) || Credential.IsMatch(clean) ? null : clean;
     }
 
     public static string? Identity(string? value) => Metadata(value) is { } clean &&

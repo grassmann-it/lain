@@ -21,6 +21,7 @@ public sealed class InspectorStore
     private string? error;
     private DateTimeOffset observedAt = DateTimeOffset.UnixEpoch;
     private long cursor, lastSequence, dropped, lastGapCursor, retainedBytes;
+    private long? oldestEventAt;
     private string? gapReason;
 
     public InspectorStore(InspectorLimitsDto? limits = null, TimeProvider? clock = null)
@@ -37,7 +38,8 @@ public sealed class InspectorStore
 
     public void BeginSource(string instanceId)
     {
-        if (InspectorTextRedactor.Identity(instanceId) is null) throw new InvalidDataException("Invalid inspector source identity.");
+        if (InspectorTextRedactor.Identity(instanceId) is not { } safeSource || safeSource != instanceId)
+            throw new InvalidDataException("Invalid inspector source identity.");
         lock (gate)
         {
             Prune();
@@ -50,7 +52,6 @@ public sealed class InspectorStore
                 {
                     entry.Events.Clear(); entry.Bytes = 0;
                     foreach (var redactor in entry.Redactors.Values) redactor.Clear();
-                    entry.RedactorAt.Clear();
                     entry.Value = entry.Value with { Truncated = true, FirstCursor = 0, LastCursor = 0 };
                     if (!entry.Terminal)
                     {
@@ -58,7 +59,7 @@ public sealed class InspectorStore
                         entry.TerminalAt = clock.GetTimestamp();
                     }
                 }
-                events.Clear(); retainedBytes = 0;
+                events.Clear(); retainedBytes = 0; oldestEventAt = null;
                 sourceId = Guid.NewGuid().ToString("N"); cursor = dropped = lastGapCursor = 0; gapReason = null;
             }
             upstreamSource = instanceId; lastSequence = 0; state = "connecting"; error = null;
@@ -80,7 +81,6 @@ public sealed class InspectorStore
                 entry.Value = entry.Value with { State = "unknown", Truncated = true };
                 entry.TerminalAt ??= clock.GetTimestamp();
                 foreach (var redactor in entry.Redactors.Values) redactor.ResetAfterGap();
-                entry.RedactorAt.Clear();
             }
         }
     }
@@ -96,7 +96,6 @@ public sealed class InspectorStore
             foreach (var entry in streams.Values)
             {
                 foreach (var redactor in entry.Redactors.Values) redactor.ResetAfterGap();
-                entry.RedactorAt.Clear();
                 if (!entry.Terminal)
                 {
                     entry.Value = entry.Value with { State = "unknown", Truncated = true };
@@ -156,17 +155,17 @@ public sealed class InspectorStore
             if (incoming.Truncated)
             {
                 foreach (var redactor in entry.Redactors.Values) redactor.ResetAfterGap();
-                entry.RedactorAt.Clear();
                 Gap(1, "upstream_content_truncated");
             }
             var channel = incoming.Kind switch { "text_delta" => "text", "reasoning_delta" => "reasoning", "tool_delta" => "tool", _ => "status" };
             string? text = null;
             string? redactionState = null;
+            long? textReceivedAt = null;
             if (channel is "text" or "reasoning")
             {
-                var cleaned = entry.Redactors[channel].Push(incoming.Text, incoming.ObservedAt);
-                entry.RedactorAt[channel] = clock.GetTimestamp();
+                var cleaned = entry.Redactors[channel].Push(incoming.Text, incoming.ObservedAt, receivedAt: clock.GetTimestamp());
                 text = cleaned.Text; redactionState = cleaned.Removed ? "removed" : "sanitized";
+                textReceivedAt = cleaned.ReceivedAt;
                 if (cleaned.Removed) { entry.Value = entry.Value with { Truncated = true }; Gap(1, "oversize_content_removed"); }
             }
             else if (incoming.Text is not null) redactionState = "removed";
@@ -176,13 +175,12 @@ public sealed class InspectorStore
                 foreach (var pair in entry.Redactors)
                 {
                     var at = pair.Value.LastObservedAt ?? incoming.ObservedAt;
-                    var tail = pair.Value.Push(null, at, final: true).Text;
-                    if (tail is not null) Add(entry, Event(entry, incoming, pair.Key + "_delta", pair.Key, tail, "sanitized") with { ObservedAt = at });
+                    var tail = pair.Value.Push(null, at, final: true);
+                    if (tail.Text is not null) Add(entry, Event(entry, incoming, pair.Key + "_delta", pair.Key, tail.Text, "sanitized") with { ObservedAt = at }, tail.ReceivedAt);
                 }
                 entry.Terminal = true; entry.TerminalAt = clock.GetTimestamp();
-                entry.RedactorAt.Clear();
             }
-            Add(entry, Event(entry, incoming, incoming.Kind, channel, text, redactionState));
+            Add(entry, Event(entry, incoming, incoming.Kind, channel, text, redactionState), textReceivedAt);
         }
     }
 
@@ -239,14 +237,15 @@ public sealed class InspectorStore
             entry.Value.StatusCode, entry.Value.Tokens, entry.Value.Measurements, entry.Value.Truncated,
             entry.DimensionConflicts.Count > 0 ? "dimension_conflict" : null, entry.Value.RequestedModel, redaction);
 
-    private void Add(StreamEntry entry, InspectorEventDto value)
+    private void Add(StreamEntry entry, InspectorEventDto value, long? receivedAt = null)
     {
         value = value with { Cursor = ++cursor };
         var bytes = JsonSerializer.SerializeToUtf8Bytes(value, Json).Length;
         entry.Value = entry.Value with { FirstCursor = entry.Value.FirstCursor == 0 ? cursor : entry.Value.FirstCursor, LastCursor = cursor };
         if (bytes > limits.MaxEventBytes || bytes > limits.PerStreamBytes || bytes > limits.ContentBytes)
         { entry.Value = entry.Value with { Truncated = true }; Drop(1, cursor, "event_capacity"); return; }
-        var stored = new StoredEvent(value, bytes, clock.GetTimestamp(), entry);
+        var stored = new StoredEvent(value, bytes, receivedAt ?? clock.GetTimestamp(), entry);
+        oldestEventAt = oldestEventAt is { } oldest ? Math.Min(oldest, stored.At) : stored.At;
         stored.Global = events.AddLast(stored); stored.Stream = entry.Events.AddLast(stored);
         retainedBytes += bytes; entry.Bytes += bytes;
         while (entry.Bytes > limits.PerStreamBytes) Remove(entry.Events.First!.Value, "stream_retention");
@@ -256,15 +255,27 @@ public sealed class InspectorStore
     private void Prune()
     {
         var now = clock.GetTimestamp();
-        while (events.First is { } first && clock.GetElapsedTime(first.Value.At, now).TotalSeconds >= limits.ContentTtlSeconds)
-            Remove(first.Value, "expired");
+        if (oldestEventAt is { } oldest && clock.GetElapsedTime(oldest, now).TotalSeconds >= limits.ContentTtlSeconds)
+        {
+            // Delayed sanitized output can be older than an earlier cursor.
+            // Scan only when the earliest retained receipt can have expired.
+            oldestEventAt = null;
+            for (var node = events.First; node is not null;)
+            {
+                var next = node.Next;
+                var item = node.Value;
+                if (clock.GetElapsedTime(item.At, now).TotalSeconds >= limits.ContentTtlSeconds) Remove(item, "expired");
+                else oldestEventAt = oldestEventAt is { } retained ? Math.Min(retained, item.At) : item.At;
+                node = next;
+            }
+        }
         foreach (var entry in streams.Values.Where(entry => entry.TerminalAt is { } at && clock.GetElapsedTime(at, now).TotalSeconds >= limits.TerminalTtlSeconds).ToArray())
             RemoveStream(entry, "stream_expired");
         // Deferred text follows the same lifetime, even when its source stops mid-token.
         foreach (var entry in streams.Values)
-            foreach (var pair in entry.RedactorAt.ToArray())
-                if (clock.GetElapsedTime(pair.Value, now).TotalSeconds >= limits.ContentTtlSeconds)
-                { entry.Redactors[pair.Key].ResetAfterGap(); entry.RedactorAt.Remove(pair.Key); }
+            foreach (var redactor in entry.Redactors.Values)
+                if (redactor.OldestReceipt is { } at && clock.GetElapsedTime(at, now).TotalSeconds >= limits.ContentTtlSeconds)
+                    redactor.ResetAfterGap();
     }
 
     private bool MakeRoom()
@@ -321,7 +332,6 @@ public sealed class InspectorStore
         public long Bytes;
         public readonly LinkedList<StoredEvent> Events = new();
         public readonly HashSet<string> DimensionConflicts = new(StringComparer.Ordinal);
-        public readonly Dictionary<string, long> RedactorAt = new(StringComparer.Ordinal);
         public readonly Dictionary<string, InspectorTextRedactor> Redactors = new(StringComparer.Ordinal)
             { ["text"] = new(), ["reasoning"] = new() };
     }
