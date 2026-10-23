@@ -1,9 +1,8 @@
 # Gemeinsame Verträge für Host, UI und CLI
 
-Stand 23.10.2026. Fachlicher Vertragsentwurf zur [Architektur](architecture.md).
-Die folgenden Invarianten konkretisieren bestätigte Produktziele. DTOs,
-Endpunktnamen und konkrete Serialisierung werden nach Paket A festgeschrieben;
-dieses Dokument behauptet noch keine ausführbare API.
+Stand 23.10.2026. Fachliche Invarianten zur [Architektur](architecture.md).
+Die implementierten DTOs und der ausführbare Wirevertrag v1 sind unten sowie
+in `src/Lain.Core/Contracts.cs` und dem gemeinsamen API-Client festgehalten.
 
 ## Identität und Konfiguration
 

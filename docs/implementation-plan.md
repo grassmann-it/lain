@@ -1,8 +1,8 @@
 # Arbeitspakete für den ersten benutzbaren Stand
 
-Stand 23.10.2026. **Planungsstand, kein laufender Implementierungsauftrag.**
-Im Repository liegen bisher Dokumente, keine Produktimplementierung; `main`
-hat noch keinen Commit und keinen Remote. Die Pakete beziehen sich auf lain,
+Ursprünglicher Paketplan vom 23.10.2026. Die Umsetzung wurde anschließend
+autorisiert und implementiert. Aktueller Ausführungsstand: [execution.md](execution.md),
+Nachweise und offene Abnahmegrenzen: [acceptance.md](acceptance.md). Die Pakete beziehen sich auf lain,
 nicht auf den bestehenden persönlichen Proxy-/TUI-Stack.
 
 ## Ziel und Grundlage
