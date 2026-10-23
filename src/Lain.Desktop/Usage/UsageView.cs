@@ -530,7 +530,7 @@ public sealed partial class UsageView : UserControl
             {
                 var values = new (string Name, string? Value)[] { ("Family", dimensions.ModelFamily), ("Manufacturer", dimensions.Manufacturer),
                     ("Inference", dimensions.InferenceProvider), ("Gateway", dimensions.Gateway), ("Billing account", dimensions.BillingAccountId),
-                    ("Reasoning", dimensions.ReasoningEffort), ("Mode", dimensions.Mode), ("Conversation", dimensions.ConversationId),
+                    ("Requested reasoning", dimensions.ReasoningEffort), ("Effective reasoning", dimensions.EffectiveReasoningEffort), ("Mode", dimensions.Mode), ("Conversation", dimensions.ConversationId),
                     ("Turn", dimensions.TurnId), ("Worker", dimensions.WorkerId), ("Harness", dimensions.Harness) };
                 var known = values.Where(x => x.Value is not null).Select(x => x.Name + ": " + x.Value).ToArray();
                 if (known.Length > 0) details.Children.Add(Label(string.Join(" · ", known), Muted));

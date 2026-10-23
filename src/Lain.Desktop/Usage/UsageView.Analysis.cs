@@ -16,7 +16,7 @@ public sealed partial class UsageView
         ("modelFamily", "Model family"), ("routeId", "Route"), ("manufacturer", "Manufacturer"),
         ("inferenceProvider", "Inference provider"), ("gateway", "Gateway"), ("billingAccountId", "Billing account"),
         ("accountId", "Account"), ("model", "Actual model"), ("provider", "Provider"),
-        ("reasoningEffort", "Reasoning effort"), ("mode", "Mode"), ("conversationId", "Conversation"),
+        ("reasoningEffort", "Requested reasoning effort"), ("effectiveReasoningEffort", "Effective reasoning effort"), ("mode", "Mode"), ("conversationId", "Conversation"),
         ("turnId", "Turn"), ("workerId", "Worker"), ("harness", "Harness"), ("profileId", "Profile")
     ];
     private readonly ComboBox _dimension = new() { Width = 190 };
@@ -71,7 +71,7 @@ public sealed partial class UsageView
         string? Value(string key) => _dimensionFilters.TryGetValue(key, out var field) && !string.IsNullOrWhiteSpace(field.Text) ? field.Text.Trim() : null;
         return query with { RouteId = Value("routeId"), ModelFamily = Value("modelFamily"), Manufacturer = Value("manufacturer"),
             InferenceProvider = Value("inferenceProvider"), Gateway = Value("gateway"), BillingAccountId = Value("billingAccountId"),
-            ReasoningEffort = Value("reasoningEffort"), Mode = Value("mode"), ConversationId = Value("conversationId"), TurnId = Value("turnId"),
+            ReasoningEffort = Value("reasoningEffort"), EffectiveReasoningEffort = Value("effectiveReasoningEffort"), Mode = Value("mode"), ConversationId = Value("conversationId"), TurnId = Value("turnId"),
             WorkerId = Value("workerId"), Harness = Value("harness"), ProfileId = Value("profileId"),
             GroupBy = (_dimension.SelectedItem as FilterChoice)?.Key ?? "modelFamily", GroupLimit = 100 };
     }
@@ -82,7 +82,7 @@ public sealed partial class UsageView
         {
             ("route", query.RouteId), ("family", query.ModelFamily), ("manufacturer", query.Manufacturer),
             ("inference provider", query.InferenceProvider), ("gateway", query.Gateway), ("billing account", query.BillingAccountId),
-            ("reasoning", query.ReasoningEffort), ("mode", query.Mode), ("conversation", query.ConversationId),
+            ("requested reasoning", query.ReasoningEffort), ("effective reasoning", query.EffectiveReasoningEffort), ("mode", query.Mode), ("conversation", query.ConversationId),
             ("turn", query.TurnId), ("worker", query.WorkerId), ("harness", query.Harness), ("profile", query.ProfileId)
         };
         return string.Concat(values.Where(x => x.Value is not null).Select(x => $" · {x.Name}: {x.Value}"));
