@@ -28,3 +28,11 @@ Do not print private state, config snapshots, upstream error bodies or tokens
 in test reports. Synthetic credentials must stay synthetic. The baseline
 isolation guard compares the existing service's stable files privately;
 transient `.tmp` churn is reported separately.
+
+For the integrated Inspector, analysis and provider expansion, use
+[`scripts/verify-expansion.sh`](../scripts/verify-expansion.sh). The
+[expansion verification guide](verify-expansion.md) lists its serial suites,
+optional explicit artifact probes, Linux namespace isolation for fixed Host
+ports, retained evidence and separate mandatory private-Xvfb GUI runner. It does
+not rerun the original packaging/account/model/quota suites automatically or
+treat synthetic success as live-provider or release qualification.

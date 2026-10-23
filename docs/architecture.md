@@ -1,10 +1,17 @@
-# Architektur für den ersten lieferbaren Stand
+# Architektur und aktive Erweiterung
 
 Architekturgrundlage vom 23.10.2026 für die [Arbeitspakete](implementation-plan.md).
 Die folgende Struktur wurde als Implementierungsgrundlage übernommen. Aktuelle
 Implementierung und Nachweise stehen in [README](../README.md) und
 [Abnahme](acceptance.md); historische Empfehlungen sind keine zusätzlichen
 Abnahmebehauptungen.
+
+Am 24.10.2026 wurde die autonome
+[Erweiterung um Inspector, Auswertungen und Anbieter](expansion-2026-10-24.md)
+beauftragt. Ihr aktueller Zuschnitt und die Abgrenzung zwischen Implementierung
+und Nachweis stehen unten. Der Basisstand vom 23.10. bleibt als Grundlage
+erhalten; dessen damalige Ausschlüsse werden nicht als neue Einschränkungen
+dieses Auftrags gelesen.
 
 ## Bestätigter Zuschnitt
 
@@ -124,8 +131,10 @@ für die grundlegende Statistik.
 Account-, Route- und Profilidentitäten sollen spätere Rollenregeln, Classifier,
 Research und Approver wiederverwenden. Konfigurierbare Bedingungen verweisen auf
 frei wählbare Routen; GLM, Kimi und Command-Code-Zugänge sind austauschbare Daten.
-Ein eigener Scheduler, semantische Umleitung aller Requests, automatische
-Kontingentoptimierung und Inspektor werden durch die Grundstruktur nicht mitgebaut.
+Ein eigener Scheduler, semantische Umleitung aller Requests und automatische
+Kontingentoptimierung bleiben außerhalb des aktuellen Auftrags. Der Inspector
+war im ursprünglichen Grundumfang nicht enthalten und ist seit dem ausdrücklichen
+Erweiterungsauftrag vom 24.10. ein aktives Vorhaben.
 
 Die bestätigten Produktentscheidungen sind klar genug für den gezielten
 Backendnachweis A. Dieser Vorschlag konkretisiert die gemeinsame .NET-Struktur;
@@ -133,3 +142,44 @@ B–E hängen vom dokumentierten Ergebnis aus A und der Übernahme dieser Strukt
 als Umsetzungsgrundlage ab. Offene Wirefelder sind delegierbar; verlorene
 Accountidentität oder ein anderer dauerhafter Laufzeitstack sind keine stillen
 Implementierungsdetails.
+
+## Aktive Erweiterung vom 24.10.2026
+
+Der integrierte Quellstand ergänzt die bestehende Host-/Core-Aufteilung. Die
+[Observability-Verträge](observability-contracts.md) sind die gemeinsame
+fachliche Grenze; die [unabhängige Gegenprüfung](expansion-review.md) führt
+konkrete Nachweise und verbleibende Einschränkungen. Vorhandener Code oder ein
+vorbereiteter Test ersetzt keine ausgeführte Prüfung des exakten Builds.
+
+| Pfad | Implementierte Zuständigkeit | Nachweisgrenze |
+| --- | --- | --- |
+| Dauerhafte Usage | Der eigene Go-Core ergänzt belegte Dimensionen und tatsächlichen Abschluss im Journal; der Host migriert SQLite additiv und berechnet vollständige gefilterte Aggregate mit Stichprobenzahlen. | Bestehende Journalidentität, Replay, Migration und neue Messungen müssen gemeinsam für den neuen Core geprüft werden. Keine Kostenwerte ohne Mess-/Preisquelle. |
+| Laufende Inhalte | Ein eigener flüchtiger Core-Ring und ein separater Host-Ring liefern begrenzte, redigierte Beobachtungen; der Host übersetzt Quellgenerationen und Cursor. | Core- und Host-Lebensdauer sind verschieden. Lücken und unbekannte Abschlüsse bleiben sichtbar; kein Payloadarchiv in SQLite. Details und Grenzen: [Inspector](inspector-design.md). |
+| Gruppierung | Request und Versuch besitzen Core-Identitäten; Gespräch, Turn, Worker und Toolfortsetzung stammen nur aus erlaubten expliziten Quellen mit Provenienz. | Ähnliche Texte, Zeiten oder Modellnamen beweisen keine Beziehung. Protokollfixtures qualifizieren nur die tatsächlich geprüften Herkunftsfelder. |
+| Anbieter | Fünfzehn deklarative Anbieterbeschreibungen führen Quellen, Einrichtung, Budgetarten, Protokolle und Fähigkeiten konkreter Routen. Accountanlage und Runtimekompilierung verwenden gemeinsame Konfigurations-/Transportvalidierung. | Vorbereiteter Adapter, erfolgreicher Mock und echte Verbindung sind getrennte Zustände. Fehlende Keys blockieren Dokumentation und Mocks nicht. [Transportgrenzen](providers/transport-qualification.md). |
+| Oberfläche und CLI | Beide lesen dieselben Hostverträge für Analyse, Inspector und Anbieter. UI formatiert die Aggregate und stellt nur belegte Gruppen dar. | Native Darstellung, Fokus, Polling und installierter Zustand benötigen eigene private-Xvfb-Nachweise; ein API-Test belegt sie nicht. |
+
+Die Anbietererweiterung verwendet weiter die vorhandenen Core-Transporte. Der
+deklarative Katalog ist kein dynamischer Plugincode-Loader und eröffnet keinen
+zweiten Inferenzdienst im Host. Private Credentials bleiben hinter der
+Account-/Transportgrenze. Nicht geheime Einstellungen wie Region, Workspace,
+Account-ID oder notwendige ausdrückliche Datenschutzfreigaben werden validiert;
+eine Katalogbeschreibung ersetzt keine erforderliche Einrichtung. Vorbereitete
+OAuth-Helfer bedeuten außerhalb der vorhandenen qualifizierten Loginpfade noch
+keinen aktiven Login-/Refresh-Lebenszyklus.
+
+`free_only` wird derzeit im Host und beim Core-Start abgewiesen, solange die
+konkrete vorgelagerte Kostenkontrolle nicht qualifiziert ist. Damit können weder
+ein Gratislabel noch unbekannt bepreiste Fallbacks bezahlte Ausführung erlauben.
+Das ist eine umgesetzte sichere Ablehnung, noch kein nutzbarer kostenloser
+Dispatchpfad. Explizite Fallbackgraphen können geprüft werden; ihre Ausführung
+wird ohne qualifizierten Core-Vertrag ebenfalls abgewiesen. Diese Einschränkung
+darf in Oberfläche, CLI oder Abnahme nicht als funktionierendes automatisches
+Gratisrouting dargestellt werden.
+
+[Der wiederholbare Erweiterungsprüflauf](verify-expansion.md) führt .NET-Prüfungen
+seriell und optionale synthetische Host-/Core-Proben in isolierten Linux-
+Netzwerknamespaces aus. GUI-Prüfungen bleiben ein eigener privater Xvfb-Lauf.
+Erfolgreiche Teilprüfungen gelten jeweils für ihren Quell-/Binarystand; sie
+autorisieren keine automatische Installation und keine allgemeine Freigabe
+neuer Provider oder der gesamten Erweiterung.
