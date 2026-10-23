@@ -14,8 +14,10 @@ lain usage --today --json
 
 **Stand 23.10.2026:** Backend A ist anhand des exakten Core-Builds qualifiziert:
 15 synthetische Fälle, unabhängige Absturz-/Zugriffstests und echte Streaming-/
-Toolfortsetzungen mit Codex und Command Code. Die abschließende Installation und
-Paketabnahme sind in [Abnahme](docs/acceptance.md) festgehalten. Unbekannter
+Toolfortsetzungen mit Codex und Command Code. Der Linux-Stand ist installiert: fünf Accounts, 45 Modellrouten, ein eigener
+systemd-User-Dienst und das getrennte Codex-Profil `lain`. Echte Codex-Nutzung
+bleibt nach Dienstneustart erhalten und wird in CLI und Oberfläche gleich
+angezeigt. Die [Abnahme](docs/acceptance.md) dokumentiert Umfang und Grenzen. Unbekannter
 Verbrauch bleibt unbekannt; fehlgeschlagene echte Proben werden nicht gelöscht.
 Direkt verwaltete OAuth-Logins sind getrennt von externen Access-Token-Snapshots;
 reale OAuth-Rotation wurde nicht als getestet ausgegeben.

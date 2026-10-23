@@ -107,11 +107,12 @@ Requests, 200 Versuche, 3.600 Tokens, zwei Accounts und unbekannte
 Cache-/Reasoningfelder nachgewiesen. Die Prüfung des abschließenden Hashs und
 Consumerfehlerfälle werden im unabhängigen Integrationsnachweis geführt.
 
-Für A bleiben getrennte Nachweise: echte Codex-/ChatGPT- und Command-Code-Proben
-mit benanntem Protokoll und harmloser Toolfortsetzung, tatsächlicher
-Harnessanschluss sowie unabhängige Vorher-/Nachher-Belege zur Unverändertheit des
-bestehenden Diensts und seiner Dateien. Synthetischer Keywechsel belegt keine
-OAuth-Erneuerung; Anzeigenamen und Host-Accountlebenszyklus sind eigene
-Anwendungsfälle. Die fachliche Tragbarkeit der konkret gemessenen offenen
-Versuche nach hartem Abbruch benötigt die Produktentscheidung. Allein die
-Dokumentation der Lücke macht A nicht bestanden.
+Die ergänzenden Nachweise sind inzwischen in [Abnahme](acceptance.md) erfasst:
+echte Codex-Responses- und Command-GLM-Responses-Proben mit harmloser
+Toolfortsetzung, der tatsächliche Codex-Profilanschluss sowie unabhängige
+Vorher-/Nachher-Belege zum bestehenden Dienst und seinen dauerhaften Dateien.
+Der abschließende Core ist über `proxy/qualification.json` qualifiziert.
+Unvollständige Versuche bleiben gemäß Vertrag sichtbar mit unbekannter Usage;
+ein harter Abbruch kann nicht gemeldeten Verbrauch nicht rekonstruieren.
+Synthetischer Keywechsel belegt keine reale OAuth-Erneuerung. Die erfolgreichen
+Referenzproben qualifizieren nicht automatisch sämtliche importierten Modelle.
