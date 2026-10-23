@@ -10,6 +10,7 @@ namespace Lain.Host.Operations;
 /// <summary>Compiles only private lain snapshots into the isolated proxy configuration.</summary>
 public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore secrets)
 {
+    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> RouteCredentials { get; private set; } = new Dictionary<string, IReadOnlyDictionary<string, string>>();
     public IReadOnlyDictionary<string, string> Write(ConfigurationDto state)
     {
         var config = new YamlMappingNode
@@ -35,6 +36,10 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
         }
         var identities = new Dictionary<string, string>();
         var authFiles = new Dictionary<string, string>();
+        var routeCredentials = state.Routes.Where(r => r.Enabled).ToDictionary(r => r.Id, _ => new Dictionary<string, string>());
+        var metadataPath = Path.Combine(paths.Imports, "routes.json");
+        var routeMetadata = File.Exists(metadataPath)
+            ? JsonSerializer.Deserialize<Dictionary<string, LegacyImportService.ImportedRouteSource>>(File.ReadAllText(metadataPath)) ?? [] : [];
         foreach (var account in state.Accounts.Where(a => a.Enabled))
         {
             using var credential = JsonDocument.Parse(secrets.ReadAccount(account.Id));
@@ -50,42 +55,72 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
                 });
                 authFiles[filename] = auth;
                 identities.Add(account.Id, filename);
+                foreach (var route in state.Routes.Where(r => r.Enabled && r.AccountIds.Contains(account.Id))) routeCredentials[route.Id][account.Id] = filename;
                 continue;
             }
             if (kind != "api-key") throw new InvalidDataException("Unsupported private credential kind.");
-            var section = Read(secret, "sourceSection") ?? "openai-compatibility";
-            if (section is not ("openai-compatibility" or "codex-api-key"))
-                throw new InvalidDataException("Unsupported source section.");
-            var provider = Read(secret, "sourceConfig") is { } sourceConfig ? Parse(sourceConfig) : new YamlMappingNode();
-            if (section == "codex-api-key" && LegacyImportService.Get(provider, "headers") is YamlMappingNode headers && headers.Children.Count > 0)
-                throw new InvalidDataException("Custom direct-provider headers require additional qualification.");
-            var key = Read(secret, "apiKey") ?? throw new InvalidDataException("Missing own API credential.");
-            var endpoint = Read(secret, "baseUrl") ?? "";
-            if (endpoint.Length > 0) { AccountService.ValidateEndpoint(endpoint); Set(provider, "base-url", new YamlScalarNode(endpoint)); }
-            provider.Children.Remove(new YamlScalarNode("disabled"));
-            // Public lain aliases are resolved by bindings. Core-private aliases use actual model names.
-            var models = LegacyImportService.Get(provider, "models") as YamlSequenceNode ?? new YamlSequenceNode();
-            NormalizeModelAliases(models);
-            foreach (var route in state.Routes.Where(r => r.Enabled && r.AccountIds.Contains(account.Id)))
-                if (!models.Children.OfType<YamlMappingNode>().Any(m => LegacyImportService.Text(m, "name") == route.UpstreamModel))
-                    models.Add(new YamlMappingNode { { "name", route.UpstreamModel }, { "alias", route.UpstreamModel } });
-            Set(provider, "models", models);
-            var proxyUrl = LegacyImportService.Text(provider, "proxy-url") ?? "";
-            if (section == "openai-compatibility")
+            var transports = secret.TryGetProperty("transports", out var variants) ? variants.EnumerateArray().ToArray() : [secret];
+            var descriptors = transports.Select((transport, index) => new
             {
-                Set(provider, "name", new YamlScalarNode(account.Provider));
-                var selectedEntry = Read(secret, "entryConfig") is { } entryConfig ? Parse(entryConfig) : new YamlMappingNode();
-                Set(selectedEntry, "api-key", new YamlScalarNode(key));
-                selectedEntry.Children.Remove(new YamlScalarNode("disabled"));
-                proxyUrl = LegacyImportService.Text(selectedEntry, "proxy-url") ?? "";
-                Set(provider, "api-key-entries", new YamlSequenceNode(selectedEntry));
-                provider.Children.Remove(new YamlScalarNode("api-key"));
+                Secret = transport,
+                Id = Read(transport, "transportId") ?? "default-" + index,
+                Models = Read(transport, "sourceConfig") is { } sourceConfig && LegacyImportService.Get(Parse(sourceConfig), "models") is YamlSequenceNode models
+                    ? models.Children.OfType<YamlMappingNode>().Select(m => LegacyImportService.Text(m, "name")).Where(m => m is not null).ToHashSet() : []
+            }).ToArray();
+            var selectedRoutes = new Dictionary<string, string>();
+            foreach (var route in state.Routes.Where(r => r.Enabled && r.AccountIds.Contains(account.Id)))
+            {
+                var mapped = routeMetadata.TryGetValue(route.Id, out var metadata) && metadata.AccountId == account.Id ? metadata.TransportId : null;
+                var matches = mapped is not null ? descriptors.Where(d => d.Id == mapped).ToArray()
+                    : descriptors.Where(d => d.Models.Contains(route.UpstreamModel)).ToArray();
+                if (matches.Length == 0 && mapped is null && descriptors.Length == 1) matches = descriptors;
+                if (matches.Length != 1) throw new InvalidOperationException("Route transport is missing or ambiguous; select an imported transport-specific route.");
+                selectedRoutes[route.Id] = matches[0].Id;
             }
-            else Set(provider, "api-key", new YamlScalarNode(key));
-            if (LegacyImportService.Get(config, section) is not YamlSequenceNode entries) { entries = new(); config.Add(section, entries); }
-            entries.Add(provider);
-            identities.Add(account.Id, CoreCredentialId(section, account.Provider, key, endpoint, proxyUrl, LegacyImportService.Text(provider, "prefix") ?? ""));
+            var selectedTransports = selectedRoutes.Count > 0 ? descriptors.Where(d => selectedRoutes.ContainsValue(d.Id)) : descriptors.Take(1);
+            foreach (var descriptor in selectedTransports)
+            {
+                var transport = descriptor.Secret;
+                var transportId = descriptor.Id;
+                var coreProvider = Read(transport, "coreProvider") ?? account.Provider;
+                var section = Read(transport, "sourceSection") ?? "openai-compatibility";
+                if (section is not ("openai-compatibility" or "codex-api-key"))
+                    throw new InvalidDataException("Unsupported source section.");
+                var provider = Read(transport, "sourceConfig") is { } sourceConfig ? Parse(sourceConfig) : new YamlMappingNode();
+                if (section == "codex-api-key" && LegacyImportService.Get(provider, "headers") is YamlMappingNode headers && headers.Children.Count > 0)
+                    throw new InvalidDataException("Custom direct-provider headers require additional qualification.");
+                var key = Read(transport, "apiKey") ?? throw new InvalidDataException("Missing own API credential.");
+                var endpoint = Read(transport, "baseUrl") ?? "";
+                if (endpoint.Length > 0) { AccountService.ValidateEndpoint(endpoint); Set(provider, "base-url", new YamlScalarNode(endpoint)); }
+                provider.Children.Remove(new YamlScalarNode("disabled"));
+                // Public lain aliases are resolved by bindings. Core-private aliases use actual model names.
+                var models = LegacyImportService.Get(provider, "models") as YamlSequenceNode ?? new YamlSequenceNode();
+                NormalizeModelAliases(models);
+                foreach (var route in selectedRoutes.Where(pair => pair.Value == transportId).Select(pair => state.Routes.Single(r => r.Id == pair.Key)))
+                    if (!models.Children.OfType<YamlMappingNode>().Any(m => LegacyImportService.Text(m, "name") == route.UpstreamModel))
+                        models.Add(new YamlMappingNode { { "name", route.UpstreamModel }, { "alias", route.UpstreamModel } });
+                Set(provider, "models", models);
+                var proxyUrl = LegacyImportService.Text(provider, "proxy-url") ?? "";
+                if (section == "openai-compatibility")
+                {
+                    Set(provider, "name", new YamlScalarNode(coreProvider));
+                    var selectedEntry = Read(transport, "entryConfig") is { } entryConfig ? Parse(entryConfig) : new YamlMappingNode();
+                    Set(selectedEntry, "api-key", new YamlScalarNode(key));
+                    selectedEntry.Children.Remove(new YamlScalarNode("disabled"));
+                    proxyUrl = LegacyImportService.Text(selectedEntry, "proxy-url") ?? "";
+                    Set(provider, "api-key-entries", new YamlSequenceNode(selectedEntry));
+                    provider.Children.Remove(new YamlScalarNode("api-key"));
+                }
+                else Set(provider, "api-key", new YamlScalarNode(key));
+                if (LegacyImportService.Get(config, section) is not YamlSequenceNode entries) { entries = new(); config.Add(section, entries); }
+                entries.Add(provider);
+                var coreId = CoreCredentialId(section, coreProvider, key, endpoint, proxyUrl, LegacyImportService.Text(provider, "prefix") ?? "");
+                identities.TryAdd(account.Id, coreId);
+                foreach (var pair in selectedRoutes.Where(pair => pair.Value == transportId)) routeCredentials[pair.Key][account.Id] = coreId;
+            }
         }
+        foreach (var route in state.Routes.Where(r => r.Enabled))
+            if (route.AccountIds.Any(id => !routeCredentials[route.Id].ContainsKey(id))) throw new InvalidOperationException("Route contains an unavailable account credential.");
         // Only own generated auth files are ever deleted. External source directories are never consulted here.
         foreach (var filename in Directory.EnumerateFiles(paths.ProxyAuth, "acct-*.json"))
             if (!authFiles.ContainsKey(Path.GetFileName(filename))) File.Delete(filename);
@@ -93,6 +128,7 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
         var output = new StringBuilder();
         using (var writer = new StringWriter(output)) new YamlStream(new YamlDocument(config)).Save(writer, false);
         OwnStatePaths.WritePrivate(paths.ProxyConfig, output.ToString());
+        RouteCredentials = routeCredentials.ToDictionary(p => p.Key, p => (IReadOnlyDictionary<string, string>)p.Value);
         return identities;
     }
     public static string CoreCredentialId(string section, string provider, string key, string endpoint, string proxyUrl, string prefix = "")

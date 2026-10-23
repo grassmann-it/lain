@@ -40,7 +40,7 @@ try
     var before = Directory.GetFiles(legacy).ToDictionary(p => p, p => SHA256.HashData(File.ReadAllBytes(p)));
     var first = importer.Import(new(0, configPath, legacy));
     Check(first.Added == 2, "API and Codex snapshot accounts imported");
-    Check(configuration.Snapshot.Accounts.Any(a => a.Provider == "command-code" && !a.Enabled), "disabled preserved");
+    Check(configuration.Snapshot.Accounts.Any(a => a.Provider == "commandcode" && !a.Enabled), "disabled preserved");
     Check(configuration.Snapshot.Accounts.All(a => a.SharedWithLegacy), "shared source disclosed");
     var again = importer.Import(new(first.Revision, configPath, legacy));
     Check(again.Revision == first.Revision && again.Added == 0 && again.Updated == 0, "replay is idempotent");
@@ -89,6 +89,71 @@ try
     var manualRoute = new RouteDto("route-manual", "manual-alias", "manual-upstream", manualAccount.Provider, [manualAccount.Id]);
     new ProxyConfigurationWriter(paths, secrets).Write(manual with { Accounts = [manualAccount], Routes = [manualRoute] });
     Check(File.ReadAllText(paths.ProxyConfig).Contains("name: manual-upstream"), "manual API accounts receive selected core model declarations");
+    var multiPaths = new OwnStatePaths(Path.Combine(testRoot, "multi"));
+    var multiSecrets = new SecretStore(multiPaths);
+    var multiRepository = new ConfigurationRepository(multiPaths);
+    var multiConfigPath = Path.Combine(legacy, "multi.yaml");
+    File.WriteAllText(multiConfigPath, """
+        codex-api-key:
+          - api-key: shared-key
+            base-url: https://api.commandcode.ai/provider/v1
+            models:
+              - name: gpt-6-luna
+                alias: cmd-gpt-6-luna
+        openai-compatibility:
+          - name: command-code
+            base-url: https://api.commandcode.ai/v1
+            api-key-entries:
+              - api-key: shared-key
+            models:
+              - name: qwen-test
+                alias: cmd-qwen
+              - name: ling-test
+                alias: cmd-ling
+              - name: gpt-6-luna
+                alias: cmd-gpt-chat
+        """);
+    var multiImporter = new LegacyImportService(multiPaths, multiRepository, multiSecrets);
+    var multiImported = multiImporter.Import(new(0, multiConfigPath));
+    var multiState = multiRepository.Snapshot;
+    Check(multiState.Accounts.Length == 1 && multiState.Accounts[0].Provider == "commandcode", "same Command key across transport protocols remains one logical account");
+    Check(multiState.Routes.Length == 4, "Responses and Qwen/Ling/chat aliases all preserved");
+    using (var multiSecret = JsonDocument.Parse(multiSecrets.ReadAccount(multiState.Accounts[0].Id)))
+        Check(multiSecret.RootElement.GetProperty("transports").GetArrayLength() == 2, "private transport definitions remain separate");
+    var multiWriter = new ProxyConfigurationWriter(multiPaths, multiSecrets);
+    multiWriter.Write(multiState);
+    var logicalAccountId = multiState.Accounts[0].Id;
+    var responsesRoute = multiState.Routes.Single(r => r.Alias == "cmd-gpt-6-luna");
+    var qwenRoute = multiState.Routes.Single(r => r.Alias == "cmd-qwen");
+    var chatRoute = multiState.Routes.Single(r => r.Alias == "cmd-gpt-chat");
+    Check(multiWriter.RouteCredentials[responsesRoute.Id][logicalAccountId].StartsWith("codex:apikey:"), "Responses route pins direct Codex transport");
+    Check(multiWriter.RouteCredentials[qwenRoute.Id][logicalAccountId].StartsWith("openai-compatibility:command-code:"), "Qwen route pins original chat transport");
+    Check(multiWriter.RouteCredentials[chatRoute.Id][logicalAccountId] != multiWriter.RouteCredentials[responsesRoute.Id][logicalAccountId], "shared model names retain distinct route transports");
+    var multiReplay = multiImporter.Import(new(multiImported.Revision, multiConfigPath));
+    Check(multiReplay.Revision == multiImported.Revision && multiRepository.Snapshot.Accounts.Length == 1, "multi-transport import replay is idempotent");
+    var ambiguous = new RouteDto("route-ambiguous", "ambiguous", "gpt-6-luna", "commandcode", [logicalAccountId]);
+    try { multiWriter.Write(multiState with { Routes = [ambiguous] }); throw new Exception("Expected ambiguous transport rejection."); } catch (InvalidOperationException) { }
+    var migratedPaths = new OwnStatePaths(Path.Combine(testRoot, "migrated"));
+    var migratedSecrets = new SecretStore(migratedPaths);
+    var migratedRepository = new ConfigurationRepository(migratedPaths);
+    migratedSecrets.WriteAccount("legacy-direct", JsonSerializer.Serialize(new { kind = "api-key", apiKey = "shared-key", baseUrl = "https://api.commandcode.ai/provider/v1" }));
+    migratedSecrets.WriteAccount("legacy-chat", JsonSerializer.Serialize(new { kind = "api-key", apiKey = "shared-key", baseUrl = "https://api.commandcode.ai/v1" }));
+    migratedRepository.Update(0, state => state with
+    {
+        Accounts = [new("legacy-direct", "codex", "codex", true, "api-key", "unverified"), new("legacy-chat", "command-code", "command-code", true, "api-key", "unverified")],
+        Routes = [new("legacy-route-gpt", "cmd-gpt-6-luna", "gpt-6-luna", "codex", ["legacy-direct"]), new("legacy-route-qwen", "cmd-qwen", "qwen-test", "command-code", ["legacy-chat"])]
+    });
+    OwnStatePaths.WritePrivate(Path.Combine(migratedPaths.Imports, "routes.json"), """{"legacy-route-gpt":{"AccountId":"legacy-direct","Alias":"cmd-gpt-6-luna","Model":"gpt-6-luna"},"legacy-route-qwen":{"AccountId":"legacy-chat","Alias":"cmd-qwen","Model":"qwen-test"}}""");
+    new LegacyImportService(migratedPaths, migratedRepository, migratedSecrets).Import(new(1, multiConfigPath));
+    var migrated = migratedRepository.Snapshot;
+    Check(migrated.Accounts.Length == 1 && migrated.Accounts[0].Id == "legacy-direct" && migrated.Accounts[0].Provider == "commandcode", "canonical migration retains an existing stable identity");
+    Check(migrated.Routes.Length == 4 && migrated.Routes.Any(r => r.Id == "legacy-route-gpt") && migrated.Routes.Any(r => r.Id == "legacy-route-qwen") && migrated.Routes.All(r => r.AccountIds.SequenceEqual(new[] { "legacy-direct" })), "canonical migration preserves route identities and remaps logical account references");
+    var migratedWriter = new ProxyConfigurationWriter(migratedPaths, migratedSecrets); migratedWriter.Write(migrated);
+    Check(migratedWriter.RouteCredentials["legacy-route-qwen"]["legacy-direct"].StartsWith("openai-compatibility:"), "migrated route transport remains chat");
+    var emptyAliasConfig = Path.Combine(legacy, "empty-alias.yaml"); File.WriteAllText(emptyAliasConfig, "oauth-model-alias: {}\noauth-excluded-models:\n  codex: [hidden-*]\n");
+    var catalogPaths = new OwnStatePaths(Path.Combine(testRoot, "catalog")); var catalogRepository = new ConfigurationRepository(catalogPaths);
+    new LegacyImportService(catalogPaths, catalogRepository, new SecretStore(catalogPaths), ["gpt-qualified", "hidden-qualified"]).Import(new(0, emptyAliasConfig, legacy));
+    Check(catalogRepository.Snapshot.Routes.Length == 1 && catalogRepository.Snapshot.Routes[0].Alias == "gpt-qualified", "qualified Codex catalog seeds empty aliases while preserving exclusions");
     var login = await new LoginOperationService().BeginAsync("codex");
     Check(login.State == "unsupported" && login.Url is null, "unqualified login fails closed");
     await using (var lifecycle = new OwnedProxyLifecycle(paths, secrets, new ProxyLaunchOptions("unused", "unused")))

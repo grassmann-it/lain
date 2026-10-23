@@ -18,14 +18,15 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             throw new ArgumentException("Invalid provider.");
         if (string.IsNullOrWhiteSpace(input.ApiKey)) throw new ArgumentException("API key is required.");
         ValidateEndpoint(input.BaseUrl);
-        var id = CredentialId(input.Provider, input.ApiKey);
+        var provider = CanonicalProvider(input.Provider, input.BaseUrl);
+        var id = CredentialId(provider, input.ApiKey);
         var sourceSection = input.Provider is "codex" or "claude" or "gemini" or "vertex" ? input.Provider + "-api-key" : "openai-compatibility";
-        var credential = JsonSerializer.Serialize(new { kind = "api-key", sourceSection, provider = input.Provider, apiKey = input.ApiKey, baseUrl = input.BaseUrl });
+        var credential = JsonSerializer.Serialize(new { kind = "api-key", sourceSection, provider, coreProvider = input.Provider, apiKey = input.ApiKey, baseUrl = input.BaseUrl });
         return configuration.Update(revision, state =>
         {
-            if (FindDuplicate(state, input.Provider, input.ApiKey, null)) throw new ArgumentException("This credential already belongs to an account.");
+            if (FindDuplicate(state, provider, input.ApiKey, null)) throw new ArgumentException("This credential already belongs to an account.");
             secrets.WriteAccount(id, credential);
-            return state with { Accounts = [.. state.Accounts, new(id, input.Name.Trim(), input.Provider, true, "api-key", "unverified")] };
+            return state with { Accounts = [.. state.Accounts, new(id, input.Name.Trim(), provider, true, "api-key", "unverified")] };
         });
     }
     public ConfigurationDto ReplaceApiCredential(long revision, string id, string apiKey)
@@ -38,16 +39,18 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             if (FindDuplicate(state, account.Provider, apiKey, id)) throw new ArgumentException("This credential already belongs to an account.");
             var json = System.Text.Json.Nodes.JsonNode.Parse(secrets.ReadAccount(id))!.AsObject();
             json["apiKey"] = apiKey;
+            if (json["transports"] is System.Text.Json.Nodes.JsonArray transports)
+                foreach (var transport in transports.OfType<System.Text.Json.Nodes.JsonObject>()) transport["apiKey"] = apiKey;
             secrets.WriteAccount(id, json.ToJsonString());
             return state with { Accounts = state.Accounts.Select(a => a.Id == id ? a with { State = "unverified" } : a).ToArray() };
         });
     }
     private bool FindDuplicate(ConfigurationDto state, string provider, string key, string? except)
     {
-        foreach (var account in state.Accounts.Where(a => a.Id != except && a.Provider == provider && a.CredentialKind == "api-key"))
+        foreach (var account in state.Accounts.Where(a => a.Id != except && a.CredentialKind == "api-key"))
         {
             using var document = JsonDocument.Parse(secrets.ReadAccount(account.Id));
-            if (document.RootElement.GetProperty("apiKey").GetString() == key) return true;
+            if (CanonicalProvider(account.Provider, document.RootElement.TryGetProperty("baseUrl", out var endpoint) ? endpoint.GetString() : null) == provider && document.RootElement.GetProperty("apiKey").GetString() == key) return true;
         }
         return false;
     }
@@ -73,6 +76,13 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         var account = configuration.Snapshot.Accounts.SingleOrDefault(a => a.Id == id) ?? throw new KeyNotFoundException("Account not found.");
         if (!secrets.HasAccount(id)) return account with { State = "missing-credential" };
         return account with { State = account.ExpiresAt <= DateTimeOffset.UtcNow ? "expired" : "unverified" };
+    }
+    internal static string CanonicalProvider(string provider, string? endpoint)
+    {
+        if (provider.Equals("commandcode", StringComparison.OrdinalIgnoreCase) || provider.Equals("command-code", StringComparison.OrdinalIgnoreCase)) return "commandcode";
+        if (Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) &&
+            (uri.Host.Equals("commandcode.ai", StringComparison.OrdinalIgnoreCase) || uri.Host.EndsWith(".commandcode.ai", StringComparison.OrdinalIgnoreCase))) return "commandcode";
+        return provider;
     }
     internal static string CredentialId(string provider, string credential) => "acct-" +
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(provider + "\0" + credential))).ToLowerInvariant()[..32];
