@@ -53,7 +53,8 @@ public sealed class ConfigurationRepository
     private static ConfigurationDto Clone(ConfigurationDto value) => value with
     {
         Accounts = value.Accounts.ToArray(),
-        Routes = value.Routes.Select(x => x with { AccountIds = x.AccountIds.ToArray() }).ToArray(),
-        Profiles = value.Profiles.Select(x => x with { RouteIds = x.RouteIds.ToArray() }).ToArray()
+        Routes = value.Routes.Select(x => x with { AccountIds = x.AccountIds.ToArray(), Policy = ClonePolicy(x.Policy) }).ToArray(),
+        Profiles = value.Profiles.Select(x => x with { RouteIds = x.RouteIds.ToArray(), Policy = ClonePolicy(x.Policy) }).ToArray()
     };
+    private static RoutingPolicyDto? ClonePolicy(RoutingPolicyDto? policy) => policy is null ? null : policy with { FallbackRouteIds = policy.FallbackRouteIds?.ToArray() };
 }

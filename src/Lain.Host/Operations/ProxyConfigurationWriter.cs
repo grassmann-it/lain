@@ -3,16 +3,18 @@ using System.Text;
 using System.Text.Json;
 using Lain.Core;
 using Lain.Host.Accounts;
+using Lain.Host.Providers;
 using YamlDotNet.RepresentationModel;
 
 namespace Lain.Host.Operations;
 
 /// <summary>Compiles only private lain snapshots into the isolated proxy configuration.</summary>
-public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore secrets)
+public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore secrets, ProviderCostPolicy? costPolicy = null)
 {
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> RouteCredentials { get; private set; } = new Dictionary<string, IReadOnlyDictionary<string, string>>();
     public IReadOnlyDictionary<string, string> Write(ConfigurationDto state)
     {
+        (costPolicy ?? ProviderCostPolicy.Embedded()).ValidateRuntime(state);
         var config = new YamlMappingNode
         {
             { "host", "127.0.0.1" }, { "port", OwnStatePaths.ProxyPort.ToString() }, { "auth-dir", paths.ProxyAuth },

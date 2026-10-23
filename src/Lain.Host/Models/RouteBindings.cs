@@ -2,6 +2,7 @@ using Lain.Core;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using Lain.Host.Operations;
+using Lain.Host.Providers;
 
 namespace Lain.Host.Models;
 
@@ -9,7 +10,18 @@ public record CoreRouteBinding([property: JsonPropertyName("id")] string Id, [pr
     [property: JsonPropertyName("accounts")] string[] Accounts, [property: JsonPropertyName("selection")] string Selection,
     [property: JsonPropertyName("credentials"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, string>? Credentials = null,
     [property: JsonPropertyName("visible")] bool Visible = true,
-    [property: JsonPropertyName("provider"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Provider = null);
+    [property: JsonPropertyName("provider"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Provider = null,
+    [property: JsonPropertyName("costPolicy")] string CostPolicy = "configured",
+    [property: JsonPropertyName("pricingClass")] string PricingClass = "unknown",
+    [property: JsonPropertyName("freeOnlyEnforcement"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? FreeOnlyEnforcement = null,
+    [property: JsonPropertyName("dimensions"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] CoreRouteDimensions? Dimensions = null);
+public record CoreRouteDimensions(
+    [property: JsonPropertyName("modelFamily"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ModelFamily = null,
+    [property: JsonPropertyName("manufacturer"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Manufacturer = null,
+    [property: JsonPropertyName("inferenceProvider"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? InferenceProvider = null,
+    [property: JsonPropertyName("gateway"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Gateway = null,
+    [property: JsonPropertyName("mode"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Mode = null,
+    [property: JsonPropertyName("profileId"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ProfileId = null);
 public record CoreBindings([property: JsonPropertyName("accounts")] IReadOnlyDictionary<string, string> Accounts,
     [property: JsonPropertyName("routes")] IReadOnlyDictionary<string, CoreRouteBinding> Routes);
 
@@ -18,9 +30,9 @@ public sealed class RouteBindingsWriter(OwnStatePaths paths)
     public string BindingsPath => Path.Combine(paths.Proxy, "bindings.json");
 
     public string Write(ConfigurationDto config, IReadOnlyDictionary<string, string> credentialIds,
-        IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? routeCredentials = null)
+        IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? routeCredentials = null, string? profileId = null)
     {
-        var bindings = RouteBindings.Compile(config, credentialIds, routeCredentials);
+        var bindings = RouteBindings.Compile(config, credentialIds, routeCredentials, profileId: profileId);
         OwnStatePaths.WritePrivate(BindingsPath, JsonSerializer.Serialize(bindings));
         return BindingsPath;
     }
@@ -30,8 +42,11 @@ public static class RouteBindings
 {
     /// <summary>Startup contract for the qualified launcher. Every active route must have complete account bindings.</summary>
     public static CoreBindings Compile(ConfigurationDto config, IReadOnlyDictionary<string, string> credentialIds,
-        IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? routeCredentials = null)
+        IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? routeCredentials = null,
+        ProviderCatalogRegistry? catalog = null, string? profileId = null)
     {
+        catalog ??= new();
+        new ProviderCostPolicy(catalog).ValidateRuntime(config);
         var routes = new Dictionary<string, CoreRouteBinding>(StringComparer.Ordinal);
         foreach (var route in config.Routes.Where(x => x.Enabled))
         {
@@ -49,8 +64,13 @@ public static class RouteBindings
                 if (!config.Accounts.Any(x => x.Id == id && x.Enabled) || !effectiveCredentials.TryGetValue(id, out var credential) || string.IsNullOrWhiteSpace(credential))
                     throw new ArgumentException("Active route has no enabled qualified credential binding.");
             }
+            var descriptor = catalog.FindRoute(route.Provider, route.ProviderRouteId);
+            var dimensions = descriptor is not null || profileId is not null
+                ? new CoreRouteDimensions(descriptor?.ModelFamily, descriptor?.Manufacturer, descriptor?.InferenceProvider, descriptor?.Gateway, ProfileId: profileId)
+                : null;
             if (!routes.TryAdd(route.Alias, new(route.Id, route.UpstreamModel, route.AccountIds.ToArray(), route.Pooled ? "pool" : "strict",
-                    overrides?.ToDictionary(x => x.Key, x => x.Value), route.Visible, route.Provider)))
+                    overrides?.ToDictionary(x => x.Key, x => x.Value), route.Visible, route.Provider,
+                    route.Policy?.CostPolicy ?? "configured", descriptor?.PricingClass ?? "unknown", null, dimensions)))
                 throw new ArgumentException("Duplicate route alias.");
         }
         var used = routes.Values.SelectMany(x => x.Accounts).ToHashSet();

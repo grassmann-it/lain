@@ -1,5 +1,6 @@
 using Lain.Core;
 using Lain.Host.Operations;
+using Lain.Host.Providers;
 
 namespace Lain.Host.Models;
 
@@ -9,20 +10,25 @@ public record AvailableModelDto(string Id, string Provider, string[] AccountIds,
 public record ModelCatalogDto(int ContractVersion, long Revision, AvailableModelDto[] Models);
 
 /// <summary>Mutations use the same revision gate as account changes; applying remains a separate operation.</summary>
-public sealed class ModelsService(ConfigurationRepository repository)
+public sealed class ModelsService(ConfigurationRepository repository, ProviderCostPolicy? costPolicy = null)
 {
+    private readonly ProviderCostPolicy policy = costPolicy ?? ProviderCostPolicy.Embedded();
     public ConfigurationDto Snapshot => repository.Snapshot;
 
     public ConfigurationDto PutRoute(long revision, RouteDto route) => repository.Update(revision, config =>
     {
         ValidateRoute(config, route);
-        return config with { Routes = config.Routes.Where(x => x.Id != route.Id).Append(route).ToArray() };
+        var next = config with { Routes = config.Routes.Where(x => x.Id != route.Id).Append(route).ToArray() };
+        policy.ValidateConfiguration(next);
+        return next;
     });
 
     public ConfigurationDto DeleteRoute(long revision, string id) => repository.Update(revision, config =>
     {
         if (!config.Routes.Any(x => x.Id == id)) throw new KeyNotFoundException("Route does not exist.");
         if (config.Profiles.Any(x => x.RouteIds.Contains(id))) throw new ArgumentException("Route is selected by a profile.");
+        if (config.Routes.Any(x => x.Id != id && (x.Policy?.FallbackRouteIds?.Contains(id) ?? false)) ||
+            config.Profiles.Any(x => x.Policy?.FallbackRouteIds?.Contains(id) ?? false)) throw new ArgumentException("Route is selected as a fallback.");
         return config with { Routes = config.Routes.Where(x => x.Id != id).ToArray() };
     });
 
@@ -36,7 +42,9 @@ public sealed class ModelsService(ConfigurationRepository repository)
         if (profile.RouteIds.Any(id => !config.Routes.Any(x => x.Id == id))) throw new ArgumentException("Profile references an unknown route.");
         if (profile.DefaultRouteId is not null && !profile.RouteIds.Contains(profile.DefaultRouteId))
             throw new ArgumentException("The default route must belong to the profile.");
-        return config with { Profiles = config.Profiles.Where(x => x.Id != profile.Id).Append(profile).ToArray() };
+        var next = config with { Profiles = config.Profiles.Where(x => x.Id != profile.Id).Append(profile).ToArray() };
+        policy.ValidateConfiguration(next);
+        return next;
     });
 
     public ConfigurationDto DeleteProfile(long revision, string id) => repository.Update(revision, config =>
@@ -62,7 +70,7 @@ public sealed class ModelsService(ConfigurationRepository repository)
         var config = Snapshot;
         if (config.Revision != revision) throw new RevisionConflictException(revision, config.Revision);
         var profile = config.Profiles.SingleOrDefault(x => x.Id == id) ?? throw new KeyNotFoundException("Profile does not exist.");
-        var routes = profile.RouteIds.Select(id => config.Routes.Single(x => x.Id == id)).ToArray();
+        var routes = policy.ResolveProfile(config, profile);
         foreach (var route in routes) ValidateRoute(config, route);
         if (!routes.Any(x => x.Enabled && x.Visible)) throw new ArgumentException("Profile has no enabled visible route.");
         if (profile.DefaultRouteId is not null && !routes.Any(x => x.Id == profile.DefaultRouteId && x.Enabled && x.Visible))
