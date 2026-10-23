@@ -189,8 +189,8 @@ func TestUsageSynchronouslyDurableAndNotDoubleCounted(t *testing.T) {
 		t.Fatal(err)
 	}
 	b, _ = i.Journal.Read(0, 1000)
-	if len(b.Events) != 2 {
-		t.Fatal("duplicate terminal event")
+	if len(b.Events) != 3 || b.Events[2].Kind != "attempt_finished" || b.Events[2].TotalTokens != nil || b.Events[2].UsageReported || b.Events[2].Outcome != nil {
+		t.Fatal("completion must be metadata-only without duplicate usage")
 	}
 }
 func TestUsageIdentityMismatchClosesDispatch(t *testing.T) {

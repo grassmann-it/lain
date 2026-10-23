@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	executor "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/executor"
+	"github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/usage"
 	"testing"
 )
 
@@ -54,6 +55,37 @@ func TestLainBeforeDispatchFailureDoesNotCallProvider(t *testing.T) {
 	e := &lainStreamFixture{}
 	if _, err := lainExecuteStream(e, context.Background(), &Auth{}, executor.Request{}, executor.Options{}); err == nil || e.called {
 		t.Fatal("provider called without durable attempt")
+	}
+}
+
+func TestLainObservationUsesExactAttemptAndPrecedesFinalization(t *testing.T) {
+	before, after, observe := LainBeforeDispatch, LainAfterDispatch, LainObserveOutput
+	defer func() { LainBeforeDispatch, LainAfterDispatch, LainObserveOutput = before, after, observe }()
+	attemptID := ""
+	observed, finished := 0, false
+	LainBeforeDispatch = func(ctx context.Context, _ *Auth, _ executor.Request, _ executor.Options) error {
+		attemptID = usage.ExecutionRequestIDFromContext(ctx)
+		if attemptID == "" || usage.ParentRequestIDFromContext(ctx) != "handler-request" {
+			t.Error("missing exact dispatch identity")
+		}
+		return nil
+	}
+	LainObserveOutput = func(ctx context.Context, _ []byte, stream bool) {
+		if finished || !stream || usage.ExecutionRequestIDFromContext(ctx) != attemptID {
+			t.Error("observation identity/order changed")
+		}
+		observed++
+	}
+	LainAfterDispatch = func(context.Context, error) error { finished = true; return nil }
+	ctx := usage.WithParentRequestID(context.Background(), "handler-request")
+	result, err := lainExecuteStream(&lainStreamFixture{}, ctx, &Auth{}, executor.Request{}, executor.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range result.Chunks {
+	}
+	if observed != 2 || !finished {
+		t.Fatal(observed, finished)
 	}
 }
 

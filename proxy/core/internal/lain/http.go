@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Middleware is installed before core routes. Only the documented inference surface is exposed.
@@ -27,6 +28,31 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 				return
 			}
 			switch path {
+			case "/lain/inspector/events":
+				if c.Request.Method != "GET" {
+					c.AbortWithStatus(405)
+					return
+				}
+				after, err := strconv.ParseInt(c.DefaultQuery("after", "0"), 10, 64)
+				if err != nil {
+					c.AbortWithStatus(400)
+					return
+				}
+				limit, err := strconv.Atoi(c.DefaultQuery("limit", "1000"))
+				if err != nil {
+					c.AbortWithStatus(400)
+					return
+				}
+				i.mu.Lock()
+				i.pruneCapture(time.Now())
+				i.mu.Unlock()
+				batch, err := i.Inspector.Read(after, limit)
+				if err != nil {
+					c.AbortWithStatusJSON(400, gin.H{"error": err.Error()})
+					return
+				}
+				c.Header("Cache-Control", "no-store")
+				c.AbortWithStatusJSON(200, batch)
 			case "/lain/events":
 				if c.Request.Method != "GET" {
 					c.AbortWithStatus(405)

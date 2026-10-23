@@ -12,6 +12,10 @@ import (
 // Hooks are installed once, before the service starts. Original executor types stay intact.
 var LainBeforeDispatch func(context.Context, *Auth, executor.Request, executor.Options) error
 var LainAfterDispatch func(context.Context, error) error
+
+// LainObserveOutput sees downstream-format executor output, never transport
+// headers. The observer must keep content separate from durable usage.
+var LainObserveOutput func(context.Context, []byte, bool)
 var LainReadOnlyCredentials bool
 var LainCredentialWritable func(*Auth) bool
 
@@ -49,6 +53,9 @@ func lainExecute(e ProviderExecutor, ctx context.Context, auth *Auth, req execut
 		return executor.Response{}, err
 	}
 	response, err := e.Execute(ctx, auth, req, opts)
+	if LainObserveOutput != nil && err == nil {
+		LainObserveOutput(ctx, response.Payload, false)
+	}
 	return response, lainEnd(ctx, err)
 }
 func lainCountTokens(e ProviderExecutor, ctx context.Context, auth *Auth, req executor.Request, opts executor.Options) (executor.Response, error) {
@@ -83,6 +90,9 @@ func lainExecuteStream(e ProviderExecutor, ctx context.Context, auth *Auth, req 
 			}
 			if canceled {
 				continue
+			}
+			if LainObserveOutput != nil && chunk.Err == nil {
+				LainObserveOutput(ctx, chunk.Payload, true)
 			}
 			if len(completion) > 0 || lainTerminalChunk(chunk.Payload) {
 				completion = append(completion, chunk)

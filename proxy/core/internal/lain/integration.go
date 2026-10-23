@@ -8,22 +8,28 @@ import (
 	auth "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/auth"
 	executor "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/executor"
 	"github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/usage"
+	"net/http"
 	"sync"
 	"time"
 )
 
 type Route struct {
-	Provider    string            `json:"provider,omitempty"`
-	Credentials map[string]string `json:"credentials,omitempty"`
-	Visible     *bool             `json:"visible,omitempty"`
-	ID          string            `json:"id"`
-	Model       string            `json:"model"`
-	Accounts    []string          `json:"accounts"`
-	Selection   string            `json:"selection"`
+	Dimensions          *Dimensions       `json:"dimensions,omitempty"`
+	CostPolicy          string            `json:"costPolicy,omitempty"`
+	PricingClass        string            `json:"pricingClass,omitempty"`
+	FreeOnlyEnforcement string            `json:"freeOnlyEnforcement,omitempty"`
+	Provider            string            `json:"provider,omitempty"`
+	Credentials         map[string]string `json:"credentials,omitempty"`
+	Visible             *bool             `json:"visible,omitempty"`
+	ID                  string            `json:"id"`
+	Model               string            `json:"model"`
+	Accounts            []string          `json:"accounts"`
+	Selection           string            `json:"selection"`
 }
 type Bindings struct {
-	Accounts map[string]string `json:"accounts"`
-	Routes   map[string]Route  `json:"routes"`
+	AccountDimensions map[string]*Dimensions `json:"accountDimensions,omitempty"`
+	Accounts          map[string]string      `json:"accounts"`
+	Routes            map[string]Route       `json:"routes"`
 }
 type selection struct {
 	Route   Route
@@ -31,15 +37,22 @@ type selection struct {
 	Allowed map[string]bool
 }
 type attempt struct {
-	event    Event
-	reported bool
+	event          Event
+	reported       bool
+	usage          *Event
+	started        time.Time
+	firstOutput    time.Time
+	content        map[string]*captureBuffer
+	captureExpires time.Time
 }
 type Integration struct {
-	Login    *LoginManager
-	Journal  *Journal
-	Bindings Bindings
-	mu       sync.Mutex
-	active   map[string]*attempt
+	Login        *LoginManager
+	Journal      *Journal
+	Bindings     Bindings
+	Inspector    *Inspector
+	mu           sync.Mutex
+	active       map[string]*attempt
+	captureSlots int
 }
 type dispatchError struct{ message string }
 
@@ -61,6 +74,12 @@ func New(j *Journal, b Bindings) (*Integration, error) {
 		seen[credential] = account
 	}
 	for alias, r := range b.Routes {
+		if r.CostPolicy != "" && r.CostPolicy != "configured" && r.CostPolicy != "free_only" {
+			return nil, errors.New("unknown route cost policy")
+		}
+		if r.CostPolicy == "free_only" {
+			return nil, errors.New("free_only route has no qualified runtime enforcement")
+		}
 		if alias == "" || r.ID == "" || r.Model == "" || len(r.Accounts) == 0 {
 			return nil, errors.New("incomplete route")
 		}
@@ -86,11 +105,12 @@ func New(j *Journal, b Bindings) (*Integration, error) {
 			}
 		}
 	}
-	return &Integration{Journal: j, Bindings: b, active: map[string]*attempt{}}, nil
+	return &Integration{Journal: j, Bindings: b, Inspector: newInspector(), active: map[string]*attempt{}}, nil
 }
 func (i *Integration) Install() {
 	auth.LainBeforeDispatch = i.Before
 	auth.LainAfterDispatch = i.After
+	auth.LainObserveOutput = i.Observe
 	auth.LainReadOnlyCredentials = true
 	usage.DurableSink = i.Publish
 }
@@ -132,13 +152,36 @@ func (i *Integration) Before(ctx context.Context, a *auth.Auth, req executor.Req
 	if selected.Route.Provider != "" {
 		provider = selected.Route.Provider
 	}
-	event := Event{Kind: "attempt_started", RequestID: requestID, AttemptID: attemptID, AccountID: accountID, CredentialID: a.ID, RouteID: &selected.Route.ID, ObservedAt: time.Now().UTC(), Provider: provider, RequestedModel: selected.Alias, Model: req.Model}
+	var headers http.Header
+	if c, ok := ctx.Value("gin").(*gin.Context); ok && c != nil && c.Request != nil {
+		headers = c.Request.Header
+	}
+	payload := opts.OriginalRequest
+	if len(payload) == 0 {
+		payload = req.Payload
+	}
+	dimensions := requestDimensions(selected.Route, i.Bindings.AccountDimensions[accountID], headers, payload)
+	started := time.Now()
+	event := Event{Kind: "attempt_started", RequestID: requestID, AttemptID: attemptID, AccountID: accountID, CredentialID: a.ID, RouteID: &selected.Route.ID, ObservedAt: started.UTC(), Provider: provider, RequestedModel: selected.Alias, Model: req.Model, Dimensions: dimensions}
 	i.mu.Lock()
 	defer i.mu.Unlock()
+	i.pruneCapture(started)
 	if err := i.Journal.Append(event); err != nil {
 		return closed(err)
 	}
-	i.active[attemptID] = &attempt{event: event}
+	current := &attempt{event: event, started: started}
+	if i.captureSlots < 256 {
+		current.content = map[string]*captureBuffer{}
+		current.captureExpires = started.Add(15 * time.Minute)
+		i.captureSlots++
+	}
+	i.active[attemptID] = current
+	i.Inspector.append(liveEvent(event, "attempt_started"))
+	if current.content == nil {
+		omitted := liveEvent(event, "metadata")
+		omitted.Text, omitted.Truncated = "[content omitted: capture capacity]", true
+		i.Inspector.append(omitted)
+	}
 	return nil
 }
 func ptr[T any](v T) *T { return &v }
@@ -154,6 +197,7 @@ func (i *Integration) Publish(ctx context.Context, r usage.Record) error {
 		return closed(errors.New("usage has no registered attempt"))
 	}
 	e := a.event
+	e.Dimensions = copyDimensions(a.event.Dimensions)
 	e.Kind = "usage"
 	e.ObservedAt = time.Now().UTC()
 	e.Outcome = ptr("success")
@@ -194,10 +238,22 @@ func (i *Integration) Publish(ctx context.Context, r usage.Record) error {
 	if a.reported {
 		return nil
 	}
+	if safeDimension(r.ReasoningEffort) != "" {
+		if e.Dimensions == nil {
+			e.Dimensions = &Dimensions{}
+		}
+		e.Dimensions.set("effectiveReasoningEffort", &e.Dimensions.EffectiveReasoningEffort, r.ReasoningEffort, "core", "usage.reasoningEffort")
+	}
+	if !a.firstOutput.IsZero() {
+		e.Measurements = a.measurements(time.Time{})
+	}
 	if err := i.Journal.Append(e); err != nil {
 		return closed(err)
 	}
 	a.reported = true
+	a.usage = &e
+	a.event.Model = e.Model
+	a.event.Dimensions = copyDimensions(e.Dimensions)
 	return nil
 }
 func (i *Integration) fault(err error) error {
@@ -206,24 +262,29 @@ func (i *Integration) fault(err error) error {
 	return i.Journal.fail(err)
 }
 func (i *Integration) After(ctx context.Context, resultErr error) error {
+	finished := time.Now()
 	i.mu.Lock()
 	defer i.mu.Unlock()
+	i.pruneCapture(finished)
 	id := usage.ExecutionRequestIDFromContext(ctx)
 	a := i.active[id]
 	if a == nil {
 		return closed(i.Journal.Health())
 	}
-	defer delete(i.active, id)
-	if err := i.Journal.Health(); err != nil {
-		return closed(err)
-	}
-	if a.reported {
-		return nil
-	}
+	defer func() {
+		if a.content != nil {
+			i.captureSlots--
+		}
+		delete(i.active, id)
+	}()
 	e := a.event
 	e.Kind = "usage"
-	e.ObservedAt = time.Now().UTC()
+	e.ObservedAt = finished.UTC()
+	e.Measurements = a.measurements(finished)
 	e.Outcome = ptr("success")
+	if a.usage != nil && a.usage.Outcome != nil {
+		e.Outcome = a.usage.Outcome
+	}
 	if resultErr != nil {
 		e.Outcome = ptr("failed")
 		var status interface{ StatusCode() int }
@@ -234,7 +295,42 @@ func (i *Integration) After(ctx context.Context, resultErr error) error {
 	if errors.Is(resultErr, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
 		e.Outcome = ptr("canceled")
 	}
-	return closed(i.Journal.Append(e))
+	e.CompletionState = e.Outcome
+	final := liveEvent(e, "attempt_finished")
+	if a.usage != nil {
+		final.InputTokens, final.OutputTokens, final.TotalTokens, final.StatusCode = a.usage.InputTokens, a.usage.OutputTokens, a.usage.TotalTokens, a.usage.StatusCode
+	}
+	if a.reported {
+		// The early durable usage fact stays immutable. Completion is a separate
+		// metadata-only fact, and can report cancellation after usage arrived.
+		e.Kind, e.Outcome, e.StatusCode = "attempt_finished", nil, nil
+	}
+	if err := i.Journal.Append(e); err != nil {
+		final.Outcome = ptr("failed")
+		i.Inspector.append(final)
+		return closed(err)
+	}
+	for kind, buffer := range a.content {
+		for _, text := range buffer.consume("", true) {
+			line := liveEvent(a.event, kind)
+			line.ObservedAt = finished.UTC()
+			line.Text = text
+			i.Inspector.append(line)
+		}
+	}
+	i.Inspector.append(final)
+	return nil
+}
+
+// Called with i.mu held. As with ring retention, expired content is purged on
+// observation/read. Never flush a stale partial line into a new retention window.
+func (i *Integration) pruneCapture(now time.Time) {
+	for _, a := range i.active {
+		if a.content != nil && !now.Before(a.captureExpires) {
+			a.content = nil
+			i.captureSlots--
+		}
+	}
 }
 
 // Credential resolves a transport-specific credential without changing the logical account.
