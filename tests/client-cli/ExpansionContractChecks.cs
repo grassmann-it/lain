@@ -142,6 +142,16 @@ internal static class ExpansionContractChecks
         result = await Run(["profiles", "apply", "strict-free", "--revision", "3", "--json"]);
         Require(result.Exit == 5 && result.Output == "" && result.Error.Contains("operation_unavailable") && calls == 1,
             "strict-free profile rejection emits diagnostic without stdout, retry or fallback"); checks++;
+        calls = 0;
+        handler.Handle = request =>
+        {
+            calls++;
+            Require(request.Method == HttpMethod.Post && request.RequestUri!.AbsolutePath == "/api/v1/profiles/strict-free/apply", "conflicted profile is never replaced with another action");
+            return Reply(request, HttpStatusCode.Conflict, "{\"code\":\"revision_conflict\",\"message\":\"Configuration changed; reload and retry.\"}");
+        };
+        result = await Run(["profiles", "apply", "strict-free", "--revision", "3", "--json"]);
+        Require(result.Exit == 5 && result.Output == "" && result.Error.Contains("revision_conflict") && calls == 1,
+            "mutation revision conflict is preserved without automatic reload or forced retry"); checks++;
         handler.Handle = request => Reply(request, HttpStatusCode.BadRequest,
             "{\"code\":\"validation\",\"message\":\"Invalid request values; check dates, identities and selected accounts.\"}");
         result = await Run(["inspector", "snapshot", "--limit", "100", "--json"]);
