@@ -10,10 +10,15 @@ from pathlib import Path
 import socket
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
+from fake_provider import FakeProvider, MODEL, marker
 
 
 def expect(condition, message):
@@ -31,7 +36,7 @@ def main():
         probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         probe.bind(('127.0.0.1', 18418))
     checks = []
-    with tempfile.TemporaryDirectory(prefix='lain-w11-package-') as temporary:
+    with FakeProvider() as provider, tempfile.TemporaryDirectory(prefix='lain-w11-package-') as temporary:
         root = Path(temporary)
         data, prefix, units = root / 'data', root / 'prefix', root / 'units'
         env = dict(os.environ, LAIN_HOME=str(data), LAIN_SYSTEMD_DIR=str(units))
@@ -47,7 +52,7 @@ def main():
         client_env.pop('LAIN_HOME')  # The installed wrapper must remember its selected home.
         launcher = str(prefix / 'bin/lain')
         expected_hash = hashlib.sha256((package / 'host/Lain.Host').read_bytes()).hexdigest()
-        def start_and_check():
+        def start_and_check(first=False):
             host = data / 'app/host/Lain.Host'
             expect(hashlib.sha256(host.read_bytes()).hexdigest() == expected_hash, 'installed host hash differs')
             with (root / 'host.log').open('a') as log:
@@ -66,6 +71,35 @@ def main():
                             time.sleep(.1)
                     else:
                         raise AssertionError('installed host never became available')
+                    def api(path, method='GET', value=None):
+                        headers = {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'}
+                        request = Request('http://127.0.0.1:18418/api/v1' + path, data=None if value is None else json.dumps(value).encode(), headers=headers, method=method)
+                        with urlopen(request, timeout=30) as response:
+                            return json.load(response)
+                    if first:
+                        config = api('/accounts', 'POST', {'revision': 0, 'value': {'name': 'Package acceptance', 'provider': 'fixture', 'apiKey': 'lain-synthetic-a', 'baseUrl': provider.url}})
+                        account_id = config['accounts'][0]['id']
+                        route = {'id': 'package-route', 'alias': 'package-model', 'upstreamModel': MODEL, 'provider': 'fixture', 'accountIds': [account_id], 'pooled': False, 'visible': True, 'enabled': True}
+                        config = api('/routes/package-route', 'PUT', {'revision': config['revision'], 'value': route})
+                        profile = {'id': 'package-profile', 'name': 'Package acceptance', 'routeIds': ['package-route'], 'defaultRouteId': 'package-route'}
+                        config = api('/profiles/package-profile', 'PUT', {'revision': config['revision'], 'value': profile})
+                        applied = api('/profiles/package-profile/apply', 'POST', {'revision': config['revision']})
+                        expect(applied['appliedRevision'] == config['revision'], 'installed proxy profile failed to apply')
+                        inference = (data / 'credentials/inference.token').read_text().strip()
+                        body = {'model': 'package-model', 'messages': [{'role': 'user', 'content': marker('text', 'installed-package')}], 'stream': False}
+                        request = Request('http://127.0.0.1:18417/v1/chat/completions', json.dumps(body).encode(), {'Authorization': 'Bearer ' + inference, 'Content-Type': 'application/json'})
+                        with urlopen(request, timeout=20) as response:
+                            expect(json.load(response)['usage']['total_tokens'] == 18, 'installed bundled Core inference failed')
+                    deadline = time.monotonic() + 15
+                    while True:
+                        summary = api('/usage')
+                        if summary['totals']['attempts'] == 1 and summary['totals']['tokens']['total'] == 18:
+                            break
+                        expect(time.monotonic() < deadline, 'installed usage did not persist exactly one synthetic attempt')
+                        time.sleep(.1)
+                    expect(summary['totals']['requests'] == 1 and summary['totals']['errors'] == 0 and summary['complete'], 'installed usage identity/coverage changed across restart')
+                    usage_result = run([launcher, 'usage', '--json'], environment=client_env)
+                    expect(usage_result.returncode == 0 and json.loads(usage_result.stdout)['totals'] == summary['totals'], 'installed CLI/API usage differ')
                     result = run([launcher, 'status', '--json'], environment=client_env)
                     expect(result.returncode == 0, 'installed CLI failed against own host from unrelated cwd')
                     status = json.loads(result.stdout)
@@ -80,9 +114,10 @@ def main():
                         except subprocess.TimeoutExpired:
                             process.kill(); process.wait(timeout=5)
         (data / 'keep-me').write_text('persistent user data')
-        start_and_check()
+        start_and_check(first=True)
         original_token = (data / 'credentials/host.token').read_bytes()
-        checks.append('actual installed host and CLI from unrelated cwd')
+        checks.append('actual installed host bundled Core inference and CLI from unrelated cwd')
+        checks.append('synthetic usage captured once and CLI/API totals match')
         expect(run(install).returncode == 0, 'actual package update failed')
         expect((data / 'app.previous/.lain-package').is_file(), 'update backup missing')
         start_and_check()
@@ -104,7 +139,7 @@ def main():
         expect((data / 'credentials/host.token').read_bytes() == original_token, 'uninstall deleted credentials')
         expect((data / 'usage.db').is_file(), 'uninstall deleted usage history')
         checks.append('documented staged uninstall preserves private data')
-    report = {'passed': True, 'checks': checks, 'providerCalls': 0, 'systemdOperations': 0, 'sameArtifactUpdateAndRollback': True, 'hostExecutableSha256': expected_hash}
+    report = {'passed': True, 'checks': checks, 'realProviderCalls': 0, 'syntheticProviderCalls': 1, 'systemdOperations': 0, 'sameArtifactUpdateAndRollback': True, 'hostExecutableSha256': expected_hash}
     Path(args.report).write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
 
