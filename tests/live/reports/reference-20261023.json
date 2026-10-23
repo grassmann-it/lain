@@ -1,0 +1,115 @@
+{
+  "state": "failed",
+  "plan": [
+    {
+      "number": 1,
+      "endpoint": "http://127.0.0.1:18417/v1/responses",
+      "route": "live-codex-gpt-6-luna",
+      "upstreamModel": "gpt-6-luna",
+      "protocol": "Responses SSE",
+      "step": "forced echo_probe tool"
+    },
+    {
+      "number": 2,
+      "endpoint": "http://127.0.0.1:18417/v1/responses",
+      "route": "live-codex-gpt-6-luna",
+      "upstreamModel": "gpt-6-luna",
+      "protocol": "Responses SSE",
+      "step": "tool result continuation"
+    },
+    {
+      "number": 3,
+      "endpoint": "http://127.0.0.1:18417/v1/responses",
+      "route": "cmd-gpt-6-luna",
+      "upstreamModel": "gpt-6-luna",
+      "protocol": "Responses SSE",
+      "step": "forced echo_probe tool"
+    },
+    {
+      "number": 4,
+      "endpoint": "http://127.0.0.1:18417/v1/responses",
+      "route": "cmd-gpt-6-luna",
+      "upstreamModel": "gpt-6-luna",
+      "protocol": "Responses SSE",
+      "step": "tool result continuation"
+    }
+  ],
+  "calls": [
+    {
+      "route": "live-codex-gpt-6-luna",
+      "accountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+      "step": "tool",
+      "state": "passed",
+      "sseEvents": 12,
+      "responseBytes": 8867,
+      "usage": {
+        "input_tokens": 83,
+        "output_tokens": 18,
+        "total_tokens": 101
+      }
+    },
+    {
+      "route": "live-codex-gpt-6-luna",
+      "accountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+      "step": "continuation",
+      "state": "passed",
+      "sseEvents": 10,
+      "responseBytes": 8750,
+      "usage": {
+        "input_tokens": 113,
+        "output_tokens": 5,
+        "total_tokens": 118
+      }
+    },
+    {
+      "route": "cmd-gpt-6-luna",
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "step": "tool",
+      "state": "attempted"
+    }
+  ],
+  "qualifiedSha256": "8edf8abf666e3c15f1a04c20c841a969d35229f09e7de5265755ab704cf9dfc0",
+  "privateStateDirectory": "/tmp/lain-reference-dxo_a12c",
+  "stage": "live-four-calls",
+  "revision": 3,
+  "importedAccounts": 5,
+  "selectedAccounts": [
+    "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+    "acct-9285cf785075f27839a7ebd10550c705"
+  ],
+  "usageWindow": {
+    "from": "2026-10-23T17:57:04.193825+00:00",
+    "to": "2026-10-23T18:58:04.193825+00:00",
+    "timeZone": "UTC"
+  },
+  "error": "HTTP request failed with status 403.",
+  "legacyFiles": {
+    "unchanged": true,
+    "temporaryFilesExcluded": true,
+    "added": 0,
+    "removed": 0,
+    "changed": 0
+  },
+  "observedAt": "2026-10-23T17:58:04Z",
+  "diagnostics": {
+    "source": "own durable journal and own SQLite read-only",
+    "attempts": 3,
+    "successfulCodexAttempts": 2,
+    "failedCommandAttempts": 1,
+    "codexInputTokens": 196,
+    "codexOutputTokens": 23,
+    "codexTotalTokens": 219,
+    "commandTokens": null,
+    "command403AfterDispatch": true,
+    "commandCredentialMatchesImportedSource": true,
+    "commandEndpoint": "https://api.commandcode.ai/provider/v1",
+    "commandCustomHeaders": false,
+    "commandProxyUrl": false,
+    "fourthRequestSent": false,
+    "automaticInferenceRetries": 0,
+    "cliApiComparison": "not reached",
+    "hostRestartPersistence": "not reached",
+    "ownProcessesStopped": true,
+    "providerErrorBodyStored": false
+  }
+}
