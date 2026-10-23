@@ -416,14 +416,31 @@ Legacy service/config/auth and normal Codex are observed for interval changes,
 not modified. Legacy temporary auth files are explicitly excluded, as are logs,
 queues and databases; preservation must not be generalized beyond that scope.
 The quiesced-client flag records a prerequisite rather than enforcing exclusion
-of all external clients. Root must keep owned inference clients and Desktop quiet.
+of all external clients. Root must keep owned inference/configuration mutations quiet; the user's open Desktop stays untouched and ordinary read-only polling is allowed.
 
-A rollback hardening follow-up was reported: the first reviewed version flushes
-restored proxy files and the state directory but not every restored DB/credential
-file or rename directory before restart. This does not block the upgrade path,
-whose stopped backup is fully synced, but power-loss-durable rollback must wait
-for that follow-up or retain an explicit weaker durability scope. Synthetic
-helper tests do not establish an actual installed upgrade or rollback.
+The initial rollback fsync follow-up is closed in inspected `96a926d`:
+`sync_part` flushes every restored DB/WAL/SHM, credential/import/configuration and
+proxy part; displaced state and rename parent directories are flushed before
+restart. Phase records distinguish restoring/restored/flushed, and the injected
+flush-failure fixture verifies no old Host restart. This is source/fixture review,
+not a simulated power-loss result. Legacy `oauth/logs/**` is now pruned before
+reading, and `*.tmp` files excluded. No further helper source blocker was found.
+Root reports eight synthetic helper tests passed; no helper test was run by this
+reviewer. Synthetic helper tests do not establish an installed upgrade/rollback.
+
+The staged package at `/tmp/lain-expansion-delivery/lain-linux-x64-0.1.0-expansion`
+(source `f713478`) has independently checked `SHA256SUMS` hash
+`eb425f60052969fdb16879e2cc88020c963515fdc6fe426d6e36d3ef038f7c79`.
+Its qualification explicitly binds final Core/source hashes and distinguishes
+historical live references, synthetic tests and new-provider live `not_tested`.
+`/tmp/lain-expansion-package-probe.json` reports seven PASS cases for actual
+packaged executables, private installation, synthetic inference/Usage, CLI from
+an unrelated directory, update/restart, rollback/restart, offline failure and
+staged uninstall. It reports one synthetic and zero real provider calls, no
+systemd operations, and explicitly `sameArtifactUpdateAndRollback: true`.
+That last boundary matters: this does not demonstrate old-generation schema
+migration on the user's installation. Controlled installed upgrade and subsequent
+GET-only native evidence remain the next independent acceptance checkpoint.
 
 ## Evidence ledger and final outcome
 
