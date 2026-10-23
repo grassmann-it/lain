@@ -89,7 +89,7 @@ openai-compatibility:
         return [self.core, "--config", str(self.root / "core.yaml"), "--bindings", str(self.root / "bindings.json"),
                 "--journal", str(self.journal), "--management-token-file", str(self.root / "management-token")]
 
-    def start(self):
+    def start(self, allow_unready=False):
         self.process = subprocess.Popen(self.command(), cwd=self.root, stdout=self.log, stderr=self.log,
                                         env=self.env)
         deadline = time.monotonic() + 20
@@ -97,7 +97,14 @@ openai-compatibility:
             if self.process.poll() is not None:
                 raise RuntimeError("isolated core exited during startup: " + (self.root / "core.log").read_text()[-3000:])
             try:
-                if self.get("/lain/health")["ready"]:
+                try:
+                    health = self.get("/lain/health")
+                except HTTPError as error:
+                    if not (allow_unready and error.code == 503):
+                        raise
+                    health = json.load(error)
+                    error.close()
+                if health["ready"] or (allow_unready and health["journalHealthy"]):
                     expected_source = Path(str(self.journal) + ".source").read_text()
                     if self.get("/lain/events?after=0&limit=1")["sourceId"] == expected_source:
                         return
@@ -386,6 +393,39 @@ def credential_lifecycle(core):
                 "scope": "synthetic adapter binding revisions across restart; display-name/OAuth lifecycle excluded"}
 
 
+def deactivated_account(core):
+    with Run(core) as run:
+        with run.post("text", "before-deactivation", route="fixture-a") as response:
+            response.read()
+        run.stop()
+        config = run.root / "core.yaml"
+        original = config.read_text()
+        config.write_text(original.replace("      - api-key: lain-synthetic-a\n", ""))
+        run.start(allow_unready=True)
+        # A's route remains bound to its missing credential; B has the same model.
+        try:
+            with run.post("text", "deactivated-strict", route="fixture-a") as response:
+                response.read()
+                raise AssertionError("strict deactivated account unexpectedly succeeded")
+        except HTTPError as error:
+            expect(error.code == 503, f"deactivated account returned {error.code}")
+            error.close()
+        expect(len(run.provider.snapshot()) == 1, "deactivated strict request silently dispatched another account")
+        with run.post("text", "deactivated-pool") as response:
+            response.read()
+        expect(run.provider.snapshot()[-1]["account"] == "account-b", "explicit pool did not use remaining active account")
+        run.stop()
+        config.write_text(original)
+        run.start()
+        with run.post("text", "reactivated-strict", route="fixture-a") as response:
+            response.read()
+        expect(run.provider.snapshot()[-1]["account"] == "account-a", "reactivation did not restore strict credential")
+        assert_complete(run.events()["events"], 3)
+        return {"deactivationMechanism": "omit API credential from config and restart; retain prior bound route", "strictStatus": 503,
+                "silentSubstitution": False, "explicitPoolAccount": "account-b", "reactivated": True,
+                "dispatchedRequests": 3, "rejectedBeforeDispatch": 1}
+
+
 def crash_inflight(core):
     with Run(core) as run:
         connection = http.client.HTTPConnection("127.0.0.1", run.port, timeout=10)
@@ -533,7 +573,7 @@ def main():
     examples = {"schemaVersion": 1, "syntheticOnly": True, "coreSha256": report["coreSha256"], "examples": {}}
     for name, function in [("same-alias-200-replay-restart", normal_and_restart), ("sse-tool-continuation", stream_tools), ("responses-tool-translation", responses_tools),
                            ("strict-429", strict_429), ("pool-429-retry", pool_429), ("cancel", cancel),
-                           ("unknown-token-components", unknown_token_components), ("credential-lifecycle", credential_lifecycle),
+                           ("unknown-token-components", unknown_token_components), ("credential-lifecycle", credential_lifecycle), ("deactivated-account", deactivated_account),
                            ("crash-inflight", crash_inflight), ("journal-failures", journal_failures), ("startup-failures", startup_failures),
                            ("terminal-write-failure", terminal_write_failure),
                            ("responses-terminal-write-failure", lambda core: terminal_write_failure(core, "responses"))]:
