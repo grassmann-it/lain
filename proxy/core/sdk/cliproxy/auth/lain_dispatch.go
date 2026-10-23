@@ -11,6 +11,10 @@ import (
 
 // Hooks are installed once, before the service starts. Original executor types stay intact.
 var LainBeforeDispatch func(context.Context, *Auth, executor.Request, executor.Options) error
+
+// LainDispatchContext carries trusted per-attempt policy into executors. It is
+// separate from HTTP context, whose arbitrary values handlers may not preserve.
+var LainDispatchContext func(context.Context, *Auth, executor.Request, executor.Options) (context.Context, error)
 var LainAfterDispatch func(context.Context, error) error
 
 // LainObserveOutput sees downstream-format executor output, never transport
@@ -37,6 +41,13 @@ func lainBegin(ctx context.Context, auth *Auth, req executor.Request, opts execu
 		return ctx, nil
 	}
 	ctx = usage.WithExecutionRequestID(ctx, uuid.NewString())
+	if LainDispatchContext != nil {
+		var err error
+		ctx, err = LainDispatchContext(ctx, auth, req, opts)
+		if err != nil {
+			return ctx, err
+		}
+	}
 	return ctx, LainBeforeDispatch(ctx, auth, req, opts)
 }
 func lainEnd(ctx context.Context, err error) error {

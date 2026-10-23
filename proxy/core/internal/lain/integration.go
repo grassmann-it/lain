@@ -74,11 +74,8 @@ func New(j *Journal, b Bindings) (*Integration, error) {
 		seen[credential] = account
 	}
 	for alias, r := range b.Routes {
-		if r.CostPolicy != "" && r.CostPolicy != "configured" && r.CostPolicy != "free_only" {
-			return nil, errors.New("unknown route cost policy")
-		}
-		if r.CostPolicy == "free_only" {
-			return nil, errors.New("free_only route has no qualified runtime enforcement")
+		if err := validateCostPolicy(r); err != nil {
+			return nil, err
 		}
 		if alias == "" || r.ID == "" || r.Model == "" || len(r.Accounts) == 0 {
 			return nil, errors.New("incomplete route")
@@ -109,6 +106,7 @@ func New(j *Journal, b Bindings) (*Integration, error) {
 }
 func (i *Integration) Install() {
 	auth.LainBeforeDispatch = i.Before
+	auth.LainDispatchContext = i.DispatchContext
 	auth.LainAfterDispatch = i.After
 	auth.LainObserveOutput = i.Observe
 	auth.LainReadOnlyCredentials = true
@@ -131,6 +129,9 @@ func (i *Integration) Before(ctx context.Context, a *auth.Auth, req executor.Req
 	selected, ok := routeSelection(ctx)
 	if !ok || a == nil || !selected.Allowed[a.ID] {
 		return closed(errors.New("dispatch identity is outside the selected route"))
+	}
+	if err := validateCostDispatch(ctx, selected.Route, a, req.Model); err != nil {
+		return closed(err)
 	}
 	// Preserve the public alias for upstream payload rules after route model translation.
 	if opts.Metadata != nil {

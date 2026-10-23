@@ -89,6 +89,59 @@ func TestLainObservationUsesExactAttemptAndPrecedesFinalization(t *testing.T) {
 	}
 }
 
+func TestLainDispatchContextSurvivesEachExecutorAttempt(t *testing.T) {
+	before, after, prepare, observe := LainBeforeDispatch, LainAfterDispatch, LainDispatchContext, LainObserveOutput
+	defer func() {
+		LainBeforeDispatch, LainAfterDispatch, LainDispatchContext, LainObserveOutput = before, after, prepare, observe
+	}()
+	type policyKey struct{}
+	ids := map[string]bool{}
+	LainDispatchContext = func(ctx context.Context, _ *Auth, _ executor.Request, _ executor.Options) (context.Context, error) {
+		id := usage.ExecutionRequestIDFromContext(ctx)
+		if id == "" || ids[id] {
+			t.Error("attempt context reused")
+		}
+		ids[id] = true
+		return context.WithValue(ctx, policyKey{}, "trusted"), nil
+	}
+	LainBeforeDispatch = func(ctx context.Context, _ *Auth, _ executor.Request, _ executor.Options) error {
+		if ctx.Value(policyKey{}) != "trusted" || usage.ParentRequestIDFromContext(ctx) != "same-request" {
+			t.Error("dispatch lost trusted context")
+		}
+		return nil
+	}
+	LainObserveOutput = func(ctx context.Context, _ []byte, _ bool) {
+		if ctx.Value(policyKey{}) != "trusted" {
+			t.Error("output lost trusted context")
+		}
+	}
+	LainAfterDispatch = func(ctx context.Context, _ error) error {
+		if ctx.Value(policyKey{}) != "trusted" {
+			t.Error("completion lost trusted context")
+		}
+		return nil
+	}
+	ctx := usage.WithParentRequestID(context.Background(), "same-request")
+	for n := 0; n < 2; n++ {
+		result, err := lainExecuteStream(&lainStreamFixture{}, ctx, &Auth{}, executor.Request{}, executor.Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for range result.Chunks {
+		}
+	}
+	if len(ids) != 2 {
+		t.Fatal(ids)
+	}
+	LainDispatchContext = func(ctx context.Context, _ *Auth, _ executor.Request, _ executor.Options) (context.Context, error) {
+		return ctx, errors.New("unqualified cost guard")
+	}
+	provider := &lainStreamFixture{}
+	if _, err := lainExecuteStream(provider, ctx, &Auth{}, executor.Request{}, executor.Options{}); err == nil || provider.called {
+		t.Fatal("failed policy reached provider")
+	}
+}
+
 type lainRefreshFixture struct {
 	ProviderExecutor
 	calls int

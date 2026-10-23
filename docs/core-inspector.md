@@ -134,10 +134,31 @@ their identities, timing and durable usage, with an explicit capture-capacity
 omission marker. Content capture never controls dispatch admission, drops usage,
 or relaxes the journal's fail-closed completion gate.
 
-`Route.costPolicy` accepts missing/`configured` for existing routes. `free_only`
-fails startup while no runtime cost enforcement mechanism has been qualified;
-descriptive `pricingClass`/`freeOnlyEnforcement` strings cannot bypass this gate.
-Unknown policies also fail startup.
+`Route.costPolicy` accepts missing/`configured` for existing routes. A `free_only`
+binding can activate only the conditional `openrouter_zero_cap_v1` guard for
+logical provider `openrouter`, pricing class `free`, and one of the two explicit
+model IDs in `internal/freeonly`. Other markers, unknown policies and arbitrary
+`:free` model suffixes fail startup. This is permission to run the fresh runtime
+check, not proof that an account currently satisfies its requirements.
+
+Raw HTTP bodies are validated before alias rewriting, and only Chat Completions
+and Responses input are admitted for this narrow policy. `LainDispatchContext`
+then runs for each executor attempt before the durable start gate. It requires
+the exact OpenAI-compatible OpenRouter chat provider/compatibility name,
+`upstream_protocol: openai-chat`, official base URL and unchanged pinned model,
+and supplies the private context marker. `Before` independently rejects a
+free-only attempt missing that marker. This explicit hook is necessary because
+normal handlers do not propagate arbitrary HTTP request context values.
+
+The final HTTP helper, after translation and payload/header rules, validates the
+actual endpoint/model/body and freshly checks the actual outgoing bearer key's
+documented zero USD limit including BYOK. Unknown, failed or changed proof closes
+the request; no inference is sent. Redirects, paid plugins and fallback overrides
+are excluded. This remains a conditional external-control boundary, with local
+mock qualification and live usability explicitly untested; see
+[the provider evidence](providers/openrouter-free-only.md). Core duration includes
+the fresh proof overhead. The proof is not generated model output or a token
+sample and is never included in this Inspector feed.
 
 ## Qualification scope
 

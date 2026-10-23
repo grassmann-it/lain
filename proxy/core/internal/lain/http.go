@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/router-for-me/CLIProxyAPI/v7/internal/freeonly"
 	"github.com/router-for-me/CLIProxyAPI/v7/internal/registry"
 	auth "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/auth"
 	"io"
@@ -173,6 +174,20 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 		if !ok {
 			c.AbortWithStatusJSON(400, gin.H{"error": "unknown model route"})
 			return
+		}
+		if err := validateCostPolicy(route); err != nil {
+			c.AbortWithStatusJSON(503, gin.H{"error": "route cost policy unavailable"})
+			return
+		}
+		if route.CostPolicy == "free_only" {
+			if path != "/v1/chat/completions" && path != "/v1/responses" {
+				c.AbortWithStatusJSON(400, gin.H{"error": "free_only protocol is not qualified"})
+				return
+			}
+			if err := freeonly.ValidateOpenRouterInput(body, alias, route.Model); err != nil {
+				c.AbortWithStatusJSON(400, gin.H{"error": "free_only request controls are not qualified"})
+				return
+			}
 		}
 		allowed := map[string]bool{}
 		for _, account := range route.Accounts {
