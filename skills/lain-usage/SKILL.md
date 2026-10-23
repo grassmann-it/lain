@@ -36,7 +36,9 @@ Usage and attempts also accept `--model ID` and `--status HTTP`; bound and pagin
 attempt lists (limit 1–500). Usage intervals are at most 366 days. Extended exact
 filters are `--route`, `--model-family`, `--manufacturer`, `--inference-provider`,
 `--gateway`, `--billing-account`, `--reasoning`, `--mode`, `--conversation`, `--turn`,
-`--worker`, `--harness` and `--profile`, each followed by a value. Use installed
+`--worker`, `--harness`, `--profile` and `--effective-reasoning-effort`, each
+followed by a value. `--reasoning` is the requested effort; effective reasoning
+records the upstream translation only when observed. Use installed
 help to check which commands the running version supports before inspecting the
 expanded contract; development does not imply the installed service was upgraded.
 
@@ -45,7 +47,7 @@ server aggregate, including measured performance and grouped usage. They do not
 accept attempt pagination. `--group-by` takes 1–3 distinct comma-separated keys:
 `accountId`, `routeId`, `model`, `provider`, `modelFamily`, `manufacturer`,
 `inferenceProvider`, `gateway`, `billingAccountId`, `reasoningEffort`, `mode`,
-`conversationId`, `turnId`, `workerId`, `parentWorkerId`, `parentRequestId`,
+`effectiveReasoningEffort`, `conversationId`, `turnId`, `workerId`, `parentWorkerId`, `parentRequestId`,
 `toolCallId`, `harness`, `profileId`, `responseId`, `previousResponseId`.
 The default is `modelFamily,accountId,reasoningEffort`; `--group-limit` is 1–500.
 Preserve null dimension keys, truncated groups, sample/eligible counts, metric

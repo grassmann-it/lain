@@ -99,7 +99,7 @@ public static partial class CliApplication
     {
         if (dimensions is null) { await output.WriteLineAsync("  Group identities: unknown"); return; }
         await output.WriteLineAsync($"  Conversation {Cell(dimensions.ConversationId)}; turn {Cell(dimensions.TurnId)}; worker {Cell(dimensions.WorkerId)}; parent worker {Cell(dimensions.ParentWorkerId)}; parent request {Cell(dimensions.ParentRequestId)}; tool call {Cell(dimensions.ToolCallId)}");
-        await output.WriteLineAsync($"  Family {Cell(dimensions.ModelFamily)}; manufacturer {Cell(dimensions.Manufacturer)}; inference {Cell(dimensions.InferenceProvider)}; gateway {Cell(dimensions.Gateway)}; billing account {Cell(dimensions.BillingAccountId)}; reasoning {Cell(dimensions.ReasoningEffort)}; mode {Cell(dimensions.Mode)}");
+        await output.WriteLineAsync($"  Family {Cell(dimensions.ModelFamily)}; manufacturer {Cell(dimensions.Manufacturer)}; inference {Cell(dimensions.InferenceProvider)}; gateway {Cell(dimensions.Gateway)}; billing account {Cell(dimensions.BillingAccountId)}; requested reasoning {Cell(dimensions.ReasoningEffort)}; effective reasoning {Cell(dimensions.EffectiveReasoningEffort)}; mode {Cell(dimensions.Mode)}");
         if (dimensions.ResponseId is not null || dimensions.PreviousResponseId is not null)
             await output.WriteLineAsync($"  Response {Cell(dimensions.ResponseId)}; previous response {Cell(dimensions.PreviousResponseId)}");
         if (dimensions.Evidence is { Length: > 0 } evidence)

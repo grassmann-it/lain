@@ -29,7 +29,8 @@ public static partial class CliApplication
                 Default groups: modelFamily,accountId,reasoningEffort; at most 3 dimensions.
           Usage filters: --route --model-family --manufacturer --inference-provider
                 --gateway --billing-account --reasoning --mode --conversation
-                --turn --worker --harness --profile (each followed by a value)
+                --effective-reasoning-effort --turn --worker --harness --profile
+                (each followed by a value; --reasoning is the requested effort)
           attempts [usage options] [--offset N] [--limit N] [--json]
           inspector [snapshot] [--request ID] [--limit 1..500] [--json]
           inspector events [--source ID] [--after N] [--request ID] [--limit 1..500] [--json]
@@ -273,7 +274,7 @@ public static partial class CliApplication
             options.Get("route"), options.Get("model-family"), options.Get("manufacturer"), options.Get("inference-provider"),
             options.Get("gateway"), options.Get("billing-account"), options.Get("reasoning"), options.Get("mode"),
             options.Get("conversation"), options.Get("turn"), options.Get("worker"), options.Get("harness"), options.Get("profile"),
-            options.Get("group-by"), groupLimit);
+            options.Get("group-by"), groupLimit, options.Get("effective-reasoning-effort"));
     }
 
     private static DateTimeOffset? ParseTime(string? value)

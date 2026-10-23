@@ -252,18 +252,18 @@ handler.Handle = request =>
     Require(request.RequestUri!.AbsolutePath == "/api/v1/usage/analysis", "usage analysis authoritative endpoint");
     var uri = Uri.UnescapeDataString(request.RequestUri.Query);
     Require(uri.Contains("groupBy=modelFamily,reasoningEffort") && uri.Contains("groupLimit=5") && uri.Contains("inferenceProvider=provider/one") &&
-        uri.Contains("billingAccountId=bill 1") && uri.Contains("reasoningEffort=high") && uri.Contains("workerId=worker/one"), "analysis forwards grouping and identity filters");
+        uri.Contains("billingAccountId=bill 1") && uri.Contains("reasoningEffort=high") && uri.Contains("effectiveReasoningEffort=medium") && uri.Contains("workerId=worker/one"), "analysis forwards grouping and identity filters");
     return new(HttpStatusCode.OK) { Content = JsonContent.Create(analysis) };
 };
 output = new(); error = new();
 exit = await CliApplication.RunAsync(["usage", "analysis", "--group-by", "modelFamily,reasoningEffort", "--group-limit", "5",
-    "--inference-provider", "provider/one", "--billing-account", "bill 1", "--reasoning", "high", "--worker", "worker/one"], output, error, () => client);
+    "--inference-provider", "provider/one", "--billing-account", "bill 1", "--reasoning", "high", "--effective-reasoning-effort", "medium", "--worker", "worker/one"], output, error, () => client);
 Require(exit == 0 && output.ToString().Contains("samples 10/12 eligible; min 1; mean 7; p50 8; p95 11; max 12") &&
     output.ToString().Contains("samples 0/12 eligible; min unknown") && output.ToString().Contains("groups 1; truncated") &&
     output.ToString().Contains("Rate basis: reported_output_tokens_per_total_duration_second"), "analysis uses server statistics with sample counts, basis, unknowns and group coverage"); assertions++;
 output = new(); error = new();
 exit = await CliApplication.RunAsync(["usage", "performance", "--group-by", "modelFamily,reasoningEffort", "--group-limit", "5",
-    "--inference-provider", "provider/one", "--billing-account", "bill 1", "--reasoning", "high", "--worker", "worker/one", "--json"], output, error, () => client);
+    "--inference-provider", "provider/one", "--billing-account", "bill 1", "--reasoning", "high", "--effective-reasoning-effort", "medium", "--worker", "worker/one", "--json"], output, error, () => client);
 using (var analysisJson = JsonDocument.Parse(output.ToString()))
     Require(exit == 0 && analysisJson.RootElement.GetProperty("dimensions")[0].GetProperty("groups")[0].GetProperty("key").ValueKind == JsonValueKind.Null,
         "unknown group identity stays null in JSON"); assertions++;

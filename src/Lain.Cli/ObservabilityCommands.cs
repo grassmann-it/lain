@@ -40,10 +40,10 @@ public static partial class CliApplication
     }
     private static readonly string[] UsageFilters = ["json", "today", "from", "to", "timezone", "account", "model", "status",
         "route", "model-family", "manufacturer", "inference-provider", "gateway", "billing-account", "reasoning", "mode",
-        "conversation", "turn", "worker", "harness", "profile"];
+        "conversation", "turn", "worker", "harness", "profile", "effective-reasoning-effort"];
     private static readonly string[] GroupDimensions = ["accountId", "routeId", "model", "provider", "modelFamily", "manufacturer",
         "inferenceProvider", "gateway", "billingAccountId", "reasoningEffort", "mode", "conversationId", "turnId", "workerId",
-        "parentWorkerId", "parentRequestId", "toolCallId", "harness", "profileId", "responseId", "previousResponseId"];
+        "parentWorkerId", "parentRequestId", "toolCallId", "harness", "profileId", "responseId", "previousResponseId", "effectiveReasoningEffort"];
 
     private static void ValidateUsage(string command, Options options)
     {

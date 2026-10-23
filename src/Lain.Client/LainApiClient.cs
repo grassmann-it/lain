@@ -110,6 +110,7 @@ public sealed partial class LainApiClient : IDisposable
         Add("routeId", query.RouteId); Add("modelFamily", query.ModelFamily); Add("manufacturer", query.Manufacturer);
         Add("inferenceProvider", query.InferenceProvider); Add("gateway", query.Gateway); Add("billingAccountId", query.BillingAccountId);
         Add("reasoningEffort", query.ReasoningEffort); Add("mode", query.Mode); Add("conversationId", query.ConversationId);
+        Add("effectiveReasoningEffort", query.EffectiveReasoningEffort);
         Add("turnId", query.TurnId); Add("workerId", query.WorkerId); Add("harness", query.Harness); Add("profileId", query.ProfileId);
         Add("groupBy", query.GroupBy);
         if (query.GroupBy is not null || query.GroupLimit != 100) Add("groupLimit", query.GroupLimit.ToString(CultureInfo.InvariantCulture));
