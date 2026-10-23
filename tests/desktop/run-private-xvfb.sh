@@ -14,7 +14,7 @@ done
 
 # Building does not start a GUI. Set LAIN_DESKTOP_SKIP_BUILD=1 only after a build.
 if [[ ${LAIN_DESKTOP_SKIP_BUILD:-0} != 1 ]]; then
-  dotnet build "$repo/tests/desktop/Lain.Desktop.Smoke.csproj" --nologo
+  dotnet build "$repo/tests/desktop/Lain.Desktop.Smoke.csproj" --nologo -m:1 -p:BuildInParallel=false -nr:false
 fi
 runtime=$(mktemp -d /tmp/lain-desktop-xvfb.XXXXXXXX)
 xvfb_pid=
