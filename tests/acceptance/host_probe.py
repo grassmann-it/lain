@@ -91,6 +91,27 @@ def main():
                 for query in ['?limit=501', '?offset=-1', '?timeZone=not-a-zone', '?limit=abc', '?from=not-a-date']:
                     check(request('/usage' + query, token=token)[0] == 400, 'invalid usage query must return 400: ' + query)
                 checks.append('bounded query validation')
+                # Applying against the explicitly absent/unqualified Core must not
+                # claim that the requested route became active.
+                current = request('/configuration', token=token)[1]
+                code, current = request('/accounts/' + account + '/enabled', 'PUT', {'revision': current['revision'], 'value': True}, token)
+                check(code == 200, 'could not enable synthetic account for failed-apply probe')
+                route = {'id': 'acceptance-route', 'alias': 'acceptance-alias', 'upstreamModel': 'synthetic-model', 'provider': 'acceptance', 'accountIds': [account], 'pooled': False, 'visible': True, 'enabled': True}
+                code, current = request('/routes/acceptance-route', 'PUT', {'revision': current['revision'], 'value': route}, token)
+                check(code == 200, 'synthetic route creation failed')
+                profile = {'id': 'acceptance-profile', 'name': 'Acceptance', 'routeIds': [route['id']], 'defaultRouteId': route['id']}
+                code, current = request('/profiles/acceptance-profile', 'PUT', {'revision': current['revision'], 'value': profile}, token)
+                check(code == 200, 'synthetic profile creation failed')
+                applied_before = current['appliedRevision']
+                code, _ = request('/profiles/acceptance-profile/apply', 'POST', {'revision': current['revision']}, token)
+                check(code in [409, 503], 'unqualified Core apply must fail explicitly')
+                after_failure = request('/configuration', token=token)[1]
+                check(after_failure['appliedRevision'] == applied_before and after_failure['revision'] > applied_before, 'failed apply advanced applied revision')
+                check(json.loads((state / 'runtime.json').read_text())['valid'] is False, 'failed generation not invalidated on disk')
+                for action in ['start', 'restart']:
+                    check(request('/service/' + action, 'POST', {}, token)[0] in [409, 503], 'failed generation could be started')
+                check(request('/status', token=token)[1]['proxyReady'] is False, 'failed runtime reported ready')
+                checks.append('failed apply preserves applied revision and invalidates runtime')
                 before = (state / 'credentials/host.token').read_bytes()
                 second = subprocess.Popen(command, env=env, cwd=root, stdout=log, stderr=log)
                 try:
