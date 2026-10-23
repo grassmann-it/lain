@@ -108,7 +108,7 @@ def main():
                 check(code in [409, 503], 'unqualified Core apply must fail explicitly')
                 after_failure = request('/configuration', token=token)[1]
                 check(after_failure['appliedRevision'] == applied_before and after_failure['revision'] > applied_before, 'failed apply advanced applied revision')
-                check(json.loads((state / 'runtime.json').read_text())['valid'] is False, 'failed generation not invalidated on disk')
+                check(json.loads((state / 'proxy/runtime.json').read_text())['valid'] is False, 'failed generation not invalidated on disk')
                 for action in ['start', 'restart']:
                     check(request('/service/' + action, 'POST', {}, token)[0] in [409, 503], 'failed generation could be started')
                 check(request('/status', token=token)[1]['proxyReady'] is False, 'failed runtime reported ready')
