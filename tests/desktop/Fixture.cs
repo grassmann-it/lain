@@ -19,7 +19,7 @@ internal sealed class Fixture : HttpMessageHandler
         ],
         Enumerable.Range(1, InitialRoutes).Select(i => new RouteDto($"r{i}", $"gpt-lain-{i:00}", $"gpt-model-{i:00}", "openai", [$"a{(i - 1) % 4 + 1}"])).ToArray(),
         Enumerable.Range(1, InitialProfiles).Select(i => new ProfileDto($"p{i}", i == 1 ? "Daily" : $"Workspace {i}", Enumerable.Range(1, i * 5).Select(n => $"r{n}").ToArray(), "r1")).ToArray());
-    public int Imports, EnableCalls, ApplyCalls, ExportCalls, LoginBegins, LoginPolls, LoginCancels, UsageCalls, StatusCalls;
+    public int Imports, EnableCalls, ApplyCalls, ExportCalls, LoginBegins, LoginPolls, LoginCancels, UsageCalls, StatusCalls, AnalysisCalls;
     public bool Offline, UsageFailure, NullTokens;
     public readonly List<string> Requests = [];
     public readonly List<string> Unexpected = [];
@@ -47,6 +47,7 @@ internal sealed class Fixture : HttpMessageHandler
                 "/api/v1/models" => new ModelCatalogDto(1, Config.Revision, [new ModelEntryDto("gpt-model", "openai", ["a1"])]),
                 "/api/v1/quotas" => Quotas(),
                 "/api/v1/usage" => Usage(request.RequestUri!),
+                "/api/v1/usage/analysis" => Analysis(request.RequestUri!),
                 "/api/v1/attempts" => new PageDto<AttemptDto>([new AttemptDto("attempt-fixture", "request-fixture", "a1", "r1", "openai", "gpt-model", DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(-1).AddSeconds(2), 200, "completed", new TokenCounts(72000, 9986, 18000, 2000, 81986), 2000, 250)], 0, 25, 1),
                 _ => throw UnexpectedRequest(request)
             };
@@ -151,6 +152,32 @@ internal sealed class Fixture : HttpMessageHandler
         return new(1, DateTimeOffset.Parse(query["from"]), DateTimeOffset.Parse(query["to"]), query.GetValueOrDefault("timeZone", "UTC"), DateTimeOffset.UtcNow, 10, true, totals,
             [new(DateTime.UtcNow.ToString("yyyy-MM-dd"), totals)], [new("a1", totals)], [new("gpt-model", totals)]);
     }
+    private UsageAnalysisDto Analysis(Uri uri)
+    {
+        AnalysisCalls++;
+        var query = uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(pair => pair.Split('=', 2)).ToDictionary(pair => Uri.UnescapeDataString(pair[0]), pair => pair.Length == 2 ? Uri.UnescapeDataString(pair[1]) : "");
+        var tokens = NullTokens ? new TokenCounts(null, null, null, null, null) : new(72000, 9986, 18000, 2000, 81986);
+        var totals = new UsageTotals(128, 132, 4, tokens, NullTokens ? 132 : 0);
+        var first = new MetricStatisticsDto(120, 132, 40, 260, 240, 510, 890);
+        var duration = new MetricStatisticsDto(129, 132, 100, 2100, 2000, 2500, 3000);
+        var rate = NullTokens ? new MetricStatisticsDto(0, 132, null, null, null, null, null)
+            : new MetricStatisticsDto(100, 132, 1, 12, 10, 18, 20);
+        var performance = new PerformanceSummaryDto(first, duration, rate);
+        var dimension = query.GetValueOrDefault("groupBy", "modelFamily");
+        var halfTokens = NullTokens ? new TokenCounts(null, null, null, null, null) : new(36000, 4993, 9000, 1000, 40993);
+        var groupRate = NullTokens ? new MetricStatisticsDto(0, 66, null, null, null, null, null) : new(50, 66, 1, 12, 10, 18, 20);
+        var grouped = new[]
+        {
+            new UsageDimensionGroupDto("fixture-family", new(64, 66, 2, halfTokens, NullTokens ? 66 : 0),
+                new(new(60, 66, 40, 260, 240, 510, 890), new(64, 66, 100, 2100, 2000, 2500, 3000), groupRate)),
+            new UsageDimensionGroupDto(null, new(64, 66, 2, halfTokens, NullTokens ? 66 : 0),
+                new(new(60, 66, 40, 260, 240, 510, 890), new(65, 66, 100, 2100, 2000, 2500, 3000), groupRate))
+        };
+        return new(Api.Version, DateTimeOffset.Parse(query["from"]), DateTimeOffset.Parse(query["to"]), query.GetValueOrDefault("timeZone", "UTC"),
+            DateTimeOffset.UtcNow, 10, true, totals, performance, [new(dimension, grouped)]);
+    }
+
     private LoginDto CompleteLogin(string path)
     {
         LoginPolls++; Config = Config with { Revision = Config.Revision + 1 };
