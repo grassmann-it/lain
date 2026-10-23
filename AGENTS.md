@@ -1,6 +1,7 @@
 # lain
 
-Projektstand: Architektur-Sparring, noch keine Produktimplementierung.
+Projektstand: Implementierung und Qualifikation des ersten Linux-Stands.
+Aktuelle Umsetzung in docs/execution.md, unabhängige Abnahme in docs/acceptance.md.
 Bestätigte Ziele stehen in `docs/product-scope.md`, der geprüfte technische
 Ausgangsbestand in `docs/technical-inventory.md`. Bestehende persönliche
 Proxy-/TUI-Projekte sind Quellen und mögliche Bausteine; ihre Entscheidungen

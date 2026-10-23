@@ -93,3 +93,24 @@ zwei Accounts, Replay und eine bekannte Abdeckungslücke. Danach werden API-/JSO
 Beispiele und Felddefinitionen so festgehalten, dass Avalonia und CLI unabhängig
 gegen denselben Vertrag arbeiten können. Das Schema des Proxy-Cores bleibt
 hinter dessen Adapter; seine Version ist nicht die öffentliche lain-API-Version.
+
+## Implementierter Wirevertrag v1
+
+`src/Lain.Core/Contracts.cs` enthält die gemeinsamen DTOs;
+`src/Lain.Client/LainApiClient.cs` ist der typisierte Referenzclient.
+JSON verwendet camelCase und explizites null für unbekannte Messwerte.
+Die API bindet ausschließlich 127.0.0.1:18418 und verlangt ein eigenes
+Host-Bearertoken aus der privaten lain-Ablage. Inferenz- und Managementtoken
+sind getrennt. Alle Mutationen werden im Host serialisiert; überholte
+Revisionen liefern 409. Konfiguration beschreibt gewünschten und angewendeten
+Stand getrennt. Ein Profil wird erst nach erfolgreichem Start als angewendet
+markiert. Ungültige Runtimegenerationen dürfen nicht neu gestartet werden.
+
+Usage: GET `/api/v1/usage` und `/api/v1/attempts`, Parameter `from`, `to`,
+`timeZone`, `accountId`, `model`, `statusCode`, `offset`, `limit`. Intervalle
+sind höchstens 366 Tage, Requestseiten höchstens 500 Einträge. Die Endpunkte
+liefern dieselben Aggregate für GUI, CLI und Skill.
+
+Lokale Credentials und Anbieterfehler werden nicht als öffentliche API-Daten
+ausgegeben. `/api/v1/auth/token?audience=codex` liefert nach Hostauthentifizierung
+ausschließlich den lokalen Inferenzschlüssel.
