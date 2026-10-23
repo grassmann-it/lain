@@ -40,6 +40,9 @@ public sealed partial class MainWindow
                 var row = Ui.Button("", () => { _selectedAccountId = account.Id; Navigate("Accounts"); });
                 row.Content = BudgetAccountCells(BudgetIdentity(account),
                     BudgetWindowRow(account, selectedQuota, quotas.Length > 1 ? $"of {quotas.Length} windows" : null));
+                // Semi centers Button itself by default; stretching only its
+                // content leaves each table row at a different intrinsic width.
+                row.HorizontalAlignment = HorizontalAlignment.Stretch;
                 row.HorizontalContentAlignment = HorizontalAlignment.Stretch;
                 row.Padding = new Thickness(12, 8);
                 row.Background = Brushes.Transparent;
