@@ -1,0 +1,277 @@
+{
+  "id": "groq",
+  "name": "Groq",
+  "summary": "Groq inference for open models, distinct from xAI/Grok. Organization rate limits can constrain requests below nominal context size.",
+  "accountUrl": "https://console.groq.com/keys",
+  "documentationUrl": "https://console.groq.com/docs/openai",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "Groq API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true,
+      "help": "Use your own GroqCloud organization API key, not an xAI/Grok key."
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Open the Groq Console",
+      "description": "Create your own API key manually for the intended organization.",
+      "url": "https://console.groq.com/keys"
+    },
+    {
+      "title": "Check Free or Developer tier",
+      "description": "Check organization billing and exact model RPM/TPM limits. A large context window does not override rate limits.",
+      "url": "https://console.groq.com/docs/rate-limits"
+    },
+    {
+      "title": "Add a pinned model route",
+      "description": "Use the exact OpenAI-compatible base URL and a concrete GPT-OSS model. Paid fallback requires deliberate configuration."
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "free",
+      "name": "Groq Free tier",
+      "kind": "free",
+      "scope": "organization",
+      "unit": "tokens",
+      "includedAmount": null,
+      "resetDescription": null,
+      "limits": [
+        {
+          "kind": "requests",
+          "value": null,
+          "unit": "requests",
+          "window": "minute",
+          "scope": "organization",
+          "notes": "Exact limits vary by model and organization; Console values govern."
+        },
+        {
+          "kind": "requests",
+          "value": null,
+          "unit": "requests",
+          "window": "day",
+          "scope": "organization",
+          "notes": "Exact limits vary by model and organization; Console values govern."
+        },
+        {
+          "kind": "tokens",
+          "value": null,
+          "unit": "tokens",
+          "window": "minute",
+          "scope": "organization",
+          "notes": "Exact limits vary by model and organization; Console values govern."
+        },
+        {
+          "kind": "tokens",
+          "value": null,
+          "unit": "tokens",
+          "window": "day",
+          "scope": "organization",
+          "notes": "Exact limits vary by model and organization; Console values govern."
+        }
+      ],
+      "notes": "No fixed quota amount embedded. Promotional credits are separate optional offers."
+    },
+    {
+      "id": "developer",
+      "name": "Groq Developer API",
+      "kind": "payg",
+      "scope": "organization",
+      "unit": "tokens",
+      "includedAmount": null,
+      "resetDescription": null,
+      "limits": [
+        {
+          "kind": "requests",
+          "value": null,
+          "unit": "requests",
+          "window": "minute",
+          "scope": "organization",
+          "notes": "Exact limits vary by model and organization; Console values govern."
+        },
+        {
+          "kind": "requests",
+          "value": null,
+          "unit": "requests",
+          "window": "day",
+          "scope": "organization",
+          "notes": "Exact limits vary by model and organization; Console values govern."
+        },
+        {
+          "kind": "tokens",
+          "value": null,
+          "unit": "tokens",
+          "window": "minute",
+          "scope": "organization",
+          "notes": "Exact limits vary by model and organization; Console values govern."
+        },
+        {
+          "kind": "tokens",
+          "value": null,
+          "unit": "tokens",
+          "window": "day",
+          "scope": "organization",
+          "notes": "Exact limits vary by model and organization; Console values govern."
+        }
+      ],
+      "notes": "PAYG after explicit upgrade/payment configuration. Not an unlimited subscription."
+    }
+  ],
+  "routes": [
+    {
+      "id": "groq/openai/gpt-oss-20b",
+      "model": "openai/gpt-oss-20b",
+      "name": "GPT-OSS 20B on Groq",
+      "baseUrl": "https://api.groq.com/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "developer"
+      ],
+      "capabilities": {
+        "contextWindow": 131072,
+        "maximumOutput": 65536,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": false,
+        "structuredOutput": true,
+        "reasoningModes": [
+          "low",
+          "medium",
+          "high"
+        ]
+      },
+      "modelFamily": "gpt-oss",
+      "manufacturer": "OpenAI",
+      "inferenceProvider": "Groq",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://console.groq.com/docs/openai",
+          "title": "Official OpenAI-compatible API",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": "Compatibility is partial; unsupported OpenAI fields must not be assumed available."
+        },
+        {
+          "url": "https://console.groq.com/docs/models",
+          "title": "Current hosted model matrix",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": null
+        },
+        {
+          "url": "https://console.groq.com/docs/model/openai/gpt-oss-20b",
+          "title": "GPT-OSS 20B on Groq hosted capabilities",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": null
+        }
+      ],
+      "restrictions": [
+        "Text input/output only on this model route.",
+        "The same model endpoint can be free or charged depending on the organization tier.",
+        "Context window does not guarantee that organization TPM accepts a prompt of that size.",
+        "Built-in browser/code tools are provider features, not implied permission for arbitrary OpenAI options."
+      ]
+    },
+    {
+      "id": "groq/openai/gpt-oss-120b",
+      "model": "openai/gpt-oss-120b",
+      "name": "GPT-OSS 120B on Groq",
+      "baseUrl": "https://api.groq.com/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "developer"
+      ],
+      "capabilities": {
+        "contextWindow": 131072,
+        "maximumOutput": 65536,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": false,
+        "structuredOutput": true,
+        "reasoningModes": [
+          "low",
+          "medium",
+          "high"
+        ]
+      },
+      "modelFamily": "gpt-oss",
+      "manufacturer": "OpenAI",
+      "inferenceProvider": "Groq",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://console.groq.com/docs/openai",
+          "title": "Official OpenAI-compatible API",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": "Compatibility is partial; unsupported OpenAI fields must not be assumed available."
+        },
+        {
+          "url": "https://console.groq.com/docs/models",
+          "title": "Current hosted model matrix",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": null
+        },
+        {
+          "url": "https://console.groq.com/docs/model/openai/gpt-oss-120b",
+          "title": "GPT-OSS 120B on Groq hosted capabilities",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": null
+        }
+      ],
+      "restrictions": [
+        "Text input/output only on this model route.",
+        "The same model endpoint can be free or charged depending on the organization tier.",
+        "Context window does not guarantee that organization TPM accepts a prompt of that size.",
+        "Built-in browser/code tools are provider features, not implied permission for arbitrary OpenAI options."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://console.groq.com/docs/openai",
+      "title": "Official OpenAI-compatible API",
+      "checkedAt": "2026-10-23T22:12:49Z",
+      "notes": "Compatibility is partial; unsupported OpenAI fields must not be assumed available."
+    },
+    {
+      "url": "https://console.groq.com/docs/models",
+      "title": "Current hosted model matrix",
+      "checkedAt": "2026-10-23T22:12:49Z",
+      "notes": null
+    },
+    {
+      "url": "https://console.groq.com/docs/rate-limits",
+      "title": "Organization rate limits and observed response headers",
+      "checkedAt": "2026-10-23T22:12:49Z",
+      "notes": "Header request limits are RPD; token limits are TPM. No standalone remaining-quota polling endpoint verified."
+    },
+    {
+      "url": "https://console.groq.com/docs/billing-faqs",
+      "title": "Free versus Developer PAYG",
+      "checkedAt": "2026-10-23T22:12:49Z",
+      "notes": "Developer upgrade requires a payment method; promotional credits are not guaranteed."
+    }
+  ],
+  "restrictions": [
+    "No live credentials or inference tested.",
+    "Quota polling is unavailable; optional observed HTTP headers describe separate RPD and TPM windows, not monthly money or credits.",
+    "Organization IDs and shared pools must be evidenced, never inferred from API key text.",
+    "No measured speed or quality claims are inferred from provider marketing.",
+    "Free-only routing remains ineligible absent enforceable prevention of paid usage."
+  ],
+  "adapterState": "available",
+  "liveVerification": "not_tested",
+  "quotaSupport": "unsupported"
+}

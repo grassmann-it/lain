@@ -1,0 +1,254 @@
+{
+  "id": "gemini-api",
+  "name": "Google Gemini API",
+  "summary": "Direct Google Developer API with project-scoped Free Tier or paid billing; no consumer-subscription API entitlement is inferred.",
+  "accountUrl": "https://aistudio.google.com/apikey",
+  "documentationUrl": "https://ai.google.dev/gemini-api/docs/openai",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "Gemini API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true,
+      "help": "Use your own Google AI Studio project key. Do not enter a Google account password."
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Open AI Studio",
+      "description": "Choose an existing eligible Google project and create your own Gemini API key manually.",
+      "url": "https://aistudio.google.com/apikey"
+    },
+    {
+      "title": "Check project billing and limits",
+      "description": "Check the active tier and model availability. Several keys in one project share limits; a consumer subscription is not proof of API credit.",
+      "url": "https://ai.google.dev/gemini-api/docs/rate-limits"
+    },
+    {
+      "title": "Add the direct compatibility route",
+      "description": "Use the Gemini API key and the exact v1beta/openai base URL. Keep paid fallback disabled unless deliberately configured."
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "free",
+      "name": "Free Tier",
+      "kind": "free",
+      "scope": "project",
+      "unit": "tokens",
+      "includedAmount": null,
+      "resetDescription": null,
+      "limits": [
+        {
+          "kind": "requests",
+          "value": null,
+          "unit": "requests",
+          "window": "minute",
+          "scope": "project",
+          "notes": "RPM is account/project and model dependent."
+        },
+        {
+          "kind": "input_tokens",
+          "value": null,
+          "unit": "tokens",
+          "window": "minute",
+          "scope": "project",
+          "notes": "TPM is input tokens, independent of context limit."
+        },
+        {
+          "kind": "requests",
+          "value": null,
+          "unit": "requests",
+          "window": "day",
+          "scope": "project",
+          "notes": "RPD resets at midnight Pacific Time, not UTC."
+        }
+      ],
+      "notes": "Only eligible models/projects. Actual remaining quota unknown; standard inference Free Tier is documented, not a live entitlement check."
+    },
+    {
+      "id": "paid",
+      "name": "Paid API usage",
+      "kind": "payg",
+      "scope": "project",
+      "unit": "tokens",
+      "includedAmount": null,
+      "resetDescription": null,
+      "limits": [
+        {
+          "kind": "requests",
+          "value": null,
+          "unit": "requests",
+          "window": "minute",
+          "scope": "project",
+          "notes": "RPM is account/project and model dependent."
+        },
+        {
+          "kind": "input_tokens",
+          "value": null,
+          "unit": "tokens",
+          "window": "minute",
+          "scope": "project",
+          "notes": "TPM is input tokens, independent of context limit."
+        },
+        {
+          "kind": "requests",
+          "value": null,
+          "unit": "requests",
+          "window": "day",
+          "scope": "project",
+          "notes": "RPD resets at midnight Pacific Time, not UTC."
+        }
+      ],
+      "notes": "Requires configured API billing. Same endpoint/model IDs may incur charges; do not infer free-only eligibility."
+    }
+  ],
+  "routes": [
+    {
+      "id": "gemini-api/gemini-3.5-flash-lite",
+      "model": "gemini-3.5-flash-lite",
+      "name": "Gemini 3.5 Flash-Lite",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "paid"
+      ],
+      "capabilities": {
+        "contextWindow": 1048576,
+        "maximumOutput": 65536,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": true,
+        "structuredOutput": true,
+        "reasoningModes": null
+      },
+      "modelFamily": "gemini",
+      "manufacturer": "Google",
+      "inferenceProvider": "Google",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://ai.google.dev/gemini-api/docs/openai",
+          "title": "Official OpenAI compatibility",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": null
+        },
+        {
+          "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite",
+          "title": "Gemini 3.5 Flash-Lite model capabilities",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": null
+        },
+        {
+          "url": "https://ai.google.dev/gemini-api/docs/pricing",
+          "title": "Free Tier and paid API categories",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": "Standard free tier exists for the listed models; project eligibility and billing tier remain unverified."
+        }
+      ],
+      "restrictions": [
+        "Pricing depends on project tier; no per-request free-only prevention verified.",
+        "Input token limit and output token limit are documented separately; do not sum them into a guaranteed single-request allowance.",
+        "Specific reasoning effort levels were not verified for this concrete model."
+      ]
+    },
+    {
+      "id": "gemini-api/gemini-3.8-flash",
+      "model": "gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "paid"
+      ],
+      "capabilities": {
+        "contextWindow": 1048576,
+        "maximumOutput": 65536,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": true,
+        "structuredOutput": true,
+        "reasoningModes": [
+          "low",
+          "medium",
+          "high"
+        ]
+      },
+      "modelFamily": "gemini",
+      "manufacturer": "Google",
+      "inferenceProvider": "Google",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://ai.google.dev/gemini-api/docs/openai",
+          "title": "Official OpenAI compatibility",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": null
+        },
+        {
+          "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash",
+          "title": "Gemini 3.8 Flash model capabilities",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": null
+        },
+        {
+          "url": "https://ai.google.dev/gemini-api/docs/pricing",
+          "title": "Free Tier and paid API categories",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": "Standard free tier exists for the listed models; project eligibility and billing tier remain unverified."
+        }
+      ],
+      "restrictions": [
+        "Pricing depends on project tier; no per-request free-only prevention verified.",
+        "Input token limit and output token limit are documented separately; do not sum them into a guaranteed single-request allowance.",
+        "reasoning_effort minimal is explicitly unsupported for Gemini 3.8 Flash; low, medium and high are documented."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://ai.google.dev/gemini-api/docs/openai",
+      "title": "Official OpenAI compatibility",
+      "checkedAt": "2026-10-23T22:12:49Z",
+      "notes": null
+    },
+    {
+      "url": "https://ai.google.dev/gemini-api/docs/rate-limits",
+      "title": "Project rate limits",
+      "checkedAt": "2026-10-23T22:12:49Z",
+      "notes": "Actual capacity varies; active model/tier limits are in AI Studio, not inferred from keys."
+    },
+    {
+      "url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "title": "Free Tier and paid API categories",
+      "checkedAt": "2026-10-23T22:12:49Z",
+      "notes": "Standard free tier exists for the listed models; project eligibility and billing tier remain unverified."
+    },
+    {
+      "url": "https://ai.google.dev/gemini-api/docs/models",
+      "title": "Current models and access",
+      "checkedAt": "2026-10-23T22:12:49Z",
+      "notes": "Gemini 2.5 access is restricted to prior active users; new projects are directed to 3.5 Flash-Lite or 3.8 Flash."
+    }
+  ],
+  "restrictions": [
+    "No live credentials or inference tested.",
+    "Quota polling with the ordinary API key is unavailable; check AI Studio.",
+    "Do not combine keys into separate project budgets or invent a project identity.",
+    "Free-only routing remains ineligible until an enforceable free account/tier condition can be demonstrated."
+  ],
+  "adapterState": "available",
+  "liveVerification": "not_tested",
+  "quotaSupport": "unsupported"
+}

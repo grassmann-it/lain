@@ -1,0 +1,239 @@
+{
+  "id": "mistral",
+  "name": "Mistral API",
+  "summary": "Direct Mistral API with Free mode, plan-included monthly usage and separately enabled prepaid PAYG overflow.",
+  "accountUrl": "https://console.mistral.ai/",
+  "documentationUrl": "https://docs.mistral.ai/api/endpoint/chat",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "Mistral API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true,
+      "help": "Use your own Mistral Studio workspace API key; API availability and plan usage must be checked in the account."
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Open Mistral Studio",
+      "description": "Use an existing account and create your own API key manually. Free mode is enabled without a credit card, within usage/rate limits.",
+      "url": "https://docs.mistral.ai/getting-started/quickstarts/studio/activate-and-generate-api-key"
+    },
+    {
+      "title": "Check the organization plan",
+      "description": "Review shared monthly included usage across API, Studio and Vibe Code; verify whether prepaid PAYG overflow is enabled.",
+      "url": "https://docs.mistral.ai/admin/billing-usage/subscriptions"
+    },
+    {
+      "title": "Check model and workspace limits",
+      "description": "Verify Small 4 availability, model TPM/RPS and workspace spending caps. Do not treat workspace caps as independent credit pools.",
+      "url": "https://docs.mistral.ai/admin/billing-usage/usage-limits"
+    },
+    {
+      "title": "Add the direct route",
+      "description": "Use https://api.mistral.ai/v1 and the pinned mistral-small-2603 model. Ordinary API keys do not imply Enterprise Admin API quota access."
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "free",
+      "name": "Mistral Free mode",
+      "kind": "free",
+      "scope": "organization",
+      "unit": "included_usage",
+      "includedAmount": null,
+      "resetDescription": "Monthly billing period; actual reset instant unknown.",
+      "limits": [
+        {
+          "kind": "tokens",
+          "value": null,
+          "unit": "tokens",
+          "window": "minute",
+          "scope": "organization",
+          "notes": "Per-model TPM shown in Admin Panel API Limits."
+        },
+        {
+          "kind": "requests",
+          "value": null,
+          "unit": "requests",
+          "window": "second",
+          "scope": "organization",
+          "notes": "Per-model requests per second, not RPM."
+        },
+        {
+          "kind": "spend",
+          "value": null,
+          "unit": "billing_currency",
+          "window": "month",
+          "scope": "organization",
+          "notes": "Organization and workspace spend caps overlap; workspace caps are not extra credits."
+        }
+      ],
+      "notes": "Included monthly usage shared across Studio/API/Vibe Code. Amount/unit not verified; do not translate into token credits."
+    },
+    {
+      "id": "subscription",
+      "name": "Mistral paid plan included usage",
+      "kind": "subscription",
+      "scope": "organization",
+      "unit": "included_usage",
+      "includedAmount": null,
+      "resetDescription": "Monthly billing period; actual reset instant unknown.",
+      "limits": [
+        {
+          "kind": "tokens",
+          "value": null,
+          "unit": "tokens",
+          "window": "minute",
+          "scope": "organization",
+          "notes": "Per-model TPM shown in Admin Panel API Limits."
+        },
+        {
+          "kind": "requests",
+          "value": null,
+          "unit": "requests",
+          "window": "second",
+          "scope": "organization",
+          "notes": "Per-model requests per second, not RPM."
+        },
+        {
+          "kind": "spend",
+          "value": null,
+          "unit": "billing_currency",
+          "window": "month",
+          "scope": "organization",
+          "notes": "Organization and workspace spend caps overlap; workspace caps are not extra credits."
+        }
+      ],
+      "notes": "Current docs list Pro/Education/Team/Enterprise. Actual plan entitlement must be verified; included monthly usage shared across Studio/API/Vibe Code."
+    },
+    {
+      "id": "payg",
+      "name": "Optional prepaid PAYG overflow",
+      "kind": "payg",
+      "scope": "organization",
+      "unit": "billing_currency",
+      "includedAmount": null,
+      "resetDescription": null,
+      "limits": [
+        {
+          "kind": "tokens",
+          "value": null,
+          "unit": "tokens",
+          "window": "minute",
+          "scope": "organization",
+          "notes": "Per-model TPM shown in Admin Panel API Limits."
+        },
+        {
+          "kind": "requests",
+          "value": null,
+          "unit": "requests",
+          "window": "second",
+          "scope": "organization",
+          "notes": "Per-model requests per second, not RPM."
+        },
+        {
+          "kind": "spend",
+          "value": null,
+          "unit": "billing_currency",
+          "window": "month",
+          "scope": "organization",
+          "notes": "Organization and workspace spend caps overlap; workspace caps are not extra credits."
+        }
+      ],
+      "notes": "Requires explicit enabling and prepaid credits. Consumed after included monthly usage; not an independent API plan."
+    }
+  ],
+  "routes": [
+    {
+      "id": "mistral/mistral-small-2603",
+      "model": "mistral-small-2603",
+      "name": "Mistral Small 4",
+      "baseUrl": "https://api.mistral.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "subscription",
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": null,
+        "structuredOutput": true,
+        "reasoningModes": null
+      },
+      "modelFamily": "mistral-small",
+      "manufacturer": "Mistral",
+      "inferenceProvider": "Mistral",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.mistral.ai/api/endpoint/chat",
+          "title": "Official chat completions API",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": null
+        },
+        {
+          "url": "https://docs.mistral.ai/models/mistral-small-4-0-26-03",
+          "title": "Mistral Small 4 concrete model",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": "Model card says 256k context; exact numeric context/output and vision capability remain unverified here."
+        }
+      ],
+      "restrictions": [
+        "Official card documents 256k context; exact context number and maximum output remain unknown.",
+        "Specific reasoning effort modes and image support were not verified for this concrete route.",
+        "API, Studio and Vibe Code may share included organization usage; optional prepaid overflow can incur charges."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://docs.mistral.ai/getting-started/quickstarts/studio/activate-and-generate-api-key",
+      "title": "Free mode and API key setup",
+      "checkedAt": "2026-10-23T22:12:49Z",
+      "notes": "API keys enabled in Free mode without a credit card; usage and rate limits apply."
+    },
+    {
+      "url": "https://docs.mistral.ai/api/endpoint/chat",
+      "title": "Official chat completions API",
+      "checkedAt": "2026-10-23T22:12:49Z",
+      "notes": null
+    },
+    {
+      "url": "https://docs.mistral.ai/models/mistral-small-4-0-26-03",
+      "title": "Mistral Small 4 concrete model",
+      "checkedAt": "2026-10-23T22:12:49Z",
+      "notes": "Model card says 256k context; exact numeric context/output and vision capability remain unverified here."
+    },
+    {
+      "url": "https://docs.mistral.ai/admin/billing-usage/subscriptions",
+      "title": "Global plans, shared included monthly usage and optional PAYG",
+      "checkedAt": "2026-10-23T22:12:49Z",
+      "notes": "Current docs explicitly share included monthly usage across Studio, API and Vibe Code. Verify the actual account entitlement."
+    },
+    {
+      "url": "https://docs.mistral.ai/admin/billing-usage/usage-limits",
+      "title": "Organization and workspace limits",
+      "checkedAt": "2026-10-23T22:12:49Z",
+      "notes": "Programmatic Admin API usage is Enterprise-only; no ordinary-key quota endpoint assumed."
+    }
+  ],
+  "restrictions": [
+    "No live credentials or inference tested.",
+    "Ordinary API-key quota lookup unavailable. Enterprise-only Admin API permissions are not assumed.",
+    "Global-plan API entitlement is documented currently but does not prove an arbitrary historical consumer subscription includes API usage.",
+    "Free-only routing remains ineligible unless paid overflow is enforceably excluded."
+  ],
+  "adapterState": "available",
+  "liveVerification": "not_tested",
+  "quotaSupport": "unsupported"
+}
