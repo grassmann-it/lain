@@ -7,6 +7,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Lain.Client;
 using Lain.Core;
 
@@ -24,12 +25,12 @@ public sealed class InspectorView : UserControl
     private readonly TextBlock _buffer = Ui.Text("No live buffer received", 11, Ui.Muted);
     private readonly TextBlock _selection = Ui.Text("Choose a conversation or request", 14);
     private readonly TextBlock _contentStatus = Ui.Text("", 11, Ui.Muted);
-    private readonly TextBox _search = new() { Width = 230, PlaceholderText = "Model, provider or identity" };
+    private readonly TextBox _search = new() { Width = 200, PlaceholderText = "Model, provider or identity" };
     private readonly ComboBox _activity = new() { Width = 160, ItemsSource = new[] { "All observed", "Active conversations", "With errors" }, SelectedIndex = 0 };
     private readonly ComboBox _conversation = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly ComboBox _request = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly CheckBox _follow = new() { Content = "Follow output", IsChecked = true };
-    private readonly Button _pause = new() { Content = "Pause updates" };
+    private readonly Button _pause = new() { Content = "Pause" };
     private readonly StackPanel _groupList = new() { Spacing = 5 };
     private readonly StackPanel _eventList = new() { Spacing = 8 };
     private readonly Expander _identity = new() { Header = "Identities & measurement sources", HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
@@ -37,7 +38,9 @@ public sealed class InspectorView : UserControl
     private readonly Grid _layout = new() { ColumnDefinitions = new ColumnDefinitions("260,*"), ColumnSpacing = 12, Height = 480 };
     private readonly Border _sidebar;
     private readonly Grid _details;
+    private readonly Grid _pickers = new() { ColumnDefinitions = new ColumnDefinitions("*"), ColumnSpacing = 10 };
     private readonly Control _conversationField;
+    private readonly Control _requestField;
     private readonly Dictionary<string, Button> _groupButtons = new(StringComparer.Ordinal);
     private readonly Dictionary<string, GroupChoice> _groups = new(StringComparer.Ordinal);
     private readonly List<InspectorEventDto> _events = [];
@@ -60,8 +63,8 @@ public sealed class InspectorView : UserControl
     public InspectorView(LainApiClient client)
     {
         _client = client;
-        var refresh = Ui.Button("Refresh inspector", () => { _nextSnapshot = 0; _refreshOnce = true; });
-        var clear = Ui.Button("Clear displayed events", () =>
+        var refresh = Ui.Button("Refresh", () => { _nextSnapshot = 0; _refreshOnce = true; });
+        var clear = Ui.Button("Clear view", () =>
         {
             ClearEvents(); _after = Math.Max(_after, _snapshot?.Cursor ?? 0);
             _contentGap = "Displayed events cleared. New events will appear as they arrive.";
@@ -70,7 +73,7 @@ public sealed class InspectorView : UserControl
         _pause.Click += (_, _) =>
         {
             _paused = !_paused;
-            _pause.Content = _paused ? "Resume updates" : "Pause updates";
+            _pause.Content = _paused ? "Resume" : "Pause";
             _nextSnapshot = 0;
             UpdateStatus();
         };
@@ -84,6 +87,8 @@ public sealed class InspectorView : UserControl
         AutomationProperties.SetName(_request, "Inspector request");
         AutomationProperties.SetName(_follow, "Follow live output");
         AutomationProperties.SetName(_eventList, "Inspector events");
+        ToolTip.SetTip(_pause, "Pause or resume automatic live updates.");
+        ToolTip.SetTip(refresh, "Refresh the Inspector once, including while paused.");
         ToolTip.SetTip(clear, "Clears this view. The host's bounded live buffer expires automatically.");
         ToolTip.SetTip(_follow, "Turn off to read earlier output while new events arrive.");
         var toolbar = new WrapPanel { Orientation = Orientation.Horizontal };
@@ -105,21 +110,23 @@ public sealed class InspectorView : UserControl
         _eventScroll = new ScrollViewer { Content = eventContent, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         _details = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*"), RowSpacing = 8 };
         _details.Children.Add(_selection);
-        var requestField = Ui.Field("Request within this group", _request);
-        Grid.SetRow(requestField, 1); _details.Children.Add(requestField);
+        _requestField = Ui.Field("Request within this group", _request);
+        _pickers.Children.Add(_conversationField); _pickers.Children.Add(_requestField);
+        Grid.SetRow(_pickers, 1); _details.Children.Add(_pickers);
         Grid.SetRow(_contentStatus, 2); _details.Children.Add(_contentStatus);
         Grid.SetRow(_eventScroll, 3); _details.Children.Add(_eventScroll);
         Grid.SetColumn(_details, 1); _layout.Children.Add(_details);
         Content = new StackPanel { Spacing = 10, Children =
         {
             Ui.PageHeader("Inspector", "Live output, attempts and tool continuations grouped by proven identities."),
-            toolbar, new StackPanel { Spacing = 3, Children = { _status, _buffer } }, _conversationField, _layout
+            toolbar, new StackPanel { Spacing = 3, Children = { _status, _buffer } }, _layout
         } };
         _search.TextChanged += (_, _) => RenderGroups();
         _activity.SelectionChanged += (_, _) => RenderGroups();
         _conversation.SelectionChanged += (_, _) => { if (!_updatingChoices && _conversation.SelectedItem is GroupChoice choice) SelectGroup(choice.Key); };
         _request.SelectionChanged += (_, _) => { if (!_updatingChoices && _request.SelectedItem is RequestChoice choice) SelectRequest(choice.Id); };
         SizeChanged += (_, _) => ArrangeInspector();
+        LayoutUpdated += (_, _) => FitWorkspace();
         AttachedToVisualTree += (_, _) =>
         {
             if (_lifetime is not null) return;
@@ -152,7 +159,17 @@ public sealed class InspectorView : UserControl
         _conversationField.IsVisible = narrow;
         _layout.ColumnDefinitions = new ColumnDefinitions(narrow ? "*" : "260,*");
         Grid.SetColumn(_details, narrow ? 0 : 1);
-        _layout.Height = Math.Clamp((_topLevel?.ClientSize.Height ?? 780) - (narrow ? 340 : 300), 220, 650);
+        _pickers.ColumnDefinitions = new ColumnDefinitions(narrow ? "*,*" : "*");
+        Grid.SetColumn(_requestField, narrow ? 1 : 0);
+        FitWorkspace();
+    }
+
+    private void FitWorkspace()
+    {
+        var viewport = this.GetVisualAncestors().OfType<ScrollViewer>().FirstOrDefault()?.Viewport.Height ?? 0;
+        if (viewport <= 0 || _layout.TranslatePoint(default, this) is not { } origin) return;
+        var height = Math.Max(180, viewport - origin.Y);
+        if (Math.Abs(_layout.Height - height) > 1) _layout.Height = height;
     }
 
     private async Task PollAsync(CancellationToken token)
