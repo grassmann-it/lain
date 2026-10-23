@@ -30,7 +30,7 @@ public sealed class HttpCodexOwnedLoginBackend : ICodexOwnedLoginBackend, IDispo
         using var result = await SendAsync(request, ct);
         var status = Read(result.RootElement, "status") switch
         {
-            "pending" => "waiting", "completed" => "completed", "canceled" or "cancelled" => "cancelled", "failed" => "failed",
+            "pending" or "exchanging" => "waiting", "completed" => "completed", "canceled" or "cancelled" => "cancelled", "failed" => "failed",
             _ => throw new InvalidDataException("Core returned an invalid login status.")
         };
         return new(status, Read(result.RootElement, "ownedAuthFile"));

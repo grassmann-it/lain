@@ -101,6 +101,14 @@ try
     var multiRepository = new ConfigurationRepository(multiPaths);
     var multiConfigPath = Path.Combine(legacy, "multi.yaml");
     File.WriteAllText(multiConfigPath, """
+        request-retry: 1
+        disable-image-generation: passthrough
+        claude-api-key:
+          - api-key: shared-key
+            base-url: https://api.commandcode.ai/provider
+            models:
+              - name: claude-test
+                alias: cmd-claude-test
         codex-api-key:
           - api-key: shared-key
             base-url: https://api.commandcode.ai/provider/v1
@@ -124,16 +132,21 @@ try
     var multiImported = multiImporter.Import(new(0, multiConfigPath));
     var multiState = multiRepository.Snapshot;
     Check(multiState.Accounts.Length == 1 && multiState.Accounts[0].Provider == "commandcode", "same Command key across transport protocols remains one logical account");
-    Check(multiState.Routes.Length == 4, "Responses and Qwen/Ling/chat aliases all preserved");
+    Check(multiState.Routes.Length == 5, "Responses and Qwen/Ling/chat aliases all preserved");
     using (var multiSecret = JsonDocument.Parse(multiSecrets.ReadAccount(multiState.Accounts[0].Id)))
-        Check(multiSecret.RootElement.GetProperty("transports").GetArrayLength() == 2, "private transport definitions remain separate");
+        Check(multiSecret.RootElement.GetProperty("transports").GetArrayLength() == 3, "private transport definitions remain separate");
     var multiWriter = new ProxyConfigurationWriter(multiPaths, multiSecrets);
     multiWriter.Write(multiState);
     var logicalAccountId = multiState.Accounts[0].Id;
     var responsesRoute = multiState.Routes.Single(r => r.Alias == "cmd-gpt-6-luna");
+    var claudeRoute = multiState.Routes.Single(r => r.Alias == "cmd-claude-test");
     var qwenRoute = multiState.Routes.Single(r => r.Alias == "cmd-qwen");
     var chatRoute = multiState.Routes.Single(r => r.Alias == "cmd-gpt-chat");
     Check(multiWriter.RouteCredentials[responsesRoute.Id][logicalAccountId].StartsWith("codex:apikey:"), "Responses route pins direct Codex transport");
+    var expectedClaudeId = "claude:apikey:" + Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("claude:apikey\0shared-key\0https://api.commandcode.ai/provider\0\0\0"))).ToLowerInvariant()[..12];
+    Check(multiWriter.RouteCredentials[claudeRoute.Id][logicalAccountId] == expectedClaudeId, "Claude API transport preserves exact synthesizer credential identity");
+    var multiRuntime = File.ReadAllText(multiPaths.ProxyConfig);
+    Check(multiRuntime.Contains("claude-api-key:") && multiRuntime.Contains("request-retry: 1") && multiRuntime.Contains("disable-image-generation: passthrough"), "runtime preserves qualified Claude API and explicit retry/image settings");
     Check(multiWriter.RouteCredentials[qwenRoute.Id][logicalAccountId].StartsWith("openai-compatibility:command-code:"), "Qwen route pins original chat transport");
     Check(multiWriter.RouteCredentials[chatRoute.Id][logicalAccountId] != multiWriter.RouteCredentials[responsesRoute.Id][logicalAccountId], "shared model names retain distinct route transports");
     var multiReplay = multiImporter.Import(new(multiImported.Revision, multiConfigPath));
@@ -154,7 +167,7 @@ try
     new LegacyImportService(migratedPaths, migratedRepository, migratedSecrets).Import(new(1, multiConfigPath));
     var migrated = migratedRepository.Snapshot;
     Check(migrated.Accounts.Length == 1 && migrated.Accounts[0].Id == "legacy-direct" && migrated.Accounts[0].Provider == "commandcode", "canonical migration retains an existing stable identity");
-    Check(migrated.Routes.Length == 4 && migrated.Routes.Any(r => r.Id == "legacy-route-gpt") && migrated.Routes.Any(r => r.Id == "legacy-route-qwen") && migrated.Routes.All(r => r.AccountIds.SequenceEqual(new[] { "legacy-direct" })), "canonical migration preserves route identities and remaps logical account references");
+    Check(migrated.Routes.Length == 5 && migrated.Routes.Any(r => r.Id == "legacy-route-gpt") && migrated.Routes.Any(r => r.Id == "legacy-route-qwen") && migrated.Routes.All(r => r.AccountIds.SequenceEqual(new[] { "legacy-direct" })), "canonical migration preserves route identities and remaps logical account references");
     var migratedWriter = new ProxyConfigurationWriter(migratedPaths, migratedSecrets); migratedWriter.Write(migrated);
     Check(migratedWriter.RouteCredentials["legacy-route-qwen"]["legacy-direct"].StartsWith("openai-compatibility:"), "migrated route transport remains chat");
     var emptyAliasConfig = Path.Combine(legacy, "empty-alias.yaml"); File.WriteAllText(emptyAliasConfig, "oauth-model-alias: {}\noauth-excluded-models:\n  codex: [hidden-*]\n");
@@ -247,7 +260,7 @@ sealed class FakeLoginHttpHandler : HttpMessageHandler
     {
         if (request.RequestUri!.Host != "127.0.0.1" || request.RequestUri.Port != OwnStatePaths.ProxyPort || request.Headers.Authorization?.Scheme != "Bearer") throw new Exception("Invalid management transport.");
         var json = request.Method == HttpMethod.Post ? """{"state":"test-state","status":"pending","authorizationUrl":"https://auth.openai.com/oauth/authorize"}"""
-            : request.Method == HttpMethod.Delete ? """{"state":"test-state","status":"canceled"}""" : """{"state":"test-state","status":"pending"}""";
+            : request.Method == HttpMethod.Delete ? """{"state":"test-state","status":"canceled"}""" : """{"state":"test-state","status":"exchanging"}""";
         return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent(json) });
     }
 }

@@ -29,7 +29,7 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
             var name = metadata.RootElement.GetProperty("snapshot").GetString()!;
             if (Path.GetFileName(name) != name) throw new InvalidDataException("Invalid own import metadata.");
             var source = Parse(File.ReadAllText(Path.Combine(paths.Imports, name)));
-            foreach (var key in new[] { "routing", "oauth-model-alias", "oauth-excluded-models", "payload" })
+            foreach (var key in new[] { "routing", "oauth-model-alias", "oauth-excluded-models", "payload", "request-retry", "disable-image-generation" })
                 if (LegacyImportService.Get(source, key) is { } value) config.Add(key, value);
             if (LegacyImportService.Get(config, "oauth-model-alias") is YamlMappingNode oauth)
                 foreach (var aliases in oauth.Children.Values.OfType<YamlSequenceNode>()) NormalizeModelAliases(aliases);
@@ -91,10 +91,10 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
                 var transportId = descriptor.Id;
                 var coreProvider = Read(transport, "coreProvider") ?? account.Provider;
                 var section = Read(transport, "sourceSection") ?? "openai-compatibility";
-                if (section is not ("openai-compatibility" or "codex-api-key"))
+                if (section is not ("openai-compatibility" or "codex-api-key" or "claude-api-key"))
                     throw new InvalidDataException("Unsupported source section.");
                 var provider = Read(transport, "sourceConfig") is { } sourceConfig ? Parse(sourceConfig) : new YamlMappingNode();
-                if (section == "codex-api-key" && LegacyImportService.Get(provider, "headers") is YamlMappingNode headers && headers.Children.Count > 0)
+                if ((section is "codex-api-key" or "claude-api-key") && LegacyImportService.Get(provider, "headers") is YamlMappingNode headers && headers.Children.Count > 0)
                     throw new InvalidDataException("Custom direct-provider headers require additional qualification.");
                 var key = Read(transport, "apiKey") ?? throw new InvalidDataException("Missing own API credential.");
                 var endpoint = Read(transport, "baseUrl") ?? "";

@@ -12,7 +12,7 @@ namespace Lain.Host.Accounts;
 public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationRepository configuration, SecretStore secrets, IReadOnlyList<string>? codexModelCatalog = null)
 {
     private static readonly string[] ProviderSections = ["codex-api-key", "claude-api-key", "gemini-api-key", "vertex-api-key", "openai-compatibility"];
-    private static readonly string[] ConfigSections = [.. ProviderSections, "routing", "oauth-model-alias", "oauth-excluded-models", "disabled", "payload"];
+    private static readonly string[] ConfigSections = [.. ProviderSections, "routing", "oauth-model-alias", "oauth-excluded-models", "disabled", "payload", "request-retry", "disable-image-generation"];
     public ImportResult Import(ImportRequest request)
     {
         paths.AssertExternalSource(request.ConfigPath);
