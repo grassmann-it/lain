@@ -36,6 +36,7 @@ public sealed partial class MainWindow : Window
     private bool _refreshing;
     private bool _editing;
     private bool _hostAvailable;
+    private string? _renderedPageState;
     private readonly UsageView _usage;
     private LoginDto? _login;
     private CancellationTokenSource? _loginPolling;
@@ -171,7 +172,7 @@ public sealed partial class MainWindow : Window
                 catch (Exception error) when (error is not OperationCanceledException) { _models = []; }
             }
             if (explicitRefresh) { _editing = false; _loginVisible = false; _notice.Text = ""; }
-            if (!_editing && _section != "Usage") Render();
+            RefreshPage(explicitRefresh);
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception ex)
@@ -181,7 +182,7 @@ public sealed partial class MainWindow : Window
             _hostIndicator.Background = Ui.Warning;
             ToolTip.SetTip(_connection, Friendly(ex));
             if (explicitRefresh || _status is null) _notice.Text = Friendly(ex);
-            if (!_editing && _section != "Usage") Render();
+            RefreshPage(explicitRefresh);
         }
         finally { _refreshing = false; _refresh.IsEnabled = !_busy; }
     }
@@ -210,6 +211,29 @@ public sealed partial class MainWindow : Window
         var button = Ui.Button(label, () => _ = RunAsync(operation, success, stayOnPage)); _actions.Add(button); return button;
     }
 
+    private void RefreshPage(bool explicitRefresh)
+    {
+        if (_editing || _section == "Usage") return;
+        // Polling updates the shell immediately, but must not remove the control being
+        // used with the keyboard. A changed snapshot remains pending until focus leaves
+        // the page, navigation occurs, or the user explicitly refreshes.
+        if (explicitRefresh || (!_page.IsKeyboardFocusWithin && PageState() != _renderedPageState)) Render();
+    }
+
+    private string PageState() => JsonSerializer.Serialize(new
+    {
+        Section = _section,
+        HostAvailable = _hostAvailable,
+        Configuration = _configuration,
+        // Observation time is visible in Overview; other pages should retain their
+        // controls when the host only advances its observation timestamp.
+        Status = _section == "Overview" ? _status : null,
+        Quotas = _section == "Accounts" ? _quotas : null,
+        QuotaError = _section == "Accounts" ? _quotaError : null,
+        Models = _section is "Routes" or "Profiles" ? _models : null,
+        LoginState = _section == "Accounts" ? _login?.State : null
+    });
+
     private void Render()
     {
         _actions.Clear();
@@ -227,6 +251,7 @@ public sealed partial class MainWindow : Window
             "Accounts" => AccountsPage(), "Routes" => RoutesPage(), "Profiles" => ProfilesPage(),
             "Usage" => _usage, "Setup" => SetupPage(), _ => OverviewPage()
         };
+        _renderedPageState = PageState();
     }
 
     private StackPanel Heading(string title, string description) => new() { Spacing = 5, Children = { Ui.Title(title), Ui.Text(description, 13, Ui.Muted) } };
