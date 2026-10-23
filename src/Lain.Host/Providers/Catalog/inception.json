@@ -1,0 +1,155 @@
+{
+  "Id": "inception",
+  "Name": "Inception Mercury",
+  "Summary": "Direct Mercury API with a one-time new-account trial and optional paid usage.",
+  "AccountUrl": "https://platform.inceptionlabs.ai",
+  "DocumentationUrl": "https://docs.inceptionlabs.ai/get-started/get-started.md",
+  "Credentials": [
+    {
+      "Id": "api_key",
+      "Label": "Inception API key",
+      "Kind": "secret",
+      "Required": true,
+      "Secret": true
+    }
+  ],
+  "SetupSteps": [
+    {
+      "Title": "Open your account",
+      "Description": "Create or sign in to your own Inception account if desired. No registration is performed by lain.",
+      "Url": "https://platform.inceptionlabs.ai"
+    },
+    {
+      "Title": "Create an API key",
+      "Description": "Use API Keys; no payment details are required for the documented new-account trial.",
+      "Url": "https://platform.inceptionlabs.ai/dashboard/api-keys"
+    },
+    {
+      "Title": "Check the account",
+      "Description": "Confirm actual trial balance and any expiry in Billing. Connection remains untested until credentials are supplied.",
+      "Url": null
+    }
+  ],
+  "BillingPlans": [
+    {
+      "Id": "new-account-trial",
+      "Name": "New-account trial",
+      "Kind": "trial",
+      "Scope": "account",
+      "Unit": "tokens",
+      "IncludedAmount": null,
+      "ResetDescription": "One-time grant; no recurring reset. Expiry is not stated.",
+      "ExpiresAt": null,
+      "Limits": [
+        {
+          "Kind": "rate",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "account",
+          "Notes": "Account/model-specific limit not observed."
+        },
+        {
+          "Kind": "parallelism",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "account",
+          "Notes": "Not observed."
+        }
+      ],
+      "Notes": "Official offer: 100 million initial tokens. Eligibility, actual grant, remaining balance and expiry are not observed. No payment details required."
+    },
+    {
+      "Id": "payg",
+      "Name": "Paid API usage",
+      "Kind": "payg",
+      "Scope": "account",
+      "Unit": "currency",
+      "IncludedAmount": null,
+      "ResetDescription": null,
+      "ExpiresAt": null,
+      "Limits": [
+        {
+          "Kind": "rate",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "account",
+          "Notes": "Account/model-specific limit not observed."
+        },
+        {
+          "Kind": "parallelism",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "account",
+          "Notes": "Not observed."
+        }
+      ],
+      "Notes": "Requires separately configured billing; promotional prices are not fixed in lain."
+    }
+  ],
+  "Routes": [
+    {
+      "Id": "inception-mercury-3",
+      "Model": "mercury-3",
+      "Name": "Mercury 3",
+      "BaseUrl": "https://api.inceptionlabs.ai/v1",
+      "Protocol": "openai-chat",
+      "BillingPlanIds": [
+        "new-account-trial",
+        "payg"
+      ],
+      "Capabilities": {
+        "ContextWindow": 1000000,
+        "MaximumOutput": 131072,
+        "Tools": true,
+        "Streaming": null,
+        "Reasoning": true,
+        "Images": false,
+        "StructuredOutput": true,
+        "ReasoningModes": [
+          "instant",
+          "low",
+          "medium",
+          "high"
+        ]
+      },
+      "ModelFamily": "mercury",
+      "Manufacturer": "Inception",
+      "InferenceProvider": "Inception",
+      "Gateway": null,
+      "PricingClass": "paid",
+      "FreeOnlyEligible": false,
+      "FreeOnlyEnforcement": "No independently verified billing cutoff; trial credit is not a free route.",
+      "Restrictions": [
+        "Temperature is documented as 0.5\u20131.0. Streaming has not been verified for this route."
+      ]
+    }
+  ],
+  "Sources": [
+    {
+      "Url": "https://docs.inceptionlabs.ai/get-started/get-started.md",
+      "Title": "Inception quick start",
+      "CheckedAt": "2026-10-23T22:13:08Z",
+      "Notes": "100M one-time new-account tokens, no payment details; expiry unstated."
+    },
+    {
+      "Url": "https://docs.inceptionlabs.ai/get-started/models.md",
+      "Title": "Inception models",
+      "CheckedAt": "2026-10-23T22:13:08Z",
+      "Notes": "Mercury 3 context/output/tools/structured outputs/reasoning."
+    },
+    {
+      "Url": "https://www.inceptionlabs.ai/blog/introducing-mercury-3",
+      "Title": "Mercury 3 launch, 19 October 2026",
+      "CheckedAt": "2026-10-23T22:13:08Z",
+      "Notes": null
+    }
+  ],
+  "Restrictions": [
+    "The trial is a one-time account grant, not a permanent free tier.",
+    "Actual balance, expiry, rate limits and parallelism are unknown without account evidence.",
+    "Adding payment details can enable paid continuation; free-only routing is blocked until a verified cutoff exists."
+  ],
+  "AdapterState": "prepared",
+  "LiveVerification": "not_tested",
+  "QuotaSupport": "unsupported"
+}

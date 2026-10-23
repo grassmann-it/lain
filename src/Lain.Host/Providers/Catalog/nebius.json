@@ -1,0 +1,192 @@
+{
+  "Id": "nebius",
+  "Name": "Nebius Token Factory",
+  "Summary": "OpenAI-compatible inference with PAYG, a small signup trial and optional Builder offers.",
+  "AccountUrl": "https://tokenfactory.nebius.com",
+  "DocumentationUrl": "https://docs.tokenfactory.nebius.com/quickstart.md",
+  "Credentials": [
+    {
+      "Id": "api_key",
+      "Label": "Nebius Token Factory API key",
+      "Kind": "secret",
+      "Required": true,
+      "Secret": true
+    }
+  ],
+  "SetupSteps": [
+    {
+      "Title": "Review onboarding and billing",
+      "Description": "Normal signup requires a billing account and bank card. Review the terms before creating your own account; lain does not register or add payment data.",
+      "Url": "https://docs.tokenfactory.nebius.com/other-capabilities/billing-new.md"
+    },
+    {
+      "Title": "Obtain an API key",
+      "Description": "Create an API key in your own Token Factory account.",
+      "Url": "https://tokenfactory.nebius.com"
+    },
+    {
+      "Title": "Select a concrete model",
+      "Description": "Copy the current model ID from the Models page. GET /models?verbose=true can report account/model pricing, context and rate limits. GLM/Kimi availability must be checked.",
+      "Url": "https://docs.tokenfactory.nebius.com/api-reference/examples/list-of-models.md"
+    },
+    {
+      "Title": "Optional Builder Program",
+      "Description": "Join and claim eligible offers separately if desired. Membership credit and application-based compute grants are distinct, optional and not counted as account balance.",
+      "Url": "https://nebius.com/builders"
+    }
+  ],
+  "BillingPlans": [
+    {
+      "Id": "signup-trial",
+      "Name": "Normal signup trial",
+      "Kind": "trial",
+      "Scope": "billing account",
+      "Unit": "currency",
+      "IncludedAmount": null,
+      "ResetDescription": "One-time credit, valid 30 days; actual start/expiry unknown.",
+      "ExpiresAt": null,
+      "Limits": [
+        {
+          "Kind": "rate",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "billing account",
+          "Notes": "Account/model-specific limit not observed."
+        },
+        {
+          "Kind": "parallelism",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "billing account",
+          "Notes": "Not observed."
+        }
+      ],
+      "Notes": "Official offer is $1 trial credit valid for 30 days. A billing account and bank card are required. Actual grant/balance unknown.",
+      "Currency": "USD"
+    },
+    {
+      "Id": "builder-offer",
+      "Name": "Optional Builder membership offer",
+      "Kind": "trial",
+      "Scope": "eligible program member / billing account",
+      "Unit": "currency",
+      "IncludedAmount": null,
+      "ResetDescription": "No recurring reset or verified expiry. Separate compute grants require application.",
+      "ExpiresAt": null,
+      "Limits": [
+        {
+          "Kind": "rate",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "eligible program member / billing account",
+          "Notes": "Account/model-specific limit not observed."
+        },
+        {
+          "Kind": "parallelism",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "eligible program member / billing account",
+          "Notes": "Not observed."
+        }
+      ],
+      "Notes": "Optional program currently advertises $25 Token Factory credit subject to eligibility, availability and terms. Joining/claiming is separate. Not guaranteed or added to balance; expiry unknown.",
+      "Currency": "USD"
+    },
+    {
+      "Id": "payg",
+      "Name": "Token Factory PAYG",
+      "Kind": "payg",
+      "Scope": "billing account",
+      "Unit": "currency",
+      "IncludedAmount": null,
+      "ResetDescription": null,
+      "ExpiresAt": null,
+      "Limits": [
+        {
+          "Kind": "rate",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "billing account",
+          "Notes": "Account/model-specific limit not observed."
+        },
+        {
+          "Kind": "parallelism",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "billing account",
+          "Notes": "Not observed."
+        }
+      ],
+      "Notes": "Paid inference; automatic card charges can occur. Retrieve current model pricing rather than using example rates.",
+      "Currency": "USD"
+    }
+  ],
+  "Routes": [
+    {
+      "Id": "nebius-deepseek-r1-example",
+      "Model": "deepseek-ai/DeepSeek-R1-0528",
+      "Name": "DeepSeek R1 \u00b7 documented example",
+      "BaseUrl": "https://api.tokenfactory.nebius.com/v1",
+      "Protocol": "openai-chat",
+      "BillingPlanIds": [
+        "signup-trial",
+        "builder-offer",
+        "payg"
+      ],
+      "Capabilities": {},
+      "ModelFamily": "deepseek",
+      "Manufacturer": "DeepSeek",
+      "InferenceProvider": "Nebius",
+      "Gateway": null,
+      "PricingClass": "paid",
+      "FreeOnlyEligible": false,
+      "FreeOnlyEnforcement": "No independently verified billing cutoff; trial credit is not a free route.",
+      "Restrictions": [
+        "Official quick-start example, not a live-verified availability claim.",
+        "Model-specific tools, streaming, reasoning controls, images, structured output and token limits remain unverified."
+      ]
+    }
+  ],
+  "Sources": [
+    {
+      "Url": "https://docs.tokenfactory.nebius.com/other-capabilities/billing-new.md",
+      "Title": "Billing & Consumption",
+      "CheckedAt": "2026-10-23T22:13:08Z",
+      "Notes": "$1/30-day signup trial; billing and card required; auto charging."
+    },
+    {
+      "Url": "https://nebius.com/builders",
+      "Title": "AI Builder Program",
+      "CheckedAt": "2026-10-23T22:13:08Z",
+      "Notes": "Optional membership credit, eligibility and application-based compute grants."
+    },
+    {
+      "Url": "https://docs.tokenfactory.nebius.com/quickstart.md",
+      "Title": "Token Factory quick start",
+      "CheckedAt": "2026-10-23T22:13:08Z",
+      "Notes": null
+    },
+    {
+      "Url": "https://docs.tokenfactory.nebius.com/api-reference/examples/list-of-models.md",
+      "Title": "Verbose models discovery",
+      "CheckedAt": "2026-10-23T22:13:08Z",
+      "Notes": null
+    },
+    {
+      "Url": "https://docs.tokenfactory.nebius.com/ai-models-inference/rate-limits.md",
+      "Title": "Dynamic rate limits",
+      "CheckedAt": "2026-10-23T22:13:08Z",
+      "Notes": null
+    }
+  ],
+  "Restrictions": [
+    "Trial and Builder currency credit are not tokens or permanent free tiers.",
+    "Builder Program is primarily for learning, testing and experimentation; verify offer terms and any expiry before use.",
+    "Actual credit balances, eligibility and expiry are unknown; optional compute grants require separate application.",
+    "Rate limits vary dynamically; observed rate-limit headers describe headroom, not remaining billing credit.",
+    "Trial use can lead to paid continuation and automatic card charges; free-only routing is blocked."
+  ],
+  "AdapterState": "prepared",
+  "LiveVerification": "not_tested",
+  "QuotaSupport": "unsupported"
+}

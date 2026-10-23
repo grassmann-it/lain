@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/Lain.Host/Providers/TrialProviderConfiguration.cs" Link="TrialProviderConfiguration.cs" />
+    <Compile Include="../../src/Lain.Host/Providers/TrialProviderRequestAdapter.cs" Link="TrialProviderRequestAdapter.cs" />
+    <None Include="../../src/Lain.Host/Providers/Catalog/inception.json" Link="Catalog/inception.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/Lain.Host/Providers/Catalog/alibaba-model-studio.json" Link="Catalog/alibaba-model-studio.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/Lain.Host/Providers/Catalog/nebius.json" Link="Catalog/nebius.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,176 @@
+{
+  "Id": "alibaba-model-studio",
+  "Name": "Alibaba Cloud Model Studio",
+  "Summary": "Regional Qwen API with model-specific time-limited trials and PAYG. Coding Plan is excluded.",
+  "AccountUrl": "https://modelstudio.console.alibabacloud.com",
+  "DocumentationUrl": "https://www.alibabacloud.com/help/en/model-studio/regions",
+  "Credentials": [
+    {
+      "Id": "api_key",
+      "Label": "Regional general-purpose Model Studio API key",
+      "Kind": "secret",
+      "Required": true,
+      "Secret": true
+    },
+    {
+      "Id": "region",
+      "Label": "Region ID",
+      "Kind": "text",
+      "Required": true,
+      "Secret": false
+    },
+    {
+      "Id": "workspace_id",
+      "Label": "Workspace ID / API Host prefix",
+      "Kind": "text",
+      "Required": true,
+      "Secret": false
+    },
+    {
+      "Id": "service_deployment_scope",
+      "Label": "Service deployment scope",
+      "Kind": "text",
+      "Required": true,
+      "Secret": false
+    }
+  ],
+  "SetupSteps": [
+    {
+      "Title": "Choose region and scope",
+      "Description": "Use your own Alibaba Cloud account. New-user free quota currently requires Singapore and International scope. Complete account information before activation.",
+      "Url": "https://modelstudio.console.alibabacloud.com"
+    },
+    {
+      "Title": "Copy the workspace API Host",
+      "Description": "Open Workspace Management. Use a regional general-purpose API key and the matching workspace host; region keys/models cannot be mixed.",
+      "Url": "https://www.alibabacloud.com/help/en/model-studio/regions"
+    },
+    {
+      "Title": "Review Free Quota Only",
+      "Description": "Enable per eligible model in the desktop web console if desired. It is disabled by default and changes take time; lain does not change or verify this console setting.",
+      "Url": "https://www.alibabacloud.com/help/en/model-studio/new-free-quota"
+    },
+    {
+      "Title": "Verify concrete model quota",
+      "Description": "Check remaining combined input/output tokens and expiry for the exact model or snapshot. Never treat trial-domain naming as proof of zero cost.",
+      "Url": null
+    }
+  ],
+  "BillingPlans": [
+    {
+      "Id": "new-user-model-trial",
+      "Name": "Eligible new-user model trial",
+      "Kind": "trial",
+      "Scope": "account + concrete model; RAM users shared",
+      "Unit": "tokens",
+      "IncludedAmount": null,
+      "ResetDescription": "90 days from the latest of activation, model release or access approval; exact expiry unknown.",
+      "ExpiresAt": null,
+      "Limits": [
+        {
+          "Kind": "rate",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "account + concrete model; RAM users shared",
+          "Notes": "Account/model-specific limit not observed."
+        },
+        {
+          "Kind": "parallelism",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "account + concrete model; RAM users shared",
+          "Notes": "Not observed."
+        }
+      ],
+      "Notes": "Only Singapore + International scope. Typically 1M tokens per eligible model; actual amount unknown. Input/output share one total. Separate model/snapshot quotas cannot be transferred."
+    },
+    {
+      "Id": "payg",
+      "Name": "Regional regular API",
+      "Kind": "payg",
+      "Scope": "account",
+      "Unit": "currency",
+      "IncludedAmount": null,
+      "ResetDescription": null,
+      "ExpiresAt": null,
+      "Limits": [
+        {
+          "Kind": "rate",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "account",
+          "Notes": "Account/model-specific limit not observed."
+        },
+        {
+          "Kind": "parallelism",
+          "Value": null,
+          "Unit": "requests",
+          "Scope": "account",
+          "Notes": "Not observed."
+        }
+      ],
+      "Notes": "Regular regional API can bill after quota exhaustion/expiry unless effective provider-side Free Quota Only protection stops it."
+    }
+  ],
+  "Routes": [
+    {
+      "Id": "alibaba-qwen3.8-max-singapore",
+      "Model": "qwen3.8-max",
+      "Name": "Qwen3.8 Max \u00b7 Singapore",
+      "BaseUrl": "https://{WorkspaceId}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
+      "Protocol": "openai-chat",
+      "BillingPlanIds": [
+        "new-user-model-trial",
+        "payg"
+      ],
+      "Capabilities": {},
+      "ModelFamily": "qwen",
+      "Manufacturer": "Alibaba",
+      "InferenceProvider": "Alibaba Cloud",
+      "Gateway": null,
+      "PricingClass": "paid",
+      "FreeOnlyEligible": false,
+      "FreeOnlyEnforcement": "No independently verified billing cutoff; trial credit is not a free route.",
+      "Restrictions": [
+        "Workspace ID is required. Account model access, quota eligibility and route capabilities remain unverified.",
+        "Other regions/scopes require separate explicit configuration and do not inherit the documented Singapore trial."
+      ]
+    }
+  ],
+  "Sources": [
+    {
+      "Url": "https://www.alibabacloud.com/help/en/model-studio/new-free-quota",
+      "Title": "New-user free quota, updated 16 October 2026",
+      "CheckedAt": "2026-10-23T22:13:08Z",
+      "Notes": null
+    },
+    {
+      "Url": "https://www.alibabacloud.com/help/en/model-studio/regions",
+      "Title": "Regions/endpoints, updated 13 October 2026",
+      "CheckedAt": "2026-10-23T22:13:08Z",
+      "Notes": null
+    },
+    {
+      "Url": "https://www.alibabacloud.com/help/en/model-studio/getting-started/first-api-call-to-qwen",
+      "Title": "Qwen API quick start",
+      "CheckedAt": "2026-10-23T22:13:08Z",
+      "Notes": "Virginia prose is internally inconsistent; copy actual API Host from console."
+    },
+    {
+      "Url": "https://www.alibabacloud.com/help/en/model-studio/coding-plan",
+      "Title": "Coding Plan usage policy",
+      "CheckedAt": "2026-10-23T22:13:08Z",
+      "Notes": null
+    }
+  ],
+  "Restrictions": [
+    "Coding Plan keys are prohibited for automated scripts, application backends and non-interactive use; this adapter rejects that plan and its endpoints.",
+    "Free Quota Only is disabled by default, per eligible model, console-managed and delayed; no request-level toggle is claimed.",
+    "Quota exhaustion under effective protection returns AllocationQuota.FreeTierOnly.",
+    "Without observable provider protection, free-only routing remains blocked.",
+    "Recommended regional workspace domains supersede legacy DashScope hosts, which stopped receiving new features after 30 September 2026."
+  ],
+  "AdapterState": "prepared",
+  "LiveVerification": "not_tested",
+  "QuotaSupport": "unsupported"
+}
