@@ -36,3 +36,10 @@ All HTTP fixtures use loopback fake providers. They prove local wire behavior,
 not vendor availability, accepted account terms, live billing state or quota.
 Provider catalogs and configured credentials continue to report live verification
 as untested. No free-only billing cutoff is established by this transport work.
+
+Local qualification passed after the registry endpoint-template fix:
+63 .NET assertions (including shared-key account enrollment, protocol-specific
+private transports and actual runtime YAML credential hashes), the native
+Responses JSON/SSE, Anthropic, Gemini Bearer and NVIDIA/Step executor fixtures,
+and existing Responses/Chat reasoning and tool translator regressions. These
+remain synthetic results; all actual provider connections are untested.
