@@ -7,7 +7,7 @@ using Lain.Core;
 namespace Lain.Client;
 
 /// <summary>The common typed application API used by the desktop and CLI.</summary>
-public sealed class LainApiClient : IDisposable
+public sealed partial class LainApiClient : IDisposable
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private readonly HttpClient http;
@@ -107,6 +107,12 @@ public sealed class LainApiClient : IDisposable
         Add("timeZone", query.TimeZone); Add("accountId", query.AccountId); Add("model", query.Model);
         Add("statusCode", query.StatusCode?.ToString(CultureInfo.InvariantCulture));
         Add("offset", query.Offset.ToString(CultureInfo.InvariantCulture)); Add("limit", query.Limit.ToString(CultureInfo.InvariantCulture));
+        Add("routeId", query.RouteId); Add("modelFamily", query.ModelFamily); Add("manufacturer", query.Manufacturer);
+        Add("inferenceProvider", query.InferenceProvider); Add("gateway", query.Gateway); Add("billingAccountId", query.BillingAccountId);
+        Add("reasoningEffort", query.ReasoningEffort); Add("mode", query.Mode); Add("conversationId", query.ConversationId);
+        Add("turnId", query.TurnId); Add("workerId", query.WorkerId); Add("harness", query.Harness); Add("profileId", query.ProfileId);
+        Add("groupBy", query.GroupBy);
+        if (query.GroupBy is not null || query.GroupLimit != 100) Add("groupLimit", query.GroupLimit.ToString(CultureInfo.InvariantCulture));
         return "?" + string.Join("&", values.Select(v => $"{Id(v.Key)}={Id(v.Value)}"));
     }
 

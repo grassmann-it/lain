@@ -7,7 +7,7 @@ using Lain.Core;
 
 namespace Lain.Cli;
 
-public static class CliApplication
+public static partial class CliApplication
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { WriteIndented = true };
     private const string Help = """
@@ -23,7 +23,19 @@ public static class CliApplication
           import CONFIG [--auth-dir DIR] [--revision N] [--json]
           usage [--today] [--from ISO] [--to ISO] [--timezone IANA]
                 [--account ID] [--model ID] [--status HTTP] [--json]
+          usage analysis|aggregate|performance [usage filters]
+                [--group-by DIMENSION[,DIMENSION...]] [--group-limit 1..500] [--json]
+                Default groups: modelFamily,accountId,reasoningEffort; at most 3 dimensions.
+          Usage filters: --route --model-family --manufacturer --inference-provider
+                --gateway --billing-account --reasoning --mode --conversation
+                --turn --worker --harness --profile (each followed by a value)
           attempts [usage options] [--offset N] [--limit N] [--json]
+          inspector [snapshot] [--request ID] [--limit 1..500] [--json]
+          inspector events [--source ID] [--after N] [--request ID] [--limit 1..500] [--json]
+          providers [catalog] [--json]
+          providers onboarding ID [--json]
+          providers routes [--provider ID] [--json]
+          providers check-free ROUTE_ID [--json]
           auth token --audience codex
           service start|stop|restart|status [--json]
           ui
@@ -69,7 +81,7 @@ public static class CliApplication
                 return 0;
             }
             // Validate the command before discovery, so misspellings work even when the host is stopped.
-            if (command is not ("status" or "accounts" or "import" or "models" or "profiles" or "usage" or "attempts" or "quotas" or "auth" or "service"))
+            if (command is not ("status" or "accounts" or "import" or "models" or "profiles" or "usage" or "attempts" or "quotas" or "auth" or "service" or "providers" or "inspector"))
                 throw new ArgumentException($"Unknown command '{command}'. Run 'lain help'.");
             Validate(command, options);
             using var client = (clientFactory ?? LainApiClient.CreateLocal)();
@@ -100,13 +112,18 @@ public static class CliApplication
                     }
                     break;
                 case "quotas": result = await client.QuotasAsync(ct); break;
+                case "providers": result = await Providers(client, options, ct); break;
+                case "inspector": result = await Inspector(client, options, ct); break;
                 case "import":
                     var revision = options.Get("revision") is { } revisionText ? ParseLong(revisionText, "revision") :
                         (await client.GetConfigurationAsync(ct)).Revision;
                     result = await client.ImportAsync(new ImportRequest(revision, Path.GetFullPath(options.Positionals[0]),
                         options.Get("auth-dir") is { } directory ? Path.GetFullPath(directory) : null), ct);
                     break;
-                case "usage": result = await client.UsageAsync(ParseQuery(options), ct); break;
+                case "usage":
+                    result = options.Positionals.Count == 0 ? await client.UsageAsync(ParseQuery(options), ct) :
+                        await client.UsageAnalysisAsync(ParseQuery(options), ct);
+                    break;
                 case "attempts": result = await client.AttemptsAsync(ParseQuery(options), ct); break;
                 case "auth":
                     var token = await client.InferenceTokenAsync("codex", ct);
@@ -141,6 +158,8 @@ public static class CliApplication
 
     private static void Validate(string command, Options options)
     {
+        if (command == "providers") { ValidateProviders(options); return; }
+        if (command == "inspector") { ValidateInspector(options); return; }
         if (command == "accounts" && options.Positionals.Count > 0)
         {
             var action = options.Positionals[0];
@@ -169,8 +188,7 @@ public static class CliApplication
         }
         if (command is "usage" or "attempts")
         {
-            options.RequireOnly("json", "today", "from", "to", "timezone", "account", "model", "status", "offset", "limit");
-            options.RequirePositionals(0); _ = ParseQuery(options); return;
+            ValidateUsage(command, options); return;
         }
         if (command == "import")
         { options.RequireOnly("json", "auth-dir", "revision"); options.RequirePositionals(1); return; }
@@ -236,12 +254,19 @@ public static class CliApplication
             to = new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(date.AddDays(1), timeZone));
         }
         if (from is not null && to is not null && from >= to) throw new ArgumentException("--from must be earlier than --to.");
+        if (from is not null && to is not null && to.Value - from.Value > TimeSpan.FromDays(366)) throw new ArgumentException("Usage intervals must not exceed 366 days.");
         int? status = options.Get("status") is { } statusText ? ParseInt(statusText, "status") : null;
         if (status is < 100 or > 599) throw new ArgumentException("--status must be an HTTP status between 100 and 599.");
         var offset = options.Get("offset") is { } offsetText ? ParseInt(offsetText, "offset") : 0;
         var limit = options.Get("limit") is { } limitText ? ParseInt(limitText, "limit") : 100;
-        if (offset < 0 || limit is < 1 or > 1000) throw new ArgumentException("--offset must be nonnegative; --limit must be between 1 and 1000.");
-        return new UsageQuery(from, to, zone, options.Get("account"), options.Get("model"), status, offset, limit);
+        if (offset < 0 || limit is < 1 or > 500) throw new ArgumentException("--offset must be nonnegative; --limit must be between 1 and 500.");
+        var groupLimit = options.Get("group-limit") is { } groupLimitText ? ParseInt(groupLimitText, "group-limit") : 100;
+        if (groupLimit is < 1 or > 500) throw new ArgumentException("--group-limit must be between 1 and 500.");
+        return new UsageQuery(from, to, zone, options.Get("account"), options.Get("model"), status, offset, limit,
+            options.Get("route"), options.Get("model-family"), options.Get("manufacturer"), options.Get("inference-provider"),
+            options.Get("gateway"), options.Get("billing-account"), options.Get("reasoning"), options.Get("mode"),
+            options.Get("conversation"), options.Get("turn"), options.Get("worker"), options.Get("harness"), options.Get("profile"),
+            options.Get("group-by"), groupLimit);
     }
 
     private static DateTimeOffset? ParseTime(string? value)
@@ -277,13 +302,52 @@ public static class CliApplication
             case UsageSummaryDto u:
                 await output.WriteLineAsync($"{u.From:O} to {u.To:O} ({u.TimeZone})");
                 await output.WriteLineAsync($"Requests {u.Totals.Requests}; attempts {u.Totals.Attempts}; errors {u.Totals.Errors}; tokens {u.Totals.Tokens.Total?.ToString(CultureInfo.InvariantCulture) ?? "unknown"}");
-                await output.WriteLineAsync($"Observed {u.ObservedAt:O}; coverage {(u.Complete ? "complete" : "incomplete")}; unknown usage attempts {u.Totals.UnknownUsageAttempts}"); break;
+                await output.WriteLineAsync($"Observed {u.ObservedAt:O}; coverage {(u.Complete ? "complete" : "incomplete")}; unknown usage attempts {u.Totals.UnknownUsageAttempts}");
+                await WriteUsageGroups(output, "Account", u.Accounts);
+                await WriteUsageGroups(output, "Model", u.Models);
+                await WriteUsageGroups(output, "Day", u.Daily);
+                break;
+            case PageDto<AttemptDto> attempts:
+                await output.WriteLineAsync($"Attempts {attempts.Items.Length} of {attempts.Total}; offset {attempts.Offset}; limit {attempts.Limit}");
+                foreach (var a in attempts.Items)
+                {
+                    await output.WriteLineAsync($"{Cell(a.Id)}\t{Cell(a.AccountId)}\t{Cell(a.Provider)}\t{Cell(a.Model)}\t{Cell(a.State)}; completion {Cell(a.CompletionState)}\tHTTP {Number(a.StatusCode)}\ttokens {Number(a.Tokens.Total)}\tfirst output {Number(a.Measurements?.FirstOutputLatencyMs)} ms\tduration {Number(a.Measurements?.TotalDurationMs)} ms");
+                    if (a.FirstTokenMs is not null || a.DurationMs is not null)
+                        await output.WriteLineAsync($"  Historical timing: first token {Number(a.FirstTokenMs)} ms; duration {Number(a.DurationMs)} ms");
+                }
+                break;
+            case QuotaDto[] quotas:
+                foreach (var q in quotas)
+                {
+                    await output.WriteLineAsync($"{Cell(q.AccountId)}\twindow {Cell(q.WindowLabel)}\tpool {Cell(q.BudgetPoolId)}\t{Cell(q.State)}\tremaining {Number(q.Remaining)} / {Number(q.Limit)} {Cell(q.Unit)}\treset {q.ResetsAt?.ToString("O", CultureInfo.InvariantCulture) ?? "unknown"}");
+                    await output.WriteLineAsync($"  Source {Cell(q.Source)}; observed {q.ObservedAt?.ToString("O", CultureInfo.InvariantCulture) ?? "unknown"}; used {Number(q.Used)} {Cell(q.Unit)}");
+                    if (q.SharedWithLegacy) await output.WriteLineAsync("  Shared budget with legacy usage.");
+                    if (q.Error is { } quotaError) await output.WriteLineAsync("  " + Cell(quotaError));
+                }
+                break;
             case ImportResult i:
                 await output.WriteLineAsync($"Imported revision {i.Revision}: {i.Added} added, {i.Updated} updated."); break;
             case CodexInstallResult i:
                 await output.WriteLineAsync($"Installed {i.ConfigurationPath} and {i.CatalogPath} (revision {i.Revision}).");
                 await output.WriteLineAsync("Codex arguments: " + string.Join(" ", i.LaunchArguments)); break;
-            default: await output.WriteLineAsync(JsonSerializer.Serialize(value, value.GetType(), Json)); break;
+            default:
+                if (!await WriteExtended(output, value))
+                    await output.WriteLineAsync(JsonSerializer.Serialize(value, value.GetType(), Json));
+                break;
+        }
+    }
+
+    // Keep remote identifiers and redacted previews on a single terminal line.
+    private static string Cell(string? value) => value is null ? "unknown" :
+        string.Concat(value.Select(c => char.IsControl(c) ? ' ' : c));
+    private static string Number<T>(T? value) where T : struct, IFormattable =>
+        value?.ToString(null, CultureInfo.InvariantCulture) ?? "unknown";
+    private static async Task WriteUsageGroups(TextWriter output, string dimension, UsageGroup[] groups)
+    {
+        foreach (var group in groups)
+        {
+            var totals = group.Totals;
+            await output.WriteLineAsync($"{dimension} {Cell(group.Key)}\trequests {totals.Requests}; attempts {totals.Attempts}; errors {totals.Errors}; tokens {Number(totals.Tokens.Total)}; unknown usage attempts {totals.UnknownUsageAttempts}");
         }
     }
 

@@ -190,6 +190,121 @@ try
 }
 finally { if (Directory.Exists(codex)) Directory.Delete(codex, true); }
 
+// Readable output keeps unknown measurements explicit and terminal control characters inert.
+handler.Handle = _ => new(HttpStatusCode.OK) { Content = JsonContent.Create(new PageDto<AttemptDto>([
+    new AttemptDto("attempt-1", "request-1", "account\u001b[31m\nnext", null, "provider", "model", DateTimeOffset.UtcNow,
+        null, null, "streaming", new TokenCounts(null, null, null, null, null))], 0, 10, 12)) };
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["attempts", "--limit", "10"], output, error, () => client);
+Require(exit == 0 && output.ToString().Contains("Attempts 1 of 12; offset 0; limit 10") &&
+    output.ToString().Contains("first output unknown ms") && !output.ToString().Contains('\u001b'),
+    "attempt text shows page bounds, unknown measurements and no terminal escapes"); assertions++;
+handler.Handle = _ => new(HttpStatusCode.OK) { Content = JsonContent.Create(new[] {
+    new QuotaDto("account", "shared-pool", "provider", "unavailable", null, null, null, "points", null, null, null, true) }) };
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["quotas"], output, error, () => client);
+Require(exit == 0 && output.ToString().Contains("remaining unknown / unknown points") &&
+    output.ToString().Contains("Shared budget with legacy"), "quota text preserves native units and shared budget scope"); assertions++;
+
+var providerRoute = new ProviderRouteDescriptorDto("route/test", "vendor/model", "Test model", "https://provider.test/v1", "openai-chat", ["trial"],
+    new RouteCapabilitiesDto(), ModelFamily: "family", Manufacturer: "vendor", InferenceProvider: "inference", Gateway: "gateway");
+var providerDescriptor = new ProviderDescriptorDto("test/provider", "Test provider", "Synthetic documentation", "https://provider.test/account", "https://provider.test/docs",
+    [new ProviderCredentialFieldDto("api_key", "API key", "api_key")], [new ProviderSetupStepDto("Create key", "Use your own account")],
+    [new ProviderBillingPlanDto("trial", "Trial", "trial", "account", "points")], [providerRoute], [], []);
+var providerCatalog = new ProviderCatalogDto(1, DateTimeOffset.UtcNow, [providerDescriptor]);
+handler.Handle = request =>
+{
+    Require(request.Method == HttpMethod.Get && request.RequestUri!.AbsolutePath == "/api/v1/providers", "provider catalog is read only");
+    return new(HttpStatusCode.OK) { Content = JsonContent.Create(providerCatalog) };
+};
+Require((await client.ProvidersAsync()).Providers[0].Id == "test/provider", "typed provider catalog"); assertions++;
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["providers", "routes", "--provider", "test/provider"], output, error, () => client);
+Require(exit == 0 && output.ToString().Contains("pricing unknown; free-only blocked") &&
+    output.ToString().Contains("tools unknown") && output.ToString().Contains("inference inference; gateway gateway"),
+    "provider route text preserves uncertainty and distinct identities"); assertions++;
+handler.Handle = request =>
+{
+    Require(request.Method == HttpMethod.Get && request.RequestUri!.AbsolutePath == "/api/v1/providers/test%2Fprovider/onboarding", "onboarding ID is escaped");
+    return new(HttpStatusCode.OK) { Content = JsonContent.Create(new ProviderOnboardingDto(1, "test/provider", "missing_credentials", providerDescriptor, [], ["api_key"])) };
+};
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["providers", "onboarding", "test/provider"], output, error, () => client);
+Require(exit == 0 && output.ToString().Contains("Missing credentials: api_key") && output.ToString().Contains("live verification not_tested") &&
+    output.ToString().Contains("scope account; unknown points") && output.ToString().Contains("https://provider.test/account"),
+    "keyless onboarding shows account link, credential field names and native budget units"); assertions++;
+handler.Handle = request =>
+{
+    Require(request.Method == HttpMethod.Get && request.RequestUri!.PathAndQuery == "/api/v1/routes/route%2Ftest/cost-policy?costPolicy=free_only", "free policy check is escaped and read only");
+    return new(HttpStatusCode.OK) { Content = JsonContent.Create(new RouteCostDecisionDto("route/test", false, "free_only", "unknown", ["Unknown pricing is blocked."])) };
+};
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["providers", "check-free", "route/test", "--json"], output, error, () => client);
+Require(exit == 0 && !JsonDocument.Parse(output.ToString()).RootElement.GetProperty("allowed").GetBoolean(), "free-only inspection preserves blocked decision"); assertions++;
+
+var emptyMetric = new MetricStatisticsDto(0, 12, null, null, null, null, null);
+var performance = new PerformanceSummaryDto(new MetricStatisticsDto(10, 12, 1, 7, 8, 11, 12), emptyMetric, emptyMetric);
+var analysisTotals = new UsageTotals(12, 14, 1, new TokenCounts(null, 99, null, null, null), 2);
+var analysis = new UsageAnalysisDto(1, DateTimeOffset.UtcNow.AddHours(-1), DateTimeOffset.UtcNow, "UTC", DateTimeOffset.UtcNow,
+    17, true, analysisTotals, performance, [new UsageDimensionDto("modelFamily", [new UsageDimensionGroupDto(null, analysisTotals, performance)], true)]);
+handler.Handle = request =>
+{
+    Require(request.RequestUri!.AbsolutePath == "/api/v1/usage/analysis", "usage analysis authoritative endpoint");
+    var uri = Uri.UnescapeDataString(request.RequestUri.Query);
+    Require(uri.Contains("groupBy=modelFamily,reasoningEffort") && uri.Contains("groupLimit=5") && uri.Contains("inferenceProvider=provider/one") &&
+        uri.Contains("billingAccountId=bill 1") && uri.Contains("reasoningEffort=high") && uri.Contains("workerId=worker/one"), "analysis forwards grouping and identity filters");
+    return new(HttpStatusCode.OK) { Content = JsonContent.Create(analysis) };
+};
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["usage", "analysis", "--group-by", "modelFamily,reasoningEffort", "--group-limit", "5",
+    "--inference-provider", "provider/one", "--billing-account", "bill 1", "--reasoning", "high", "--worker", "worker/one"], output, error, () => client);
+Require(exit == 0 && output.ToString().Contains("samples 10/12 eligible; min 1; mean 7; p50 8; p95 11; max 12") &&
+    output.ToString().Contains("samples 0/12 eligible; min unknown") && output.ToString().Contains("groups 1; truncated") &&
+    output.ToString().Contains("Rate basis: reported_output_tokens_per_total_duration_second"), "analysis uses server statistics with sample counts, basis, unknowns and group coverage"); assertions++;
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["usage", "performance", "--group-by", "modelFamily,reasoningEffort", "--group-limit", "5",
+    "--inference-provider", "provider/one", "--billing-account", "bill 1", "--reasoning", "high", "--worker", "worker/one", "--json"], output, error, () => client);
+using (var analysisJson = JsonDocument.Parse(output.ToString()))
+    Require(exit == 0 && analysisJson.RootElement.GetProperty("dimensions")[0].GetProperty("groups")[0].GetProperty("key").ValueKind == JsonValueKind.Null,
+        "unknown group identity stays null in JSON"); assertions++;
+foreach (var invalid in new[] {
+    new[] { "usage", "analysis", "--group-by", "modelFamily,modelFamily" },
+    new[] { "usage", "analysis", "--group-by", "model,provider,accountId,workerId" },
+    new[] { "usage", "analysis", "--group-limit", "501" },
+    new[] { "usage", "analysis", "--offset", "1" },
+    new[] { "usage", "--group-by", "model" },
+    new[] { "inspector", "events", "--after", "5" },
+    new[] { "inspector", "--limit", "501" } })
+{
+    output = new(); error = new();
+    exit = await CliApplication.RunAsync(invalid, output, error, () => throw new Exception("invalid options must not discover host"));
+    Require(exit == 2 && output.ToString() == "", "invalid grouping, pagination or inspector options rejected before discovery"); assertions++;
+}
+handler.Handle = request =>
+{
+    Require(request.RequestUri!.PathAndQuery == "/api/v1/inspector?limit=5&requestId=request%2Fone", "bounded snapshot with escaped request filter");
+    var stream = new InspectorStreamDto("stream", "request", "request/one", null, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
+        "streaming", 1, 4, Dimensions: new AttemptDimensionsDto(ConversationId: "conversation", TurnId: "turn", WorkerId: "worker",
+            Evidence: [new DimensionEvidenceDto("workerId", "harness", "worker_id")]));
+    return new(HttpStatusCode.OK) { Content = JsonContent.Create(new InspectorSnapshotDto(1, "source", DateTimeOffset.UtcNow,
+        "ready", false, 4, 1, 2, new InspectorLimitsDto(), [stream])) };
+};
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["inspector", "snapshot", "--request", "request/one", "--limit", "5"], output, error, () => client);
+Require(exit == 0 && output.ToString().Contains("coverage incomplete") && output.ToString().Contains("dropped events 2") &&
+    output.ToString().Contains("Conversation conversation; turn turn; worker worker") && output.ToString().Contains("workerId (harness; worker_id)"),
+    "inspector snapshot reports observed identities with evidence and loss/retention state"); assertions++;
+handler.Handle = request =>
+{
+    Require(request.RequestUri!.PathAndQuery == "/api/v1/inspector/events?after=4&limit=5&sourceId=source%2Fone&requestId=request%2Fone", "event pagination carries source and cursor");
+    return new(HttpStatusCode.OK) { Content = JsonContent.Create(new InspectorEventPageDto("source/one", [
+        new InspectorEventDto(5, "content", DateTimeOffset.UtcNow, "request/one", Channel: "output", Text: "redacted\u001b[31m\ncontent")], 5, 7, 1, 3, true, "buffer_evicted")) };
+};
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["inspector", "events", "--source", "source/one", "--after", "4", "--request", "request/one", "--limit", "5"], output, error, () => client);
+Require(exit == 0 && output.ToString().Contains("next cursor 5; high watermark 7") && output.ToString().Contains("Gap: buffer_evicted") &&
+    output.ToString().Contains("Group identities: unknown") && !output.ToString().Contains('\u001b'), "event output preserves gaps/cursors and does not invent grouping"); assertions++;
+
 var state = Path.Combine(Path.GetTempPath(), "lain-discovery-" + Guid.NewGuid().ToString("N"));
 var previous = Environment.GetEnvironmentVariable("LAIN_HOME");
 try
