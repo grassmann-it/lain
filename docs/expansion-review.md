@@ -231,12 +231,13 @@ Tool chunks remain within a selected request/attempt. No timestamp/content/model
 heuristic creates conversations. Two concrete issues were reported and accepted
 for a follow-up: actual terminal state `success` was missing from the view's
 terminal-state list; per-attempt parent lookup could split a retried logical
-request when its attempts asserted conflicting parent IDs. The owner is adding
-per-request consensus and keeping ambiguous links under the original request.
-The view is also adopting the five-source allowlist and monotonic receipt TTL.
-Core replay age currently compares UTC observation timestamps; a separate review
-request asks for monotonic ring-retention timestamps so wall-clock rollback cannot
-extend the declared content lifetime. These remain open until fixes are inspected.
+request when its attempts asserted conflicting parent IDs. Inspected Desktop fix `bf540d4`: per-request consensus keeps ambiguous,
+conflicting or cyclic links under the original request; actual success state,
+five-source evidence checks and monotonic receipt TTL are present. A small
+follow-up is pending for Clear: it must never move the event cursor backward to
+a stale snapshot or accept an in-flight page of just-cleared events. Core fix
+`25ae0ed` stores separate monotonic receipt timestamps, closing the ring-retention
+clock issue while leaving UTC observation timestamps for display.
 
 ## Narrow OpenRouter free-only qualification boundary
 
@@ -258,8 +259,30 @@ atomically bound to the following inference call. This is not a live-usability
 claim. Core must carry the trusted route pin through every retry and invoke the
 final guard after all body/header transformations, immediately before dispatch;
 preparation helpers or an inbound-body check alone do not qualify execution.
-Other provider free-only mechanisms remain unsupported. Final wiring and Go
-execution evidence are still pending independent review.
+Other provider free-only mechanisms remain unsupported. Inspected Core
+`4030184` with root final-send hooks `73f1d46`/`755f2e8`: the private pin is installed
+at each executor attempt before the durable dispatch gate; exact auth/provider/
+protocol/base/model checks and a second pin check precede execution; every final
+compatibility HTTP send uses the guard after translation/customization. The proof
+uses an isolated client copy and is excluded from inference response tracking.
+No further static boundary blocker was found; integrated Go execution is pending.
+
+Further integrated logs passed 27 focused Host Inspector assertions and 80
+independent fake-HTTP collector boundary assertions. They cover split credentials,
+unknown/conflicting provenance, cursor gaps/restarts, active-capacity overflow,
+byte bounds, monotonic lifetime and null/zero token distinctions. The updated
+provider-policy harness passes 50 assertions and independent integration remains
+169. Global loopback/bearer authorization, `Cache-Control: no-store`, and actual
+Inspector service/endpoint wiring were inspected in root Program.cs.
+
+Route/Profile UI source `01fb567` preserves optional policy/provenance fields and
+unchanged selection order by editing original records. The policy-check wording
+correctly distinguishes saved-configuration eligibility from a fresh upstream cap
+proof or live access. Actual policy-editor renders/mutation fixtures remain pending.
+Preliminary provider renders at 1120×780 and 800×560 are readable with explicit
+prepared/live-unknown distinctions and eight navigation labels. Their first suite
+stopped on a provider-search assertion; the reported event-loop timing fix and full
+successful rerun are required before accepting that UI suite.
 
 ## Evidence ledger and final outcome
 
