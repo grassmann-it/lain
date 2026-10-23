@@ -1,0 +1,183 @@
+{
+  "id": "openrouter",
+  "name": "OpenRouter",
+  "summary": "Multi-provider gateway with explicit free variants and separately configured PAYG routes.",
+  "accountUrl": "https://openrouter.ai/keys",
+  "documentationUrl": "https://openrouter.ai/docs",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "OpenRouter API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Create your own API key",
+      "description": "Use your own OpenRouter account and create an inference API key.",
+      "url": "https://openrouter.ai/keys"
+    },
+    {
+      "title": "Choose explicit model routes",
+      "description": "Select a concrete :free catalog entry for reproducible tests. openrouter/free randomly selects an eligible free model."
+    },
+    {
+      "title": "Qualify access",
+      "description": "Connection and capabilities remain untested until credentials are supplied and an explicit connection test is run."
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "free-models",
+      "name": "Free model request allowance",
+      "kind": "free",
+      "scope": "account",
+      "unit": "requests",
+      "includedAmount": 50,
+      "resetDescription": "Daily account request window; per-minute constraint also applies.",
+      "limits": [
+        {
+          "kind": "rate",
+          "value": 20,
+          "unit": "requests",
+          "window": "minute",
+          "scope": "account"
+        }
+      ],
+      "notes": "Documented daily ceiling becomes 1,000 after at least USD 10 in all-time purchased credits; no purchase is performed. The current API counter, not is_free_tier, determines the observed ceiling and remaining requests. Failed attempts count."
+    },
+    {
+      "id": "payg",
+      "name": "Prepaid PAYG",
+      "kind": "payg",
+      "scope": "billing-account",
+      "unit": "usd",
+      "notes": "Model-specific prices and purchase fees apply. The key spend cap is not the account credit balance."
+    }
+  ],
+  "routes": [
+    {
+      "id": "openrouter-llama-3.3-70b-free",
+      "model": "meta-llama/llama-3.3-70b-instruct:free",
+      "name": "Llama 3.3 70B · free",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free-models"
+      ],
+      "capabilities": {
+        "contextWindow": 131072,
+        "images": false
+      },
+      "modelFamily": "llama-3.3",
+      "manufacturer": "Meta",
+      "inferenceProvider": null,
+      "gateway": "OpenRouter",
+      "pricingClass": "free",
+      "freeOnlyEligible": true,
+      "freeOnlyEnforcement": "Only explicit documented free models; all fallback routes must also be verified free. Block paid plugins and unqualified routing overrides.",
+      "sources": [
+        {
+          "url": "https://openrouter.ai/meta-llama/llama-3.3-70b-instruct:free",
+          "title": "Llama 3.3 free route",
+          "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+          "notes": null
+        }
+      ],
+      "restrictions": []
+    },
+    {
+      "id": "openrouter-qwen3-coder-free",
+      "model": "qwen/qwen3-coder:free",
+      "name": "Qwen3 Coder · free",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free-models"
+      ],
+      "capabilities": {
+        "contextWindow": 1048576
+      },
+      "modelFamily": "qwen3-coder",
+      "manufacturer": "Alibaba / Qwen",
+      "inferenceProvider": null,
+      "gateway": "OpenRouter",
+      "pricingClass": "free",
+      "freeOnlyEligible": true,
+      "freeOnlyEnforcement": "Only explicit documented free models; reject paid or unknown fallback models and paid plugins.",
+      "sources": [
+        {
+          "url": "https://openrouter.ai/qwen/qwen3-coder:free/uptime",
+          "title": "Qwen3 Coder free route",
+          "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+          "notes": null
+        }
+      ],
+      "restrictions": []
+    },
+    {
+      "id": "openrouter-random-free",
+      "model": "openrouter/free",
+      "name": "Random free model router",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free-models"
+      ],
+      "capabilities": {},
+      "modelFamily": null,
+      "manufacturer": null,
+      "inferenceProvider": null,
+      "gateway": "OpenRouter",
+      "pricingClass": "free",
+      "freeOnlyEligible": true,
+      "freeOnlyEnforcement": "Use openrouter/free alone with no paid plugins or external fallbacks. Response model and inference provider must be observed.",
+      "sources": [],
+      "restrictions": [
+        "Random model selection; no fixed family or route capability guarantees."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://openrouter.ai/pricing",
+      "title": "OpenRouter pricing",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    },
+    {
+      "url": "https://openrouter.ai/docs/guides/routing/model-variants/free",
+      "title": "Free catalog variants",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    },
+    {
+      "url": "https://openrouter.ai/docs/guides/routing/routers/free-router",
+      "title": "Random free router",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    },
+    {
+      "url": "https://openrouter.ai/docs/api/api-reference/api-keys/get-current-key",
+      "title": "Current API key",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    },
+    {
+      "url": "https://openrouter.ai/docs/api_reference/limits",
+      "title": "Credit, budget and request limits",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    }
+  ],
+  "restrictions": [
+    "Inference provider varies by served endpoint; a model author prefix is not proof of the actual inference operator.",
+    "No credentials provisioned; real access remains untested.",
+    "Free route request quota, USD credit balance and key/organization spend caps must not be added together."
+  ],
+  "adapterState": "prepared",
+  "liveVerification": "not_tested",
+  "quotaSupport": "read_only_api"
+}

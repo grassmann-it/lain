@@ -1,0 +1,169 @@
+{
+  "id": "requesty",
+  "name": "Requesty",
+  "summary": "Gateway with organization-wide free-model request allowance and separate PAYG access.",
+  "accountUrl": "https://app.requesty.ai",
+  "documentationUrl": "https://docs.requesty.ai",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "Requesty API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Create your own API key",
+      "description": "Create an API key in your Requesty organization.",
+      "url": "https://app.requesty.ai"
+    },
+    {
+      "title": "Pin free provider routes",
+      "description": "Use a full provider/model ID, review current model pricing and disable any fallback policy that can select paid or unknown routes."
+    },
+    {
+      "title": "Review data policy",
+      "description": "Review Training Permitted Models metadata before sending content; free plan data handling can differ by model."
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "free-models",
+      "name": "Free models · organization pool",
+      "kind": "free",
+      "scope": "organization",
+      "unit": "requests",
+      "includedAmount": 200,
+      "resetDescription": "Daily; exact reset timestamp unknown until observed.",
+      "limits": [
+        {
+          "kind": "rate",
+          "value": 20,
+          "unit": "requests",
+          "window": "minute",
+          "scope": "organization"
+        }
+      ],
+      "notes": "Shared across all free models. Paying organizations: 1,000/day and 60/minute; this does not establish the user organization tier or its remaining requests."
+    },
+    {
+      "id": "payg",
+      "name": "PAYG",
+      "kind": "payg",
+      "scope": "organization",
+      "unit": "usd",
+      "notes": "Separate from free allowance; upstream pricing plus gateway markup. No current credit-balance endpoint qualified."
+    }
+  ],
+  "routes": [
+    {
+      "id": "requesty-nemotron-super-free",
+      "model": "nvidia/nemotron-3-super-120b-a12b",
+      "name": "Nemotron 3 Super · documented free",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free-models"
+      ],
+      "capabilities": {},
+      "modelFamily": "nemotron-3",
+      "manufacturer": "NVIDIA",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "free",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": "Pin the exact documented provider/model ID; reject bare aliases and policy/* routers. Recheck current price and provider routing before free-only activation.",
+      "sources": [],
+      "restrictions": [
+        "Snapshot price is documented, current endpoint metadata and account routing policy remain unqualified."
+      ]
+    },
+    {
+      "id": "requesty-nemotron-nano-free",
+      "model": "nvidia/nemotron-3-nano-30b-a3b",
+      "name": "Nemotron 3 Nano · documented free",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free-models"
+      ],
+      "capabilities": {},
+      "modelFamily": "nemotron-3",
+      "manufacturer": "NVIDIA",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "free",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": "Pin the exact documented provider/model ID; reject bare aliases and policy/* routers. Recheck current price and provider routing before free-only activation.",
+      "sources": [],
+      "restrictions": [
+        "Snapshot price is documented, current endpoint metadata and account routing policy remain unqualified."
+      ]
+    },
+    {
+      "id": "requesty-gemma4-free",
+      "model": "google/gemma-4-31b-it",
+      "name": "Gemma 4 31B · documented free",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free-models"
+      ],
+      "capabilities": {},
+      "modelFamily": "gemma-4",
+      "manufacturer": "Google",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "free",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": "Pin the exact documented provider/model ID; reject bare aliases and policy/* routers. Recheck current price and provider routing before free-only activation.",
+      "sources": [],
+      "restrictions": [
+        "Snapshot price is documented, current endpoint metadata and account routing policy remain unqualified."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://docs.requesty.ai/quickstart",
+      "title": "Requesty quickstart",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    },
+    {
+      "url": "https://docs.requesty.ai/features/free-models",
+      "title": "Free models and organization limits",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    },
+    {
+      "url": "https://docs.requesty.ai/features/supported-models",
+      "title": "Current model catalog",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    },
+    {
+      "url": "https://docs.requesty.ai/features/fallback-policies",
+      "title": "Fallback policy references",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    },
+    {
+      "url": "https://www.requesty.ai/terms",
+      "title": "Requesty terms",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": "Training Permitted Models require model-specific data policy review."
+    }
+  ],
+  "restrictions": [
+    "Daily pool belongs to the organization, not separately to every model or API key.",
+    "Do not copy OpenRouter provider.allow_fallbacks fields to Requesty; its documented fallback model is policy/name.",
+    "No verified remaining-request quota endpoint; dashboard/manual observation only.",
+    "No credentials provisioned; real access remains untested."
+  ],
+  "adapterState": "prepared",
+  "liveVerification": "not_tested",
+  "quotaSupport": "manual"
+}

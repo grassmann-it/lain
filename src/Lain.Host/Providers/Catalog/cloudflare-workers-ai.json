@@ -1,0 +1,186 @@
+{
+  "id": "cloudflare-workers-ai",
+  "name": "Cloudflare Workers AI",
+  "summary": "Direct local REST inference with account-wide Neuron allocation; no Worker deployment required.",
+  "accountUrl": "https://dash.cloudflare.com",
+  "documentationUrl": "https://developers.cloudflare.com/workers-ai",
+  "credentials": [
+    {
+      "id": "apiToken",
+      "label": "Workers AI API token",
+      "kind": "api-token",
+      "required": true,
+      "secret": true,
+      "help": "Workers AI Read and Edit permissions for the chosen account."
+    },
+    {
+      "id": "accountId",
+      "label": "Cloudflare account ID",
+      "kind": "account-id",
+      "required": true,
+      "secret": false
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Select your Cloudflare account",
+      "description": "Copy its Account ID from Workers AI in the dashboard.",
+      "url": "https://dash.cloudflare.com"
+    },
+    {
+      "title": "Create a Workers AI API token",
+      "description": "Use the Workers AI template, or grant Workers AI Read and Edit for the selected account."
+    },
+    {
+      "title": "Choose direct REST access",
+      "description": "Configure the account-specific /ai/v1 base URL. A deployed Worker is unnecessary."
+    },
+    {
+      "title": "Qualify billing posture",
+      "description": "Verify Workers Free versus Paid and AI Gateway billing before activating any free-only route."
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "workers-free",
+      "name": "Workers Free · daily allocation",
+      "kind": "free",
+      "scope": "cloudflare-account",
+      "unit": "neurons",
+      "includedAmount": 10000,
+      "resetDescription": "Daily at 00:00 UTC",
+      "notes": "Neuron compute units are not tokens. Free plan stops at its allocation; certain models require paid billing."
+    },
+    {
+      "id": "workers-paid",
+      "name": "Workers Paid / PAYG inference",
+      "kind": "payg",
+      "scope": "cloudflare-account",
+      "unit": "neurons",
+      "includedAmount": 10000,
+      "resetDescription": "Daily at 00:00 UTC",
+      "notes": "Usage above the included allocation is billed. Prepaid AI Gateway credits are a separate billing path, not a free fallback."
+    }
+  ],
+  "routes": [
+    {
+      "id": "cloudflare-gemma4",
+      "model": "@cf/google/gemma-4-26b-a4b-it",
+      "name": "Gemma 4 · Neuron allocation",
+      "baseUrl": "https://api.cloudflare.com/client/v4/accounts/{accountId}/ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "workers-free",
+        "workers-paid"
+      ],
+      "capabilities": {
+        "contextWindow": 256000,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gemma-4",
+      "manufacturer": "Google",
+      "inferenceProvider": "Cloudflare",
+      "gateway": null,
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": "Require verified Workers Free billing posture, direct endpoint and current free-access model allowlist. Paid plan/AI Gateway credit billing can charge beyond allocation and cannot qualify automatically.",
+      "sources": [
+        {
+          "url": "https://developers.cloudflare.com/workers-ai/models/gemma-4-26b-a4b-it/",
+          "title": "Gemma 4 Cloudflare-hosted route",
+          "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+          "notes": null
+        }
+      ],
+      "restrictions": []
+    },
+    {
+      "id": "cloudflare-glm47-flash",
+      "model": "@cf/zai-org/glm-4.7-flash",
+      "name": "GLM 4.7 Flash · Neuron allocation",
+      "baseUrl": "https://api.cloudflare.com/client/v4/accounts/{accountId}/ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "workers-free",
+        "workers-paid"
+      ],
+      "capabilities": {},
+      "modelFamily": "glm-4.7",
+      "manufacturer": "Z.ai",
+      "inferenceProvider": "Cloudflare",
+      "gateway": null,
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": "Free allocation is account-dependent; require verified Workers Free billing posture and direct access.",
+      "sources": [],
+      "restrictions": []
+    },
+    {
+      "id": "cloudflare-kimi26-paid",
+      "model": "@cf/moonshotai/kimi-k2.6",
+      "name": "Kimi K2.6 · paid access",
+      "baseUrl": "https://api.cloudflare.com/client/v4/accounts/{accountId}/ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "workers-paid"
+      ],
+      "capabilities": {},
+      "modelFamily": "kimi-k2",
+      "manufacturer": "Moonshot AI",
+      "inferenceProvider": "Cloudflare",
+      "gateway": null,
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [],
+      "restrictions": [
+        "Requires Workers Paid plan or prepaid AI Gateway credits; excluded from free-only."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+      "title": "Neurons, free allocation and paid-only models",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    },
+    {
+      "url": "https://developers.cloudflare.com/workers-ai/get-started/rest-api/",
+      "title": "Account ID and API token direct REST setup",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    },
+    {
+      "url": "https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/",
+      "title": "OpenAI-compatible account endpoint",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    },
+    {
+      "url": "https://developers.cloudflare.com/changelog/post/2026-07-28-models-require-workers-paid/",
+      "title": "Free-access models and paid-plan change",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    },
+    {
+      "url": "https://developers.cloudflare.com/changelog/product/workers-ai/",
+      "title": "Recent paid-only additions",
+      "checkedAt": "2026-10-23T22:13:17.697734+00:00",
+      "notes": null
+    }
+  ],
+  "restrictions": [
+    "No current Neuron remaining-budget API has been qualified; 10,000 is the documented allowance, not a measured remaining balance.",
+    "All free-only eligibility stays disabled until account billing posture can enforce a hard free stop.",
+    "Paid-billing-required model roster changes; use a positive free-access allowlist and fail closed for unknown models.",
+    "Responses API is limited to GPT-OSS routes and non-streaming requests; generic OpenAI compatibility does not guarantee Responses streaming.",
+    "No credentials provisioned; real access remains untested."
+  ],
+  "adapterState": "prepared",
+  "liveVerification": "not_tested",
+  "quotaSupport": "manual"
+}
