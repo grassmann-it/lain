@@ -14,7 +14,9 @@ import sys
 import tempfile
 import time
 from urllib.error import HTTPError
-from urllib.request import Request, urlopen
+from urllib.request import Request, build_opener, ProxyHandler
+
+urlopen = build_opener(ProxyHandler({})).open
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))

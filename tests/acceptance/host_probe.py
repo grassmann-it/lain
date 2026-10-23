@@ -15,6 +15,7 @@ import time
 import urllib.error
 import urllib.request
 
+LOCAL_HTTP = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 BASE = 'http://127.0.0.1:18418/api/v1'
 SECRET = 'synthetic-acceptance-key-not-real-001'
 
@@ -24,7 +25,7 @@ def request(path, method='GET', value=None, token=None):
         headers['Authorization'] = 'Bearer ' + token
     req = urllib.request.Request(BASE + path, data=None if value is None else json.dumps(value).encode(), headers=headers, method=method)
     try:
-        response = urllib.request.urlopen(req, timeout=10)
+        response = LOCAL_HTTP.open(req, timeout=10)
     except urllib.error.HTTPError as error:
         response = error
     with response:
