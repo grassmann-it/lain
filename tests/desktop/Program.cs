@@ -88,11 +88,12 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await CaptureBoth("overview");
         await Click("Accounts"); await CaptureBoth("accounts");
         var accountList = Controls<ListBox>().Single(x => AutomationProperties.GetName(x) == "Accounts");
-        accountList.Focus();
-        Check(accountList.IsKeyboardFocusWithin, "account list accepts keyboard focus");
+        var accountItem = accountList.GetVisualDescendants().OfType<ListBoxItem>().Single(x => x.IsSelected);
+        accountItem.Focus();
+        Check(accountItem.IsFocused, "selected account row accepts keyboard focus");
         var statusCalls = fixture.StatusCalls;
         await Task.Delay(10300);
-        Check(fixture.StatusCalls > statusCalls && accountList.IsKeyboardFocusWithin && Controls<ListBox>().Contains(accountList), "account list focus and identity survive passive refresh");
+        Check(fixture.StatusCalls > statusCalls && accountItem.IsFocused && Controls<ListBox>().Contains(accountList) && accountList.GetVisualDescendants().Contains(accountItem), "account list focus and identity survive passive refresh");
         fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1,
             Accounts = fixture.Config.Accounts.Select(a => a.Id == "a1" ? a with { Name = "Personal Codex updated" } : a).ToArray() };
         await Click("Refresh");
