@@ -91,6 +91,7 @@ public sealed partial class MainWindow
         var form = AccountForm("Add API account", "Credentials stay with your local host and are excluded from exports.",
             AccountFormRow("Display name", name), AccountFormRow("Provider", provider),
             AccountFormRow("Base URL", endpoint), AccountFormRow("API key", key));
+        form.Children.Insert(1, Ui.Button("Browse supported providers", () => { key.Text = ""; Navigate("Providers"); }));
         form.Children.Add(Ui.Row(Action("Add account", async () => {
             if (string.IsNullOrWhiteSpace(name.Text) || string.IsNullOrWhiteSpace(provider.Text) || string.IsNullOrWhiteSpace(key.Text) || string.IsNullOrWhiteSpace(endpoint.Text)) throw new InvalidOperationException("Enter a name, provider, base URL and API key.");
             if (!Uri.TryCreate(endpoint.Text, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http")) throw new InvalidOperationException("Enter a valid HTTP or HTTPS base URL.");

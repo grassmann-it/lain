@@ -7,6 +7,8 @@ using Avalonia.Threading;
 using Lain.Client;
 using Lain.Core;
 using Lain.Desktop.Usage;
+using Lain.Desktop.Providers;
+using Lain.Desktop.Inspector;
 using Avalonia.Platform.Storage;
 using System.Text.Json;
 
@@ -21,7 +23,7 @@ public sealed partial class MainWindow : Window
     private readonly TextBlock _connection = Ui.Text("Connecting to local host…", 11, Ui.Muted);
     private readonly TextBlock _notice = Ui.Text("", 13);
     private readonly Border _hostIndicator = new() { Width = 6, Height = 6, CornerRadius = new CornerRadius(3), Background = Ui.Muted, VerticalAlignment = VerticalAlignment.Center };
-    private readonly StackPanel _navigation = new() { Orientation = Orientation.Horizontal, Spacing = 4, HorizontalAlignment = HorizontalAlignment.Center };
+    private readonly Avalonia.Controls.Primitives.UniformGrid _navigation = new() { Columns = 8, HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(10, 0), MaxWidth = 1120 };
     private readonly Button _refresh;
     private readonly ScrollViewer _workspace;
     private readonly List<Button> _actions = [];
@@ -38,6 +40,10 @@ public sealed partial class MainWindow : Window
     private bool _hostAvailable;
     private string? _renderedPageState;
     private readonly UsageView _usage;
+    private readonly InspectorView _inspector;
+    private readonly ProviderCatalogView _providers;
+    private ProviderCatalogDto? _providerCatalog;
+    private bool _providerLoading;
     private LoginDto? _login;
     private CancellationTokenSource? _loginPolling;
     private bool _loginVisible;
@@ -47,6 +53,8 @@ public sealed partial class MainWindow : Window
     {
         _client = client;
         _usage = new UsageView(client);
+        _inspector = new InspectorView(client);
+        _providers = new ProviderCatalogView(uri => _ = OpenProviderLinkAsync(uri), BeginProviderSetup);
         Title = "lain";
         Width = 1120; Height = 780; MinWidth = 800; MinHeight = 560;
         Background = Ui.Background;
@@ -114,14 +122,18 @@ public sealed partial class MainWindow : Window
         var footer = new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 1, 0, 0), Child = footerContent };
         Grid.SetRow(footer, 3); shell.Children.Add(footer);
 
-        foreach (var name in new[] { "Overview", "Accounts", "Routes", "Profiles", "Usage", "Setup" })
+        foreach (var name in new[] { "Overview", "Accounts", "Providers", "Routes", "Profiles", "Inspector", "Usage", "Setup" })
         {
             var nav = Ui.Button(name, () => Navigate(name));
             nav.Tag = name;
             nav.Content = Ui.Row(Ui.Icon(name.ToLowerInvariant(), 16), Ui.Text(name, 13));
-            nav.MinWidth = 104;
+            nav.Classes.Add("nav");
+            nav.MinWidth = 0;
             nav.Height = 36;
-            nav.Padding = new Thickness(12, 7);
+            nav.Margin = new Thickness(2, 0);
+            nav.Padding = new Thickness(6, 7);
+            nav.HorizontalContentAlignment = HorizontalAlignment.Center;
+            if (nav.Content is StackPanel navRow) { navRow.Spacing = 6; navRow.HorizontalAlignment = HorizontalAlignment.Center; }
             nav.BorderThickness = new Thickness(0);
             nav.VerticalAlignment = VerticalAlignment.Center;
             AutomationProperties.SetName(nav, name);
@@ -130,6 +142,8 @@ public sealed partial class MainWindow : Window
         var navigationBar = new Border { Background = Ui.Surface, BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 1, 0, 0), Child = _navigation };
         Grid.SetRow(navigationBar, 4); shell.Children.Add(navigationBar);
         Content = shell;
+        SizeChanged += (_, _) => UpdateNavigationLayout();
+        UpdateNavigationLayout();
         Opened += async (_, _) => { await RefreshAsync(true); _poll.Start(); };
         _poll.Tick += async (_, _) => await RefreshAsync(false);
         Closed += (_, _) => { _poll.Stop(); _lifetime.Cancel(); _client.Dispose(); _lifetime.Dispose(); };
@@ -149,7 +163,19 @@ public sealed partial class MainWindow : Window
 
     private void ToggleMaximize() => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
-    private void Navigate(string section) { _section = section; _editing = false; _loginVisible = false; _notice.Text = ""; _workspace.Offset = default; Render(); }
+    private void UpdateNavigationLayout()
+    {
+        var showIcons = (Bounds.Width > 0 ? Bounds.Width : Width) >= 1000;
+        foreach (var button in _navigation.Children.OfType<Button>())
+            if (button.Content is StackPanel row)
+                foreach (var icon in row.Children.OfType<PathIcon>()) icon.IsVisible = showIcons;
+    }
+
+    private void Navigate(string section)
+    {
+        _section = section; _editing = false; _loginVisible = false; _notice.Text = ""; _workspace.Offset = default; Render();
+        if (section == "Providers") _ = RefreshProviderCatalogAsync();
+    }
 
     private async Task RefreshAsync(bool explicitRefresh)
     {
@@ -173,6 +199,8 @@ public sealed partial class MainWindow : Window
                 catch (Exception error) when (error is not OperationCanceledException) { _models = []; }
             }
             if (explicitRefresh) { _editing = false; _loginVisible = false; _notice.Text = ""; }
+            if (_providerCatalog is not null) _providers.SetCatalog(_providerCatalog, _configuration?.Accounts);
+            if (_section == "Providers" && (explicitRefresh || _providerCatalog is null)) await RefreshProviderCatalogAsync();
             RefreshPage(explicitRefresh);
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
@@ -214,7 +242,7 @@ public sealed partial class MainWindow : Window
 
     private void RefreshPage(bool explicitRefresh)
     {
-        if (_editing || _section == "Usage") return;
+        if (_editing || _section is "Usage" or "Inspector" or "Providers") return;
         // Polling updates the shell immediately, but must not remove the control being
         // used with the keyboard. A changed snapshot remains pending until focus leaves
         // the page, navigation occurs, or the user explicitly refreshes.
@@ -250,6 +278,7 @@ public sealed partial class MainWindow : Window
         _page.Content = _section switch
         {
             "Accounts" => AccountsPage(), "Routes" => RoutesPage(), "Profiles" => ProfilesPage(),
+            "Providers" => _providers, "Inspector" => _inspector,
             "Usage" => _usage, "Setup" => SetupPage(), _ => OverviewPage()
         };
         _renderedPageState = PageState();

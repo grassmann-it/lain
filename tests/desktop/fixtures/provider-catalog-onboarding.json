@@ -85,7 +85,7 @@
           ],
           "capabilities": {
             "contextWindow": 1000000,
-            "maximumOutput": 1048576,
+            "maximumOutput": null,
             "tools": true,
             "streaming": true,
             "reasoning": true,
@@ -124,7 +124,8 @@
             "max_tokens includes reasoning and answer; prompt plus output must fit the context window. The schema permits up to 1,048,576, not an independent guaranteed output allocation.",
             "Reasoning remains enabled. Do not send enable_thinking=false as a reasoning disable switch. Preserve assistant reasoning_content and tool_call_id on continuations.",
             "Streaming uses SSE data events ending with [DONE]; reasoning, content and tool calls arrive as deltas.",
-            "The published context value is 1M tokens; actual usable context and concurrency depend on hosting configuration. Structured output and adjustable reasoning effort are not verified for this route."
+            "The published context value is 1M tokens; actual usable context and concurrency depend on hosting configuration. Structured output and adjustable reasoning effort are not verified for this route.",
+            "The documented max_tokens validation bound of 1,048,576 is not a separately verified usable maximum output capacity; MaximumOutput remains unknown."
           ],
           "freeOnlyEnforcementKind": "unsupported"
         }
