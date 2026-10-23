@@ -15,12 +15,12 @@ public sealed class UsageView : UserControl
     private static IBrush Muted => Ui.Muted;
     private static IBrush Accent => Ui.Accent;
     private readonly LainApiClient _client;
-    private readonly TextBox _from = new() { Width = 118, Watermark = "yyyy-MM-dd" };
-    private readonly TextBox _to = new() { Width = 118, Watermark = "yyyy-MM-dd" };
+    private readonly TextBox _from = new() { Width = 118, PlaceholderText = "yyyy-MM-dd" };
+    private readonly TextBox _to = new() { Width = 118, PlaceholderText = "yyyy-MM-dd" };
     private readonly TextBox _zone = new() { Width = 172 };
     private readonly ComboBox _account = new() { Width = 172 };
     private readonly ComboBox _model = new() { Width = 172 };
-    private readonly TextBox _status = new() { Width = 84, Watermark = "Any" };
+    private readonly TextBox _status = new() { Width = 84, PlaceholderText = "Any" };
     private readonly TextBlock _connection = Label("Waiting for usage service", Muted);
     private readonly TextBlock _freshness = Label("No snapshot received", Muted);
     private readonly TextBlock _coverage = Label("Coverage unknown until a snapshot is received", Muted);
@@ -28,6 +28,8 @@ public sealed class UsageView : UserControl
     private readonly TextBlock _filterError = Label("", Ui.Warning);
     private readonly UniformGrid _totals = new() { Columns = 4 };
     private readonly HashSet<string> _expandedAttempts = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Button> _attemptToggles = new(StringComparer.Ordinal);
+    private readonly Expander _dailyDetails = new() { Header = "Daily totals", HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly StackPanel _daily = new() { Spacing = 4 };
     private readonly StackPanel _accounts = new();
     private readonly StackPanel _models = new();
@@ -77,6 +79,7 @@ public sealed class UsageView : UserControl
         paging.Children.Add(_page);
         RenderEmptyTotals();
         _daily.Children.Add(Label("Waiting for daily activity", Muted));
+        _dailyDetails.Content = Label("Waiting for daily totals", Muted);
         _accounts.Children.Add(Label("Waiting for account totals", Muted));
         _models.Children.Add(Label("Waiting for model totals", Muted));
         _attempts.Children.Add(Label("Waiting for attempts", Muted));
@@ -90,7 +93,7 @@ public sealed class UsageView : UserControl
                 _error,
                 new StackPanel { Spacing = 3, Children = { _connection, _freshness, _coverage } },
                 Panel(_totals, 0),
-                Section("Daily activity", "Attempts by calendar day · hover for exact host totals", _daily),
+                Section("Daily activity", "Attempts by calendar day", new StackPanel { Spacing = 6, Children = { _daily, _dailyDetails } }),
                 Section("Accounts", "Historical identities retained", _accounts),
                 Section("Actual models", "Requests and upstream attempts counted separately", _models),
                 Section("Attempts & errors", "25 per page · expand a row for tokens, timing and identifiers", new StackPanel { Children = { _attempts, paging } }),
@@ -293,7 +296,20 @@ public sealed class UsageView : UserControl
     private void RenderDaily(UsageGroup[] days)
     {
         _daily.Children.Clear();
-        if (days.Length == 0) { _daily.Children.Add(Label("No activity in this range", Muted)); return; }
+        var exactTotals = new StackPanel();
+        exactTotals.Children.Add(GroupRow("Day", "Requests", "Attempts", "Errors", "Tokens", "Unknown", true));
+        foreach (var day in days)
+        {
+            var totals = day.Totals;
+            exactTotals.Children.Add(GroupRow(day.Key, Number(totals.Requests), Number(totals.Attempts), Number(totals.Errors), Number(totals.Tokens.Total), Number(totals.UnknownUsageAttempts)));
+        }
+        _dailyDetails.Content = exactTotals;
+        if (days.Length == 0)
+        {
+            _daily.Children.Add(Label("No activity in this range", Muted));
+            exactTotals.Children.Add(Label("No activity in this range", Muted));
+            return;
+        }
         var max = days.Max(x => x.Totals.Attempts);
         var chart = new Grid { Height = 114, Margin = new Thickness(0, 6, 0, 0) };
         for (var index = 0; index < days.Length; index++)
@@ -356,6 +372,9 @@ public sealed class UsageView : UserControl
 
     private void RenderAttempts(PageDto<AttemptDto> page, TimeZoneInfo zone)
     {
+        // Polling may replace the rows, but must leave keyboard users on the same attempt.
+        var focusedAttempt = _attemptToggles.FirstOrDefault(pair => pair.Value.IsFocused).Key;
+        _attemptToggles.Clear();
         _attempts.Children.Clear();
         _attempts.Children.Add(TableRow(AttemptCells("", "Time", "Account / model", "Status", "Tokens", "Duration", true), true));
         if (page.Items.Length == 0) _attempts.Children.Add(Label("No attempts match these filters", Muted));
@@ -365,6 +384,7 @@ public sealed class UsageView : UserControl
             var failed = attempt.StatusCode >= 400 || !string.IsNullOrEmpty(attempt.Error);
             var expanded = _expandedAttempts.Contains(attempt.Id);
             var toggle = new Button { Content = expanded ? "⌄" : "›", Width = 26, Height = 28, MinHeight = 28, Padding = new Thickness(0), Background = Brushes.Transparent, BorderThickness = new Thickness(0) };
+            _attemptToggles[attempt.Id] = toggle;
             ToolTip.SetTip(toggle, "Show attempt details");
             Avalonia.Automation.AutomationProperties.SetName(toggle, $"Details for attempt {attempt.Id}");
             var row = AttemptCells("", TimeZoneInfo.ConvertTime(attempt.StartedAt, zone).ToString("MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
@@ -398,6 +418,8 @@ public sealed class UsageView : UserControl
                 entry.Children.Add(new Border { Padding = new Thickness(32, 0, 8, 6), Child = Cell(attempt.Error, Ui.Warning) });
             _attempts.Children.Add(TableRow(entry));
         }
+        if (focusedAttempt is not null && _attemptToggles.TryGetValue(focusedAttempt, out var focusedToggle))
+            focusedToggle.Focus();
         var first = page.Items.Length == 0 ? 0 : page.Offset + 1;
         _page.Text = $"{first:N0}–{page.Offset + page.Items.Length:N0} of {page.Total:N0}";
         _previous.IsEnabled = page.Offset > 0;
@@ -451,10 +473,14 @@ public sealed class UsageView : UserControl
         Background = Ui.Surface, BorderBrush = Ui.Edge, BorderThickness = new Thickness(1),
         CornerRadius = new CornerRadius(6), Padding = new Thickness(padding), Child = child
     };
-    private static StackPanel Field(string title, Control control) => new()
+    private static StackPanel Field(string title, Control control)
     {
-        Spacing = 3, Margin = new Thickness(0, 0, 8, 6), Children = { Label(title, Muted), control }
-    };
+        Avalonia.Automation.AutomationProperties.SetName(control, title);
+        return new StackPanel
+        {
+            Spacing = 3, Margin = new Thickness(0, 0, 8, 6), Children = { Label(title, Muted), control }
+        };
+    }
     private static Border Section(string title, string description, Control body) => Panel(new StackPanel
     {
         Spacing = 8,
