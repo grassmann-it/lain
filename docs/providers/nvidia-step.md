@@ -24,7 +24,9 @@ Die [Build-Modellseite][nv-build] nennt die vollständige Modell-ID, den
 Text-/Bildeingaben, Tool Calling, Reasoning und **1M Kontext**. Die [Inference-API-Referenz][nv-infer] belegt `max_tokens` von 1 bis
 1.048.576 (Standard 4096), einschließlich Reasoning und Antwort. Prompt plus
 Ausgabe müssen ins Kontextfenster passen; dies ist keine unabhängige zusätzliche
-Ausgabezuteilung. Die Route unterstützt höchstens acht Bilder und ausdrücklich
+Ausgabezuteilung oder nachgewiesene nutzbare Ausgabekapazität. Deshalb bleibt
+das Katalogfeld `MaximumOutput` unbekannt; die Parametergrenze steht nur in den
+Routenhinweisen. Die Route unterstützt höchstens acht Bilder und ausdrücklich
 kein Video/Audio. `tool_choice` unterstützt `auto`, `none`, `required` und eine
 benannte Funktion. Bei Fortsetzungen sind `reasoning_content` und passende
 `tool_call_id` zu erhalten. Reasoning bleibt auf diesem Checkpoint aktiv;
@@ -39,7 +41,12 @@ Prototyping über das NVIDIA Developer Program. Entwicklung, Tests, Forschung un
 Evaluation sind vom Produktionseinsatz zu unterscheiden; für Produktion nennt
 NVIDIA eine AI-Enterprise-Lizenz. Die 90-tägige Enterprise-Evaluation und die
 16-GPU-Grenze für selbst gehostete NIMs sind **kein** kostenloses Tokenbudget der
-Build-API. Kein belastbarer fester RPM-/TPM-/Tages-/Parallelitätswert und kein
+Build-API. Öffentlich am 23.10.2026 um ca. 22:13 UTC geprüft; relevanter
+FAQ-Wortlaut: “Members of the NVIDIA Developer Program have free access to NIM
+API endpoints for prototyping”. Der Produktionsabschnitt lautet: “Using NIM in
+production requires an NVIDIA AI Enterprise license.” Diese Quelle kann je
+Abrufclient unterschiedlich erreichbar sein; die Zitate belegen das Angebot,
+keine getestete Kontoberechtigung. Kein belastbarer fester RPM-/TPM-/Tages-/Parallelitätswert und kein
 öffentlicher API-Key-Quota-Endpunkt für diese Route wurde verifiziert. Solche
 Werte bleiben unbekannt, niemals „unbegrenzt“ oder ein ausgedachtes Restbudget.
 
