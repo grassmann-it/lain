@@ -299,6 +299,18 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             if (id == "a2") Check(HasText("Last known"), "stale Command window is labelled as last known");
             if (id == "a4") Check(HasText("38% left"), "percentage-only Kimi window shows justified remaining percentage");
             if (id != "a1") await CaptureBoth($"accounts-{id}", () => accounts.ScrollIntoView(account));
+            if (id == "a2")
+            {
+                var lastWindow = accounts.GetVisualDescendants().OfType<TextBlock>().Single(x => x.Text == "Model allowance");
+                Check(!Controls<ProgressBar>().Any(x => AutomationProperties.GetName(x) == "Command Code Pro · Model allowance · consumed"), "unknown model allowance has no invented progress bar");
+                await CaptureBoth("accounts-a2-last-window", () => lastWindow.BringIntoView());
+                // CaptureBoth restores the large viewport, so explicitly prove reachability at the small size too.
+                await ResizeViewport(800, 560);
+                lastWindow.BringIntoView();
+                await Task.Delay(100); window.UpdateLayout();
+                Check(FitsScrollViewports(lastWindow), "sixth Command window is visibly reachable inside every scroll viewport at 800x560");
+                await ResizeViewport(1120, 780);
+            }
         }
         accounts.SelectedItem = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == "a3");
         await Task.Delay(120);
@@ -324,6 +336,22 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         accounts.ScrollIntoView(personal);
         accounts.BringIntoView();
         await Task.Delay(120);
+    }
+
+    private bool FitsScrollViewports(Control control)
+    {
+        if (control.GetVisualAncestors().OfType<Control>().Any(parent => !parent.IsVisible)) return false;
+        var origin = control.TranslatePoint(default, window);
+        if (origin is null || control.Bounds.Width <= 0 || control.Bounds.Height <= 0) return false;
+        var target = new Rect(origin.Value, control.Bounds.Size);
+        bool Contains(Rect viewport) => target.Left >= viewport.Left - 1 && target.Top >= viewport.Top - 1
+            && target.Right <= viewport.Right + 1 && target.Bottom <= viewport.Bottom + 1;
+        if (!Contains(new Rect(window.Bounds.Size))) return false;
+        return control.GetVisualAncestors().OfType<ScrollViewer>().All(scroller =>
+        {
+            var point = scroller.TranslatePoint(default, window);
+            return point is not null && Contains(new Rect(point.Value, scroller.Bounds.Size));
+        });
     }
 
     private void CheckQuotaBar(string account, string label, double percent)

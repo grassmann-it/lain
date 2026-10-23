@@ -115,6 +115,12 @@ internal sealed class Fixture : HttpMessageHandler
             Reading("a2", "https://api.commandcode.ai/alpha/billing/credits#weekly", "Weekly", 22, 40, "USD-Credits", 55)
                 with { State = "stale", ObservedAt = observed.AddMinutes(6), Error = "Quota refresh temporarily unavailable; previous observation retained." },
             Reading("a2", "https://api.commandcode.ai/alpha/billing/credits#monthlyCredits", "Monthly credits", 20, 80, "USD-Credits", 25),
+            new("a2", null, "https://api.commandcode.ai/alpha/billing/credits#purchasedCredits", "ok", observed, observed, null,
+                "USD-Credits", null, null, 12, false, WindowLabel: "Purchased credits"),
+            new("a2", null, "https://api.commandcode.ai/alpha/billing/credits#freeCredits", "ok", observed, observed, null,
+                "USD-Credits", null, null, 0, false, WindowLabel: "Free credits"),
+            new("a2", null, "https://commandcode.ai/docs/plans/pro#model-monthly-remaining-unknown", "unknown", observed, null, null,
+                "USD", null, null, null, false, WindowLabel: "Model allowance"),
             Reading("a3", "https://api.z.ai/api/monitor/usage/quota/limit#credit_limit", "Credits", 250, 1000, "credits", 25),
             Reading("a4", "https://api.kimi.com/coding/v1/usages#limit_5h", "5 hours", 100, 100, "%", 100),
             // Some provider windows supply only a consumed percentage, with no absolute amounts.
