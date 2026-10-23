@@ -232,19 +232,38 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             ("a4", "Kimi Coding", [("5 hours", 100), ("Monthly", 62)])
         })
         {
-            accounts.SelectedItem = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == id);
+            var account = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == id);
+            accounts.SelectedItem = account;
+            accounts.ScrollIntoView(account);
             await Task.Delay(120);
             foreach (var (label, percent) in windows) CheckQuotaBar(name, label, percent);
+            if (id == "a2") Check(HasText("Last known"), "stale Command window is labelled as last known");
+            if (id == "a4") Check(HasText("38% left"), "percentage-only Kimi window shows justified remaining percentage");
+            if (id != "a1") await CaptureBoth($"accounts-{id}", () => accounts.ScrollIntoView(account));
         }
         accounts.SelectedItem = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == "a3");
         await Task.Delay(120);
         Check(HasText("750", true) && HasText("credits", true), "Z.ai exposes its numeric remaining credit balance");
-        accounts.SelectedItem = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == "a5");
+        var technical = Controls<Expander>().Single(x => Equals(x.Header, "Technical details"));
+        technical.IsExpanded = true;
         await Task.Delay(120);
+        var provenance = technical.GetVisualDescendants().OfType<SelectableTextBlock>().Single(x => x.Text?.Contains("observed", StringComparison.Ordinal) == true);
+        Check(technical.GetVisualDescendants().OfType<SelectableTextBlock>().Any(x => x.Text?.Contains("https://api.z.ai/", StringComparison.Ordinal) == true)
+            && provenance.Text!.Contains("last success", StringComparison.Ordinal), "expanded quota details expose source and snapshot freshness");
+        await CaptureBoth("accounts-a3-technical", () => provenance.BringIntoView());
+        technical.IsExpanded = false;
+        var mimo = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == "a5");
+        accounts.SelectedItem = mimo;
+        accounts.ScrollIntoView(mimo);
+        await Task.Delay(120);
+        await CaptureBoth("accounts-a5", () => accounts.ScrollIntoView(mimo));
         Check(HasText("Not available", true), "accounts explain unavailable MiMo quota");
         Check(!Controls<ProgressBar>().Any(x => AutomationProperties.GetName(x)?.Contains("MiMo", StringComparison.Ordinal) == true), "unsupported account has no zero-percent quota bar");
         // Keep the existing account/focus workflows on Personal Codex.
-        accounts.SelectedItem = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == "a1");
+        var personal = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == "a1");
+        accounts.SelectedItem = personal;
+        accounts.ScrollIntoView(personal);
+        accounts.BringIntoView();
         await Task.Delay(120);
     }
 
@@ -278,12 +297,13 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Task.Delay(180);
     }
-    private async Task CaptureBoth(string page)
+    private async Task CaptureBoth(string page, Action? reveal = null)
     {
         foreach (var (width, height) in new[] { (1120, 780), (800, 560) })
         {
             window.Width = width; window.Height = height;
             await Task.Delay(130); window.UpdateLayout();
+            if (reveal is not null) { reveal(); await Task.Delay(80); window.UpdateLayout(); }
             Check(Math.Abs(window.Bounds.Width - width) < 2 && Math.Abs(window.Bounds.Height - height) < 2, $"{page} viewport {width}x{height}");
             var file = $"{page}-{width}x{height}.png";
             using var bitmap = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96, 96));

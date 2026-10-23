@@ -111,11 +111,14 @@ internal sealed class Fixture : HttpMessageHandler
         return [
             Reading("a1", "https://chatgpt.com/backend-api/wham/usage#primary_window", "5 hours", 37, 100, "%", 37, true),
             Reading("a2", "https://api.commandcode.ai/alpha/billing/credits#fiveHour", "5 hours", 4, 20, "USD-Credits", 20),
-            Reading("a2", "https://api.commandcode.ai/alpha/billing/credits#weekly", "Weekly", 22, 40, "USD-Credits", 55),
+            Reading("a2", "https://api.commandcode.ai/alpha/billing/credits#weekly", "Weekly", 22, 40, "USD-Credits", 55)
+                with { State = "stale", ObservedAt = observed.AddMinutes(6), Error = "Quota refresh temporarily unavailable; previous observation retained." },
             Reading("a2", "https://api.commandcode.ai/alpha/billing/credits#monthlyCredits", "Monthly credits", 20, 80, "USD-Credits", 25),
             Reading("a3", "https://api.z.ai/api/monitor/usage/quota/limit#credit_limit", "Credits", 250, 1000, "credits", 25),
             Reading("a4", "https://api.kimi.com/coding/v1/usages#limit_5h", "5 hours", 100, 100, "%", 100),
-            Reading("a4", "https://api.kimi.com/coding/v1/usages#limit_month_total", "Monthly", 62, 100, "%", 62),
+            // Some provider windows supply only a consumed percentage, with no absolute amounts.
+            Reading("a4", "https://api.kimi.com/coding/v1/usages#limit_month_total", "Monthly", 62, 100, "%", 62)
+                with { Used = null, Limit = null, Remaining = null },
             new("a5", null, "unavailable", "unsupported", observed, null, null, "unknown", null, null, null, false,
                 "Provider quota is not available.", "Provider quota")
         ];
