@@ -36,8 +36,17 @@ builder.Services.AddSingleton(secrets);
 builder.Services.AddSingleton(repository);
 builder.Services.AddSingleton(proxy);
 builder.Services.AddSingleton<AccountService>();
-builder.Services.AddSingleton<LegacyImportService>();
-builder.Services.AddSingleton<LoginOperationService>();
+var catalogPath = Path.Combine(Path.GetDirectoryName(binary)!, "codex-model-catalog.json");
+string[] codexModels = [];
+if (File.Exists(catalogPath))
+{
+ using var catalog = JsonDocument.Parse(File.ReadAllText(catalogPath));
+ codexModels = catalog.RootElement.GetProperty("models").EnumerateArray().Select(model => model.GetProperty("id").GetString()!).ToArray();
+}
+builder.Services.AddSingleton(new LegacyImportService(paths, repository, secrets, codexModels));
+using var loginBackend = new HttpCodexOwnedLoginBackend(paths, secrets);
+var loginAdapter = new CodexOwnedLoginAdapter(loginBackend, paths, repository, secrets, codexModels);
+builder.Services.AddSingleton(new LoginOperationService([loginAdapter]));
 builder.Services.AddSingleton<ModelsService>();
 builder.Services.AddSingleton<CodexProfileAdapter>();
 builder.Services.AddSingleton<ProxyConfigurationWriter>();
@@ -61,7 +70,7 @@ app.Use(async (context, next) => {
  var expected = "Bearer " + hostToken;
  if (!CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(supplied), Encoding.UTF8.GetBytes(expected))) { context.Response.StatusCode = 401; await context.Response.WriteAsJsonAsync(new ApiError("unauthorized", "A local lain management token is required.")); return; }
  context.Response.Headers.CacheControl = "no-store";
- var mutation = context.Request.Method is not ("GET" or "HEAD");
+ var mutation = context.Request.Method is not ("GET" or "HEAD") || context.Request.Path.StartsWithSegments(Api.Prefix + "/accounts/login");
  if (mutation) await mutations.WaitAsync(context.RequestAborted);
  try { await next(context); }
  catch (RevisionConflictException) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError("revision_conflict", "Configuration changed; reload and retry.")); }
@@ -89,9 +98,20 @@ app.MapPut(Api.Prefix + "/accounts/{id}/enabled", (string id, RevisionRequest<bo
 app.MapDelete(Api.Prefix + "/accounts/{id}", (string id, long revision, AccountService svc) => svc.Remove(revision, id));
 app.MapPost(Api.Prefix + "/accounts/{id}/check", (string id, AccountService svc) => svc.Check(id));
 app.MapPost(Api.Prefix + "/import", (ImportRequest request, LegacyImportService svc) => svc.Import(request));
-app.MapPost(Api.Prefix + "/accounts/login", (LoginRequest request, LoginOperationService svc, CancellationToken ct) => {
+app.MapPost(Api.Prefix + "/accounts/login", async (LoginRequest request, LoginOperationService svc, ProxyConfigurationWriter writer, CancellationToken ct) => {
  if (request.Revision != repository.Snapshot.Revision) throw new RevisionConflictException(request.Revision, repository.Snapshot.Revision);
- return svc.BeginAsync(request.Provider, ct);
+ if (!proxy.Status.Ready)
+ {
+  if (File.Exists(runtimeManifest)) { RequireAppliedRuntime(); await proxy.StartAsync(ct); }
+  else
+  {
+   var empty = new ConfigurationDto(repository.Snapshot.Revision, repository.Snapshot.AppliedRevision, [], [], []);
+   var identities = writer.Write(empty);
+   new RouteBindingsWriter(paths).Write(empty, identities);
+   await proxy.StartAsync(ct);
+  }
+ }
+ return await svc.BeginAsync(request.Provider, ct);
 });
 app.MapGet(Api.Prefix + "/accounts/login/{id}", (string id, LoginOperationService svc, CancellationToken ct) => svc.StatusAsync(id, ct));
 app.MapDelete(Api.Prefix + "/accounts/login/{id}", (string id, LoginOperationService svc, CancellationToken ct) => svc.CancelAsync(id, ct));
@@ -121,7 +141,8 @@ app.MapPost(Api.Prefix + "/service/{action}", async (string action, Cancellation
  return Status();
 });
 using var shutdown = new CancellationTokenSource();
-var quotaLoop = quota.RunAsync(shutdown.Token);
+var referenceWithoutQuota = Environment.GetEnvironmentVariable("LAIN_REFERENCE_QUALIFICATION") == "1" && paths.Root.StartsWith(Path.GetTempPath(), StringComparison.Ordinal) && Environment.GetEnvironmentVariable("LAIN_REFERENCE_DISABLE_QUOTA") == "1";
+var quotaLoop = referenceWithoutQuota ? Task.CompletedTask : quota.RunAsync(shutdown.Token);
 if (qualified && File.Exists(Path.Combine(paths.Root, "active-profile.json")))
 {
  try {
