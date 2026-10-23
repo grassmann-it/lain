@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Compile Include="../../../src/Lain.Core/*.cs" Link="Core/%(Filename)%(Extension)" />
+    <Compile Include="../../../src/Lain.Host/Inspector/*.cs" Link="Inspector/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

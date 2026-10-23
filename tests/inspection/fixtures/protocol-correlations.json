@@ -238,6 +238,80 @@
           "not-a-worker"
         ]
       }
+    },
+    {
+      "id": "claude-user-id-json-explicit-only",
+      "protocol": "anthropic-messages",
+      "headers": {},
+      "body": {
+        "model": "fixture-claude-a",
+        "max_tokens": 32,
+        "metadata": {
+          "user_id": "{\"session_id\":\"session-json-fixture\",\"agent_id\":\"worker-json-fixture\",\"parent_agent_id\":\"parent-json-fixture\",\"account_id\":\"not-a-worker\"}"
+        },
+        "messages": [
+          {
+            "role": "user",
+            "content": "synthetic structured harness metadata"
+          }
+        ]
+      },
+      "expected": {
+        "conversationId": "session-json-fixture",
+        "workerId": "worker-json-fixture",
+        "parentWorkerId": "parent-json-fixture",
+        "turnId": null,
+        "evidence": "request_body",
+        "forbiddenLiterals": [
+          "not-a-worker"
+        ]
+      }
+    },
+    {
+      "id": "codex-explicit-thread-spawn",
+      "protocol": "openai-chat",
+      "headers": {
+        "X-Codex-Turn-Metadata": "{\"thread_id\":\"worker-thread-fixture\",\"parent_thread_id\":\"parent-thread-fixture\",\"turn_id\":\"turn-spawn-fixture\",\"subagent_kind\":\"thread_spawn\"}"
+      },
+      "body": {
+        "model": "fixture-a",
+        "messages": [
+          {
+            "role": "user",
+            "content": "synthetic explicit worker spawn"
+          }
+        ]
+      },
+      "expected": {
+        "conversationId": "worker-thread-fixture",
+        "workerId": "worker-thread-fixture",
+        "parentWorkerId": "parent-thread-fixture",
+        "turnId": "turn-spawn-fixture",
+        "evidence": "harness_header"
+      }
+    },
+    {
+      "id": "codex-ordinary-fork-is-not-worker",
+      "protocol": "openai-chat",
+      "headers": {
+        "X-Codex-Turn-Metadata": "{\"thread_id\":\"conversation-thread-fixture\",\"parent_thread_id\":\"fork-parent-fixture\"}"
+      },
+      "body": {
+        "model": "fixture-a",
+        "messages": [
+          {
+            "role": "user",
+            "content": "synthetic ordinary fork"
+          }
+        ]
+      },
+      "expected": {
+        "conversationId": "conversation-thread-fixture",
+        "workerId": null,
+        "parentWorkerId": null,
+        "turnId": null,
+        "evidence": "harness_header"
+      }
     }
   ]
 }

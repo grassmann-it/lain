@@ -37,3 +37,13 @@ graphs cover paid/trial/unknown fallback opt-in, strict route/profile inheritanc
 cycles, missing/disabled targets, unqualified execution, forged free controls and
 concrete model-route mismatches. A declarative free label does not prove that
 runtime controls are qualified.
+
+The independent fake-HTTP Host collector boundary suite is:
+
+`dotnet run --project tests/inspection/host/InspectorIntegration.csproj`
+
+It checks actual Go token-field JSON, tool/response/worker provenance, global
+filtered cursors, epoch changes, evicted intervals, bounded catch-up, malformed
+pages, cancellation, sanitized failure state, split-token redaction, conflicting
+identity evidence, overflow and separate content/terminal lifetimes. It uses a
+manual clock and an in-memory HttpMessageHandler; it opens no socket.
