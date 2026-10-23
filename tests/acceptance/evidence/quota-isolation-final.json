@@ -1,0 +1,21 @@
+{
+  "persistentPathComparison": {
+    "added": 4,
+    "removed": 4,
+    "changed": 0
+  },
+  "unmatchedContentsRemoved": 4,
+  "unmatchedContentsAdded": 4,
+  "allPersistentContentAndModesPreserved": false,
+  "existingService": [
+    "ActiveState=active",
+    "MainPID=1882",
+    "ExecMainStartTimestamp=Fri 2026-10-23 13:32:05 CEST"
+  ],
+  "credentialConfigBinaryFiles": 5,
+  "credentialConfigBinaryUnchanged": true,
+  "normalCodexUnchangedDuringCurrentUiUpdate": true,
+  "normalCodexMatchesOriginalBaseline": false,
+  "normalCodexModificationTimeBeforeQuotaWork": "2026-10-23T21:13:49.717199",
+  "explanation": "The four persistent additions/removals are legacy error-response logs under oauth/logs, consistent with bounded log retention. All three credential files, configuration and binary remain unchanged. The ordinary Codex config was preserved during this quota/UI update; it already differed from the original 20:50 baseline with mtime21:13, before this quota work, so no whole-session unchanged-config claim is made."
+}
