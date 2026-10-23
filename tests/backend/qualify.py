@@ -11,6 +11,7 @@ import concurrent.futures
 import hashlib
 import http.client
 import json
+import math
 import os
 from pathlib import Path
 import resource
@@ -188,19 +189,65 @@ class ClaudeRun(Run):
         self.write_bindings()
 
 
+def assert_final_measurements(event):
+    measured = event.get("measurements")
+    expect(isinstance(measured, dict) and measured.get("source") == "core_monotonic_v1", "terminal measurements lack owned monotonic provenance")
+    total = measured.get("totalDurationMs")
+    expect(isinstance(total, (int, float)) and not isinstance(total, bool) and math.isfinite(total) and total >= 0, "terminal total duration missing or invalid")
+    expect(isinstance(measured.get("finishedAt"), str) and measured["finishedAt"], "terminal finish timestamp missing")
+    first = measured.get("firstOutputLatencyMs")
+    if first is not None:
+        expect(isinstance(first, (int, float)) and not isinstance(first, bool) and math.isfinite(first) and 0 <= first <= total, "first output latency is invalid or exceeds full duration")
+        expect(isinstance(measured.get("firstOutputAt"), str) and measured["firstOutputAt"], "observed first output lacks its timestamp")
+    else:
+        expect(measured.get("firstOutputAt") is None, "unobserved first output received an invented timestamp")
+
+
 def assert_complete(events, requests, attempts=None):
     starts = [event for event in events if event["kind"] == "attempt_started"]
     usages = [event for event in events if event["kind"] == "usage"]
+    completions = [event for event in events if event["kind"] == "attempt_finished"]
+    expect(len(starts) + len(usages) + len(completions) == len(events), "unknown durable event kind")
     expect(len({event["requestId"] for event in starts}) == requests, "logical request count mismatch")
     expect(len(starts) == (attempts if attempts is not None else requests), "attempt count mismatch")
-    expect(len(usages) == len(starts), "registered attempt missing terminal usage")
+    expect(len(usages) == len(starts), "registered attempt missing its single usage fact")
     expect(len({event["eventId"] for event in events}) == len(events), "duplicate source event IDs")
     expect(len({event["attemptId"] for event in starts}) == len(starts), "reused execution identity")
+    expect(len({event["sequence"] for event in events}) == len(events), "duplicate durable event sequence")
+    expect([event["sequence"] for event in events] == sorted(event["sequence"] for event in events), "durable event sequence reordered")
+    expected_completions = 0
+    token_fields = ("inputTokens", "outputTokens", "totalTokens", "cacheReadTokens", "cacheCreationTokens", "reasoningTokens")
     for start in starts:
-        terminal = [row for row in usages if row["attemptId"] == start["attemptId"]]
-        expect(len(terminal) == 1, "attempt must have exactly one terminal usage")
-        for key in ("requestId", "accountId", "credentialId", "routeId"):
-            expect(terminal[0][key] == start[key], f"changed {key} within attempt")
+        facts = [row for row in usages if row["attemptId"] == start["attemptId"]]
+        finished = [row for row in completions if row["attemptId"] == start["attemptId"]]
+        expect(len(facts) == 1, "attempt must have exactly one usage fact")
+        usage = facts[0]
+        expect(usage["sequence"] > start["sequence"], "usage preceded its durable dispatch registration")
+        for key in ("sourceId", "requestId", "accountId", "credentialId", "routeId"):
+            expect(usage[key] == start[key], f"changed {key} within attempt")
+        if usage.get("completionState") is not None:
+            # With no reporter, finalization itself writes the one unknown-usage fact.
+            expect(not finished, "unknown reporter duplicated its terminal usage with completion metadata")
+            expect(usage["completionState"] == usage["outcome"] and usage["completionState"] in ("success", "failed", "canceled"), "unknown reporter final state is inconsistent")
+            expect(not usage["usageReported"] and all(usage.get(key) is None for key in token_fields), "unknown reporter invented consumed tokens")
+            expect(usage["outcome"] != "success" or usage.get("statusCode") is None, "unknown reporter invented an HTTP success status")
+            expect(usage.get("latencyMs") is None and usage.get("ttftMs") is None, "owned timing overwrote unknown legacy provider timing")
+            assert_final_measurements(usage)
+        else:
+            # Known reporters persist consumption early, then append metadata-only true wrapper completion.
+            expected_completions += 1
+            expect(len(finished) == 1, "reported attempt must have exactly one separate completion metadata fact")
+            final = finished[0]
+            for key in ("sourceId", "requestId", "accountId", "credentialId", "routeId"):
+                expect(final[key] == start[key], f"completion changed {key} within attempt")
+            expect(final["sequence"] > usage["sequence"], "completion metadata preceded its immutable usage fact")
+            expect(final["model"] == usage["model"], "completion lost the actual final usage model")
+            expect(final.get("completionState") in ("success", "failed", "canceled"), "completion metadata has no wrapper outcome")
+            expect(final.get("outcome") is None and final.get("statusCode") is None, "completion metadata duplicated the usage outcome or HTTP status")
+            expect(not final["usageReported"] and all(final.get(key) is None for key in token_fields), "completion metadata duplicated consumed tokens")
+            expect(final.get("latencyMs") is None and final.get("ttftMs") is None, "completion metadata overwrote legacy provider timing")
+            assert_final_measurements(final)
+    expect(len(completions) == expected_completions, "orphan or duplicate completion metadata facts")
     return starts, usages
 
 
@@ -237,7 +284,9 @@ def normal_and_restart(core):
         run.stop()
         run.start()
         expect(run.events() == batch, "restart lost/changed persisted identity or events")
-        return {"requests": 200, "attempts": len(starts), "events": len(batch["events"]), "tokensPerAccount": 1800,
+        return {"requests": 200, "attempts": len(starts), "usageFacts": len(usages),
+                "completionMetadata": sum(row["kind"] == "attempt_finished" for row in batch["events"]),
+                "events": len(batch["events"]), "tokensPerAccount": 1800,
                 "distinctCredentials": len({row["credentialId"] for row in starts}), "replayEqual": True, "restartEqual": True,
                 "eventExamples": [next(row for row in usages if row["accountId"] == account) for account in run.accounts], "batchExample": batch}
 
@@ -433,7 +482,8 @@ def credential_lifecycle(core):
             response.read()
         rows = run.events()["events"]
         expect(rows[:len(original)] == original, "key change rewrote historical identity")
-        expect(rows[-1]["accountId"] == "account-a" and rows[-1]["credentialId"] == rotated, "rotated key lost stable account identity")
+        _, rotated_usages = assert_complete(rows, 2)
+        expect(rotated_usages[-1]["accountId"] == "account-a" and rotated_usages[-1]["credentialId"] == rotated, "rotated usage fact lost stable account identity")
         expect(first_credential != rotated, "rotation did not change credential identity")
         expect(run.provider.snapshot()[-1]["account"] == "account-a-rotated", "rotated credential not used upstream")
         run.stop()
@@ -506,7 +556,9 @@ def crash_inflight(core):
             response.read()
         after = run.events()
         old_attempt = before["events"][0]["attemptId"]
-        expect(len(after["events"]) == 3, "crash restart lost or duplicated source events")
+        expect(after["events"][:len(before["events"])] == before["events"], "postrestart request rewrote the unresolved precrash dispatch")
+        recovered = [row for row in after["events"] if row["attemptId"] != old_attempt]
+        assert_complete(recovered, 1)
         expect(sum(row["attemptId"] == old_attempt for row in after["events"]) == 1, "unknown crashed attempt misreported as completed")
         expect(len({row["requestId"] for row in after["events"]}) == 2, "postrestart work reused crashed request identity")
         return {"killSignal": "SIGKILL", "durableStartedBeforeOutput": True, "unresolvedAttempts": 1,
