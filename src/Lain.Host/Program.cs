@@ -104,7 +104,7 @@ app.MapPost(Api.Prefix + "/profiles/{id}/apply", async (string id, ApplyRequest 
  await proxy.StopAsync(ct); // Stop before changing files observed by the Core's watcher.
  OwnStatePaths.WritePrivate(runtimeManifest, JsonSerializer.Serialize(new { valid = false, revision = request.Revision }));
  var identities = writer.Write(runtime);
- new RouteBindingsWriter(paths).Write(runtime, identities);
+ new RouteBindingsWriter(paths).Write(runtime, identities, writer.RouteCredentials);
  await proxy.StartAsync(ct);
  repository.MarkApplied(request.Revision);
  OwnStatePaths.WritePrivate(runtimeManifest, JsonSerializer.Serialize(new { valid = true, revision = request.Revision }));
