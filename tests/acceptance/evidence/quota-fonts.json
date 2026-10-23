@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "privateXvfb": true,
+  "observations": [
+    "FONT displayed Overview: requested=avares://Lain.Desktop/Assets/Fonts/IBMPlexSansCondensed#IBM Plex Sans Condensed, source=avares://Lain.Desktop/Assets/Fonts/IBMPlexSansCondensed, resolved=True, actual=IBM Plex Sans Condensed SemiBold, weight=DemiBold",
+    "FONT displayed Provider budgets: requested=avares://Lain.Desktop/Assets/Fonts/IBMPlexSansCondensed#IBM Plex Sans Condensed, source=avares://Lain.Desktop/Assets/Fonts/IBMPlexSansCondensed, resolved=True, actual=IBM Plex Sans Condensed SemiBold, weight=DemiBold",
+    "FONT displayed Personal Codex: requested=avares://Lain.Desktop/Assets/Fonts/IBMPlexSansCondensed#IBM Plex Sans Condensed, source=avares://Lain.Desktop/Assets/Fonts/IBMPlexSansCondensed, resolved=True, actual=IBM Plex Sans Condensed SemiBold, weight=DemiBold",
+    "FONT displayed lain: requested=avares://Lain.Desktop/Assets/Fonts/Oxanium#Oxanium, source=avares://Lain.Desktop/Assets/Fonts/Oxanium, resolved=True, actual=Oxanium SemiBold, weight=DemiBold",
+    "PASS bundled IBM Plex Sans Condensed Normal resolves to its real font (actual: IBM Plex Sans Condensed)",
+    "PASS bundled IBM Plex Sans Condensed DemiBold resolves to its real font (actual: IBM Plex Sans Condensed SemiBold)",
+    "PASS bundled Oxanium Normal resolves to its real font (actual: Oxanium)",
+    "PASS bundled Oxanium DemiBold resolves to its real font (actual: Oxanium SemiBold)"
+  ],
+  "scope": "Actual displayed control FontFamily and resolved GlyphTypeface; direct embedded regular/semibold family resolution. No production code change was needed."
+}

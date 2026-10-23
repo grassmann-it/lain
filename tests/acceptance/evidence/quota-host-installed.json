@@ -1,0 +1,106 @@
+{
+  "passed": true,
+  "hostInstalled": true,
+  "zai": [
+    {
+      "accountId": "acct-ae1c396a0e93a312ac1dcfd6531bd188",
+      "budgetPoolId": null,
+      "source": "https://api.z.ai/api/monitor/usage/quota/limit#CREDIT_LIMIT/unit/3/number/5",
+      "state": "ok",
+      "observedAt": "2026-10-23T21:16:48.4772424+00:00",
+      "lastSuccessAt": "2026-10-23T21:16:48.4772424+00:00",
+      "resetsAt": "2026-10-24T00:04:27.105+00:00",
+      "unit": "credits",
+      "used": 483,
+      "limit": 12000,
+      "remaining": 11516,
+      "sharedWithLegacy": true,
+      "error": null
+    },
+    {
+      "accountId": "acct-ae1c396a0e93a312ac1dcfd6531bd188",
+      "budgetPoolId": null,
+      "source": "https://api.z.ai/api/monitor/usage/quota/limit#CREDIT_LIMIT/unit/6/number/1",
+      "state": "ok",
+      "observedAt": "2026-10-23T21:16:48.4772424+00:00",
+      "lastSuccessAt": "2026-10-23T21:16:48.4772424+00:00",
+      "resetsAt": "2026-10-29T18:28:30.982+00:00",
+      "unit": "credits",
+      "used": 17977,
+      "limit": 60000,
+      "remaining": 42022,
+      "sharedWithLegacy": true,
+      "error": null
+    }
+  ],
+  "kimi": [
+    {
+      "accountId": "acct-b2f4491f4456aa30b7debe2247df99aa",
+      "budgetPoolId": null,
+      "source": "https://api.kimi.com/coding/v1/usages#limit_5h",
+      "state": "ok",
+      "observedAt": "2026-10-23T21:16:48.8962388+00:00",
+      "lastSuccessAt": "2026-10-23T21:16:48.8962388+00:00",
+      "resetsAt": "2026-10-23T21:59:22+00:00",
+      "unit": "percent",
+      "used": 100,
+      "limit": 100,
+      "remaining": 0,
+      "sharedWithLegacy": true,
+      "error": null
+    },
+    {
+      "accountId": "acct-b2f4491f4456aa30b7debe2247df99aa",
+      "budgetPoolId": null,
+      "source": "https://api.kimi.com/coding/v1/usages#limit_month_total",
+      "state": "ok",
+      "observedAt": "2026-10-23T21:16:48.8962388+00:00",
+      "lastSuccessAt": "2026-10-23T21:16:48.8962388+00:00",
+      "resetsAt": "2026-10-27T00:00:00+00:00",
+      "unit": "percent",
+      "used": 78.86999999999999,
+      "limit": 100,
+      "remaining": 21.13000000000001,
+      "sharedWithLegacy": true,
+      "error": null
+    },
+    {
+      "accountId": "acct-b2f4491f4456aa30b7debe2247df99aa",
+      "budgetPoolId": null,
+      "source": "https://api.kimi.com/coding/v1/usages#limit_month_code",
+      "state": "ok",
+      "observedAt": "2026-10-23T21:16:48.8962388+00:00",
+      "lastSuccessAt": "2026-10-23T21:16:48.8962388+00:00",
+      "resetsAt": "2026-10-27T00:00:00+00:00",
+      "unit": "percent",
+      "used": 68.8,
+      "limit": 100,
+      "remaining": 31.200000000000003,
+      "sharedWithLegacy": true,
+      "error": null
+    }
+  ],
+  "unsupported": [
+    {
+      "accountId": "acct-3b8f7ca3a3add5fee0676e31fac70a64",
+      "budgetPoolId": null,
+      "source": "unavailable",
+      "state": "unsupported",
+      "observedAt": "2026-10-23T21:16:47.3294736+00:00",
+      "lastSuccessAt": null,
+      "resetsAt": null,
+      "unit": "unknown",
+      "used": null,
+      "limit": null,
+      "remaining": null,
+      "sharedWithLegacy": true,
+      "error": "Direct MiMo quota is not available through a verified API-key endpoint. Check the provider console."
+    }
+  ],
+  "usageUnchanged": true,
+  "legacyServiceUnchanged": true,
+  "credentialsUnchanged": true,
+  "normalCodexConfigUnchanged": true,
+  "inferenceRequests": 0,
+  "backup": "/home/tomka/.local/share/lain/host-backups/20261023T231642"
+}

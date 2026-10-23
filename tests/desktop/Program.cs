@@ -9,6 +9,7 @@ using Avalonia.Automation;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -88,6 +89,8 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Directory.CreateDirectory(Output);
         await Open();
         await CheckQuotaOverview();
+        CheckBundledFonts();
+        if (Environment.GetEnvironmentVariable("LAIN_DESKTOP_FONT_PROBE_ONLY") == "1") { window.Close(); return; }
         await CaptureBoth("overview");
         await Click("Accounts");
         await CheckClosedQuotaTiles("accounts");
@@ -403,6 +406,27 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(bars.Length == 1, $"one semantic quota progress label: {name}");
         Check(bars.All(bar => Math.Abs(bar.Minimum) < .001 && Math.Abs(bar.Maximum - 100) < .001 && Math.Abs(bar.Value - percent) < .001 && !bar.IsIndeterminate),
             $"{account} {label} progress is {percent}% consumed");
+    }
+
+    private void CheckBundledFonts()
+    {
+        foreach (var label in new[] { "Overview", "Provider budgets", "Personal Codex", "lain" })
+        {
+            var block = Controls<TextBlock>().Where(x => x.Text == label).OrderByDescending(x => x.FontSize).First();
+            var found = FontManager.Current.TryGetGlyphTypeface(new Typeface(block.FontFamily, block.FontStyle, block.FontWeight, block.FontStretch), out var actual);
+            Console.WriteLine($"FONT displayed {label}: requested={block.FontFamily}, source={block.FontFamily.Key}, resolved={found}, actual={actual?.FamilyName}, weight={actual?.Weight}");
+        }
+        foreach (var (uri, expected) in new[]
+        {
+            ("avares://Lain.Desktop/Assets/Fonts/IBMPlexSansCondensed#IBM Plex Sans Condensed", "IBM Plex Sans Condensed"),
+            ("avares://Lain.Desktop/Assets/Fonts/Oxanium#Oxanium", "Oxanium")
+        })
+        foreach (var weight in new[] { FontWeight.Normal, FontWeight.SemiBold })
+        {
+            var found = FontManager.Current.TryGetGlyphTypeface(new Typeface(new FontFamily(uri), FontStyle.Normal, weight), out var glyph);
+            Check(found && glyph?.FamilyName.StartsWith(expected, StringComparison.Ordinal) == true,
+                $"bundled {expected} {weight} resolves to its real font (actual: {glyph?.FamilyName ?? "missing"})");
+        }
     }
 
     private async Task Open()
