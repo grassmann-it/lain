@@ -62,7 +62,8 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
                 DateTimeOffset? expires = DateTimeOffset.TryParse(JsonText(auth, "expired"), out var parsed) ? parsed : null;
                 var disabled = auth.TryGetProperty("disabled", out var disabledValue) && disabledValue.ValueKind == JsonValueKind.True;
                 var credential = JsonSerializer.Serialize(new { kind = "codex-access-snapshot", provider = "codex", accessToken = token, accountId, expiresAt = expires });
-                candidates.Add((new(id, "Codex snapshot", "codex", !disabled, "codex-access-snapshot", expires <= DateTimeOffset.UtcNow ? "expired" : "unverified", ExpiresAt: expires, SharedWithLegacy: true), credential));
+                var displayName = FirstName(JsonText(auth, "display_name"), JsonText(auth, "name"), JsonText(auth, "label"), JsonText(auth, "email")) ?? "Codex snapshot";
+                candidates.Add((new(id, displayName, "codex", !disabled, "codex-access-snapshot", expires <= DateTimeOffset.UtcNow ? "expired" : "unverified", ExpiresAt: expires, SharedWithLegacy: true), credential));
             }
         }
         var selected = new YamlMappingNode();
@@ -195,8 +196,10 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
         using (var writer = new StringWriter(source)) new YamlStream(new YamlDocument(provider)).Save(writer, false);
         var entrySource = new StringBuilder();
         using (var writer = new StringWriter(entrySource)) new YamlStream(new YamlDocument(entry)).Save(writer, false);
-        var credential = JsonSerializer.Serialize(new { kind = "api-key", sourceSection, provider = canonicalProvider, coreProvider = providerName, transportId, sourceEnabled = !disabled, apiKey = key, baseUrl = endpoint, sourceConfig = source.ToString(), entryConfig = entrySource.ToString() });
-        candidates.Add((new(id, canonicalProvider, canonicalProvider, !disabled, "api-key", "unverified", SharedWithLegacy: true), credential));
+        var explicitName = FirstName(Text(entry, "display-name"), Text(entry, "display_name"), Text(entry, "label"), Text(entry, "name"),
+            Text(provider, "display-name"), Text(provider, "display_name"), Text(provider, "label"), Text(provider, "name"));
+        var credential = JsonSerializer.Serialize(new { kind = "api-key", displayNameIsExplicit = explicitName is not null, sourceSection, provider = canonicalProvider, coreProvider = providerName, transportId, sourceEnabled = !disabled, apiKey = key, baseUrl = endpoint, sourceConfig = source.ToString(), entryConfig = entrySource.ToString() });
+        candidates.Add((new(id, explicitName ?? canonicalProvider, canonicalProvider, !disabled, "api-key", "unverified", SharedWithLegacy: true), credential));
     }
     private Dictionary<string, string> NormalizeImportedIdentities(List<(AccountDto Account, string Credential)> candidates, ConfigurationDto state)
     {
@@ -227,7 +230,8 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
         foreach (var item in group.GroupBy(c => JsonNode.Parse(c.Credential)!["transportId"]!.GetValue<string>()).Select(g => g.First()))
             transports.Add(JsonNode.Parse(item.Credential));
         json["transports"] = transports;
-        return (first.Account with { Enabled = group.Any(c => c.Account.Enabled) }, json.ToJsonString());
+        var named = group.FirstOrDefault(item => JsonNode.Parse(item.Credential)?["displayNameIsExplicit"]?.GetValue<bool>() == true);
+        return (first.Account with { Name = named.Account?.Name ?? first.Account.Name, Enabled = group.Any(c => c.Account.Enabled) }, json.ToJsonString());
     }
     private static void RemoveRefreshMaterial(YamlNode node, HashSet<YamlNode>? seen = null)
     {
@@ -244,6 +248,7 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
         }
         else if (node is YamlSequenceNode sequence) foreach (var child in sequence.Children) RemoveRefreshMaterial(child, seen);
     }
+    private static string? FirstName(params string?[] values) => values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim();
     private static bool IsTrue(string? value) => bool.TryParse(value, out var result) && result;
     internal static YamlNode? Get(YamlMappingNode node, string key) => node.Children.TryGetValue(new YamlScalarNode(key), out var value) ? value : null;
     internal static string? Text(YamlMappingNode node, string key) => (Get(node, key) as YamlScalarNode)?.Value;

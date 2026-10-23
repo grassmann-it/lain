@@ -37,16 +37,18 @@ try
             disabled: true
             api-key-entries:
               - api-key: upstream-secret
+                label: Primary API
                 proxy-url: http://127.0.0.1:19001
             models:
               - name: upstream-model
                 alias: short-model
         """);
-    File.WriteAllText(authPath, """{"type":"codex","access_token":"access-secret","account_id":"shared-account","refresh_token":"NEVER-COPY-ME","id_token":"NEVER-COPY-ID","expired":"2099-01-01T00:00:00Z","disabled":false}""");
+    File.WriteAllText(authPath, """{"type":"codex","display_name":"Personal Codex","email":"person@example.test","access_token":"access-secret","account_id":"shared-account","refresh_token":"NEVER-COPY-ME","id_token":"NEVER-COPY-ID","expired":"2099-01-01T00:00:00Z","disabled":false}""");
     var before = Directory.GetFiles(legacy).ToDictionary(p => p, p => SHA256.HashData(File.ReadAllBytes(p)));
     var first = importer.Import(new(0, configPath, legacy));
     Check(first.Added == 2, "API and Codex snapshot accounts imported");
     Check(configuration.Snapshot.Accounts.Any(a => a.Provider == "commandcode" && !a.Enabled), "disabled preserved");
+    Check(configuration.Snapshot.Accounts.Any(a => a.Name == "Primary API") && configuration.Snapshot.Accounts.Any(a => a.Name == "Personal Codex"), "explicit API and Codex account names imported");
     Check(configuration.Snapshot.Accounts.All(a => a.SharedWithLegacy), "shared source disclosed");
     var again = importer.Import(new(first.Revision, configPath, legacy));
     Check(again.Revision == first.Revision && again.Added == 0 && again.Updated == 0, "replay is idempotent");
@@ -97,6 +99,42 @@ try
     var manualRoute = new RouteDto("route-manual", "manual-alias", "manual-upstream", manualAccount.Provider, [manualAccount.Id]);
     new ProxyConfigurationWriter(paths, secrets).Write(manual with { Accounts = [manualAccount], Routes = [manualRoute] });
     Check(File.ReadAllText(paths.ProxyConfig).Contains("name: manual-upstream"), "manual API accounts receive selected core model declarations");
+    Check(AccountService.CanonicalProvider("codex", "https://api.kimi.ai/v1") == "kimi", "Kimi endpoint attributed independently of protocol");
+    Check(AccountService.CanonicalProvider("codex", "https://api.z.ai/api/coding/paas/v4") == "zai", "Z.ai endpoint attributed independently of protocol");
+    Check(AccountService.CanonicalProvider("codex", "https://token-plan-ams.xiaomimimo.com/v1") == "xiaomi-mimo", "Xiaomi MiMo endpoint attributed independently of protocol");
+    Check(AccountService.CanonicalProvider("codex", "https://unknown-provider.test/v1") == "unknown-provider.test", "unknown direct upstream uses explicit endpoint host");
+    Check(AccountService.CanonicalProvider("codex", "https://api.kimi.ai.attacker.test/v1") == "api.kimi.ai.attacker.test", "provider domain mapping requires host boundary");
+    Check(AccountService.CanonicalProvider("codex", "https://api.kimi.ai/v1") == AccountService.CanonicalProvider("openai-compatibility", "https://api.kimi.ai/v1"), "known upstream canonical identity survives protocol changes");
+    var attributionPaths = new OwnStatePaths(Path.Combine(testRoot, "attribution"));
+    var attributionSecrets = new SecretStore(attributionPaths); var attributionRepository = new ConfigurationRepository(attributionPaths);
+    var attributionConfig = Path.Combine(legacy, "attribution.yaml");
+    File.WriteAllText(attributionConfig, """
+        codex-api-key:
+          - api-key: kimi-shared
+            base-url: https://api.kimi.ai/v1
+          - api-key: zai-key
+            base-url: https://api.z.ai/v1
+          - api-key: mimo-key
+            base-url: https://token-plan-ams.xiaomimimo.com/v1
+          - api-key: unknown-key
+            base-url: https://unidentified.test/v1
+        openai-compatibility:
+          - name: named-kimi-transport
+            label: Work Kimi
+            base-url: https://api.kimi.ai/v1
+            api-key-entries:
+              - api-key: kimi-shared
+        """);
+    var attributionImporter = new LegacyImportService(attributionPaths, attributionRepository, attributionSecrets);
+    attributionImporter.Import(new(0, attributionConfig));
+    var attribution = attributionRepository.Snapshot;
+    Check(attribution.Accounts.Length == 4 && attribution.Accounts.All(a => a.Provider != "codex"), "direct API protocol is not presented as upstream provider");
+    var kimiAccount = attribution.Accounts.Single(a => a.Provider == "kimi");
+    Check(kimiAccount.Name == "Work Kimi", "merged transport prefers explicit account label over protocol fallback");
+    using (var kimiCredential = JsonDocument.Parse(attributionSecrets.ReadAccount(kimiAccount.Id)))
+        Check(kimiCredential.RootElement.GetProperty("transports").GetArrayLength() == 2, "known provider same key merges across protocol transports");
+    var attributedReplay = attributionImporter.Import(new(attribution.Revision, attributionConfig));
+    Check(attributedReplay.Revision == attribution.Revision && attributionRepository.Snapshot.Accounts.Single(a => a.Provider == "kimi").Id == kimiAccount.Id, "canonical provider import identity remains stable");
     var multiPaths = new OwnStatePaths(Path.Combine(testRoot, "multi"));
     var multiSecrets = new SecretStore(multiPaths);
     var multiRepository = new ConfigurationRepository(multiPaths);

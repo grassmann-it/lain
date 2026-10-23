@@ -90,8 +90,21 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
     internal static string CanonicalProvider(string provider, string? endpoint)
     {
         if (provider.Equals("commandcode", StringComparison.OrdinalIgnoreCase) || provider.Equals("command-code", StringComparison.OrdinalIgnoreCase)) return "commandcode";
-        if (Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) &&
-            (uri.Host.Equals("commandcode.ai", StringComparison.OrdinalIgnoreCase) || uri.Host.EndsWith(".commandcode.ai", StringComparison.OrdinalIgnoreCase))) return "commandcode";
+        if (Uri.TryCreate(endpoint, UriKind.Absolute, out var uri))
+        {
+            var host = uri.IdnHost.ToLowerInvariant();
+            if (host == "commandcode.ai" || host.EndsWith(".commandcode.ai", StringComparison.Ordinal)) return "commandcode";
+            if (host == "kimi.ai" || host.EndsWith(".kimi.ai", StringComparison.Ordinal)) return "kimi";
+            if (host == "z.ai" || host.EndsWith(".z.ai", StringComparison.Ordinal)) return "zai";
+            if (host == "xiaomimimo.com" || host.EndsWith(".xiaomimimo.com", StringComparison.Ordinal)) return "xiaomi-mimo";
+            // Direct API section names describe the protocol, not the upstream company.
+            if (provider is "codex" or "claude" or "gemini" or "vertex")
+            {
+                if (provider == "codex" && (host == "api.openai.com" || host == "chatgpt.com")) return "openai";
+                if (provider == "claude" && host == "api.anthropic.com") return "anthropic";
+                return host;
+            }
+        }
         return provider;
     }
     internal static string CredentialId(string provider, string credential) => "acct-" +

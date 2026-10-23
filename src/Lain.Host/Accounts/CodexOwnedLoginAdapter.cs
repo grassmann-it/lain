@@ -70,6 +70,8 @@ public sealed class CodexOwnedLoginAdapter(ICodexOwnedLoginBackend backend, OwnS
         if (Read(auth, "type") != "codex" || string.IsNullOrWhiteSpace(Read(auth, "access_token")) || string.IsNullOrWhiteSpace(Read(auth, "account_id")))
             throw new InvalidDataException("Owned login credential is invalid.");
         var providerAccountId = Read(auth, "account_id")!;
+        var displayName = new[] { Read(auth, "display_name"), Read(auth, "name"), Read(auth, "label"), Read(auth, "email") }
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim() ?? "Codex";
         DateTimeOffset? expires = DateTimeOffset.TryParse(Read(auth, "expired"), out var expiry) ? expiry : null;
         for (var attempt = 0; attempt < 10; attempt++)
         {
@@ -82,7 +84,7 @@ public sealed class CodexOwnedLoginAdapter(ICodexOwnedLoginBackend backend, OwnS
                     var id = existing?.Id ?? AccountService.CredentialId(Provider, providerAccountId);
                     // Keep only an ownership reference. The core remains authoritative for rotated tokens.
                     secrets.WriteAccount(id, JsonSerializer.Serialize(new { kind = "codex-owned", provider = Provider, ownedAuthFile = filename, accountId = providerAccountId, expiresAt = expires }));
-                    var account = new AccountDto(id, existing?.Name ?? "Codex", Provider, true, "codex-owned", "unverified",
+                    var account = new AccountDto(id, existing?.Name ?? displayName, Provider, true, "codex-owned", "unverified",
                         existing?.BudgetPoolId, expires, existing?.SharedWithLegacy ?? false);
                     var routes = state.Routes.ToList();
                     if (!routes.Any(r => r.AccountIds.Contains(id)))
