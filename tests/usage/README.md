@@ -59,6 +59,14 @@ cursor. The background worker marks failed collection as incomplete and retries.
   last successful ingestion time (Unix epoch before first ingestion). `Complete`
   also requires no backlog, collection fault, or matching pending attempt. It
   means capture coverage at that snapshot, not that provider quantities are known.
+- Schema version 2 preserves the active journal source and permanent coverage-gap
+  intervals. Replacing its UUID between clean polls records the uncertain interval
+  from the previous successful observation to the first observation of the new
+  source, in the same transaction as events and cursor. Every overlapping query
+  reports incomplete capture, including account/model/status-filtered queries.
+  Normal restart and replay with an unchanged UUID create no gap. A v1 database
+  migrates without changing usage or cursor; if it already contains multiple
+  sources, its untraceable historical transitions are conservatively incomplete.
 
 Only sanitized event metadata, token counts, timing, stable identities and
 deduplication digests are stored. No credential content, HTTP headers, prompts or

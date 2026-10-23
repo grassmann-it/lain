@@ -31,11 +31,12 @@ public sealed class SqliteUsageStore : IUsageStore
         if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
         using var transaction = connection.BeginTransaction();
         var version = Convert.ToInt32(Command(connection, transaction, "PRAGMA user_version").ExecuteScalar(), CultureInfo.InvariantCulture);
-        if (version > 1) throw new InvalidOperationException("Usage database schema is newer than this host.");
-        if (version == 0)
+        if (version > 2) throw new InvalidOperationException("Usage database schema is newer than this host.");
+        foreach (var migration in new[] { (Version: 1, File: "001_usage.sql"), (Version: 2, File: "002_source_coverage.sql") })
         {
+            if (version >= migration.Version) continue;
             var assembly = typeof(SqliteUsageStore).Assembly;
-            var name = assembly.GetManifestResourceNames().Single(n => n.EndsWith("Usage.Migrations.001_usage.sql", StringComparison.Ordinal));
+            var name = assembly.GetManifestResourceNames().Single(n => n.EndsWith("Usage.Migrations." + migration.File, StringComparison.Ordinal));
             using var stream = assembly.GetManifestResourceStream(name)!;
             using var reader = new StreamReader(stream);
             Command(connection, transaction, reader.ReadToEnd()).ExecuteNonQuery();
@@ -74,10 +75,24 @@ public sealed class SqliteUsageStore : IUsageStore
             throw new InvalidDataException("Invalid journal envelope.");
         using var connection = Open();
         using var transaction = connection.BeginTransaction();
+        var observed = clock.GetUtcNow().ToUnixTimeMilliseconds();
         using (var create = Command(connection, transaction,
             "INSERT INTO sources(source_id,cursor,high_watermark,observed_ms) VALUES($source,0,0,$now) ON CONFLICT DO NOTHING",
-            ("$source", batch.SourceId), ("$now", clock.GetUtcNow().ToUnixTimeMilliseconds())))
+            ("$source", batch.SourceId), ("$now", observed)))
             await create.ExecuteNonQueryAsync(ct);
+        // A fresh UUID can conceal an unread tail of the old journal, even when
+        // its last delivered watermark was fully ingested. Keep that uncertainty
+        // independently of transient collection faults and atomically with data.
+        using (var gap = Command(connection, transaction, """
+            INSERT INTO coverage_gaps(from_ms,to_ms,previous_source_id,next_source_id,reason)
+            SELECT MIN(s.observed_ms,$now),MAX(s.observed_ms+1,$now),s.source_id,$source,'source_changed'
+            FROM collector_state c JOIN sources s ON s.source_id=c.active_source_id
+            WHERE c.singleton=1 AND c.active_source_id <> $source
+            """, ("$source", batch.SourceId), ("$now", observed)))
+            await gap.ExecuteNonQueryAsync(ct);
+        using (var active = Command(connection, transaction,
+            "UPDATE collector_state SET active_source_id=$source WHERE singleton=1", ("$source", batch.SourceId)))
+            await active.ExecuteNonQueryAsync(ct);
         long cursor;
         using (var read = Command(connection, transaction, "SELECT cursor FROM sources WHERE source_id=$source", ("$source", batch.SourceId)))
             cursor = Convert.ToInt64(await read.ExecuteScalarAsync(ct), CultureInfo.InvariantCulture);
@@ -108,7 +123,7 @@ public sealed class SqliteUsageStore : IUsageStore
             throw new InvalidDataException("Journal nextCursor does not acknowledge the delivered batch.");
         using var update = Command(connection, transaction,
             "UPDATE sources SET cursor=$cursor,high_watermark=MAX(high_watermark,$high,$cursor),observed_ms=$now,faulted=0 WHERE source_id=$source",
-            ("$cursor", cursor), ("$high", batch.HighWatermark), ("$now", clock.GetUtcNow().ToUnixTimeMilliseconds()), ("$source", batch.SourceId));
+            ("$cursor", cursor), ("$high", batch.HighWatermark), ("$now", observed), ("$source", batch.SourceId));
         await update.ExecuteNonQueryAsync(ct);
         ct.ThrowIfCancellationRequested();
         transaction.Commit();
@@ -217,7 +232,13 @@ public sealed class SqliteUsageStore : IUsageStore
         state.Close();
         using var pending = Filtered(connection, transaction, "SELECT COUNT(*)", query, window, "AND state='pending'");
         var noPending = Convert.ToInt64(await pending.ExecuteScalarAsync(ct), CultureInfo.InvariantCulture) == 0;
-        var complete = caughtUp && noPending && accounts.Length <= MaximumGroupCount && models.Length <= MaximumGroupCount;
+        using var gaps = Command(connection, transaction,
+            "SELECT EXISTS(SELECT 1 FROM coverage_gaps WHERE from_ms < $to AND to_ms > $from)",
+            ("$from", window.From.ToUnixTimeMilliseconds()), ("$to", window.To.ToUnixTimeMilliseconds()));
+        var noGaps = Convert.ToInt64(await gaps.ExecuteScalarAsync(ct), CultureInfo.InvariantCulture) == 0;
+        // Lost events have no trustworthy account/model/status identity; filters
+        // cannot make an overlapping capture gap disappear.
+        var complete = caughtUp && noPending && noGaps && accounts.Length <= MaximumGroupCount && models.Length <= MaximumGroupCount;
         return new(Api.Version, window.From, window.To, window.Zone.Id, observed, cursor, complete, totals, daily, accounts.Take(MaximumGroupCount).ToArray(), models.Take(MaximumGroupCount).ToArray());
     }
 

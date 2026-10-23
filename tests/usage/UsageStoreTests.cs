@@ -168,6 +168,112 @@ public sealed class UsageStoreTests : IDisposable
         Assert.True((await store.SummaryAsync(Query())).Complete);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SourceReplacementBetweenCleanPollsPersistsOnlyItsUncertainInterval(bool emptyReplacement)
+    {
+        var old = Started(1);
+        var handler = new JournalHandler([old, Finished(2, old)]);
+        using var client = new HttpClient(handler) { BaseAddress = new Uri("http://127.0.0.1:18418/") };
+        var clock = new TestClock(Start.AddSeconds(10));
+        var store = new SqliteUsageStore(Database, clock);
+        var collector = new JournalUsageCollector(client, store, NullLogger<JournalUsageCollector>.Instance);
+        Assert.True(await collector.PollAsync());
+        Assert.True((await store.SummaryAsync(Query())).Complete);
+
+        // Normal restart preserves source identity and does not invent a gap.
+        clock.Now = Start.AddSeconds(20);
+        store = new SqliteUsageStore(Database, clock);
+        collector = new JournalUsageCollector(client, store, NullLogger<JournalUsageCollector>.Instance);
+        Assert.True(await collector.PollAsync());
+        Assert.True((await store.SummaryAsync(Query())).Complete);
+        Assert.Equal(0, InspectLong("SELECT COUNT(*) FROM coverage_gaps"));
+
+        // Both journal file and UUID are replaced between completed polls.
+        var fresh = Started(1, "new-a", "new-r", at: Start.AddSeconds(35)) with { SourceId = "source-b", EventId = "source-b:1" };
+        handler.SourceId = "source-b";
+        handler.Events = emptyReplacement ? [] : [fresh, Finished(2, fresh) with { EventId = "source-b:2" }];
+        clock.Now = Start.AddSeconds(40);
+        Assert.True(await collector.PollAsync());
+        Assert.Equal(emptyReplacement ? 0 : 2, await store.GetCursorAsync("source-b"));
+        Assert.False((await store.SummaryAsync(Query())).Complete);
+        Assert.False((await store.SummaryAsync(Query() with { AccountId = "not-observed", Model = "not-observed", StatusCode = 429 })).Complete);
+        Assert.True((await store.SummaryAsync(new(Start.AddSeconds(-1), Start.AddSeconds(20)))).Complete);
+        Assert.True((await store.SummaryAsync(new(Start.AddSeconds(40), Start.AddSeconds(60)))).Complete);
+        Assert.False((await store.SummaryAsync(new(Start.AddSeconds(20), Start.AddSeconds(40)))).Complete);
+        Assert.Equal(1, InspectLong("SELECT COUNT(*) FROM coverage_gaps"));
+
+        clock.Now = Start.AddSeconds(50);
+        store = new SqliteUsageStore(Database, clock);
+        collector = new JournalUsageCollector(client, store, NullLogger<JournalUsageCollector>.Instance);
+        Assert.True(await collector.PollAsync());
+        Assert.False((await store.SummaryAsync(Query())).Complete);
+        Assert.Equal(1, InspectLong("SELECT COUNT(*) FROM coverage_gaps"));
+        Assert.Equal(emptyReplacement ? 1 : 2, (await store.SummaryAsync(Query())).Totals.Attempts);
+    }
+
+    [Fact]
+    public async Task InvalidReplacementBatchRollsBackSourceGapAndActiveIdentityWithCursor()
+    {
+        var clock = new TestClock(Start.AddSeconds(10));
+        var store = new SqliteUsageStore(Database, clock);
+        var old = Started(1);
+        await store.IngestAsync(Batch(old, Finished(2, old)));
+        var fresh = Started(1, "new-a", "new-r") with { SourceId = "source-b", EventId = "source-b:1" };
+        clock.Now = Start.AddSeconds(40);
+        var invalid = Finished(2, fresh) with { EventId = "source-b:2", AccountId = "changed-account" };
+        await Assert.ThrowsAsync<InvalidDataException>(() => store.IngestAsync(new("source-b", [fresh, invalid], 2, 2)));
+        store = new SqliteUsageStore(Database, clock);
+        Assert.Equal(0, await store.GetCursorAsync("source-b"));
+        Assert.Equal(2, await store.GetCursorAsync("source-a"));
+        Assert.Equal(0, InspectLong("SELECT COUNT(*) FROM coverage_gaps"));
+        Assert.Equal(1, InspectLong("SELECT COUNT(*) FROM sources"));
+        Assert.Equal(1, InspectLong("SELECT COUNT(*) FROM collector_state WHERE active_source_id='source-a'"));
+        Assert.True((await store.SummaryAsync(Query())).Complete);
+    }
+
+    [Fact]
+    public async Task ExistingVersionOneDatabaseMigratesWithoutChangingUsageOrCursor()
+    {
+        var store = new SqliteUsageStore(Database);
+        var started = Started(1);
+        await store.IngestAsync(Batch(started, Finished(2, started)));
+        // These are exactly the two additive v2 tables; removal restores the
+        // original v1 schema while retaining actual committed production rows.
+        using (var connection = new SqliteConnection($"Data Source={Database};Pooling=False"))
+        {
+            connection.Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = "DROP TABLE coverage_gaps; DROP TABLE collector_state; PRAGMA user_version=1;";
+            command.ExecuteNonQuery();
+        }
+        store = new SqliteUsageStore(Database);
+        Assert.Equal(2, InspectLong("PRAGMA user_version"));
+        Assert.Equal(2, await store.GetCursorAsync("source-a"));
+        Assert.Equal(0, InspectLong("SELECT COUNT(*) FROM coverage_gaps"));
+        var summary = await store.SummaryAsync(Query());
+        Assert.True(summary.Complete);
+        Assert.Equal(14L, summary.Totals.Tokens.Total);
+        await store.IngestAsync(Batch(started, Finished(2, started)));
+        Assert.Equal(1, (await store.SummaryAsync(Query())).Totals.Attempts);
+    }
+
+    private long InspectLong(string sql)
+    {
+        using var connection = new SqliteConnection($"Data Source={Database};Pooling=False");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        return Convert.ToInt64(command.ExecuteScalar());
+    }
+
+    private sealed class TestClock(DateTimeOffset now) : TimeProvider
+    {
+        public DateTimeOffset Now { get; set; } = now;
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
+
     [Fact]
     public async Task CollectorReplaysOnlyBeyondCommittedCursor()
     {
@@ -185,14 +291,16 @@ public sealed class UsageStoreTests : IDisposable
 
     private sealed class JournalHandler(JournalEvent[] events) : HttpMessageHandler
     {
+        public JournalEvent[] Events { get; set; } = events;
+        public string SourceId { get; set; } = events[0].SourceId;
         public List<string> Queries { get; } = [];
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Queries.Add(request.RequestUri!.Query);
             var values = request.RequestUri.Query.TrimStart('?').Split('&').Select(p => p.Split('=')).ToDictionary(p => p[0], p => p[1]);
             var after = long.Parse(values["after"]);
-            var selected = events.Where(e => e.Sequence > after).Take(int.Parse(values["limit"])).ToArray();
-            var batch = new JournalBatch("source-a", selected, selected.LastOrDefault()?.Sequence ?? after, events[^1].Sequence);
+            var selected = Events.Where(e => e.Sequence > after).Take(int.Parse(values["limit"])).ToArray();
+            var batch = new JournalBatch(SourceId, selected, selected.LastOrDefault()?.Sequence ?? after, Events.LastOrDefault()?.Sequence ?? 0);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(JsonSerializer.Serialize(batch, JournalJson.Options)) });
         }
     }
