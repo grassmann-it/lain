@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Lain.Usage.Tests;
 
-public sealed class UsageStoreTests : IDisposable
+public sealed partial class UsageStoreTests : IDisposable
 {
     private readonly string directory = Path.Combine(Path.GetTempPath(), "lain-usage-test-" + Guid.NewGuid().ToString("N"));
     private string Database => Path.Combine(directory, "usage.db");
@@ -239,17 +239,9 @@ public sealed class UsageStoreTests : IDisposable
         var store = new SqliteUsageStore(Database);
         var started = Started(1);
         await store.IngestAsync(Batch(started, Finished(2, started)));
-        // These are exactly the two additive v2 tables; removal restores the
-        // original v1 schema while retaining actual committed production rows.
-        using (var connection = new SqliteConnection($"Data Source={Database};Pooling=False"))
-        {
-            connection.Open();
-            using var command = connection.CreateCommand();
-            command.CommandText = "DROP TABLE coverage_gaps; DROP TABLE collector_state; PRAGMA user_version=1;";
-            command.ExecuteNonQuery();
-        }
+        RestoreLegacySchema(1);
         store = new SqliteUsageStore(Database);
-        Assert.Equal(2, InspectLong("PRAGMA user_version"));
+        Assert.Equal(3, InspectLong("PRAGMA user_version"));
         Assert.Equal(2, await store.GetCursorAsync("source-a"));
         Assert.Equal(0, InspectLong("SELECT COUNT(*) FROM coverage_gaps"));
         var summary = await store.SummaryAsync(Query());
