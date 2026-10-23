@@ -24,14 +24,14 @@ None substitutes for the others.
 | Requirement | Independent acceptance check | Evidence/status |
 | --- | --- | --- |
 | Dense quota tiles | Unequal tile heights do not create large empty grid cells. Closed tiles retain named windows, bars, remaining/reset/freshness; native expansion exposes balances/actions/provenance. | Actual Masonry fixture renders independently inspected at 1120×780 and 800×560; closed-tile density accepted. Installed Desktop follow-up also inspected and accepted for this UI-only checkpoint; expansion stays separate. |
-| Own live streams | Owned core supplies request/attempt live lifecycle and content; UI stays useful while a stream is running, including cancellation/error. | Core/Inspector implementation pending review. |
+| Own live streams | Owned core supplies request/attempt live lifecycle and content; UI stays useful while a stream is running, including cancellation/error. | Core/Host/Desktop source reviewed; focused Host and Go suites passed at recorded checkpoints. Final compact UI renders and exact final Core qualification pending. |
 | Conversation/turn/tool/worker grouping | Group only by supported identities and recorded evidence. Retries, continuations and tool calls do not become invented independent conversations. Missing parents/workers remain unknown. | Shared contract inspected; source and adversarial grouping fixtures pending. |
-| Durable usage | Existing requests/tokens survive migration/restart/replay. Metadata additions do not change token/outcome facts or double-count a terminal event. | Migration/collector source review pending. |
+| Durable usage | Existing requests/tokens survive migration/restart/replay. Metadata additions do not change token/outcome facts or double-count a terminal event. | Additive migration and metadata-only completion source reviewed; data worktree suite passed 22 tests. Installed expansion migration/restart evidence pending. |
 | Useful dimensions | Route, model family, manufacturer, inference provider, gateway, billing account, reasoning/mode and supported grouping identities remain distinct and historically attributable. | Additive DTOs inspected; end-to-end projection pending. |
-| Performance | First-output latency, full duration and output/full-duration rate have explicit definitions and valid sample counts. Quantiles use the whole filtered dataset, not 25 displayed attempts. | DTO definitions inspected; SQL and execution evidence pending. |
+| Performance | First-output latency, full duration and output/full-duration rate have explicit definitions and valid sample counts. Quantiles use the whole filtered dataset, not 25 displayed attempts. | Whole-population SQL and explicit denominator/sample semantics inspected; 22-test data suite passed, including 600-attempt percentile fixture. Final UI evidence pending. |
 | Token/cost semantics | Unknown is null, measured zero remains zero, cached/reasoning subsets are not added again. Costs require actual currency/unit/pricing basis; unknown pricing never becomes zero. | No cost aggregation promised where no source cost fact exists. Integration pending. |
 | Declarative provider setup | Capabilities/protocol, account link, required credentials, billing kind/scope, limits and route matrix are available without a key. Missing credentials visibly block live verification, not documentation/mocks. | Catalog/onboarding implementation pending. |
-| Strict free-only | Actual route execution and every retry/fallback reject paid or unknown price, incompatible scope/eligibility and expired/unverified trial assumptions. A display toggle alone is insufficient. | Host policy and Core `8fe73e3` startup denial inspected. Safe fail-closed behavior; executable free-only path remains unavailable. |
+| Strict free-only | Actual route execution and every retry/fallback reject paid or unknown price, incompatible scope/eligibility and expired/unverified trial assumptions. A display toggle alone is insufficient. | Initial deny-all boundary reviewed; narrow guarded OpenRouter execution is now wired and source-reviewed. Same-key zero-cap proof remains mandatory; live usability not tested. |
 | Privacy/lifetime | Auth headers/keys/refresh tokens never enter public output or persistent Usage. Inspector content uses bounded local buffers, explicit redaction and TTL; gaps/evictions are visible. | Contract bounds inspected; implementation/negative tests pending. |
 | Accessible UI | Keyboard activation/focus/expansion survive polling; statuses are text as well as color; narrow viewport and long content stay reachable without hidden data. | Private-Xvfb actual renders and functional checks pending. |
 | Safe delivery | Owned-core identity/durability qualification remains valid; controlled migration/install has rollback. No legacy proxy/queue mutation or normal Codex configuration rewrite. | Final root-owned integration and interval-scoped isolation evidence pending. |
@@ -233,9 +233,8 @@ for a follow-up: actual terminal state `success` was missing from the view's
 terminal-state list; per-attempt parent lookup could split a retried logical
 request when its attempts asserted conflicting parent IDs. Inspected Desktop fix `bf540d4`: per-request consensus keeps ambiguous,
 conflicting or cyclic links under the original request; actual success state,
-five-source evidence checks and monotonic receipt TTL are present. A small
-follow-up is pending for Clear: it must never move the event cursor backward to
-a stale snapshot or accept an in-flight page of just-cleared events. Core fix
+five-source evidence checks and monotonic receipt TTL are present. Clear follow-up `e3530b7` was also inspected: its cursor never regresses to a
+stale snapshot and incoming entries at/below the cleared cursor are skipped. Core fix
 `25ae0ed` stores separate monotonic receipt timestamps, closing the ring-retention
 clock issue while leaving UTC observation timestamps for display.
 
@@ -283,6 +282,32 @@ Preliminary provider renders at 1120×780 and 800×560 are readable with explici
 prepared/live-unknown distinctions and eight navigation labels. Their first suite
 stopped on a provider-search assertion; the reported event-loop timing fix and full
 successful rerun are required before accepting that UI suite.
+
+Further follow-up source review found no new blocker in Host `540b2af` (root
+`ad29d94`): normalized metadata is checked for secrets after control/invisible
+character removal; canonical generation IDs are required; held characters keep
+their original monotonic receipt age through later chunks and terminal flushing;
+expiry handles delayed events whose ages are older than earlier cursors. Five
+additional regression assertions are prepared; the earlier 27-assertion result
+alone does not certify this follow-up. Core `fc916d7` applies the same
+normalize-before-secret-matching order and adds split/hidden-marker/final-flush
+fixtures. Its new binary needs fresh exact-hash qualification.
+
+The data worktree's `/tmp/lain-usage-next-tests.log` reports 22 tests passed, zero
+failed/skipped, for the Usage store suite. The focused final Go log
+`/tmp/lain-core-expanded-go-final.log` passes `internal/lain`, `internal/freeonly`,
+`sdk/cliproxy/auth` and `internal/runtime/executor`. The preceding Go run failed
+two newly added auth fixtures using invalid request UUIDs; `042e302` corrects
+those fixtures, and the rerun passes. That run precedes `fc916d7` and is not the
+final binary's qualification report.
+
+Staging-script source `a174f6e` was independently inspected without execution.
+It requires separate nonexistent outputs, frozen source/locks/resources, exact
+patch-2 Core/build/source/license/qualification binding and post-copy hashes,
+while keeping broad release/expansion gates false. No static packaging blocker
+was found. `backendQualified` inherits only the supplied independent report's
+scope: focused Go tests must not be substituted for full exact-binary Core
+qualification. Final archive/installed hashes remain separate checks.
 
 ## Evidence ledger and final outcome
 
