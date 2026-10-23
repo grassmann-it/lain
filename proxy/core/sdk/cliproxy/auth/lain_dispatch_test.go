@@ -59,13 +59,14 @@ func TestLainBeforeDispatchFailureDoesNotCallProvider(t *testing.T) {
 }
 
 func TestLainObservationUsesExactAttemptAndPrecedesFinalization(t *testing.T) {
+	const parentID = "1816e13d-b47d-4aba-a9df-88c8fa4b1370"
 	before, after, observe := LainBeforeDispatch, LainAfterDispatch, LainObserveOutput
 	defer func() { LainBeforeDispatch, LainAfterDispatch, LainObserveOutput = before, after, observe }()
 	attemptID := ""
 	observed, finished := 0, false
 	LainBeforeDispatch = func(ctx context.Context, _ *Auth, _ executor.Request, _ executor.Options) error {
 		attemptID = usage.ExecutionRequestIDFromContext(ctx)
-		if attemptID == "" || usage.ParentRequestIDFromContext(ctx) != "handler-request" {
+		if attemptID == "" || usage.ParentRequestIDFromContext(ctx) != parentID {
 			t.Error("missing exact dispatch identity")
 		}
 		return nil
@@ -77,7 +78,7 @@ func TestLainObservationUsesExactAttemptAndPrecedesFinalization(t *testing.T) {
 		observed++
 	}
 	LainAfterDispatch = func(context.Context, error) error { finished = true; return nil }
-	ctx := usage.WithParentRequestID(context.Background(), "handler-request")
+	ctx := usage.WithParentRequestID(context.Background(), parentID)
 	result, err := lainExecuteStream(&lainStreamFixture{}, ctx, &Auth{}, executor.Request{}, executor.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -90,6 +91,7 @@ func TestLainObservationUsesExactAttemptAndPrecedesFinalization(t *testing.T) {
 }
 
 func TestLainDispatchContextSurvivesEachExecutorAttempt(t *testing.T) {
+	const parentID = "5e6f10f3-92ea-4b4f-a128-f728591beef0"
 	before, after, prepare, observe := LainBeforeDispatch, LainAfterDispatch, LainDispatchContext, LainObserveOutput
 	defer func() {
 		LainBeforeDispatch, LainAfterDispatch, LainDispatchContext, LainObserveOutput = before, after, prepare, observe
@@ -105,7 +107,7 @@ func TestLainDispatchContextSurvivesEachExecutorAttempt(t *testing.T) {
 		return context.WithValue(ctx, policyKey{}, "trusted"), nil
 	}
 	LainBeforeDispatch = func(ctx context.Context, _ *Auth, _ executor.Request, _ executor.Options) error {
-		if ctx.Value(policyKey{}) != "trusted" || usage.ParentRequestIDFromContext(ctx) != "same-request" {
+		if ctx.Value(policyKey{}) != "trusted" || usage.ParentRequestIDFromContext(ctx) != parentID {
 			t.Error("dispatch lost trusted context")
 		}
 		return nil
@@ -121,7 +123,7 @@ func TestLainDispatchContextSurvivesEachExecutorAttempt(t *testing.T) {
 		}
 		return nil
 	}
-	ctx := usage.WithParentRequestID(context.Background(), "same-request")
+	ctx := usage.WithParentRequestID(context.Background(), parentID)
 	for n := 0; n < 2; n++ {
 		result, err := lainExecuteStream(&lainStreamFixture{}, ctx, &Auth{}, executor.Request{}, executor.Options{})
 		if err != nil {
