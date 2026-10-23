@@ -85,8 +85,11 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     {
         Directory.CreateDirectory(Output);
         await Open();
+        await CheckQuotaOverview();
         await CaptureBoth("overview");
-        await Click("Accounts"); await CaptureBoth("accounts");
+        await Click("Accounts");
+        await CheckQuotaAccounts();
+        await CaptureBoth("accounts");
         var accountList = Controls<ListBox>().Single(x => AutomationProperties.GetName(x) == "Accounts");
         var accountItem = accountList.GetVisualDescendants().OfType<ListBoxItem>().Single(x => x.IsSelected);
         accountItem.Focus();
@@ -204,6 +207,54 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             scope = "Production MainWindow, UsageView and App theme initialization; in-memory HTTP only. Button Click routed events exercise handlers, not OS pointer hit-testing. No real credentials, host, authorization browser, inference or service mutation."
         }, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"PASS desktop smoke: {checks.Count} checks, {screenshots.Count} screenshots. {Output}/evidence.json");
+    }
+
+    private async Task CheckQuotaOverview()
+    {
+        await Wait(() => Controls<ProgressBar>().Length >= 4, "overview displays known provider budgets");
+        CheckQuotaBar("Personal Codex", "5 hours", 37);
+        CheckQuotaBar("Command Code Pro", "Weekly", 55);
+        CheckQuotaBar("Z.ai Coding", "Credits", 25);
+        CheckQuotaBar("Kimi Coding", "5 hours", 100);
+        Check(HasText("MiMo API") && HasText("Not available", true), "overview distinguishes unsupported MiMo from an empty balance");
+        Check(!Controls<ProgressBar>().Any(x => AutomationProperties.GetName(x)?.Contains("MiMo", StringComparison.Ordinal) == true), "unsupported overview provider has no invented progress");
+    }
+
+    private async Task CheckQuotaAccounts()
+    {
+        await Wait(() => Controls<ListBox>().Any(x => AutomationProperties.GetName(x) == "Accounts"), "account list ready for quota inspection");
+        var accounts = Controls<ListBox>().Single(x => AutomationProperties.GetName(x) == "Accounts");
+        foreach (var (id, name, windows) in new (string, string, (string Label, double Percent)[])[]
+        {
+            ("a1", "Personal Codex", [("5 hours", 37)]),
+            ("a2", "Command Code Pro", [("5 hours", 20), ("Weekly", 55), ("Monthly credits", 25)]),
+            ("a3", "Z.ai Coding", [("Credits", 25)]),
+            ("a4", "Kimi Coding", [("5 hours", 100), ("Monthly", 62)])
+        })
+        {
+            accounts.SelectedItem = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == id);
+            await Task.Delay(120);
+            foreach (var (label, percent) in windows) CheckQuotaBar(name, label, percent);
+        }
+        accounts.SelectedItem = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == "a3");
+        await Task.Delay(120);
+        Check(HasText("750", true) && HasText("credits", true), "Z.ai exposes its numeric remaining credit balance");
+        accounts.SelectedItem = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == "a5");
+        await Task.Delay(120);
+        Check(HasText("Not available", true), "accounts explain unavailable MiMo quota");
+        Check(!Controls<ProgressBar>().Any(x => AutomationProperties.GetName(x)?.Contains("MiMo", StringComparison.Ordinal) == true), "unsupported account has no zero-percent quota bar");
+        // Keep the existing account/focus workflows on Personal Codex.
+        accounts.SelectedItem = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == "a1");
+        await Task.Delay(120);
+    }
+
+    private void CheckQuotaBar(string account, string label, double percent)
+    {
+        var name = $"{account} · {label} · consumed";
+        var bars = Controls<ProgressBar>().Where(x => AutomationProperties.GetName(x) == name).ToArray();
+        Check(bars.Length > 0, $"semantic quota progress label: {name}");
+        Check(bars.All(bar => Math.Abs(bar.Minimum) < .001 && Math.Abs(bar.Maximum - 100) < .001 && Math.Abs(bar.Value - percent) < .001 && !bar.IsIndeterminate),
+            $"{account} {label} progress is {percent}% consumed");
     }
 
     private async Task Open()

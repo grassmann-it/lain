@@ -10,7 +10,13 @@ internal sealed class Fixture : HttpMessageHandler
     public const int InitialRoutes = 45;
     public const int InitialProfiles = 3;
     public ConfigurationDto Config = new(1, 1,
-        Enumerable.Range(1, InitialAccounts).Select(i => new AccountDto($"a{i}", i == 1 ? "Personal Codex" : $"Team connection {i}", i == 5 ? "command-code" : "openai", true, i == 5 ? "api-key" : "oauth-snapshot", "ready", null, DateTimeOffset.UtcNow.AddHours(i), i == 1)).ToArray(),
+        [
+            new("a1", "Personal Codex", "codex", true, "codex-access-snapshot", "ready", SharedWithLegacy: true),
+            new("a2", "Command Code Pro", "command-code", true, "api-key", "ready"),
+            new("a3", "Z.ai Coding", "zai", true, "api-key", "ready"),
+            new("a4", "Kimi Coding", "kimi", true, "api-key", "ready"),
+            new("a5", "MiMo API", "mimo", true, "api-key", "ready")
+        ],
         Enumerable.Range(1, InitialRoutes).Select(i => new RouteDto($"r{i}", $"gpt-lain-{i:00}", $"gpt-model-{i:00}", "openai", [$"a{(i - 1) % 4 + 1}"])).ToArray(),
         Enumerable.Range(1, InitialProfiles).Select(i => new ProfileDto($"p{i}", i == 1 ? "Daily" : $"Workspace {i}", Enumerable.Range(1, i * 5).Select(n => $"r{n}").ToArray(), "r1")).ToArray());
     public int Imports, EnableCalls, ApplyCalls, ExportCalls, LoginBegins, LoginPolls, LoginCancels, UsageCalls, StatusCalls;
@@ -38,7 +44,7 @@ internal sealed class Fixture : HttpMessageHandler
                 "/api/v1/configuration" => Config,
                 "/api/v1/accounts" => Config.Accounts,
                 "/api/v1/models" => new ModelCatalogDto(1, Config.Revision, [new ModelEntryDto("gpt-model", "openai", ["a1"])]),
-                "/api/v1/quotas" => new[] { new QuotaDto("a1", null, "provider", "unknown", DateTimeOffset.UtcNow, null, null, "requests", null, null, null, true) },
+                "/api/v1/quotas" => Quotas(),
                 "/api/v1/usage" => Usage(),
                 "/api/v1/attempts" => new PageDto<AttemptDto>([new AttemptDto("attempt-fixture", "request-fixture", "a1", "r1", "openai", "gpt-model", DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(-1).AddSeconds(2), 200, "completed", new TokenCounts(72000, 9986, 18000, 2000, 81986), 2000, 250)], 0, 25, 1),
                 _ => throw UnexpectedRequest(request)
@@ -93,6 +99,26 @@ internal sealed class Fixture : HttpMessageHandler
         }
         else throw UnexpectedRequest(request);
         return new(HttpStatusCode.OK) { Content = JsonContent.Create(value) };
+    }
+
+    // Concrete provider budgets exercise percentage, numeric balance, exhaustion and unsupported rendering.
+    private static QuotaDto[] Quotas()
+    {
+        var observed = DateTimeOffset.Parse("2026-10-23T12:00:00Z");
+        QuotaDto Reading(string id, string source, string label, double used, double limit, string unit, double percent, bool shared = false)
+            => new(id, null, source, "ok", observed, observed, observed.AddHours(5), unit, used, limit, limit - used,
+                shared, WindowLabel: label, UsedPercent: percent);
+        return [
+            Reading("a1", "https://chatgpt.com/backend-api/wham/usage#primary_window", "5 hours", 37, 100, "%", 37, true),
+            Reading("a2", "https://api.commandcode.ai/alpha/billing/credits#fiveHour", "5 hours", 4, 20, "USD-Credits", 20),
+            Reading("a2", "https://api.commandcode.ai/alpha/billing/credits#weekly", "Weekly", 22, 40, "USD-Credits", 55),
+            Reading("a2", "https://api.commandcode.ai/alpha/billing/credits#monthlyCredits", "Monthly credits", 20, 80, "USD-Credits", 25),
+            Reading("a3", "https://api.z.ai/api/monitor/usage/quota/limit#credit_limit", "Credits", 250, 1000, "credits", 25),
+            Reading("a4", "https://api.kimi.com/coding/v1/usages#limit_5h", "5 hours", 100, 100, "%", 100),
+            Reading("a4", "https://api.kimi.com/coding/v1/usages#limit_month_total", "Monthly", 62, 100, "%", 62),
+            new("a5", null, "unavailable", "unsupported", observed, null, null, "unknown", null, null, null, false,
+                "Provider quota is not available.", "Provider quota")
+        ];
     }
 
     private StatusDto Status()
