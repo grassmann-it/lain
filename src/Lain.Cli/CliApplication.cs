@@ -13,6 +13,8 @@ public static class CliApplication
     private const string Help = """
         Usage: lain <command> [options]
           status | accounts | models | profiles | quotas [--json]
+          profiles apply ID [--revision N] [--json]
+          profiles install-codex ID [--revision N] [--json]
           import CONFIG [--auth-dir DIR] [--revision N] [--json]
           usage [--today] [--from ISO] [--to ISO] [--timezone IANA]
                 [--account ID] [--model ID] [--status HTTP] [--json]
@@ -73,7 +75,23 @@ public static class CliApplication
                 case "service": result = await client.StatusAsync(ct); break;
                 case "accounts": result = await client.AccountsAsync(ct); break;
                 case "models": result = await client.ModelsAsync(ct); break;
-                case "profiles": result = await client.ProfilesAsync(ct); break;
+                case "profiles":
+                    if (options.Positionals.Count == 0) { result = await client.ProfilesAsync(ct); break; }
+                    var profileRevision = options.Get("revision") is { } revisionValue ? ParseLong(revisionValue, "revision") :
+                        (await client.GetConfigurationAsync(ct)).Revision;
+                    if (options.Positionals[0] == "apply")
+                        result = await client.ApplyProfileAsync(profileRevision, options.Positionals[1], ct);
+                    else
+                    {
+                        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                        var executable = Path.GetFullPath(Path.Combine(home, ".local", "bin", "lain"));
+                        if (!File.Exists(executable)) throw new IOException("lain launcher is missing at ~/.local/bin/lain. Run the lain installer first.");
+                        var codexDirectory = Path.Combine(home, ".codex");
+                        var artifacts = await client.ExportCodexProfileAsync(profileRevision, options.Positionals[1], executable,
+                            Path.Combine(codexDirectory, "lain.models.json"), ct);
+                        result = CodexArtifactInstaller.Install(artifacts, codexDirectory);
+                    }
+                    break;
                 case "quotas": result = await client.QuotasAsync(ct); break;
                 case "import":
                     var revision = options.Get("revision") is { } revisionText ? ParseLong(revisionText, "revision") :
@@ -122,6 +140,14 @@ public static class CliApplication
         }
         if (command == "import")
         { options.RequireOnly("json", "auth-dir", "revision"); options.RequirePositionals(1); return; }
+        if (command == "profiles" && options.Positionals.Count > 0)
+        {
+            options.RequireOnly("json", "revision"); options.RequirePositionals(2);
+            if (options.Positionals[0] is not ("apply" or "install-codex"))
+                throw new ArgumentException("Profile action must be apply or install-codex.");
+            if (options.Get("revision") is { } revision) _ = ParseLong(revision, "revision");
+            return;
+        }
         if (command == "auth")
         {
             options.RequireOnly("audience"); options.RequirePositionals(1);
@@ -188,6 +214,9 @@ public static class CliApplication
                 await output.WriteLineAsync($"Observed {u.ObservedAt:O}; coverage {(u.Complete ? "complete" : "incomplete")}; unknown usage attempts {u.Totals.UnknownUsageAttempts}"); break;
             case ImportResult i:
                 await output.WriteLineAsync($"Imported revision {i.Revision}: {i.Added} added, {i.Updated} updated."); break;
+            case CodexInstallResult i:
+                await output.WriteLineAsync($"Installed {i.ConfigurationPath} and {i.CatalogPath} (revision {i.Revision}).");
+                await output.WriteLineAsync("Codex arguments: " + string.Join(" ", i.LaunchArguments)); break;
             default: await output.WriteLineAsync(JsonSerializer.Serialize(value, value.GetType(), Json)); break;
         }
     }

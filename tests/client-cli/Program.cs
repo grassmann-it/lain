@@ -91,6 +91,44 @@ output = new(); error = new();
 exit = await CliApplication.RunAsync(["attempts", "--today", "--timezone", "Europe/Berlin", "--status", "429", "--json"], output, error, () => client);
 Require(exit == 0, "today attempts filters accepted"); assertions++;
 
+handler.Handle = request =>
+{
+    Require(request.Method == HttpMethod.Post && request.RequestUri!.AbsolutePath == "/api/v1/profiles/profile-1/apply", "apply profile endpoint");
+    using var payload = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
+    Require(payload.RootElement.GetProperty("revision").GetInt64() == 3, "apply uses optimistic revision");
+    return new(HttpStatusCode.OK) { Content = JsonContent.Create(configuration with { AppliedRevision = 3 }) };
+};
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["profiles", "apply", "profile-1", "--revision", "3", "--json"], output, error, () => client);
+Require(exit == 0 && JsonDocument.Parse(output.ToString()).RootElement.GetProperty("appliedRevision").GetInt64() == 3, "CLI apply emits effective configuration"); assertions++;
+
+var codex = Path.Combine(Path.GetTempPath(), "lain-codex-" + Guid.NewGuid().ToString("N"));
+var artifacts = new CodexProfileArtifacts("lain.config.toml", "synthetic generated config", "lain.models.json", "{\"models\":[]}", ["--no-daemon", "--profile", "lain"], 3);
+try
+{
+    Directory.CreateDirectory(codex);
+    File.WriteAllText(Path.Combine(codex, "config.toml"), "EXISTING-CONFIG");
+    handler.Handle = request =>
+    {
+        Require(request.RequestUri!.AbsolutePath == "/api/v1/profiles/profile-1/codex/export", "Codex export endpoint");
+        using var payload = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
+        Require(payload.RootElement.GetProperty("executablePath").GetString() == "/absolute/lain" &&
+            payload.RootElement.GetProperty("catalogPath").GetString() == Path.Combine(codex, "lain.models.json"), "Codex artifact request uses absolute helper/catalog paths");
+        return new(HttpStatusCode.OK) { Content = JsonContent.Create(artifacts) };
+    };
+    var generated = await client.ExportCodexProfileAsync(3, "profile-1", "/absolute/lain", Path.Combine(codex, "lain.models.json"));
+    var installed = CodexArtifactInstaller.Install(generated, codex);
+    Require(File.ReadAllText(installed.ConfigurationPath) == artifacts.Configuration && File.ReadAllText(installed.CatalogPath) == artifacts.Catalog,
+        "generated artifacts installed");
+    Require(File.ReadAllText(Path.Combine(codex, "config.toml")) == "EXISTING-CONFIG" && Directory.GetFiles(codex).Length == 3,
+        "ordinary config unchanged and temporary files removed");
+    if (!OperatingSystem.IsWindows()) Require(File.GetUnixFileMode(installed.ConfigurationPath) == (UnixFileMode.UserRead | UnixFileMode.UserWrite), "installed configuration is private");
+    assertions++;
+    try { CodexArtifactInstaller.Install(artifacts with { ConfigFileName = "config.toml" }, codex); throw new Exception("unexpected file must be rejected"); }
+    catch (InvalidDataException) { assertions++; }
+}
+finally { if (Directory.Exists(codex)) Directory.Delete(codex, true); }
+
 var state = Path.Combine(Path.GetTempPath(), "lain-discovery-" + Guid.NewGuid().ToString("N"));
 var previous = Environment.GetEnvironmentVariable("LAIN_HOME");
 try

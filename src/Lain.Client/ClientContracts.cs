@@ -10,3 +10,6 @@ public sealed record ModelCatalogDto(int ContractVersion, long Revision, ModelEn
 public sealed record ModelEntryDto(string Id, string Provider, string[] AccountIds, string Source = "configured");
 public sealed record AccountPlaceholderDto(string Id, string Provider);
 public sealed record ProfileExportDto(int ContractVersion, long Revision, ProfileDto Profile, RouteDto[] Routes, AccountPlaceholderDto[] Accounts);
+public sealed record ProfileApplyRequest(long Revision);
+public sealed record CodexExportRequest(long Revision, string ExecutablePath, string CatalogPath);
+public sealed record CodexProfileArtifacts(string ConfigFileName, string Configuration, string CatalogFileName, string Catalog, string[] LaunchArguments, long Revision);
