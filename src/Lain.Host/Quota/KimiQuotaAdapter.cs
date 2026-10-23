@@ -37,10 +37,10 @@ public sealed class KimiQuotaAdapter(HttpClient client) : IQuotaAdapter
         {
             foreach (var (key, alias, label) in new (string, string?, string)[]
             {
-                ("limit_5h", null, "5 Stunden"),
-                ("limit_7d", null, "7 Tage"),
-                ("limit_month_total", "month_total", "Monat gesamt"),
-                ("limit_month_code", "month_code", "Monat Coding")
+                ("limit_5h", null, "5 hours"),
+                ("limit_7d", null, "7 days"),
+                ("limit_month_total", "month_total", "Monthly total"),
+                ("limit_month_code", "month_code", "Monthly coding")
             })
             {
                 var window = JsonFields.Object(usages, key);
@@ -60,11 +60,12 @@ public sealed class KimiQuotaAdapter(HttpClient client) : IQuotaAdapter
         if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("usages", out _)) return rows;
 
         var limits = JsonFields.Object(root, "limits");
-        if (limits.ValueKind != JsonValueKind.Array) return rows;
-        var index = 0;
+        // No stable legacy window identifier has been verified. More than one
+        // row could be reordered, so refuse to attach its history by position.
+        if (limits.ValueKind != JsonValueKind.Array || limits.GetArrayLength() != 1) return rows;
         foreach (var limit in limits.EnumerateArray())
         {
-            var source = Endpoint + "#legacy_" + index++;
+            var source = Endpoint + "#legacy_0";
             var detail = JsonFields.Object(limit, "detail");
             if (detail.ValueKind != JsonValueKind.Object) continue;
             var total = JsonFields.Number(detail, "limit");
@@ -72,7 +73,7 @@ public sealed class KimiQuotaAdapter(HttpClient client) : IQuotaAdapter
             double? percent = total is > 0 && used.HasValue ? used / total * 100 : null;
             if (percent > 100 || percent.HasValue && !double.IsFinite(percent.Value)) percent = null;
             rows.Add(new(source, "units", used, total, JsonFields.Number(detail, "remaining"),
-                JsonFields.Date(detail, "resetTime"), WindowLabel: "Tariffenster", UsedPercent: percent));
+                JsonFields.Date(detail, "resetTime"), WindowLabel: "Plan window", UsedPercent: percent));
         }
         return rows;
     }
