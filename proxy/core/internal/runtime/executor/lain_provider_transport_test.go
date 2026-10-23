@@ -143,3 +143,19 @@ func TestLainStepResponsesContinuation(t *testing.T) {
 		t.Fatal("response reasoning lost")
 	}
 }
+
+func TestLainRequiredProviderSession(t *testing.T) {
+	auth := &cliproxyauth.Auth{Attributes: map[string]string{"header:x-opencode-session": "$CPA-SESSION-ID"}}
+	if validateProviderSession(context.Background(), auth) == nil {
+		t.Fatal("missing required session accepted")
+	}
+	if validateProviderSession(util.WithSessionID(context.Background(), "fixture\nsession"), auth) == nil {
+		t.Fatal("invalid session accepted")
+	}
+	if err := validateProviderSession(util.WithSessionID(context.Background(), "fixture-session"), auth); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateProviderSession(context.Background(), &cliproxyauth.Auth{}); err != nil {
+		t.Fatal("unrelated provider rejected")
+	}
+}
