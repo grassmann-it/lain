@@ -1,0 +1,364 @@
+{
+  "id": "synthetic",
+  "name": "Synthetic",
+  "summary": "Offene Modelle über Coding-Abos oder nutzungsabhängige API-Abrechnung.",
+  "accountUrl": "https://synthetic.new/users/create",
+  "documentationUrl": "https://dev.synthetic.new/docs/api/overview",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "Synthetic API-Key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true,
+      "help": "Eigener Inferenz-API-Key; Consumer-Abos belegen kein API-Guthaben."
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Account einrichten",
+      "description": "Eigenen Account und Tarif selbst wählen.",
+      "url": "https://synthetic.new/users/create"
+    },
+    {
+      "title": "API-Key abrufen",
+      "description": "Persönlichen Key privat in lain speichern.",
+      "url": "https://dev.synthetic.new/docs/api/overview"
+    },
+    {
+      "title": "Route prüfen",
+      "description": "Offizielle API-Basis und Modell auswählen; Livezugang bleibt bis zur Prüfung ungeprüft."
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "go",
+      "name": "Go",
+      "kind": "subscription",
+      "scope": "account",
+      "unit": "credits",
+      "recurringPrice": 9,
+      "currency": "USD",
+      "priceInterval": "month",
+      "resetDescription": "Gemeinsamer Pool; Kredite regenerieren über die Woche.",
+      "notes": "Modellgewichte unterscheiden sich; keine festen Tokenbudgets. Extra PAYG separat konfigurieren."
+    },
+    {
+      "id": "standard",
+      "name": "Standard",
+      "kind": "subscription",
+      "scope": "account",
+      "unit": "credits",
+      "recurringPrice": 30,
+      "currency": "USD",
+      "priceInterval": "month",
+      "resetDescription": "Gemeinsamer Pool; Kredite regenerieren über die Woche.",
+      "notes": "Modellgewichte unterscheiden sich; keine festen Tokenbudgets. Extra PAYG separat konfigurieren."
+    },
+    {
+      "id": "big",
+      "name": "Big",
+      "kind": "subscription",
+      "scope": "account",
+      "unit": "credits",
+      "recurringPrice": 90,
+      "currency": "USD",
+      "priceInterval": "month",
+      "resetDescription": "Gemeinsamer Pool; Kredite regenerieren über die Woche.",
+      "notes": "Modellgewichte unterscheiden sich; keine festen Tokenbudgets. Extra PAYG separat konfigurieren."
+    },
+    {
+      "id": "payg",
+      "name": "API nach Verbrauch",
+      "kind": "payg",
+      "scope": "account",
+      "unit": "USD"
+    }
+  ],
+  "routes": [
+    {
+      "id": "synthetic:hf:deepseek-ai/DeepSeek-V4.1-Flash-1017:subscription",
+      "model": "hf:deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "name": "DeepSeek V4.1 Flash 1017 (subscription)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "go",
+        "standard",
+        "big"
+      ],
+      "capabilities": {
+        "contextWindow": 512000,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "deepseek-v4.1",
+      "manufacturer": "deepseek",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "subscription",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "Modell kann bei Rotation entfernt werden; kein automatischer Aliaswechsel.",
+        "Modellbezogene Tool-/Reasoning-/JSON-Fähigkeiten ungeprüft."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Modelle und Kontext",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat-SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:deepseek-ai/DeepSeek-V4.1-Flash-1017:payg",
+      "model": "hf:deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "name": "DeepSeek V4.1 Flash 1017 (payg)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": 512000,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "deepseek-v4.1",
+      "manufacturer": "deepseek",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "Modell kann bei Rotation entfernt werden; kein automatischer Aliaswechsel.",
+        "Modellbezogene Tool-/Reasoning-/JSON-Fähigkeiten ungeprüft."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Modelle und Kontext",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat-SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:moonshotai/Kimi-K3:subscription",
+      "model": "hf:moonshotai/Kimi-K3",
+      "name": "Kimi K3 (subscription)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "go",
+        "standard",
+        "big"
+      ],
+      "capabilities": {
+        "contextWindow": 512000,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": true,
+        "structuredOutput": null
+      },
+      "modelFamily": "kimi-k3",
+      "manufacturer": "moonshot",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "subscription",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "Modell kann bei Rotation entfernt werden; kein automatischer Aliaswechsel.",
+        "Modellbezogene Tool-/Reasoning-/JSON-Fähigkeiten ungeprüft."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Modelle und Kontext",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat-SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:moonshotai/Kimi-K3:payg",
+      "model": "hf:moonshotai/Kimi-K3",
+      "name": "Kimi K3 (payg)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": 512000,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": true,
+        "structuredOutput": null
+      },
+      "modelFamily": "kimi-k3",
+      "manufacturer": "moonshot",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "Modell kann bei Rotation entfernt werden; kein automatischer Aliaswechsel.",
+        "Modellbezogene Tool-/Reasoning-/JSON-Fähigkeiten ungeprüft."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Modelle und Kontext",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat-SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:zai-org/GLM-4.7-Flash:subscription",
+      "model": "hf:zai-org/GLM-4.7-Flash",
+      "name": "GLM 4.7 Flash (subscription)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "go",
+        "standard",
+        "big"
+      ],
+      "capabilities": {
+        "contextWindow": 192000,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "glm-4.7",
+      "manufacturer": "zai",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "subscription",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "Modell kann bei Rotation entfernt werden; kein automatischer Aliaswechsel.",
+        "Modellbezogene Tool-/Reasoning-/JSON-Fähigkeiten ungeprüft."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Modelle und Kontext",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat-SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:zai-org/GLM-4.7-Flash:payg",
+      "model": "hf:zai-org/GLM-4.7-Flash",
+      "name": "GLM 4.7 Flash (payg)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": 192000,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "glm-4.7",
+      "manufacturer": "zai",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "Modell kann bei Rotation entfernt werden; kein automatischer Aliaswechsel.",
+        "Modellbezogene Tool-/Reasoning-/JSON-Fähigkeiten ungeprüft."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Modelle und Kontext",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat-SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://synthetic.new/pricing",
+      "title": "Tarife und gemeinsame Modellgewichte",
+      "checkedAt": "2026-10-24T00:00:00Z"
+    },
+    {
+      "url": "https://dev.synthetic.new/docs/api/overview",
+      "title": "Offizielle API-Basen",
+      "checkedAt": "2026-10-24T00:00:00Z"
+    },
+    {
+      "url": "https://dev.synthetic.new/docs/api/models",
+      "title": "Modellliste und Kontext",
+      "checkedAt": "2026-10-24T00:00:00Z"
+    },
+    {
+      "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+      "title": "Tools, Reasoning, SSE und JSON-Parameter",
+      "checkedAt": "2026-10-24T00:00:00Z"
+    },
+    {
+      "url": "https://dev.synthetic.new/docs/synthetic/quotas",
+      "title": "Offizieller Quota-Vertrag",
+      "checkedAt": "2026-10-24T00:00:00Z"
+    }
+  ],
+  "restrictions": [
+    "Kein dauerhaft kostenloser API-Tarif nachgewiesen.",
+    "Kredite regenerieren über die Woche; Modelle teilen denselben gewichteten Kontopool. Modellschätzungen nicht addieren.",
+    "Zusätzliche PAYG-Nutzung bewusst konfigurieren; kein kostenloser Fallback.",
+    "Quota-Feld requests wird wegen aktueller gewichteter Credits als Anbieter-Einheiten geführt.",
+    "Big Fast/Infinite sind eingeschränkte Beta-Aboleistungen, keine kostenlosen API-Tarife.",
+    "Tools, Reasoning und JSON-Schema sind API-Parameter; Fähigkeiten konkreter Modellrouten noch ungeprüft."
+  ],
+  "adapterState": "available",
+  "liveVerification": "not_tested",
+  "quotaSupport": "available"
+}
