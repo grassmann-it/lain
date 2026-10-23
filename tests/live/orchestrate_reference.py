@@ -61,6 +61,7 @@ class Host:
     def start(self):
         for port in (18417, 18418):
             with socket.socket() as reserve:
+                reserve.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 try:
                     reserve.bind(("127.0.0.1", port))
                 except OSError:
