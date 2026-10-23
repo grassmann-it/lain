@@ -33,6 +33,10 @@ public sealed class MainWindow : Window
     private bool _editing;
     private bool _hostAvailable;
     private readonly UsageView _usage;
+    private LoginDto? _login;
+    private CancellationTokenSource? _loginPolling;
+    private bool _loginVisible;
+    private string? _loginError;
 
     public MainWindow(LainApiClient client)
     {
@@ -70,7 +74,7 @@ public sealed class MainWindow : Window
         Render();
     }
 
-    private void Navigate(string section) { _section = section; _editing = false; _notice.Text = ""; Render(); }
+    private void Navigate(string section) { _section = section; _editing = false; _loginVisible = false; _notice.Text = ""; Render(); }
 
     private async Task RefreshAsync(bool explicitRefresh)
     {
@@ -91,7 +95,7 @@ public sealed class MainWindow : Window
                 try { _models = (await _client.ModelsAsync(_lifetime.Token)).Models; }
                 catch (Exception error) when (error is not OperationCanceledException) { _models = []; }
             }
-            if (explicitRefresh) { _editing = false; _notice.Text = ""; }
+            if (explicitRefresh) { _editing = false; _loginVisible = false; _notice.Text = ""; }
             if (!_editing && _section != "Usage") Render();
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
@@ -171,7 +175,8 @@ public sealed class MainWindow : Window
 
     private Control AccountsPage()
     {
-        var panel = Ui.Stack(Heading("Accounts", "Each connection keeps its own identity and history."), Ui.Row(Ui.Button("Add API account", ShowAddAccount), Ui.Button("Import existing setup", ShowImport)));
+        var panel = Ui.Stack(Heading("Accounts", "Each connection keeps its own identity and history."),
+            Ui.Row(Action(_login is { State: "waiting" } ? "Continue Codex login" : "Connect Codex", StartCodexLoginAsync, "Complete sign-in in your browser.", stayOnPage: true), Ui.Button("Add API account", ShowAddAccount), Ui.Button("Import existing setup", ShowImport)));
         if (_configuration is not { } cfg) { panel.Children.Add(Empty("Accounts are unavailable until the host responds.")); return panel; }
         if (cfg.Accounts.Length == 0) panel.Children.Add(Empty("No accounts yet. Add an API key or import a supported local configuration."));
         foreach (var account in cfg.Accounts)
@@ -193,6 +198,93 @@ public sealed class MainWindow : Window
     }
 
     private static Control Empty(string text) => Ui.Card(Ui.Text(text, 14, Ui.Muted));
+
+    private async Task StartCodexLoginAsync()
+    {
+        if (_configuration is not { } cfg) throw new InvalidOperationException("Connect to the host first.");
+        if (_login is not { State: "waiting" })
+        {
+            _loginPolling?.Cancel();
+            _login = await _client.LoginAsync(cfg.Revision, "codex", _lifetime.Token);
+            _loginError = null;
+            if (_login.State == "waiting")
+            {
+                var polling = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+                _loginPolling = polling;
+                _ = PollLoginAsync(_login.Id, polling);
+            }
+        }
+        ShowLoginPage();
+    }
+
+    private void ShowLoginPage()
+    {
+        if (_login is not { } login) return;
+        _loginVisible = true; _editing = true; _actions.Clear();
+        var guidance = login.State switch
+        {
+            "completed" => "Your Codex account is connected.",
+            "cancelled" => "Authorization was cancelled. Return to accounts to start again.",
+            "failed" or "unsupported" => "Authorization could not finish. Return to accounts to retry.",
+            _ => "Finish the Codex authorization in your browser. lain checks the result automatically."
+        };
+        var details = Ui.Stack(Ui.Text($"Sign-in · {login.State}", 20), Ui.Text(login.Error ?? _loginError ?? guidance, 14, Ui.Muted));
+        if (login.Url is { } url)
+        {
+            details.Children.Add(new TextBox { Text = url, IsReadOnly = true, TextWrapping = TextWrapping.Wrap });
+            details.Children.Add(Action("Open authorization page", async () => {
+                if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http")) throw new InvalidOperationException("The host returned an invalid authorization URL.");
+                if (!await Launcher.LaunchUriAsync(uri)) throw new InvalidOperationException("The browser could not be opened. Copy the authorization URL into your browser.");
+            }, "Complete sign-in in your browser.", stayOnPage: true));
+        }
+        var buttons = Ui.Row(Ui.Button("Back to accounts", () => Navigate("Accounts")));
+        if (login.State == "waiting") buttons.Children.Add(Action("Cancel login", async () => {
+            _login = await _client.CancelLoginAsync(login.Id, _lifetime.Token);
+            _loginPolling?.Cancel(); _loginVisible = false;
+            _notice.Text = $"Codex login {_login.State}.";
+        }, "Codex login cancelled."));
+        _page.Content = Ui.Stack(Heading("Connect your Codex account", "This opens a new authorization for lain's own account storage."), Ui.Card(details), buttons);
+    }
+
+    private async Task PollLoginAsync(string id, CancellationTokenSource polling)
+    {
+        try
+        {
+            while (!polling.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2), polling.Token);
+                try
+                {
+                    var login = await _client.GetLoginAsync(id, polling.Token);
+                    if (_login?.Id != id) return;
+                    _login = login; _loginError = null;
+                    if (_login.State == "completed")
+                    {
+                        _configuration = await _client.GetConfigurationAsync(polling.Token);
+                        if (_loginVisible && _section == "Accounts") { _editing = false; _loginVisible = false; }
+                        await RefreshAsync(false);
+                        if (!_editing) Render();
+                        _notice.Text = "Codex account connected.";
+                        return;
+                    }
+                    if (_loginVisible && _section == "Accounts" && !_busy) ShowLoginPage();
+                    if (_login.State is "failed" or "cancelled" or "unsupported")
+                    {
+                        _notice.Text = $"Codex authorization {_login.State}.";
+                        return;
+                    }
+                }
+                catch (OperationCanceledException) when (polling.IsCancellationRequested) { return; }
+                catch (Exception error)
+                {
+                    _loginError = "Sign-in status is unavailable. Retrying automatically. " + Friendly(error);
+                    if (_loginVisible && _section == "Accounts" && !_busy) ShowLoginPage();
+                }
+            }
+        }
+        catch (OperationCanceledException) when (polling.IsCancellationRequested) { }
+        finally { if (ReferenceEquals(_loginPolling, polling)) _loginPolling = null; polling.Dispose(); }
+    }
 
     private static Control QuotaDetails(QuotaDto? quota)
     {
@@ -367,6 +459,6 @@ public sealed class MainWindow : Window
 
     private Control SetupPage() => Ui.Stack(Heading("Your first connection", "lain runs locally, with a background host that stays active when this window closes."),
         Ui.Card(Ui.Stack(Ui.Text("01  ·  Start the host", 20), Ui.Text("Install and start the lain user service using the supplied installer. The management API listens locally on port 18418; inference uses port 18417.", 14, Ui.Muted), Ui.Button("Check host connection", () => _ = RefreshAsync(true)))),
-        Ui.Card(Ui.Stack(Ui.Text("02  ·  Connect an account", 20), Ui.Text("Add an API key or import a supported local configuration. Imported Codex access-token snapshots expire; reconnect by importing a fresh snapshot. Other OAuth providers remain unavailable until qualified.", 14, Ui.Muted), Ui.Button("Manage accounts", () => Navigate("Accounts")))),
+        Ui.Card(Ui.Stack(Ui.Text("02  ·  Connect an account", 20), Ui.Text("Connect Codex through its authorization page, add an API key, or import a supported local configuration. Imported access-token snapshots expire; reconnect by importing a fresh snapshot. Other OAuth providers remain unavailable until qualified.", 14, Ui.Muted), Ui.Button("Manage accounts", () => Navigate("Accounts")))),
         Ui.Card(Ui.Stack(Ui.Text("03  ·  Choose models and a profile", 20), Ui.Text("Create a model route bound to your account, then choose a profile. Profile export creates a separate client configuration so your existing client setup is preserved.", 14, Ui.Muted), Ui.Row(Ui.Button("Model routes", () => Navigate("Routes")), Ui.Button("Profiles", () => Navigate("Profiles"))))));
 }
