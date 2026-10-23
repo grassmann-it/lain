@@ -105,12 +105,17 @@ class FakeProvider:
                     row["status"] = 429
                     return self.reply(429, {"error": {"message": "synthetic quota exceeded", "type": "rate_limit_error", "code": "rate_limit_exceeded"}})
                 row["status"] = 200
+                usage = dict(USAGE)
+                if case == "partial_usage":
+                    usage.pop("total_tokens")
+                elif case == "zero_usage":
+                    usage = {key: 0 for key in usage}
                 tool = case == "tool" and not tool_result
                 message = {"role": "assistant", "content": "synthetic tool result accepted" if tool_result else "synthetic response"}
                 if tool:
                     message = {"role": "assistant", "content": None, "tool_calls": [{"id": "call_fixture_1", "type": "function", "function": {"name": "fixture_echo", "arguments": '{"value":"safe"}'}}]}
                 response = {"id": "chatcmpl-" + request_id, "object": "chat.completion", "created": 1700000000,
-                            "model": MODEL, "choices": [{"index": 0, "message": message, "finish_reason": "tool_calls" if tool else "stop"}], "usage": USAGE}
+                            "model": MODEL, "choices": [{"index": 0, "message": message, "finish_reason": "tool_calls" if tool else "stop"}], "usage": usage}
                 if not body.get("stream"):
                     return self.reply(200, response)
                 self.send_response(200)
@@ -141,7 +146,7 @@ class FakeProvider:
                     if case == "gated_usage":
                         owner.usage_gate.wait(timeout=8)
                     event({}, "tool_calls" if tool else "stop")
-                    event({}, usage=USAGE)
+                    event({}, usage=usage)
                     self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
                 except (BrokenPipeError, ConnectionResetError):

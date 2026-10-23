@@ -331,7 +331,15 @@ def unknown_token_components(core):
         expect([row["inputTokens"], row["outputTokens"], row["totalTokens"]] == [11, 7, 18], "reported token values altered")
         for field in ("cacheReadTokens", "cacheCreationTokens", "reasoningTokens"):
             expect(row[field] is None, f"provider omitted {field} but journal invented {row[field]}")
-        return {"inputTokens": 11, "outputTokens": 7, "totalTokens": 18, "unreportedComponents": None}
+        for case in ("partial_usage", "zero_usage"):
+            with run.post(case, case, route="fixture-a") as response:
+                response.read()
+        _, usages = assert_complete(run.events()["events"], 3)
+        partial, zero = usages[-2:]
+        expect([partial["inputTokens"], partial["outputTokens"], partial["totalTokens"]] == [11, 7, None], "missing total was invented from known components")
+        expect(zero["usageReported"] and [zero["inputTokens"], zero["outputTokens"], zero["totalTokens"]] == [0, 0, 0], "explicit provider zeros became unknown")
+        return {"requests": 3, "inputTokens": 11, "outputTokens": 7, "totalTokens": 18, "unreportedComponents": None,
+                "missingTotalIsNull": True, "explicitZeroPreserved": True}
 
 
 def credential_lifecycle(core):
