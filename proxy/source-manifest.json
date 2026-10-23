@@ -3,7 +3,7 @@
   "upstream": "https://github.com/router-for-me/CLIProxyAPI",
   "upstreamCommit": "9bdde54b59d1af70ae0534a0ef61b2c3361a1257",
   "snapshotVersion": "7.3.17-parent-request.3-model-compat.3-startup-readiness.1",
-  "lainPatchVersion": 1,
+  "lainPatchVersion": 2,
   "verifiedOriginalFileCount": 1663,
   "originalBaselineSha256": "a3dcb37a26d25f0df4173c203dba69fe04a813ddf94d826ccc9adc8efc884045",
   "license": "MIT",
@@ -268,7 +268,7 @@
     "internal/config/config_load.go": "11aa664097f8d616b979e28397c65367e672e1bbbaa378e2a985fdbca06c5f18",
     "internal/config/config_meta_test.go": "0227e68cb275b7fa7068b4915d5ad1b7d49b45aa2c50c537f5f8a02c5a8c6ecd",
     "internal/config/config_normalization.go": "09b119a2ec87b8ee42a1d972214259d77f0006a984a866df35d1565b2883e2b5",
-    "internal/config/config_types.go": "216e63fa6c8580e0551bb782d97d85df41cac3a3c07c9a26ea6d571c26fd92bf",
+    "internal/config/config_types.go": "9a2ca9a06d298a545626f0631acd97e3ff246b77f6b0e503d010872e290fc4a3",
     "internal/config/config_validation.go": "0c5ce3711e4d01aa40754d92c0ed0a1b6b3dc7745fb994346e945e271cab1b25",
     "internal/config/config_yaml.go": "041062b8f99ce03a4a666f4f916e3ed38e00da2f9c9d10afb25eb3993ddb9d4d",
     "internal/config/cooling_override_test.go": "4b37643bd004c2487f26e2f0d1b7e688ed8efe1b3fe02a835faab8c74a86f8d0",
@@ -313,6 +313,8 @@
     "internal/discovery/spec.go": "82a228979ef2549e3bcbfda26f6cca6bf0452b6b2ebd0dd03391f97580989586",
     "internal/discovery/types.go": "db5ccae7055fac3b452272e201f4bb2b1dedc601b7571f703f735ef443cf83a3",
     "internal/discovery/zeroconf.go": "3f007610046eb544c4784087d32129783652677f76e40d0242417604ae7f32f1",
+    "internal/freeonly/openrouter.go": "2b4a5f56973819962e38a820847fba04b13b5a304294b27a4bdf93c671b65912",
+    "internal/freeonly/openrouter_test.go": "a56816a094966c2fd5ffddd5298cc0f43bc016de81ed14842a8fbdab7c431e17",
     "internal/home/certificate.go": "775989b61a012628a90d1efe2f99d2d55b3a215caa657514fd09b623ab6296fe",
     "internal/home/client.go": "957a119e900b1dad1be143856c8e3f20fe733e25abe5a72c595cf9f67f402bb4",
     "internal/home/client_test.go": "73f4b6ecf2c5ac4401e5071479a477093843fe170ec94f88336b6e24aaa9edba",
@@ -343,13 +345,19 @@
     "internal/interfaces/error_message.go": "8a120378d4e377101cdecae961a93aa3f3261c5b0d873084bd8d29e56e8504f9",
     "internal/interfaces/types.go": "9b7002e1ef36a4aad13155a1a4b2b64d50b045c94656f3e39c9ca3be20d9cb94",
     "internal/lain/credentials.go": "6d6cf95882a49b9618d9fa5a68ad2a0f3a58f5841903d3be4436964e538e5d3f",
-    "internal/lain/http.go": "a00e7e3f786a999951a09caccfe759be16685ba80d07737647c69cef77cf221b",
-    "internal/lain/http_test.go": "804b6e76b536ed58e185133cc8c1aca56f7ccbf528ba5ff6993ead7946555bc4",
-    "internal/lain/integration.go": "ee8aa480f95283c1fd1bf97db83cf22b7391265031586653132ddb325e58b0a6",
-    "internal/lain/journal.go": "6166b9ec3af5193aa0d3eadcdec5225f5961cc181134123e0675ea4f3807e632",
-    "internal/lain/journal_test.go": "c6cb23751429fcbf76c05b765c1965b4e87a30c276a22c8123f6a8497c66e4ef",
+    "internal/lain/dimensions.go": "6acdbae4f537b055cafd2f958e21ab5b769f9badc6d8892ee951ba397f23809c",
+    "internal/lain/free_only.go": "65670721c276c386d3f21bb6b50c8ce285f0cfa596c665e7b00a0f167f2709f0",
+    "internal/lain/free_only_test.go": "1809e36b36165945ef597f152ae9a365251c15e5fe06a7e2b6eb16941b5cfa95",
+    "internal/lain/http.go": "f4ddeeee203b9cfdad8f71cee5224da22a1ec5107b9e042dbf20b40abde4be1e",
+    "internal/lain/http_test.go": "c4c070d7c1f58384b51894f6bfee9c6dc13c19763b5c8cfe8bef1f813a569856",
+    "internal/lain/inspector.go": "be8be004cacaff9ff1fd13cdb5a9244d5a9d7a0507d58b1f9a48a0e26b3be25b",
+    "internal/lain/inspector_test.go": "b97009decaefa3b732c892cd0bd5554f93e265fcbb386cca206aa5f63fbe457b",
+    "internal/lain/integration.go": "7d12d5deb30ac2d281597ac8ed16cb9dc4a59e598a35983e56dce9cf3cc67292",
+    "internal/lain/journal.go": "0ac23edb0bfb3c7b81faa7f110d9f4e4efa492ae409a379b97512f6cdc8a01da",
+    "internal/lain/journal_test.go": "dd079c854ff461367015dd0c42c4a0855f33961ad0c90edfffdb2a93459a1d37",
     "internal/lain/login.go": "1b7fc98288a48f63910f9c8ed2f66f816dd1faada2c40e35a4fe7e91efbcf057",
     "internal/lain/login_test.go": "6346763ba3701bd5a86609e65153c025184098294a15d3b4ce048ac1a5ccad19",
+    "internal/lain/observation.go": "49c1e8139bb35069b2f070724aaba326cc81101edf683165ecaed032d423f66a",
     "internal/lain/owned.go": "ab63e6519258d43c03bcce31056e10fb975ac132d046b4707aecc1e1fb4a8f9a",
     "internal/logging/cpa_trace.go": "5a051ea25ebbdf0f30485fcf1ea5d49b2e614da9aa7fc562ca146d5d3e723b3c",
     "internal/logging/cpa_trace_test.go": "bf563681adeb0d93a7c70a97fbdd2242cee49c0fcccaf6c3096d4ea009d8b1e3",
@@ -548,7 +556,7 @@
     "internal/runtime/executor/claude_executor_cloaking_display_test.go": "44a29d55da81d5dff938e24cd81b32df519bbe2715be875847c00c151763270c",
     "internal/runtime/executor/claude_executor_diagnostics.go": "56f2df44738c6162171594f1ccdfc137c6ee15f07cda25528780350646ade5cf",
     "internal/runtime/executor/claude_executor_diagnostics_test.go": "dc8f6e70bbaba56361885872b8c962222afd825ac28b6fcd1b4279c3f6c2bfab",
-    "internal/runtime/executor/claude_executor_execute.go": "dd30a5a46b09c5f7e0af9d94d6853f49e4cf402c50de61c29d931c00832d5125",
+    "internal/runtime/executor/claude_executor_execute.go": "64b5d6f8690175c014adc6c4b74ddea0035b1882638229c56228265d3b246e85",
     "internal/runtime/executor/claude_executor_fable_ratelimit_test.go": "e5cfd034680f0f8b4efc7bcb629aee7b4a9566761fd340fe7daa4fd8438a6a2d",
     "internal/runtime/executor/claude_executor_fast_error.go": "7fa7c9d0e5789ed2b03ed0c5852915bdd79c868f4e712ced9a0950186c174677",
     "internal/runtime/executor/claude_executor_fast_error_test.go": "295bb8d714887e9d7f3e88ad7f617639d85beb5cbe99a8adb8dbddf8f4ad4ca0",
@@ -557,7 +565,7 @@
     "internal/runtime/executor/claude_executor_request.go": "21b1d365d1e38ef84e8a660cf2fb30e5f7eed6a03f45a853d2bd6028211887d7",
     "internal/runtime/executor/claude_executor_request_bench_test.go": "912c7b5d784640977798667aecd2c441b7ae3951f717f57d4cd1c393b2f803bf",
     "internal/runtime/executor/claude_executor_request_remap_test.go": "357f3617c539ed94b8f8d8915a6fbff33091e149f61af23b3037d9b1fe8ee9ff",
-    "internal/runtime/executor/claude_executor_stream.go": "250ffe1a483eb503e2c14b2560428457497728005ef0cf69a00a59bccabc1cea",
+    "internal/runtime/executor/claude_executor_stream.go": "1a0c36814c6143710ac4f3f7bce99ab9dd8e4927a8c4f618789faded1bd2d063",
     "internal/runtime/executor/claude_executor_stream_terminal_test.go": "d5c7f0121acafc082fd3e23f3de0e543b3f955b456b59862f9253eb199b5cb39",
     "internal/runtime/executor/claude_executor_subagent_ttl_regression_test.go": "d9b279b8bbc6b3740f966b0434a3fc4127524bbb59b6a6d1b90914c82a19ef40",
     "internal/runtime/executor/claude_executor_test.go": "8eb04bf1bf00dbaafeb5175f311537a3e41cea36ace33a90a49cdf32fa003757",
@@ -629,7 +637,7 @@
     "internal/runtime/executor/devin_executor.go": "f49b8f5f0aa2b3ab2c109a3a5aa3a44f58482e984889225e97a157eebc8c1413",
     "internal/runtime/executor/devin_executor_test.go": "ad7cf91b74e043836cf2c194532eaaa9b9d2ce84df778b387a6f602f4384a955",
     "internal/runtime/executor/executor_payload_optimization_test.go": "3c0de165bbbc54c8996eff84197852dad760ce7336861ccd1403e20f88a46dcd",
-    "internal/runtime/executor/gemini_executor.go": "ab5da1307aa4820865c3e00ec73deede70fbb996f88f83eb505bf6a26cccee8a",
+    "internal/runtime/executor/gemini_executor.go": "257c5e79d40a7e20a20f08db0c3909bf0f650222eceeaead60f424a3bb2cf680",
     "internal/runtime/executor/gemini_executor_signature_test.go": "151326fcaec05409af6477853f1de87f3b8b89e035a671019a0832f79957d8e6",
     "internal/runtime/executor/gemini_executor_test.go": "8760a2bc83f01c9e66769310c3fa04e03f0d3cc04ae7083079d82f570396fd60",
     "internal/runtime/executor/gemini_interactions_translate_test.go": "6d6ff667a072fc8250216f9bf0bcdcf667e40ea55af29776381eea23df335138",
@@ -758,14 +766,19 @@
     "internal/runtime/executor/kimi_home_model_capabilities_test.go": "7cdddd09a1e0344f47de36d51625c97b890f12118b6d23c68e0a562a77cd65bb",
     "internal/runtime/executor/kimi_thinking_replay.go": "eb04650d9ad046c43ce8d3bc8af8552b4438e5848a17b0638bc60dab91f8dda7",
     "internal/runtime/executor/kimi_thinking_replay_test.go": "1586f6588bc0be5dfd76b755aa6e6655aa5394df9741782ccbe897e853378f5e",
+    "internal/runtime/executor/lain_free_only_transport.go": "47d3a908d266c56899716624092a248c576fd61a8e9d2cf25a42d663fbbd5f81",
+    "internal/runtime/executor/lain_free_only_transport_test.go": "7d92bc105938ee90f539fb798735498f9ab9f3cbc8c780244783633a4b0f9f89",
+    "internal/runtime/executor/lain_provider_headers.go": "3c0c423fed242b17a71a260872b66373c609891615e487bb197d08feb908f9b6",
+    "internal/runtime/executor/lain_provider_transport_test.go": "8f82a641dcc89cc8cd55ad3b480be6001949530439a78acddc77fac761639ac0",
     "internal/runtime/executor/meta_executor.go": "d07054115255a696e2a2ffec7731f6ba7d7d77a7384ce13512a0777e77602372",
     "internal/runtime/executor/meta_executor_execute.go": "f481b78bfc2dbc6335e3c8081e3144d7b069c878372e2645ed07f32c0d0fea64",
     "internal/runtime/executor/meta_executor_stream.go": "de2aa851533b6aaefc3d842fd8e015d3f92ed640ad4954425175e9de44666bbb",
     "internal/runtime/executor/meta_executor_test.go": "6a9838b9b46b227c6356c00f391800375624ffe15d99d78568c1821282d8b673",
-    "internal/runtime/executor/openai_compat_executor.go": "1fd2ca7faa1468d2630d43846ba0f70b15d06ebec6f73c0cd45066753bc6bec9",
+    "internal/runtime/executor/openai_compat_executor.go": "035f2cdc9ccdf1bee3dbe754b91c6ae2ab7f29fb34efc84c12d728cb6ce11432",
     "internal/runtime/executor/openai_compat_executor_compact_test.go": "1fc58561de584a22021c1a37c583c5869a203f91bb34f224c1f61e738caa8f99",
     "internal/runtime/executor/openai_compat_executor_images_test.go": "1702e7a5b149711eee78523a6e52aea4eed6dc70fb2407ce6cb4f218cd940d42",
     "internal/runtime/executor/openai_compat_executor_max_tokens_test.go": "326f2f15d9ca0d62f3f7affab6cbe9f681f94e731a65861bcf1aecd180c9fbbe",
+    "internal/runtime/executor/openai_compat_executor_nvidia_step_test.go": "eabf143a1c95cb6f35da9fcb0c78dea318f86bc7c7f67797b698474b35ff536a",
     "internal/runtime/executor/openai_compat_executor_reasoning_test.go": "758048e2a16d86a7241b6bdc6e81104c1d59a70a1299905807e863ced9b3487a",
     "internal/runtime/executor/openai_compat_executor_retry_test.go": "2c98378f1d27e356bf3c5938227bfe0a46199c43580482cc9d6c19847aef8703",
     "internal/runtime/executor/openai_compat_executor_tool_results_test.go": "175ef9c70a01ca5c120b8fe1c7b361456071ee4eba107ab6f06ef06d72e331db",
@@ -1108,7 +1121,7 @@
     "internal/watcher/dispatcher.go": "92ceb64fb303d8243ffed49bd7ae6fa116bb845998a61a7f3d641dd3f1418ba7",
     "internal/watcher/dispatcher_snapshot_test.go": "dcd9794231819bb8dbe9f7efee18da81f3bc74968a0db2ba92d32b54ea176e5b",
     "internal/watcher/events.go": "dbe9af98792bac7353ebdde10afa82a0d80f8475ed3cf4105930be354babadaa",
-    "internal/watcher/synthesizer/config.go": "4d7feef09905189b03a5a39f8abc9abef14618c13660fcb1daee65b7ab1ef878",
+    "internal/watcher/synthesizer/config.go": "37aaecfab98e553d495d6713ec99901f0005c2e1c555caa3fab424aa7d4519cf",
     "internal/watcher/synthesizer/config_test.go": "637efe3f28a3abd8fd4a4dcba121b95dd5f4c573f6feea14c45cf8b0df326264",
     "internal/watcher/synthesizer/context.go": "2ab5977242b824969830e00a479f8c74860c3cd7aeb29f3891a8ec91a18cda49",
     "internal/watcher/synthesizer/cooling_override_test.go": "e071e8d1ff92c588b518badb1323f532de89c5b7e79308dc6022eb859058f209",
@@ -1326,8 +1339,8 @@
     "sdk/cliproxy/auth/home_unauthorized_refresh_test.go": "2e1320258018b2931f29dbdb8c75e790b55883f2e07bd58e45363f57b779e7a6",
     "sdk/cliproxy/auth/home_web_search_capability_test.go": "163e3e7e9b5c8b303e18529bd5c74d346ca1e44e94bbb33af6319005bada0e5e",
     "sdk/cliproxy/auth/home_websocket_reuse_test.go": "d1af99b189d11bb4f49158cba65be37cbd1bc09121e1c6de21d9e73af85f6f36",
-    "sdk/cliproxy/auth/lain_dispatch.go": "a5f81fdc2a12f307a8f4bbb5ccc213c9b94845a7ea3073994450329aca46f540",
-    "sdk/cliproxy/auth/lain_dispatch_test.go": "c3aa51838a12521ff5a1fec7de3bbf8f0d1fee3cd2855320117e5f8208f2c7c3",
+    "sdk/cliproxy/auth/lain_dispatch.go": "e391248317238903a8965364a9f7e1f2de2bcd8de4c9d0413e3cd8d96539db8f",
+    "sdk/cliproxy/auth/lain_dispatch_test.go": "602ee978d712362ac8d27b218bb91d660852212b33857544eea09bd805342bac",
     "sdk/cliproxy/auth/meta_refresh_test.go": "15097bab45bde9d85edd3ab008e232e9dfd7f89519c39bb07ca069abc77c238b",
     "sdk/cliproxy/auth/metadata_keys.go": "f7a221bce6d1a3ae14709afc740ff9492e155c85845d0a17538ec4a4b70974a7",
     "sdk/cliproxy/auth/metadata_keys_test.go": "4f49f28de28c62eb6dcded98efed3f922a418edca4cb6af0573a01a897bd4aa8",
@@ -1486,29 +1499,61 @@
       "baseline": null,
       "lain": "9b550984c701a20d9e1feacfc0c3de2fc01ca5f17ecfbc39c79f9b5c2b5c27e1"
     },
+    "internal/config/config_types.go": {
+      "baseline": "216e63fa6c8580e0551bb782d97d85df41cac3a3c07c9a26ea6d571c26fd92bf",
+      "lain": "9a2ca9a06d298a545626f0631acd97e3ff246b77f6b0e503d010872e290fc4a3"
+    },
+    "internal/freeonly/openrouter.go": {
+      "baseline": null,
+      "lain": "2b4a5f56973819962e38a820847fba04b13b5a304294b27a4bdf93c671b65912"
+    },
+    "internal/freeonly/openrouter_test.go": {
+      "baseline": null,
+      "lain": "a56816a094966c2fd5ffddd5298cc0f43bc016de81ed14842a8fbdab7c431e17"
+    },
     "internal/lain/credentials.go": {
       "baseline": null,
       "lain": "6d6cf95882a49b9618d9fa5a68ad2a0f3a58f5841903d3be4436964e538e5d3f"
     },
+    "internal/lain/dimensions.go": {
+      "baseline": null,
+      "lain": "6acdbae4f537b055cafd2f958e21ab5b769f9badc6d8892ee951ba397f23809c"
+    },
+    "internal/lain/free_only.go": {
+      "baseline": null,
+      "lain": "65670721c276c386d3f21bb6b50c8ce285f0cfa596c665e7b00a0f167f2709f0"
+    },
+    "internal/lain/free_only_test.go": {
+      "baseline": null,
+      "lain": "1809e36b36165945ef597f152ae9a365251c15e5fe06a7e2b6eb16941b5cfa95"
+    },
     "internal/lain/http.go": {
       "baseline": null,
-      "lain": "a00e7e3f786a999951a09caccfe759be16685ba80d07737647c69cef77cf221b"
+      "lain": "f4ddeeee203b9cfdad8f71cee5224da22a1ec5107b9e042dbf20b40abde4be1e"
     },
     "internal/lain/http_test.go": {
       "baseline": null,
-      "lain": "804b6e76b536ed58e185133cc8c1aca56f7ccbf528ba5ff6993ead7946555bc4"
+      "lain": "c4c070d7c1f58384b51894f6bfee9c6dc13c19763b5c8cfe8bef1f813a569856"
+    },
+    "internal/lain/inspector.go": {
+      "baseline": null,
+      "lain": "be8be004cacaff9ff1fd13cdb5a9244d5a9d7a0507d58b1f9a48a0e26b3be25b"
+    },
+    "internal/lain/inspector_test.go": {
+      "baseline": null,
+      "lain": "b97009decaefa3b732c892cd0bd5554f93e265fcbb386cca206aa5f63fbe457b"
     },
     "internal/lain/integration.go": {
       "baseline": null,
-      "lain": "ee8aa480f95283c1fd1bf97db83cf22b7391265031586653132ddb325e58b0a6"
+      "lain": "7d12d5deb30ac2d281597ac8ed16cb9dc4a59e598a35983e56dce9cf3cc67292"
     },
     "internal/lain/journal.go": {
       "baseline": null,
-      "lain": "6166b9ec3af5193aa0d3eadcdec5225f5961cc181134123e0675ea4f3807e632"
+      "lain": "0ac23edb0bfb3c7b81faa7f110d9f4e4efa492ae409a379b97512f6cdc8a01da"
     },
     "internal/lain/journal_test.go": {
       "baseline": null,
-      "lain": "c6cb23751429fcbf76c05b765c1965b4e87a30c276a22c8123f6a8497c66e4ef"
+      "lain": "dd079c854ff461367015dd0c42c4a0855f33961ad0c90edfffdb2a93459a1d37"
     },
     "internal/lain/login.go": {
       "baseline": null,
@@ -1518,9 +1563,25 @@
       "baseline": null,
       "lain": "6346763ba3701bd5a86609e65153c025184098294a15d3b4ce048ac1a5ccad19"
     },
+    "internal/lain/observation.go": {
+      "baseline": null,
+      "lain": "49c1e8139bb35069b2f070724aaba326cc81101edf683165ecaed032d423f66a"
+    },
     "internal/lain/owned.go": {
       "baseline": null,
       "lain": "ab63e6519258d43c03bcce31056e10fb975ac132d046b4707aecc1e1fb4a8f9a"
+    },
+    "internal/runtime/executor/claude_executor_execute.go": {
+      "baseline": "dd30a5a46b09c5f7e0af9d94d6853f49e4cf402c50de61c29d931c00832d5125",
+      "lain": "64b5d6f8690175c014adc6c4b74ddea0035b1882638229c56228265d3b246e85"
+    },
+    "internal/runtime/executor/claude_executor_stream.go": {
+      "baseline": "250ffe1a483eb503e2c14b2560428457497728005ef0cf69a00a59bccabc1cea",
+      "lain": "1a0c36814c6143710ac4f3f7bce99ab9dd8e4927a8c4f618789faded1bd2d063"
+    },
+    "internal/runtime/executor/gemini_executor.go": {
+      "baseline": "ab5da1307aa4820865c3e00ec73deede70fbb996f88f83eb505bf6a26cccee8a",
+      "lain": "257c5e79d40a7e20a20f08db0c3909bf0f650222eceeaead60f424a3bb2cf680"
     },
     "internal/runtime/executor/helps/lain_presence_test.go": {
       "baseline": null,
@@ -1533,6 +1594,34 @@
     "internal/runtime/executor/helps/usage_helpers.go": {
       "baseline": "b48eca30ecdc1a49657d095a80cb86f32a9c425c87f13962847e6f0eb79e5e46",
       "lain": "0248afb4eed4ff1f7df7800a74e6c72985714a48059d6c92c8f6274b82d9d1d2"
+    },
+    "internal/runtime/executor/lain_free_only_transport.go": {
+      "baseline": null,
+      "lain": "47d3a908d266c56899716624092a248c576fd61a8e9d2cf25a42d663fbbd5f81"
+    },
+    "internal/runtime/executor/lain_free_only_transport_test.go": {
+      "baseline": null,
+      "lain": "7d92bc105938ee90f539fb798735498f9ab9f3cbc8c780244783633a4b0f9f89"
+    },
+    "internal/runtime/executor/lain_provider_headers.go": {
+      "baseline": null,
+      "lain": "3c0c423fed242b17a71a260872b66373c609891615e487bb197d08feb908f9b6"
+    },
+    "internal/runtime/executor/lain_provider_transport_test.go": {
+      "baseline": null,
+      "lain": "8f82a641dcc89cc8cd55ad3b480be6001949530439a78acddc77fac761639ac0"
+    },
+    "internal/runtime/executor/openai_compat_executor.go": {
+      "baseline": "1fd2ca7faa1468d2630d43846ba0f70b15d06ebec6f73c0cd45066753bc6bec9",
+      "lain": "035f2cdc9ccdf1bee3dbe754b91c6ae2ab7f29fb34efc84c12d728cb6ce11432"
+    },
+    "internal/runtime/executor/openai_compat_executor_nvidia_step_test.go": {
+      "baseline": null,
+      "lain": "eabf143a1c95cb6f35da9fcb0c78dea318f86bc7c7f67797b698474b35ff536a"
+    },
+    "internal/watcher/synthesizer/config.go": {
+      "baseline": "4d7feef09905189b03a5a39f8abc9abef14618c13660fcb1daee65b7ab1ef878",
+      "lain": "37aaecfab98e553d495d6713ec99901f0005c2e1c555caa3fab424aa7d4519cf"
     },
     "sdk/api/handlers/handlers.go": {
       "baseline": "f7428b77517b2861a375a245c8c39d8fce555a60beba65bf9da7a26f81e69d7b",
@@ -1560,11 +1649,11 @@
     },
     "sdk/cliproxy/auth/lain_dispatch.go": {
       "baseline": null,
-      "lain": "a5f81fdc2a12f307a8f4bbb5ccc213c9b94845a7ea3073994450329aca46f540"
+      "lain": "e391248317238903a8965364a9f7e1f2de2bcd8de4c9d0413e3cd8d96539db8f"
     },
     "sdk/cliproxy/auth/lain_dispatch_test.go": {
       "baseline": null,
-      "lain": "c3aa51838a12521ff5a1fec7de3bbf8f0d1fee3cd2855320117e5f8208f2c7c3"
+      "lain": "602ee978d712362ac8d27b218bb91d660852212b33857544eea09bd805342bac"
     },
     "sdk/cliproxy/lain_snapshot.go": {
       "baseline": null,
