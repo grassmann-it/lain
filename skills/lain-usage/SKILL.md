@@ -52,12 +52,17 @@ accept attempt pagination. `--group-by` takes 1–3 distinct comma-separated key
 The default is `modelFamily,accountId,reasoningEffort`; `--group-limit` is 1–500.
 Preserve null dimension keys, truncated groups, sample/eligible counts, metric
 definitions and rate basis. Do not compute medians or totals from attempt pages.
+For comparisons, reuse fixed `--from`/`--to` values and timezone across commands;
+each requested dimension is a separate breakdown, not a combined grouping.
 
 Inspector reads are bounded snapshots of the owned core's local live buffer.
 Snapshot limits are 1–256; event page limits are 1–500. The Host may expose lower
 configured limits. Reported Host display retention does not describe the
 separately bounded source ring's lifetime.
 Keep `sourceId` with every cursor; `--after` greater than zero requires `--source`.
+Use the returned `nextCursor` even for a filtered empty page. On `source_changed`
+or another gap, record the interruption, adopt the returned source/cursor pair
+and refresh the snapshot; never silently join generations.
 Report gaps, dropped events, incomplete coverage, truncation and retention times.
 Use explicit dimension evidence for conversations, turns, workers and tool
 continuations; missing identities stay unknown. Events are not independent chats.
@@ -72,6 +77,11 @@ be unknown. Keep free, trial, subscription and PAYG budgets and their native uni
 separate. `providers check-free` evaluates a configured route without changing
 policy: unknown-priced and paid routes must stay blocked under `free_only`.
 Unverified live connections stay unverified until an authorized real check occurs.
+The cost-policy response checks configuration; actual dispatch still requires
+qualified provider-side controls. The narrow OpenRouter implementation requires
+an exact allowlisted free model and a fresh same-key zero-USD cap check including
+BYOK on every dispatch. A local boolean or cached quota does not satisfy it, and
+a zero-cap key may deny free requests too. No live usability is implied.
 
 Honor response coverage, observation time and unknown/null values.
 Do not invent token totals, infer independent budgets from multiple credentials,
@@ -110,6 +120,10 @@ by the provider validator. Settings require a catalog route;
 keys and other secret values must use the dedicated secret input path. Host
 validation remains authoritative for supported protocols, routes and settings.
 Preparing an account does not establish live provider verification.
+Optional Contributor training routes require the declared nonsecret
+`allowTrainingData=true` workspace privacy permission; never supply that opt-in
+without the user's authorization. It does not authorize paid usage or bypass
+free-only controls.
 
 Configuration mutations require a user request for that action. A request to
 inspect usage does not authorize importing accounts or changing routes. Imports
