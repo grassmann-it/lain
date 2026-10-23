@@ -28,6 +28,7 @@ internal sealed class Fixture : HttpMessageHandler
     private readonly DateTimeOffset inspectorStarted = DateTimeOffset.UtcNow;
     public static readonly ProviderCatalogDto ProviderCatalog = LoadProviders();
     public readonly List<string> Requests = [];
+    public readonly List<long> InspectorEventAfters = [];
     public readonly List<string> Unexpected = [];
     public readonly List<Dictionary<string, string>> UsageQueries = [];
 
@@ -162,6 +163,7 @@ internal sealed class Fixture : HttpMessageHandler
         var query = uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries).Select(pair => pair.Split('=', 2))
             .ToDictionary(pair => Uri.UnescapeDataString(pair[0]), pair => pair.Length == 2 ? Uri.UnescapeDataString(pair[1]) : "");
         var after = long.TryParse(query.GetValueOrDefault("after"), out var parsed) ? parsed : 0;
+        InspectorEventAfters.Add(after);
         var request = query.GetValueOrDefault("requestId");
         var changed = query.GetValueOrDefault("sourceId") != InspectorSource;
         InspectorEventDto E(long cursor, string id, string channel, string text, string? tool = null) => new(cursor, "output_delta", inspectorStarted,
@@ -172,8 +174,10 @@ internal sealed class Fixture : HttpMessageHandler
                 E(3, "request-a", "assistant", "continued."), E(4, "request-a", "tool_call", "Tool call metadata only.", "fixture_tool"),
                 E(5, "request-b", "tool_result", "Fixture tool result.", "fixture_tool"), E(6, "request-b", "assistant", "Answer after tool."),
                 E(7, "request-b", "assistant", " Still streaming."), E(8, "request-unknown", "assistant", "Independent output."),
-                E(9, "request-error", "assistant", "Retained partial output before failure.") };
-        var high = InspectorRestarted ? 1 : 11;
+                E(9, "request-error", "assistant", "Retained partial output before failure."),
+                // Events can advance between snapshot polls; Clear must never return to the older snapshot cursor.
+                E(12, "request-b", "assistant", " Ahead-of-snapshot output."), E(13, "request-b", "assistant", " Still retained.") };
+        var high = InspectorRestarted ? 1 : 13;
         return new(InspectorSource, all.Where(e => e.Cursor > (changed ? 0 : after) && e.RequestId == request).ToArray(), high, high, 1, 0,
             Truncated: changed && after > 0, GapReason: changed && after > 0 ? "source_changed" : null);
     }

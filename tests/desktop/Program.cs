@@ -646,7 +646,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             "Inspector exposes identities together with their evidence sources");
         identities.IsExpanded = false;
         await CaptureBoth("inspector");
-        Named<ComboBox>("Inspector request").SelectedIndex = 1;
+        Named<ComboBox>("Request within this group").SelectedIndex = 1;
         await Wait(() => HasSelectable("Fixture tool result.") && HasSelectable("Answer after tool. Still streaming."), "tool continuation stays within its selected request");
         Check(!HasSelectable("First answer continued.") && HasText("Tool · fixture_tool"), "switching request clears preceding output and labels tool content");
         await CaptureBoth("inspector-tool");
@@ -668,6 +668,11 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(fixture.InspectorCalls == snapshots + 1, "manual refresh preserves paused state");
         await Click("Clear displayed events");
         Check(!HasSelectable("Answer after tool.") && HasText("Displayed events cleared.", true), "clear removes displayed content with an explicit explanation");
+        var beforeClearRefresh = fixture.InspectorEventCalls;
+        await Click("Refresh inspector");
+        await Wait(() => fixture.InspectorEventCalls > beforeClearRefresh, "cleared Inspector can refresh while its snapshot cursor trails events");
+        Check(fixture.InspectorEventAfters[^1] == 13 && !HasSelectable("Ahead-of-snapshot output.") && HasText("Displayed events cleared.", true),
+            "clear never regresses the event cursor or replays output ahead of the snapshot");
         fixture.InspectorRestarted = true;
         await Click("Refresh inspector");
         await Wait(() => HasSelectable("New source output only."), "Inspector attaches to the new live source");
