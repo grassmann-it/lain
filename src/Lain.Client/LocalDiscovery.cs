@@ -11,6 +11,9 @@ public static class LocalDiscovery
     {
         var path = Path.Combine(StateDirectory, "credentials", "host.token");
         if (!File.Exists(path)) throw new IOException("lain host credential is missing. Start the lain service first.");
+        for (var directory = new DirectoryInfo(Path.GetDirectoryName(path)!); directory is not null; directory = directory.Parent)
+            if ((directory.Attributes & FileAttributes.ReparsePoint) != 0)
+                throw new IOException("lain host credential directories must not be symbolic links.");
         if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
             throw new IOException("lain host credential must be a regular private file.");
         var token = File.ReadAllText(path).Trim();

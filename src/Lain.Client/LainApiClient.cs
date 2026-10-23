@@ -29,8 +29,6 @@ public sealed class LainApiClient : IDisposable
 
     public Task<StatusDto> StatusAsync(CancellationToken ct = default) => Get<StatusDto>("status", ct);
     public Task<ConfigurationDto> GetConfigurationAsync(CancellationToken ct = default) => Get<ConfigurationDto>("configuration", ct);
-    public Task<ConfigurationDto> SaveConfigurationAsync(long revision, ConfigurationDto value, CancellationToken ct = default) =>
-        Send<ConfigurationDto>(HttpMethod.Put, "configuration", new RevisionRequest<ConfigurationDto>(revision, value), ct);
     public Task<AccountDto[]> AccountsAsync(CancellationToken ct = default) => Get<AccountDto[]>("accounts", ct);
     public Task<ConfigurationDto> AddApiAccountAsync(long revision, AddApiAccountRequest value, CancellationToken ct = default) =>
         Send<ConfigurationDto>(HttpMethod.Post, "accounts", new RevisionRequest<AddApiAccountRequest>(revision, value), ct);

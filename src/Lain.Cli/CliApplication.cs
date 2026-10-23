@@ -92,6 +92,8 @@ public static class CliApplication
                 default: throw new ArgumentException("Unsupported command.");
             }
             await Write(output, result, options.Json);
+            if (!options.Json && result is ImportResult imported)
+                foreach (var warning in imported.Warnings) await error.WriteLineAsync("lain: warning: " + warning);
             return 0;
         }
         catch (LainApiException ex)
@@ -185,8 +187,7 @@ public static class CliApplication
                 await output.WriteLineAsync($"Requests {u.Totals.Requests}; attempts {u.Totals.Attempts}; errors {u.Totals.Errors}; tokens {u.Totals.Tokens.Total?.ToString(CultureInfo.InvariantCulture) ?? "unknown"}");
                 await output.WriteLineAsync($"Observed {u.ObservedAt:O}; coverage {(u.Complete ? "complete" : "incomplete")}; unknown usage attempts {u.Totals.UnknownUsageAttempts}"); break;
             case ImportResult i:
-                await output.WriteLineAsync($"Imported revision {i.Revision}: {i.Added} added, {i.Updated} updated.");
-                foreach (var warning in i.Warnings) await output.WriteLineAsync("Warning: " + warning); break;
+                await output.WriteLineAsync($"Imported revision {i.Revision}: {i.Added} added, {i.Updated} updated."); break;
             default: await output.WriteLineAsync(JsonSerializer.Serialize(value, value.GetType(), Json)); break;
         }
     }
