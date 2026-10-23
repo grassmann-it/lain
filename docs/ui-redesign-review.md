@@ -4,9 +4,17 @@ Review owner: independent UI/accessibility acceptance worker. Date: 2026-10-23.
 
 ## Scope and decision
 
-**Pending integrated visual verification.** Source review and reference comparison
-alone do not approve the replacement desktop. The old desktop's functional
-evidence remains useful but does not establish acceptance of this redesign.
+**Visual direction accepted for integrated source `f5f7c74`.** All 30 actual
+captures from the successful private-Xvfb run were inspected, covering 15 scenes
+at 1120 × 780 and 800 × 560. The graphite Semi/Ursa workspace, compact lists and
+controls, restrained blue accent and persistent bottom navigation address the
+requested MeowChan direction. No blocking overlap or horizontal content loss was
+found in these fixtures. The run passed all 63 functional assertions.
+
+This decision closes the visual-direction review for that source checkpoint. It
+does not claim full keyboard/screen-reader conformance or qualify a subsequently
+packaged/installed build. Those limits are recorded below. The old desktop's
+functional evidence is not used as proof of the redesign.
 
 This review covers visual direction, information density, interaction semantics,
 keyboard accessibility and the 800 × 560 minimum window. GUI evidence must come
@@ -54,13 +62,15 @@ this reviewer did not run the native desktop.
 
 | ID | Finding | Status |
 | --- | --- | --- |
-| UI-01 | The baseline shell's ten-second refresh replaced whole pages and detached keyboard focus. | Source fix `376a0b4`: compare semantic snapshots; defer passive replacement while the page owns focus. Runtime verification pending. |
-| UI-02 | Usage filter labels lacked accessible names/label relationships in the first redesign source. | Source fix `f016b94`: six named filters. Integrated verification pending. |
-| UI-03 | Usage attempt rows were rebuilt every five seconds, preserving expansion but detaching the focused toggle. | Source fix `f016b94`: restore focused attempt by ID. Runtime verification pending. |
-| UI-04 | Exact daily chart values were exposed only through pointer tooltips. | Source fix `f016b94`: persistent keyboard-reachable Daily totals expander. Integrated verification pending. |
-| UI-05 | Route filters lacked accessible labels in the first redesign source. | Source fix `e6f4d28`: named filters and row actions. Integrated verification pending. |
-| UI-06 | A fixed 780 px route table minimum put row actions outside the small window's content viewport. | Source fix `e6f4d28`: flexible compact columns, provider in identity cell at narrow widths. Render verification pending. |
-| UI-07 | Profile destination label named a layout container; search/composite selections lacked explicit accessible names; selecting profiles rebuilt the focused selector. | Source fix `7bf09ee`: named controls and stable selector instances with only detail replacement. Runtime verification pending. |
+| UI-01 | The baseline shell's ten-second refresh replaced whole pages and detached keyboard focus. | Resolved: source fix `376a0b4`; selected account row/list identity and focus survive passive polling in the final run; explicit refresh displays changed configuration. |
+| UI-02 | Usage filter labels lacked accessible names/label relationships in the first redesign source. | Resolved by source inspection: `f016b94` names all six filters. Runtime input focus and pending-filter retention also pass. |
+| UI-03 | Usage attempt rows were rebuilt every five seconds, preserving expansion but detaching the focused toggle. | Resolved within tested scope: `f016b94` restores focused attempt by ID; focus survives polling in the final run. Focus-ring appearance is not established by that assertion. |
+| UI-04 | Exact daily chart values were exposed only through pointer tooltips. | Resolved: `f016b94` adds a persistent Daily totals expander; the expanded table and exact totals were visually inspected. |
+| UI-05 | Route filters lacked accessible labels in the first redesign source. | Resolved by source inspection: `e6f4d28` names filters and row actions. |
+| UI-06 | A fixed 780 px route table minimum put row actions outside the small window's content viewport. | Resolved: `e6f4d28` adds flexible compact columns; Edit/Remove remain visible in the actual 800 × 560 capture. |
+| UI-07 | Profile destination label named a layout container; search/composite selections lacked explicit accessible names; selecting profiles rebuilt the focused selector. | Resolved by source inspection: `7bf09ee` names the actual controls and retains selector instances; final profile save/apply/export flows pass. |
+| UI-08 | The first actual Accounts render had approximately 58 px rows, pushing useful detail down the page. | Resolved: `3b2b80e` reduces rows to 44 px while retaining Semi templates; all five fixture accounts now fit the narrow initial viewport. |
+| UI-09 | Shared removal confirmation called routes/profiles a connection and lacked destructive styling. | Source fix `c6bf084` uses accurate generic removal copy and the danger class; removal is not included in the final fixture interaction assertions. |
 
 The theme foundation's final shared title is 22 px, with 13 px body text, 32 px
 controls and 5 px control radii. Those values are consistent with the requested
@@ -75,6 +85,57 @@ accessibility conformance.
 
 ## Integrated render evidence
 
-Not yet available. Final review must record inspected screenshot paths, source
-checkpoint, test report and any remaining limitations before changing the
-decision above.
+Evidence directory: `/tmp/lain-ui-evidence-4`. The final `evidence.json` reports
+`PASS`, `privateXvfb: true`, display `:2`, 63 assertions and 30 PNGs. The executed
+production desktop assembly was
+`/home/tomka/Desktop/lain/tests/desktop/bin/Debug/net10.0/Lain.Desktop.dll`, SHA-256
+`91EFBE8E2B29F4BD399175586FE20C63DC2645D593A78C1010BF61635941F5F2`.
+The integrator identified source commit
+`f5f7c74841daa1d7790d11543919595322d11761` for this run.
+
+Every scene below was inspected in both `-1120x780.png` and `-800x560.png` forms:
+
+| Scene filename prefix | Visual result |
+| --- | --- |
+| `overview` | Compact hierarchy and status values; no former oversized branding or teal/navy cards. Smaller viewport scrolls vertically. |
+| `accounts` | Aligned compact rows, readable selection and credential state; unknown quota remains explicit. Five fixture rows fit at minimum width. |
+| `login` | Clear waiting state, readable primary action, collapsed manual-link section and separate cancellation. Lower controls require vertical scrolling at 800 × 560. |
+| `routes` | Dense comparison table. Narrow mode puts provider below the model and keeps row actions visible. |
+| `route-editor` | Two usable field/binding columns without overlap; smaller viewport scrolls to lower options/actions. |
+| `profile-editor` | Aligned fields, searchable selection and readable route rows. The route list and page have separate bounded vertical scroll areas. |
+| `profiles` | Compact selector and single detail panel; primary management actions fit in the narrow capture. |
+| `codex-export` | Export path and launch command remain readable; long command wraps at minimum width. |
+| `usage` | Filters wrap into two rows on the narrow window; totals switch to four columns; metadata and unknown semantics remain explicit. |
+| `usage-details` | Expanded Daily totals table shows exact values at full width; narrow capture shows its heading and columns with remaining content below the viewport. |
+| `usage-null` | Unknown token values are em dashes, not fabricated zeroes; unknown-attempt counts remain visible in tables. |
+| `usage-error` | Captured scrolled data remains laid out correctly; the error banner is outside the captured viewport, so its appearance is not visually verified here. |
+| `setup` | Concise ordered sections and consistent controls; lower steps are reached by vertical scrolling on the small window. |
+| `offline` | Persistent unavailable notice, last-known configuration wording and amber footer indicator communicate stale/offline state. |
+| `reopened-usage` | Reopened view retains the same layout and obtains fresh fixture data. |
+
+The final runtime assertions cover account addition/disable/import, revisioned
+route/profile saves, profile apply, fixture Codex export, login completion and
+cancellation, unknown usage, API failure/recovery, offline state, polling focus
+retention, detach cancellation and close/reopen behavior. Requests matched the
+in-memory fixture allowlist; no real credentials, host, provider or browser
+authorization was used. The first Xvfb attempt failed to bind its display socket;
+two subsequent preliminary runs stopped on harness focus/label expectations.
+Only the successful final run is counted as functional acceptance evidence.
+
+## Limits of this acceptance
+
+- Button tests raise routed Click events; they do not prove physical pointer
+  hit-testing, complete Tab order, OS shortcuts, screen-reader output, native
+  dialogs, clipboard integration or browser authorization.
+- Runtime focus assertions establish focused-control retention, not a complete
+  focus-ring audit. The focused attempt toggle is below the viewport in the
+  `usage-details` captures; the `usage-error` banner is likewise above its
+  captured scroll position. Neither appearance is claimed as visually verified.
+- Quota rendering was inspected with unknown values. Populated multi-window,
+  progress, stale/error quota fixtures and extreme-length account names are not
+  covered by this capture set. Source review is not substituted for those renders.
+- Minimum-height views use vertical scrolling; all form actions are not expected
+  to remain simultaneously visible. The captures show the intended scroll
+  boundaries, not a guarantee of physical wheel/keyboard scrolling behavior.
+- The fixture assembly is a Debug source build. Packaged/installed parity and
+  read-only real-host usage verification remain the integrator's separate gate.
