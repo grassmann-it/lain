@@ -8,6 +8,11 @@ the helper before reopening the database. No subprocess survives test cleanup.
 
 These are synthetic contract tests, not backend/provider qualification.
 
+For a complete sanitized journal envelope from the isolated core, run
+`dotnet run --project tests/usage/Lain.Usage.Tests.csproj -- --ingest-journal envelope.json /tmp/owned-usage-check.db`.
+This helper ingests/reopens/replays the unchanged journal ten times and emits
+only aggregate counts. It deliberately rejects subset fixtures with sequence gaps.
+
 ## Host integration
 
 The host references `Microsoft.Data.Sqlite` version **10.0.12** and embeds
