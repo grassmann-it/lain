@@ -163,6 +163,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Click("Usage"); await Wait(UsageConnected, "usage connected");
         await CaptureBoth("usage");
         await CheckUsageControls();
+        await CheckUsageAnalysis();
         var usageInput = Controls<UsageView>().Single().GetVisualDescendants().OfType<TextBox>().First();
         usageInput.Focus();
         Check(usageInput.IsFocused, "usage input accepts keyboard focus");
@@ -186,6 +187,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         fixture.NullTokens = true;
         await ClickUsageApply();
         Check(Controls<UsageView>().Single().GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "—"), "null tokens render unknown");
+        Check(HasText("0 / 132 measured") && HasText("P50 —"), "missing output usage has zero measured samples and no invented rate median");
         await CaptureBoth("usage-null");
         fixture.UsageFailure = true; await ClickUsageApply();
         await Wait(() => HasText("Usage could not be refreshed:", true), "usage API error visible");
@@ -275,6 +277,72 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Named<TextBox>("HTTP status").Text = "";
         await Click("Last 7 days");
         Named<TextBox>("From · inclusive").BringIntoView();
+    }
+
+    private async Task CheckUsageAnalysis()
+    {
+        T Named<T>(string name) where T : Control => Controls<T>().Single(x => AutomationProperties.GetName(x) == name);
+        await Wait(() => Controls<StackPanel>().Any(x => AutomationProperties.GetName(x) == "Usage performance"), "whole-range usage performance is available");
+        var performance = Named<StackPanel>("Usage performance");
+        var texts = performance.GetVisualDescendants().OfType<TextBlock>().Select(x => x.Text).ToArray();
+        Check(new[] { "120 / 132 measured", "129 / 132 measured", "100 / 132 measured" }.All(texts.Contains),
+            "performance exposes measured and eligible counts from the whole range rather than the one-attempt page");
+        Check(texts.Contains("P50 240 ms") && texts.Contains("P95 510 ms")
+            && texts.Contains("P50 " + 10d.ToString("N1", System.Globalization.CultureInfo.CurrentCulture) + " tok/s"),
+            "performance exposes the host's measured percentiles and rate basis");
+        Check(HasText("P50/P95 use all matching stored measurements", true) && HasText("Costs are not reported by this source.", true),
+            "performance defines its population and does not invent cost estimates");
+        var known = Named<Expander>("Analysis group modelFamily fixture-family");
+        known.IsExpanded = true;
+        await Task.Delay(100);
+        Check(known.GetVisualDescendants().OfType<TextBlock>().Any(x => x.Text?.Contains("80 of 88 eligible measured", StringComparison.Ordinal) == true),
+            "expanded model family group retains its own measurement denominator");
+        var unknown = Named<Expander>("Analysis group modelFamily Unknown");
+        unknown.IsExpanded = true;
+        await Task.Delay(100);
+        Check(!unknown.GetVisualDescendants().OfType<Button>().Any(x => AutomationProperties.GetName(x)?.StartsWith("Filter ", StringComparison.Ordinal) == true),
+            "unknown group is not given an invented filter identity");
+        var order = Named<ComboBox>("Group order");
+        var reads = fixture.AnalysisCalls;
+        order.SelectedIndex = 1;
+        Check(fixture.AnalysisCalls == reads
+            && Controls<Expander>().First(x => AutomationProperties.GetName(x)?.StartsWith("Analysis group modelFamily ", StringComparison.Ordinal) == true) is { } first
+            && AutomationProperties.GetName(first) == "Analysis group modelFamily Unknown",
+            "least-used ordering reorders loaded groups without a new analysis request");
+        order.SelectedIndex = 0;
+        Check(new[] { "a2", "a3", "a4", "a5", "a-new" }.All(id => Controls<Button>().Any(button => AutomationProperties.GetName(button) == $"Inspect inactive account {id}")),
+            "configured accounts with no matching observed activity remain discoverable");
+
+        await CaptureBoth("usage-analysis", () => Named<StackPanel>("Usage performance").BringIntoView());
+        var compare = Named<ComboBox>("Compare by");
+        compare.SelectedIndex = 2;
+        await Wait(() => Controls<Expander>().Any(x => AutomationProperties.GetName(x) == "Analysis group manufacturer fixture-manufacturer"), "usage can compare manufacturer separately from route and inference provider");
+        var manufacturer = Named<Expander>("Analysis group manufacturer fixture-manufacturer");
+        manufacturer.IsExpanded = true;
+        await Task.Delay(100);
+        await Click("Filter manufacturer fixture-manufacturer");
+        Check(fixture.UsageQueries.Last().GetValueOrDefault("manufacturer") == "fixture-manufacturer"
+            && HasText("manufacturer: fixture-manufacturer", true), "group drilldown applies its evidenced dimension and shows the loaded scope");
+
+        fixture.IncompleteCoverage = true;
+        await ClickUsageApply();
+        Check(HasText("Configured accounts without matching observed activity · coverage is incomplete", true),
+            "unobserved accounts are qualified when historical coverage is incomplete");
+        await CaptureBoth("usage-unobserved", () => Named<Button>("Inspect inactive account a2").BringIntoView());
+        fixture.IncompleteCoverage = false;
+        fixture.AnalysisFailure = true;
+        await ClickUsageApply();
+        Check(UsageConnected() && HasText("Analysis unavailable", true) && HasText("showing the last analysis snapshot", true),
+            "analysis failure leaves usage connected and labels the retained snapshot");
+        fixture.AnalysisFailure = false;
+        var more = Controls<Expander>().Single(x => Equals(x.Header, "More filters"));
+        more.IsExpanded = true;
+        await Task.Delay(80);
+        Named<TextBox>("Manufacturer").Text = "";
+        await Click("Last 7 days");
+        more.IsExpanded = false;
+        compare.SelectedIndex = 0;
+        await Wait(() => Controls<Expander>().Any(x => AutomationProperties.GetName(x) == "Analysis group modelFamily fixture-family"), "usage analysis recovers its initial grouping");
     }
 
     private static readonly (string Account, (string Label, double Percent)[] Windows)[] ExpectedProviderWindows =

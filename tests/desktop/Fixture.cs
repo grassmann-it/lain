@@ -20,7 +20,7 @@ internal sealed class Fixture : HttpMessageHandler
         Enumerable.Range(1, InitialRoutes).Select(i => new RouteDto($"r{i}", $"gpt-lain-{i:00}", $"gpt-model-{i:00}", "openai", [$"a{(i - 1) % 4 + 1}"])).ToArray(),
         Enumerable.Range(1, InitialProfiles).Select(i => new ProfileDto($"p{i}", i == 1 ? "Daily" : $"Workspace {i}", Enumerable.Range(1, i * 5).Select(n => $"r{n}").ToArray(), "r1")).ToArray());
     public int Imports, EnableCalls, ApplyCalls, ExportCalls, LoginBegins, LoginPolls, LoginCancels, UsageCalls, StatusCalls, AnalysisCalls;
-    public bool Offline, UsageFailure, NullTokens;
+    public bool Offline, UsageFailure, NullTokens, IncompleteCoverage, AnalysisFailure;
     public readonly List<string> Requests = [];
     public readonly List<string> Unexpected = [];
     public readonly List<Dictionary<string, string>> UsageQueries = [];
@@ -33,6 +33,8 @@ internal sealed class Fixture : HttpMessageHandler
         if (request.RequestUri.Host != "fixture.invalid" || request.Headers.Authorization is not null)
             throw UnexpectedRequest(request);
         if (Offline) throw new HttpRequestException("offline fixture");
+        if (AnalysisFailure && path == "/api/v1/usage/analysis")
+            return new(HttpStatusCode.ServiceUnavailable) { Content = JsonContent.Create(new ApiError("fixture_analysis_unavailable", "Fixture analysis temporarily unavailable")) };
         if (UsageFailure && path == "/api/v1/usage")
             return new(HttpStatusCode.ServiceUnavailable) { Content = JsonContent.Create(new ApiError("fixture_unavailable", "Fixture usage temporarily unavailable")) };
         object value;
@@ -149,7 +151,7 @@ internal sealed class Fixture : HttpMessageHandler
             .Select(pair => pair.Split('=', 2)).ToDictionary(pair => Uri.UnescapeDataString(pair[0]), pair => pair.Length == 2 ? Uri.UnescapeDataString(pair[1]) : "");
         UsageQueries.Add(query);
         var totals = new UsageTotals(128, 132, 4, NullTokens ? new(null, null, null, null, null) : new(72000, 9986, 18000, 2000, 81986), NullTokens ? 132 : 0);
-        return new(1, DateTimeOffset.Parse(query["from"]), DateTimeOffset.Parse(query["to"]), query.GetValueOrDefault("timeZone", "UTC"), DateTimeOffset.UtcNow, 10, true, totals,
+        return new(1, DateTimeOffset.Parse(query["from"]), DateTimeOffset.Parse(query["to"]), query.GetValueOrDefault("timeZone", "UTC"), DateTimeOffset.UtcNow, 10, !IncompleteCoverage, totals,
             [new(DateTime.UtcNow.ToString("yyyy-MM-dd"), totals)], [new("a1", totals)], [new("gpt-model", totals)]);
     }
     private UsageAnalysisDto Analysis(Uri uri)
@@ -166,16 +168,24 @@ internal sealed class Fixture : HttpMessageHandler
         var performance = new PerformanceSummaryDto(first, duration, rate);
         var dimension = query.GetValueOrDefault("groupBy", "modelFamily");
         var halfTokens = NullTokens ? new TokenCounts(null, null, null, null, null) : new(36000, 4993, 9000, 1000, 40993);
-        var groupRate = NullTokens ? new MetricStatisticsDto(0, 66, null, null, null, null, null) : new(50, 66, 1, 12, 10, 18, 20);
+        var groupKey = dimension switch
+        {
+            "manufacturer" => "fixture-manufacturer", "routeId" => "r1", "inferenceProvider" => "fixture-inference",
+            "gateway" => "fixture-gateway", "billingAccountId" or "accountId" => "a1", "model" => "gpt-model", "provider" => "codex",
+            "reasoningEffort" => "high", "mode" => "agent", "conversationId" => "conversation-fixture", "turnId" => "turn-fixture",
+            "workerId" => "worker-fixture", "harness" => "fixture-harness", "profileId" => "p1", _ => "fixture-family"
+        };
+        var knownRate = NullTokens ? new MetricStatisticsDto(0, 88, null, null, null, null, null) : new(66, 88, 1, 12, 10, 18, 20);
+        var unknownRate = NullTokens ? new MetricStatisticsDto(0, 44, null, null, null, null, null) : new(34, 44, 1, 12, 10, 18, 20);
         var grouped = new[]
         {
-            new UsageDimensionGroupDto("fixture-family", new(64, 66, 2, halfTokens, NullTokens ? 66 : 0),
-                new(new(60, 66, 40, 260, 240, 510, 890), new(64, 66, 100, 2100, 2000, 2500, 3000), groupRate)),
-            new UsageDimensionGroupDto(null, new(64, 66, 2, halfTokens, NullTokens ? 66 : 0),
-                new(new(60, 66, 40, 260, 240, 510, 890), new(65, 66, 100, 2100, 2000, 2500, 3000), groupRate))
+            new UsageDimensionGroupDto(groupKey, new(85, 88, 3, halfTokens, NullTokens ? 88 : 0),
+                new(new(80, 88, 40, 260, 240, 510, 890), new(86, 88, 100, 2100, 2000, 2500, 3000), knownRate)),
+            new UsageDimensionGroupDto(null, new(43, 44, 1, halfTokens, NullTokens ? 44 : 0),
+                new(new(40, 44, 40, 260, 240, 510, 890), new(43, 44, 100, 2100, 2000, 2500, 3000), unknownRate))
         };
         return new(Api.Version, DateTimeOffset.Parse(query["from"]), DateTimeOffset.Parse(query["to"]), query.GetValueOrDefault("timeZone", "UTC"),
-            DateTimeOffset.UtcNow, 10, true, totals, performance, [new(dimension, grouped)]);
+            DateTimeOffset.UtcNow, 10, !IncompleteCoverage, totals, performance, [new(dimension, grouped)]);
     }
 
     private LoginDto CompleteLogin(string path)
