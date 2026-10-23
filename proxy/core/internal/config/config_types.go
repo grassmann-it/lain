@@ -696,6 +696,9 @@ type MetaModel = CodexModel
 // GeminiKey represents the configuration for a Gemini API key,
 // including optional overrides for upstream base URL, proxy routing, and headers.
 type GeminiKey struct {
+	// AuthHeader is bearer for documented Gemini-protocol gateways; empty uses x-goog-api-key.
+	AuthHeader string `yaml:"auth-header,omitempty" json:"auth-header,omitempty"`
+
 	// APIKey is the authentication key for accessing Gemini API services.
 	APIKey string `yaml:"api-key" json:"api-key"`
 
@@ -784,6 +787,9 @@ func (m GeminiModel) GetThinking() *registry.ThinkingSupport { return m.Thinking
 // OpenAICompatibility represents the configuration for OpenAI API compatibility
 // with external providers, allowing model aliases to be routed through OpenAI API format.
 type OpenAICompatibility struct {
+	// UpstreamProtocol selects the wire format; empty preserves Chat compatibility.
+	UpstreamProtocol string `yaml:"upstream-protocol,omitempty" json:"upstream-protocol,omitempty"`
+
 	// Name is the identifier for this OpenAI compatibility configuration.
 	Name string `yaml:"name" json:"name"`
 

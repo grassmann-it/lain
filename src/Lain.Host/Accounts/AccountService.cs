@@ -3,12 +3,13 @@ using System.Text;
 using System.Text.Json;
 using Lain.Core;
 using Lain.Host.Operations;
+using Lain.Host.Providers;
 
 namespace Lain.Host.Accounts;
 
-public sealed record AddApiAccountRequest(string Name, string Provider, string ApiKey, string BaseUrl);
+public sealed record AddApiAccountRequest(string Name, string Provider, string ApiKey, string BaseUrl, string? ProviderRouteId = null, Dictionary<string, string>? Settings = null);
 
-public sealed class AccountService(ConfigurationRepository configuration, SecretStore secrets)
+public sealed class AccountService(ConfigurationRepository configuration, SecretStore secrets, ProviderCatalogRegistry? catalog = null)
 {
     public AccountDto[] List() => configuration.Snapshot.Accounts.Select(a => a.CredentialKind == "codex-owned" ? Check(a.Id) : a).ToArray();
     public ConfigurationDto AddApi(long revision, AddApiAccountRequest input)
@@ -19,13 +20,48 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             throw new ArgumentException("Invalid provider.");
         if (string.IsNullOrWhiteSpace(input.ApiKey)) throw new ArgumentException("API key is required.");
         ValidateEndpoint(input.BaseUrl);
-        var provider = CanonicalProvider(input.Provider, input.BaseUrl);
+        var registry = catalog ?? new ProviderCatalogRegistry();
+        var plan = ProviderTransportValidation.Prepare(registry, input.Provider, input.ProviderRouteId, input.BaseUrl, input.Settings);
+        var provider = registry.Find(input.Provider) is not null ? input.Provider : CanonicalProvider(input.Provider, input.BaseUrl);
         var id = CredentialId(provider, input.ApiKey);
         var sourceSection = input.Provider is "codex" or "claude" or "gemini" or "vertex" ? input.Provider + "-api-key" : "openai-compatibility";
-        var credential = JsonSerializer.Serialize(new { kind = "api-key", sourceSection, provider, coreProvider = input.Provider, apiKey = input.ApiKey, baseUrl = input.BaseUrl });
+        sourceSection = plan?.SourceSection ?? sourceSection;
+        var credential = JsonSerializer.Serialize(new { kind = "api-key", sourceSection, provider, coreProvider = plan?.CoreProvider ?? input.Provider, apiKey = input.ApiKey, baseUrl = plan?.BaseUrl ?? input.BaseUrl, providerRouteId = input.ProviderRouteId, transportId = input.ProviderRouteId, settings = input.Settings });
         return configuration.Update(revision, state =>
         {
-            if (FindDuplicate(state, provider, input.ApiKey, null)) throw new ArgumentException("This credential already belongs to an account.");
+            var duplicate = FindDuplicate(state, provider, input.ApiKey, null);
+            if (duplicate is not null)
+            {
+                if (plan is null) throw new ArgumentException("This credential already belongs to an account.");
+                var existing = System.Text.Json.Nodes.JsonNode.Parse(secrets.ReadAccount(duplicate.Id))!.AsObject();
+                var transports = existing["transports"] as System.Text.Json.Nodes.JsonArray;
+                if (transports is null)
+                {
+                    transports = new System.Text.Json.Nodes.JsonArray(existing.DeepClone());
+                    existing["transports"] = transports;
+                }
+                if (transports.Any(t => t?["providerRouteId"]?.GetValue<string>() == input.ProviderRouteId ||
+                    (t?["providerRouteIds"] as System.Text.Json.Nodes.JsonArray)?.Any(value => value?.GetValue<string>() == input.ProviderRouteId) == true))
+                    throw new ArgumentException("This credential already has the selected provider route.");
+                var compatible = transports.OfType<System.Text.Json.Nodes.JsonObject>().FirstOrDefault(t =>
+                    t["sourceSection"]?.GetValue<string>() == plan.SourceSection && t["coreProvider"]?.GetValue<string>() == plan.CoreProvider &&
+                    t["baseUrl"]?.GetValue<string>() == plan.BaseUrl && System.Text.Json.Nodes.JsonNode.DeepEquals(t["settings"], System.Text.Json.Nodes.JsonNode.Parse(credential)?["settings"]));
+                if (compatible is not null)
+                {
+                    var ids = compatible["providerRouteIds"] as System.Text.Json.Nodes.JsonArray ?? new System.Text.Json.Nodes.JsonArray();
+                    if (compatible["providerRouteIds"] is null) compatible["providerRouteIds"] = ids;
+                    ids.Add(input.ProviderRouteId);
+                }
+                else
+                {
+                    if (transports.Any(t => t?["sourceSection"]?.GetValue<string>() == plan.SourceSection &&
+                        t?["coreProvider"]?.GetValue<string>() == plan.CoreProvider && t?["baseUrl"]?.GetValue<string>() == plan.BaseUrl))
+                        throw new ArgumentException("This credential already has the endpoint with different provider settings.");
+                    transports.Add(System.Text.Json.Nodes.JsonNode.Parse(credential));
+                }
+                secrets.WriteAccount(duplicate.Id, existing.ToJsonString());
+                return state with { Accounts = state.Accounts.Select(a => a.Id == duplicate.Id ? a with { State = "unverified" } : a).ToArray() };
+            }
             secrets.WriteAccount(id, credential);
             return state with { Accounts = [.. state.Accounts, new(id, input.Name.Trim(), provider, true, "api-key", "unverified")] };
         });
@@ -37,7 +73,7 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         {
             var account = state.Accounts.SingleOrDefault(a => a.Id == id) ?? throw new KeyNotFoundException("Account not found.");
             if (account.CredentialKind != "api-key") throw new InvalidOperationException("Only API key accounts support this operation.");
-            if (FindDuplicate(state, account.Provider, apiKey, id)) throw new ArgumentException("This credential already belongs to an account.");
+            if (FindDuplicate(state, account.Provider, apiKey, id) is not null) throw new ArgumentException("This credential already belongs to an account.");
             var json = System.Text.Json.Nodes.JsonNode.Parse(secrets.ReadAccount(id))!.AsObject();
             json["apiKey"] = apiKey;
             if (json["transports"] is System.Text.Json.Nodes.JsonArray transports)
@@ -46,14 +82,14 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             return state with { Accounts = state.Accounts.Select(a => a.Id == id ? a with { State = "unverified" } : a).ToArray() };
         });
     }
-    private bool FindDuplicate(ConfigurationDto state, string provider, string key, string? except)
+    private AccountDto? FindDuplicate(ConfigurationDto state, string provider, string key, string? except)
     {
         foreach (var account in state.Accounts.Where(a => a.Id != except && a.CredentialKind == "api-key"))
         {
             using var document = JsonDocument.Parse(secrets.ReadAccount(account.Id));
-            if (CanonicalProvider(account.Provider, document.RootElement.TryGetProperty("baseUrl", out var endpoint) ? endpoint.GetString() : null) == provider && document.RootElement.GetProperty("apiKey").GetString() == key) return true;
+            if (CanonicalProvider(account.Provider, document.RootElement.TryGetProperty("baseUrl", out var endpoint) ? endpoint.GetString() : null) == provider && document.RootElement.GetProperty("apiKey").GetString() == key) return account;
         }
-        return false;
+        return null;
     }
     public ConfigurationDto SetEnabled(long revision, string id, bool enabled) => configuration.Update(revision, state =>
     {

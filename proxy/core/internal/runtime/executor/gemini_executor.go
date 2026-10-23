@@ -994,6 +994,10 @@ func applyGeminiHeaders(req *http.Request, auth *cliproxyauth.Auth, clientHeader
 	if auth != nil {
 		attrs = auth.Attributes
 	}
+	if auth != nil && auth.Attributes["auth_header"] == "bearer" {
+		req.Header.Del("x-goog-api-key")
+		req.Header.Set("Authorization", "Bearer "+auth.Attributes["api_key"])
+	}
 	util.ApplyCustomHeadersFromAttrs(req, attrs, clientHeaders...)
 }
 
