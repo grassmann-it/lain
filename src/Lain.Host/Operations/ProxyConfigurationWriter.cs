@@ -77,16 +77,23 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
             {
                 Secret = transport,
                 Id = Read(transport, "transportId") ?? "default-" + index,
+                ProviderRouteIds = (Read(transport, "providerRouteId") is { } primary ? new[] { primary } : [])
+                    .Concat(transport.TryGetProperty("providerRouteIds", out var routeIds) && routeIds.ValueKind == JsonValueKind.Array
+                        ? routeIds.EnumerateArray().Where(value => value.ValueKind == JsonValueKind.String).Select(value => value.GetString()!) : [])
+                    .ToHashSet(StringComparer.Ordinal),
                 Models = Read(transport, "sourceConfig") is { } sourceConfig && LegacyImportService.Get(Parse(sourceConfig), "models") is YamlSequenceNode models
                     ? models.Children.OfType<YamlMappingNode>().Select(m => LegacyImportService.Text(m, "name")).Where(m => m is not null).ToHashSet() : []
             }).ToArray();
+            if (descriptors.Any(d => string.IsNullOrWhiteSpace(d.Id)) || descriptors.Select(d => d.Id).Distinct(StringComparer.Ordinal).Count() != descriptors.Length)
+                throw new InvalidDataException("Private credential transport identities must be distinct and nonempty.");
             var selectedRoutes = new Dictionary<string, string>();
             foreach (var route in state.Routes.Where(r => r.Enabled && r.AccountIds.Contains(account.Id)))
             {
                 var mapped = routeMetadata.TryGetValue(route.Id, out var metadata) && metadata.AccountId == account.Id ? metadata.TransportId : null;
-                var matches = mapped is not null ? descriptors.Where(d => d.Id == mapped).ToArray()
+                var matches = route.ProviderRouteId is not null ? descriptors.Where(d => d.ProviderRouteIds.Contains(route.ProviderRouteId)).ToArray()
+                    : mapped is not null ? descriptors.Where(d => d.Id == mapped).ToArray()
                     : descriptors.Where(d => d.Models.Contains(route.UpstreamModel)).ToArray();
-                if (matches.Length == 0 && mapped is null && descriptors.Length == 1) matches = descriptors;
+                if (matches.Length == 0 && route.ProviderRouteId is null && mapped is null && descriptors.Length == 1) matches = descriptors;
                 if (matches.Length != 1) throw new InvalidOperationException("Route transport is missing or ambiguous; select an imported transport-specific route.");
                 selectedRoutes[route.Id] = matches[0].Id;
             }
