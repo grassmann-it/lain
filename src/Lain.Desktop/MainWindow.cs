@@ -261,8 +261,10 @@ public sealed partial class MainWindow : Window
     private void ConfirmRemoval(string name, Func<Task> remove)
     {
         _editing = true;
-        _page.Content = Ui.Stack(Heading($"Remove {name}?", "The connection is removed from the active configuration. Historical usage remains available. Routes depending on this connection may need updating."),
-            Ui.Row(Action("Remove", remove, "Removed."), Ui.Button("Cancel", () => { _editing = false; Render(); })));
+        var confirm = Action("Remove", remove, "Removed.");
+        confirm.Classes.Add("danger");
+        _page.Content = Ui.Stack(Heading($"Remove {name}?", "This item will be removed from the saved configuration. Historical usage remains available."),
+            Ui.Row(confirm, Ui.Button("Cancel", () => { _editing = false; Render(); })));
     }
 
 
