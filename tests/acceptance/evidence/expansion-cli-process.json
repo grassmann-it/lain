@@ -1,0 +1,120 @@
+{
+  "kind": "compiled_cli_process_probe",
+  "passed": true,
+  "cases": [
+    {
+      "name": "catalog",
+      "exitCode": 0,
+      "requests": 1,
+      "stdoutBytes": 2324,
+      "stderrBytes": 0
+    },
+    {
+      "name": "onboarding",
+      "exitCode": 0,
+      "requests": 1,
+      "stdoutBytes": 2304,
+      "stderrBytes": 0
+    },
+    {
+      "name": "routes",
+      "exitCode": 0,
+      "requests": 1,
+      "stdoutBytes": 792,
+      "stderrBytes": 0
+    },
+    {
+      "name": "analysis",
+      "exitCode": 0,
+      "requests": 1,
+      "stdoutBytes": 2384,
+      "stderrBytes": 0
+    },
+    {
+      "name": "snapshot",
+      "exitCode": 0,
+      "requests": 1,
+      "stdoutBytes": 1830,
+      "stderrBytes": 0
+    },
+    {
+      "name": "events",
+      "exitCode": 0,
+      "requests": 1,
+      "stdoutBytes": 187,
+      "stderrBytes": 0
+    },
+    {
+      "name": "cost",
+      "exitCode": 0,
+      "requests": 1,
+      "stdoutBytes": 170,
+      "stderrBytes": 0
+    },
+    {
+      "name": "policy_rejection",
+      "exitCode": 5,
+      "requests": 1,
+      "stdoutBytes": 0,
+      "stderrBytes": 46
+    },
+    {
+      "name": "revision_conflict",
+      "exitCode": 5,
+      "requests": 1,
+      "stdoutBytes": 0,
+      "stderrBytes": 66
+    },
+    {
+      "name": "unauthorized",
+      "exitCode": 4,
+      "requests": 1,
+      "stdoutBytes": 0,
+      "stderrBytes": 46
+    },
+    {
+      "name": "server_unavailable",
+      "exitCode": 3,
+      "requests": 1,
+      "stdoutBytes": 0,
+      "stderrBytes": 46
+    },
+    {
+      "name": "redirect",
+      "exitCode": 5,
+      "requests": 1,
+      "stdoutBytes": 0,
+      "stderrBytes": 46
+    },
+    {
+      "name": "invalid_bound",
+      "exitCode": 2,
+      "requests": 0,
+      "stdoutBytes": 0,
+      "stderrBytes": 47
+    },
+    {
+      "name": "host_unavailable",
+      "exitCode": 3,
+      "requests": 0,
+      "stdoutBytes": 0,
+      "stderrBytes": 89
+    }
+  ],
+  "privateNetworkNamespace": true,
+  "privateLainHome": true,
+  "noBuild": true,
+  "noInstalledService": true,
+  "noRealProvider": true,
+  "cliPath": "/home/tomka/Desktop/lain/src/Lain.Cli/bin/Release/net10.0/Lain.Cli.dll",
+  "cliSha256": "10a15bedc2ce90072df30df686728a465b34f9d716fb1c85dbcc31d794a48fa4",
+  "artifactSha256": {
+    "Lain.Cli.dll": "10a15bedc2ce90072df30df686728a465b34f9d716fb1c85dbcc31d794a48fa4",
+    "Lain.Client.dll": "5ab1457f739336d0fe5b30d6e975077252242ddd80a118ac2c16fd208fd5520a",
+    "Lain.Core.dll": "7c2c9968cbf24f66963f784491c979359ae05d506cd244042e6828a215176a45",
+    "Lain.Cli.deps.json": "e9a7ce190b078aae4d617418d3b8eee0dc781694f3e57a783159b619b2e00cc7",
+    "Lain.Cli.runtimeconfig.json": "9950d4583cfc9a106857c0d5b8a75b53e8774852b57b80bc3823a74d44a4d87f"
+  },
+  "commandMode": "dotnet compiled DLL",
+  "claim": "synthetic CLI runtime/packaging coverage; no live provider qualification"
+}

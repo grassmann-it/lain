@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "coreSha256": "bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87",
+  "checks": [
+    {
+      "name": "same-alias-200-replay-restart",
+      "passed": true,
+      "evidence": {
+        "requests": 200,
+        "attempts": 200,
+        "usageFacts": 200,
+        "completionMetadata": 200,
+        "events": 600,
+        "tokensPerAccount": 1800,
+        "distinctCredentials": 2,
+        "replayEqual": true,
+        "restartEqual": true
+      }
+    },
+    {
+      "name": "sse-tool-continuation",
+      "passed": true,
+      "evidence": {
+        "requests": 3,
+        "attempts": 3,
+        "sse": true,
+        "toolContinuation": true
+      }
+    },
+    {
+      "name": "responses-tool-translation",
+      "passed": true,
+      "evidence": {
+        "requests": 3,
+        "clientProtocol": "OpenAI Responses SSE",
+        "providerProtocol": "OpenAI Chat Completions SSE",
+        "toolContinuation": true
+      }
+    },
+    {
+      "name": "strict-429",
+      "passed": true,
+      "evidence": {
+        "requests": 1,
+        "attempts": 1,
+        "status": 429,
+        "accounts": [
+          "account-a"
+        ],
+        "unknownTokens": true
+      }
+    },
+    {
+      "name": "pool-429-retry",
+      "passed": true,
+      "evidence": {
+        "requests": 2,
+        "attempts": 3,
+        "retryAccounts": [
+          "account-a",
+          "account-b"
+        ]
+      }
+    },
+    {
+      "name": "cancel",
+      "passed": true,
+      "evidence": {
+        "attempts": 1,
+        "outcome": "canceled",
+        "tokens": null
+      }
+    },
+    {
+      "name": "unknown-token-components",
+      "passed": true,
+      "evidence": {
+        "requests": 3,
+        "inputTokens": 11,
+        "outputTokens": 7,
+        "totalTokens": 18,
+        "unreportedComponents": null,
+        "missingTotalIsNull": true,
+        "explicitZeroPreserved": true
+      }
+    },
+    {
+      "name": "credential-lifecycle",
+      "passed": true,
+      "evidence": {
+        "requests": 3,
+        "stableAccountAcrossKeyChange": true,
+        "credentialChanged": true,
+        "removeReaddPreservesPastAccount": true,
+        "scope": "synthetic adapter binding revisions across restart; display-name/OAuth lifecycle excluded"
+      }
+    },
+    {
+      "name": "deactivated-account",
+      "passed": true,
+      "evidence": {
+        "deactivationMechanism": "omit API credential from config and restart; retain prior bound route",
+        "strictStatus": 503,
+        "silentSubstitution": false,
+        "explicitPoolAccount": "account-b",
+        "reactivated": true,
+        "dispatchedRequests": 3,
+        "rejectedBeforeDispatch": 1
+      }
+    },
+    {
+      "name": "crash-inflight",
+      "passed": true,
+      "evidence": {
+        "killSignal": "SIGKILL",
+        "durableStartedBeforeOutput": true,
+        "unresolvedAttempts": 1,
+        "missingProviderUsage": "detectable from unmatched attempt_started; exact consumed tokens unknown",
+        "postRestartRequestSucceeded": true
+      }
+    },
+    {
+      "name": "journal-failures",
+      "passed": true,
+      "evidence": {
+        "duplicateWriterRejected": true,
+        "predispatchFailure": 503,
+        "upstreamAttemptsDuringFailure": 0,
+        "tornJournalRejectedUnchanged": true,
+        "explicitRecovery": true
+      }
+    },
+    {
+      "name": "startup-failures",
+      "passed": true,
+      "evidence": {
+        "nonLoopbackRejected": true,
+        "duplicateCredentialRejected": true,
+        "validConfigRecovery": true
+      }
+    },
+    {
+      "name": "terminal-write-failure",
+      "passed": true,
+      "evidence": {
+        "clientProtocol": "chat",
+        "startedPersisted": true,
+        "clientCompletionSuppressed": true,
+        "nextRequestStatus": 503,
+        "upstreamAttempts": 1,
+        "unresolvedAttempts": 1
+      }
+    },
+    {
+      "name": "responses-terminal-write-failure",
+      "passed": true,
+      "evidence": {
+        "clientProtocol": "responses",
+        "startedPersisted": true,
+        "clientCompletionSuppressed": true,
+        "nextRequestStatus": 503,
+        "upstreamAttempts": 1,
+        "unresolvedAttempts": 1
+      }
+    },
+    {
+      "name": "anthropic-messages-tools",
+      "passed": true,
+      "evidence": {
+        "requests": 4,
+        "attempts": 4,
+        "clientProtocol": "Anthropic Messages SSE/nonstream",
+        "providerProtocol": "Anthropic Messages SSE/nonstream",
+        "distinctCredentials": 2,
+        "toolContinuation": true,
+        "totalTokens": null
+      }
+    }
+  ],
+  "passed": true,
+  "qualifiedArtifact": "/tmp/lain-expanded-core-final/lain-proxy-qualified",
+  "pending": [
+    "real Codex/ChatGPT and Command Code provider probes",
+    "display-name and real OAuth credential lifecycle",
+    "consumer transactional SQLite acknowledgement",
+    "production service before/after isolation evidence",
+    "product acceptance of unresolved in-flight usage after hard crash"
+  ]
+}

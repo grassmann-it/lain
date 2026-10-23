@@ -1,0 +1,116 @@
+{
+  "passed": true,
+  "syntheticOnly": true,
+  "scope": "Executed checks for source integration; individual logs/fixture hashes retain their actual boundaries. Product providers have no new live verification.",
+  "reports": {
+    "usage": {
+      "passed": true,
+      "tests": 22,
+      "log": "/tmp/lain-final-baseline/Lain.Usage.Tests.log",
+      "logSha256": "f9ed108b67ad29bf5da90da614c90b25801f95ee701418370860f2759bcda4db"
+    },
+    "inspector": {
+      "passed": true,
+      "focused": 32,
+      "independent": 80,
+      "log": "/tmp/lain-inspector-age-regression.log",
+      "logSha256": "29f47ed35f29300ef3ab61039a1bd1b6376892624ce6626ba93a119cf2b366e6"
+    },
+    "clientCli": {
+      "passed": true,
+      "checks": 64,
+      "log": "/tmp/lain-expansion-tests/ClientCli.Tests-integrated.log",
+      "logSha256": "292195a4cf52388d4f25c1128c81eba57fbaa8a6226e44bf7003f20b57b19b4d"
+    },
+    "providerPolicy": {
+      "passed": true,
+      "checks": 50,
+      "log": "/tmp/lain-expansion-tests/ProviderPolicy.Tests-integrated.log",
+      "logSha256": "97fcbc9cd16457a47ad475a13c2c27f6c8685f0e6925077c5e1b221df288a1a5"
+    },
+    "providerPolicyIndependent": {
+      "passed": true,
+      "checks": 169,
+      "log": "/tmp/lain-expansion-tests/PolicyIntegration-integrated.log",
+      "logSha256": "c8812e5b4eed1732899b66e490813de248d2627d7ceac1484db735f96d3d5b8b"
+    },
+    "providerTransport": {
+      "passed": true,
+      "checks": 63,
+      "log": "/tmp/lain-transport-dotnet.log",
+      "logSha256": "8a9de650c63981beb7412b3baaf48ba2ebcecbe2612ce2ca8af802e7f7b8a3d2"
+    },
+    "providerDirect": {
+      "passed": true,
+      "checks": 60,
+      "log": "/tmp/lain-expansion-tests/DirectApi.Tests.log",
+      "logSha256": "69219ae071bf0287faef45d8ba00eaacb7f28d8ed53d0a944113ba4fe859e98c"
+    },
+    "gateways": {
+      "passed": true,
+      "checks": 37,
+      "log": "/tmp/lain-expansion-tests/gateways-run.log",
+      "logSha256": "2b28d3bfae36789d5a57b17e83ceb72ef9230b7a31017b474a372702c55cb1cb"
+    },
+    "nvidiaStep": {
+      "passed": true,
+      "checks": 40,
+      "log": "/tmp/lain-expansion-tests/nvidia-step.log",
+      "logSha256": "693dbb7864d539af0f5914adf04d8fbedf5c7a22645380665a03055c110a3e59"
+    },
+    "poeOpenCode": {
+      "passed": true,
+      "checks": 50,
+      "log": "/tmp/lain-expansion-tests/poe-opencode.log",
+      "logSha256": "fef41b7efe70661458bd6d36e0a31c0074a0f8c24544de85b9b3339ecb0c9760"
+    },
+    "syntheticXai": {
+      "passed": true,
+      "checks": 41,
+      "log": "/tmp/lain-expansion-tests/synthetic-xai.log",
+      "logSha256": "411d1a0254fb903fd281832814620de130c5e4412f79da86325f73cd7360fe6c"
+    },
+    "providerTrials": {
+      "passed": true,
+      "log": "/tmp/lain-expansion-tests/ProviderTrials.Tests.log",
+      "logSha256": "251ee28b23cf25a666e278ab7f1781ff7d2eb67ea7d9e9ab7a6a891fd149df62"
+    },
+    "accounts": {
+      "passed": true,
+      "log": "/tmp/lain-final-baseline/accounts-retest.log",
+      "logSha256": "87e4b8cc6dc91594e33859004dfc51c3ec3d521dee94e32c092a9263f6698ae7"
+    },
+    "modelsProfiles": {
+      "passed": true,
+      "log": "/tmp/lain-final-baseline/Models.Tests.log",
+      "logSha256": "a81f98909b208b5a1f61ed18e4c9f163a81e496f33be2467761d5575bb4d4cc0"
+    },
+    "quota": {
+      "passed": true,
+      "log": "/tmp/lain-final-baseline/quota.log",
+      "logSha256": "b8e540fa602c05c9154ae88dd4c8f8dcf96d762b7ca713637b3cde24e86d6ab1"
+    },
+    "hostApi": {
+      "passed": true,
+      "log": "/tmp/lain-expansion-host-probe.log",
+      "logSha256": "33db91aa18cb62e7e5390ed2980a6bd913e85be7387a73db551f273fc735ddf0"
+    },
+    "goPackages": {
+      "passed": true,
+      "packages": [
+        "internal/lain",
+        "internal/freeonly",
+        "sdk/cliproxy/auth",
+        "internal/runtime/executor"
+      ],
+      "log": "/tmp/lain-core-patch2-final-go.log",
+      "logSha256": "384d008f6f202a98a1de3ce6855a3494f6bcfeae9101993814309c2de182c33b"
+    }
+  },
+  "resolvedFailures": [
+    "Gateway harness omitted new Core source files; linked all contracts, rerun passed.",
+    "Two auth fixtures supplied invalid parent UUIDs; corrected fixture data, production check retained.",
+    "Desktop queued search events and field locator corrected without weakening checks.",
+    "Accounts harness source dependency graph updated for integrated catalog; old internal test APIs preserved."
+  ]
+}
