@@ -155,8 +155,9 @@ Click events are not proof of OS pointer hit testing. No real provider or instal
 Desktop claim follows from fixture screenshots alone. The installed host is
 separately confirmed by
 [`quota-host-installed.json`](../tests/acceptance/evidence/quota-host-installed.json):
-Z.ai/Kimi rows `ok`, MiMo `unsupported`, usage/credentials/legacy service/config
-unchanged. Installed Desktop verification is recorded below.
+Z.ai/Kimi rows `ok`, MiMo `unsupported`. Its unchanged flags are scoped to that
+installation comparison, not the entire session. Installed Desktop verification
+is recorded below.
 
 
 Runtime font verification separately inspected in
@@ -223,3 +224,16 @@ this comparison. The accurate claim is unchanged credential/configuration/binary
 files, with four old and four new runtime error logs. Earlier zero-difference
 reports remain evidence only for their own comparison time. No legacy file or
 service was modified by this review.
+
+
+### Normal Codex configuration: comparison interval matters
+
+The current Desktop/CLI update at 23:58 on 2026-10-23 preserved the exact existing
+normal Codex configuration bytes. This is the scope of the installation report's
+`normalCodexConfigUnchanged` flag. It is not a whole-session claim.
+
+The earlier private `/tmp/lain-normal-codex-before.json` baseline from 20:50 does
+not match the current configuration, whose modification time is 21:13—before the
+23:00-hour quota work. The source of that earlier divergence remains unattributed.
+The final isolation report records it; neither the later installation comparison
+nor the quota review retroactively establishes unchanged bytes since 20:50.
