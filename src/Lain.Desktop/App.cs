@@ -1,8 +1,10 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Styling;
-using Avalonia.Themes.Simple;
 using Lain.Client;
+using Semi.Avalonia;
+using System.Globalization;
+using Ursa.Themes.Semi;
 
 namespace Lain.Desktop;
 
@@ -11,7 +13,8 @@ public sealed class App : Application
     public override void Initialize()
     {
         RequestedThemeVariant = ThemeVariant.Dark;
-        Styles.Add(new SimpleTheme());
+        Styles.Add(new SemiTheme { Locale = CultureInfo.GetCultureInfo("en-US") });
+        Styles.Add(new UrsaSemiTheme { Locale = CultureInfo.GetCultureInfo("en-US") });
         Styles.Add(Ui.CreateStyles());
     }
 

@@ -1,0 +1,115 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <!-- Semi owns control templates, focus, popups and interaction states. -->
+    <SolidColorBrush x:Key="Lain.Background">#141518</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Surface">#1B1D21</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Raised">#23262C</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Input">#17191D</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Edge">#32363E</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Ink">#E9EBEF</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Muted">#A1A7B3</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Accent">#6A9BFF</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.AccentSurface">#26364F</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Hover">#2D3138</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Danger">#EA8087</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultPrimaryForeground">#E9EBEF</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultPointeroverBackground">#2D3138</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultPointeroverBorderBrush">#505765</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultPressedBackground">#26364F</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultPressedBorderBrush">#6A9BFF</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultDisabledForeground">#707783</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultDisabledBorderBrush">#32363E</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidForeground">#141518</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryBackground">#6A9BFF</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryBorderBrush">#6A9BFF</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBackground">#8AB1FF</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBorderBrush">#8AB1FF</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBackground">#5488EB</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedForeground">#141518</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBorderBrush">#5488EB</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidDisabledBackground">#23262C</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidDisabledForeground">#707783</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidDisabledBorderBrush">#32363E</SolidColorBrush>
+  </Styles.Resources>
+  <Style Selector="Window">
+    <Setter Property="FontFamily" Value="avares://Avalonia.Fonts.Inter/Assets#Inter" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Background" Value="{DynamicResource Lain.Background}" />
+    <Setter Property="Foreground" Value="{DynamicResource Lain.Ink}" />
+  </Style>
+  <Style Selector="Button">
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="11,5" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Background" Value="{DynamicResource Lain.Raised}" />
+    <Setter Property="Foreground" Value="{DynamicResource Lain.Ink}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Lain.Edge}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.primary">
+    <Setter Property="Theme" Value="{DynamicResource SolidButton}" />
+    <Setter Property="Background" Value="{DynamicResource Lain.Accent}" />
+    <Setter Property="Foreground" Value="{DynamicResource Lain.Background}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Lain.Accent}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.subtle">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.danger">
+    <Setter Property="Foreground" Value="{DynamicResource Lain.Danger}" />
+  </Style>
+  <Style Selector=":is(Button).toolbar-icon">
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="Padding" Value="7" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.nav">
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Padding" Value="13,7" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource Lain.Muted}" />
+  </Style>
+  <Style Selector="Button.nav.selected">
+    <Setter Property="Background" Value="{DynamicResource Lain.Raised}" />
+    <Setter Property="Foreground" Value="{DynamicResource Lain.Accent}" />
+  </Style>
+  <Style Selector="Button.nav TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Lain.Muted}" />
+  </Style>
+  <Style Selector="Button.nav.selected TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Lain.Ink}" />
+  </Style>
+  <Style Selector="TextBox, ComboBox, NumericUpDown">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Background" Value="{DynamicResource Lain.Input}" />
+    <Setter Property="Foreground" Value="{DynamicResource Lain.Ink}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Lain.Edge}" />
+  </Style>
+  <Style Selector="TextBox">
+    <Setter Property="Padding" Value="9,5" />
+  </Style>
+  <Style Selector="ComboBox">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="CheckBox, ToggleSwitch">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="MinHeight" Value="28" />
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource Lain.Muted}" />
+  </Style>
+  <Style Selector="TextBlock.section-title">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+</Styles>

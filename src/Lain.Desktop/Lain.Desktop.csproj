@@ -1,1 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup><ItemGroup><ProjectReference Include="../Lain.Core/Lain.Core.csproj" /><ProjectReference Include="../Lain.Client/Lain.Client.csproj" /></ItemGroup><ItemGroup><PackageReference Include="Avalonia.Desktop" Version="11.3.22" /><PackageReference Include="Avalonia.Themes.Simple" Version="11.3.22" /></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Lain.Core/Lain.Core.csproj" />
+    <ProjectReference Include="../Lain.Client/Lain.Client.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.4" />
+    <PackageReference Include="Semi.Avalonia" Version="12.1.0.1" />
+    <PackageReference Include="Irihi.Ursa" Version="2.2.0" />
+    <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="2.2.0" />
+  </ItemGroup>
+</Project>
