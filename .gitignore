@@ -1,0 +1,12 @@
+/.architecture-sparring/
+/.local/
+/.build/
+.env
+.env.*
+!.env.example
+*.log
+
+**/bin/
+**/obj/
+artifacts/
+.worktrees/
