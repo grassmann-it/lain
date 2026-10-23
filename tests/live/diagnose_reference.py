@@ -115,6 +115,7 @@ def main():
     parser.add_argument("--cli-dll", type=pathlib.Path)
     parser.add_argument("--proxy-binary", type=pathlib.Path)
     parser.add_argument("--approved-sha256")
+    parser.add_argument("--verify-only", action="store_true", help="Local Host/CLI restart checks only; zero inference or quota requests.")
     args = parser.parse_args()
     report = {"state": "planned", "inferenceRequests": 0, "plan": "One nonstream Command gpt-6-luna diagnostic; read-only quota; existing usage persistence and CLI parity."}
     if not args.execute:
@@ -130,8 +131,29 @@ def main():
         actual = probe.validate_gate(args.proxy_binary)
         orchestration.require(actual == args.approved_sha256, "Approved binary SHA mismatch.")
         report.update(qualifiedSha256=actual, privateStateDirectory=str(state), stage="host-start")
-        secrets = redaction_values(state)
         host = orchestration.Host(args.host_dll.resolve(strict=True), args.proxy_binary.resolve(strict=True), state)
+        if args.verify_only:
+            report = json.loads(path.read_text())
+            report.pop("error", None)
+            report.pop("errorType", None)
+            report.update(stage="local-only-restart-verification", additionalInferenceRequests=0, additionalQuotaRequests=0)
+            window = report["cliBeforeRestart"]["window"]
+            host.start()
+            before = orchestration.wait_until(lambda: usage_snapshot(host, window))
+            orchestration.require(before["totals"] == report["beforeRestart"]["totals"] and before["attempts"] == report["beforeRestart"]["attempts"], "Existing records changed after diagnostic shutdown.")
+            report["cliBeforeRestart"] = orchestration.compare_cli_usage(host, args.cli_dll.resolve(strict=True), window)
+            host.stop()
+            host.start()
+            after = orchestration.wait_until(lambda: usage_snapshot(host, window))
+            report["afterRestart"] = after
+            report["cliAfterRestart"] = orchestration.compare_cli_usage(host, args.cli_dll.resolve(strict=True), window)
+            orchestration.require(before["totals"] == after["totals"] and before["attempts"] == after["attempts"], "Records changed across local-only restart.")
+            original_by_id = {item["id"]: item for item in report["originalThree"]["attempts"]}
+            after_by_id = {item["id"]: item for item in after["attempts"]}
+            orchestration.require(all(after_by_id.get(key) == value for key, value in original_by_id.items()), "An original terminal record changed after restart.")
+            report.update(state="completed-partial-provider-evidence", stage="complete", usagePersistencePassed=True, originalThreePreserved=True, finalQualificationPassed=False)
+            return 0
+        secrets = redaction_values(state)
         host.start()
         original = json.loads((state / "sanitized-report.json").read_text())
         window = original["usageWindow"]
