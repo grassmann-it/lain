@@ -153,6 +153,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
 
         await Click("Usage"); await Wait(UsageConnected, "usage connected");
         await CaptureBoth("usage");
+        await CheckUsageControls();
         var usageInput = Controls<UsageView>().Single().GetVisualDescendants().OfType<TextBox>().First();
         usageInput.Focus();
         Check(usageInput.IsFocused, "usage input accepts keyboard focus");
@@ -161,6 +162,8 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Task.Delay(5300);
         Check(fixture.UsageCalls > pollStart && UsageConnected(), "usage refreshes after five seconds");
         Check(usageInput.IsFocused && usageInput.Text == unsubmittedFilter, "usage input focus and filter survive polling");
+        Check(Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Filter to account a1" && b.GetVisualAncestors().OfType<Control>().All(parent => parent.IsVisible))
+            && Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Filter to model gpt-model" && b.GetVisualAncestors().OfType<Control>().All(parent => parent.IsVisible)), "account and model detail expansion survive polling");
         await Click("Details for attempt attempt-fixture");
         var details = Controls<Button>().Single(b => AutomationProperties.GetName(b) == "Details for attempt attempt-fixture");
         details.Focus();
@@ -208,6 +211,61 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             scope = "Production MainWindow, UsageView and App theme initialization; in-memory HTTP only. Button Click routed events exercise handlers, not OS pointer hit-testing. No real credentials, host, authorization browser, inference or service mutation."
         }, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"PASS desktop smoke: {checks.Count} checks, {screenshots.Count} screenshots. {Output}/evidence.json");
+    }
+
+    private async Task CheckUsageControls()
+    {
+        T Named<T>(string name) where T : Control => Controls<T>().Single(x => AutomationProperties.GetName(x) == name);
+        var daily = Controls<Expander>().Single(x => Equals(x.Header, "Daily totals"));
+        var measure = Named<ComboBox>("Daily measure");
+        daily.IsExpanded = true;
+        var reads = fixture.UsageCalls;
+        measure.SelectedIndex = 2;
+        Check(fixture.UsageCalls == reads, "switching daily measure reuses the loaded snapshot");
+        var output = 9986L.ToString("N0", System.Globalization.CultureInfo.CurrentCulture);
+        Check(Equals(measure.SelectedItem, "Output tokens") && daily.GetVisualDescendants().OfType<TextBlock>().Any(x => x.Text == output), "daily output measure exposes the exact host output total");
+        await CaptureBoth("usage-daily-output", () => daily.BringIntoView());
+        measure.SelectedIndex = 0;
+        Check(Equals(measure.SelectedItem, "Attempts"), "daily measure supports attempts");
+        measure.SelectedIndex = 1;
+        daily.IsExpanded = false;
+
+        Named<TextBox>("Time zone").Text = "UTC";
+        Named<TextBox>("HTTP status").Text = "200";
+        var today = DateTimeOffset.UtcNow.UtcDateTime.Date;
+        foreach (var (label, start) in new[]
+        {
+            ("Today", today), ("Last 7 days", today.AddDays(-6)),
+            ("Last 30 days", today.AddDays(-29)), ("This month", new DateTime(today.Year, today.Month, 1))
+        })
+        {
+            await Click(label);
+            var query = fixture.UsageQueries.Last();
+            Check(DateTimeOffset.Parse(query["from"]).UtcDateTime == start && DateTimeOffset.Parse(query["to"]).UtcDateTime == today.AddDays(1)
+                && query["timeZone"] == "UTC" && query["offset"] == "0" && query["statusCode"] == "200", $"{label} applies its UTC calendar range and preserves the status filter");
+        }
+        await Click("Details for account a1");
+        await Click("Details for model gpt-model");
+        var errorRate = (400d / 132).ToString("N1", System.Globalization.CultureInfo.CurrentCulture) + "% error rate";
+        Check(HasText(errorRate, true) && HasText("Tokens:", true), "account and model details show token fields and errors per attempt");
+        await Click("Filter to account a1");
+        Check(fixture.UsageQueries.Last().GetValueOrDefault("accountId") == "a1", "account drilldown applies its stable account ID");
+        await Click("Filter to model gpt-model");
+        var scoped = fixture.UsageQueries.Last();
+        Check(scoped.GetValueOrDefault("accountId") == "a1" && scoped.GetValueOrDefault("model") == "gpt-model" && scoped.GetValueOrDefault("statusCode") == "200", "model drilldown preserves account and status filters");
+        Check(HasText("Applied filters:", true) && HasText("gpt-model", true) && HasText("HTTP 200", true), "loaded usage scope is visible");
+        await CaptureBoth("usage-filters", () => Named<Button>("Filter to model gpt-model").BringIntoView());
+
+        Named<TextBox>("From · inclusive").Text = "2020-01-01";
+        Named<TextBox>("To · exclusive").Text = "2024-01-01";
+        await ClickUsageApply();
+        Check(HasText("Choose a range of at most 366 days."), "oversized date range reports a useful validation error");
+        Check(!fixture.UsageQueries.Any(query => DateTimeOffset.Parse(query["from"]).Year == 2020), "oversized date range never reaches the usage API");
+        Named<ComboBox>("Account").SelectedIndex = 0;
+        Named<ComboBox>("Actual model").SelectedIndex = 0;
+        Named<TextBox>("HTTP status").Text = "";
+        await Click("Last 7 days");
+        Named<TextBox>("From · inclusive").BringIntoView();
     }
 
     private async Task CheckQuotaOverview()

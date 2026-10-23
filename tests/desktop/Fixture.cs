@@ -23,6 +23,7 @@ internal sealed class Fixture : HttpMessageHandler
     public bool Offline, UsageFailure, NullTokens;
     public readonly List<string> Requests = [];
     public readonly List<string> Unexpected = [];
+    public readonly List<Dictionary<string, string>> UsageQueries = [];
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
@@ -45,7 +46,7 @@ internal sealed class Fixture : HttpMessageHandler
                 "/api/v1/accounts" => Config.Accounts,
                 "/api/v1/models" => new ModelCatalogDto(1, Config.Revision, [new ModelEntryDto("gpt-model", "openai", ["a1"])]),
                 "/api/v1/quotas" => Quotas(),
-                "/api/v1/usage" => Usage(),
+                "/api/v1/usage" => Usage(request.RequestUri!),
                 "/api/v1/attempts" => new PageDto<AttemptDto>([new AttemptDto("attempt-fixture", "request-fixture", "a1", "r1", "openai", "gpt-model", DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(-1).AddSeconds(2), 200, "completed", new TokenCounts(72000, 9986, 18000, 2000, 81986), 2000, 250)], 0, 25, 1),
                 _ => throw UnexpectedRequest(request)
             };
@@ -129,11 +130,14 @@ internal sealed class Fixture : HttpMessageHandler
         StatusCalls++;
         return new(1, "test", "ready", true, Config.Revision, Config.AppliedRevision, DateTimeOffset.UtcNow);
     }
-    private UsageSummaryDto Usage()
+    private UsageSummaryDto Usage(Uri uri)
     {
         UsageCalls++;
+        var query = uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(pair => pair.Split('=', 2)).ToDictionary(pair => Uri.UnescapeDataString(pair[0]), pair => pair.Length == 2 ? Uri.UnescapeDataString(pair[1]) : "");
+        UsageQueries.Add(query);
         var totals = new UsageTotals(128, 132, 4, NullTokens ? new(null, null, null, null, null) : new(72000, 9986, 18000, 2000, 81986), NullTokens ? 132 : 0);
-        return new(1, DateTimeOffset.UtcNow.AddDays(-7), DateTimeOffset.UtcNow, "Europe/Berlin", DateTimeOffset.UtcNow, 10, true, totals,
+        return new(1, DateTimeOffset.Parse(query["from"]), DateTimeOffset.Parse(query["to"]), query.GetValueOrDefault("timeZone", "UTC"), DateTimeOffset.UtcNow, 10, true, totals,
             [new(DateTime.UtcNow.ToString("yyyy-MM-dd"), totals)], [new("a1", totals)], [new("gpt-model", totals)]);
     }
     private LoginDto CompleteLogin(string path)
