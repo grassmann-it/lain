@@ -81,6 +81,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     private readonly Fixture fixture = new();
     private readonly List<string> checks = [];
     private readonly List<object> screenshots = [];
+    private readonly List<object> tileLayouts = [];
     private MainWindow window = null!;
     private readonly List<HttpClient> transports = [];
 
@@ -215,7 +216,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         {
             result = "PASS", display = Environment.GetEnvironmentVariable("DISPLAY"), privateXvfb = true,
             assembly = assembly.Location, sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))),
-            checks, screenshots, requests = fixture.Requests,
+            checks, screenshots, tileLayouts, requests = fixture.Requests,
             scope = "Production MainWindow, UsageView and App theme initialization; in-memory HTTP only. Button Click routed events exercise handlers, not OS pointer hit-testing. No real credentials, host, authorization browser, inference or service mutation."
         }, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"PASS desktop smoke: {checks.Count} checks, {screenshots.Count} screenshots. {Output}/evidence.json");
@@ -325,6 +326,12 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         var mimo = QuotaTile("MiMo API");
         Check(!mimo.IsExpanded && HasText("Not available", true), $"{page} explains unsupported MiMo quota in its closed tile");
         Check(!mimo.GetVisualDescendants().OfType<ProgressBar>().Any(), $"{page} unsupported provider has no invented progress");
+        foreach (var (width, height) in new[] { (1120, 780), (800, 560) })
+        {
+            await ResizeViewport(width, height);
+            CheckCompactTileLayout(page);
+        }
+        await ResizeViewport(1120, 780);
     }
 
     private Task CheckQuotaOverview() => CheckClosedQuotaTiles("overview");
@@ -335,6 +342,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         {
             var tile = QuotaTile(name);
             await ExpandTile(tile, true);
+            CheckTileBoundsDoNotOverlap($"expanded {name}");
             foreach (var (label, percent) in windows) CheckQuotaBar(name, label, percent);
             if (name == "Command Code Pro")
             {
@@ -381,6 +389,45 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await ExpandTile(personal, true);
         TileHeader(personal).BringIntoView();
         await Task.Delay(120);
+    }
+
+    private Rect TileBounds(string account)
+    {
+        var tile = QuotaTile(account);
+        var point = tile.TranslatePoint(default, window) ?? throw new Exception($"Tile is not attached: {account}");
+        return new Rect(point, tile.Bounds.Size);
+    }
+
+    private void CheckCompactTileLayout(string page)
+    {
+        var codex = TileBounds("Personal Codex");
+        var command = TileBounds("Command Code Pro");
+        var zai = TileBounds("Z.ai Coding");
+        // The short first card must release its own column instead of reserving a tall shared grid row.
+        Check(command.Height > codex.Height + 24 && Math.Abs(codex.Top - command.Top) < 2 && command.Left > codex.Right,
+            $"{page} fixture provides short and tall neighboring quota tiles at {window.Bounds.Width:0}px");
+        Check(Math.Abs(zai.Left - codex.Left) < 2 && Math.Abs(zai.Top - codex.Bottom - 12) < 2 && zai.Top < command.Bottom - 12,
+            $"{page} next left tile starts 12px after short Codex card before its taller peer ends");
+        tileLayouts.Add(new
+        {
+            page, width = window.Bounds.Width, height = window.Bounds.Height,
+            codex = new { codex.X, codex.Y, codex.Width, codex.Height },
+            command = new { command.X, command.Y, command.Width, command.Height },
+            zai = new { zai.X, zai.Y, zai.Width, zai.Height }, gap = zai.Top - codex.Bottom
+        });
+        CheckTileBoundsDoNotOverlap($"{page} closed {window.Bounds.Width:0}px");
+    }
+
+    private void CheckTileBoundsDoNotOverlap(string context)
+    {
+        var names = ExpectedProviderWindows.Select(row => row.Account).Append("MiMo API").ToArray();
+        var tiles = names.Select(name => (Name: name, Bounds: TileBounds(name))).ToArray();
+        Check(tiles.All(tile => tile.Bounds.Width > 0 && tile.Bounds.Height > 0), $"{context} quota tiles retain positive bounds");
+        var overlapping = tiles.SelectMany((a, index) => tiles.Skip(index + 1).Select(b => (a, b)))
+            .Where(pair => Math.Min(pair.a.Bounds.Right, pair.b.Bounds.Right) - Math.Max(pair.a.Bounds.Left, pair.b.Bounds.Left) > 1
+                && Math.Min(pair.a.Bounds.Bottom, pair.b.Bounds.Bottom) - Math.Max(pair.a.Bounds.Top, pair.b.Bounds.Top) > 1)
+            .Select(pair => $"{pair.a.Name} / {pair.b.Name}").ToArray();
+        Check(overlapping.Length == 0, $"{context} quota tile bounds do not overlap ({string.Join(", ", overlapping)})");
     }
 
     private bool FitsScrollViewports(Control control)
