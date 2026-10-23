@@ -4,5 +4,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Lain.Desktop/Lain.Desktop.csproj" />
+    <EmbeddedResource Include="fixtures/inspection-providers.json" />
   </ItemGroup>
 </Project>

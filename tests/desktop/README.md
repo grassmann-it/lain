@@ -22,11 +22,11 @@ XDG_RUNTIME_DIR and LAIN_HOME prevent real local credential discovery. The
 harness refuses to initialize Avalonia unless the runner's live Xvfb PID and
 display marker are present. There is no native desktop fallback. EXIT/INT/TERM
 cleanup terminates only the child Xvfb and removes its private temporary files;
-a 100-second timeout bounds the harness.
+a 150-second timeout bounds the harness.
 
 Production `App.Initialize()` supplies theme resources/styles; its framework
 startup is deliberately not invoked because it constructs the real local API
-client. The test's MainWindow and UsageView are the actual production classes.
+client. The test's MainWindow, UsageView, ProviderCatalogView and InspectorView are the actual production classes.
 Every HTTP request goes to an in-memory handler with an explicit allowlist and
 no Authorization header. Five accounts, 45 routes, three profiles and persistent
 usage totals provide realistic density. All account/import/route/profile/login
@@ -46,5 +46,13 @@ Button interactions raise Avalonia routed Click events. These validate actual
 handlers and enabled-state transitions, not physical pointer hit-testing,
 complete keyboard tab order, desktop dialogs, clipboard integration or browser
 authorization. Input focus assertions do not replace keyboard accessibility
-review. PNGs require independent visual review for clipping, density and theme
+review. Provider guidance covers no-account states, honest unknown budgets and limits,
+free/trial filtering, explicit route/plan setup, masked credentials, callback-only
+link actions and catalog outages. Inspector fixtures cover evidenced conversation
+groups, unproven identities, conflicting retry parents, success/active/error states,
+reasoning/output/tool chunks, local filtering, pause/manual refresh, source restart,
+clear, outage/recovery and detach cancellation. Both pages are rendered at both
+viewport sizes.
+
+PNGs require independent visual review for clipping, density and theme
 acceptance. This fixture cannot establish real host/provider behavior.

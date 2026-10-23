@@ -40,6 +40,11 @@ internal static class Program
                     Check(!decision.Allowed, $"{provider.Id}/{descriptor.Id}: paid, trial, subscription and unknown routes cannot satisfy free_only");
                 else
                     Check(!decision.Allowed || descriptor.FreeOnlyEnforcement is { Length: > 0 }, $"{provider.Id}/{descriptor.Id}: a free-only approval requires a concrete enforcement mechanism");
+                if (decision.Allowed)
+                    Check(provider.Id == "openrouter" && descriptor.Model is "meta-llama/llama-3.3-70b-instruct:free" or "qwen/qwen3-coder:free"
+                        && descriptor.Protocol == "openai-chat" && descriptor.BaseUrl.TrimEnd('/') == "https://openrouter.ai/api/v1"
+                        && policy.RuntimeEnforcement(route) == "openrouter_zero_cap_v1",
+                        $"{provider.Id}/{descriptor.Id}: free-only intent is bounded to the two concretely supported OpenRouter zero-cap models");
                 Check(decision.RouteId == route.Id && decision.CostPolicy == "free_only", $"{provider.Id}/{descriptor.Id}: decision retains the requested route and strict policy");
             }
         }

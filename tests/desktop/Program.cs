@@ -17,6 +17,7 @@ using Lain.Client;
 using Lain.Core;
 using Lain.Desktop;
 using Lain.Desktop.Usage;
+using Lain.Desktop.Providers;
 
 internal static class Program
 {
@@ -134,6 +135,9 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Click("Import");
         Check(fixture.Imports == 1 && HasText("snapshot warning", true), "import and warning preserved");
 
+        await CheckProviderCatalog();
+        await CheckInspector();
+
         await Click("Routes"); await CaptureBoth("routes"); await Click("Create route");
         Controls<ComboBox>().First().SelectedIndex = 1;
         Input("client-facing-model").Text = "test-route";
@@ -219,7 +223,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             result = "PASS", display = Environment.GetEnvironmentVariable("DISPLAY"), privateXvfb = true,
             assembly = assembly.Location, sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))),
             checks, screenshots, tileLayouts, requests = fixture.Requests,
-            scope = "Production MainWindow, UsageView and App theme initialization; in-memory HTTP only. Button Click routed events exercise handlers, not OS pointer hit-testing. No real credentials, host, authorization browser, inference or service mutation."
+            scope = "Production MainWindow, UsageView, ProviderCatalogView, InspectorView and App theme initialization; in-memory HTTP only. Button Click routed events exercise handlers, not OS pointer hit-testing. No real credentials, host, authorization browser, inference or service mutation."
         }, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"PASS desktop smoke: {checks.Count} checks, {screenshots.Count} screenshots. {Output}/evidence.json");
     }
@@ -521,6 +525,117 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(bars.Length == 1, $"one semantic quota progress label: {name}");
         Check(bars.All(bar => Math.Abs(bar.Minimum) < .001 && Math.Abs(bar.Maximum - 100) < .001 && Math.Abs(bar.Value - percent) < .001 && !bar.IsIndeterminate),
             $"{account} {label} progress is {percent}% consumed");
+    }
+
+
+    private T Named<T>(string name) where T : Control => Controls<T>().Single(x => AutomationProperties.GetName(x) == name);
+    private bool HasSelectable(string text) => Controls<SelectableTextBlock>().Any(block => block.Text?.Contains(text, StringComparison.Ordinal) == true);
+    private bool HasGroup(string key) => Controls<Button>().Any(button => AutomationProperties.GetName(button) == "Inspect group " + key);
+
+    private async Task CheckProviderCatalog()
+    {
+        var before = fixture.ProviderCalls;
+        await Click("Providers");
+        await Wait(() => fixture.ProviderCalls > before && HasText("NVIDIA Build"), "Providers loads its local descriptor endpoint on navigation");
+        Check(HasText("No account configured") && !HasText("Connection verified"), "catalog is useful with no account and does not invent verification");
+        await CaptureBoth("providers");
+        Named<ComboBox>("Filter provider access type").SelectedIndex = 1;
+        Check(HasText("NVIDIA Build") && !HasText("Inception Mercury"), "free access filter excludes one-time trial and paid Inception access");
+        Named<ComboBox>("Filter provider access type").SelectedIndex = 0;
+        Named<TextBox>("Search providers").Text = "step-5";
+        Check(HasText("NVIDIA Build") && !HasText("Inception Mercury"), "provider search includes concrete model identities");
+        Named<TextBox>("Search providers").Text = "";
+        var card = Named<Expander>("Provider NVIDIA Build"); card.IsExpanded = true;
+        await Task.Delay(100);
+        Check(HasText("Unknown — no automatic budget source is available.") && HasText("Unknown requests/minute", true), "unobserved budgets and account limits remain unknown");
+        var route = Named<Expander>("NVIDIA Build: Step 5 Preview via NVIDIA capabilities"); route.IsExpanded = true;
+        await Task.Delay(100);
+        Check(HasText("1,000,000 tokens / Unknown") && HasText("Strict free-only access requires qualified runtime controls", true), "capabilities preserve unknown maximum output and explain qualified free-only controls");
+        await CaptureBoth("provider-capabilities", () => route.BringIntoView());
+        var header = card.GetVisualDescendants().OfType<ToggleButton>().Single(control => AutomationProperties.GetName(control) == "NVIDIA Build setup and capabilities");
+        header.BringIntoView(); header.Focus();
+        await Click("Refresh");
+        Check(card.IsExpanded && route.IsExpanded && header.IsFocused && Controls<Expander>().Contains(card), "identical catalog refresh preserves card identity expansion and focus");
+        await Click("Set up NVIDIA Build in lain");
+        Check(HasText("Set up NVIDIA Build") && Named<ComboBox>("Provider route").SelectedIndex == -1 && Named<ComboBox>("Billing plan").SelectedIndex == -1,
+            "assisted provider setup requires an explicit route and billing choice");
+        Named<ComboBox>("Provider route").SelectedIndex = 0;
+        Check(Named<ComboBox>("Billing plan").SelectedIndex == -1 && Named<TextBox>("Base URL").IsReadOnly
+            && Named<TextBox>("Base URL").Text == "https://integrate.api.nvidia.com/v1" && Named<TextBox>("Own API key").PasswordChar == '●',
+            "setup derives a read-only official endpoint and masks the private credential");
+        await CaptureBoth("provider-setup");
+        await Click("Cancel");
+
+        // Explicit synthetic callbacks prove links are inert until clicked; never invoke the shell browser launcher.
+        var opened = new List<Uri>(); var setups = new List<string>();
+        var view = new ProviderCatalogView(opened.Add, setups.Add);
+        var probe = new Window { Width = 800, Height = 560, Content = new ScrollViewer { Content = view } };
+        view.SetCatalog(Fixture.ProviderCatalog, []); probe.Show(); await Task.Delay(100);
+        Check(opened.Count == 0 && setups.Count == 0, "rendering provider guidance never opens links or starts account setup");
+        var buttons = view.GetVisualDescendants().OfType<Button>().ToArray();
+        buttons.Single(button => AutomationProperties.GetName(button) == "NVIDIA Build: Official account / keys").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        buttons.Single(button => AutomationProperties.GetName(button) == "Set up NVIDIA Build in lain").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(opened.Count == 1 && opened[0].AbsoluteUri == "https://build.nvidia.com/stepfun-ai/step-5-preview" && setups.SequenceEqual(["nvidia-build"]), "explicit catalog actions invoke only their supplied callbacks");
+        view.ShowUnavailable("Fixture catalog outage");
+        Check(view.GetVisualDescendants().OfType<TextBlock>().Any(block => block.Text == "Provider catalog unavailable")
+            && !view.GetVisualDescendants().OfType<TextBlock>().Any(block => block.Text?.Contains("invalid credential", StringComparison.OrdinalIgnoreCase) == true),
+            "catalog outages do not mislabel credentials as invalid");
+        probe.Close(); window.Activate();
+    }
+
+    private async Task CheckInspector()
+    {
+        await Click("Inspector");
+        await Wait(() => HasText("Connected to the live inspector", true) && HasSelectable("First answer continued."), "Inspector loads and assembles live output chunks");
+        Check(HasGroup("conversation:conversation-ui") && HasGroup("request:request-unknown") && HasGroup("request:request-error")
+            && HasGroup("request:request-conflict") && !HasGroup("request:request-a") && !HasGroup("request:request-b"),
+            "only evidenced identities group requests; unsupported claims and conflicting retry parents remain separate");
+        Check(HasText("Retained result", true), "Host success state renders a retained result");
+        var identities = Controls<Expander>().Single(control => Equals(control.Header, "Identities & measurement sources")); identities.IsExpanded = true;
+        await Task.Delay(100);
+        Check(HasSelectable("Conversation: conversation-ui") && HasSelectable("Worker: worker-ui") && HasText("conversationId · harness_header", true),
+            "Inspector exposes identities together with their evidence sources");
+        identities.IsExpanded = false;
+        await CaptureBoth("inspector");
+        Named<ComboBox>("Inspector request").SelectedIndex = 1;
+        await Wait(() => HasSelectable("Fixture tool result.") && HasSelectable("Answer after tool. Still streaming."), "tool continuation stays within its selected request");
+        Check(!HasSelectable("First answer continued.") && HasText("Tool · fixture_tool"), "switching request clears preceding output and labels tool content");
+        await CaptureBoth("inspector-tool");
+        Named<TextBox>("Search live requests").Text = "request-unknown";
+        Check(HasGroup("request:request-unknown") && !HasGroup("conversation:conversation-ui"), "Inspector search filters observed groups locally");
+        Named<TextBox>("Search live requests").Text = "";
+        Named<ComboBox>("Inspector activity").SelectedIndex = 2;
+        Check(HasGroup("request:request-error") && !HasGroup("conversation:conversation-ui"), "Inspector error filter uses observed failed status");
+        Named<ComboBox>("Inspector activity").SelectedIndex = 0;
+        await Click("Toggle inspector updates"); await Task.Delay(300);
+        var paused = fixture.InspectorCalls + fixture.InspectorEventCalls;
+        await Task.Delay(550);
+        Check(fixture.InspectorCalls + fixture.InspectorEventCalls == paused && HasText("Updates paused", true), "pause stops automatic live fetches");
+        var snapshots = fixture.InspectorCalls;
+        await Click("Refresh inspector");
+        await Wait(() => fixture.InspectorCalls == snapshots + 1, "manual inspector refresh works once while paused");
+        await Task.Delay(300);
+        Check(fixture.InspectorCalls == snapshots + 1, "manual refresh preserves paused state");
+        await Click("Clear displayed events");
+        Check(!HasSelectable("Answer after tool.") && HasText("Displayed events cleared.", true), "clear removes displayed content with an explicit explanation");
+        fixture.InspectorRestarted = true;
+        await Click("Refresh inspector");
+        await Wait(() => HasSelectable("New source output only."), "Inspector attaches to the new live source");
+        Check(!HasGroup("conversation:conversation-ui") && !HasSelectable("First answer") && !HasSelectable("Fixture tool result.")
+            && HasText("Live source restarted; previous content and relationships were cleared.", true), "source restart purges prior content and relationships");
+        await CaptureBoth("inspector-source-restarted");
+        fixture.InspectorFailure = true;
+        await Click("Refresh inspector");
+        await Wait(() => HasText("Inspector disconnected · active state is unknown", true), "Inspector failures report unknown active state");
+        Check(HasText("Active state unknown", true), "connection loss cannot leave a falsely active request");
+        await CaptureBoth("inspector-disconnected");
+        fixture.InspectorFailure = false;
+        await Click("Toggle inspector updates");
+        await Wait(() => HasText("Connected to the live inspector", true), "Inspector recovers from a local source outage");
+        await Click("Routes");
+        var detached = fixture.InspectorCalls + fixture.InspectorEventCalls;
+        await Task.Delay(550);
+        Check(fixture.InspectorCalls + fixture.InspectorEventCalls == detached, "Inspector polling stops when detached");
     }
 
     private void CheckBundledFonts()

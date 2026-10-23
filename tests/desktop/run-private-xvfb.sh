@@ -47,6 +47,6 @@ mkdir -p "$runtime/home" "$runtime/xdg" "$runtime/lain"
 export HOME="$runtime/home" XDG_CONFIG_HOME="$runtime/home/config" XDG_DATA_HOME="$runtime/home/data"
 export XDG_RUNTIME_DIR="$runtime/xdg" LAIN_HOME="$runtime/lain"
 export LAIN_TEST_XVFB_PID="$xvfb_pid" LAIN_TEST_DISPLAY="$DISPLAY" LAIN_TEST_OUTPUT="$output"
-timeout --signal=TERM --kill-after=5s 100s dotnet \
+timeout --signal=TERM --kill-after=5s 150s dotnet \
   "$repo/tests/desktop/bin/Debug/net10.0/Lain.Desktop.Smoke.dll" 2>&1 | tee "$output/run.log"
 echo "Desktop evidence: $output"

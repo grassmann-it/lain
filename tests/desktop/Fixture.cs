@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Lain.Core;
 using Lain.Client;
 
@@ -20,7 +21,11 @@ internal sealed class Fixture : HttpMessageHandler
         Enumerable.Range(1, InitialRoutes).Select(i => new RouteDto($"r{i}", $"gpt-lain-{i:00}", $"gpt-model-{i:00}", "openai", [$"a{(i - 1) % 4 + 1}"])).ToArray(),
         Enumerable.Range(1, InitialProfiles).Select(i => new ProfileDto($"p{i}", i == 1 ? "Daily" : $"Workspace {i}", Enumerable.Range(1, i * 5).Select(n => $"r{n}").ToArray(), "r1")).ToArray());
     public int Imports, EnableCalls, ApplyCalls, ExportCalls, LoginBegins, LoginPolls, LoginCancels, UsageCalls, StatusCalls, AnalysisCalls;
-    public bool Offline, UsageFailure, NullTokens, IncompleteCoverage, AnalysisFailure;
+    public bool Offline, UsageFailure, NullTokens, IncompleteCoverage, AnalysisFailure, InspectorFailure;
+    public int ProviderCalls, InspectorCalls, InspectorEventCalls;
+    public bool InspectorRestarted;
+    private readonly DateTimeOffset inspectorStarted = DateTimeOffset.UtcNow;
+    public static readonly ProviderCatalogDto ProviderCatalog = LoadProviders();
     public readonly List<string> Requests = [];
     public readonly List<string> Unexpected = [];
     public readonly List<Dictionary<string, string>> UsageQueries = [];
@@ -35,6 +40,8 @@ internal sealed class Fixture : HttpMessageHandler
         if (Offline) throw new HttpRequestException("offline fixture");
         if (AnalysisFailure && path == "/api/v1/usage/analysis")
             return new(HttpStatusCode.ServiceUnavailable) { Content = JsonContent.Create(new ApiError("fixture_analysis_unavailable", "Fixture analysis temporarily unavailable")) };
+        if (InspectorFailure && path.StartsWith("/api/v1/inspector", StringComparison.Ordinal))
+            return new(HttpStatusCode.ServiceUnavailable) { Content = JsonContent.Create(new ApiError("fixture_inspector_unavailable", "Fixture live source temporarily unavailable")) };
         if (UsageFailure && path == "/api/v1/usage")
             return new(HttpStatusCode.ServiceUnavailable) { Content = JsonContent.Create(new ApiError("fixture_unavailable", "Fixture usage temporarily unavailable")) };
         object value;
@@ -48,6 +55,9 @@ internal sealed class Fixture : HttpMessageHandler
                 "/api/v1/accounts" => Config.Accounts,
                 "/api/v1/models" => new ModelCatalogDto(1, Config.Revision, [new ModelEntryDto("gpt-model", "openai", ["a1"])]),
                 "/api/v1/quotas" => Quotas(),
+                "/api/v1/providers" => Providers(),
+                "/api/v1/inspector" => Inspector(),
+                "/api/v1/inspector/events" => InspectorEvents(request.RequestUri!),
                 "/api/v1/usage" => Usage(request.RequestUri!),
                 "/api/v1/usage/analysis" => Analysis(request.RequestUri!),
                 "/api/v1/attempts" => new PageDto<AttemptDto>([new AttemptDto("attempt-fixture", "request-fixture", "a1", "r1", "openai", "gpt-model", DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(-1).AddSeconds(2), 200, "completed", new TokenCounts(72000, 9986, 18000, 2000, 81986), 2000, 250)], 0, 25, 1),
@@ -103,6 +113,60 @@ internal sealed class Fixture : HttpMessageHandler
         }
         else throw UnexpectedRequest(request);
         return new(HttpStatusCode.OK) { Content = JsonContent.Create(value) };
+    }
+
+
+    private static ProviderCatalogDto LoadProviders()
+    {
+        using var json = typeof(Fixture).Assembly.GetManifestResourceStream("Lain.Desktop.Smoke.fixtures.inspection-providers.json")
+            ?? throw new InvalidOperationException("Embedded provider UI fixture missing");
+        return JsonSerializer.Deserialize<ProviderCatalogDto>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+    }
+    private ProviderCatalogDto Providers() { ProviderCalls++; return ProviderCatalog; }
+    private string InspectorSource => InspectorRestarted ? "source-ui-2" : "source-ui-1";
+    private static AttemptDimensionsDto ProvenDimensions(string? parent = null) => new(
+        ConversationId: "conversation-ui", TurnId: "turn-ui", WorkerId: "worker-ui", ParentRequestId: parent,
+        Evidence: [new("conversationId", "harness_header", "X-Conversation-Id"), new("turnId", "harness_header", "X-Turn-Id"),
+            new("workerId", "request_body", "thread_spawn"), new("parentRequestId", "request_body", "parent_request_id")]);
+    private InspectorSnapshotDto Inspector()
+    {
+        InspectorCalls++;
+        var now = DateTimeOffset.UtcNow;
+        InspectorStreamDto Stream(string request, string state, long first, long last, AttemptDimensionsDto? dimensions = null, int? status = null)
+            => new("stream-" + request, "attempt", request, "attempt-" + request, inspectorStarted, now, state, first, last,
+                AccountId: "a1", RouteId: "r1", Provider: "fixture-inference", Model: "fixture-inspector-model", Dimensions: dimensions,
+                StatusCode: status, Measurements: state == "success" ? new(120, 2000, Source: "core_monotonic") : null);
+        var streams = InspectorRestarted
+            ? new[] { Stream("request-new", "streaming", 1, 1) }
+            : new[] { Stream("request-a", "success", 1, 4, ProvenDimensions(), 200),
+                Stream("request-b", "streaming", 5, 7, ProvenDimensions("request-a")),
+                // Deliberately identical claimed conversation, but no evidence: it must remain independent.
+                Stream("request-unknown", "active", 8, 8, new(ConversationId: "conversation-ui")),
+                Stream("request-error", "failed", 9, 9, status: 503),
+                Stream("request-conflict", "active", 10, 10, new(ParentRequestId: "request-unknown", Evidence: [new("parentRequestId", "request_body")])),
+                Stream("request-conflict", "active", 11, 11, new(ParentRequestId: "request-error", Evidence: [new("parentRequestId", "request_body")])) with { Id = "stream-request-conflict-retry", AttemptId = "attempt-conflict-retry" } };
+        return new(Api.Version, InspectorSource, now, "live", true, InspectorRestarted ? 1 : 11, 1, 0, new(), streams);
+    }
+    private InspectorEventPageDto InspectorEvents(Uri uri)
+    {
+        InspectorEventCalls++;
+        var query = uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries).Select(pair => pair.Split('=', 2))
+            .ToDictionary(pair => Uri.UnescapeDataString(pair[0]), pair => pair.Length == 2 ? Uri.UnescapeDataString(pair[1]) : "");
+        var after = long.TryParse(query.GetValueOrDefault("after"), out var parsed) ? parsed : 0;
+        var request = query.GetValueOrDefault("requestId");
+        var changed = query.GetValueOrDefault("sourceId") != InspectorSource;
+        InspectorEventDto E(long cursor, string id, string channel, string text, string? tool = null) => new(cursor, "output_delta", inspectorStarted,
+            id, "attempt-" + id, Dimensions: id is "request-a" or "request-b" ? ProvenDimensions(id == "request-b" ? "request-a" : null) : null,
+            Channel: channel, Text: text, ToolCallId: tool is null ? null : "tool-ui", ToolName: tool, RedactionState: "none");
+        var all = InspectorRestarted ? new[] { E(1, "request-new", "assistant", "New source output only.") }
+            : new[] { E(1, "request-a", "reasoning", "Fixture reasoning summary."), E(2, "request-a", "assistant", "First answer "),
+                E(3, "request-a", "assistant", "continued."), E(4, "request-a", "tool_call", "Tool call metadata only.", "fixture_tool"),
+                E(5, "request-b", "tool_result", "Fixture tool result.", "fixture_tool"), E(6, "request-b", "assistant", "Answer after tool."),
+                E(7, "request-b", "assistant", " Still streaming."), E(8, "request-unknown", "assistant", "Independent output."),
+                E(9, "request-error", "assistant", "Retained partial output before failure.") };
+        var high = InspectorRestarted ? 1 : 11;
+        return new(InspectorSource, all.Where(e => e.Cursor > (changed ? 0 : after) && e.RequestId == request).ToArray(), high, high, 1, 0,
+            Truncated: changed && after > 0, GapReason: changed && after > 0 ? "source_changed" : null);
     }
 
     // Concrete provider budgets exercise percentage, numeric balance, exhaustion and unsupported rendering.
