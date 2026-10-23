@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "sha256": "8edf8abf666e3c15f1a04c20c841a969d35229f09e7de5265755ab704cf9dfc0",
+  "syntheticPassed": true,
+  "passed": true,
+  "scope": "Backend A: account binding, durable dispatch/usage and reference transports",
+  "syntheticCases": 15,
+  "referenceProviders": [
+    {
+      "provider": "codex",
+      "model": "gpt-6-luna",
+      "streamAndToolContinuation": true
+    },
+    {
+      "provider": "commandcode",
+      "model": "zai-org/GLM-5.3",
+      "streamAndToolContinuation": true
+    }
+  ],
+  "ownedOAuthLiveRotationTested": false,
+  "evidence": [
+    "tests/backend/fixtures/qualification-result.json",
+    "tests/acceptance/evidence/core-final.json",
+    "tests/live/reports/identified-client-20261023.json"
+  ],
+  "notes": [
+    "Earlier generic-client HTTP403 failures retained as unknown usage; truthful reference client passed.",
+    "Package and installation acceptance are tracked separately in docs/acceptance.md."
+  ]
+}
