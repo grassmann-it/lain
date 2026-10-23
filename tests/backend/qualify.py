@@ -206,6 +206,10 @@ def stream_tools(core):
         with run.post("text", "sse", route="fixture-a", stream=True) as response:
             raw = response.read().decode()
         expect("[DONE]" in raw and "synthetic response" in raw, "SSE text/DONE lost")
+        sse_chunks = [json.loads(line[6:]) for line in raw.splitlines() if line.startswith("data: {")]
+        finish_indices = [index for index, chunk in enumerate(sse_chunks) if any(choice.get("finish_reason") is not None for choice in chunk.get("choices", []))]
+        usage_indices = [index for index, chunk in enumerate(sse_chunks) if chunk.get("usage")]
+        expect(finish_indices and usage_indices and finish_indices[0] < usage_indices[-1], "durability buffering reordered finish_reason and usage frames")
         messages = [{"role": "user", "content": marker("tool", "tool")}]
         with run.post("tool", "tool", route="fixture-a", stream=True, messages=messages) as response:
             raw = response.read().decode()
