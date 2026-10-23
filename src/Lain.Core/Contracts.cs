@@ -15,7 +15,7 @@ public record UsageTotals(long Requests, long Attempts, long Errors, TokenCounts
 public record UsageGroup(string Key, UsageTotals Totals);
 public record UsageSummaryDto(int ContractVersion, DateTimeOffset From, DateTimeOffset To, string TimeZone, DateTimeOffset ObservedAt, long Cursor, bool Complete, UsageTotals Totals, UsageGroup[] Daily, UsageGroup[] Accounts, UsageGroup[] Models);
 public record AttemptDto(string Id, string RequestId, string AccountId, string? RouteId, string Provider, string Model, DateTimeOffset StartedAt, DateTimeOffset? FinishedAt, int? StatusCode, string State, TokenCounts Tokens, double? DurationMs = null, double? FirstTokenMs = null, string? Error = null);
-public record QuotaDto(string AccountId, string? BudgetPoolId, string Source, string State, DateTimeOffset? ObservedAt, DateTimeOffset? LastSuccessAt, DateTimeOffset? ResetsAt, string Unit, double? Used, double? Limit, double? Remaining, bool SharedWithLegacy, string? Error = null);
+public record QuotaDto(string AccountId, string? BudgetPoolId, string Source, string State, DateTimeOffset? ObservedAt, DateTimeOffset? LastSuccessAt, DateTimeOffset? ResetsAt, string Unit, double? Used, double? Limit, double? Remaining, bool SharedWithLegacy, string? Error = null, string? WindowLabel = null, double? UsedPercent = null);
 public record LoginDto(string Id, string Provider, string State, string? Url = null, string? Error = null);
 public record ImportRequest(long Revision, string ConfigPath, string? AuthDirectory = null);
 public record ImportResult(long Revision, int Added, int Updated, string[] Warnings);

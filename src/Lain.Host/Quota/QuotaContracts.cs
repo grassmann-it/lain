@@ -14,11 +14,12 @@ public interface IQuotaCredentialSource
 }
 
 // Deliberately contains no refresh token, token endpoint, or ability to rotate credentials.
-public sealed class QuotaCredential(string bearerToken, string? providerAccountId = null, DateTimeOffset? expiresAt = null)
+public sealed class QuotaCredential(string bearerToken, string? providerAccountId = null, DateTimeOffset? expiresAt = null, string? baseUrl = null)
 {
     public string BearerToken { get; } = bearerToken;
     public string? ProviderAccountId { get; } = providerAccountId;
     public DateTimeOffset? ExpiresAt { get; } = expiresAt;
+    public string? BaseUrl { get; } = baseUrl;
     public override string ToString() => "QuotaCredential [redacted]";
 
     // Accepts the normalized private SecretStore schema, never the legacy store path.
@@ -35,12 +36,12 @@ public sealed class QuotaCredential(string bearerToken, string? providerAccountI
         };
         return string.IsNullOrWhiteSpace(token) ? null : new(token,
             kind is "codex-access-snapshot" or "codex-owned" ? JsonFields.String(root, "accountId") : null,
-            JsonFields.Date(root, "expiresAt"));
+            JsonFields.Date(root, "expiresAt"), JsonFields.String(root, "baseUrl"));
     }
 }
 
 public record QuotaReading(string Source, string Unit, double? Used = null, double? Limit = null,
-    double? Remaining = null, DateTimeOffset? ResetsAt = null, string? BudgetPoolId = null, bool InheritAccountPool = true);
+    double? Remaining = null, DateTimeOffset? ResetsAt = null, string? BudgetPoolId = null, bool InheritAccountPool = true, string? WindowLabel = null, double? UsedPercent = null);
 
 // A partial response may contain usable readings and a sanitized diagnostic.
 public record QuotaFetchResult(IReadOnlyList<QuotaReading> Readings, string? Error = null);

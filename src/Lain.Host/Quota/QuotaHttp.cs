@@ -6,13 +6,14 @@ namespace Lain.Host.Quota;
 internal static class QuotaHttp
 {
     public static async Task<JsonDocument> GetAsync(HttpClient client, string url, QuotaCredential credential,
-        CancellationToken ct, bool codex = false)
+        CancellationToken ct, bool codex = false, bool rawAuthorization = false, string? userAgent = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", credential.BearerToken);
+        if (rawAuthorization) request.Headers.TryAddWithoutValidation("Authorization", credential.BearerToken);
+        else request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", credential.BearerToken);
         if (codex && !string.IsNullOrEmpty(credential.ProviderAccountId))
             request.Headers.Add("ChatGPT-Account-Id", credential.ProviderAccountId);
-        request.Headers.UserAgent.ParseAdd(codex ? "lain/1.0" : "command-code/1.84.0 lain/1.0");
+        request.Headers.UserAgent.ParseAdd(userAgent ?? (codex ? "lain/1.0" : "command-code/1.84.0 lain/1.0"));
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(20));
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
