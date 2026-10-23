@@ -23,7 +23,7 @@ None substitutes for the others.
 
 | Requirement | Independent acceptance check | Evidence/status |
 | --- | --- | --- |
-| Dense quota tiles | Unequal tile heights do not create large empty grid cells. Closed tiles retain named windows, bars, remaining/reset/freshness; native expansion exposes balances/actions/provenance. | Actual Masonry fixture renders independently inspected at 1120×780 and 800×560; closed-tile density accepted. Installed-binary follow-up pending. |
+| Dense quota tiles | Unequal tile heights do not create large empty grid cells. Closed tiles retain named windows, bars, remaining/reset/freshness; native expansion exposes balances/actions/provenance. | Actual Masonry fixture renders independently inspected at 1120×780 and 800×560; closed-tile density accepted. Installed Desktop follow-up also inspected and accepted for this UI-only checkpoint; expansion stays separate. |
 | Own live streams | Owned core supplies request/attempt live lifecycle and content; UI stays useful while a stream is running, including cancellation/error. | Core/Inspector implementation pending review. |
 | Conversation/turn/tool/worker grouping | Group only by supported identities and recorded evidence. Retries, continuations and tool calls do not become invented independent conversations. Missing parents/workers remain unknown. | Shared contract inspected; source and adversarial grouping fixtures pending. |
 | Durable usage | Existing requests/tokens survive migration/restart/replay. Metadata additions do not change token/outcome facts or double-count a terminal event. | Migration/collector source review pending. |
@@ -158,8 +158,8 @@ Independently viewed real native captures from
 `/tmp/lain-masonry-ui-evidence/evidence.json` (private Xvfb, PASS, 250 checks,
 48 PNGs). The fixture assembly SHA-256 is
 `B6F0C960BA6DE734A1F2729D3E5602B6F97E10E45A7F71FDAA6B56869E91B96B`.
-This evidence qualifies that exact fixture binary; the installed binary remains
-separate evidence, even when built from the same source.
+This evidence qualifies that exact fixture binary. The separately inspected
+installed binary and its different hash are recorded below.
 
 Viewed closed Overview and Accounts at both 1120×780 and 800×560. The left
 Z.ai card starts just below the shorter Codex card while the taller right Command
@@ -177,6 +177,40 @@ last shorter closed card; this is distinct from synchronizing every closed row.
 Details and actions remain readable and later windows are reachable by ordinary
 page scrolling. No targeted Masonry visual blocker was found in these captures.
 This is layout acceptance, not Inspector UI or whole-expansion release acceptance.
+
+## Installed Masonry checkpoint
+
+The completed installed run at
+`/tmp/lain-quota-installed-gui-check/evidence.json` is PASS with 22 native PNGs,
+using private Xvfb and installed Desktop SHA-256
+`7ca4fb2032f37e7c1eeb88b137d48afa4d18c35f6028f5d073d8e04c572d245a`.
+The root preserved its report as
+`tests/acceptance/evidence/masonry-desktop-installed.json`.
+Independently viewed installed Overview, closed Z.ai and Kimi Accounts tiles,
+expanded Kimi, Z.ai technical details, and reopened Usage. Actual provider windows
+remain readable (two Z.ai, three Kimi); bars, percentages, reset labels and sources
+match the captured Host observations. The independent-column layout remains
+visible with real account data.
+
+The installed harness retained one request, 81,986 tokens and cursor 2 before,
+during and after a same-process window close/reopen; Host and proxy remained
+reachable. This demonstrates that window reopening does not discard the captured
+persistent Usage. It is not a service restart/migration test. The harness performs
+GET observations and native navigation/expansion only; it reports no inference,
+quota refresh, credential check, configuration write or service operation.
+
+The separate `masonry-ui-installed.json` reports Desktop/CLI installation with
+Host/Core, services, credentials and current normal Codex config bytes preserved
+for that update interval. Its component source commits are Desktop `850cdc3`,
+CLI `d9cfc2f`, Host `de872b7`; it reports zero inference and service operations.
+This does not broaden preservation to earlier session intervals.
+
+**Scoped judgment:** the rendered and installed Masonry UI change at `850cdc3`
+is accepted as a standalone checkpoint, subject to packaging retaining the
+qualified component hashes. This does not qualify new Inspector/analysis/provider
+implementations or executable free-only routing. Packaging may preserve the
+already-qualified fixed Core; the UI evidence alone does not justify a broad
+expansion `releaseQualified: true` claim.
 
 ## Evidence ledger and final outcome
 
