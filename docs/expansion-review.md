@@ -148,7 +148,9 @@ workers/conversations. These implementation follow-ups were sent to its owner:
   redactor; upstream Core already omits overlong lines, but clearing state alone
   can expose a subsequent continuation in an isolated Host fixture.
 
-These are unexecuted WIP findings, pending owner updates and negative fixtures.
+Source fixes in Host `d94a7cf` have now been inspected: the five-source allowlist,
+effective reasoning, newline discard after oversized/gapped content, and monotonic
+pending-buffer lifetime are present. Focused execution remains pending.
 Provider preparation source reviews likewise do not qualify Host transport wiring,
 account entitlements, successful inference or usable free-only execution.
 
@@ -211,6 +213,53 @@ qualified component hashes. This does not qualify new Inspector/analysis/provide
 implementations or executable free-only routing. Packaging may preserve the
 already-qualified fixed Core; the UI evidence alone does not justify a broad
 expansion `releaseQualified: true` claim.
+
+## Integrated source and existing harness checkpoint
+
+Inspected the root's completed outputs under `/tmp/lain-expansion-tests`, rather
+than running competing builds. Client/CLI passed 63 assertions; provider policy
+42; transport 63; independent policy integration 169; direct APIs 60; trial
+providers 85; NVIDIA/Step 40; Poe/OpenCode 50; Synthetic/xAI 41; and three Python
+manifest tests passed. Gateway's initial build failed because its standalone
+project omitted additive Core contracts. After `cd45ec3`, the separate retest and
+run passed 37 assertions; the initial failing log is retained and not described
+as a first-pass success. These are synthetic checks, not provider access tests.
+
+Desktop Inspector source at integrated `414a5fb` uses source generations, explicit
+request/attempt IDs and evidenced conversation/parent/response-chain references.
+Tool chunks remain within a selected request/attempt. No timestamp/content/model
+heuristic creates conversations. Two concrete issues were reported and accepted
+for a follow-up: actual terminal state `success` was missing from the view's
+terminal-state list; per-attempt parent lookup could split a retried logical
+request when its attempts asserted conflicting parent IDs. The owner is adding
+per-request consensus and keeping ambiguous links under the original request.
+The view is also adopting the five-source allowlist and monotonic receipt TTL.
+Core replay age currently compares UTC observation timestamps; a separate review
+request asks for monotonic ring-retention timestamps so wall-clock rollback cannot
+extend the declared content lifetime. These remain open until fixes are inspected.
+
+## Narrow OpenRouter free-only qualification boundary
+
+Root accepted the design boundary of a dedicated numeric zero-USD hard cap,
+including BYOK, checked afresh with the actual outgoing key for every dispatch,
+plus exact model/endpoint and final-payload controls. Source preparation
+`b879bbd`/`307a6ee` is consistent with that boundary: only two explicit free model
+IDs qualify; arbitrary suffixes/random routers do not; recursive duplicate JSON
+keys, provider/model overrides, server tools, paid extras and unqualified fields
+are rejected; final provider prompt/completion/request/image prices are zero,
+fallbacks disabled, redirects/cookies disabled. Numeric zero is inspected without
+floating-point underflow; null, missing, positive or failed cap proofs reject.
+
+The official hard-cap/null distinction supports the chosen no-spend prerequisite.
+The documentation explicitly preserves the remaining evidence limit: no live
+zero-cap key has demonstrated successful free-model inference or behavior under
+administrator-enforced billable defaults, and a remote policy change cannot be
+atomically bound to the following inference call. This is not a live-usability
+claim. Core must carry the trusted route pin through every retry and invoke the
+final guard after all body/header transformations, immediately before dispatch;
+preparation helpers or an inbound-body check alone do not qualify execution.
+Other provider free-only mechanisms remain unsupported. Final wiring and Go
+execution evidence are still pending independent review.
 
 ## Evidence ledger and final outcome
 
