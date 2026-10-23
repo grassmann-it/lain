@@ -2,12 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Threading;
-using Lain.Client;
-using Lain.Core;
-using Lain.Desktop.Usage;
-using Avalonia.Platform.Storage;
-using System.Text.Json;
 
 namespace Lain.Desktop;
 
@@ -16,17 +10,55 @@ public sealed partial class MainWindow
     private Control OverviewPage()
     {
         var status = _status;
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,18,*") };
-        var proxyState = status is null ? "Unknown" : !_hostAvailable ? $"Last seen: {(status.ProxyReady ? "ready" : status.State)}" : status.ProxyReady ? "Connected" : "Not ready";
-        grid.Children.Add(Ui.Card(Ui.Stack(Ui.Text("PROXY", 11, Ui.Muted), Ui.Text(proxyState, 26, _hostAvailable ? Ui.Accent : Ui.Muted), Ui.Text(status?.Error ?? "Your own accounts. One local connection.", 13, Ui.Muted))));
-        var config = Ui.Card(Ui.Stack(Ui.Text("CONFIGURATION", 11, Ui.Muted), Ui.Text(_configuration is null ? "Unknown" : $"Revision {_configuration.Revision}", 26), Ui.Text(_configuration is null ? "Waiting for the host" : _configuration.Revision == _configuration.AppliedRevision ? "Applied to the proxy" : $"Pending · proxy uses revision {_configuration.AppliedRevision}", 13, Ui.Muted)));
-        Grid.SetColumn(config, 2); grid.Children.Add(config);
-        var panel = Ui.Stack(Heading("Welcome to the wired", "A quiet place for your accounts, models and usage."), grid,
-            Ui.Card(Ui.Stack(Ui.Text("Make a connection", 20), Ui.Text("Import an existing configuration or add an API account. Then choose model routes and build a profile for your client.", 14, Ui.Muted), Ui.Row(Ui.Button("Manage accounts", () => Navigate("Accounts")), Ui.Button("Setup guide", () => Navigate("Setup"))))));
-        if (_configuration is { } cfg) panel.Children.Add(Ui.Card(Ui.Row(Metric(cfg.Accounts.Length, "accounts"), Metric(cfg.Routes.Length, "routes"), Metric(cfg.Profiles.Length, "profiles"))));
-        panel.Children.Add(Ui.Card(Ui.Stack(Ui.Text("Local proxy", 20), Ui.Text("Manage only the proxy owned by lain. Restarting or stopping may interrupt active requests.", 13, Ui.Muted), Ui.Row(
-            Action("Start proxy", async () => { _status = await _client.ServiceAsync("start", _lifetime.Token); }, "Proxy start requested."),
-            Ui.Button("Restart…", () => ConfirmProxyAction("restart")), Ui.Button("Stop…", () => ConfirmProxyAction("stop"))))));
+        var configuration = _configuration;
+        var hostState = _hostAvailable ? "Online" : status is null ? "Unavailable" : "Offline · showing last known state";
+        var proxyState = status is null ? "Unknown" : status.ProxyReady ? "Ready" : status.State;
+        if (!_hostAvailable && status is not null) proxyState = $"Last known: {proxyState}";
+        var revisionState = configuration is null ? "Unavailable" : configuration.Revision == configuration.AppliedRevision
+            ? $"Revision {configuration.Revision} · applied"
+            : $"Revision {configuration.Revision} · pending; proxy uses {configuration.AppliedRevision}";
+        if (!_hostAvailable && configuration is not null) revisionState = $"Last known: {revisionState}";
+
+        var service = OverviewGroup("Local service",
+            OverviewValue("Host", hostState, _hostAvailable),
+            OverviewValue("Proxy", proxyState, _hostAvailable && status?.ProxyReady == true),
+            OverviewValue("Configuration", revisionState),
+            OverviewValue("Observed", status is null ? "No host response yet" : Ui.When(status.ObservedAt)));
+        if (!string.IsNullOrWhiteSpace(status?.Error))
+            service.Children.Add(Ui.Text(_hostAvailable ? status.Error : $"Last host error: {status.Error}", 12, Ui.Muted));
+        var start = Action("Start proxy", async () => { _status = await _client.ServiceAsync("start", _lifetime.Token); }, "Proxy start requested.");
+        var restart = Ui.Button("Restart…", () => ConfirmProxyAction("restart"));
+        var stop = Ui.Button("Stop…", () => ConfirmProxyAction("stop"));
+        start.IsEnabled = restart.IsEnabled = stop.IsEnabled = _hostAvailable;
+        service.Children.Add(OverviewActions(start, restart, stop));
+        service.Children.Add(Ui.Text("Restarting or stopping the proxy may interrupt active requests.", 12, Ui.Muted));
+
+        var inventory = OverviewGroup(_hostAvailable ? "Configuration" : "Last known configuration");
+        if (configuration is null)
+        {
+            inventory.Children.Add(Ui.Text("Connect to the host to load accounts, routes and profiles.", 13, Ui.Muted));
+            inventory.Children.Add(Ui.Button("Check connection", () => _ = RefreshAsync(true)));
+        }
+        else
+        {
+            inventory.Children.Add(OverviewInventory("Accounts", $"{configuration.Accounts.Length} configured · {configuration.Accounts.Count(x => x.Enabled)} enabled", "Accounts"));
+            inventory.Children.Add(OverviewInventory("Model routes", $"{configuration.Routes.Length} configured · {configuration.Routes.Count(x => x.Enabled)} enabled", "Routes"));
+            inventory.Children.Add(OverviewInventory("Profiles", $"{configuration.Profiles.Length} configured", "Profiles"));
+        }
+
+        var panel = Ui.Stack(Heading("Overview", "Local proxy and configuration status."), Ui.Card(service), Ui.Card(inventory));
+        if (!_hostAvailable)
+            panel.Children.Add(OverviewNext("Connect to the host", "Start the lain user service, then refresh to see the current state.", "Setup guide", "Setup"));
+        else if (configuration is { Accounts.Length: 0 })
+            panel.Children.Add(OverviewNext("Connect an account", "Add an API key, authorize Codex or import a supported configuration.", "Add account", "Accounts"));
+        else if (configuration is not null && !configuration.Accounts.Any(x => x.Enabled))
+            panel.Children.Add(OverviewNext("Enable an account", "A route needs an enabled account to serve requests.", "Manage accounts", "Accounts"));
+        else if (configuration is { Routes.Length: 0 })
+            panel.Children.Add(OverviewNext("Create a model route", "Choose an upstream model and the account that will serve it.", "Model routes", "Routes"));
+        else if (configuration is not null && !configuration.Routes.Any(x => x.Enabled))
+            panel.Children.Add(OverviewNext("Enable a model route", "Enable a route before using it in a client profile.", "Model routes", "Routes"));
+        else if (configuration is { Profiles.Length: 0 })
+            panel.Children.Add(OverviewNext("Create a profile", "Select routes and export a separate configuration for your client.", "Profiles", "Profiles"));
         return panel;
     }
 
@@ -34,12 +66,79 @@ public sealed partial class MainWindow
     {
         _editing = true;
         _page.Content = Ui.Stack(Heading($"{char.ToUpperInvariant(action[0]) + action[1..]} the lain proxy?", "Active requests may be interrupted. Your configuration and stored usage remain available."),
-            Ui.Row(Action("Continue", async () => { _status = await _client.ServiceAsync(action, _lifetime.Token); }, $"Proxy {action} requested."), Ui.Button("Cancel", () => { _editing = false; Render(); })));
+            OverviewActions(Action($"{char.ToUpperInvariant(action[0]) + action[1..]} proxy", async () => { _status = await _client.ServiceAsync(action, _lifetime.Token); }, $"Proxy {action} requested."), Ui.Button("Cancel", () => { _editing = false; Render(); })));
     }
 
-    private static Control Metric(int value, string label) => new Border { MinWidth = 150, Child = Ui.Stack(Ui.Text(value.ToString(), 28, Ui.Accent), Ui.Text(label, 13, Ui.Muted)) };
+    private Control SetupPage()
+    {
+        var configuration = _configuration;
+        var hostState = _hostAvailable ? "Online" : "Connection required";
+        var accountsState = configuration is null ? "Not loaded" : $"{configuration.Accounts.Length} configured";
+        var routingState = configuration is null ? "Not loaded" : $"{configuration.Routes.Length} routes · {configuration.Profiles.Length} profiles";
+        if (!_hostAvailable && configuration is not null)
+        {
+            accountsState = $"Last known: {accountsState}";
+            routingState = $"Last known: {routingState}";
+        }
+        return Ui.Stack(Heading("Setup", "Connect an account, choose models and configure your client."),
+            Ui.Card(OverviewGroup("1. Connect to the local host",
+                Ui.Text(hostState, 13, _hostAvailable ? Ui.Accent : Ui.Muted),
+                Ui.Text("Start the lain user service using the supplied installer. The host keeps running when this window closes.", 13, Ui.Muted),
+                OverviewActions(Ui.Button("Check connection", () => _ = RefreshAsync(true))))),
+            Ui.Card(OverviewGroup("2. Add an account",
+                Ui.Text(accountsState, 13, Ui.Muted),
+                Ui.Text("Authorize Codex, add an API key or import a supported local configuration.", 13, Ui.Muted),
+                Ui.Text("Imported access-token snapshots expire; import a fresh snapshot to reconnect. Other OAuth providers are not yet available.", 12, Ui.Muted),
+                OverviewActions(Ui.Button("Manage accounts", () => Navigate("Accounts"))))),
+            Ui.Card(OverviewGroup("3. Choose models and export a profile",
+                Ui.Text(routingState, 13, Ui.Muted),
+                Ui.Text("Bind a model route to your account, then include it in a profile. Export creates a separate client configuration.", 13, Ui.Muted),
+                OverviewActions(Ui.Button("Model routes", () => Navigate("Routes")), Ui.Button("Profiles", () => Navigate("Profiles"))))));
+    }
 
-    private Control SetupPage() => Ui.Stack(Heading("Your first connection", "lain runs locally, with a background host that stays active when this window closes."),
-        Ui.Card(Ui.Stack(Ui.Text("01  ·  Start the host", 20), Ui.Text("Install and start the lain user service using the supplied installer. The management API listens locally on port 18418; inference uses port 18417.", 14, Ui.Muted), Ui.Button("Check host connection", () => _ = RefreshAsync(true)))),
-        Ui.Card(Ui.Stack(Ui.Text("02  ·  Connect an account", 20), Ui.Text("Connect Codex through its authorization page, add an API key, or import a supported local configuration. Imported access-token snapshots expire; reconnect by importing a fresh snapshot. Other OAuth providers remain unavailable until qualified.", 14, Ui.Muted), Ui.Button("Manage accounts", () => Navigate("Accounts")))),
-        Ui.Card(Ui.Stack(Ui.Text("03  ·  Choose models and a profile", 20), Ui.Text("Create a model route bound to your account, then choose a profile. Profile export creates a separate client configuration so your existing client setup is preserved.", 14, Ui.Muted), Ui.Row(Ui.Button("Model routes", () => Navigate("Routes")), Ui.Button("Profiles", () => Navigate("Profiles"))))));}
+    private static StackPanel OverviewGroup(string title, params Control[] controls)
+    {
+        var panel = new StackPanel { Spacing = 9 };
+        panel.Children.Add(new TextBlock { Text = title, FontSize = 14, FontWeight = FontWeight.SemiBold, Foreground = Ui.Ink, Margin = new Thickness(0, 0, 0, 3), TextWrapping = TextWrapping.Wrap });
+        foreach (var control in controls) panel.Children.Add(control);
+        return panel;
+    }
+
+    private static Control OverviewValue(string label, string value, bool accent = false)
+    {
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("112,*"), ColumnSpacing = 12 };
+        row.Children.Add(Ui.Text(label, 13, Ui.Muted));
+        var text = Ui.Text(value, 13, accent ? Ui.Accent : Ui.Ink);
+        Grid.SetColumn(text, 1);
+        row.Children.Add(text);
+        return row;
+    }
+
+    private Control OverviewInventory(string label, string value, string section)
+    {
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 12, Margin = new Thickness(0, 2) };
+        var details = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
+        details.Children.Add(Ui.Text(label, 13));
+        details.Children.Add(Ui.Text(value, 12, Ui.Muted));
+        row.Children.Add(details);
+        var button = Ui.Button("Manage", () => Navigate(section));
+        button.VerticalAlignment = VerticalAlignment.Center;
+        Grid.SetColumn(button, 1);
+        row.Children.Add(button);
+        return row;
+    }
+
+    private Control OverviewNext(string title, string detail, string action, string section) =>
+        Ui.Card(OverviewGroup(title, Ui.Text(detail, 13, Ui.Muted), OverviewActions(Ui.Button(action, () => Navigate(section)))));
+
+    private static WrapPanel OverviewActions(params Control[] controls)
+    {
+        var row = new WrapPanel { Orientation = Orientation.Horizontal };
+        foreach (var control in controls)
+        {
+            control.Margin = new Thickness(0, 0, 8, 4);
+            row.Children.Add(control);
+        }
+        return row;
+    }
+}
