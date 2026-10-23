@@ -27,7 +27,9 @@ func WithOpenRouterPin(ctx context.Context, model string) context.Context {
 
 func OpenRouterPin(ctx context.Context) (string, bool) {
 	model, ok := ctx.Value(pinKey{}).(string)
-	return model, ok && IsOpenRouterFreeModel(model)
+	// Presence, not qualification: malformed intent must reach the rejecting
+	// final guard instead of falling back to ordinary unguarded dispatch.
+	return model, ok
 }
 
 // IsOpenRouterFreeModel deliberately excludes random routers and suffix guesses.

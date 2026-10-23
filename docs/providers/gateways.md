@@ -12,8 +12,9 @@ aktivierten Core-Routen. Der Integrator muss sie in den Katalog aufnehmen und de
 OpenRouter-Quotaadapter über den vorhandenen Host-HTTP-Client ohne Redirects
 registrieren. `GatewayRouteValidation` prüft Provider-spezifische Voraussetzungen;
 ein späterer Konfigurations-/Requestwriter muss diese Prüfung auch anwenden und
-alle tatsächlichen Fallbacks und Zusatzdienste erfassen. Ein UI-Schalter allein
-erzwingt keine kostenlose Inferenz.
+alle tatsächlichen Fallbacks und Zusatzdienste erfassen. Der gezielte OpenRouter-
+Laufzeitpfad und seine Grenzen stehen in [openrouter-free-only.md](openrouter-free-only.md).
+Ein UI-Schalter allein erzwingt keine kostenlose Inferenz.
 
 `FreeOnlyRejections` verlangt eine positiv qualifizierte aktuelle Modellmenge
 und belegten harten Kostenstopp. Diese Eingaben sind Prüfresultate, keine aus einem

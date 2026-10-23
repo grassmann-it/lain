@@ -160,8 +160,8 @@ func TestInboundAndContextPin(t *testing.T) {
 	if _, ok := OpenRouterPin(context.Background()); ok {
 		t.Fatal("unmarked context qualified")
 	}
-	if _, ok := OpenRouterPin(WithOpenRouterPin(context.Background(), "openrouter/free")); ok {
-		t.Fatal("random router qualified")
+	if model, ok := OpenRouterPin(WithOpenRouterPin(context.Background(), "openrouter/free")); !ok || model != "openrouter/free" {
+		t.Fatal("malformed pin intent disappeared instead of reaching final guard")
 	}
 	if model, ok := OpenRouterPin(WithOpenRouterPin(context.Background(), pinnedModel)); !ok || model != pinnedModel {
 		t.Fatal("trusted pin missing")

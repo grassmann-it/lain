@@ -60,9 +60,11 @@ configured by the user; this code does not create or update one.
 documented cap/null distinction; however, no explicit official assurance was
 found that a zero-limit key continues serving free models while preventing all
 administrator-enforced billable defaults. No live access has tested that boundary.
-Therefore do not represent it as observed usability or activate strict free-only
-solely because this helper or a manifest exists. The integrator must resolve this
-qualification boundary before enabling the route. A subsequent external change
+The accepted implementation boundary therefore relies on the provider's documented
+hard per-key cap as an external control and verifies its state for each dispatch.
+Do not represent this as observed usability: a zero-cap key may also deny free
+requests, and the appropriate result is a visible prerequisite/provider error,
+never a paid fallback. A subsequent external change
 to the key policy is also outside local control; fresh per-dispatch checks reduce
 the interval but cannot atomically bind a remote policy read to an inference call.
 
@@ -89,4 +91,5 @@ failing closed. `openrouter_test.go` uses an in-memory fake RoundTripper for all
 HTTP, including the key proof; it exercises body injection, independent fresh
 proofs, redirection, zero/unknown/positive caps, tiny nonzero cap values, sanitized
 failures and attempted routing/tool/plugin overrides. Run only in the root's
-serialized Go slot; tests have not been executed in this worktree.
+serialized Go slot; tests have not been executed in this worktree. Runtime activation
+also requires the Host writer and Core's startup/context guards, not just the helper.
