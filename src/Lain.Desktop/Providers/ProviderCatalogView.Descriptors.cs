@@ -115,7 +115,7 @@ public sealed partial class ProviderCatalogView
 
     private static string AccessType(string? kind) => kind?.ToLowerInvariant() switch
     {
-        "free" => "Ongoing free", "trial" => "One-time trial", "subscription" => "Subscription", "payg" => "Pay as you go", _ => "Unknown pricing"
+        "free" => "Free access", "trial" => "One-time trial", "subscription" => "Subscription", "payg" => "Pay as you go", _ => "Unknown pricing"
     };
     private static bool IsLiveVerified(string? state) => state is "verified" or "live_verified";
     private static string Readiness(ProviderDescriptorDto provider)

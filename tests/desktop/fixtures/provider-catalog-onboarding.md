@@ -6,10 +6,10 @@ for synthetic desktop tests. It never contacts the URLs it contains.
 The three entries copy the researched manifests from the parallel provider
 workers at this checkpoint:
 
-- NVIDIA Build: ongoing developer access, documented route features, unknown
+- NVIDIA Build: Free developer access, documented route features, unknown
   live budgets and account limits, no qualified spend-prevention claim.
 - Inception Mercury: a one-time new-account trial and separate PAYG access;
-  trial expiry remains unknown. It must not match an ongoing-free filter.
+  trial expiry remains unknown. It must not match an free-access filter.
 - Poe: subscription points and add-on points, shared account scope, distinct
   model/manufacturer/publisher evidence and no guessed recurring price.
 

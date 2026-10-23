@@ -20,7 +20,7 @@ public sealed partial class ProviderCatalogView : UserControl
     private readonly HashSet<string> _expanded = new(StringComparer.Ordinal);
     private CatalogCard[] _catalog = [];
     private bool _loaded;
-    private static readonly string[] BillingFilters = ["All access types", "Ongoing free", "One-time trial", "Subscription", "Pay as you go", "Unknown pricing"];
+    private static readonly string[] BillingFilters = ["All access types", "Free access", "One-time trial", "Subscription", "Pay as you go", "Unknown pricing"];
     private static readonly string[] SetupFilters = ["All providers", "No account configured", "Has configured accounts"];
 
     public ProviderCatalogView(Action<Uri>? openLink = null, Action<string>? beginSetup = null)
