@@ -22,7 +22,7 @@ with tempfile.TemporaryDirectory(prefix="lain-package-test-") as temporary:
     (package / "SHA256SUMS").write_text("".join(
         hashlib.sha256(path.read_bytes()).hexdigest() + "  " + str(path.relative_to(package)) + "\n"
         for path in sorted(package.rglob("*")) if path.is_file() and path.name != "SHA256SUMS"))
-    home = temporary / "data with ' quote %"
+    home = temporary / "data with spaces"
     prefix = temporary / "prefix"
     units = temporary / "units"
     env = dict(os.environ, LAIN_HOME=str(home), LAIN_SYSTEMD_DIR=str(units))
@@ -31,6 +31,13 @@ with tempfile.TemporaryDirectory(prefix="lain-package-test-") as temporary:
     def run(args, **options):
         return subprocess.run(args, env=env, capture_output=True, text=True, **options)
 
+    for character in ("'", '"', "%", "\\", "\t"):
+        unsupported = temporary / ("unsupported" + character + "path")
+        env["LAIN_HOME"] = str(unsupported)
+        result = run(command)
+        assert result.returncode != 0 and not unsupported.exists(), result.stderr
+        assert not prefix.exists() and not units.exists()
+    env["LAIN_HOME"] = str(home)
     result = run(command)
     assert result.returncode == 0, result.stderr
     del env["LAIN_HOME"]
@@ -42,7 +49,21 @@ with tempfile.TemporaryDirectory(prefix="lain-package-test-") as temporary:
     assert result.stdout.splitlines() == ["desktop/Lain.Desktop", str(home), "two words"]
     assert stat.S_IMODE(home.stat().st_mode) == 0o700
     unit = (units / "lain.service").read_text()
-    assert "18418" in unit and "%%" in unit and "UMask=0077" in unit
+    assert "18418" in unit and "UMask=0077" in unit
+    assert "WorkingDirectory=" + str(home).replace("%", "%%") + "\n" in unit
+    if os.environ.get("LAIN_VERIFY_SYSTEMD") == "1":
+        # Verify ordinary and space-containing service paths with the real parser.
+        for label in ("default-data", "data with spaces"):
+            verify_home = temporary / label
+            verify_prefix = temporary / (label + "-prefix")
+            verify_units = temporary / (label + "-units")
+            env["LAIN_HOME"] = str(verify_home)
+            env["LAIN_SYSTEMD_DIR"] = str(verify_units)
+            result = run(command[:-1] + [str(verify_prefix)])
+            assert result.returncode == 0, result.stderr
+            result = run(["systemd-analyze", "--user", "verify", str(verify_units / "lain.service")])
+            assert result.returncode == 0, result.stderr
+        env["LAIN_SYSTEMD_DIR"] = str(units)
     env["LAIN_HOME"] = str(home)
     result = run(command)
     assert result.returncode == 0, result.stderr

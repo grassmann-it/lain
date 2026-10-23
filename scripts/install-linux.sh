@@ -9,6 +9,11 @@ unit_dir=${LAIN_SYSTEMD_DIR:-"${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"}
 for path in "$package" "$prefix" "$lain_home" "$unit_dir"; do
     [[ "$path" == /* && "$path" != *$'\n'* && "$path" != *$'\r'* ]] || { echo 'All installation paths must be absolute and single-line' >&2; exit 2; }
 done
+# systemd rejects these literal characters in executable paths. Keep supported
+# homes explicit instead of creating an installation with an unusable service.
+case "$lain_home" in
+    *[\\\"\'%]*|*$'\t'*) echo 'LAIN_HOME cannot contain quotes, backslashes, percent signs or tabs; spaces are supported' >&2; exit 2;;
+esac
 for part in cli/Lain.Cli host/Lain.Host desktop/Lain.Desktop proxy/lain-proxy; do
     [[ -x "$package/$part" ]] || { echo "Missing executable: $part" >&2; exit 2; }
 done
@@ -42,8 +47,9 @@ pathlib.Path(launcher).chmod(0o700)
 # systemd specifiers and quoted argument syntax have different escaping than sh.
 escaped = home.replace('\\', '\\\\').replace('"', '\\"').replace('%', '%%')
 service = (root / 'lain.service.in').read_text().replace('@HOME@', escaped)
-# WorkingDirectory supports quoted values too.
-service = service.replace('WorkingDirectory=' + escaped, 'WorkingDirectory="' + escaped + '"')
+# WorkingDirectory is a single path directive, not a quoted argument list.
+# Spaces/quotes are literal here; escape only systemd percent specifiers.
+service = service.replace('@WORKING_DIRECTORY@', home.replace('%', '%%'))
 pathlib.Path(unit).write_text(service)
 pathlib.Path(unit).chmod(0o600)
 PY

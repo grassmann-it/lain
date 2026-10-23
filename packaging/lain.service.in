@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=@HOME@
+WorkingDirectory=@WORKING_DIRECTORY@
 Environment="LAIN_HOME=@HOME@"
 Environment="LAIN_PROXY_PATH=@HOME@/app/proxy/lain-proxy"
 Environment="ASPNETCORE_URLS=http://127.0.0.1:18418"

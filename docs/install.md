@@ -76,7 +76,10 @@ Standardpfade:
 
 `lain` funktioniert aus jedem Arbeitsverzeichnis; `lain ui` startet die GUI,
 alle anderen Argumente gehen unverändert an die CLI. `LAIN_HOME` überschreibt
-das private Verzeichnis und muss absolut sein. Beim Installieren wird der gewählte
+das private Verzeichnis und muss absolut sein. Leerzeichen werden unterstützt;
+Anführungszeichen, Backslashes, Prozentzeichen und Tabs in `LAIN_HOME` verweigert
+der Installer vor jeder Änderung, da diese Pfade keine unterstützte systemd-
+Programmpfadform sind. Beim Installieren wird der gewählte
 Wert auch im Launcher und im Service festgehalten. Ein abweichendes
 Installationspräfix als zweites Argument ändert nur den Ort von `bin/lain`.
 `LAIN_SYSTEMD_DIR` wählt das Verzeichnis für die Service-Datei, ansonsten gilt
@@ -122,3 +125,9 @@ realen Anbieterproben aus. Optional starten `--core /absolute/lain-proxy` und
 Hosttest benötigt den freien eigenen Port 18418. Backendberichte liegen im
 ausgegebenen temporären Verzeichnis. Diese Prüfungen ersetzen keine endgültige
 Abnahme für den exakten Lieferstand.
+
+Der isolierte Installer-Test `python3 packaging/test-install.py` prüft außerdem,
+dass nicht unterstützte Pfade keine Installationsänderungen hinterlassen.
+`LAIN_VERIFY_SYSTEMD=1 python3 packaging/test-install.py` prüft zusätzlich die
+erzeugten Units für Standard- und Leerzeichenpfade mit `systemd-analyze --user
+verify`, ohne Dienste zu starten oder zu ändern.
