@@ -24,12 +24,16 @@ public sealed class UsageView : UserControl
     private readonly TextBlock _connection = Label("Waiting for usage service", Muted);
     private readonly TextBlock _freshness = Label("No snapshot received", Muted);
     private readonly TextBlock _coverage = Label("Coverage unknown until a snapshot is received", Muted);
+    private readonly TextBlock _scope = Label("No filters applied yet", Muted);
     private readonly TextBlock _error = Label("", Ui.Warning);
     private readonly TextBlock _filterError = Label("", Ui.Warning);
     private readonly UniformGrid _totals = new() { Columns = 4 };
     private readonly HashSet<string> _expandedAttempts = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Button> _attemptToggles = new(StringComparer.Ordinal);
+    private readonly HashSet<(bool Account, string Key)> _expandedGroups = new();
+    private readonly Dictionary<(bool Account, string Key, bool Filter), Button> _groupButtons = new();
     private readonly Expander _dailyDetails = new() { Header = "Daily totals", HorizontalAlignment = HorizontalAlignment.Stretch };
+    private readonly ComboBox _dailyMetric = new() { Width = 152, ItemsSource = new[] { "Attempts", "Total tokens", "Output tokens" }, SelectedIndex = 1 };
     private readonly StackPanel _daily = new() { Spacing = 4 };
     private readonly StackPanel _accounts = new();
     private readonly StackPanel _models = new();
@@ -44,6 +48,7 @@ public sealed class UsageView : UserControl
     private readonly Dictionary<string, string> _accountNames = new();
     private readonly HashSet<string> _knownAccounts = new(StringComparer.Ordinal);
     private readonly HashSet<string> _knownModels = new(StringComparer.Ordinal);
+    private UsageSummaryDto? _summary;
     private long _generation;
 
     public UsageView(LainApiClient client)
@@ -70,6 +75,18 @@ public sealed class UsageView : UserControl
         filters.Children.Add(new StackPanel { Margin = new Thickness(0, 20, 0, 6), Children = { _apply } });
         _apply.Classes.Add("primary");
         ToolTip.SetTip(_status, "Exact HTTP code, 100–599. Leave blank for all outcomes.");
+        var ranges = new WrapPanel { Orientation = Orientation.Horizontal };
+        foreach (var (caption, days) in new (string, int?)[] { ("Today", 1), ("Last 7 days", 7), ("Last 30 days", 30), ("This month", null) })
+        {
+            var button = new Button { Content = caption, Margin = new Thickness(0, 0, 6, 6) };
+            ToolTip.SetTip(button, "Apply this calendar range in the selected time zone, together with the filters below.");
+            button.Click += async (_, _) => await ApplyRangeAsync(days);
+            ranges.Children.Add(button);
+        }
+        Avalonia.Automation.AutomationProperties.SetName(_dailyMetric, "Daily measure");
+        var measureLabel = Label("Show", Muted);
+        measureLabel.VerticalAlignment = VerticalAlignment.Center;
+        var measure = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { measureLabel, _dailyMetric } };
 
         var paging = new DockPanel { LastChildFill = false, Margin = new Thickness(0, 8, 0, 0) };
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { _previous, _next } };
@@ -89,21 +106,22 @@ public sealed class UsageView : UserControl
             Children =
             {
                 new StackPanel { Spacing = 3, Children = { Ui.Title("Usage"), Label("Persistent activity · updates every 5 seconds", Muted) } },
-                Panel(new StackPanel { Spacing = 4, Children = { filters, _filterError } }),
+                Panel(new StackPanel { Spacing = 4, Children = { ranges, filters, _filterError } }),
                 _error,
-                new StackPanel { Spacing = 3, Children = { _connection, _freshness, _coverage } },
+                new StackPanel { Spacing = 3, Children = { _connection, _freshness, _scope, _coverage } },
                 Panel(_totals, 0),
-                Section("Daily activity", "Attempts by calendar day", new StackPanel { Spacing = 6, Children = { _daily, _dailyDetails } }),
-                Section("Accounts", "Historical identities retained", _accounts),
-                Section("Actual models", "Requests and upstream attempts counted separately", _models),
+                Section("Daily activity", "Calendar days · unknown values stay —", new StackPanel { Spacing = 6, Children = { measure, _daily, _dailyDetails } }),
+                Section("Accounts", "Expand for token details and filtering · historical identities retained", _accounts),
+                Section("Actual models", "Expand for token details and filtering", _models),
                 Section("Attempts & errors", "25 per page · expand a row for tokens, timing and identifiers", new StackPanel { Children = { _attempts, paging } }),
-                Label("— means unknown. Cached and reasoning tokens are subsets of total tokens. Dates and times use the selected zone.", Muted)
+                Label("— means unknown. Cached and reasoning tokens are included in total tokens. Error percentages use attempts, including failed/canceled attempts and HTTP ≥400. Dates and times use the selected zone.", Muted)
             }
         };
         SizeChanged += (_, _) => _totals.Columns = Bounds.Width >= 850 ? 8 : 4;
         _apply.Click += async (_, _) => await ApplyAsync();
         _previous.Click += async (_, _) => await MovePageAsync(-1);
         _next.Click += async (_, _) => await MovePageAsync(1);
+        _dailyMetric.SelectionChanged += (_, _) => { if (_summary is not null) RenderDaily(_summary.Daily); };
         AttachedToVisualTree += OnAttached;
         DetachedFromVisualTree += OnDetached;
     }
@@ -144,6 +162,23 @@ public sealed class UsageView : UserControl
         await RefreshAsync(_lifetime.Token);
     }
 
+    private async Task ApplyRangeAsync(int? days)
+    {
+        try
+        {
+            var zone = TimeZoneInfo.FindSystemTimeZoneById(_zone.Text?.Trim() ?? "");
+            var today = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, zone).Date;
+            var from = days is { } count ? today.AddDays(1 - count) : new DateTime(today.Year, today.Month, 1);
+            _from.Text = from.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            _to.Text = today.AddDays(1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            await ApplyAsync();
+        }
+        catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException or ArgumentException)
+        {
+            ShowFilterError(ex);
+        }
+    }
+
     private async Task MovePageAsync(int direction)
     {
         if (_lifetime is null) return;
@@ -160,6 +195,7 @@ public sealed class UsageView : UserControl
             var from = ParseDate(_from.Text, zone);
             var to = ParseDate(_to.Text, zone);
             if (from >= to) throw new FormatException("The end date must follow the start date.");
+            if (to - from > TimeSpan.FromDays(366)) throw new FormatException("Choose a range of at most 366 days.");
             int? status = null;
             if (!string.IsNullOrWhiteSpace(_status.Text))
             {
@@ -175,10 +211,15 @@ public sealed class UsageView : UserControl
         }
         catch (Exception ex) when (ex is FormatException or TimeZoneNotFoundException or InvalidTimeZoneException or ArgumentException)
         {
-            _filterError.Text = ex is TimeZoneNotFoundException ? "Unknown time zone. Use an IANA name such as Europe/Berlin or UTC." : ex.Message;
-            _filterError.IsVisible = true;
+            ShowFilterError(ex);
             return false;
         }
+    }
+
+    private void ShowFilterError(Exception error)
+    {
+        _filterError.Text = error is TimeZoneNotFoundException ? "Unknown time zone. Use an IANA name such as Europe/Berlin or UTC." : error.Message;
+        _filterError.IsVisible = true;
     }
 
     private static DateTimeOffset ParseDate(string? text, TimeZoneInfo zone)
@@ -242,11 +283,13 @@ public sealed class UsageView : UserControl
 
     private void Render(UsageSummaryDto summary, PageDto<AttemptDto> page, UsageQuery query)
     {
+        _summary = summary;
         var zone = TimeZoneInfo.FindSystemTimeZoneById(summary.TimeZone);
         _connection.Text = "Connected · source: lain host / persistent usage API";
         _connection.Foreground = Accent;
         var age = DateTimeOffset.UtcNow - summary.ObservedAt;
         _freshness.Text = $"Observed {TimeZoneInfo.ConvertTime(summary.ObservedAt, zone):yyyy-MM-dd HH:mm:ss zzz} ({Math.Max(0, age.TotalSeconds):N0}s ago) · cursor {summary.Cursor:N0} · zone {summary.TimeZone}\nApplied range: {TimeZoneInfo.ConvertTime(summary.From, zone):yyyy-MM-dd HH:mm} → {TimeZoneInfo.ConvertTime(summary.To, zone):yyyy-MM-dd HH:mm} (exclusive)";
+        _scope.Text = $"Applied filters: {(query.AccountId is { } accountId ? AccountName(accountId) : "all accounts")} · {query.Model ?? "all models"} · {(query.StatusCode is { } status ? $"HTTP {status}" : "all outcomes")}";
         _coverage.Text = summary.Complete
             ? $"Coverage: complete for selected range · {summary.Totals.UnknownUsageAttempts:N0} attempts with unknown token usage"
             : $"Coverage: incomplete — totals may omit activity · {summary.Totals.UnknownUsageAttempts:N0} attempts with unknown token usage";
@@ -268,13 +311,15 @@ public sealed class UsageView : UserControl
 
     private void RenderEmptyTotals() => RenderStatStrip(Enumerable.Repeat("—", TotalTitles.Length).ToArray());
 
-    private void RenderTotals(UsageTotals totals) => RenderStatStrip(new[]
-    {
-        Number(totals.Requests), Number(totals.Attempts), Number(totals.Errors), Number(totals.Tokens.Total),
-        Number(totals.Tokens.Input), Number(totals.Tokens.Output), Number(totals.Tokens.Cached), Number(totals.Tokens.Reasoning)
-    });
+    private void RenderTotals(UsageTotals totals) => RenderStatStrip(
+        new[]
+        {
+            Number(totals.Requests), Number(totals.Attempts), Number(totals.Errors), Number(totals.Tokens.Total),
+            Number(totals.Tokens.Input), Number(totals.Tokens.Output), Number(totals.Tokens.Cached), Number(totals.Tokens.Reasoning)
+        },
+        new[] { "Client requests", "Upstream attempts", totals.Attempts > 0 ? $"{ErrorRate(totals)} of attempts" : "No attempts", "Reported total", "Reported input", "Reported output", "Included in total", "Included in total" });
 
-    private void RenderStatStrip(string[] values)
+    private void RenderStatStrip(string[] values, string[]? hints = null)
     {
         _totals.Children.Clear();
         for (var index = 0; index < TotalTitles.Length; index++)
@@ -284,11 +329,18 @@ public sealed class UsageView : UserControl
             value.FontWeight = FontWeight.SemiBold;
             value.TextWrapping = TextWrapping.NoWrap;
             value.TextTrimming = TextTrimming.CharacterEllipsis;
-            ToolTip.SetTip(value, values[index]);
+            ToolTip.SetTip(value, index == 2 ? $"{values[index]} failed/canceled attempts or HTTP ≥400. Percentage uses attempts in the applied range." : values[index]);
+            var content = new StackPanel { Spacing = 3, Children = { Label(TotalTitles[index], Muted), value } };
+            if (hints is not null)
+            {
+                var hint = Label(hints[index], Muted);
+                hint.FontSize = 11;
+                content.Children.Add(hint);
+            }
             _totals.Children.Add(new Border
             {
                 BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 1, 0), Padding = new Thickness(12, 9),
-                Child = new StackPanel { Spacing = 3, Children = { Label(TotalTitles[index], Muted), value } }
+                Child = content
             });
         }
     }
@@ -296,12 +348,13 @@ public sealed class UsageView : UserControl
     private void RenderDaily(UsageGroup[] days)
     {
         _daily.Children.Clear();
+        var metric = _dailyMetric.SelectedItem as string ?? "Total tokens";
         var exactTotals = new StackPanel();
-        exactTotals.Children.Add(GroupRow("Day", "Requests", "Attempts", "Errors", "Tokens", "Unknown", true));
+        exactTotals.Children.Add(GroupRow("Day", "Requests", "Attempts", "Errors · %", metric, "Unknown", true));
         foreach (var day in days)
         {
             var totals = day.Totals;
-            exactTotals.Children.Add(GroupRow(day.Key, Number(totals.Requests), Number(totals.Attempts), Number(totals.Errors), Number(totals.Tokens.Total), Number(totals.UnknownUsageAttempts)));
+            exactTotals.Children.Add(GroupRow(day.Key, Number(totals.Requests), Number(totals.Attempts), Errors(totals), Number(ActivityValue(totals)), Number(totals.UnknownUsageAttempts)));
         }
         _dailyDetails.Content = exactTotals;
         if (days.Length == 0)
@@ -310,15 +363,17 @@ public sealed class UsageView : UserControl
             exactTotals.Children.Add(Label("No activity in this range", Muted));
             return;
         }
-        var max = days.Max(x => x.Totals.Attempts);
+        var known = days.Select(day => ActivityValue(day.Totals)).Where(value => value.HasValue).Select(value => value!.Value).ToArray();
+        var max = known.DefaultIfEmpty(0).Max();
         var chart = new Grid { Height = 114, Margin = new Thickness(0, 6, 0, 0) };
         for (var index = 0; index < days.Length; index++)
         {
             var day = days[index];
             chart.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-            var ratio = max == 0 ? 0 : Math.Clamp((double)day.Totals.Attempts / max, 0, 1);
+            var amount = ActivityValue(day.Totals);
+            var ratio = amount is { } value && max > 0 ? Math.Clamp((double)value / max, 0, 1) : 0;
             var slot = new Grid { RowDefinitions = new RowDefinitions("*,20"), Background = Brushes.Transparent };
-            ToolTip.SetTip(slot, $"{day.Key}\n{day.Totals.Requests:N0} requests · {day.Totals.Attempts:N0} attempts · {day.Totals.Errors:N0} errors\n{Number(day.Totals.Tokens.Total)} tokens · {day.Totals.UnknownUsageAttempts:N0} unknown usage");
+            ToolTip.SetTip(slot, $"{day.Key} · {metric}: {Number(amount)}\n{day.Totals.Requests:N0} requests · {day.Totals.Attempts:N0} attempts · {Errors(day.Totals)} errors\n{TokenDetails(day.Totals.Tokens)}\n{day.Totals.UnknownUsageAttempts:N0} attempts with unknown usage or total");
             var bar = new Border
             {
                 Background = Accent, Height = ratio * 88, VerticalAlignment = VerticalAlignment.Bottom,
@@ -326,6 +381,13 @@ public sealed class UsageView : UserControl
                 CornerRadius = new CornerRadius(2, 2, 0, 0), IsVisible = ratio > 0
             };
             slot.Children.Add(bar);
+            if (amount is null)
+            {
+                var unknown = Label("—", Muted);
+                unknown.HorizontalAlignment = HorizontalAlignment.Center;
+                unknown.VerticalAlignment = VerticalAlignment.Bottom;
+                slot.Children.Add(unknown);
+            }
             // Keep every host bucket; thin the labels only, so long ranges still fit the viewport.
             var showLabel = index % Math.Max(1, (int)Math.Ceiling(days.Length / 7d)) == 0;
             if (showLabel)
@@ -339,35 +401,83 @@ public sealed class UsageView : UserControl
             Put(chart, slot, index);
         }
         _daily.Children.Add(chart);
-        _daily.Children.Add(Label($"{days[0].Key} → {days[^1].Key} · peak {max:N0} attempts / day", Muted));
+        var peak = known.Length == 0 ? $"{metric.ToLowerInvariant()} unknown" : $"{(known.Length < days.Length ? "known peak" : "peak")} {max:N0} {metric.ToLowerInvariant()} / day";
+        _daily.Children.Add(Label($"{days[0].Key} → {days[^1].Key} · {peak}" + (known.Length < days.Length ? " · — marks unknown values" : ""), Muted));
     }
+
+    private long? ActivityValue(UsageTotals totals) => _dailyMetric.SelectedIndex switch
+    {
+        0 => totals.Attempts,
+        2 => totals.Tokens.Output,
+        _ => totals.Tokens.Total
+    };
 
     private void RenderGroups(StackPanel target, UsageGroup[] groups, bool accounts)
     {
+        var focused = _groupButtons.FirstOrDefault(pair => pair.Key.Account == accounts && pair.Value.IsFocused).Key;
+        foreach (var key in _groupButtons.Keys.Where(key => key.Account == accounts).ToArray()) _groupButtons.Remove(key);
         target.Children.Clear();
-        target.Children.Add(GroupRow("Identity", "Requests", "Attempts", "Errors", "Tokens", "Unknown", true));
+        target.Children.Add(GroupRow("Identity", "Requests", "Attempts", "Errors · %", "Tokens", "Unknown", true));
         if (groups.Length == 0) { target.Children.Add(Label("No activity in this range", Muted)); return; }
         foreach (var group in groups)
         {
             var identity = accounts ? AccountName(group.Key) : group.Key;
             if (accounts && identity != group.Key) identity += $"  ·  {group.Key}";
             var t = group.Totals;
-            target.Children.Add(GroupRow(identity, Number(t.Requests), Number(t.Attempts), Number(t.Errors), Number(t.Tokens.Total), Number(t.UnknownUsageAttempts)));
+            var expanded = _expandedGroups.Contains((accounts, group.Key));
+            var toggle = DetailToggle(expanded, $"Details for {(accounts ? "account" : "model")} {group.Key}");
+            var filter = new Button { Content = accounts ? "Filter to this account" : "Filter to this model", HorizontalAlignment = HorizontalAlignment.Left };
+            Avalonia.Automation.AutomationProperties.SetName(filter, $"Filter to {(accounts ? "account" : "model")} {group.Key}");
+            _groupButtons[(accounts, group.Key, false)] = toggle;
+            _groupButtons[(accounts, group.Key, true)] = filter;
+            var row = GroupCells(identity, Number(t.Requests), Number(t.Attempts), Errors(t), Number(t.Tokens.Total), Number(t.UnknownUsageAttempts));
+            Put(row, toggle, 0);
+            var details = new StackPanel
+            {
+                IsVisible = expanded, Spacing = 6, Margin = new Thickness(34, 5, 8, 10),
+                Children =
+                {
+                    Label(TokenDetails(t.Tokens), Muted),
+                    Label($"{ErrorRate(t)} error rate · {t.Errors:N0} of {t.Attempts:N0} attempts · {t.UnknownUsageAttempts:N0} with unknown usage or total", Muted),
+                    filter
+                }
+            };
+            toggle.Click += (_, _) =>
+            {
+                details.IsVisible = !details.IsVisible;
+                toggle.Content = details.IsVisible ? "⌄" : "›";
+                if (details.IsVisible) _expandedGroups.Add((accounts, group.Key)); else _expandedGroups.Remove((accounts, group.Key));
+            };
+            filter.Click += async (_, _) => await ApplyGroupAsync(group.Key, accounts);
+            target.Children.Add(TableRow(new StackPanel { Children = { row, details } }));
         }
+        if (focused.Key is not null && _groupButtons.TryGetValue(focused, out var focusedButton)) focusedButton.Focus();
     }
 
-    private static Border GroupRow(string identity, string requests, string attempts, string errors, string tokens, string unknown, bool header = false)
+    private async Task ApplyGroupAsync(string key, bool account)
     {
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("2.5*,*,*,*,1.2*,*"), MinHeight = 30 };
+        if (account) UpdateChoices(_account, "All accounts", _knownAccounts, key, AccountName);
+        else UpdateChoices(_model, "All models", _knownModels, key, x => x);
+        await ApplyAsync();
+    }
+
+    private static Border GroupRow(string identity, string requests, string attempts, string errors, string tokens, string unknown, bool header = false) =>
+        TableRow(GroupCells(identity, requests, attempts, errors, tokens, unknown, header), header);
+
+    private static Grid GroupCells(string identity, string requests, string attempts, string errors, string tokens, string unknown, bool header = false)
+    {
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("28,2.5*,*,*,1.3*,1.2*,*"), MinHeight = 32 };
         var values = new[] { identity, requests, attempts, errors, tokens, unknown };
         for (var i = 0; i < values.Length; i++)
         {
             var label = Cell(values[i], header ? Muted : Ui.Ink);
             if (header) label.FontWeight = FontWeight.SemiBold;
+            if (header && i == 3) ToolTip.SetTip(label, "Failed/canceled attempts or HTTP ≥400, with their percentage of all attempts in the applied range.");
+            if (header && i == 5) ToolTip.SetTip(label, "Attempts without reported usage or a known total. Individual token fields may also be unknown.");
             if (i > 0) label.HorizontalAlignment = HorizontalAlignment.Right;
-            Put(grid, label, i);
+            Put(grid, label, i + 1);
         }
-        return TableRow(grid, header);
+        return grid;
     }
 
     private void RenderAttempts(PageDto<AttemptDto> page, TimeZoneInfo zone)
@@ -381,12 +491,10 @@ public sealed class UsageView : UserControl
         foreach (var attempt in page.Items)
         {
             var status = attempt.StatusCode?.ToString(CultureInfo.InvariantCulture) ?? "—";
-            var failed = attempt.StatusCode >= 400 || !string.IsNullOrEmpty(attempt.Error);
+            var failed = attempt.State is "failed" or "canceled" || attempt.StatusCode >= 400;
             var expanded = _expandedAttempts.Contains(attempt.Id);
-            var toggle = new Button { Content = expanded ? "⌄" : "›", Width = 26, Height = 28, MinHeight = 28, Padding = new Thickness(0), Background = Brushes.Transparent, BorderThickness = new Thickness(0) };
+            var toggle = DetailToggle(expanded, $"Details for attempt {attempt.Id}");
             _attemptToggles[attempt.Id] = toggle;
-            ToolTip.SetTip(toggle, "Show attempt details");
-            Avalonia.Automation.AutomationProperties.SetName(toggle, $"Details for attempt {attempt.Id}");
             var row = AttemptCells("", TimeZoneInfo.ConvertTime(attempt.StartedAt, zone).ToString("MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
                 $"{AccountName(attempt.AccountId)} / {attempt.Model}", status, Number(attempt.Tokens.Total), Milliseconds(attempt.DurationMs));
             Put(row, toggle, 0);
@@ -400,8 +508,9 @@ public sealed class UsageView : UserControl
                 {
                     Label($"{TimeZoneInfo.ConvertTime(attempt.StartedAt, zone):yyyy-MM-dd HH:mm:ss zzz} · HTTP {status} · {attempt.State}", Muted),
                     Label($"{AccountName(attempt.AccountId)} · {attempt.AccountId} · {attempt.Provider} · {attempt.Model}" + (attempt.RouteId is null ? "" : $" · route {attempt.RouteId}"), Muted),
-                    Label($"Tokens: {Number(attempt.Tokens.Total)} total · {Number(attempt.Tokens.Input)} input · {Number(attempt.Tokens.Output)} output · {Number(attempt.Tokens.Cached)} cached · {Number(attempt.Tokens.Reasoning)} reasoning", Muted),
+                    Label(TokenDetails(attempt.Tokens), Muted),
                     Label($"Duration {Milliseconds(attempt.DurationMs)} · first token {Milliseconds(attempt.FirstTokenMs)}", Muted),
+                    Label($"Output / end-to-end: {OutputRate(attempt)} · reported output ÷ full attempt duration", Muted),
                     Label($"Request {attempt.RequestId} · attempt {attempt.Id}", Muted)
                 }
             };
@@ -450,7 +559,30 @@ public sealed class UsageView : UserControl
 
     private string AccountName(string id) => _accountNames.GetValueOrDefault(id, id);
     private static string Number(long? value) => value?.ToString("N0", CultureInfo.CurrentCulture) ?? "—";
-    private static string Milliseconds(double? value) => value is { } ms && double.IsFinite(ms) && ms >= 0 ? $"{ms:N0} ms" : "—";
+    private static string Milliseconds(double? value)
+    {
+        if (value is not { } ms || !double.IsFinite(ms) || ms < 0) return "—";
+        return ms < 1000 ? $"{ms:N0} ms" : ms < 60000 ? $"{ms / 1000:N1} s" : $"{ms / 60000:N1} min";
+    }
+    private static string ErrorRate(UsageTotals totals) => totals.Attempts > 0 ? $"{100d * totals.Errors / totals.Attempts:N1}%" : "—";
+    private static string Errors(UsageTotals totals) => totals.Attempts > 0 ? $"{Number(totals.Errors)} · {ErrorRate(totals)}" : Number(totals.Errors);
+    private static string TokenDetails(TokenCounts tokens) => $"Tokens: {Number(tokens.Total)} total · {Number(tokens.Input)} input · {Number(tokens.Output)} output · {Number(tokens.Cached)} cached · {Number(tokens.Reasoning)} reasoning";
+    private static string OutputRate(AttemptDto attempt)
+    {
+        // This is a per-attempt display calculation, never an aggregate over the current page.
+        if (attempt.FinishedAt is not { } finished || finished < attempt.StartedAt || attempt.State == "pending" ||
+            attempt.Tokens.Output is not { } output || output < 0 ||
+            attempt.DurationMs is not { } duration || !double.IsFinite(duration) || duration <= 0) return "—";
+        var rate = output * 1000d / duration;
+        return double.IsFinite(rate) ? $"{rate:N1} tok/s" : "—";
+    }
+    private static Button DetailToggle(bool expanded, string name)
+    {
+        var button = new Button { Content = expanded ? "⌄" : "›", Width = 26, Height = 28, MinHeight = 28, Padding = new Thickness(0), Background = Brushes.Transparent, BorderThickness = new Thickness(0) };
+        ToolTip.SetTip(button, "Show details");
+        Avalonia.Automation.AutomationProperties.SetName(button, name);
+        return button;
+    }
     private void ShowError(string? message) { _error.Text = message ?? ""; _error.IsVisible = message is not null; }
     private static TextBlock Label(string text, IBrush? brush = null) => new() { Text = text, Foreground = brush, TextWrapping = TextWrapping.Wrap, FontSize = 13 };
     private static TextBlock Cell(string text, IBrush brush)
@@ -486,7 +618,7 @@ public sealed class UsageView : UserControl
         Spacing = 8,
         Children =
         {
-            new WrapPanel { Children = { new TextBlock { Text = title, FontSize = 14, FontWeight = FontWeight.SemiBold, Foreground = Ui.Ink, Margin = new Thickness(0, 0, 12, 0) }, Label(description, Muted) } },
+            new WrapPanel { Children = { new TextBlock { Text = title, FontSize = 14, FontWeight = FontWeight.SemiBold, Foreground = Ui.Ink, Margin = new Thickness(0, 0, 12, 0), Classes = { "section-title" } }, Label(description, Muted) } },
             body
         }
     });
