@@ -24,7 +24,7 @@ public sealed class LainApiClient : IDisposable
         if (http.BaseAddress is null) http.BaseAddress = LocalDiscovery.ApiAddress;
     }
 
-    public static LainApiClient CreateLocal() => new(new HttpClient { BaseAddress = LocalDiscovery.ApiAddress,
+    public static LainApiClient CreateLocal() => new(new HttpClient(new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false }) { BaseAddress = LocalDiscovery.ApiAddress,
         Timeout = TimeSpan.FromSeconds(30) }, null, true) { tokenProvider = LocalDiscovery.ReadHostToken };
 
     public Task<StatusDto> StatusAsync(CancellationToken ct = default) => Get<StatusDto>("status", ct);
