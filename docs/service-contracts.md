@@ -122,3 +122,35 @@ liefern dieselben Aggregate für GUI, CLI und Skill.
 Lokale Credentials und Anbieterfehler werden nicht als öffentliche API-Daten
 ausgegeben. `/api/v1/auth/token?audience=codex` liefert nach Hostauthentifizierung
 ausschließlich den lokalen Inferenzschlüssel.
+
+## Additive Erweiterung vom 24.10.2026
+
+Die ausführbaren DTO-Ergänzungen und die abgestimmte Implementierungsgrenze
+stehen in [Observability- und Anbieterverträgen](observability-contracts.md).
+Die öffentliche Version bleibt v1; vorhandene DTO-Parameter und Endpunkte
+behalten ihre Semantik. Neue optionale Felder ersetzen keine unbekannten Werte
+durch Schätzungen.
+
+- `/api/v1/usage/analysis` ergänzt vollständige Hostaggregate für belegte
+  Modellfamilien, Anbieter/Gateway, Reasoning, Routen und Workerbezüge sowie
+  Performanceverteilungen mit Mess- und Grundgesamtheitszahlen. Die bisherigen
+  Usage-Antworten bleiben kompatibel.
+- `/api/v1/inspector` und `/api/v1/inspector/events` liefern ausschließlich eigene,
+  begrenzte flüchtige Streambeobachtungen mit eigenem Quell-/Cursorbezug,
+  Lebensdauer, Redaktionsstatus und sichtbaren Lücken. Inhalte werden nicht Teil
+  der dauerhaften Usage. Chats und Worker werden nur durch belegte Identitäten
+  verbunden.
+- Anbieterbeschreibungen, Einrichtung und Modellmatrix trennen geprüfte Quellen,
+  vorbereitete Adapter, fehlende Zugangsdaten und tatsächlich geprüfte
+  Verbindungen. Kontingente behalten Budgetart, Einheit und gemeinsamen Scope.
+- Routen-/Profilrichtlinien ergänzen explizite Fallbacks. `free_only` verwirft
+  kostenpflichtige, trial-/abogebundene und unbekannt bepreiste Alternativen und
+  verlangt tatsächlich umgesetzte Kostenkontrolle. Eine Katalogbehauptung allein
+  autorisiert keinen Dispatch.
+
+Ein früher Usage-Bericht und das tatsächliche Streamende können auseinanderliegen.
+Der additive Journalabschluss `attempt_finished` ergänzt Messung und
+`completionState`, ohne den ursprünglichen Token-/Usagebeleg umzuschreiben.
+Neue Analysefehler zählen den bekannten tatsächlichen Abschluss; der bisherige
+`/usage`-Fehlerzähler behält seine historische Grundlage. Migrationen und
+Replay-Kompatibilität liegen beim Usageadapter, nicht bei den Clients.
