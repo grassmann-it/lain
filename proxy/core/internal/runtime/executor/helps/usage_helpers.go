@@ -1204,6 +1204,10 @@ func parseClaudeUsageNode(usageNode gjson.Result) usage.Detail {
 		CacheReadTokens:     cacheReadTokens,
 		CacheCreationTokens: cacheCreationTokens,
 	}
+	detail.Reported = &usage.ReportedTokens{
+		InputTokens: reportedToken(usageNode.Get("input_tokens")), OutputTokens: reportedToken(usageNode.Get("output_tokens")), TotalTokens: reportedToken(usageNode.Get("total_tokens")),
+		CacheReadTokens: reportedToken(usageNode.Get("cache_read_input_tokens")), CacheCreationTokens: reportedToken(usageNode.Get("cache_creation_input_tokens")), ReasoningTokens: reportedToken(reasoningNode),
+	}
 	if detail.CachedTokens == 0 {
 		detail.CachedTokens = detail.CacheCreationTokens
 	}

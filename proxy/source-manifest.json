@@ -29,7 +29,7 @@
     "cmd/fetch_codex_models/main.go": "cf53def54f83f48380aa79c2b30a8fcb1f652f82c11f4fc1b5f867619f02c990",
     "cmd/fetch_codex_models/main_test.go": "658a84d84009bd734554bb64c1df2cc5ab1e40ab2a2a80335d68a0d43e666497",
     "cmd/fetch_devin_models/main.go": "7242920a1c7016af7c994a21ef4c74643b92de3d6d8dc1ad803fec52de9ada54",
-    "cmd/lain-proxy/main.go": "276ed68cfbd0ae58c742053c1078e254942266ef66d4e3452fa1e09f272bb2d7",
+    "cmd/lain-proxy/main.go": "9b550984c701a20d9e1feacfc0c3de2fc01ca5f17ecfbc39c79f9b5c2b5c27e1",
     "cmd/server/main.go": "a77acce2091462413daf114c26785b9fd6899288be9b9aab9191419e5012f037",
     "cmd/server/main_test.go": "5a2dd1dd511fe8bdd1ed4ad620337ebf482b55334ffb355a9f67cf3453febe25",
     "cmd/validate_codex_models/main.go": "b2359f751b433f18245636d2214c67ed54144450a61ba343aebce5ad8da9a689",
@@ -343,11 +343,14 @@
     "internal/interfaces/error_message.go": "8a120378d4e377101cdecae961a93aa3f3261c5b0d873084bd8d29e56e8504f9",
     "internal/interfaces/types.go": "9b7002e1ef36a4aad13155a1a4b2b64d50b045c94656f3e39c9ca3be20d9cb94",
     "internal/lain/credentials.go": "6d6cf95882a49b9618d9fa5a68ad2a0f3a58f5841903d3be4436964e538e5d3f",
-    "internal/lain/http.go": "67f35c76e2ef0a885003448d4eb876859bbcec98e709a5e82276efb69b26b2a2",
+    "internal/lain/http.go": "a00e7e3f786a999951a09caccfe759be16685ba80d07737647c69cef77cf221b",
     "internal/lain/http_test.go": "804b6e76b536ed58e185133cc8c1aca56f7ccbf528ba5ff6993ead7946555bc4",
-    "internal/lain/integration.go": "f100988f622a0b104d589acdefbc8183eeba740b56ba9311ee6203e50de5eff4",
+    "internal/lain/integration.go": "ee8aa480f95283c1fd1bf97db83cf22b7391265031586653132ddb325e58b0a6",
     "internal/lain/journal.go": "6166b9ec3af5193aa0d3eadcdec5225f5961cc181134123e0675ea4f3807e632",
-    "internal/lain/journal_test.go": "c68723f7f05ea66e63de41483df7b05360758b5136cc16f44db9b0a0e7652429",
+    "internal/lain/journal_test.go": "c6cb23751429fcbf76c05b765c1965b4e87a30c276a22c8123f6a8497c66e4ef",
+    "internal/lain/login.go": "1b7fc98288a48f63910f9c8ed2f66f816dd1faada2c40e35a4fe7e91efbcf057",
+    "internal/lain/login_test.go": "6346763ba3701bd5a86609e65153c025184098294a15d3b4ce048ac1a5ccad19",
+    "internal/lain/owned.go": "ab63e6519258d43c03bcce31056e10fb975ac132d046b4707aecc1e1fb4a8f9a",
     "internal/logging/cpa_trace.go": "5a051ea25ebbdf0f30485fcf1ea5d49b2e614da9aa7fc562ca146d5d3e723b3c",
     "internal/logging/cpa_trace_test.go": "bf563681adeb0d93a7c70a97fbdd2242cee49c0fcccaf6c3096d4ea009d8b1e3",
     "internal/logging/diagnostic.go": "e5b18a36f7ed9f603c095ed037160a6b375188fd506c38b14a92ad16c2acf7cc",
@@ -697,7 +700,7 @@
     "internal/runtime/executor/helps/json_retry_helpers.go": "78f67f3c4038bd0f9c29a0e72f616e022fe8a48749eb91404aad3450e0ad7fae",
     "internal/runtime/executor/helps/kimi_responses.go": "676fb4c66f36f3293fc431d0dcfabe8e6ccef9e120573cca9e50e24d9c29bae9",
     "internal/runtime/executor/helps/kimi_responses_test.go": "2a8b0cf1a97bf618a342b1c356387c824f6c9b7da3a5203d3dac1476a35247c6",
-    "internal/runtime/executor/helps/lain_presence_test.go": "6a3fe5e97ca20c87eb1029d564875284ccbd5bfa90c1367c76ec24b0d200f3cd",
+    "internal/runtime/executor/helps/lain_presence_test.go": "f44e4591cd4531b37e4b2c2e210c9293fa497e32266c28e538379ddb293c0dfc",
     "internal/runtime/executor/helps/logging_helpers.go": "846b0a85795713135f841597c1f81a9c28c4dd93a2fe7f74f84ab0ed9f63bcbb",
     "internal/runtime/executor/helps/logging_helpers_test.go": "1f668d86f38895a4ead6466e0eda5179f0b3cda8d60a2caee4670fc8bee6d1a4",
     "internal/runtime/executor/helps/mimo_responses_tools.go": "78fb344b29febf389435ee3b207b83157bb884903ad6bb72ab8ba03c5d16ccd1",
@@ -715,7 +718,7 @@
     "internal/runtime/executor/helps/payload_helpers_disable_image_generation_test.go": "5b60499c9d4231f806fcb00be7c61b48cb9eb23953ef1a463fa75da4cecf13a8",
     "internal/runtime/executor/helps/payload_mutations.go": "1788786834db9cbc2b53b196c16c28beb15b3277b1dba483b51c25bc5b40124d",
     "internal/runtime/executor/helps/payload_mutations_test.go": "9d86199df19ef633e3002aa5e15fa31b396be4ec820e4deb51294f4ab8c1c95e",
-    "internal/runtime/executor/helps/plugin_executor_usage.go": "ea053008e73ba1ff423e42440f1614a09d15ca05890562de44d8629c68df7d7b",
+    "internal/runtime/executor/helps/plugin_executor_usage.go": "f8e900590d0679ea97dfafa0bcad26b8be5ba7b7ef6a6aec3f7de265bff8c49b",
     "internal/runtime/executor/helps/proxy_helpers.go": "eac23bbe3a06ec05f45fbd66e147b9ac6b5931779f1f764c9aa4ffaef7d3ed26",
     "internal/runtime/executor/helps/proxy_helpers_test.go": "c321bb6c2f4d8885d361409c407633334c3b25b70c966a5dbfe63fb5c9e36036",
     "internal/runtime/executor/helps/request_pair_compat_test.go": "fcee78b96ecf107160cea0e0d3cae548dba657c0b260a01a86af4416f3a1435d",
@@ -737,7 +740,7 @@
     "internal/runtime/executor/helps/token_helpers.go": "036b0d0336fc16cb6327877675bbe98db53723029e1f715679dd541d5b19790b",
     "internal/runtime/executor/helps/transport_cache.go": "41d01c281be7e0f1504b40415b0439bdafc6c09ff51f2466c7a8cb8ff4830be8",
     "internal/runtime/executor/helps/transport_cache_test.go": "a28ec6d4ba7d5bc055dc4776c4cc46a6662dbed0f675fdfd0c8f73ebe4053774",
-    "internal/runtime/executor/helps/usage_helpers.go": "8531f0787c0ddae904b8643f38e9ab7e13a56f03ceb466ed1455cc9df1d140af",
+    "internal/runtime/executor/helps/usage_helpers.go": "0248afb4eed4ff1f7df7800a74e6c72985714a48059d6c92c8f6274b82d9d1d2",
     "internal/runtime/executor/helps/usage_helpers_test.go": "f2f80cc35337f8681f34571d6a84bbb60ad2746a65103c36c9d3409e765bd035",
     "internal/runtime/executor/helps/usage_stream_benchmark_test.go": "52d53b4e5887582abba04abedc146a26a0fa11894bdf9e992d33b1e8e9e2f913",
     "internal/runtime/executor/helps/user_id_cache.go": "31fdb48817e16ece6f88400be1483e96ebf3e90c7fd65ed4b8c645187ed9df6d",
@@ -1246,7 +1249,7 @@
     "sdk/cliproxy/auth/conductor_cooldown_monotonic_test.go": "c566b277b28860d616ed056f0835075158763e2caa2c9c77b0f8a705d0990fcb",
     "sdk/cliproxy/auth/conductor_cooling_precedence_test.go": "e8e742468c92ac6c0b06fd57e23074ecfdc7227ba341af742ee81a25fed310cb",
     "sdk/cliproxy/auth/conductor_credits_candidates_test.go": "73fd9e1472e9375c84e8b46a0baf4bd36155c8fc247433b6bfc2e84a207a0818",
-    "sdk/cliproxy/auth/conductor_execution.go": "7f2eeada49a301f0ded6f7975373c7bcf45d830358a6f473ee91b129d950d77c",
+    "sdk/cliproxy/auth/conductor_execution.go": "bd19ceb2fc9e42ddaeabfcea33b8baecf7c1c67c9b4c7717e0ba2dff4242918d",
     "sdk/cliproxy/auth/conductor_execution_error_priority_test.go": "9ebc9f2af22a0f68db8ca494b729914c26b0fdf574b211351ceb594f42c80dc6",
     "sdk/cliproxy/auth/conductor_execution_quota_test.go": "25b15587a17ebcdc5a3a1782e3fbfb78237983933886441e1821eaa98991356a",
     "sdk/cliproxy/auth/conductor_executor_replace_test.go": "049f456790e49ec2cf7d4f059c7cc94ace5ec7a3778d66bddfe69002cd0f563f",
@@ -1262,7 +1265,7 @@
     "sdk/cliproxy/auth/conductor_overrides_test.go": "a9ee8d007a2c2914bc0f22089d34767fb19308e5f28320114da8dd1399966e00",
     "sdk/cliproxy/auth/conductor_quota_clock_test.go": "d1d57bb0cf6e2d9dcb0c698607c436223bdf98e2216e784bf163e38c4d3b3388",
     "sdk/cliproxy/auth/conductor_recent_requests_test.go": "264fd240fe4a4c24cb77f219b6f6b38c8d4560dbe8fe858a4937dcdce85f4d22",
-    "sdk/cliproxy/auth/conductor_refresh.go": "749eabe6ae06fae78b196e516f8f417e2b85cd08656617b474bc126a05954a6c",
+    "sdk/cliproxy/auth/conductor_refresh.go": "84f924b82d8f300bf3f7fe1b62d4b3ba948b3c591498f77f148ca336c70e7265",
     "sdk/cliproxy/auth/conductor_refresh_executor_key_test.go": "c9e9e06c97eca697fb4d5d80f56ee76b8c91211a06fe52de2873fd1cfe294d3f",
     "sdk/cliproxy/auth/conductor_remove_test.go": "3897ff87be70273e34a08c5b74f532926530fa5056f52df6456d05792cc896ad",
     "sdk/cliproxy/auth/conductor_request_scoped_errors.go": "9e5965094e4b328154b54d45189ded6be301675d7ffd332082b57abfa55763b3",
@@ -1272,7 +1275,7 @@
     "sdk/cliproxy/auth/conductor_scheduler_cooldown_rebuild_test.go": "08be286ea7bff1c801e390f958a9aeeaf52ebbb5ab8d298a3615c6fa291e9d69",
     "sdk/cliproxy/auth/conductor_scheduler_refresh_test.go": "66a308ac67cc6eee15ee8a5fba5a17c2dc705d400f6da141ce7f0fd2ff387a21",
     "sdk/cliproxy/auth/conductor_scheduler_targeted_update_test.go": "c5b164c0764c261e855b480283dcadf342a78facab93d14886a7dc00ffffef1f",
-    "sdk/cliproxy/auth/conductor_selection.go": "2159cc994a3bab53bb051661d2ed138e5fd5f25a330cedba96653584a65d2a58",
+    "sdk/cliproxy/auth/conductor_selection.go": "8f2e09defdb78c3e208c64ba86861d1895ab3d4a5a2616349a6841aba251046a",
     "sdk/cliproxy/auth/conductor_selection_cooldown_test.go": "4f5173356c920b4af881413c9982d2504aaabc921be0f236cba808fd377307d1",
     "sdk/cliproxy/auth/conductor_session_affinity_alias_test.go": "fe0811383115a68013706bd84acb194e0f329d79b6339b52d5c6f77836f1a2ea",
     "sdk/cliproxy/auth/conductor_stream.go": "8f8d8aec545510a65292630bc09dd22fb86d5a8fa675fd818db391284e5017e4",
@@ -1323,8 +1326,8 @@
     "sdk/cliproxy/auth/home_unauthorized_refresh_test.go": "2e1320258018b2931f29dbdb8c75e790b55883f2e07bd58e45363f57b779e7a6",
     "sdk/cliproxy/auth/home_web_search_capability_test.go": "163e3e7e9b5c8b303e18529bd5c74d346ca1e44e94bbb33af6319005bada0e5e",
     "sdk/cliproxy/auth/home_websocket_reuse_test.go": "d1af99b189d11bb4f49158cba65be37cbd1bc09121e1c6de21d9e73af85f6f36",
-    "sdk/cliproxy/auth/lain_dispatch.go": "92e71844a5f25e68b7992c51575f8ecbcfe33e14cbf250b1123ad71110c0a3eb",
-    "sdk/cliproxy/auth/lain_dispatch_test.go": "d8c3e6e17f03e1030ece25565cc35e10401b2f0c5d03c9308f20380e3ee8f4b7",
+    "sdk/cliproxy/auth/lain_dispatch.go": "a5f81fdc2a12f307a8f4bbb5ccc213c9b94845a7ea3073994450329aca46f540",
+    "sdk/cliproxy/auth/lain_dispatch_test.go": "c3aa51838a12521ff5a1fec7de3bbf8f0d1fee3cd2855320117e5f8208f2c7c3",
     "sdk/cliproxy/auth/meta_refresh_test.go": "15097bab45bde9d85edd3ab008e232e9dfd7f89519c39bb07ca069abc77c238b",
     "sdk/cliproxy/auth/metadata_keys.go": "f7a221bce6d1a3ae14709afc740ff9492e155c85845d0a17538ec4a4b70974a7",
     "sdk/cliproxy/auth/metadata_keys_test.go": "4f49f28de28c62eb6dcded98efed3f922a418edca4cb6af0573a01a897bd4aa8",
@@ -1481,7 +1484,7 @@
   "patches": {
     "cmd/lain-proxy/main.go": {
       "baseline": null,
-      "lain": "276ed68cfbd0ae58c742053c1078e254942266ef66d4e3452fa1e09f272bb2d7"
+      "lain": "9b550984c701a20d9e1feacfc0c3de2fc01ca5f17ecfbc39c79f9b5c2b5c27e1"
     },
     "internal/lain/credentials.go": {
       "baseline": null,
@@ -1489,7 +1492,7 @@
     },
     "internal/lain/http.go": {
       "baseline": null,
-      "lain": "67f35c76e2ef0a885003448d4eb876859bbcec98e709a5e82276efb69b26b2a2"
+      "lain": "a00e7e3f786a999951a09caccfe759be16685ba80d07737647c69cef77cf221b"
     },
     "internal/lain/http_test.go": {
       "baseline": null,
@@ -1497,7 +1500,7 @@
     },
     "internal/lain/integration.go": {
       "baseline": null,
-      "lain": "f100988f622a0b104d589acdefbc8183eeba740b56ba9311ee6203e50de5eff4"
+      "lain": "ee8aa480f95283c1fd1bf97db83cf22b7391265031586653132ddb325e58b0a6"
     },
     "internal/lain/journal.go": {
       "baseline": null,
@@ -1505,15 +1508,31 @@
     },
     "internal/lain/journal_test.go": {
       "baseline": null,
-      "lain": "c68723f7f05ea66e63de41483df7b05360758b5136cc16f44db9b0a0e7652429"
+      "lain": "c6cb23751429fcbf76c05b765c1965b4e87a30c276a22c8123f6a8497c66e4ef"
+    },
+    "internal/lain/login.go": {
+      "baseline": null,
+      "lain": "1b7fc98288a48f63910f9c8ed2f66f816dd1faada2c40e35a4fe7e91efbcf057"
+    },
+    "internal/lain/login_test.go": {
+      "baseline": null,
+      "lain": "6346763ba3701bd5a86609e65153c025184098294a15d3b4ce048ac1a5ccad19"
+    },
+    "internal/lain/owned.go": {
+      "baseline": null,
+      "lain": "ab63e6519258d43c03bcce31056e10fb975ac132d046b4707aecc1e1fb4a8f9a"
     },
     "internal/runtime/executor/helps/lain_presence_test.go": {
       "baseline": null,
-      "lain": "6a3fe5e97ca20c87eb1029d564875284ccbd5bfa90c1367c76ec24b0d200f3cd"
+      "lain": "f44e4591cd4531b37e4b2c2e210c9293fa497e32266c28e538379ddb293c0dfc"
+    },
+    "internal/runtime/executor/helps/plugin_executor_usage.go": {
+      "baseline": "ea053008e73ba1ff423e42440f1614a09d15ca05890562de44d8629c68df7d7b",
+      "lain": "f8e900590d0679ea97dfafa0bcad26b8be5ba7b7ef6a6aec3f7de265bff8c49b"
     },
     "internal/runtime/executor/helps/usage_helpers.go": {
       "baseline": "b48eca30ecdc1a49657d095a80cb86f32a9c425c87f13962847e6f0eb79e5e46",
-      "lain": "8531f0787c0ddae904b8643f38e9ab7e13a56f03ceb466ed1455cc9df1d140af"
+      "lain": "0248afb4eed4ff1f7df7800a74e6c72985714a48059d6c92c8f6274b82d9d1d2"
     },
     "sdk/api/handlers/handlers.go": {
       "baseline": "f7428b77517b2861a375a245c8c39d8fce555a60beba65bf9da7a26f81e69d7b",
@@ -1521,7 +1540,7 @@
     },
     "sdk/cliproxy/auth/conductor_execution.go": {
       "baseline": "cb9922c859184df4eb3396727c81f36b81d2b59ce99beb368dc789ef5d81967f",
-      "lain": "7f2eeada49a301f0ded6f7975373c7bcf45d830358a6f473ee91b129d950d77c"
+      "lain": "bd19ceb2fc9e42ddaeabfcea33b8baecf7c1c67c9b4c7717e0ba2dff4242918d"
     },
     "sdk/cliproxy/auth/conductor_home.go": {
       "baseline": "4ef399951c8dbba7e78ffd91cdafc0c08fde9b7da318c075dfed8ae43e1606cd",
@@ -1529,11 +1548,11 @@
     },
     "sdk/cliproxy/auth/conductor_refresh.go": {
       "baseline": "f4554268627ce0d769dc1ace41f54f4cee65244ec34ec715b1af068464780137",
-      "lain": "749eabe6ae06fae78b196e516f8f417e2b85cd08656617b474bc126a05954a6c"
+      "lain": "84f924b82d8f300bf3f7fe1b62d4b3ba948b3c591498f77f148ca336c70e7265"
     },
     "sdk/cliproxy/auth/conductor_selection.go": {
       "baseline": "9caf0d70f99a06fd6b36357f009f781d8972d154c5f05c38d270f6ceb78036ee",
-      "lain": "2159cc994a3bab53bb051661d2ed138e5fd5f25a330cedba96653584a65d2a58"
+      "lain": "8f2e09defdb78c3e208c64ba86861d1895ab3d4a5a2616349a6841aba251046a"
     },
     "sdk/cliproxy/auth/conductor_stream.go": {
       "baseline": "649f5787d3a4fccf05fb29cc57fa9fca433b6302e64132a863b2461b21daf96b",
@@ -1541,11 +1560,11 @@
     },
     "sdk/cliproxy/auth/lain_dispatch.go": {
       "baseline": null,
-      "lain": "92e71844a5f25e68b7992c51575f8ecbcfe33e14cbf250b1123ad71110c0a3eb"
+      "lain": "a5f81fdc2a12f307a8f4bbb5ccc213c9b94845a7ea3073994450329aca46f540"
     },
     "sdk/cliproxy/auth/lain_dispatch_test.go": {
       "baseline": null,
-      "lain": "d8c3e6e17f03e1030ece25565cc35e10401b2f0c5d03c9308f20380e3ee8f4b7"
+      "lain": "c3aa51838a12521ff5a1fec7de3bbf8f0d1fee3cd2855320117e5f8208f2c7c3"
     },
     "sdk/cliproxy/lain_snapshot.go": {
       "baseline": null,

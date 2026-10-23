@@ -26,3 +26,13 @@ func TestLainUsagePresenceDistinguishesAbsentAndZero(t *testing.T) {
 		t.Fatal(detail, ok)
 	}
 }
+
+func TestLainClaudeStreamPreservesReportedPresenceAcrossDeltas(t *testing.T) {
+	initial := ParseClaudeUsage([]byte(`{"usage":{"input_tokens":11,"output_tokens":0,"cache_read_input_tokens":0}}`))
+	update := ParseClaudeUsage([]byte(`{"usage":{"output_tokens":7}}`))
+	merged := MergeStreamUsageDetail(initial, update)
+	p := merged.Reported
+	if p == nil || p.InputTokens == nil || *p.InputTokens != 11 || p.OutputTokens == nil || *p.OutputTokens != 7 || p.CacheReadTokens == nil || *p.CacheReadTokens != 0 || p.CacheCreationTokens != nil || p.ReasoningTokens != nil || p.TotalTokens != nil {
+		t.Fatal(p)
+	}
+}

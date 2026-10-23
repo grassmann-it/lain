@@ -143,6 +143,33 @@ func ObserveMergedStreamUsage(buffer *StreamUsageBuffer, update usage.Detail) {
 // MergeStreamUsageDetail merges existing stream usage with a newer update.
 func MergeStreamUsageDetail(existing, update usage.Detail) usage.Detail {
 	merged := update
+	if existing.Reported != nil || update.Reported != nil {
+		known := usage.ReportedTokens{}
+		if update.Reported != nil {
+			known = *update.Reported
+		}
+		if prior := existing.Reported; prior != nil {
+			if known.InputTokens == nil {
+				known.InputTokens = prior.InputTokens
+			}
+			if known.OutputTokens == nil {
+				known.OutputTokens = prior.OutputTokens
+			}
+			if known.TotalTokens == nil {
+				known.TotalTokens = prior.TotalTokens
+			}
+			if known.CacheReadTokens == nil {
+				known.CacheReadTokens = prior.CacheReadTokens
+			}
+			if known.CacheCreationTokens == nil {
+				known.CacheCreationTokens = prior.CacheCreationTokens
+			}
+			if known.ReasoningTokens == nil {
+				known.ReasoningTokens = prior.ReasoningTokens
+			}
+		}
+		merged.Reported = &known
+	}
 	if merged.InputTokens == 0 && existing.InputTokens > 0 {
 		merged.InputTokens = existing.InputTokens
 	}

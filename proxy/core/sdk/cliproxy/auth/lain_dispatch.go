@@ -13,6 +13,11 @@ import (
 var LainBeforeDispatch func(context.Context, *Auth, executor.Request, executor.Options) error
 var LainAfterDispatch func(context.Context, error) error
 var LainReadOnlyCredentials bool
+var LainCredentialWritable func(*Auth) bool
+
+func lainCredentialWritable(a *Auth) bool {
+	return !LainReadOnlyCredentials || (LainCredentialWritable != nil && LainCredentialWritable(a))
+}
 
 func lainAuthAllowed(meta map[string]any, id string) bool {
 	allowed, exists := meta["lain.allowed_auth_ids"]
@@ -79,7 +84,7 @@ func lainExecuteStream(e ProviderExecutor, ctx context.Context, auth *Auth, req 
 			if canceled {
 				continue
 			}
-			if lainTerminalChunk(chunk.Payload) {
+			if len(completion) > 0 || lainTerminalChunk(chunk.Payload) {
 				completion = append(completion, chunk)
 				continue
 			}

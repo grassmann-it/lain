@@ -30,6 +30,7 @@ func run() error {
 	bindingsPath := flag.String("bindings", "", "account and model route bindings JSON")
 	journalPath := flag.String("journal", "", "durable event journal path")
 	tokenPath := flag.String("management-token-file", "", "private management bearer token file")
+	ownedPath := flag.String("owned-auth-dir", "", "separate directory for credentials created by lain login")
 	flag.Parse()
 	for _, p := range []string{*configPath, *bindingsPath, *journalPath, *tokenPath} {
 		if p == "" || !filepath.IsAbs(p) {
@@ -92,7 +93,34 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	manager := auth.NewManager(snapshotStore, nil, nil)
+	if *ownedPath == "" {
+		*ownedPath = filepath.Join(filepath.Dir(cfg.AuthDir), "auth-owned")
+	}
+	if !filepath.IsAbs(*ownedPath) {
+		return errors.New("owned-auth-dir must be absolute")
+	}
+	if err = os.MkdirAll(*ownedPath, 0700); err != nil {
+		return err
+	}
+	snapshotReal, err := filepath.EvalSymlinks(cfg.AuthDir)
+	if err != nil {
+		return err
+	}
+	ownedReal, err := filepath.EvalSymlinks(*ownedPath)
+	if err != nil {
+		return err
+	}
+	if snapshotReal == ownedReal || strings.HasPrefix(ownedReal, snapshotReal+string(os.PathSeparator)) || strings.HasPrefix(snapshotReal, ownedReal+string(os.PathSeparator)) {
+		return errors.New("owned and snapshot auth directories must be separate")
+	}
+	ownedStore, err := lain.NewOwnedStore(snapshotStore, *ownedPath, bindings)
+	if err != nil {
+		return err
+	}
+	auth.LainCredentialWritable = ownedStore.Allowed
+	integration.Login = lain.NewLoginManager(ownedStore, cfg)
+	defer integration.Login.Close()
+	manager := auth.NewManager(ownedStore, nil, nil)
 	service, err := cliproxy.NewBuilder().WithConfig(cfg).WithConfigPath(*configPath).WithCoreAuthManager(manager).WithWatcherFactory(cliproxy.LainSnapshotWatcher).WithServerOptions(api.WithMiddleware(integration.Middleware(managementToken, manager, cfg.APIKeys...))).Build()
 	if err != nil {
 		return err

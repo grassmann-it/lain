@@ -5,8 +5,11 @@ go_bin="${LAIN_GO:-}"
 if [[ -z "$go_bin" ]]; then
  if command -v go >/dev/null 2>&1; then go_bin="$(command -v go)";
  elif [[ -x "$HOME/.local/share/model-usage/toolchain/go/bin/go" ]]; then go_bin="$HOME/.local/share/model-usage/toolchain/go/bin/go";
- else echo 'Go 1.26+ is required; set LAIN_GO to its absolute executable.' >&2; exit 1; fi
+ else echo 'Go 1.27.2 is required; set LAIN_GO to its absolute executable.' >&2; exit 1; fi
 fi
+expected_go="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["goVersion"])' "$root/proxy/toolchain.json")"
+actual_go="$("$go_bin" env GOVERSION)"
+if [[ "$actual_go" != "$expected_go" ]]; then echo "Pinned compiler $expected_go required; found $actual_go" >&2; exit 1; fi
 output="${1:-$root/artifacts/proxy/lain-proxy}"
 mkdir -p -- "$(dirname -- "$output")"
 python3 "$root/scripts/build-core-verify.py"

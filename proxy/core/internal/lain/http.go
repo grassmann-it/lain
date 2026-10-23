@@ -23,6 +23,9 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 				c.AbortWithStatus(401)
 				return
 			}
+			if i.Login != nil && i.Login.Handle(c) {
+				return
+			}
 			switch path {
 			case "/lain/events":
 				if c.Request.Method != "GET" {

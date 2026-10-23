@@ -42,7 +42,7 @@ const (
 // every few seconds and triggers refresh operations when required.
 // Only one loop is kept alive; starting a new one cancels the previous run.
 func (m *Manager) StartAutoRefresh(parent context.Context, interval time.Duration) {
-	if LainReadOnlyCredentials {
+	if LainReadOnlyCredentials && LainCredentialWritable == nil {
 		return
 	}
 	if interval <= 0 {
@@ -116,6 +116,9 @@ func (m *Manager) queueRefreshUnschedule(authID string) {
 }
 
 func (m *Manager) shouldRefresh(a *Auth, now time.Time) bool {
+	if !lainCredentialWritable(a) {
+		return false
+	}
 	if a == nil {
 		return false
 	}
@@ -475,7 +478,7 @@ func (m *Manager) RefreshHomeSelectionAfterUnauthorized(_ context.Context, selec
 // tryRefreshAfterUnauthorized refreshes local OAuth credentials once after a
 // 401 so the current auth can be retried before fallback/suspend.
 func (m *Manager) tryRefreshAfterUnauthorized(ctx context.Context, auth *Auth, execErr error, alreadyTried bool) (*Auth, bool) {
-	if LainReadOnlyCredentials {
+	if !lainCredentialWritable(auth) {
 		return auth, false
 	}
 	if m == nil || auth == nil || alreadyTried || execErr == nil {
@@ -547,6 +550,9 @@ func (m *Manager) refreshAuthForRequest(ctx context.Context, id, failedAccessTok
 		}
 	}
 
+	if !lainCredentialWritable(auth) {
+		return nil, errors.New("credential refresh is restricted to active owned credentials")
+	}
 	base := auth.Clone()
 	updated, err := exec.Refresh(ctx, base.Clone())
 	if err != nil && errors.Is(err, context.Canceled) {

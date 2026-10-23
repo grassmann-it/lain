@@ -1504,7 +1504,7 @@ func (m *Manager) prepareHomeAuthSnapshot(ctx context.Context, executor Provider
 }
 
 func (m *Manager) prepareRequestAuth(ctx context.Context, executor ProviderExecutor, auth *Auth) (*Auth, error) {
-	if LainReadOnlyCredentials {
+	if !lainCredentialWritable(auth) {
 		return auth, nil
 	}
 	if m == nil || executor == nil || auth == nil {
@@ -1521,6 +1521,9 @@ func (m *Manager) prepareRequestAuth(ctx context.Context, executor ProviderExecu
 // PrepareRequestAuth prepares a registered credential using the same serialization
 // and lifecycle checks as normal request execution. Management tools use this path too.
 func (m *Manager) PrepareRequestAuth(ctx context.Context, preparer RequestAuthPreparer, auth *Auth) (*Auth, error) {
+	if !lainCredentialWritable(auth) {
+		return auth, nil
+	}
 	if m == nil || preparer == nil || auth == nil || !preparer.ShouldPrepareRequestAuth(auth) {
 		return auth, nil
 	}

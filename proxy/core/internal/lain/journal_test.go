@@ -6,9 +6,12 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/router-for-me/CLIProxyAPI/v7/internal/config"
+	"github.com/router-for-me/CLIProxyAPI/v7/internal/runtime/executor/helps"
 	auth "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/auth"
 	executor "github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/executor"
 	"github.com/router-for-me/CLIProxyAPI/v7/sdk/cliproxy/usage"
+	"github.com/tidwall/gjson"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -223,5 +226,35 @@ func TestRouteCredentialOverridesPreserveLogicalAccount(t *testing.T) {
 	b.Accounts["b"] = "responses-credential"
 	if _, err = New(j, b); err == nil {
 		t.Fatal("same credential assigned to two logical accounts")
+	}
+}
+
+func TestDispatchPreservesPublicAliasForPayloadRules(t *testing.T) {
+	i, ctx, a := dispatchFixture(t)
+	opts := executor.Options{Metadata: map[string]any{executor.RequestedModelMetadataKey: "core-model"}}
+	if err := i.Before(ctx, a, executor.Request{Model: "upstream-model"}, opts); err != nil {
+		t.Fatal(err)
+	}
+	if opts.Metadata[executor.RequestedModelMetadataKey] != "alias" {
+		t.Fatal("public payload selector alias lost")
+	}
+}
+
+func TestPublicAliasPayloadFilterAfterRouteRewrite(t *testing.T) {
+	i, ctx, a := dispatchFixture(t)
+	c := ctx.Value("gin").(*gin.Context)
+	v, _ := c.Get("lain.selection")
+	selected := v.(selection)
+	selected.Alias = "cmd-fixture"
+	c.Set("lain.selection", selected)
+	opts := executor.Options{Metadata: map[string]any{executor.RequestedModelMetadataKey: "gpt-upstream"}}
+	if err := i.Before(ctx, a, executor.Request{Model: "gpt-upstream"}, opts); err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{Payload: config.PayloadConfig{Filter: []config.PayloadFilterRule{{Models: []config.PayloadModelRule{{Name: "cmd-*", Protocol: "codex"}}, Params: []string{"include"}}}}}
+	body := []byte(`{"model":"gpt-upstream","include":["reasoning.encrypted_content"],"input":"hello"}`)
+	filtered := helps.ApplyPayloadConfigWithRoot(cfg, "gpt-upstream", "codex", "", body, body, helps.PayloadRequestedModel(opts, "gpt-upstream"), "")
+	if gjson.GetBytes(filtered, "include").Exists() || gjson.GetBytes(filtered, "input").String() != "hello" {
+		t.Fatal(string(filtered))
 	}
 }

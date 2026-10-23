@@ -13,6 +13,7 @@ import (
 )
 
 type Route struct {
+	Provider    string            `json:"provider,omitempty"`
 	Credentials map[string]string `json:"credentials,omitempty"`
 	Visible     *bool             `json:"visible,omitempty"`
 	ID          string            `json:"id"`
@@ -34,6 +35,7 @@ type attempt struct {
 	reported bool
 }
 type Integration struct {
+	Login    *LoginManager
 	Journal  *Journal
 	Bindings Bindings
 	mu       sync.Mutex
@@ -110,6 +112,10 @@ func (i *Integration) Before(ctx context.Context, a *auth.Auth, req executor.Req
 	if !ok || a == nil || !selected.Allowed[a.ID] {
 		return closed(errors.New("dispatch identity is outside the selected route"))
 	}
+	// Preserve the public alias for upstream payload rules after route model translation.
+	if opts.Metadata != nil {
+		opts.Metadata[executor.RequestedModelMetadataKey] = selected.Alias
+	}
 	accountID := ""
 	for _, id := range selected.Route.Accounts {
 		if i.Credential(selected.Route, id) == a.ID {
@@ -122,7 +128,11 @@ func (i *Integration) Before(ctx context.Context, a *auth.Auth, req executor.Req
 	if accountID == "" || requestID == "" || attemptID == "" {
 		return closed(errors.New("dispatch identity missing"))
 	}
-	event := Event{Kind: "attempt_started", RequestID: requestID, AttemptID: attemptID, AccountID: accountID, CredentialID: a.ID, RouteID: &selected.Route.ID, ObservedAt: time.Now().UTC(), Provider: a.Provider, RequestedModel: selected.Alias, Model: req.Model}
+	provider := a.Provider
+	if selected.Route.Provider != "" {
+		provider = selected.Route.Provider
+	}
+	event := Event{Kind: "attempt_started", RequestID: requestID, AttemptID: attemptID, AccountID: accountID, CredentialID: a.ID, RouteID: &selected.Route.ID, ObservedAt: time.Now().UTC(), Provider: provider, RequestedModel: selected.Alias, Model: req.Model}
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	if err := i.Journal.Append(event); err != nil {

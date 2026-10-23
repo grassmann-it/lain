@@ -56,3 +56,35 @@ func TestLainBeforeDispatchFailureDoesNotCallProvider(t *testing.T) {
 		t.Fatal("provider called without durable attempt")
 	}
 }
+
+type lainRefreshFixture struct {
+	ProviderExecutor
+	calls int
+}
+
+func (e *lainRefreshFixture) Identifier() string { return "fixture" }
+func (e *lainRefreshFixture) Refresh(_ context.Context, a *Auth) (*Auth, error) {
+	e.calls++
+	a.Metadata = map[string]any{"access_token": "fresh"}
+	return a, nil
+}
+func TestLainRefreshOwnershipGateProtectsExternalCredentials(t *testing.T) {
+	readonly, writable := LainReadOnlyCredentials, LainCredentialWritable
+	defer func() { LainReadOnlyCredentials = readonly; LainCredentialWritable = writable }()
+	LainReadOnlyCredentials = true
+	LainCredentialWritable = func(a *Auth) bool { return a != nil && a.ID == "owned/own.json" && !a.Disabled }
+	manager := NewManager(nil, nil, nil)
+	e := &lainRefreshFixture{}
+	manager.RegisterExecutor(e)
+	for _, id := range []string{"external.json", "owned/own.json"} {
+		if _, err := manager.Register(context.Background(), &Auth{ID: id, Provider: "fixture", Metadata: map[string]any{"access_token": "old", "refresh_token": "secret"}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := manager.refreshAuthForRequest(context.Background(), "external.json", ""); err == nil || e.calls != 0 {
+		t.Fatal("external refresh attempted")
+	}
+	if _, err := manager.refreshAuthForRequest(context.Background(), "owned/own.json", ""); err != nil || e.calls != 1 {
+		t.Fatal("owned refresh unavailable", err, e.calls)
+	}
+}

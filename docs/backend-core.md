@@ -9,7 +9,7 @@ records the exact retained and patched source. The original personal proxy was
 not changed, launched, stopped, or queried by this build.
 
 Build with `scripts/build-core.sh`, optionally passing an absolute output path.
-Go 1.26+ is required; set `LAIN_GO` to its executable when it is outside PATH.
+Exactly Go 1.27.2 is required (`proxy/toolchain.json`); set `LAIN_GO` to its executable when it is outside PATH.
 Dependencies are pinned by the retained `go.mod` and `go.sum`. Default output is
 `artifacts/proxy/lain-proxy`; its adjacent manifest records the binary SHA-256,
 source manifest SHA-256 and compiler. Licence: upstream MIT (`proxy/core/LICENSE`).
@@ -68,8 +68,9 @@ boundary. WebSocket and image endpoints are not exposed by this version.
 OAuth import accepts only separate Codex access-token snapshots. A JSON file with
 `refresh_token`, another OAuth provider, or a symlink is rejected. All refresh and
 request preparation paths are disabled for these snapshots; runtime credential
-writes are suppressed. Own OAuth login and rotation are **not qualified by this
-integration** and must not be represented as tested by a successful import.
+writes are suppressed. Owned login credentials use the separate directory and
+explicit ownership rules described below. Live provider rotation remains untested
+unless the qualification report records such a probe.
 
 ## Durable attempt and usage contract
 
@@ -83,10 +84,12 @@ The usage publisher calls the durable sink synchronously **before** starting or
 appending to the core RAM queue. The sink stores only selected metadata: no request
 or response content, headers, API keys, access tokens, error bodies or session text.
 A terminal `usage` event retains the start identity. Unknown quantities are JSON
-`null`; explicitly reported zero is `0`. For the qualified OpenAI/Codex parsers,
-per-component presence survives parsing and legacy total normalization. Cache and
-reasoning fields remain subsets when supplied by those protocols; they must not be
-added again to input/output totals. An absent total is not fabricated from other
+`null`; explicitly reported zero is `0`. For the qualified OpenAI/Codex/Claude parsers,
+per-component presence survives parsing and legacy total normalization. OpenAI/Codex cache and
+reasoning fields remain subsets and must not be added again to input/output totals.
+Claude cache-read/write are separately reported from its raw input tokens; reasoning
+is a subset of output. Claude start/delta presence is merged without replacing
+explicit zeros with missing values. An absent total is not fabricated from other
 fields. Other parser paths lacking component-presence evidence produce unknown
 quantities until qualified.
 
@@ -160,3 +163,46 @@ The separate qualification suite exercises the launched binary against synthetic
 upstreams. Provider translation and real-provider evidence are reported separately
 in `docs/backend-qualification.md`; this document does not itself declare gate A
 passed.
+
+## Owned Codex login and refresh
+
+`--owned-auth-dir` selects a separate private directory (default `auth-owned`
+beside the snapshot auth directory). Nesting or sharing it with the snapshot
+directory is refused. The private `ownership` registry contains only filenames
+created by successful local login completion. An arbitrary copied credential file
+is never promoted to owned status. Every saved token/registry update uses a 0600
+atomic replacement followed by file and directory sync.
+
+The following narrow endpoints require the management token:
+
+- POST `/lain/login/codex` returns a state and authorization URL. Only one pending
+  login can own callback port 1455; an existing listener yields a conflict.
+- GET `/lain/login/{state}` returns `pending`, `exchanging`, `completed`, `failed`,
+  or `canceled`, and sanitized result metadata. Completed results include
+  `ownedAuthFile` (basename), `accountId`, and `expiresAt`, never tokens.
+- DELETE `/lain/login/{state}` cancels pending/exchanging work. A late token exchange
+  cannot persist after cancellation; completed logins cannot be canceled as if
+  they had never been saved.
+
+The OAuth callback binds only IPv4 loopback `127.0.0.1:1455`, checks an unpredictable
+state, and uses the core's PKCE/token exchange implementation. No browser is opened
+automatically. Login expires after ten minutes, state storage is bounded, and
+shutdown cancels pending work. The Host adopts the result through an owned-file
+reference and restarts with core credential ID `owned/<basename>`. It must not copy
+or overwrite rotating refresh tokens. Newly created but unapplied credentials do
+not dispatch or refresh.
+
+The ownership registry AND membership in the current route bindings are required
+for loading and refreshing an owned credential. Disabled, removed and unselected
+credentials stay inert. The source registry file remains private even when the
+corresponding public Account is removed. Automatic, request-triggered and explicit
+refresh calls all check ownership; external snapshots fail those gates. Local
+synthetic tests exercise successful owned persistence, cancellation with late
+exchange, unregistered copied-file rejection, and own-only refresh. These tests
+prove lifecycle isolation, not real provider refresh behavior.
+
+A route may optionally set `provider` to its canonical commercial provider (for
+example Command Code while using a Codex wire transport). Events use that identity
+consistently; when absent they retain the core provider identity. The original
+public route alias remains in executor requested-model metadata so imported
+payload filter rules match it after middleware rewrites the transport model.
