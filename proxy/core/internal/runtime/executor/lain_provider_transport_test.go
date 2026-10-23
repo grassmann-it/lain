@@ -121,3 +121,25 @@ func TestLainGatewayAnthropicTransport(t *testing.T) {
 		t.Fatal("missing Anthropic content")
 	}
 }
+
+func TestLainStepResponsesContinuation(t *testing.T) {
+	var captured []byte
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		captured, _ = io.ReadAll(r.Body)
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"id":"chat_fixture","object":"chat.completion","model":"step-5-preview","choices":[{"index":0,"message":{"role":"assistant","content":"fixture","reasoning_content":"next reasoning"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}`)
+	}))
+	defer server.Close()
+	auth := &cliproxyauth.Auth{Provider: "stepfun-openai-chat", Attributes: map[string]string{"base_url": server.URL + "/step_plan/v1", "api_key": "fixture-key", "upstream_protocol": "openai-chat"}}
+	payload := []byte(`{"model":"step-5-preview","input":[{"type":"reasoning","id":"rs_fixture","summary":[{"type":"summary_text","text":"prior reasoning"}]},{"type":"function_call","call_id":"call_prior","name":"inspect","arguments":"{}"},{"type":"function_call_output","call_id":"call_prior","output":"fixture result"}],"tools":[{"type":"function","name":"inspect","parameters":{"type":"object"}}]}`)
+	result, err := NewOpenAICompatExecutor(auth.Provider, &config.Config{}).Execute(context.Background(), auth, cliproxyexecutor.Request{Model: "step-5-preview", Payload: payload}, cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatOpenAIResponse, ResponseFormat: sdktranslator.FormatOpenAIResponse})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gjson.GetBytes(captured, "messages.0.reasoning_content").String() != "prior reasoning" || gjson.GetBytes(captured, "messages.0.tool_calls.0.id").String() != "call_prior" || gjson.GetBytes(captured, "messages.1.tool_call_id").String() != "call_prior" {
+		t.Fatalf("reasoning/tool continuation changed: %s", captured)
+	}
+	if !strings.Contains(string(result.Payload), "next reasoning") {
+		t.Fatal("response reasoning lost")
+	}
+}

@@ -18,10 +18,12 @@ var nvidia = ProviderTransportValidation.Prepare(catalog,"nvidia-build",nv.Id,nv
 Check(nvidia.SourceSection == "openai-compatibility" && nvidia.CoreProvider == "nvidia-build-openai-chat");
 foreach (var descriptor in catalog.Find("opencode-go")!.Routes)
 {
-    var plan = ProviderTransportValidation.Prepare(catalog,"opencode-go",descriptor.Id,descriptor.BaseUrl)!;
+    var options = descriptor.Protocol == "gemini" ? new Dictionary<string,string>{{"allowTrainingData","true"}} : null;
+    if (options is not null) Reject(() => ProviderTransportValidation.Prepare(catalog,"opencode-go",descriptor.Id,descriptor.BaseUrl));
+    var plan = ProviderTransportValidation.Prepare(catalog,"opencode-go",descriptor.Id,descriptor.BaseUrl,options)!;
     Check(plan.Headers["x-opencode-session"] == "$CPA-SESSION-ID" && plan.Headers["User-Agent"] == "lain/1.0");
     Check(descriptor.Protocol switch { "anthropic-messages" => plan.BaseUrl.EndsWith("/anthropic"), "gemini" => plan.BaseUrl.EndsWith("/google"), _ => plan.BaseUrl.EndsWith("/openai/v1") });
-    var transport = JsonSerializer.SerializeToElement(new { coreProvider = plan.CoreProvider, providerRouteId = descriptor.Id });
+    var transport = JsonSerializer.SerializeToElement(new { coreProvider = plan.CoreProvider, providerRouteId = descriptor.Id, settings = options });
     var route = new RouteDto("fixture","fixture",descriptor.Model,"opencode-go",[],ProviderRouteId:descriptor.Id);
     var yaml = new YamlMappingNode();
     Check(ProviderTransportValidation.ValidateCompiled(catalog,route,transport,plan.SourceSection,plan.BaseUrl,yaml));

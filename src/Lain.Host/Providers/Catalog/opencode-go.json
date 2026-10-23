@@ -12,6 +12,14 @@
       "required": true,
       "secret": true,
       "help": null
+    },
+    {
+      "id": "allowTrainingData",
+      "label": "Allow Contributor training endpoints",
+      "kind": "consent",
+      "required": false,
+      "secret": false,
+      "help": "Only required for Gemini Contributor. Explicitly confirm true after permitting paid endpoints that train on request data in workspace privacy settings. Defaults to no permission."
     }
   ],
   "setupSteps": [

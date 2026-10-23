@@ -34,8 +34,10 @@ public static class ProviderTransportValidation
         var supplied = settings ?? new Dictionary<string, string>();
         string? Setting(string name, string? alias = null) => supplied.GetValueOrDefault(name) ?? (alias is null ? null : supplied.GetValueOrDefault(alias));
         foreach (var key in supplied.Keys)
-            if (key is not ("accountId" or "region" or "workspaceId" or "workspace_id" or "serviceDeploymentScope" or "service_deployment_scope" or "billingPlan"))
+            if (key is not ("accountId" or "region" or "workspaceId" or "workspace_id" or "serviceDeploymentScope" or "service_deployment_scope" or "billingPlan" or "allowTrainingData"))
                 throw new ArgumentException("Unsupported provider setting. Credentials must use the credential field.");
+        if (providerId == "opencode-go" && route.Model == "gemini-4-argon-contributor" && Setting("allowTrainingData") != "true")
+            throw new ArgumentException("This Contributor route requires explicit workspace permission for endpoints that train on request data; confirm allowTrainingData only after reviewing that setting.");
         var expected = route.BaseUrl.TrimEnd('/');
         var billingPlan = Setting("billingPlan");
         if (billingPlan is not null && !route.BillingPlanIds.Contains(billingPlan, StringComparer.Ordinal))
