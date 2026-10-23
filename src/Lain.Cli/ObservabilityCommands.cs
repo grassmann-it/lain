@@ -41,6 +41,8 @@ public static partial class CliApplication
     private static readonly string[] UsageFilters = ["json", "today", "from", "to", "timezone", "account", "model", "status",
         "route", "model-family", "manufacturer", "inference-provider", "gateway", "billing-account", "reasoning", "mode",
         "conversation", "turn", "worker", "harness", "profile", "effective-reasoning-effort"];
+    private static readonly string[] UsageIdentityFilters = ["account", "model", "route", "model-family", "manufacturer",
+        "inference-provider", "gateway", "billing-account", "reasoning", "mode", "conversation", "turn", "worker", "harness", "profile", "effective-reasoning-effort"];
     private static readonly string[] GroupDimensions = ["accountId", "routeId", "model", "provider", "modelFamily", "manufacturer",
         "inferenceProvider", "gateway", "billingAccountId", "reasoningEffort", "mode", "conversationId", "turnId", "workerId",
         "parentWorkerId", "parentRequestId", "toolCallId", "harness", "profileId", "responseId", "previousResponseId", "effectiveReasoningEffort"];
@@ -52,10 +54,12 @@ public static partial class CliApplication
         if (analysis && options.Positionals[0] is not ("analysis" or "aggregate" or "performance"))
             throw new ArgumentException("Usage action must be analysis, aggregate or performance.");
         options.RequireOnly([.. UsageFilters, .. (analysis ? new[] { "group-by", "group-limit" } : new[] { "offset", "limit" })]);
+        foreach (var name in UsageIdentityFilters) ValidateScalarOption(options, name, 256);
+        ValidateScalarOption(options, "timezone", 128);
         if (options.Get("group-by") is { } groups)
         {
-            var dimensions = groups.Split(',');
-            if (dimensions.Length is < 1 or > 3 || dimensions.Distinct(StringComparer.Ordinal).Count() != dimensions.Length ||
+            var dimensions = groups.Split(',').Select(d => d.Trim()).ToArray();
+            if (groups.Length > 512 || groups.Any(char.IsControl) || dimensions.Length is < 1 or > 3 || dimensions.Distinct(StringComparer.Ordinal).Count() != dimensions.Length ||
                 dimensions.Any(d => !GroupDimensions.Contains(d, StringComparer.Ordinal)))
                 throw new ArgumentException("--group-by requires 1 to 3 distinct dimensions: " + string.Join(",", GroupDimensions) + ".");
         }
@@ -69,10 +73,17 @@ public static partial class CliApplication
         if (options.Positionals.Count > 0 && options.Positionals[0] is not ("snapshot" or "events"))
             throw new ArgumentException("Inspector action must be snapshot or events.");
         options.RequireOnly(events ? ["json", "source", "after", "request", "limit"] : ["json", "request", "limit"]);
+        ValidateScalarOption(options, "source", 256); ValidateScalarOption(options, "request", 256);
         _ = InspectorLimit(options, events ? 500 : 256);
         var after = InspectorAfter(options);
         if (after > 0 && string.IsNullOrWhiteSpace(options.Get("source")))
             throw new ArgumentException("--source is required with --after greater than zero; cursors belong to one inspector source.");
+    }
+
+    private static void ValidateScalarOption(Options options, string name, int maximum)
+    {
+        if (options.Get(name) is { } value && (string.IsNullOrWhiteSpace(value) || value.Length > maximum || value.Any(char.IsControl)))
+            throw new ArgumentException($"--{name} must be a nonempty value of at most {maximum} characters without control characters.");
     }
 
     private static int InspectorLimit(Options options, int maximum)

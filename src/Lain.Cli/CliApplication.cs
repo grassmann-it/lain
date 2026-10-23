@@ -274,7 +274,8 @@ public static partial class CliApplication
             options.Get("route"), options.Get("model-family"), options.Get("manufacturer"), options.Get("inference-provider"),
             options.Get("gateway"), options.Get("billing-account"), options.Get("reasoning"), options.Get("mode"),
             options.Get("conversation"), options.Get("turn"), options.Get("worker"), options.Get("harness"), options.Get("profile"),
-            options.Get("group-by"), groupLimit, options.Get("effective-reasoning-effort"));
+            options.Get("group-by") is { } grouping ? string.Join(',', grouping.Split(',').Select(d => d.Trim())) : null,
+            groupLimit, options.Get("effective-reasoning-effort"));
     }
 
     private static DateTimeOffset? ParseTime(string? value)

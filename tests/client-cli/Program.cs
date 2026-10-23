@@ -256,7 +256,7 @@ handler.Handle = request =>
     return new(HttpStatusCode.OK) { Content = JsonContent.Create(analysis) };
 };
 output = new(); error = new();
-exit = await CliApplication.RunAsync(["usage", "analysis", "--group-by", "modelFamily,reasoningEffort", "--group-limit", "5",
+exit = await CliApplication.RunAsync(["usage", "analysis", "--group-by", "modelFamily, reasoningEffort", "--group-limit", "5",
     "--inference-provider", "provider/one", "--billing-account", "bill 1", "--reasoning", "high", "--effective-reasoning-effort", "medium", "--worker", "worker/one"], output, error, () => client);
 Require(exit == 0 && output.ToString().Contains("samples 10/12 eligible; min 1; mean 7; p50 8; p95 11; max 12") &&
     output.ToString().Contains("samples 0/12 eligible; min unknown") && output.ToString().Contains("groups 1; truncated") &&
@@ -268,7 +268,11 @@ using (var analysisJson = JsonDocument.Parse(output.ToString()))
     Require(exit == 0 && analysisJson.RootElement.GetProperty("dimensions")[0].GetProperty("groups")[0].GetProperty("key").ValueKind == JsonValueKind.Null,
         "unknown group identity stays null in JSON"); assertions++;
 foreach (var invalid in new[] {
-    new[] { "usage", "analysis", "--group-by", "modelFamily,modelFamily" },
+    new[] { "usage", "analysis", "--group-by", "modelFamily, modelFamily" },
+    new[] { "usage", "analysis", "--worker", new string('w', 257) },
+    new[] { "usage", "analysis", "--model", "" },
+    new[] { "usage", "analysis", "--reasoning", "high\nprivate" },
+    new[] { "inspector", "--request", new string('r', 257) },
     new[] { "usage", "analysis", "--group-by", "model,provider,accountId,workerId" },
     new[] { "usage", "analysis", "--group-limit", "501" },
     new[] { "usage", "analysis", "--offset", "1" },
@@ -383,6 +387,7 @@ finally
     Environment.SetEnvironmentVariable("LAIN_HOME", previous);
     if (Directory.Exists(state)) Directory.Delete(state, true);
 }
+assertions += await ExpansionContractChecks.RunAsync();
 Console.WriteLine($"PASS: {assertions} client/CLI contract checks.");
 
 sealed class FakeHandler : HttpMessageHandler
