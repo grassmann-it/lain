@@ -76,7 +76,7 @@ After root review and execution authorization, add `--execute
    It swaps the verified whole stage into `app`, leaving launcher/unit and
    ordinary Codex/legacy files untouched.
 5. Starts **only `lain.service`** once and waits for own API/Core readiness and
-   the same applied revision. It compares the original fixed-window summary,
+   the exact same desired/applied revision pair. It compares the original fixed-window summary,
    cursor and legacy attempt fields; requires the new additive attempt fields;
    exercises `/usage/analysis` and `/inspector`; and rechecks configuration,
    credentials, runtime files, package contents and protected external hashes.
