@@ -39,7 +39,7 @@ public sealed partial class MainWindow
             _selectedProfileId = profile.Id;
             foreach (var (id, selector) in selectors)
             {
-                selector.Background = id == profile.Id ? Brush.Parse("#263750") : Brushes.Transparent;
+                selector.Background = id == profile.Id ? Ui.AccentSurface : Brushes.Transparent;
                 selector.BorderBrush = id == profile.Id ? Ui.Accent : Brushes.Transparent;
             }
             foreach (var action in detailActions) _actions.Remove(action);
@@ -79,6 +79,7 @@ public sealed partial class MainWindow
         }
         var details = Ui.Stack(Ui.Text(selected.Name, 18),
             Ui.Text($"{selected.RouteIds.Length} selected routes  ·  Default: {cfg.Routes.FirstOrDefault(r => r.Id == selected.DefaultRouteId)?.Alias ?? "None"}", 12, Ui.Muted),
+            Ui.Text(selected.Policy?.CostPolicy == "free_only" ? "Spending policy: Only free — no paid fallback" : "Spending policy: Configured access; stricter route policies still apply", 12, Ui.Muted),
             ProfileWrap(Ui.Button("Edit selection", () => EditProfile(selected)),
                 apply,
                 Ui.Button("Connect Codex…", () => ShowCodexExport(selected))),
@@ -170,6 +171,8 @@ public sealed partial class MainWindow
         var search = Ui.Input(hint: "Search routes, providers or models");
         AutomationProperties.SetName(search, "Search profile routes, providers or models");
         AutomationProperties.SetName(name, "Profile name");
+        var spending = new SpendingPolicyEditor(profile?.Policy);
+        var policyStatus = Ui.Text("Check saved routes before choosing strict free-only access. Profile fallbacks are validated on save and apply.", 12, Ui.Muted);
         var count = Ui.Text("", 12, Ui.Muted);
         var empty = Ui.Text("No routes match this search.", 13, Ui.Muted);
         var defaults = new ComboBox { ItemsSource = new[] { "None" }.Concat(cfg.Routes.Select(r => r.Alias)).ToArray(), SelectedIndex = profile?.DefaultRouteId is { } id ? Array.FindIndex(cfg.Routes, r => r.Id == id) + 1 : 0 };
@@ -212,7 +215,10 @@ public sealed partial class MainWindow
             if (ids.Length == 0) throw new InvalidOperationException("Select at least one route.");
             if (defaultId is not null && !ids.Contains(defaultId)) throw new InvalidOperationException("Select the default route in this profile too.");
             var profileId = profile?.Id ?? Guid.NewGuid().ToString("N");
-            _configuration = await _client.SaveProfileAsync(cfg.Revision, new ProfileDto(profileId, name.Text.Trim(), ids, defaultId), _lifetime.Token);
+            if (profile is not null && profile.RouteIds.Length == ids.Length && profile.RouteIds.All(id => ids.Contains(id, StringComparer.Ordinal))) ids = profile.RouteIds;
+            var original = profile ?? new ProfileDto(profileId, "", []);
+            _configuration = await _client.SaveProfileAsync(cfg.Revision,
+                original with { Name = name.Text.Trim(), RouteIds = ids, DefaultRouteId = defaultId, Policy = spending.Resolve() }, _lifetime.Token);
             _selectedProfileId = profileId;
         }, "Profile saved.");
         save.Classes.Add("primary");
@@ -227,7 +233,9 @@ public sealed partial class MainWindow
             new ScrollViewer { MaxHeight = 300, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = routeList });
         selection.Spacing = 8;
         _page.Content = Ui.Stack(ProfileHeader(profile is null ? "Create profile" : "Edit profile", $"Choose a model menu and its default. Saved revision {cfg.Revision}."),
-            Ui.Card(Ui.Stack(fields, defaultHint)), Ui.Card(selection),
+            Ui.Card(Ui.Stack(fields, defaultHint, spending.Control,
+                Ui.Text("A profile can make routes stricter. Configured access never weakens a route's existing free-only rule.", 11, Ui.Muted),
+                SpendingPolicyCheck(spending, () => choices.Where(item => item.Box.IsChecked == true).Select(item => item.Route.Id).ToArray(), policyStatus), policyStatus)), Ui.Card(selection),
             ProfileWrap(save, Ui.Button("Cancel", () => { _editing = false; Render(); })));
     }
 

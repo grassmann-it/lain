@@ -230,7 +230,7 @@ public sealed partial class MainWindow : Window
     }
 
     private static string Friendly(Exception error) => error is LainApiException api
-        ? $"{api.Message} ({api.Code}). Refresh before retrying if another client changed these settings."
+        ? $"{CostPolicyMessage(api.Message)} ({api.Code}). Refresh before retrying if another client changed these settings."
         : error is HttpRequestException ? "The lain host is unavailable. Start the user service, then refresh. Your saved configuration stays on the host."
         : error is TaskCanceledException ? "The host took too long to respond. Refresh to check its current state."
         : error.Message;
