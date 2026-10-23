@@ -53,7 +53,12 @@ def main():
     if before['schema'] != 1 or before['root'] != current['root']:
         raise ValueError('snapshot schema/root mismatch')
     result = compare(before, current)
-    print(json.dumps({'unchanged': not any(result.values()), **result}))
+    def persistent(snapshot):
+        return {**snapshot, 'files': {key: value for key, value in snapshot['files'].items() if not key.endswith('.tmp')}}
+    stable = compare(persistent(before), persistent(current))
+    print(json.dumps({'unchanged': not any(result.values()), **result,
+                      'persistent_unchanged': not any(stable.values()), 'persistent': stable,
+                      'temporary_auth_files_excluded_from_persistent': True}))
     return int(any(result.values()))
 
 
