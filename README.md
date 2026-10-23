@@ -12,18 +12,27 @@ codex --no-daemon --profile lain
 lain usage --today --json
 ```
 
-**Stand 23.10.2026:** Backend A ist anhand des exakten Core-Builds qualifiziert:
-15 synthetische Fälle, unabhängige Absturz-/Zugriffstests und echte Streaming-/
-Toolfortsetzungen mit Codex und Command Code. Der Linux-Stand ist installiert: fünf Accounts, 45 Modellrouten, ein eigener
-systemd-User-Dienst und das getrennte Codex-Profil `lain`. Echte Codex-Nutzung
-bleibt nach Dienstneustart erhalten und wird in CLI und Oberfläche gleich
-angezeigt. Die [Abnahme](docs/acceptance.md) dokumentiert Umfang und Grenzen. Unbekannter
-Verbrauch bleibt unbekannt; fehlgeschlagene echte Proben werden nicht gelöscht.
-Direkt verwaltete OAuth-Logins sind getrennt von externen Access-Token-Snapshots;
-reale OAuth-Rotation wurde nicht als getestet ausgegeben.
+**Stand 24.10.2026:** Der erweiterte Linux-Stand ist installiert. Quoten erscheinen
+als aufklappbare Kacheln mit Prozenten, Restbudget und gemeldeten Resets; unabhängige
+Spalten vermeiden Leerflächen. Semi/Ursa, Mint und dunkle Flächen sowie gebündelte
+Plex-/Oxanium-Schriften bestimmen die Oberfläche.
 
-Die Oberfläche verwendet jetzt Semi und Ursa im kompakten MeowChan-Stil.
-[Usage-Vorschau](docs/screenshots/usage-semi.png) · [Accounts](docs/screenshots/accounts-semi.png) · [Designprüfung](docs/ui-redesign-review.md)
+Der Inspector zeigt eigene Streams und belegte Request-/Worker-Beziehungen.
+Usage vergleicht Modelle, Accounts, Anbieter und Reasoning samt Messabdeckung und
+P50/P95. Der Anbieterkatalog bietet offizielle Links, Einrichtung und deklarierte
+Fähigkeiten für 15 zusätzliche Anbieter. Diese wurden mit lokalen Testanbietern
+geprüft und bleiben ohne echte Zugangstests ausdrücklich `not_tested`.
+
+380 UI-Prüfungen auf privatem Xvfb sowie die installierte Oberfläche mit echten
+lokalen Daten sind geprüft. Ein echter historischer Request mit 81.986 Tokens
+blieb beim Dienstupdate und Fensterneustart erhalten. Die neue Core-Qualifikation
+umfasst synthetische Identitäts-, Dauerhaftigkeits- und Streamtests; frühere echte
+Codex-/Command-Code-Proben bleiben ihrem damaligen Binary zugeordnet.
+[Aktuelle Abnahme und Grenzen](docs/expansion-review.md) ·
+[CLI und Einrichtung](docs/observability-cli.md) ·
+[Quotenkacheln](docs/screenshots/quota-tiles.png) ·
+[Inspector](docs/screenshots/inspector.png) ·
+[Usage](docs/screenshots/usage-analysis.png)
 
 - [Installation und Betrieb](docs/install.md)
 - [Entwicklung und reproduzierbare Prüfung](docs/development.md)
@@ -34,12 +43,12 @@ Die Oberfläche verwendet jetzt Semi und Ursa im kompakten MeowChan-Stil.
 - [Produktumfang](docs/product-scope.md)
 - [Ausführungsplan](docs/execution.md)
 
-Die bestehenden persönlichen Proxy-Dienste und die normale Codex-Konfiguration
-bleiben unverändert. Lain besitzt eigene Dienste, Ports (18417/18418), Secrets,
+Das kontrollierte Update erhält die bestehenden persönlichen Proxy-Dienste und
+die normale Codex-Konfiguration. Lain besitzt eigene Dienste, Ports (18417/18418), Secrets,
 Konfiguration und Journale. Der Codex-Export schreibt ausschließlich
 `lain.config.toml` und `lain.models.json`; das Authkommando liefert nur einen
 lokalen Inferenzschlüssel.
 
-Automatische Kontingentoptimierung, Rollenrouting, Classifier, Approver und
-Inspektor gehören zu späteren Ausbaustufen. Das Produkt ist unabhängig von der
+Automatische Kontingentoptimierung, Rollenrouting, Classifier und Approver
+gehören zu späteren Ausbaustufen. Das Produkt ist unabhängig von der
 bisherigen persönlichen Proxy-/TUI-Implementierung.

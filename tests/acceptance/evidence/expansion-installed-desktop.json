@@ -1,0 +1,521 @@
+{
+  "result": "PASS",
+  "privateXvfbDisplay": ":2",
+  "requests": 1,
+  "totalTokens": 81986,
+  "cursorBefore": 2,
+  "cursorWhileClosed": 2,
+  "cursorAfter": 2,
+  "configurationRevisionUnchanged": true,
+  "hostReachableWhileWindowClosed": true,
+  "proxyReadyWhileWindowClosed": true,
+  "budgets": {
+    "api": [
+      {
+        "provider": "zai",
+        "windowCount": 2,
+        "windows": [
+          {
+            "label": "Credits \u00B7 5 hours",
+            "usedPercent": 8,
+            "unit": "credits",
+            "state": "ok"
+          },
+          {
+            "label": "Credits \u00B7 7 days",
+            "usedPercent": 30,
+            "unit": "credits",
+            "state": "ok"
+          }
+        ]
+      },
+      {
+        "provider": "kimi",
+        "windowCount": 3,
+        "windows": [
+          {
+            "label": "5 hours",
+            "usedPercent": 64.92999999999999,
+            "unit": "percent",
+            "state": "ok"
+          },
+          {
+            "label": "Monthly total",
+            "usedPercent": 80.64,
+            "unit": "percent",
+            "state": "ok"
+          },
+          {
+            "label": "Monthly coding",
+            "usedPercent": 70.56,
+            "unit": "percent",
+            "state": "ok"
+          }
+        ]
+      }
+    ],
+    "overview": [
+      {
+        "provider": "zai",
+        "windowCount": 2,
+        "closedTileShowsAllWindows": true,
+        "windows": [
+          {
+            "label": "Credits \u00B7 5 hours",
+            "usedPercent": 8
+          },
+          {
+            "label": "Credits \u00B7 7 days",
+            "usedPercent": 30
+          }
+        ]
+      },
+      {
+        "provider": "kimi",
+        "windowCount": 3,
+        "closedTileShowsAllWindows": true,
+        "windows": [
+          {
+            "label": "5 hours",
+            "usedPercent": 64.92999999999999
+          },
+          {
+            "label": "Monthly total",
+            "usedPercent": 80.64
+          },
+          {
+            "label": "Monthly coding",
+            "usedPercent": 70.56
+          }
+        ]
+      }
+    ],
+    "accounts": [
+      {
+        "provider": "zai",
+        "nativeTileExpanded": true,
+        "closedTileShowsAllWindows": true,
+        "windowCount": 2,
+        "explicitUsedPercentMatchesProgress": true,
+        "resetMatchesHostSnapshot": true,
+        "accountIdentityMatchesDetails": true,
+        "sourceAndLastSuccessVisible": true,
+        "windows": [
+          {
+            "label": "Credits \u00B7 5 hours",
+            "usedPercent": 8,
+            "unit": "credits",
+            "state": "ok",
+            "lastSuccessAt": "2026-10-23T23:05:32.3835407+00:00",
+            "resetsAt": "2026-10-24T00:04:27.105+00:00"
+          },
+          {
+            "label": "Credits \u00B7 7 days",
+            "usedPercent": 30,
+            "unit": "credits",
+            "state": "ok",
+            "lastSuccessAt": "2026-10-23T23:05:32.3835407+00:00",
+            "resetsAt": "2026-10-29T18:28:30.982+00:00"
+          }
+        ]
+      },
+      {
+        "provider": "kimi",
+        "nativeTileExpanded": true,
+        "closedTileShowsAllWindows": true,
+        "windowCount": 3,
+        "explicitUsedPercentMatchesProgress": true,
+        "resetMatchesHostSnapshot": true,
+        "accountIdentityMatchesDetails": true,
+        "sourceAndLastSuccessVisible": true,
+        "windows": [
+          {
+            "label": "5 hours",
+            "usedPercent": 64.92999999999999,
+            "unit": "percent",
+            "state": "ok",
+            "lastSuccessAt": "2026-10-23T23:05:32.8632942+00:00",
+            "resetsAt": "2026-10-24T02:59:22+00:00"
+          },
+          {
+            "label": "Monthly total",
+            "usedPercent": 80.64,
+            "unit": "percent",
+            "state": "ok",
+            "lastSuccessAt": "2026-10-23T23:05:32.8632942+00:00",
+            "resetsAt": "2026-10-27T00:00:00+00:00"
+          },
+          {
+            "label": "Monthly coding",
+            "usedPercent": 70.56,
+            "unit": "percent",
+            "state": "ok",
+            "lastSuccessAt": "2026-10-23T23:05:32.8632942+00:00",
+            "resetsAt": "2026-10-27T00:00:00+00:00"
+          }
+        ]
+      }
+    ]
+  },
+  "providersUi": {
+    "catalogProviders": 15,
+    "displayedCards": 15,
+    "requiredProviderIds": [
+      "nvidia-build",
+      "stepfun",
+      "poe",
+      "opencode-go",
+      "gemini-api",
+      "inception",
+      "openrouter",
+      "requesty",
+      "cloudflare-workers-ai",
+      "groq",
+      "mistral",
+      "alibaba-model-studio",
+      "nebius",
+      "synthetic",
+      "xai"
+    ],
+    "documentedAndLiveVerificationSeparate": true,
+    "noOfficialLinkOrSetupActionInvoked": true,
+    "noNewRecognizedBrowserProcess": true
+  },
+  "inspectorUi": {
+    "state": "live",
+    "streams": 0,
+    "cursor": 0,
+    "Complete": true,
+    "DroppedEvents": 0,
+    "connectedEmptyState": true,
+    "noInventedContentOrGroups": true,
+    "noInferenceOrInspectorMutation": true
+  },
+  "analysis": {
+    "Cursor": 2,
+    "Complete": true,
+    "attempts": 1,
+    "historicalAttemptsWithoutOwnedMeasurements": 1,
+    "firstOutputSamples": 0,
+    "durationSamples": 0,
+    "rateSamples": 0,
+    "eligible": 1,
+    "missingOwnedMeasurementsRemainNull": true,
+    "legacyTimingsNotPromotedToOwnedMeasurements": true,
+    "performance": {
+      "FirstOutputLatencyMs": {
+        "Samples": 0,
+        "Eligible": 1,
+        "Minimum": null,
+        "Mean": null,
+        "P50": null,
+        "P95": null,
+        "Maximum": null
+      },
+      "TotalDurationMs": {
+        "Samples": 0,
+        "Eligible": 1,
+        "Minimum": null,
+        "Mean": null,
+        "P50": null,
+        "P95": null,
+        "Maximum": null
+      },
+      "OutputTokensPerSecond": {
+        "Samples": 0,
+        "Eligible": 1,
+        "Minimum": null,
+        "Mean": null,
+        "P50": null,
+        "P95": null,
+        "Maximum": null
+      },
+      "RateBasis": "reported_output_tokens_per_total_duration_second"
+    },
+    "dimensionCount": 3
+  },
+  "analysisUi": {
+    "measuredEligibleMatchesApi": true,
+    "absentMeasurementsShownUnknown": true,
+    "legacyTimingFallbackNotInvented": true
+  },
+  "firstUi": {
+    "requests": 1,
+    "totalTokens": 81986,
+    "initialGeneration": 2,
+    "finalGeneration": 3,
+    "openAfterUsageLoadedSeconds": 6.9055336
+  },
+  "reopenedUi": {
+    "requests": 1,
+    "totalTokens": 81986,
+    "initialGeneration": 2,
+    "finalGeneration": 3,
+    "openAfterUsageLoadedSeconds": 6.9044846
+  },
+  "screenshots": [
+    {
+      "tag": "overview",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/overview-1120x780.png"
+    },
+    {
+      "tag": "overview",
+      "requestedWidth": 1500,
+      "requestedHeight": 1000,
+      "pixelWidth": 1500,
+      "pixelHeight": 1000,
+      "path": "/tmp/lain-quota-installed-gui-check/overview-1500x1000.png"
+    },
+    {
+      "tag": "overview-zai",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/overview-zai-1120x780.png"
+    },
+    {
+      "tag": "overview-zai",
+      "requestedWidth": 1500,
+      "requestedHeight": 1000,
+      "pixelWidth": 1500,
+      "pixelHeight": 1000,
+      "path": "/tmp/lain-quota-installed-gui-check/overview-zai-1500x1000.png"
+    },
+    {
+      "tag": "overview-kimi",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/overview-kimi-1120x780.png"
+    },
+    {
+      "tag": "overview-kimi",
+      "requestedWidth": 1500,
+      "requestedHeight": 1000,
+      "pixelWidth": 1500,
+      "pixelHeight": 1000,
+      "path": "/tmp/lain-quota-installed-gui-check/overview-kimi-1500x1000.png"
+    },
+    {
+      "tag": "accounts-zai-closed",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/accounts-zai-closed-1120x780.png"
+    },
+    {
+      "tag": "accounts-zai-closed",
+      "requestedWidth": 1500,
+      "requestedHeight": 1000,
+      "pixelWidth": 1500,
+      "pixelHeight": 1000,
+      "path": "/tmp/lain-quota-installed-gui-check/accounts-zai-closed-1500x1000.png"
+    },
+    {
+      "tag": "accounts-zai-expanded",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/accounts-zai-expanded-1120x780.png"
+    },
+    {
+      "tag": "accounts-zai-expanded",
+      "requestedWidth": 1500,
+      "requestedHeight": 1000,
+      "pixelWidth": 1500,
+      "pixelHeight": 1000,
+      "path": "/tmp/lain-quota-installed-gui-check/accounts-zai-expanded-1500x1000.png"
+    },
+    {
+      "tag": "accounts-zai-technical",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/accounts-zai-technical-1120x780.png"
+    },
+    {
+      "tag": "accounts-zai-technical",
+      "requestedWidth": 1500,
+      "requestedHeight": 1000,
+      "pixelWidth": 1500,
+      "pixelHeight": 1000,
+      "path": "/tmp/lain-quota-installed-gui-check/accounts-zai-technical-1500x1000.png"
+    },
+    {
+      "tag": "accounts-kimi-closed",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/accounts-kimi-closed-1120x780.png"
+    },
+    {
+      "tag": "accounts-kimi-closed",
+      "requestedWidth": 1500,
+      "requestedHeight": 1000,
+      "pixelWidth": 1500,
+      "pixelHeight": 1000,
+      "path": "/tmp/lain-quota-installed-gui-check/accounts-kimi-closed-1500x1000.png"
+    },
+    {
+      "tag": "accounts-kimi-expanded",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/accounts-kimi-expanded-1120x780.png"
+    },
+    {
+      "tag": "accounts-kimi-expanded",
+      "requestedWidth": 1500,
+      "requestedHeight": 1000,
+      "pixelWidth": 1500,
+      "pixelHeight": 1000,
+      "path": "/tmp/lain-quota-installed-gui-check/accounts-kimi-expanded-1500x1000.png"
+    },
+    {
+      "tag": "accounts-kimi-technical",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/accounts-kimi-technical-1120x780.png"
+    },
+    {
+      "tag": "accounts-kimi-technical",
+      "requestedWidth": 1500,
+      "requestedHeight": 1000,
+      "pixelWidth": 1500,
+      "pixelHeight": 1000,
+      "path": "/tmp/lain-quota-installed-gui-check/accounts-kimi-technical-1500x1000.png"
+    },
+    {
+      "tag": "installed-providers",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/installed-providers-1120x780.png"
+    },
+    {
+      "tag": "installed-providers",
+      "requestedWidth": 800,
+      "requestedHeight": 560,
+      "pixelWidth": 800,
+      "pixelHeight": 560,
+      "path": "/tmp/lain-quota-installed-gui-check/installed-providers-800x560.png"
+    },
+    {
+      "tag": "installed-provider-details",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/installed-provider-details-1120x780.png"
+    },
+    {
+      "tag": "installed-provider-details",
+      "requestedWidth": 800,
+      "requestedHeight": 560,
+      "pixelWidth": 800,
+      "pixelHeight": 560,
+      "path": "/tmp/lain-quota-installed-gui-check/installed-provider-details-800x560.png"
+    },
+    {
+      "tag": "installed-inspector-empty",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/installed-inspector-empty-1120x780.png"
+    },
+    {
+      "tag": "installed-inspector-empty",
+      "requestedWidth": 800,
+      "requestedHeight": 560,
+      "pixelWidth": 800,
+      "pixelHeight": 560,
+      "path": "/tmp/lain-quota-installed-gui-check/installed-inspector-empty-800x560.png"
+    },
+    {
+      "tag": "first-usage",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/first-usage-1120x780.png"
+    },
+    {
+      "tag": "first-usage",
+      "requestedWidth": 1500,
+      "requestedHeight": 1000,
+      "pixelWidth": 1500,
+      "pixelHeight": 1000,
+      "path": "/tmp/lain-quota-installed-gui-check/first-usage-1500x1000.png"
+    },
+    {
+      "tag": "installed-usage-analysis",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/installed-usage-analysis-1120x780.png"
+    },
+    {
+      "tag": "installed-usage-analysis",
+      "requestedWidth": 800,
+      "requestedHeight": 560,
+      "pixelWidth": 800,
+      "pixelHeight": 560,
+      "path": "/tmp/lain-quota-installed-gui-check/installed-usage-analysis-800x560.png"
+    },
+    {
+      "tag": "reopened-usage",
+      "requestedWidth": 1120,
+      "requestedHeight": 780,
+      "pixelWidth": 1120,
+      "pixelHeight": 780,
+      "path": "/tmp/lain-quota-installed-gui-check/reopened-usage-1120x780.png"
+    },
+    {
+      "tag": "reopened-usage",
+      "requestedWidth": 1500,
+      "requestedHeight": 1000,
+      "pixelWidth": 1500,
+      "pixelHeight": 1000,
+      "path": "/tmp/lain-quota-installed-gui-check/reopened-usage-1500x1000.png"
+    }
+  ],
+  "assemblies": [
+    {
+      "name": "Lain.Desktop",
+      "path": "/home/tomka/.local/share/lain/app/desktop/Lain.Desktop.dll",
+      "sha256": "f6e27878441b099645c9557d10fc921ec2c0022922f45b842c59f7c4c92ffb4d"
+    },
+    {
+      "name": "Lain.Client",
+      "path": "/home/tomka/.local/share/lain/app/desktop/Lain.Client.dll",
+      "sha256": "d5f9d480a2e79c13d19e84868f571590eaa012ae7eddb2481b2c70db1a5d9999"
+    },
+    {
+      "name": "Lain.Core",
+      "path": "/home/tomka/.local/share/lain/app/desktop/Lain.Core.dll",
+      "sha256": "d2b72d2e0468f8d9d7f7e726c3ac4e25fa41fbec23dcbc8c496325a521f6287f"
+    },
+    {
+      "name": "Avalonia.Controls",
+      "path": "/home/tomka/.local/share/lain/app/desktop/Avalonia.Controls.dll",
+      "sha256": "24d36a48b0033e52313d1f7a2d8b69bcc18e5504d518bf56c23916558c4f1912"
+    }
+  ],
+  "scope": "Installed App/MainWindow/UsageView/ProviderCatalogView/InspectorView and real local API. Harness uses GET-only observations, Overview/Accounts/Providers/Inspector/Usage navigation, native account-tile and technical-detail expansion and Usage read-filter application. Providers are compared with actual catalog descriptors; Inspector must remain empty and connected; whole-range analysis is checked against all observed attempt metadata with missing owned measurements kept null. No quota refresh, inference, credential checks, configuration mutation, login or browser action. Window reopen is within one harness process. Private Xvfb only; no native user display. Background host activity is not disabled or attributed to this harness."
+}
