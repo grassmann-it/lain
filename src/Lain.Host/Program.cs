@@ -68,7 +68,16 @@ app.Use(async (context, next) => {
  catch (Exception) { context.Response.StatusCode = 500; await context.Response.WriteAsJsonAsync(new ApiError("operation_failed", "The operation failed. Check lain paths, credentials and service readiness.")); }
  finally { if (mutation) mutations.Release(); }
 });
-StatusDto Status() { var config = repository.Snapshot; var ps = proxy.Status; return new(Api.Version, "0.1.0", ps.State, ps.Ready, config.Revision, config.AppliedRevision, DateTimeOffset.UtcNow, ps.Error); }
+var runtimeManifest = Path.Combine(paths.Proxy, "runtime.json");
+void RequireAppliedRuntime()
+{
+ if (!File.Exists(runtimeManifest)) throw new InvalidOperationException("No applied runtime exists.");
+ using var document = JsonDocument.Parse(File.ReadAllText(runtimeManifest));
+ var runtime = document.RootElement;
+ if (!runtime.GetProperty("valid").GetBoolean() || runtime.GetProperty("revision").GetInt64() != repository.Snapshot.AppliedRevision)
+  throw new InvalidOperationException("Runtime application is incomplete.");
+}
+StatusDto Status() { var config = repository.Snapshot; var ps = proxy.Status; return new(Api.Version, "0.1.0", config.Revision != config.AppliedRevision ? "pending-application" : ps.State, ps.Ready, config.Revision, config.AppliedRevision, DateTimeOffset.UtcNow, ps.Error); }
 app.MapGet(Api.Prefix + "/status", Status);
 app.MapGet(Api.Prefix + "/configuration", () => repository.Snapshot);
 app.MapGet(Api.Prefix + "/accounts", (AccountService svc) => svc.List());
@@ -90,10 +99,12 @@ app.MapPost(Api.Prefix + "/profiles/{id}/apply", async (string id, ApplyRequest 
  var accountIds = activeRoutes.SelectMany(r => r.AccountIds).ToHashSet();
  var runtime = selected.Configuration with { Routes = activeRoutes, Accounts = selected.Configuration.Accounts.Where(a => accountIds.Contains(a.Id)).ToArray() };
  await proxy.StopAsync(ct); // Stop before changing files observed by the Core's watcher.
+ OwnStatePaths.WritePrivate(runtimeManifest, JsonSerializer.Serialize(new { valid = false, revision = request.Revision }));
  var identities = writer.Write(runtime);
  new RouteBindingsWriter(paths).Write(runtime, identities);
  await proxy.StartAsync(ct);
  repository.MarkApplied(request.Revision);
+ OwnStatePaths.WritePrivate(runtimeManifest, JsonSerializer.Serialize(new { valid = true, revision = request.Revision }));
  OwnStatePaths.WritePrivate(Path.Combine(paths.Root, "active-profile.json"), JsonSerializer.Serialize(new { id, revision = request.Revision }));
  return repository.Snapshot;
 });
@@ -103,14 +114,18 @@ app.MapGet(Api.Prefix + "/quotas", (CancellationToken ct) => quota.GetSnapshotsA
 app.MapPost(Api.Prefix + "/quotas/refresh", (QuotaRefreshRequest request, CancellationToken ct) => quota.RefreshAsync(request.AccountId, ct));
 app.MapGet(Api.Prefix + "/auth/token", (string audience) => audience == "codex" ? Results.Ok(new { token = secrets.GetOrCreateToken(paths.InferenceToken) }) : Results.BadRequest(new ApiError("invalid_audience", "Only the codex inference audience is supported.")));
 app.MapPost(Api.Prefix + "/service/{action}", async (string action, CancellationToken ct) => {
- switch (action) { case "start": await proxy.StartAsync(ct); break; case "stop": await proxy.StopAsync(ct); break; case "restart": await proxy.RestartAsync(ct); break; default: throw new ArgumentException("Unknown proxy action."); }
+ switch (action) { case "start": RequireAppliedRuntime(); await proxy.StartAsync(ct); break; case "stop": await proxy.StopAsync(ct); break; case "restart": RequireAppliedRuntime(); await proxy.RestartAsync(ct); break; default: throw new ArgumentException("Unknown proxy action."); }
  return Status();
 });
 using var shutdown = new CancellationTokenSource();
 var quotaLoop = quota.RunAsync(shutdown.Token);
 if (qualified && File.Exists(Path.Combine(paths.Root, "active-profile.json")) && repository.Snapshot.Revision == repository.Snapshot.AppliedRevision)
 {
- try { await proxy.StartAsync(shutdown.Token); } catch (Exception) { /* API remains available for repair. */ }
+ try {
+  using var active = JsonDocument.Parse(File.ReadAllText(Path.Combine(paths.Root, "active-profile.json")));
+  if (active.RootElement.GetProperty("revision").GetInt64() != repository.Snapshot.AppliedRevision) throw new InvalidOperationException();
+  RequireAppliedRuntime(); await proxy.StartAsync(shutdown.Token);
+ } catch (Exception) { /* API remains available for repair. */ }
 }
 try { await app.RunAsync(); }
 finally { shutdown.Cancel(); try { await quotaLoop; } catch (OperationCanceledException) {} await proxy.DisposeAsync(); providerHttp.Dispose(); }
