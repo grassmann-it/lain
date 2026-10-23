@@ -28,7 +28,7 @@ public static partial class CliApplication
             case InspectorSnapshotDto snapshot:
                 await output.WriteLineAsync($"Inspector {Cell(snapshot.State)}; source {Cell(snapshot.SourceId)}; observed {snapshot.ObservedAt:O}; coverage {(snapshot.Complete ? "complete" : "incomplete")}");
                 await output.WriteLineAsync($"Cursor {snapshot.Cursor}; earliest {snapshot.EarliestCursor}; dropped events {snapshot.DroppedEvents}; streams {snapshot.Streams.Length}");
-                await output.WriteLineAsync($"Content lifetime {snapshot.Limits.ContentTtlSeconds}s; terminal lifetime {snapshot.Limits.TerminalTtlSeconds}s; content buffer {snapshot.Limits.ContentBytes} bytes; policy {Cell(snapshot.Limits.ContentPolicy)}");
+                await output.WriteLineAsync($"Host content lifetime {snapshot.Limits.ContentTtlSeconds}s; terminal lifetime {snapshot.Limits.TerminalTtlSeconds}s; content buffer {snapshot.Limits.ContentBytes} bytes; policy {Cell(snapshot.Limits.ContentPolicy)}");
                 foreach (var stream in snapshot.Streams)
                 {
                     await output.WriteLineAsync($"{Cell(stream.Id)}\t{Cell(stream.Scope)}\trequest {Cell(stream.RequestId)}\tattempt {Cell(stream.AttemptId)}\t{Cell(stream.State)}{(stream.Truncated ? "; truncated" : "")}");

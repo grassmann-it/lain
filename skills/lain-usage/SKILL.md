@@ -54,6 +54,9 @@ Preserve null dimension keys, truncated groups, sample/eligible counts, metric
 definitions and rate basis. Do not compute medians or totals from attempt pages.
 
 Inspector reads are bounded snapshots of the owned core's local live buffer.
+Snapshot limits are 1–256; event page limits are 1–500. The Host may expose lower
+configured limits. Reported Host display retention does not describe the
+separately bounded source ring's lifetime.
 Keep `sourceId` with every cursor; `--after` greater than zero requires `--source`.
 Report gaps, dropped events, incomplete coverage, truncation and retention times.
 Use explicit dimension evidence for conversations, turns, workers and tool

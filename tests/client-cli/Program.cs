@@ -274,7 +274,8 @@ foreach (var invalid in new[] {
     new[] { "usage", "analysis", "--offset", "1" },
     new[] { "usage", "--group-by", "model" },
     new[] { "inspector", "events", "--after", "5" },
-    new[] { "inspector", "--limit", "501" } })
+    new[] { "inspector", "--limit", "257" },
+    new[] { "inspector", "events", "--limit", "501" } })
 {
     output = new(); error = new();
     exit = await CliApplication.RunAsync(invalid, output, error, () => throw new Exception("invalid options must not discover host"));

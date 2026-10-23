@@ -32,7 +32,7 @@ public static partial class CliApplication
                 --effective-reasoning-effort --turn --worker --harness --profile
                 (each followed by a value; --reasoning is the requested effort)
           attempts [usage options] [--offset N] [--limit N] [--json]
-          inspector [snapshot] [--request ID] [--limit 1..500] [--json]
+          inspector [snapshot] [--request ID] [--limit 1..256] [--json]
           inspector events [--source ID] [--after N] [--request ID] [--limit 1..500] [--json]
           providers [catalog] [--json]
           providers onboarding ID [--json]

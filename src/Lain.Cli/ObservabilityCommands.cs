@@ -69,16 +69,16 @@ public static partial class CliApplication
         if (options.Positionals.Count > 0 && options.Positionals[0] is not ("snapshot" or "events"))
             throw new ArgumentException("Inspector action must be snapshot or events.");
         options.RequireOnly(events ? ["json", "source", "after", "request", "limit"] : ["json", "request", "limit"]);
-        _ = InspectorLimit(options);
+        _ = InspectorLimit(options, events ? 500 : 256);
         var after = InspectorAfter(options);
         if (after > 0 && string.IsNullOrWhiteSpace(options.Get("source")))
             throw new ArgumentException("--source is required with --after greater than zero; cursors belong to one inspector source.");
     }
 
-    private static int InspectorLimit(Options options)
+    private static int InspectorLimit(Options options, int maximum)
     {
         var limit = options.Get("limit") is { } text ? ParseInt(text, "limit") : 100;
-        if (limit is < 1 or > 500) throw new ArgumentException("--limit must be between 1 and 500.");
+        if (limit < 1 || limit > maximum) throw new ArgumentException($"--limit must be between 1 and {maximum}.");
         return limit;
     }
     private static long InspectorAfter(Options options) => options.Get("after") is { } text ? ParseLong(text, "after") : 0;
@@ -87,8 +87,8 @@ public static partial class CliApplication
     {
         if (options.Positionals.FirstOrDefault() == "events")
             return await client.InspectorEventsAsync(new InspectorEventQuery(options.Get("source"), InspectorAfter(options),
-                InspectorLimit(options), options.Get("request")), ct);
-        return await client.InspectorAsync(new InspectorQuery(options.Get("request"), InspectorLimit(options)), ct);
+                InspectorLimit(options, 500), options.Get("request")), ct);
+        return await client.InspectorAsync(new InspectorQuery(options.Get("request"), InspectorLimit(options, 256)), ct);
     }
     private static void ValidateProviders(Options options)
     {
