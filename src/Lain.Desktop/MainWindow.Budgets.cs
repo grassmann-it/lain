@@ -205,6 +205,14 @@ public sealed partial class MainWindow
             if (resetsAt <= DateTimeOffset.UtcNow) reset.Children.Add(Ui.Text("Reset due · refresh to check", 11, Ui.Warning));
         }
         else reset.Children.Add(Ui.Text(unavailable ? "—" : "Not supplied", 11, Ui.Muted));
+        if (!unavailable && quota?.LastSuccessAt is { } lastSuccess)
+        {
+            var localSuccess = lastSuccess.ToLocalTime();
+            var format = localSuccess.Date == DateTimeOffset.Now.Date ? "HH:mm" : "dd MMM · HH:mm";
+            var checkedAt = Ui.Text("Checked " + localSuccess.ToString(format, CultureInfo.CurrentCulture), 11, Ui.Muted);
+            ToolTip.SetTip(checkedAt, $"Last successful quota update: {localSuccess:yyyy-MM-dd HH:mm:ss zzz}");
+            reset.Children.Add(checkedAt);
+        }
         var row = BudgetWindowCells(label, consumption, reset);
         row.MinHeight = 38;
         return row;
