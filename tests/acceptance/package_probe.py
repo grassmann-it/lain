@@ -69,9 +69,11 @@ def main():
                             with urlopen(request, timeout=1) as response:
                                 expect(response.status == 200, 'installed API not healthy')
                                 break
-                        except (OSError, HTTPError):
+                        except (OSError, HTTPError) as ready_error:
+                            last_ready_error = type(ready_error).__name__ + (':' + str(ready_error.code) if isinstance(ready_error, HTTPError) else '')
                             time.sleep(.1)
                     else:
+                        print(json.dumps({'hostReadinessFailure': last_ready_error, 'tokenExists': (data / 'credentials/host.token').is_file()}), flush=True)
                         raise AssertionError('installed host never became available')
                     def api(path, method='GET', value=None):
                         headers = {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'}
@@ -108,6 +110,12 @@ def main():
                     expect(status['contractVersion'] == 1, 'installed CLI returned wrong contract')
                     expect(token not in result.stdout, 'installed CLI exposed management token')
                     expect((data / 'keep-me').read_text() == 'persistent user data', 'update/rollback lost own user data')
+                except Exception:
+                    evidence = Path(tempfile.mkdtemp(prefix='lain-w11-package-failure-'))
+                    shutil.copytree(data, evidence / 'data')
+                    shutil.copy2(root / 'host.log', evidence / 'host.log')
+                    print(json.dumps({'privateFailureEvidence': str(evidence)}), flush=True)
+                    raise
                 finally:
                     if process.poll() is None:
                         process.terminate()
