@@ -1,9 +1,11 @@
 # Independent acceptance
 
-This is an evidence ledger, not a release approval. W11 owns the independent
-review. A–E remain unaccepted until the corresponding checks below have actual
-results against the integrated commit and staged artifacts. Synthetic evidence
-never establishes real-provider or GUI compatibility.
+W11 owns this independent evidence review. Backend qualification, staged-package
+acceptance, actual user installation and the isolated Codex CLI workflow have
+passed at the scopes below. The installed native desktop evidence has also been
+reviewed: the selected Linux release is accepted for these tested workflows.
+Synthetic evidence never establishes real-provider or GUI compatibility, and
+success on a selected route does not qualify every model.
 
 ## Isolation baseline
 
@@ -34,18 +36,18 @@ rotation, restart, configuration write, or queue consumption is authorized.
 | Gate | Required independent evidence | Status |
 | --- | --- | --- |
 | A provenance | Manifest-bound source/build/license and private owned processes/ports | Fresh-worktree 1463-input source manifest passed; exact final binary checked |
-| A identity | Two distinct credentials for one provider, strict HTTP pinning on 429/deactivation, explicit pool behavior | W2 final synthetic suite passed; real routes pending |
+| A identity | Two distinct credentials for one provider, strict HTTP pinning on 429/deactivation, explicit pool behavior | W2 strict/pool and distinct-credential tests passed; actual Codex and Command GLM attempts retain selected account/route identity |
 | A durability | Dispatch persisted before send; sync completion usage; restart/replay; write failure, crash and unknown coverage | W2 final suite + independent Core crash/auth + 13 SQLite tests passed |
-| A protocol | Nonstream, SSE, harmless tool + continuation, cancel; synthetic retry counted as one request and multiple attempts | Chat, Responses translation, native Messages synthetic tests passed; real probes pending |
+| A protocol | Nonstream, SSE, harmless tool + continuation, cancel; synthetic retry counted as one request and multiple attempts | Chat, Responses translation and native Messages synthetic tests passed; actual Codex and Command GLM Responses tool/continuation passed |
 | B host | Unauthorized local API rejected, revision races rejected, failure distinguishes desired/applied revision | HTTP auth, concurrency, pending revision and failed-apply restart guard passed |
-| B data/privacy | SQLite restart and dedup; no headers/credentials/payloads in usage/export/errors; unknown amounts serialized null | Pending |
-| B accounts/quota | API/Codex snapshot import, no refresh token; separate same-provider accounts, isolated quota failure/last-good | Pending |
-| C desktop | Actual Linux window, clickable account/model/profile/usage flows; closes without stopping collector | Pending |
-| D harness | Isolated Codex config/helper/model menu and harmless actual request; no existing configuration changes | Pending |
-| D consistency | CLI/UI/skill consume same host snapshot and bounded queries; no duplicate collector | Pending |
-| E delivery | Fresh staged install outside cwd, start/stop/restart, update/rollback, uninstall preserving data | Actual staged Host/Core/CLI, usage, restart, same-artifact update/rollback and data-preserving uninstall passed; native user install/GUI pending |
+| B data/privacy | SQLite restart and dedup; no headers/credentials/payloads in usage/export/errors; unknown amounts serialized null | 13 SQLite tests, journal/public-API privacy checks and export allowlist review passed; actual failed attempts retain null usage; installed usage survives systemd restart |
+| B accounts/quota | API/Codex snapshot import, no refresh token; separate same-provider accounts, isolated quota failure/last-good | Read-only API/access-token import and account attribution passed; W6 executed 35 synthetic quota assertions including isolation/last-good; actual Command quota observed; real owned OAuth renewal untested |
+| C desktop | Actual Linux window, clickable account/model/profile/usage flows; closes without stopping collector | Installed native Usage navigation, polling and close/reopen passed against real host; account/route/profile control actions additionally fixture-tested; actual OAuth browser flow untested |
+| D harness | Isolated Codex config/helper/model menu and harmless actual request; no existing configuration changes | Actual Codex profile `lain` used `gpt-6-luna`, catalog has 45 configured models, one request/81,986 tokens persisted; normal Codex configuration unchanged |
+| D consistency | CLI/UI/skill consume same host snapshot and bounded queries; no duplicate collector | Installed GUI/CLI/API agree on 1 request and 81,986 tokens; closed-window host stays ready; skill delegates the same bounded CLI without database access |
+| E delivery | Fresh staged install outside cwd, start/stop/restart, update/rollback, uninstall preserving data | Actual staged Host/Core/CLI, usage, restart, same-artifact update/rollback and data-preserving uninstall passed; actual user installation, enabled systemd restart and installed native GUI checks passed |
 | Real providers | Explicitly authorized minimal Codex and Command Code stream/tool continuation, usage attribution and persistence | Codex Responses + Command GLM Responses tool/continuation passed; earlier Command GPT failures retained; real OAuth renewal untested |
-| Final isolation | Same existing service PID/start and unchanged legacy binary/config/auth hashes, or documented attributable exception | Pending |
+| Final isolation | Same existing service PID/start and unchanged legacy binary/config/auth hashes, or documented attributable exception | Installed-run report confirms original PID/start unchanged; persistent binary/config/auth additions, removals and changes are zero; only temporary auth-file churn |
 
 ## Reproduction and review rules
 
@@ -91,13 +93,13 @@ A later read-only legacy service check still showed active PID 1882 and the same
 files in the active legacy OAuth directory; all persistent auth files, config and
 binary remained byte-identical. The guard now reports persistent and full-file-set
 results separately; temporary-file churn does not become an invented claim that
-the entire directory was unchanged. A final comparison is still required.
+the entire directory was unchanged. The final installed-run comparison is recorded below.
 
 Independent code review identified and escalated runtime-file/apply races and
 missing token-component values becoming zero. The Host now serializes mutation
 and stops the own Core before file writes, with runtime validity/revision checks.
-The Core presence fix and its final protocol/durability tests remain subject to
-the exact artifact's qualification report. The Codex external-profile format was
+The Core presence fix and final protocol/durability results are recorded below
+against the exact accepted artifact. The Codex external-profile format was
 queried: W5 supplied an isolated run of installed Codex 0.162.1 confirming
 `--profile lain` loads `lain.config.toml`; no nested `[profiles.lain]` is needed
 for that tested build. This is peer evidence, not a second independent live run.
@@ -186,11 +188,67 @@ After the corrected package run, the private legacy guard again showed **zero
 persistent additions/removals/changes** for binary, configuration and auth files.
 Only transient `.tmp` churn was observed (four added, three removed at that
 instant). A first read raced a disappearing temporary file and was retried;
-no credential content was emitted. The integrator will make the final service
-PID/start-time check after the persistent user installation.
+no credential content was emitted. The installed-run report subsequently confirms
+the original service PID/start time remained unchanged.
 
-Overall release acceptance remains open for the integrator's actual user
-installation, native desktop workflow and actual isolated Codex CLI session.
-Backend qualification and staged-package acceptance are passed at the stated
-scope; those are not a blanket claim that all provider models or OAuth lifecycle
-operations have been tested.
+The actual user installation, isolated Codex CLI session and installed native
+desktop are now evidenced below. The selected Linux workflows pass acceptance.
+This is not a blanket claim that all provider models, interactive client menu
+paths or OAuth lifecycle operations have been tested.
+
+## Actual installed service and Codex CLI
+
+W11 reviewed the integrator's [installed-run report](../tests/acceptance/evidence/installed-final.json).
+This is actual installed-service evidence, distinct from the temporary synthetic
+package run: Codex profile `lain` used `gpt-6-luna` through the own proxy, and the
+configured client catalog contains 45 models. The observed request produced one
+request, one attempt, no errors and 81,986 total tokens (81,981 input and 5 output).
+Reported cached tokens are 3,968 and reasoning tokens are zero; these subsets are
+not added to total again. CLI/API totals match, cursor is 2, and the same usage
+survived an actual own systemd service restart. The own unit is enabled.
+
+The normal Codex configuration remained unchanged. The original proxy service's
+PID and start time remained unchanged, and the final persistent legacy-file
+comparison found no added, removed or changed binary/config/auth files. Temporary
+`.tmp` churn in the independently running legacy OAuth directory remains excluded
+from that persistent-file statement.
+
+This single request qualifies the observed installed Codex route and exported
+profile/helper/catalog workflow. It does not test all 45 catalog entries, a GUI
+OAuth authorization or real refresh-token renewal. The account/last-good quota
+semantics also retain their explicit scope: W6 confirmed an executed
+`bash tests/quota/run.sh` run on commit `8baeeb1` with **35 assertions passed
+(synthetic only)**. Those assertions include two same-provider accounts, independent
+credentials and values, one-account failure retaining last-good data without
+hiding the other account, stale/unknown windows, cancellation and owned access
+credentials without refresh/ID-token use. W11 reviewed that peer execution
+confirmation and the test sources; it did not run another quota test. The
+committed live diagnostic contains actual Command quota observations. The quota
+cache intentionally starts unknown after host restart, and missing model allowance
+remains unknown.
+
+## Installed native desktop
+
+W11 reviewed the [installed-desktop report](../tests/acceptance/evidence/desktop-installed-final.json)
+and the reopened Usage screenshot. The native harness loaded the actual installed
+`Lain.Desktop`, `Lain.Client` and Avalonia assemblies; it did not compile replacement
+application sources or serve fixture data. Installed Desktop DLL SHA-256:
+`da0961adf7ae2b8894f9c5c45596f03be2397e33c21fd032f7ce1ab84620ce67`.
+
+The actual Usage view showed the same one request and 81,986 tokens as the installed
+CLI/API. On each opening it stayed open for more than 6.4 seconds and its polling
+generation advanced from 1 to 2. Closing and reopening the window within the same
+harness process preserved the displayed numbers; the host remained reachable and
+the proxy ready while the window was closed, with cursor 2 unchanged. No new
+inference was sent during that closed interval, so this check establishes service
+independence and unchanged persisted data, not additional unseen usage generation.
+The integrator separately launched the actual `lain ui` command from `/` and
+closed it afterward. No test windows remain open.
+
+The installed native run used GET-only observations and Usage navigation; account,
+route, profile and login control actions have the earlier fixture-control scope.
+It did not perform configuration mutations, a browser authorization, real OAuth
+renewal, or an interactive Codex `/model` inspection. The generated 45-entry
+catalog and successful actual `--profile lain` request are the harness evidence.
+Any further GUI tests must use Xvfb as requested by the user; no additional test
+was needed for this documentation review.
