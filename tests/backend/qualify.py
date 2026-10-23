@@ -98,7 +98,9 @@ openai-compatibility:
                 raise RuntimeError("isolated core exited during startup: " + (self.root / "core.log").read_text()[-3000:])
             try:
                 if self.get("/lain/health")["ready"]:
-                    return
+                    expected_source = Path(str(self.journal) + ".source").read_text()
+                    if self.get("/lain/events?after=0&limit=1")["sourceId"] == expected_source:
+                        return
             except (OSError, ValueError):
                 pass
             time.sleep(.05)
