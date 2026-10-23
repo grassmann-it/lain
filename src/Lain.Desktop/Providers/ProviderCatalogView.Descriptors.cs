@@ -96,9 +96,10 @@ public sealed partial class ProviderCatalogView
             new("Protocol / endpoint", Join(Protocol(route.Protocol), Known(route.BaseUrl))),
             new("Billing plans", route.BillingPlanIds.Length == 0 ? "Not reported" : string.Join(", ", route.BillingPlanIds.Select(id => provider.BillingPlans.FirstOrDefault(plan => plan.Id == id)?.Name ?? id))),
             new("Price class", Human(route.PricingClass)),
-            new("Free-only routing", route.FreeOnlyEligible && route.PricingClass == "free" && !string.IsNullOrWhiteSpace(route.FreeOnlyEnforcement)
-                ? Join("Described as eligible; route enforcement is required", route.FreeOnlyEnforcement)
-                : "Not verified as eligible; unknown or paid fallback routes must stay excluded."),
+            new("Free-only routing", Join(
+                route.FreeOnlyEligible && route.PricingClass == "free" ? "Documented free access" : "Paid or unknown pricing is excluded",
+                "Strict free-only routing is unavailable until provider cost controls are qualified. Catalog documentation alone does not enable it.",
+                route.FreeOnlyEnforcement)),
             new("Context window / maximum output", $"{Tokens(capabilities.ContextWindow)} / {Tokens(capabilities.MaximumOutput)}"),
             new("Tools / streaming / reasoning", $"{Support(capabilities.Tools)} / {Support(capabilities.Streaming)} / {Support(capabilities.Reasoning)}"),
             new("Images / structured output", $"{Support(capabilities.Images)} / {Support(capabilities.StructuredOutput)}"),
