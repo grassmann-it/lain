@@ -18,11 +18,12 @@ internal sealed class Fixture : HttpMessageHandler
             new("a4", "Kimi Coding", "kimi", true, "api-key", "ready"),
             new("a5", "MiMo API", "mimo", true, "api-key", "ready")
         ],
-        Enumerable.Range(1, InitialRoutes).Select(i => new RouteDto($"r{i}", $"gpt-lain-{i:00}", $"gpt-model-{i:00}", "openai", [$"a{(i - 1) % 4 + 1}"])).ToArray(),
-        Enumerable.Range(1, InitialProfiles).Select(i => new ProfileDto($"p{i}", i == 1 ? "Daily" : $"Workspace {i}", Enumerable.Range(1, i * 5).Select(n => $"r{n}").ToArray(), "r1")).ToArray());
+        Enumerable.Range(1, InitialRoutes).Select(i => new RouteDto($"r{i}", $"gpt-lain-{i:00}", $"gpt-model-{i:00}", "openai", [$"a{(i - 1) % 4 + 1}"],
+            ProviderRouteId: i == 1 ? "fixture-explicit-catalog-route" : null, Policy: i == 1 ? new("configured", ["r2"], true) : null)).ToArray(),
+        Enumerable.Range(1, InitialProfiles).Select(i => new ProfileDto($"p{i}", i == 1 ? "Daily" : $"Workspace {i}", Enumerable.Range(1, i * 5).Select(n => $"r{n}").ToArray(), "r1", Policy: i == 1 ? new("configured", ["r2"], true) : null)).ToArray());
     public int Imports, EnableCalls, ApplyCalls, ExportCalls, LoginBegins, LoginPolls, LoginCancels, UsageCalls, StatusCalls, AnalysisCalls;
     public bool Offline, UsageFailure, NullTokens, IncompleteCoverage, AnalysisFailure, InspectorFailure;
-    public int ProviderCalls, InspectorCalls, InspectorEventCalls;
+    public int ProviderCalls, InspectorCalls, InspectorEventCalls, CostPolicyCalls;
     public bool InspectorRestarted;
     private readonly DateTimeOffset inspectorStarted = DateTimeOffset.UtcNow;
     public static readonly ProviderCatalogDto ProviderCatalog = LoadProviders();
@@ -56,6 +57,7 @@ internal sealed class Fixture : HttpMessageHandler
                 "/api/v1/models" => new ModelCatalogDto(1, Config.Revision, [new ModelEntryDto("gpt-model", "openai", ["a1"])]),
                 "/api/v1/quotas" => Quotas(),
                 "/api/v1/providers" => Providers(),
+                var p when p.StartsWith("/api/v1/routes/") && p.EndsWith("/cost-policy") => CostPolicy(request.RequestUri!),
                 "/api/v1/inspector" => Inspector(),
                 "/api/v1/inspector/events" => InspectorEvents(request.RequestUri!),
                 "/api/v1/usage" => Usage(request.RequestUri!),
@@ -77,7 +79,7 @@ internal sealed class Fixture : HttpMessageHandler
         {
             var body = await request.Content!.ReadFromJsonAsync<RevisionRequest<RouteDto>>(cancellationToken: ct);
             Revision(body!.Revision);
-            Config = Config with { Revision = Config.Revision + 1, Routes = Config.Routes.Append(body.Value).ToArray() }; value = Config;
+            Config = Config with { Revision = Config.Revision + 1, Routes = Config.Routes.Where(route => route.Id != body.Value.Id).Append(body.Value).ToArray() }; value = Config;
         }
         else if (request.Method == HttpMethod.Post && path.EndsWith("/apply"))
         {
@@ -91,7 +93,7 @@ internal sealed class Fixture : HttpMessageHandler
         {
             var body = await request.Content!.ReadFromJsonAsync<RevisionRequest<ProfileDto>>(cancellationToken: ct);
             Revision(body!.Revision);
-            Config = Config with { Revision = Config.Revision + 1, Profiles = Config.Profiles.Append(body.Value).ToArray() }; value = Config;
+            Config = Config with { Revision = Config.Revision + 1, Profiles = Config.Profiles.Where(profile => profile.Id != body.Value.Id).Append(body.Value).ToArray() }; value = Config;
         }
         else if (request.Method == HttpMethod.Post && path == "/api/v1/import")
         {
@@ -121,6 +123,13 @@ internal sealed class Fixture : HttpMessageHandler
         using var json = typeof(Fixture).Assembly.GetManifestResourceStream("Lain.Desktop.Smoke.fixtures.inspection-providers.json")
             ?? throw new InvalidOperationException("Embedded provider UI fixture missing");
         return JsonSerializer.Deserialize<ProviderCatalogDto>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+    }
+    private RouteCostDecisionDto CostPolicy(Uri uri)
+    {
+        CostPolicyCalls++;
+        var strict = uri.Query.Contains("free_only", StringComparison.Ordinal);
+        return new(uri.AbsolutePath.Split('/')[4], !strict, strict ? "free_only" : "configured", "unknown",
+            strict ? ["upstream_cost_controls_unavailable"] : []);
     }
     private ProviderCatalogDto Providers() { ProviderCalls++; return ProviderCatalog; }
     private string InspectorSource => InspectorRestarted ? "source-ui-2" : "source-ui-1";

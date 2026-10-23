@@ -147,6 +147,8 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await CaptureBoth("route-editor"); await Click("Save route");
         await Wait(() => fixture.Config.Routes.Length == Fixture.InitialRoutes + 1, "revisioned route saved");
 
+        await CheckPolicyPreservation();
+
         await Click("Profiles"); await Click("Create profile");
         Input("Profile name").Text = "Focus";
         Controls<CheckBox>().First().IsChecked = true;
@@ -531,6 +533,51 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     private T Named<T>(string name) where T : Control => Controls<T>().Single(x => AutomationProperties.GetName(x) == name);
     private bool HasSelectable(string text) => Controls<SelectableTextBlock>().Any(block => block.Text?.Contains(text, StringComparison.Ordinal) == true);
     private bool HasGroup(string key) => Controls<Button>().Any(button => AutomationProperties.GetName(button) == "Inspect group " + key);
+
+
+    private async Task CheckPolicyPreservation()
+    {
+        var original = fixture.Config.Routes.Single(route => route.Id == "r1");
+        await Click("Edit route " + original.Alias);
+        Input("client-facing-model").Text = "policy-preservation-fixture";
+        await Click("Save route");
+        await Wait(() => fixture.Config.Routes.Single(route => route.Id == "r1").Alias == "policy-preservation-fixture", "existing route rename saves through the production editor");
+        var renamed = fixture.Config.Routes.Single(route => route.Id == "r1");
+        Check(renamed.ProviderRouteId == original.ProviderRouteId && JsonSerializer.Serialize(renamed.Policy) == JsonSerializer.Serialize(original.Policy),
+            "unrelated route edits preserve concrete catalog provenance fallback targets and paid fallback consent");
+        await Click("Edit route " + renamed.Alias);
+        Input("client-facing-model").Text = original.Alias;
+        Named<ComboBox>("Spending policy").SelectedIndex = 1;
+        await Click("Check spending policy");
+        await Wait(() => HasText("This route has no qualified runtime spending controls", true), "policy prerequisite check explains missing runtime cost controls");
+        Check(!HasText("Configuration is eligible for guarded free-only routing", true) && fixture.CostPolicyCalls == 1,
+            "a failed policy check cannot claim a fulfilled spending cap or live access");
+        await CaptureBoth("route-spending-policy");
+        await Click("Save route");
+        await Wait(() => fixture.Config.Routes.Single(route => route.Id == "r1").Policy?.CostPolicy == "free_only", "explicit free-only route selection is saved");
+        var strictRoute = fixture.Config.Routes.Single(route => route.Id == "r1");
+        Check(strictRoute.ProviderRouteId == original.ProviderRouteId && strictRoute.Policy?.AllowPaidFallback == false
+            && strictRoute.Policy.FallbackRouteIds!.SequenceEqual(original.Policy!.FallbackRouteIds!),
+            "explicit strict route mode clears paid opt-in and retains fallback targets for Host validation");
+
+        await Click("Profiles");
+        var profile = fixture.Config.Profiles.Single(item => item.Id == "p1");
+        await Click($"{profile.Name}, {profile.RouteIds.Length} routes");
+        await Click("Edit selection");
+        Input("Profile name").Text = "Profile policy preservation fixture";
+        await Click("Save profile");
+        await Wait(() => fixture.Config.Profiles.Single(item => item.Id == "p1").Name == "Profile policy preservation fixture", "existing profile rename saves through the production editor");
+        Check(JsonSerializer.Serialize(fixture.Config.Profiles.Single(item => item.Id == "p1").Policy) == JsonSerializer.Serialize(profile.Policy),
+            "unrelated profile edits retain fallback policy and explicit consent");
+        await Click("Edit selection");
+        Input("Profile name").Text = profile.Name;
+        Named<ComboBox>("Spending policy").SelectedIndex = 1;
+        await Click("Save profile");
+        await Wait(() => fixture.Config.Profiles.Single(item => item.Id == "p1").Policy?.CostPolicy == "free_only", "explicit strict profile selection is saved");
+        var strictProfile = fixture.Config.Profiles.Single(item => item.Id == "p1");
+        Check(strictProfile.Policy?.AllowPaidFallback == false && strictProfile.Policy.FallbackRouteIds!.SequenceEqual(profile.Policy!.FallbackRouteIds!),
+            "strict profile choice clears paid opt-in while preserving fallback targets");
+    }
 
     private async Task CheckProviderCatalog()
     {
