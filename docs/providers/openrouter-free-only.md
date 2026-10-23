@@ -33,8 +33,7 @@ that this overrides administrator-enforced defaults.
 
 The official [spend-control decision map](https://openrouter.ai/blog/insights/governing-team-ai-spend/)
 describes a per-key limit as a **“hard cap”**, with the scope **“Total credits one
-API key can spend”** and behavior **“Blocks (rejects over limit)”**. Those quoted
-phrases total 18 words. The same source notes that already-running requests can
+API key can spend”** and behavior **“Blocks (rejects over limit)”**. The same source notes that already-running requests can
 finish above a *workspace* budget. It does not explicitly extend that caveat to
 zero per-key limits, and it does not supply a zero-limit/free-model example.
 
