@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import socket
+import shutil
 import subprocess
 import tempfile
 import time
@@ -94,7 +95,16 @@ def main():
         result = run([launcher, 'status', '--json'], environment=client_env)
         expect(result.returncode != 0 and not result.stdout.strip(), 'offline CLI must fail without fake stdout snapshot')
         checks.append('offline CLI fails explicitly')
-    report = {'passed': True, 'checks': checks, 'providerCalls': 0, 'systemdOperations': 0, 'hostExecutableSha256': expected_hash}
+        # Exercise documented uninstall mechanics only on this probe's own paths.
+        shutil.rmtree(data / 'app')
+        shutil.rmtree(data / 'app.failed')
+        (prefix / 'bin/lain').unlink()
+        (units / 'lain.service').unlink()
+        expect((data / 'keep-me').read_text() == 'persistent user data', 'uninstall deleted private data')
+        expect((data / 'credentials/host.token').read_bytes() == original_token, 'uninstall deleted credentials')
+        expect((data / 'usage.db').is_file(), 'uninstall deleted usage history')
+        checks.append('documented staged uninstall preserves private data')
+    report = {'passed': True, 'checks': checks, 'providerCalls': 0, 'systemdOperations': 0, 'sameArtifactUpdateAndRollback': True, 'hostExecutableSha256': expected_hash}
     Path(args.report).write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
 
