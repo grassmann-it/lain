@@ -23,6 +23,14 @@ fake-upstream journal-to-SQLite path for that core build. It does not qualify
 other scenarios, newer core builds, or real providers; backend qualification
 remained open because of a separately observed streaming-order defect.
 
+The same unchanged-envelope replay/reopen check was repeated against schema 2
+with the final synthetic qualification build SHA-256
+`8edf8abf666e3c15f1a04c20c841a969d35229f09e7de5265755ab704cf9dfc0`:
+400 events again produced exactly the counts above, with complete capture.
+The source-transition fix passed all 13 tests after a non-incremental rebuild,
+including empty and populated replacement journals, v1 migration, transaction
+rollback, and process-kill recovery. Real-provider qualification is separate.
+
 ## Host integration
 
 The host references `Microsoft.Data.Sqlite` version **10.0.12** and embeds
