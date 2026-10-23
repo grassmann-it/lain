@@ -10,7 +10,7 @@ using Lain.Core;
 namespace Lain.Desktop.Usage;
 
 /// <summary>Read-only projection of host aggregates. Collection continues in the host.</summary>
-public sealed class UsageView : UserControl
+public sealed partial class UsageView : UserControl
 {
     private static IBrush Muted => Ui.Muted;
     private static IBrush Accent => Ui.Accent;
@@ -106,10 +106,11 @@ public sealed class UsageView : UserControl
             Children =
             {
                 new StackPanel { Spacing = 3, Children = { Ui.Title("Usage"), Label("Persistent activity · updates every 5 seconds", Muted) } },
-                Panel(new StackPanel { Spacing = 4, Children = { ranges, filters, _filterError } }),
+                Panel(new StackPanel { Spacing = 4, Children = { ranges, filters, BuildDimensionFilters(), _filterError } }),
                 _error,
                 new StackPanel { Spacing = 3, Children = { _connection, _freshness, _scope, _coverage } },
                 Panel(_totals, 0),
+                BuildAnalysisSection(),
                 Section("Daily activity", "Calendar days · unknown values stay —", new StackPanel { Spacing = 6, Children = { measure, _daily, _dailyDetails } }),
                 Section("Accounts", "Expand for token details and filtering · historical identities retained", _accounts),
                 Section("Actual models", "Expand for token details and filtering", _models),
@@ -205,6 +206,7 @@ public sealed class UsageView : UserControl
             }
             query = new UsageQuery(from, to, zone.Id, (_account.SelectedItem as FilterChoice)?.Key,
                 (_model.SelectedItem as FilterChoice)?.Key, status, 0, 25);
+            query = ReadDimensionFilters(query);
             _filterError.Text = "";
             _filterError.IsVisible = false;
             return true;
@@ -246,12 +248,15 @@ public sealed class UsageView : UserControl
             var attemptsTask = _client.AttemptsAsync(query, refresh.Token);
             // Friendly account names are optional; historical IDs still render when configuration is unavailable.
             var namesTask = ReadAccountNamesAsync(refresh.Token);
-            await Task.WhenAll(summaryTask, attemptsTask, namesTask);
+            var analysisTask = ReadAnalysisAsync(query, refresh.Token);
+            await Task.WhenAll(summaryTask, attemptsTask, namesTask, analysisTask);
             if (refresh.IsCancellationRequested || generation != _generation) return;
             var summary = await summaryTask;
             if (summary.ContractVersion != Api.Version)
                 throw new InvalidOperationException($"Usage contract {summary.ContractVersion} is unsupported; expected {Api.Version}.");
             Render(summary, await attemptsTask, query);
+            var analysis = await analysisTask;
+            RenderAnalysis(analysis.Value, analysis.Error);
             ShowError(null);
         }
         catch (OperationCanceledException) when (refresh.IsCancellationRequested) { }
@@ -275,6 +280,8 @@ public sealed class UsageView : UserControl
         {
             var accounts = await _client.AccountsAsync(token);
             token.ThrowIfCancellationRequested();
+            _configuredAccounts.Clear();
+            _configuredAccounts.UnionWith(accounts.Select(account => account.Id));
             foreach (var account in accounts) _accountNames[account.Id] = account.Name;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
@@ -290,6 +297,7 @@ public sealed class UsageView : UserControl
         var age = DateTimeOffset.UtcNow - summary.ObservedAt;
         _freshness.Text = $"Observed {TimeZoneInfo.ConvertTime(summary.ObservedAt, zone):yyyy-MM-dd HH:mm:ss zzz} ({Math.Max(0, age.TotalSeconds):N0}s ago) · cursor {summary.Cursor:N0} · zone {summary.TimeZone}\nApplied range: {TimeZoneInfo.ConvertTime(summary.From, zone):yyyy-MM-dd HH:mm} → {TimeZoneInfo.ConvertTime(summary.To, zone):yyyy-MM-dd HH:mm} (exclusive)";
         _scope.Text = $"Applied filters: {(query.AccountId is { } accountId ? AccountName(accountId) : "all accounts")} · {query.Model ?? "all models"} · {(query.StatusCode is { } status ? $"HTTP {status}" : "all outcomes")}";
+        _scope.Text += DimensionScope(query);
         _coverage.Text = summary.Complete
             ? $"Coverage: complete for selected range · {summary.Totals.UnknownUsageAttempts:N0} attempts with unknown token usage"
             : $"Coverage: incomplete — totals may omit activity · {summary.Totals.UnknownUsageAttempts:N0} attempts with unknown token usage";
@@ -299,6 +307,7 @@ public sealed class UsageView : UserControl
         RenderGroups(_accounts, summary.Accounts, true);
         RenderGroups(_models, summary.Models, false);
         RenderAttempts(page, zone);
+        RenderUnobservedAccounts(summary, query);
         // Never derive totals, group counts or token metrics from a page of attempts.
         _knownAccounts.UnionWith(summary.Accounts.Select(x => x.Key).Concat(_accountNames.Keys));
         _knownModels.UnionWith(summary.Models.Select(x => x.Key));
@@ -491,6 +500,7 @@ public sealed class UsageView : UserControl
         foreach (var attempt in page.Items)
         {
             var status = attempt.StatusCode?.ToString(CultureInfo.InvariantCulture) ?? "—";
+            var completion = attempt.CompletionState ?? attempt.State;
             var failed = attempt.State is "failed" or "canceled" || attempt.StatusCode >= 400;
             var expanded = _expandedAttempts.Contains(attempt.Id);
             var toggle = DetailToggle(expanded, $"Details for attempt {attempt.Id}");
@@ -500,13 +510,13 @@ public sealed class UsageView : UserControl
             Put(row, toggle, 0);
             var statusCell = row.Children.OfType<TextBlock>().First(x => Grid.GetColumn(x) == 3);
             statusCell.Foreground = failed ? Ui.Warning : status == "—" ? Muted : Ui.Success;
-            ToolTip.SetTip(statusCell, $"HTTP {status} · {attempt.State}");
+            ToolTip.SetTip(statusCell, $"HTTP {status} · {completion}");
             var details = new StackPanel
             {
                 IsVisible = expanded, Spacing = 4, Margin = new Thickness(32, 4, 8, 10),
                 Children =
                 {
-                    Label($"{TimeZoneInfo.ConvertTime(attempt.StartedAt, zone):yyyy-MM-dd HH:mm:ss zzz} · HTTP {status} · {attempt.State}", Muted),
+                    Label($"{TimeZoneInfo.ConvertTime(attempt.StartedAt, zone):yyyy-MM-dd HH:mm:ss zzz} · HTTP {status} · {completion}", Muted),
                     Label($"{AccountName(attempt.AccountId)} · {attempt.AccountId} · {attempt.Provider} · {attempt.Model}" + (attempt.RouteId is null ? "" : $" · route {attempt.RouteId}"), Muted),
                     Label(TokenDetails(attempt.Tokens), Muted),
                     Label($"Duration {Milliseconds(attempt.DurationMs)} · first token {Milliseconds(attempt.FirstTokenMs)}", Muted),
@@ -514,6 +524,19 @@ public sealed class UsageView : UserControl
                     Label($"Request {attempt.RequestId} · attempt {attempt.Id}", Muted)
                 }
             };
+            if (attempt.Measurements is { } measured)
+                details.Children.Add(Label($"Owned-core measurements: first output {Milliseconds(measured.FirstOutputLatencyMs)} · total {Milliseconds(measured.TotalDurationMs)} · source {measured.Source ?? "not supplied"}", Muted));
+            if (attempt.Dimensions is { } dimensions)
+            {
+                var values = new (string Name, string? Value)[] { ("Family", dimensions.ModelFamily), ("Manufacturer", dimensions.Manufacturer),
+                    ("Inference", dimensions.InferenceProvider), ("Gateway", dimensions.Gateway), ("Billing account", dimensions.BillingAccountId),
+                    ("Reasoning", dimensions.ReasoningEffort), ("Mode", dimensions.Mode), ("Conversation", dimensions.ConversationId),
+                    ("Turn", dimensions.TurnId), ("Worker", dimensions.WorkerId), ("Harness", dimensions.Harness) };
+                var known = values.Where(x => x.Value is not null).Select(x => x.Name + ": " + x.Value).ToArray();
+                if (known.Length > 0) details.Children.Add(Label(string.Join(" · ", known), Muted));
+                if (dimensions.Evidence is { Length: > 0 } evidence)
+                    details.Children.Add(new Expander { Header = "Attribution sources", Content = Label(string.Join("\n", evidence.Select(x => $"{x.Field} · {x.Source}" + (x.Key is null ? "" : " · " + x.Key))), Muted) });
+            }
             if (!string.IsNullOrWhiteSpace(attempt.Error)) details.Children.Add(Label(attempt.Error, Ui.Warning));
             toggle.Click += (_, _) =>
             {
@@ -571,8 +594,9 @@ public sealed class UsageView : UserControl
     {
         // This is a per-attempt display calculation, never an aggregate over the current page.
         if (attempt.FinishedAt is not { } finished || finished < attempt.StartedAt || attempt.State == "pending" ||
+            attempt.CompletionState is "active" or "pending" or "streaming" or "unknown" ||
             attempt.Tokens.Output is not { } output || output < 0 ||
-            attempt.DurationMs is not { } duration || !double.IsFinite(duration) || duration <= 0) return "—";
+            (attempt.Measurements?.TotalDurationMs ?? attempt.DurationMs) is not { } duration || !double.IsFinite(duration) || duration <= 0) return "—";
         var rate = output * 1000d / duration;
         return double.IsFinite(rate) ? $"{rate:N1} tok/s" : "—";
     }
