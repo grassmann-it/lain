@@ -97,7 +97,7 @@
       "gateway": "NVIDIA Build",
       "pricingClass": "free",
       "freeOnlyEligible": true,
-      "freeOnlyEnforcement": "Pin the official developer endpoint and this route. Do not configure paid fallback. Developer entitlement and actual remaining allowance require account verification.",
+      "freeOnlyEnforcement": "The official developer offer is free for prototyping, but endpoint/account/request controls preventing spend have not been qualified. Free-only execution must fail closed; pinning the documented URL alone is insufficient.",
       "publisher": "StepFun",
       "publisherType": "manufacturer",
       "sources": [
@@ -121,7 +121,8 @@
         "Reasoning remains enabled. Do not send enable_thinking=false as a reasoning disable switch. Preserve assistant reasoning_content and tool_call_id on continuations.",
         "Streaming uses SSE data events ending with [DONE]; reasoning, content and tool calls arrive as deltas.",
         "The published context value is 1M tokens; actual usable context and concurrency depend on hosting configuration. Structured output and adjustable reasoning effort are not verified for this route."
-      ]
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
     }
   ],
   "sources": [

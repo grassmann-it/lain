@@ -43,6 +43,12 @@ Build-API. Kein belastbarer fester RPM-/TPM-/Tages-/Parallelitätswert und kein
 öffentlicher API-Key-Quota-Endpunkt für diese Route wurde verifiziert. Solche
 Werte bleiben unbekannt, niemals „unbegrenzt“ oder ein ausgedachtes Restbudget.
 
+„Nur kostenlos“ darf aus der kostenlosen Angebotsbeschreibung allein keine
+Ausführungsfreigabe ableiten. Die Maschinenkennzeichnung bleibt `unsupported`,
+bis Endpoint-, Account- und Requestkontrollen nachgewiesen Kosten ausschließen.
+Unbekannte Kontoberechtigung oder ein erschöpfter Entwicklungszugang darf keinen
+bezahlten Fallback aktivieren.
+
 Einrichtung: NVIDIA-Konto und Developer-Program-Zugang selbst erstellen, Modellseite
 öffnen, dort API-Key erzeugen und als eigenes Secret mit der offiziellen Basis
 speichern. In lain ist ohne Schlüssel `missing_credentials`, mit Schlüssel bis
