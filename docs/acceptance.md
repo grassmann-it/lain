@@ -45,10 +45,10 @@ rotation, restart, configuration write, or queue consumption is authorized.
 | B host | Unauthorized local API rejected, revision races rejected, failure distinguishes desired/applied revision | HTTP auth, concurrency, pending revision and failed-apply restart guard passed |
 | B data/privacy | SQLite restart and dedup; no headers/credentials/payloads in usage/export/errors; unknown amounts serialized null | 13 SQLite tests, journal/public-API privacy checks and export allowlist review passed; actual failed attempts retain null usage; installed usage survives systemd restart |
 | B accounts/quota | API/Codex snapshot import, no refresh token; separate same-provider accounts, isolated quota failure/last-good | Read-only API/access-token import and account attribution passed; W6 executed 35 synthetic quota assertions including isolation/last-good; actual Command quota observed; real owned OAuth renewal untested |
-| C desktop | Actual Linux window, clickable account/model/profile/usage flows; closes without stopping collector | Prior-design installed Usage/polling/close-reopen passed; configuration controls fixture-tested; user rejected visual design, redesign and Xvfb retest pending; real OAuth browser flow untested |
+| C desktop | Actual Linux window, clickable account/model/profile/usage flows; closes without stopping collector | Semi/Ursa redesign passed 63 workflow assertions, 30 reviewed Xvfb renders and installed real-usage/poll/close-reopen checks; real OAuth browser flow untested |
 | D harness | Isolated Codex config/helper/model menu and harmless actual request; no existing configuration changes | Actual Codex profile `lain` used `gpt-6-luna`, catalog has 45 configured models, one request/81,986 tokens persisted; normal Codex configuration unchanged |
-| D consistency | CLI/UI/skill consume same host snapshot and bounded queries; no duplicate collector | Prior-design GUI/CLI/API agree on 1 request and 81,986 tokens; closed-window host stays ready; skill delegates the same bounded CLI; new UI parity requires Xvfb retest |
-| E delivery | Fresh staged install outside cwd, start/stop/restart, update/rollback, uninstall preserving data | Actual staged Host/Core/CLI, usage, restart, same-artifact update/rollback and data-preserving uninstall passed; actual user installation, enabled systemd restart and prior-design native GUI checks passed; release acceptance awaits visual redesign |
+| D consistency | CLI/UI/skill consume same host snapshot and bounded queries; no duplicate collector | Redesigned installed GUI/CLI/API agree on 1 request and 81,986 tokens; closed-window host stays ready; skill delegates the same bounded CLI |
+| E delivery | Fresh staged install outside cwd, start/stop/restart, update/rollback, uninstall preserving data | Actual staged Host/Core/CLI, usage, restart, same-artifact update/rollback and data-preserving uninstall passed; actual installation/systemd persistence and redesigned installed Xvfb checks passed; desktop-only update preserves backend/service identities |
 | Real providers | Explicitly authorized minimal Codex and Command Code stream/tool continuation, usage attribution and persistence | Codex Responses + Command GLM Responses tool/continuation passed; earlier Command GPT failures retained; real OAuth renewal untested |
 | Final isolation | Same existing service PID/start and unchanged legacy binary/config/auth hashes, or documented attributable exception | Installed-run report confirms original PID/start unchanged; persistent binary/config/auth additions, removals and changes are zero; only temporary auth-file churn |
 
@@ -195,10 +195,8 @@ no credential content was emitted. The installed-run report subsequently confirm
 the original service PID/start time remained unchanged.
 
 The actual user installation, isolated Codex CLI session and installed native
-desktop baseline are now evidenced below. These functional results do not close
-overall release acceptance: the user requested a visual redesign after reviewing
-the prior interface. The new UI needs Xvfb acceptance. Nor are these results a
-blanket claim that all provider models, interactive client menu paths or OAuth
+desktop baseline are now evidenced below. The user then requested a visual redesign; its subsequent Xvfb and installed
+acceptance appears at the end of this ledger. These results are not a blanket claim that all provider models, interactive client menu paths or OAuth
 lifecycle operations have been tested.
 
 ## Actual installed service and Codex CLI
@@ -264,8 +262,8 @@ The user rejected the visual design shown in the installed baseline and requeste
 a MeowChan direction using Ursa/Semi. Functional backend, persistence, isolation
 and installed-package evidence remains valid for its recorded artifacts; it does
 not establish acceptance of the requested new interface. In particular, the
-Desktop hash and screenshots above describe the **prior design**, not the pending
-redesign. The required replacement was subsequently implemented and checked as recorded below.
+Desktop hash and screenshots above describe the **prior design**, not the replacement
+design. The required replacement was subsequently implemented and checked as recorded below.
 
 ## Redesigned desktop final acceptance
 
