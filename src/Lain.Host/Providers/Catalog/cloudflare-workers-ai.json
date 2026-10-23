@@ -95,7 +95,8 @@
           "notes": null
         }
       ],
-      "restrictions": []
+      "restrictions": [],
+      "freeOnlyEnforcementKind": "provider_control_required"
     },
     {
       "id": "cloudflare-glm47-flash",
@@ -116,7 +117,8 @@
       "freeOnlyEligible": false,
       "freeOnlyEnforcement": "Free allocation is account-dependent; require verified Workers Free billing posture and direct access.",
       "sources": [],
-      "restrictions": []
+      "restrictions": [],
+      "freeOnlyEnforcementKind": "provider_control_required"
     },
     {
       "id": "cloudflare-kimi26-paid",
@@ -138,7 +140,8 @@
       "sources": [],
       "restrictions": [
         "Requires Workers Paid plan or prepaid AI Gateway credits; excluded from free-only."
-      ]
+      ],
+      "freeOnlyEnforcementKind": "provider_control_required"
     }
   ],
   "sources": [

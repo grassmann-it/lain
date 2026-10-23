@@ -78,7 +78,8 @@
       "sources": [],
       "restrictions": [
         "Snapshot price is documented, current endpoint metadata and account routing policy remain unqualified."
-      ]
+      ],
+      "freeOnlyEnforcementKind": "provider_control_required"
     },
     {
       "id": "requesty-nemotron-nano-free",
@@ -100,7 +101,8 @@
       "sources": [],
       "restrictions": [
         "Snapshot price is documented, current endpoint metadata and account routing policy remain unqualified."
-      ]
+      ],
+      "freeOnlyEnforcementKind": "provider_control_required"
     },
     {
       "id": "requesty-gemma4-free",
@@ -122,7 +124,8 @@
       "sources": [],
       "restrictions": [
         "Snapshot price is documented, current endpoint metadata and account routing policy remain unqualified."
-      ]
+      ],
+      "freeOnlyEnforcementKind": "provider_control_required"
     }
   ],
   "sources": [

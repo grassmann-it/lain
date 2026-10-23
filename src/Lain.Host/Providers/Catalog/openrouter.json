@@ -86,7 +86,8 @@
           "notes": null
         }
       ],
-      "restrictions": []
+      "restrictions": [],
+      "freeOnlyEnforcementKind": "free_model_pin"
     },
     {
       "id": "openrouter-qwen3-coder-free",
@@ -115,7 +116,8 @@
           "notes": null
         }
       ],
-      "restrictions": []
+      "restrictions": [],
+      "freeOnlyEnforcementKind": "free_model_pin"
     },
     {
       "id": "openrouter-random-free",
@@ -137,7 +139,8 @@
       "sources": [],
       "restrictions": [
         "Random model selection; no fixed family or route capability guarantees."
-      ]
+      ],
+      "freeOnlyEnforcementKind": "free_model_pin"
     }
   ],
   "sources": [
