@@ -77,6 +77,36 @@ def error_fields(raw, secrets):
     return {key: sanitize(error.get(key), secrets) for key in ("code", "type", "message")}
 
 
+def html_error_classification(raw):
+    """Only booleans and a known title class leave this function."""
+    text = raw.decode("utf-8", errors="replace")
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            error = parsed.get("error", parsed)
+            if isinstance(error, dict) and isinstance(error.get("message"), str):
+                text = error["message"]
+    except ValueError:
+        pass
+    lower = text.lower()
+    title = re.search(r"<title[^>]*>(.*?)</title>", text, re.I | re.S)
+    known_title = None
+    if title:
+        candidate = " ".join(title.group(1).lower().split())
+        for fragment, label in (("just a moment", "Cloudflare challenge"), ("attention required", "Cloudflare attention required"),
+                                ("access denied", "Access denied"), ("403 forbidden", "403 Forbidden"), ("error 1010", "Cloudflare 1010")):
+            if fragment in candidate:
+                known_title = label
+                break
+        if known_title is None:
+            known_title = "Unrecognized HTML title omitted"
+    return {"html": "<html" in lower or "<!doctype" in lower, "cloudflare": "cloudflare" in lower,
+            "cloudflare1010": "cloudflare" in lower and bool(re.search(r"\b1010\b", lower)),
+            "challenge": "cf-chl" in lower or "just a moment" in lower or "challenge-platform" in lower,
+            "accessDenied": "access denied" in lower or "accessdenied" in lower,
+            "cdnForbidden": "forbidden" in lower and ("cloudflare" in lower or "cdn" in lower), "titleClass": known_title}
+
+
 def one_command_request(token, account, secrets):
     payload = {"model": orchestration.COMMAND_ALIAS, "stream": False, "store": False, "max_output_tokens": 16,
                "instructions": "Reply exactly OK.",

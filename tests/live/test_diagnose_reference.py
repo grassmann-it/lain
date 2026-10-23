@@ -29,6 +29,14 @@ class DiagnosticTests(unittest.TestCase):
             self.assertEqual(0, diagnostic.main())
         self.assertEqual(0, json.loads(output.getvalue())["inferenceRequests"])
 
+    def test_html_classification_has_only_known_labels_and_booleans(self):
+        raw = json.dumps({"error": {"message": "<!DOCTYPE html><title>Access denied secret-key</title><body>Cloudflare Error 1010 secret-key</body>"}}).encode()
+        classification = diagnostic.html_error_classification(raw)
+        self.assertTrue(classification["html"])
+        self.assertTrue(classification["cloudflare1010"])
+        self.assertEqual("Access denied", classification["titleClass"])
+        self.assertNotIn("secret-key", json.dumps(classification))
+
 
 if __name__ == "__main__":
     unittest.main()

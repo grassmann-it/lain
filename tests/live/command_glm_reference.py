@@ -69,7 +69,12 @@ def main():
                 return probe.OPENER.open(request, timeout=45)
             except urllib.error.HTTPError as error:
                 with error:
-                    report["providerError"] = {"statusCode": error.code, **diagnostic.error_fields(probe.bounded_read(error), secrets)}
+                    raw = probe.bounded_read(error)
+                    report["providerError"] = {"statusCode": error.code, **diagnostic.error_fields(raw, secrets),
+                        "bodyClassification": diagnostic.html_error_classification(raw),
+                        "retryAfter": diagnostic.sanitize(error.headers.get("Retry-After"), secrets),
+                        "cfMitigatedChallenge": error.headers.get("cf-mitigated", "").lower() == "challenge",
+                        "proxyNormalizes403Code": error.code == 403}
                 raise probe.ProbeError("GLM request failed; no continuation or retry sent.") from None
         probe.open_request = capturing_open
         probe.run_pair(ALIAS, original_command, token, report)
