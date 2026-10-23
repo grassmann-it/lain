@@ -47,7 +47,8 @@ public static class RouteBindings
         ProviderCatalogRegistry? catalog = null, string? profileId = null, IReadOnlySet<string>? qualifiedProviderRouteIds = null)
     {
         catalog ??= new();
-        new ProviderCostPolicy(catalog).ValidateRuntime(config);
+        var costPolicy = new ProviderCostPolicy(catalog);
+        costPolicy.ValidateRuntime(config);
         var routes = new Dictionary<string, CoreRouteBinding>(StringComparer.Ordinal);
         foreach (var route in config.Routes.Where(x => x.Enabled))
         {
@@ -67,12 +68,16 @@ public static class RouteBindings
             }
             // Catalog identity alone cannot prove that the selected credential targets the documented inference endpoint.
             var descriptor = qualifiedProviderRouteIds?.Contains(route.Id) == true ? catalog.FindRoute(route.Provider, route.ProviderRouteId) : null;
+            var freeOnly = route.Policy?.CostPolicy == "free_only";
+            var enforcement = freeOnly && descriptor is not null ? costPolicy.RuntimeEnforcement(route) : null;
+            if (freeOnly && enforcement is null)
+                throw new ArgumentException("Free-only routing requires a qualified provider transport and runtime enforcement.");
             var dimensions = descriptor is not null || profileId is not null
                 ? new CoreRouteDimensions(descriptor?.ModelFamily, descriptor?.Manufacturer, descriptor?.InferenceProvider, descriptor?.Gateway, ProfileId: profileId)
                 : null;
             if (!routes.TryAdd(route.Alias, new(route.Id, route.UpstreamModel, route.AccountIds.ToArray(), route.Pooled ? "pool" : "strict",
                     overrides?.ToDictionary(x => x.Key, x => x.Value), route.Visible, route.Provider,
-                    route.Policy?.CostPolicy ?? "configured", descriptor?.PricingClass ?? "unknown", null, dimensions)))
+                    route.Policy?.CostPolicy ?? "configured", descriptor?.PricingClass ?? "unknown", enforcement, dimensions)))
                 throw new ArgumentException("Duplicate route alias.");
         }
         var used = routes.Values.SelectMany(x => x.Accounts).ToHashSet();

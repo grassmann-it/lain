@@ -59,6 +59,34 @@ Check(legacyBinding?.CostPolicy == "configured", "legacy bindings default config
 Check(ProxyConfigurationWriter.CoreCredentialId("claude-api-key", "provider", "key", "https://example.test", "") !=
     ProxyConfigurationWriter.CoreCredentialId("claude-api-key", "provider", "key", "https://example.test", "", sortedHeaders: "User-Agent\0lain/1.0\0"),
     "qualified direct headers participate in core credential identity");
+var guardedDescriptor = descriptor with
+{
+    Id = "openrouter",
+    Routes = [descriptor.Routes[0] with { Id = "guarded-route", Model = "qwen/qwen3-coder:free", BaseUrl = "https://openrouter.ai/api/v1" }]
+};
+var guardedCatalog = new ProviderCatalogRegistry([guardedDescriptor]);
+var guardedPolicy = new ProviderCostPolicy(guardedCatalog);
+var guardedRoute = free with { Provider = "openrouter", ProviderRouteId = "guarded-route", UpstreamModel = "qwen/qwen3-coder:free", Policy = strict };
+var guardedConfig = config with { Accounts = [account with { Provider = "openrouter" }], Routes = [guardedRoute] };
+Check(guardedPolicy.Evaluate(guardedConfig, guardedRoute).Allowed, "guarded OpenRouter configuration intent accepted pending fresh runtime key proof");
+Check(guardedPolicy.RuntimeEnforcement(guardedRoute) == "openrouter_zero_cap_v1", "only named runtime guard enables the concrete free route");
+Throws<ArgumentException>(() => RouteBindings.Compile(guardedConfig, new Dictionary<string, string> { [account.Id] = "core" }, catalog: guardedCatalog),
+    "supported free intent still needs actual transport qualification");
+var guardedBindings = RouteBindings.Compile(guardedConfig, new Dictionary<string, string> { [account.Id] = "core" }, catalog: guardedCatalog,
+    qualifiedProviderRouteIds: new HashSet<string> { guardedRoute.Id });
+Check(guardedBindings.Routes[guardedRoute.Alias].FreeOnlyEnforcement == "openrouter_zero_cap_v1", "free runtime binding requires named key-proof and final-request guard");
+foreach (var invalid in new[]
+{
+    guardedDescriptor.Routes[0] with { BaseUrl = "https://other.example.test/v1" },
+    guardedDescriptor.Routes[0] with { Model = "openrouter/free" },
+    guardedDescriptor.Routes[0] with { Model = "unqualified/new-model:free" },
+    guardedDescriptor.Routes[0] with { Protocol = "openai-responses" }
+})
+{
+    var invalidPolicy = new ProviderCostPolicy(new([guardedDescriptor with { Routes = [invalid] }]));
+    Check(!invalidPolicy.Evaluate(guardedConfig, guardedRoute with { UpstreamModel = invalid.Model }).Allowed,
+        "unqualified gateway/variant/protocol cannot inherit OpenRouter guard eligibility");
+}
 descriptor.Routes[0] = descriptor.Routes[0] with { PricingClass = "payg" };
 Check(catalog.FindRoute("test-provider", "free-route")?.PricingClass == "free", "catalog constructor copies mutable arrays");
 var snapshot = catalog.Snapshot(); snapshot.Providers[0].Routes[0] = snapshot.Providers[0].Routes[0] with { Model = "edited" };

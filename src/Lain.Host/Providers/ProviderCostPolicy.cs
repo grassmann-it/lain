@@ -5,7 +5,13 @@ namespace Lain.Host.Providers;
 /// <summary>Policy validation is independent of provider marketing and never infers safety from a remaining balance.</summary>
 public sealed class ProviderCostPolicy(ProviderCatalogRegistry catalog)
 {
+    public const string OpenRouterZeroCapEnforcement = "openrouter_zero_cap_v1";
     public static ProviderCostPolicy Embedded() => new(new ProviderCatalogRegistry());
+
+    /// <summary>Names an implemented dispatch guard, not a stored assertion that the account has budget or access.
+    /// The Core must obtain fresh same-key zero-cap proof on every dispatch; missing proof rejects inference.</summary>
+    public string? RuntimeEnforcement(RouteDto route) => SupportsOpenRouterZeroCap(route, catalog.FindRoute(route.Provider, route.ProviderRouteId))
+        ? OpenRouterZeroCapEnforcement : null;
 
     public RouteCostDecisionDto Evaluate(ConfigurationDto configuration, RouteDto route, RoutingPolicyDto? policyOverride = null)
     {
@@ -87,11 +93,17 @@ public sealed class ProviderCostPolicy(ProviderCatalogRegistry catalog)
         if (descriptor is null) reasons.Add("unclassified_route");
         if (descriptor?.PricingClass != "free") reasons.Add("route_not_permanently_free");
         if (descriptor?.FreeOnlyEligible != true) reasons.Add("free_only_not_documented");
-        // A manifest is documentation, not a runtime cost guarantee. No upstream-specific request writer and
-        // account-tier control has yet been qualified. Even a forged free label/enforcement kind fails closed.
-        // Enable individual mechanisms here only together with endpoint/account checks and an enforcing Core change.
-        reasons.Add("upstream_cost_controls_unavailable");
+        // A manifest is documentation, not a runtime cost guarantee. The narrow OpenRouter implementation
+        // requires a separately validated transport plus a fresh server-side zero-USD key cap on EACH dispatch,
+        // and a final outgoing payload/endpoint guard. It does not trust an account flag or the model suffix alone.
+        if (!SupportsOpenRouterZeroCap(route, descriptor)) reasons.Add("upstream_cost_controls_unavailable");
     }
+
+    private static bool SupportsOpenRouterZeroCap(RouteDto route, ProviderRouteDescriptorDto? descriptor) =>
+        route.Provider == "openrouter" && descriptor is not null && descriptor.Model == route.UpstreamModel &&
+        descriptor.PricingClass == "free" && descriptor.FreeOnlyEligible && descriptor.FreeOnlyEnforcementKind == "free_model_pin" &&
+        descriptor.Protocol == "openai-chat" && descriptor.BaseUrl.TrimEnd('/') == "https://openrouter.ai/api/v1" &&
+        route.UpstreamModel is "meta-llama/llama-3.3-70b-instruct:free" or "qwen/qwen3-coder:free";
 
     private static RoutingPolicyDto EffectivePolicy(RoutingPolicyDto? route, RoutingPolicyDto? profile)
     {
