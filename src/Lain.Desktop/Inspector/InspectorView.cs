@@ -63,7 +63,7 @@ public sealed class InspectorView : UserControl
         var refresh = Ui.Button("Refresh inspector", () => { _nextSnapshot = 0; _refreshOnce = true; });
         var clear = Ui.Button("Clear displayed events", () =>
         {
-            ClearEvents(); _after = _snapshot?.Cursor ?? _after;
+            ClearEvents(); _after = Math.Max(_after, _snapshot?.Cursor ?? 0);
             _contentGap = "Displayed events cleared. New events will appear as they arrive.";
             RenderEvents();
         });
@@ -222,7 +222,7 @@ public sealed class InspectorView : UserControl
             }
             if (page.Truncated || page.GapReason is not null)
                 _contentGap = "Content gap · " + (page.GapReason ?? "part of the live buffer is no longer available");
-            foreach (var entry in page.Events.Where(e => e.RequestId == request).OrderBy(e => e.Cursor))
+            foreach (var entry in page.Events.Where(e => e.RequestId == request && e.Cursor > _after).OrderBy(e => e.Cursor))
                 if (!_events.Any(existing => existing.Cursor == entry.Cursor)) { _events.Add(entry); _eventReceived[entry.Cursor] = Stopwatch.GetTimestamp(); }
             _after = Math.Max(_after, page.NextCursor);
             var characters = _events.Sum(e => e.Text?.Length ?? 0);
