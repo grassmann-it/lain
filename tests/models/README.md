@@ -58,3 +58,7 @@ IDs in `accounts`. An explicit route map must cover exactly its members; missing
 foreign, blank, or conflicting credential ownership fails compilation. Without a
 route map, the original global account mapping remains supported. Two transports
 of one logical account do not create two account or budget identities.
+
+Every enabled route remains in the launcher bindings, including hidden routes.
+The `visible` field preserves model-menu visibility separately from callability;
+legacy bindings without this field default to visible.

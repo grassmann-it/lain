@@ -7,7 +7,8 @@ namespace Lain.Host.Models;
 
 public record CoreRouteBinding([property: JsonPropertyName("id")] string Id, [property: JsonPropertyName("model")] string Model,
     [property: JsonPropertyName("accounts")] string[] Accounts, [property: JsonPropertyName("selection")] string Selection,
-    [property: JsonPropertyName("credentials"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, string>? Credentials = null);
+    [property: JsonPropertyName("credentials"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, string>? Credentials = null,
+    [property: JsonPropertyName("visible")] bool Visible = true);
 public record CoreBindings([property: JsonPropertyName("accounts")] IReadOnlyDictionary<string, string> Accounts,
     [property: JsonPropertyName("routes")] IReadOnlyDictionary<string, CoreRouteBinding> Routes);
 
@@ -48,7 +49,7 @@ public static class RouteBindings
                     throw new ArgumentException("Active route has no enabled qualified credential binding.");
             }
             if (!routes.TryAdd(route.Alias, new(route.Id, route.UpstreamModel, route.AccountIds.ToArray(), route.Pooled ? "pool" : "strict",
-                    overrides?.ToDictionary(x => x.Key, x => x.Value))))
+                    overrides?.ToDictionary(x => x.Key, x => x.Value), route.Visible)))
                 throw new ArgumentException("Duplicate route alias.");
         }
         var used = routes.Values.SelectMany(x => x.Accounts).ToHashSet();

@@ -34,6 +34,12 @@ try
     Throws<ArgumentException>(() => RouteBindings.Compile(config, new Dictionary<string, string>()));
     var bindings = RouteBindings.Compile(config, new Dictionary<string, string> { ["private-account-a"] = "core-a", ["private-account-b"] = "core-b" });
     Check(bindings.Routes["lain-test"].Selection == "strict" && bindings.Routes["pool-test"].Selection == "pool", "explicit routing selection");
+    Check(bindings.Routes["lain-test"].Visible && !bindings.Routes["pool-test"].Visible, "hidden enabled routes remain bound with explicit visibility");
+    using (var visibility = JsonDocument.Parse(JsonSerializer.Serialize(bindings)))
+        Check(visibility.RootElement.GetProperty("routes").GetProperty("lain-test").GetProperty("visible").GetBoolean() &&
+              !visibility.RootElement.GetProperty("routes").GetProperty("pool-test").GetProperty("visible").GetBoolean(), "launcher JSON preserves model menu visibility");
+    var legacyRoute = JsonSerializer.Deserialize<CoreRouteBinding>("{\"id\":\"old\",\"model\":\"model\",\"accounts\":[\"account\"],\"selection\":\"strict\"}");
+    Check(legacyRoute!.Visible, "legacy route bindings default to visible");
     Check(JsonSerializer.Serialize(bindings).Contains("\"routes\"") && JsonSerializer.Serialize(bindings).Contains("\"accounts\""), "launcher JSON contract");
     var writer = new RouteBindingsWriter(new OwnStatePaths(directory));
     writer.Write(config, bindings.Accounts);
