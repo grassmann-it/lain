@@ -1,0 +1,645 @@
+{
+  "contractVersion": 1,
+  "observedAt": "2026-10-24T00:00:00Z",
+  "providers": [
+    {
+      "id": "nvidia-build",
+      "name": "NVIDIA Build",
+      "summary": "NVIDIA-hosted StepFun Step 5 Preview for development and evaluation. Own credentials required; real access has not been tested.",
+      "accountUrl": "https://build.nvidia.com/stepfun-ai/step-5-preview",
+      "documentationUrl": "https://docs.api.nvidia.com/nim/reference/stepfun-ai-step-5-preview-infer",
+      "credentials": [
+        {
+          "id": "apiKey",
+          "label": "Own API key",
+          "kind": "api-key",
+          "required": true,
+          "secret": true,
+          "help": "Create your own API key on the official account page. Never paste keys into logs or usage records."
+        }
+      ],
+      "setupSteps": [
+        {
+          "title": "Developer access",
+          "description": "Use your own NVIDIA account and join the NVIDIA Developer Program.",
+          "url": "https://developer.nvidia.com/developer-program"
+        },
+        {
+          "title": "Create API key",
+          "description": "Open the model page and generate your own NVIDIA API key.",
+          "url": "https://build.nvidia.com/stepfun-ai/step-5-preview"
+        },
+        {
+          "title": "Configure route",
+          "description": "Use https://integrate.api.nvidia.com/v1 and model stepfun-ai/step-5-preview. Keep development/evaluation usage separate from production licensing.",
+          "url": null
+        },
+        {
+          "title": "Verify account limits",
+          "description": "Check your account entitlement and actual limits. No remaining-budget API or fixed free token allowance has been verified.",
+          "url": null
+        }
+      ],
+      "billingPlans": [
+        {
+          "id": "developer",
+          "name": "Developer prototyping access",
+          "kind": "free",
+          "scope": "account",
+          "unit": "unknown",
+          "limits": [
+            {
+              "kind": "rate",
+              "value": null,
+              "unit": "requests/minute",
+              "scope": "account",
+              "notes": "Actual account limit has not been verified."
+            },
+            {
+              "kind": "rate",
+              "value": null,
+              "unit": "tokens/minute",
+              "scope": "account",
+              "notes": "Actual account limit has not been verified."
+            },
+            {
+              "kind": "concurrency",
+              "value": null,
+              "unit": "requests",
+              "scope": "account",
+              "notes": "Actual account limit has not been verified."
+            }
+          ],
+          "notes": "Official free API access for prototyping; not an unlimited allowance. Exact account limits, expiry and remaining budget unknown. The separate 90-day Enterprise evaluation and self-hosted GPU allowance are not hosted API token credits."
+        }
+      ],
+      "routes": [
+        {
+          "id": "nvidia-build:step-5-preview",
+          "model": "stepfun-ai/step-5-preview",
+          "name": "Step 5 Preview via NVIDIA",
+          "baseUrl": "https://integrate.api.nvidia.com/v1",
+          "protocol": "openai-chat",
+          "billingPlanIds": [
+            "developer"
+          ],
+          "capabilities": {
+            "contextWindow": 1000000,
+            "maximumOutput": 1048576,
+            "tools": true,
+            "streaming": true,
+            "reasoning": true,
+            "images": true,
+            "structuredOutput": null,
+            "reasoningModes": [
+              "always-on"
+            ]
+          },
+          "modelFamily": "step-5",
+          "manufacturer": "StepFun",
+          "inferenceProvider": "NVIDIA",
+          "gateway": "NVIDIA Build",
+          "pricingClass": "free",
+          "freeOnlyEligible": true,
+          "freeOnlyEnforcement": "The official developer offer is free for prototyping, but endpoint/account/request controls preventing spend have not been qualified. Free-only execution must fail closed; pinning the documented URL alone is insufficient.",
+          "publisher": "StepFun",
+          "publisherType": "manufacturer",
+          "sources": [
+            {
+              "url": "https://build.nvidia.com/stepfun-ai/step-5-preview",
+              "title": "NVIDIA Build Step 5 Preview",
+              "checkedAt": "2026-10-23T22:13:05Z",
+              "notes": null
+            },
+            {
+              "url": "https://docs.api.nvidia.com/nim/reference/stepfun-ai-step-5-preview-infer",
+              "title": "NVIDIA Step 5 Preview inference API",
+              "checkedAt": "2026-10-23T22:13:05Z",
+              "notes": null
+            }
+          ],
+          "restrictions": [
+            "Development/evaluation entitlement is not production authorization.",
+            "At most eight images per request; video and audio unsupported on this hosted route.",
+            "max_tokens includes reasoning and answer; prompt plus output must fit the context window. The schema permits up to 1,048,576, not an independent guaranteed output allocation.",
+            "Reasoning remains enabled. Do not send enable_thinking=false as a reasoning disable switch. Preserve assistant reasoning_content and tool_call_id on continuations.",
+            "Streaming uses SSE data events ending with [DONE]; reasoning, content and tool calls arrive as deltas.",
+            "The published context value is 1M tokens; actual usable context and concurrency depend on hosting configuration. Structured output and adjustable reasoning effort are not verified for this route."
+          ],
+          "freeOnlyEnforcementKind": "unsupported"
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://build.nvidia.com/stepfun-ai/step-5-preview",
+          "title": "NVIDIA Build Step 5 Preview",
+          "checkedAt": "2026-10-23T22:13:05Z",
+          "notes": null
+        },
+        {
+          "url": "https://docs.api.nvidia.com/nim/reference/stepfun-ai-step-5-preview-infer",
+          "title": "NVIDIA Step 5 Preview inference API",
+          "checkedAt": "2026-10-23T22:13:05Z",
+          "notes": null
+        },
+        {
+          "url": "https://docs.api.nvidia.com/nim/docs/product",
+          "title": "NVIDIA NIM product FAQ",
+          "checkedAt": "2026-10-23T22:13:05Z",
+          "notes": null
+        }
+      ],
+      "restrictions": [
+        "Own NVIDIA API key required.",
+        "Free access is intended for prototyping/development/testing/research/evaluation. Production use requires qualification under current NVIDIA terms.",
+        "No official hosted-API quota endpoint or fixed remaining allowance verified.",
+        "No account registration, key creation, trial activation or purchase is performed by lain."
+      ],
+      "adapterState": "available",
+      "liveVerification": "not_tested",
+      "quotaSupport": "unsupported"
+    },
+    {
+      "id": "inception",
+      "name": "Inception Mercury",
+      "summary": "Direct Mercury API with a one-time new-account trial and optional paid usage.",
+      "accountUrl": "https://platform.inceptionlabs.ai",
+      "documentationUrl": "https://docs.inceptionlabs.ai/get-started/get-started.md",
+      "credentials": [
+        {
+          "Id": "api_key",
+          "Label": "Inception API key",
+          "Kind": "secret",
+          "Required": true,
+          "Secret": true
+        }
+      ],
+      "setupSteps": [
+        {
+          "Title": "Open your account",
+          "Description": "Create or sign in to your own Inception account if desired. No registration is performed by lain.",
+          "Url": "https://platform.inceptionlabs.ai"
+        },
+        {
+          "Title": "Create an API key",
+          "Description": "Use API Keys; no payment details are required for the documented new-account trial.",
+          "Url": "https://platform.inceptionlabs.ai/dashboard/api-keys"
+        },
+        {
+          "Title": "Check the account",
+          "Description": "Confirm actual trial balance and any expiry in Billing. Connection remains untested until credentials are supplied.",
+          "Url": null
+        }
+      ],
+      "billingPlans": [
+        {
+          "Id": "new-account-trial",
+          "Name": "New-account trial",
+          "Kind": "trial",
+          "Scope": "account",
+          "Unit": "tokens",
+          "IncludedAmount": null,
+          "ResetDescription": "One-time grant; no recurring reset. Expiry is not stated.",
+          "ExpiresAt": null,
+          "Limits": [
+            {
+              "Kind": "rate",
+              "Value": null,
+              "Unit": "requests",
+              "Scope": "account",
+              "Notes": "Account/model-specific limit not observed."
+            },
+            {
+              "Kind": "parallelism",
+              "Value": null,
+              "Unit": "requests",
+              "Scope": "account",
+              "Notes": "Not observed."
+            }
+          ],
+          "Notes": "Official offer: 100 million initial tokens. Eligibility, actual grant, remaining balance and expiry are not observed. No payment details required."
+        },
+        {
+          "Id": "payg",
+          "Name": "Paid API usage",
+          "Kind": "payg",
+          "Scope": "account",
+          "Unit": "currency",
+          "IncludedAmount": null,
+          "ResetDescription": null,
+          "ExpiresAt": null,
+          "Limits": [
+            {
+              "Kind": "rate",
+              "Value": null,
+              "Unit": "requests",
+              "Scope": "account",
+              "Notes": "Account/model-specific limit not observed."
+            },
+            {
+              "Kind": "parallelism",
+              "Value": null,
+              "Unit": "requests",
+              "Scope": "account",
+              "Notes": "Not observed."
+            }
+          ],
+          "Notes": "Requires separately configured billing; promotional prices are not fixed in lain."
+        }
+      ],
+      "routes": [
+        {
+          "Id": "inception-mercury-3",
+          "Model": "mercury-3",
+          "Name": "Mercury 3",
+          "BaseUrl": "https://api.inceptionlabs.ai/v1",
+          "Protocol": "openai-chat",
+          "BillingPlanIds": [
+            "new-account-trial",
+            "payg"
+          ],
+          "Capabilities": {
+            "ContextWindow": 1000000,
+            "MaximumOutput": 131072,
+            "Tools": true,
+            "Streaming": null,
+            "Reasoning": true,
+            "Images": false,
+            "StructuredOutput": true,
+            "ReasoningModes": [
+              "instant",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "ModelFamily": "mercury",
+          "Manufacturer": "Inception",
+          "InferenceProvider": "Inception",
+          "Gateway": null,
+          "PricingClass": "paid",
+          "FreeOnlyEligible": false,
+          "FreeOnlyEnforcement": "No independently verified billing cutoff; trial credit is not a free route.",
+          "Restrictions": [
+            "Temperature is documented as 0.5–1.0. Streaming has not been verified for this route."
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "Url": "https://docs.inceptionlabs.ai/get-started/get-started.md",
+          "Title": "Inception quick start",
+          "CheckedAt": "2026-10-23T22:13:08Z",
+          "Notes": "100M one-time new-account tokens, no payment details; expiry unstated."
+        },
+        {
+          "Url": "https://docs.inceptionlabs.ai/get-started/models.md",
+          "Title": "Inception models",
+          "CheckedAt": "2026-10-23T22:13:08Z",
+          "Notes": "Mercury 3 context/output/tools/structured outputs/reasoning."
+        },
+        {
+          "Url": "https://www.inceptionlabs.ai/blog/introducing-mercury-3",
+          "Title": "Mercury 3 launch, 19 October 2026",
+          "CheckedAt": "2026-10-23T22:13:08Z",
+          "Notes": null
+        }
+      ],
+      "restrictions": [
+        "The trial is a one-time account grant, not a permanent free tier.",
+        "Actual balance, expiry, rate limits and parallelism are unknown without account evidence.",
+        "Adding payment details can enable paid continuation; free-only routing is blocked until a verified cutoff exists."
+      ],
+      "adapterState": "prepared",
+      "liveVerification": "not_tested",
+      "quotaSupport": "unsupported"
+    },
+    {
+      "id": "poe",
+      "name": "Poe",
+      "summary": "Official user API with shared account points across public bots and models.",
+      "accountUrl": "https://poe.com/api/keys",
+      "documentationUrl": "https://creator.poe.com/docs/external-applications/external-application-guide",
+      "credentials": [
+        {
+          "id": "apiKey",
+          "label": "Poe API key",
+          "kind": "api-key",
+          "required": true,
+          "secret": true,
+          "help": null
+        },
+        {
+          "id": "oauthClientId",
+          "label": "Registered Poe OAuth client ID",
+          "kind": "client-id",
+          "required": false,
+          "secret": false,
+          "help": "Optional: OAuth preparation requires a registered client and an application callback."
+        }
+      ],
+      "setupSteps": [
+        {
+          "title": "Create your API key",
+          "description": "Sign in and create a user API key. Store it with the official API base URL https://api.poe.com/v1.",
+          "url": "https://poe.com/api/keys"
+        },
+        {
+          "title": "Check paid access",
+          "description": "Paid API models require an active subscription or add-on points. Confirm current account-specific pricing; no minimum subscription price is assumed.",
+          "url": "https://poe.com/subscription_plans"
+        },
+        {
+          "title": "Optional official OAuth",
+          "description": "Register an application client; use authorization code, S256 PKCE and state. Host callback and secure key persistence are integration work.",
+          "url": "https://poe.com/api/clients"
+        },
+        {
+          "title": "Review bot publisher",
+          "description": "Review publisher and official marking before allowing a bot to spend your account points. A model name does not establish who operates it.",
+          "url": "https://poe.com"
+        }
+      ],
+      "billingPlans": [
+        {
+          "id": "poe-subscription",
+          "name": "Poe subscription points",
+          "kind": "subscription",
+          "scope": "user_account",
+          "unit": "points",
+          "includedAmount": null,
+          "resetDescription": "Allocation and reset depend on the account plan; unavailable in the balance response.",
+          "notes": "Subscription and add-on points share the same reported balance. Plan price and point allocation are unknown without account evidence."
+        },
+        {
+          "id": "poe-addon",
+          "name": "Poe add-on points",
+          "kind": "payg",
+          "scope": "user_account",
+          "unit": "points",
+          "notes": "One-time purchased points; not a free trial. Balance response does not separate their amount or expiry from plan points."
+        }
+      ],
+      "routes": [
+        {
+          "id": "poe:gpt-5.4:chat",
+          "model": "gpt-5.4",
+          "name": "GPT-5.4 via Poe (chat)",
+          "baseUrl": "https://api.poe.com/v1",
+          "protocol": "openai-chat",
+          "billingPlanIds": [
+            "poe-subscription",
+            "poe-addon"
+          ],
+          "capabilities": {
+            "contextWindow": 1050000,
+            "maximumOutput": 128000,
+            "tools": true,
+            "streaming": true,
+            "reasoning": true,
+            "images": true,
+            "structuredOutput": false,
+            "reasoningModes": [
+              "none",
+              "low",
+              "medium",
+              "high",
+              "xhigh"
+            ]
+          },
+          "modelFamily": "gpt",
+          "manufacturer": "OpenAI",
+          "inferenceProvider": null,
+          "gateway": "Poe",
+          "pricingClass": "paid",
+          "freeOnlyEligible": false,
+          "publisher": "OpenAI",
+          "publisherType": "provider_reported",
+          "sources": [
+            {
+              "url": "https://creator.poe.com/docs/external-applications/openai-compatible-api",
+              "title": "Poe OpenAI compatibility",
+              "checkedAt": "2026-10-24T00:00:00Z",
+              "notes": "Chat and Responses capability semantics differ; unsupported Chat fields can be ignored."
+            },
+            {
+              "url": "https://api.poe.com/v1/models",
+              "title": "Poe live public model metadata",
+              "checkedAt": "2026-10-24T00:00:00Z",
+              "notes": "Public unauthenticated snapshot checked; model pricing null is not proof of free access."
+            }
+          ],
+          "restrictions": [
+            "Publisher is reported by Poe; official publisher status and actual inference operator are not independently verified.",
+            "Chat response_format/strict schema unsupported; Responses text.format is a separate feature.",
+            "No live credential-backed connection test."
+          ]
+        },
+        {
+          "id": "poe:gpt-5.4:responses",
+          "model": "gpt-5.4",
+          "name": "GPT-5.4 via Poe (responses)",
+          "baseUrl": "https://api.poe.com/v1",
+          "protocol": "openai-responses",
+          "billingPlanIds": [
+            "poe-subscription",
+            "poe-addon"
+          ],
+          "capabilities": {
+            "contextWindow": 1050000,
+            "maximumOutput": 128000,
+            "tools": true,
+            "streaming": true,
+            "reasoning": true,
+            "images": true,
+            "structuredOutput": null,
+            "reasoningModes": [
+              "none",
+              "low",
+              "medium",
+              "high",
+              "xhigh"
+            ]
+          },
+          "modelFamily": "gpt",
+          "manufacturer": "OpenAI",
+          "inferenceProvider": null,
+          "gateway": "Poe",
+          "pricingClass": "paid",
+          "freeOnlyEligible": false,
+          "publisher": "OpenAI",
+          "publisherType": "provider_reported",
+          "sources": [
+            {
+              "url": "https://creator.poe.com/docs/external-applications/openai-compatible-api",
+              "title": "Poe OpenAI compatibility",
+              "checkedAt": "2026-10-24T00:00:00Z",
+              "notes": "Chat and Responses capability semantics differ; unsupported Chat fields can be ignored."
+            },
+            {
+              "url": "https://api.poe.com/v1/models",
+              "title": "Poe live public model metadata",
+              "checkedAt": "2026-10-24T00:00:00Z",
+              "notes": "Public unauthenticated snapshot checked; model pricing null is not proof of free access."
+            }
+          ],
+          "restrictions": [
+            "Publisher is reported by Poe; official publisher status and actual inference operator are not independently verified.",
+            "Chat response_format/strict schema unsupported; Responses text.format is a separate feature.",
+            "No live credential-backed connection test."
+          ]
+        },
+        {
+          "id": "poe:claude-sonnet-4.6:chat",
+          "model": "claude-sonnet-4.6",
+          "name": "Claude-Sonnet-4.6 via Poe (chat)",
+          "baseUrl": "https://api.poe.com/v1",
+          "protocol": "openai-chat",
+          "billingPlanIds": [
+            "poe-subscription",
+            "poe-addon"
+          ],
+          "capabilities": {
+            "contextWindow": 983040,
+            "maximumOutput": 128000,
+            "tools": true,
+            "streaming": true,
+            "reasoning": true,
+            "images": true,
+            "structuredOutput": false,
+            "reasoningModes": null
+          },
+          "modelFamily": "claude",
+          "manufacturer": "Anthropic",
+          "inferenceProvider": null,
+          "gateway": "Poe",
+          "pricingClass": "paid",
+          "freeOnlyEligible": false,
+          "publisher": "Anthropic",
+          "publisherType": "provider_reported",
+          "sources": [
+            {
+              "url": "https://creator.poe.com/docs/external-applications/openai-compatible-api",
+              "title": "Poe OpenAI compatibility",
+              "checkedAt": "2026-10-24T00:00:00Z",
+              "notes": "Chat and Responses capability semantics differ; unsupported Chat fields can be ignored."
+            },
+            {
+              "url": "https://api.poe.com/v1/models",
+              "title": "Poe live public model metadata",
+              "checkedAt": "2026-10-24T00:00:00Z",
+              "notes": "Public unauthenticated snapshot checked; model pricing null is not proof of free access."
+            }
+          ],
+          "restrictions": [
+            "Publisher is reported by Poe; official publisher status and actual inference operator are not independently verified.",
+            "Chat response_format/strict schema unsupported; Responses text.format is a separate feature.",
+            "No live credential-backed connection test."
+          ]
+        },
+        {
+          "id": "poe:claude-sonnet-4.6:responses",
+          "model": "claude-sonnet-4.6",
+          "name": "Claude-Sonnet-4.6 via Poe (responses)",
+          "baseUrl": "https://api.poe.com/v1",
+          "protocol": "openai-responses",
+          "billingPlanIds": [
+            "poe-subscription",
+            "poe-addon"
+          ],
+          "capabilities": {
+            "contextWindow": 983040,
+            "maximumOutput": 128000,
+            "tools": true,
+            "streaming": true,
+            "reasoning": true,
+            "images": true,
+            "structuredOutput": null,
+            "reasoningModes": null
+          },
+          "modelFamily": "claude",
+          "manufacturer": "Anthropic",
+          "inferenceProvider": null,
+          "gateway": "Poe",
+          "pricingClass": "paid",
+          "freeOnlyEligible": false,
+          "publisher": "Anthropic",
+          "publisherType": "provider_reported",
+          "sources": [
+            {
+              "url": "https://creator.poe.com/docs/external-applications/openai-compatible-api",
+              "title": "Poe OpenAI compatibility",
+              "checkedAt": "2026-10-24T00:00:00Z",
+              "notes": "Chat and Responses capability semantics differ; unsupported Chat fields can be ignored."
+            },
+            {
+              "url": "https://api.poe.com/v1/models",
+              "title": "Poe live public model metadata",
+              "checkedAt": "2026-10-24T00:00:00Z",
+              "notes": "Public unauthenticated snapshot checked; model pricing null is not proof of free access."
+            }
+          ],
+          "restrictions": [
+            "Publisher is reported by Poe; official publisher status and actual inference operator are not independently verified.",
+            "Chat response_format/strict schema unsupported; Responses text.format is a separate feature.",
+            "No live credential-backed connection test."
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://creator.poe.com/docs/external-applications/external-application-guide",
+          "title": "Poe external applications",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "User API keys spend the owning user account points; paid models require a subscription or add-on points."
+        },
+        {
+          "url": "https://creator.poe.com/docs/external-applications/openai-compatible-api",
+          "title": "Poe OpenAI compatibility",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Chat and Responses capability semantics differ; unsupported Chat fields can be ignored."
+        },
+        {
+          "url": "https://creator.poe.com/docs/external-applications/sign-in-with-poe",
+          "title": "Sign in with Poe (OAuth)",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Authorization code with mandatory S256 PKCE; token response is an API key, not a refresh token."
+        },
+        {
+          "url": "https://creator.poe.com/api-reference/getCurrentBalance",
+          "title": "Poe current balance",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Combined plan and add-on balance only; no allocation, reset, or expiry fields."
+        },
+        {
+          "url": "https://creator.poe.com/api-reference/getPointsHistory",
+          "title": "Poe usage history",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "30 days; maximum 100 rows/page; cursor query_id; creation_time is microseconds."
+        },
+        {
+          "url": "https://creator.poe.com/api-reference/listModels",
+          "title": "Poe model list",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "owned_by is a publisher claim, not independent verification of manufacturer-operated inference."
+        },
+        {
+          "url": "https://api.poe.com/v1/models",
+          "title": "Poe live public model metadata",
+          "checkedAt": "2026-10-24T00:00:00Z",
+          "notes": "Public unauthenticated snapshot checked; model pricing null is not proof of free access."
+        }
+      ],
+      "restrictions": [
+        "All user API calls spend the API key owner account balance; do not treat this as an unlimited model flat rate.",
+        "Points are not tokens or USD. Account-wide history includes API, Chat, and Canvas App usage, not only lain.",
+        "No automatic signup, subscription, purchase, client registration, or OAuth flow.",
+        "Poe documents 500 requests/minute per user; remaining request rate headers are separate from points.",
+        "A null model pricing field may mean free OR request-priced; unknown costs cannot enter free-only routing."
+      ],
+      "adapterState": "prepared",
+      "liveVerification": "not_tested",
+      "quotaSupport": "available"
+    }
+  ]
+}

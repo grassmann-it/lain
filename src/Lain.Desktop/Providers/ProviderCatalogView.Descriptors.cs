@@ -29,7 +29,7 @@ public sealed partial class ProviderCatalogView
         {
             new("Account setup", accountCount == 0 ? "No account configured. You can review requirements before adding credentials." : $"{accountCount} account{(accountCount == 1 ? "" : "s")} configured; connection status is shown separately."),
             new("Adapter", Adapter(provider.AdapterState)),
-            new("Live connection", VerificationState(provider.LiveVerification))
+            new("Integration verification", VerificationState(provider.LiveVerification))
         };
         access.AddRange(provider.Credentials.Select(field => new CatalogFact(
             $"{field.Label} · {(field.Required ? "required" : "optional")}",
@@ -79,7 +79,8 @@ public sealed partial class ProviderCatalogView
         var accessTypes = provider.BillingPlans.Select(plan => AccessType(plan.Kind)).Distinct(StringComparer.Ordinal).DefaultIfEmpty("Unknown pricing").ToArray();
         var search = string.Join(" ", new[] { provider.Id, provider.Name, provider.Summary }
             .Concat(protocols).Concat(accessTypes).Concat(provider.Routes.Select(route => $"{route.Model} {route.Name} {route.ModelFamily} {route.Manufacturer} {route.InferenceProvider} {route.Gateway}")));
-        return new(provider.Id, provider.Name, provider.Summary, search, accountCount, accessTypes, protocols,
+        return new(provider.Id, provider.Name, provider.Summary, search, accountCount,
+            provider.AccountUrl, provider.DocumentationUrl, Readiness(provider), IsLiveVerified(provider.LiveVerification), accessTypes, protocols,
             access.ToArray(), budgets.ToArray(), limits, routes,
             provider.SetupSteps.Select(step => Join(step.Title, step.Description)).ToArray(), provider.Restrictions,
             links.DistinctBy(link => link.Url).ToArray(), verification);
@@ -115,20 +116,36 @@ public sealed partial class ProviderCatalogView
     {
         "free" => "Ongoing free", "trial" => "One-time trial", "subscription" => "Subscription", "payg" => "Pay as you go", _ => "Unknown pricing"
     };
+    private static bool IsLiveVerified(string? state) => state is "verified" or "live_verified";
+    private static string Readiness(ProviderDescriptorDto provider)
+    {
+        if (IsLiveVerified(provider.LiveVerification)) return "Live verified";
+        return provider.AdapterState?.ToLowerInvariant() switch
+        {
+            "mock_tested" or "mock-tested" => "Mock tested · live unverified",
+            "documented" or "documentation_only" => "Documented · live unverified",
+            "prepared" => "Prepared · live unverified",
+            "available" => "Adapter available · live unverified",
+            "unsupported" => "Documented · adapter unavailable",
+            _ => $"{Human(provider.AdapterState)} · live unverified"
+        };
+    }
     private static string Adapter(string? state) => state?.ToLowerInvariant() switch
     {
         "available" => "Available; live access still requires credentials and verification",
         "prepared" => "Prepared; not yet verified with a live account",
+        "documented" or "documentation_only" => "Documented; adapter execution is not verified",
+        "mock_tested" or "mock-tested" => "Mock tested; no live provider connection has been verified",
         "unsupported" => "Not supported", "unavailable" => "Not available", _ => Known(Human(state))
     };
     private static string VerificationState(string? state) => state?.ToLowerInvariant() switch
     {
         "not_tested" or "unverified" => "Not tested with live credentials",
-        "verified" => "Verified", "failed" => "Last verification failed", _ => Known(Human(state))
+        "verified" or "live_verified" => "Live integration verified; check each configured account separately", "failed" => "Last verification failed", _ => Known(Human(state))
     };
     private static string QuotaSupport(string? state) => state?.ToLowerInvariant() switch
     {
-        "unsupported" => "Not supported; enter or inspect account limits separately",
+        "unsupported" => "Not supported; refer to the provider account console",
         "supported" => "Supported where the provider exposes account budget data",
         "prepared" => "Prepared; not checked with live credentials", _ => Known(Human(state))
     };

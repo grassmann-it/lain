@@ -11,6 +11,7 @@ namespace Lain.Desktop.Providers;
 public sealed partial class ProviderCatalogView : UserControl
 {
     private readonly Action<Uri>? _openLink;
+    private readonly Action<string>? _beginSetup;
     private readonly TextBox _search = Ui.Input(hint: "Search providers, protocols or models");
     private readonly ComboBox _billing = new() { ItemsSource = BillingFilters, SelectedIndex = 0, MinWidth = 174 };
     private readonly ComboBox _setup = new() { ItemsSource = SetupFilters, SelectedIndex = 0, MinWidth = 174 };
@@ -22,10 +23,11 @@ public sealed partial class ProviderCatalogView : UserControl
     private static readonly string[] BillingFilters = ["All access types", "Ongoing free", "One-time trial", "Subscription", "Pay as you go", "Unknown pricing"];
     private static readonly string[] SetupFilters = ["All providers", "No account configured", "Has configured accounts"];
 
-    public ProviderCatalogView(Action<Uri>? openLink = null)
+    public ProviderCatalogView(Action<Uri>? openLink = null, Action<string>? beginSetup = null)
     {
         _openLink = openLink;
-        AutomationProperties.SetName(this, "Provider catalog");
+        _beginSetup = beginSetup;
+        AutomationProperties.SetName(this, "Supported providers");
         AutomationProperties.SetName(_search, "Search providers");
         AutomationProperties.SetName(_billing, "Filter provider access type");
         AutomationProperties.SetName(_setup, "Filter provider setup state");
@@ -40,8 +42,8 @@ public sealed partial class ProviderCatalogView : UserControl
             Spacing = 14,
             Children =
             {
-                Ui.PageHeader("Providers", "Official access, credentials and setup guidance for your own accounts."),
-                Ui.Text("A configured account is not a verified connection. Budget values stay unknown until reported by a supported source.", 12, Ui.Muted),
+                Ui.PageHeader("Supported providers", "Choose a provider, get your own account and credentials, then return for assisted setup."),
+                Ui.Text("Documentation, prepared adapters and live verification are shown separately. A saved account does not prove a working connection.", 12, Ui.Muted),
                 filters, _count, _cards
             }
         };
@@ -85,7 +87,7 @@ public sealed partial class ProviderCatalogView : UserControl
             _cards.Children.Add(Ui.Card(Ui.Text(_catalog.Length == 0 ? "No provider descriptions are available yet." : "No providers match these filters.", 13, Ui.Muted)));
     }
 
-    private Expander Card(CatalogCard provider)
+    private Control Card(CatalogCard provider)
     {
         var name = Ui.Text(provider.Name, 16);
         name.FontFamily = Ui.HeadingFont;
@@ -97,6 +99,9 @@ public sealed partial class ProviderCatalogView : UserControl
         Grid.SetColumn(account, 1);
         identity.Children.Add(account);
         var tags = new WrapPanel { Orientation = Orientation.Horizontal };
+        var readiness = Ui.Badge(provider.Readiness, provider.LiveVerified ? "success" : null);
+        readiness.Margin = new Thickness(0, 0, 6, 3);
+        tags.Children.Add(readiness);
         foreach (var label in provider.AccessTypes.DefaultIfEmpty("Unknown pricing").Concat(provider.Protocols).Distinct(StringComparer.Ordinal))
         {
             var tag = Ui.Badge(label);
@@ -104,6 +109,15 @@ public sealed partial class ProviderCatalogView : UserControl
             tags.Children.Add(tag);
         }
         var heading = new StackPanel { Spacing = 6, HorizontalAlignment = HorizontalAlignment.Stretch, Children = { identity, Ui.Text(provider.Summary, 12, Ui.Muted), tags } };
+        var actions = new WrapPanel { Orientation = Orientation.Horizontal };
+        AddLink(actions, provider, new CatalogLink("Official account / keys", provider.AccountUrl), primary: true);
+        AddLink(actions, provider, new CatalogLink("Official documentation", provider.DocumentationUrl));
+        var setup = Ui.Button("Set up in lain", () => _beginSetup?.Invoke(provider.Id));
+        setup.IsEnabled = _beginSetup is not null;
+        setup.Margin = new Thickness(0, 0, 8, 6);
+        AutomationProperties.SetName(setup, $"Set up {provider.Name} in lain");
+        ToolTip.SetTip(setup, "Choose the route and enter your own credentials in the account form.");
+        actions.Children.Add(setup);
         var details = new StackPanel { Spacing = 15 };
         details.Children.Add(Facts("Access and credentials", provider.Access));
         details.Children.Add(Facts("Billing and budgets", provider.Budgets));
@@ -135,23 +149,14 @@ public sealed partial class ProviderCatalogView : UserControl
         if (provider.Notes.Length > 0)
             details.Children.Add(Ui.Section("Before you connect", new StackPanel { Spacing = 6, Children = { Ui.Text(string.Join("\n\n", provider.Notes), 12, Ui.Muted) } }));
         var links = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var link in provider.Links)
-        {
-            if (!Uri.TryCreate(link.Url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps) continue;
-            var button = Ui.Button(link.Label, () => _openLink?.Invoke(uri));
-            button.IsEnabled = _openLink is not null;
-            button.Margin = new Thickness(0, 0, 8, 6);
-            ToolTip.SetTip(button, uri.AbsoluteUri);
-            AutomationProperties.SetName(button, $"{provider.Name}: {link.Label}");
-            links.Children.Add(button);
-        }
+        foreach (var link in provider.Links) AddLink(links, provider, link);
         var sources = new StackPanel { Spacing = 6, Children = { Ui.Text(provider.Verification, 12, Ui.Muted), links } };
         details.Children.Add(Ui.Section("Official sources", sources));
         var expander = new Expander
         {
-            Header = heading, Content = details,
+            Header = Ui.Text("Setup, budgets and model capabilities", 12), Content = details,
             HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
-            BorderBrush = Ui.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6),
+            BorderBrush = Ui.Edge, BorderThickness = new Thickness(0), CornerRadius = new CornerRadius(4),
             IsExpanded = _expanded.Contains(provider.Id)
         };
         expander.Classes.Add("account-tile");
@@ -172,7 +177,19 @@ public sealed partial class ProviderCatalogView : UserControl
             if (change.Property != Expander.IsExpandedProperty) return;
             if (expander.IsExpanded) _expanded.Add(provider.Id); else _expanded.Remove(provider.Id);
         };
-        return expander;
+        return Ui.Card(new StackPanel { Spacing = 8, Children = { heading, actions, expander } });
+    }
+
+    private void AddLink(Panel target, CatalogCard provider, CatalogLink link, bool primary = false)
+    {
+        if (!Uri.TryCreate(link.Url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps) return;
+        var button = Ui.Button(link.Label, () => _openLink?.Invoke(uri));
+        if (primary) button.Classes.Add("primary");
+        button.IsEnabled = _openLink is not null;
+        button.Margin = new Thickness(0, 0, 8, 6);
+        ToolTip.SetTip(button, uri.AbsoluteUri);
+        AutomationProperties.SetName(button, $"{provider.Name}: {link.Label}");
+        target.Children.Add(button);
     }
 
     private static Control Facts(string title, CatalogFact[] facts) => Ui.Section(title,
@@ -192,7 +209,7 @@ public sealed partial class ProviderCatalogView : UserControl
     }
 
     private sealed record CatalogCard(string Id, string Name, string Summary, string SearchText, int AccountCount,
-        string[] AccessTypes, string[] Protocols, CatalogFact[] Access, CatalogFact[] Budgets, CatalogFact[] Limits,
+        string AccountUrl, string DocumentationUrl, string Readiness, bool LiveVerified, string[] AccessTypes, string[] Protocols, CatalogFact[] Access, CatalogFact[] Budgets, CatalogFact[] Limits,
         CatalogRoute[] Routes, string[] Steps, string[] Notes, CatalogLink[] Links, string Verification);
     private sealed record CatalogFact(string Label, string Value);
     private sealed record CatalogRoute(string Name, CatalogFact[] Facts);
