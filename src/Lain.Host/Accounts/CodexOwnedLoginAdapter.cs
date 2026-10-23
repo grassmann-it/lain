@@ -64,6 +64,7 @@ public sealed class CodexOwnedLoginAdapter(ICodexOwnedLoginBackend backend, OwnS
         var file = Path.Combine(paths.OwnedAuth, filename);
         if (!File.Exists(file) || new FileInfo(file).Length > 1024 * 1024 || (File.GetAttributes(file) & FileAttributes.ReparsePoint) != 0)
             throw new InvalidDataException("Owned login credential is unavailable.");
+        if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite);
         using var document = JsonDocument.Parse(File.ReadAllText(file));
         var auth = document.RootElement;
         if (Read(auth, "type") != "codex" || string.IsNullOrWhiteSpace(Read(auth, "access_token")) || string.IsNullOrWhiteSpace(Read(auth, "account_id")))
