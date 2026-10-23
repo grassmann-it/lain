@@ -44,6 +44,9 @@ class Run:
             probe.bind(("127.0.0.1", 0))
             self.port = probe.getsockname()[1]
         self.url = f"http://127.0.0.1:{self.port}"
+        # Do not inherit provider tokens, credential helpers, proxy settings or
+        # discovery configuration from the developer's interactive environment.
+        self.env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "LANG": "C.UTF-8", "NO_PROXY": "127.0.0.1,localhost"}
         self.process = None
         self.log = (self.root / "core.log").open("wb")
         self.journal = self.root / "events.jsonl"
@@ -88,7 +91,7 @@ openai-compatibility:
 
     def start(self):
         self.process = subprocess.Popen(self.command(), cwd=self.root, stdout=self.log, stderr=self.log,
-                                        env={**os.environ, "NO_PROXY": "127.0.0.1,localhost"})
+                                        env=self.env)
         deadline = time.monotonic() + 20
         while time.monotonic() < deadline:
             if self.process.poll() is not None:
@@ -410,7 +413,7 @@ def crash_inflight(core):
 
 def journal_failures(core):
     with Run(core) as run:
-        duplicate = subprocess.run(run.command(), cwd=run.root, capture_output=True, timeout=8)
+        duplicate = subprocess.run(run.command(), cwd=run.root, env=run.env, capture_output=True, timeout=8)
         expect(duplicate.returncode != 0 and b"journal already owned" in duplicate.stderr, "second journal writer was not rejected")
         # Linux per-process file limit affects only our child. No filesystem/device manipulation.
         resource.prlimit(run.process.pid, resource.RLIMIT_FSIZE, (1, 1))
@@ -432,7 +435,7 @@ def journal_failures(core):
         # Preserve the torn append as evidence; startup must refuse silent truncation.
         original = run.journal.read_bytes()
         expect(original, "file-limit failure did not produce testable partial append")
-        failed = subprocess.run(run.command(), cwd=run.root, capture_output=True, timeout=8)
+        failed = subprocess.run(run.command(), cwd=run.root, env=run.env, capture_output=True, timeout=8)
         expect(failed.returncode != 0 and b"journal incomplete" in failed.stderr, "torn journal was silently accepted")
         expect(run.journal.read_bytes() == original, "startup altered torn journal")
         # Recovery is explicit: this fixture had no dispatched work; restore its known-empty journal.
@@ -451,13 +454,13 @@ def startup_failures(core):
         config = run.root / "core.yaml"
         original = config.read_text()
         config.write_text(original.replace('host: "127.0.0.1"', 'host: "0.0.0.0"'))
-        failed = subprocess.run(run.command(), cwd=run.root, capture_output=True, timeout=8)
+        failed = subprocess.run(run.command(), cwd=run.root, env=run.env, capture_output=True, timeout=8)
         expect(failed.returncode != 0 and b"loopback" in failed.stderr, "unsafe host config was accepted")
         expect(not run.provider.snapshot(), "invalid config dispatched upstream work")
         config.write_text(original)
         run.bindings["accounts"]["account-b"] = run.accounts["account-a"]
         run.write_bindings()
-        failed = subprocess.run(run.command(), cwd=run.root, capture_output=True, timeout=8)
+        failed = subprocess.run(run.command(), cwd=run.root, env=run.env, capture_output=True, timeout=8)
         expect(failed.returncode != 0 and b"unique" in failed.stderr, "two aliases of same credential accepted as two accounts")
         # Reconstruct account-b's distinct fixture binding after deliberate invalid revision.
         kind = "openai-compatibility:fixture"
