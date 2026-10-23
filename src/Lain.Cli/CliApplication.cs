@@ -13,6 +13,11 @@ public static class CliApplication
     private const string Help = """
         Usage: lain <command> [options]
           status | accounts | models | profiles | quotas [--json]
+          accounts login codex [--revision N] [--json]
+          accounts login-status|login-cancel|check ID [--json]
+          accounts enable|disable|remove ID [--revision N] [--json]
+          accounts add-api --name NAME --provider PROVIDER --base-url URL
+                   (--key-env ENVNAME | --key-stdin) [--revision N] [--json]
           profiles apply ID [--revision N] [--json]
           profiles install-codex ID [--revision N] [--json]
           import CONFIG [--auth-dir DIR] [--revision N] [--json]
@@ -27,7 +32,7 @@ public static class CliApplication
         """;
 
     public static async Task<int> RunAsync(string[] args, TextWriter output, TextWriter error,
-        Func<LainApiClient>? clientFactory = null, CancellationToken ct = default)
+        Func<LainApiClient>? clientFactory = null, CancellationToken ct = default, TextReader? input = null)
     {
         try
         {
@@ -73,7 +78,9 @@ public static class CliApplication
             {
                 case "status":
                 case "service": result = await client.StatusAsync(ct); break;
-                case "accounts": result = await client.AccountsAsync(ct); break;
+                case "accounts":
+                    result = await Accounts(client, options, input ?? Console.In, ct);
+                    break;
                 case "models": result = await client.ModelsAsync(ct); break;
                 case "profiles":
                     if (options.Positionals.Count == 0) { result = await client.ProfilesAsync(ct); break; }
@@ -112,6 +119,7 @@ public static class CliApplication
             await Write(output, result, options.Json);
             if (!options.Json && result is ImportResult imported)
                 foreach (var warning in imported.Warnings) await error.WriteLineAsync("lain: warning: " + warning);
+            if (!options.Json && result is LoginDto { Error: { } loginError }) await error.WriteLineAsync("lain: " + loginError);
             return 0;
         }
         catch (LainApiException ex)
@@ -133,6 +141,32 @@ public static class CliApplication
 
     private static void Validate(string command, Options options)
     {
+        if (command == "accounts" && options.Positionals.Count > 0)
+        {
+            var action = options.Positionals[0];
+            if (action == "add-api")
+            {
+                options.RequireOnly("json", "revision", "name", "provider", "base-url", "key-env", "key-stdin");
+                options.RequirePositionals(1);
+                foreach (var required in new[] { "name", "provider", "base-url" })
+                    if (string.IsNullOrWhiteSpace(options.Get(required))) throw new ArgumentException($"--{required} is required.");
+                if (options.Has("key-env") == options.Has("key-stdin"))
+                    throw new ArgumentException("Specify exactly one of --key-env ENVNAME or --key-stdin. API keys cannot be passed as command arguments.");
+                if (options.Has("key-env") && string.IsNullOrWhiteSpace(options.Get("key-env")))
+                    throw new ArgumentException("--key-env requires a nonempty environment variable name.");
+            }
+            else
+            {
+                options.RequirePositionals(2);
+                if (action is "enable" or "disable" or "remove" or "login") options.RequireOnly("json", "revision");
+                else if (action is "check" or "login-status" or "login-cancel") options.RequireOnly("json");
+                else throw new ArgumentException("Account action must be add-api, login, login-status, login-cancel, enable, disable, remove or check.");
+                if (action == "login" && options.Positionals[1] != "codex")
+                    throw new ArgumentException("Only the qualified Codex login is available: accounts login codex.");
+            }
+            if (options.Get("revision") is { } revision) _ = ParseLong(revision, "revision");
+            return;
+        }
         if (command is "usage" or "attempts")
         {
             options.RequireOnly("json", "today", "from", "to", "timezone", "account", "model", "status", "offset", "limit");
@@ -159,6 +193,34 @@ public static class CliApplication
         options.RequirePositionals(command == "service" ? 1 : 0);
         if (command == "service" && options.Positionals[0] != "status")
             throw new ArgumentException("Service action must be start, stop, restart or status.");
+    }
+
+    private static async Task<object> Accounts(LainApiClient client, Options options, TextReader input, CancellationToken ct)
+    {
+        if (options.Positionals.Count == 0) return await client.AccountsAsync(ct);
+        var action = options.Positionals[0];
+        if (action == "login-status") return await client.GetLoginAsync(options.Positionals[1], ct);
+        if (action == "login-cancel") return await client.CancelLoginAsync(options.Positionals[1], ct);
+        if (action == "check") return await client.CheckAccountAsync(options.Positionals[1], ct);
+        string? apiKey = null;
+        if (action == "add-api")
+        {
+            apiKey = options.Has("key-stdin") ? await input.ReadLineAsync(ct) :
+                Environment.GetEnvironmentVariable(options.Get("key-env")!);
+            if (string.IsNullOrWhiteSpace(apiKey) || apiKey.Any(char.IsWhiteSpace))
+                throw new ArgumentException("The API key source is empty or contains whitespace.");
+        }
+        var revision = options.Get("revision") is { } supplied ? ParseLong(supplied, "revision") :
+            (await client.GetConfigurationAsync(ct)).Revision;
+        return action switch
+        {
+            "login" => await client.LoginAsync(revision, options.Positionals[1], ct),
+            "enable" => await client.SetAccountEnabledAsync(revision, options.Positionals[1], true, ct),
+            "disable" => await client.SetAccountEnabledAsync(revision, options.Positionals[1], false, ct),
+            "remove" => await client.RemoveAccountAsync(revision, options.Positionals[1], ct),
+            "add-api" => await client.AddApiAccountAsync(revision, new AddApiAccountRequest(options.Get("name")!, options.Get("provider")!, apiKey!, options.Get("base-url")!), ct),
+            _ => throw new ArgumentException("Unsupported account action.")
+        };
     }
 
     private static UsageQuery ParseQuery(Options options)
@@ -204,6 +266,10 @@ public static class CliApplication
             case StatusDto s: await output.WriteLineAsync($"lain {s.Version}: {s.State}; proxy {(s.ProxyReady ? "ready" : "unavailable")}; configuration {s.AppliedRevision}/{s.Revision}"); break;
             case AccountDto[] accounts:
                 foreach (var a in accounts) await output.WriteLineAsync($"{a.Id}\t{a.Name}\t{a.Provider}\t{(a.Enabled ? "enabled" : "disabled")}\t{a.State}"); break;
+            case LoginDto login:
+                await output.WriteLineAsync($"Login {login.Id} ({login.Provider}): {login.State}");
+                if (login.Url is not null) await output.WriteLineAsync(login.Url);
+                break;
             case ModelCatalogDto models:
                 foreach (var m in models.Models) await output.WriteLineAsync($"{m.Id}\t{m.Provider}\t{string.Join(",", m.AccountIds)}"); break;
             case ProfileDto[] profiles:
@@ -239,7 +305,7 @@ public static class CliApplication
                 if (name.Length == 0 || name.Contains('=')) throw new ArgumentException("Use options as '--name value'.");
                 if (options.values.ContainsKey(name)) throw new ArgumentException($"Duplicate option --{name}.");
                 string? value = null;
-                if (name is not ("json" or "today"))
+                if (name is not ("json" or "today" or "key-stdin"))
                 {
                     if (++i >= args.Length || args[i].StartsWith("--", StringComparison.Ordinal)) throw new ArgumentException($"--{name} requires a value.");
                     value = args[i];

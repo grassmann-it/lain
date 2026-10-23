@@ -93,6 +93,67 @@ Require(exit == 0, "today attempts filters accepted"); assertions++;
 
 handler.Handle = request =>
 {
+    Require(request.Method == HttpMethod.Post && request.RequestUri!.AbsolutePath == "/api/v1/accounts/login", "account login endpoint");
+    using var payload = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
+    Require(payload.RootElement.GetProperty("provider").GetString() == "codex" && payload.RootElement.GetProperty("revision").GetInt64() == 3, "login provider/revision");
+    return new(HttpStatusCode.OK) { Content = JsonContent.Create(new LoginDto("login-1", "codex", "pending", "https://example.test/login")) };
+};
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["accounts", "login", "codex", "--revision", "3"], output, error, () => client);
+Require(exit == 0 && output.ToString().Contains("https://example.test/login") && error.ToString() == "", "login emits authorization URL"); assertions++;
+foreach (var action in new[] { "login-status", "login-cancel" })
+{
+    handler.Handle = request =>
+    {
+        Require(request.RequestUri!.AbsolutePath == "/api/v1/accounts/login/login-1" && request.Method == (action == "login-status" ? HttpMethod.Get : HttpMethod.Delete), "login status/cancel typed method");
+        return new(HttpStatusCode.OK) { Content = JsonContent.Create(new LoginDto("login-1", "codex", "cancelled")) };
+    };
+    output = new(); error = new();
+    exit = await CliApplication.RunAsync(["accounts", action, "login-1", "--json"], output, error, () => client);
+    Require(exit == 0 && JsonDocument.Parse(output.ToString()).RootElement.GetProperty("state").GetString() == "cancelled", "login lifecycle JSON"); assertions++;
+}
+foreach (var action in new[] { "enable", "disable" })
+{
+    handler.Handle = request =>
+    {
+        Require(request.Method == HttpMethod.Put && request.RequestUri!.AbsolutePath == "/api/v1/accounts/acct-1/enabled", "account state endpoint");
+        using var payload = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
+        Require(payload.RootElement.GetProperty("revision").GetInt64() == 3 && payload.RootElement.GetProperty("value").GetBoolean() == (action == "enable"), "enable/disable revision request");
+        return new(HttpStatusCode.OK) { Content = JsonContent.Create(configuration) };
+    };
+    output = new(); error = new();
+    exit = await CliApplication.RunAsync(["accounts", action, "acct-1", "--revision", "3", "--json"], output, error, () => client);
+    Require(exit == 0 && error.ToString() == "", "account state mutation succeeds"); assertions++;
+}
+var secretName = "LAIN_SYNTHETIC_TEST_API_KEY";
+var previousSecret = Environment.GetEnvironmentVariable(secretName);
+try
+{
+    Environment.SetEnvironmentVariable(secretName, "SYNTHETIC-API-KEY");
+    handler.Handle = request =>
+    {
+        Require(request.Method == HttpMethod.Post && request.RequestUri!.AbsolutePath == "/api/v1/accounts", "add API account endpoint");
+        using var payload = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
+        Require(payload.RootElement.GetProperty("value").GetProperty("apiKey").GetString() == "SYNTHETIC-API-KEY", "secret supplied only in API request body");
+        return new(HttpStatusCode.OK) { Content = JsonContent.Create(configuration) };
+    };
+    foreach (var source in new[] { "env", "stdin" })
+    {
+        output = new(); error = new();
+        string[] accountArgs = ["accounts", "add-api", "--name", "test", "--provider", "test", "--base-url", "https://example.test/v1", "--revision", "3", "--json",
+            .. (source == "env" ? new[] { "--key-env", secretName } : new[] { "--key-stdin" })];
+        exit = await CliApplication.RunAsync(accountArgs, output, error, () => client, input: new StringReader("SYNTHETIC-API-KEY\n"));
+        Require(exit == 0 && !output.ToString().Contains("SYNTHETIC-API-KEY") && error.ToString() == "", "secret sources do not echo credentials"); assertions++;
+    }
+}
+finally { Environment.SetEnvironmentVariable(secretName, previousSecret); }
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["accounts", "add-api", "--api-key", "SHOULD-NOT-ECHO"], output, error,
+    () => throw new Exception("invalid input must not reach client"));
+Require(exit == 2 && output.ToString() == "" && !error.ToString().Contains("SHOULD-NOT-ECHO"), "plaintext API key option rejected without echo"); assertions++;
+
+handler.Handle = request =>
+{
     Require(request.Method == HttpMethod.Post && request.RequestUri!.AbsolutePath == "/api/v1/profiles/profile-1/apply", "apply profile endpoint");
     using var payload = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
     Require(payload.RootElement.GetProperty("revision").GetInt64() == 3, "apply uses optimistic revision");
