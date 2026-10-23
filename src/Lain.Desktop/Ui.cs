@@ -10,17 +10,22 @@ namespace Lain.Desktop;
 
 internal static class Ui
 {
-    public static readonly IBrush Background = Brush.Parse("#141518");
-    public static readonly IBrush Surface = Brush.Parse("#1B1D21");
-    public static readonly IBrush Raised = Brush.Parse("#23262C");
-    public static readonly IBrush InputSurface = Brush.Parse("#17191D");
-    public static readonly IBrush Hover = Brush.Parse("#2D3138");
-    public static readonly IBrush Edge = Brush.Parse("#32363E");
-    public static readonly IBrush Ink = Brush.Parse("#E9EBEF");
-    public static readonly IBrush Muted = Brush.Parse("#A1A7B3");
-    public static readonly IBrush Accent = Brush.Parse("#6A9BFF");
-    public static readonly IBrush AccentSurface = Brush.Parse("#26364F");
-    public static readonly IBrush Success = Brush.Parse("#6BC493");
+    // Verified grassmann-it.de palette; see docs/brand-reference.md.
+    public static readonly FontFamily HeadingFont = new("avares://Lain.Desktop/Assets/Fonts/IBMPlexSansCondensed#IBM Plex Sans Condensed");
+    public static readonly FontFamily BrandFont = new("avares://Lain.Desktop/Assets/Fonts/Oxanium#Oxanium");
+    public static readonly FontFamily NavigationFont = BrandFont;
+
+    public static readonly IBrush Background = Brush.Parse("#050706");
+    public static readonly IBrush Surface = Brush.Parse("#08100D");
+    public static readonly IBrush Raised = Brush.Parse("#0C1511");
+    public static readonly IBrush InputSurface = Brush.Parse("#0C1511");
+    public static readonly IBrush Hover = Brush.Parse("#10281F");
+    public static readonly IBrush Edge = Brush.Parse("#30493E");
+    public static readonly IBrush Ink = Brush.Parse("#EDF2EF");
+    public static readonly IBrush Muted = Brush.Parse("#89938E");
+    public static readonly IBrush Accent = Brush.Parse("#73D7AE");
+    public static readonly IBrush AccentSurface = Brush.Parse("#10281F");
+    public static readonly IBrush Success = Brush.Parse("#9BCF9C");
     public static readonly IBrush Warning = Brush.Parse("#D9AF65");
     public static readonly IBrush Danger = Brush.Parse("#EA8087");
 
@@ -33,7 +38,7 @@ internal static class Ui
     };
 
     public static TextBlock Text(string text, double size = 13, IBrush? color = null) => new() { Text = text, FontSize = size, Foreground = color ?? Ink, TextWrapping = TextWrapping.Wrap };
-    public static TextBlock Title(string text) => new() { Text = text, FontSize = 22, FontWeight = FontWeight.SemiBold, Foreground = Ink, TextWrapping = TextWrapping.Wrap };
+    public static TextBlock Title(string text) => new() { Text = text, FontFamily = HeadingFont, FontSize = 22, FontWeight = FontWeight.SemiBold, Foreground = Ink, TextWrapping = TextWrapping.Wrap };
     public static StackPanel Stack(params Control[] controls) { var panel = new StackPanel { Spacing = 12 }; foreach (var child in controls) panel.Children.Add(child); return panel; }
     public static StackPanel Row(params Control[] controls) { var panel = new StackPanel { Spacing = 8, Orientation = Orientation.Horizontal }; foreach (var child in controls) panel.Children.Add(child); return panel; }
     public static Border Card(Control content) => new() { Background = Surface, BorderBrush = Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(14), Child = content };
@@ -72,6 +77,7 @@ internal static class Ui
     {
         var heading = Text(title, 14);
         heading.FontWeight = FontWeight.SemiBold;
+        heading.FontFamily = HeadingFont;
         var panel = new StackPanel { Spacing = 8, Children = { heading } };
         if (!string.IsNullOrWhiteSpace(description)) panel.Children.Add(Text(description, 12, Muted));
         panel.Children.Add(Separator());

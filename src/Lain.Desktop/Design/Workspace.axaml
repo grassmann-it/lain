@@ -1,36 +1,153 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Styles.Resources>
-    <!-- Semi owns control templates, focus, popups and interaction states. -->
-    <SolidColorBrush x:Key="Lain.Background">#141518</SolidColorBrush>
-    <SolidColorBrush x:Key="Lain.Surface">#1B1D21</SolidColorBrush>
-    <SolidColorBrush x:Key="Lain.Raised">#23262C</SolidColorBrush>
-    <SolidColorBrush x:Key="Lain.Input">#17191D</SolidColorBrush>
-    <SolidColorBrush x:Key="Lain.Edge">#32363E</SolidColorBrush>
-    <SolidColorBrush x:Key="Lain.Ink">#E9EBEF</SolidColorBrush>
-    <SolidColorBrush x:Key="Lain.Muted">#A1A7B3</SolidColorBrush>
-    <SolidColorBrush x:Key="Lain.Accent">#6A9BFF</SolidColorBrush>
-    <SolidColorBrush x:Key="Lain.AccentSurface">#26364F</SolidColorBrush>
-    <SolidColorBrush x:Key="Lain.Hover">#2D3138</SolidColorBrush>
+    <!-- Verified website colors, adapted for the compact desktop shell.
+         Semi owns control templates, focus, popups and interaction states. -->
+    <SolidColorBrush x:Key="Lain.Background">#050706</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Surface">#08100D</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Raised">#0C1511</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Input">#0C1511</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Edge">#30493E</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Ink">#EDF2EF</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Muted">#89938E</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Accent">#73D7AE</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.AccentSurface">#10281F</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Hover">#10281F</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.ControlEdge">#50695B</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Success">#9BCF9C</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.Warning">#D9AF65</SolidColorBrush>
     <SolidColorBrush x:Key="Lain.Danger">#EA8087</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonDefaultPrimaryForeground">#E9EBEF</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonDefaultPointeroverBackground">#2D3138</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonDefaultPointeroverBorderBrush">#505765</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonDefaultPressedBackground">#26364F</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonDefaultPressedBorderBrush">#6A9BFF</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonDefaultDisabledForeground">#707783</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonDefaultDisabledBorderBrush">#32363E</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonSolidForeground">#141518</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonSolidPrimaryBackground">#6A9BFF</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonSolidPrimaryBorderBrush">#6A9BFF</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBackground">#8AB1FF</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBorderBrush">#8AB1FF</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBackground">#5488EB</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedForeground">#141518</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBorderBrush">#5488EB</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonSolidDisabledBackground">#23262C</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonSolidDisabledForeground">#707783</SolidColorBrush>
-    <SolidColorBrush x:Key="ButtonSolidDisabledBorderBrush">#32363E</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultPrimaryForeground">#EDF2EF</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultPointeroverBackground">#10281F</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultPointeroverBorderBrush">#50695B</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultPressedBackground">#10281F</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultPressedBorderBrush">#73D7AE</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultDisabledForeground">#64756B</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonDefaultDisabledBorderBrush">#30493E</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidForeground">#050706</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryBackground">#73D7AE</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryBorderBrush">#73D7AE</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBackground">#9BE5C6</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBorderBrush">#9BE5C6</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBackground">#5EBF98</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedForeground">#050706</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBorderBrush">#5EBF98</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidDisabledBackground">#0C1511</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidDisabledForeground">#64756B</SolidColorBrush>
+    <SolidColorBrush x:Key="ButtonSolidDisabledBorderBrush">#30493E</SolidColorBrush>
+    <!-- Override component brushes as well as palette aliases: Semi resolves
+         several aliases statically while loading its theme dictionaries. -->
+    <SolidColorBrush x:Key="Lain.AccentHover">#9BE5C6</SolidColorBrush>
+    <SolidColorBrush x:Key="Lain.AccentPressed">#5EBF98</SolidColorBrush>
+    <!-- Shared palette and focus -->
+    <StaticResource x:Key="SemiColorPrimary" ResourceKey="Lain.Accent" />
+    <StaticResource x:Key="SemiColorPrimaryPointerover" ResourceKey="Lain.AccentHover" />
+    <StaticResource x:Key="SemiColorPrimaryActive" ResourceKey="Lain.AccentPressed" />
+    <StaticResource x:Key="SemiColorPrimaryLight" ResourceKey="Lain.AccentSurface" />
+    <StaticResource x:Key="SemiColorPrimaryLightPointerover" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="SemiColorPrimaryLightActive" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="SemiColorFocusBorder" ResourceKey="Lain.Accent" />
+    <StaticResource x:Key="SemiColorLink" ResourceKey="Lain.Accent" />
+    <StaticResource x:Key="SemiColorText0" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="SemiColorText1" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="SemiColorText2" ResourceKey="Lain.Muted" />
+    <StaticResource x:Key="SemiColorText3" ResourceKey="Lain.Muted" />
+    <StaticResource x:Key="SemiColorBackground0" ResourceKey="Lain.Background" />
+    <StaticResource x:Key="SemiColorBackground1" ResourceKey="Lain.Surface" />
+    <StaticResource x:Key="SemiColorBackground2" ResourceKey="Lain.Raised" />
+    <StaticResource x:Key="SemiColorBackground3" ResourceKey="Lain.Raised" />
+    <StaticResource x:Key="SemiColorBackground4" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="SemiColorBorder" ResourceKey="Lain.Edge" />
+    <StaticResource x:Key="SemiColorFill0" ResourceKey="Lain.Raised" />
+    <StaticResource x:Key="SemiColorFill1" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="SemiColorFill2" ResourceKey="Lain.AccentSurface" />
+    <!-- Text input and selection -->
+    <StaticResource x:Key="TextBoxTextCaretBrush" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="TextBoxForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="TextBoxPlaceholderForeground" ResourceKey="Lain.Muted" />
+    <StaticResource x:Key="TextBoxInnerForeground" ResourceKey="Lain.Muted" />
+    <StaticResource x:Key="TextBoxDefaultBackground" ResourceKey="Lain.Input" />
+    <StaticResource x:Key="TextBoxPointeroverBackground" ResourceKey="Lain.Raised" />
+    <StaticResource x:Key="TextBoxPressedBackground" ResourceKey="Lain.Raised" />
+    <StaticResource x:Key="TextBoxFocusBorderBrush" ResourceKey="Lain.Accent" />
+    <StaticResource x:Key="TextBoxDefaultBorderBrush" ResourceKey="Lain.ControlEdge" />
+    <StaticResource x:Key="TextBoxPointeroverBorderBrush" ResourceKey="Lain.ControlEdge" />
+    <StaticResource x:Key="TextBoxBorderedDefaultBorderBrush" ResourceKey="Lain.ControlEdge" />
+    <StaticResource x:Key="TextBoxBorderedPointeroverBorderBrush" ResourceKey="Lain.AccentHover" />
+    <StaticResource x:Key="TextBoxSelectionBackground" ResourceKey="Lain.AccentSurface" />
+    <StaticResource x:Key="TextBoxSelectionForeground" ResourceKey="Lain.Ink" />
+    <!-- Choice popups and rows -->
+    <StaticResource x:Key="ComboBoxSelectorBackground" ResourceKey="Lain.Input" />
+    <StaticResource x:Key="ComboBoxSelectorPlaceHolderForeground" ResourceKey="Lain.Muted" />
+    <StaticResource x:Key="ComboBoxSelectorPointeroverBackground" ResourceKey="Lain.Raised" />
+    <StaticResource x:Key="ComboBoxSelectorFocusBackground" ResourceKey="Lain.Raised" />
+    <StaticResource x:Key="ComboBoxSelectorPressedBackground" ResourceKey="Lain.Raised" />
+    <StaticResource x:Key="ComboBoxSelectorBorderBrush" ResourceKey="Lain.ControlEdge" />
+    <StaticResource x:Key="ComboBoxSelectorPointeroverBorderBrush" ResourceKey="Lain.ControlEdge" />
+    <StaticResource x:Key="ComboBoxSelectorFocusBorderBrush" ResourceKey="Lain.Accent" />
+    <StaticResource x:Key="ComboBoxSelectorPressedBorderBrush" ResourceKey="Lain.Accent" />
+    <StaticResource x:Key="ComboBoxPopupBackground" ResourceKey="Lain.Raised" />
+    <StaticResource x:Key="ComboBoxPopupBorderBrush" ResourceKey="Lain.ControlEdge" />
+    <StaticResource x:Key="ComboBoxItemForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="ComboBoxItemPointeroverForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="ComboBoxItemPointeroverBackground" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="ComboBoxItemFocusForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="ComboBoxItemFocusBackground" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="ComboBoxItemPressedForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="ComboBoxItemPressedBackground" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="ComboBoxItemSelectedForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="ComboBoxItemSelectedBackground" ResourceKey="Lain.AccentSurface" />
+    <StaticResource x:Key="ComboBoxItemSelectedPointeroverBackground" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="ComboBoxSelectorBorderedBorderBrush" ResourceKey="Lain.ControlEdge" />
+    <StaticResource x:Key="ComboBoxSelectorBorderedPointeroverBorderBrush" ResourceKey="Lain.AccentHover" />
+    <StaticResource x:Key="ComboBoxSelectorBorderedFocusBorderBrush" ResourceKey="Lain.Accent" />
+    <StaticResource x:Key="ComboBoxSelectorBorderedPressedBorderBrush" ResourceKey="Lain.AccentPressed" />
+    <StaticResource x:Key="ListBoxItemPointeroverForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="ListBoxItemPointeroverBackground" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="ListBoxItemPressedForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="ListBoxItemPressedBackground" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="ListBoxItemSelectedForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="ListBoxItemSelectedBackground" ResourceKey="Lain.AccentSurface" />
+    <StaticResource x:Key="ListBoxItemSelectedPointeroverBackground" ResourceKey="Lain.Hover" />
+    <!-- Checkboxes and switches -->
+    <StaticResource x:Key="CheckBoxForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="CheckBoxGlyphFill" ResourceKey="Lain.Background" />
+    <StaticResource x:Key="CheckBoxDefaultBorderBrush" ResourceKey="Lain.ControlEdge" />
+    <StaticResource x:Key="CheckBoxPointeroverBackground" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="CheckBoxPointeroverBorderBrush" ResourceKey="Lain.AccentHover" />
+    <StaticResource x:Key="CheckBoxPressedBackground" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="CheckBoxPressedBorderBrush" ResourceKey="Lain.AccentPressed" />
+    <StaticResource x:Key="CheckBoxCheckedDefaultBackground" ResourceKey="Lain.Accent" />
+    <StaticResource x:Key="CheckBoxCheckedDefaultBorderBrush" ResourceKey="Lain.Accent" />
+    <StaticResource x:Key="CheckBoxCheckedPointeroverBackground" ResourceKey="Lain.AccentHover" />
+    <StaticResource x:Key="CheckBoxCheckedPointeroverBorderBrush" ResourceKey="Lain.AccentHover" />
+    <StaticResource x:Key="CheckBoxCheckedPressedBackground" ResourceKey="Lain.AccentPressed" />
+    <StaticResource x:Key="CheckBoxCheckedPressedBorderBrush" ResourceKey="Lain.AccentPressed" />
+    <StaticResource x:Key="ToggleSwitchContainerUnCheckedDefaultBackground" ResourceKey="Lain.Edge" />
+    <StaticResource x:Key="ToggleSwitchContainerUnCheckedPointeroverBackground" ResourceKey="Lain.ControlEdge" />
+    <StaticResource x:Key="ToggleSwitchContainerUnCheckedPressedBackground" ResourceKey="Lain.ControlEdge" />
+    <StaticResource x:Key="ToggleSwitchContainerCheckedDefaultBackground" ResourceKey="Lain.Accent" />
+    <StaticResource x:Key="ToggleSwitchContainerCheckedPointeroverBackground" ResourceKey="Lain.AccentHover" />
+    <StaticResource x:Key="ToggleSwitchContainerCheckedPressedBackground" ResourceKey="Lain.AccentPressed" />
+    <StaticResource x:Key="ToggleSwitchIndicatorBackground" ResourceKey="Lain.Ink" />
+    <!-- Progress and elevated surfaces -->
+    <StaticResource x:Key="ProgressBarIndicatorBrush" ResourceKey="Lain.Accent" />
+    <StaticResource x:Key="ProgressBarPrimaryForeground" ResourceKey="Lain.Accent" />
+    <StaticResource x:Key="ProgressBarBackground" ResourceKey="Lain.Raised" />
+    <StaticResource x:Key="ProgressBarTextForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="ProgressBarSuccessForeground" ResourceKey="Lain.Success" />
+    <StaticResource x:Key="ProgressBarWarningForeground" ResourceKey="Lain.Warning" />
+    <StaticResource x:Key="ProgressBarDangerForeground" ResourceKey="Lain.Danger" />
+    <StaticResource x:Key="FlyoutBackground" ResourceKey="Lain.Raised" />
+    <StaticResource x:Key="FlyoutForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="FlyoutBorderBrush" ResourceKey="Lain.ControlEdge" />
+    <StaticResource x:Key="MenuFlyoutBackground" ResourceKey="Lain.Raised" />
+    <StaticResource x:Key="MenuFlyoutBorderBrush" ResourceKey="Lain.ControlEdge" />
+    <StaticResource x:Key="MenuItemForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="MenuItemPointeroverForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="MenuItemPointeroverBackground" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="MenuItemPressedBackground" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="MenuItemSeparatorBackground" ResourceKey="Lain.Edge" />
   </Styles.Resources>
   <Style Selector="Window">
     <Setter Property="FontFamily" Value="avares://Avalonia.Fonts.Inter/Assets#Inter" />
@@ -82,6 +199,7 @@
     <Setter Property="Foreground" Value="{DynamicResource Lain.Accent}" />
   </Style>
   <Style Selector="Button.nav TextBlock">
+    <Setter Property="FontFamily" Value="avares://Lain.Desktop/Assets/Fonts/Oxanium#Oxanium" />
     <Setter Property="Foreground" Value="{DynamicResource Lain.Muted}" />
   </Style>
   <Style Selector="Button.nav.selected TextBlock">
@@ -93,7 +211,7 @@
     <Setter Property="CornerRadius" Value="5" />
     <Setter Property="Background" Value="{DynamicResource Lain.Input}" />
     <Setter Property="Foreground" Value="{DynamicResource Lain.Ink}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource Lain.Edge}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Lain.ControlEdge}" />
   </Style>
   <Style Selector="TextBox">
     <Setter Property="Padding" Value="9,5" />
@@ -117,6 +235,7 @@
     <Setter Property="Foreground" Value="{DynamicResource Lain.Muted}" />
   </Style>
   <Style Selector="TextBlock.section-title">
+    <Setter Property="FontFamily" Value="avares://Lain.Desktop/Assets/Fonts/IBMPlexSansCondensed#IBM Plex Sans Condensed" />
     <Setter Property="FontSize" Value="14" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>

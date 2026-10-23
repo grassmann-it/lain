@@ -3,6 +3,10 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
+    <AvaloniaResource Include="Assets/Fonts/**/*.ttf" />
+    <None Update="Assets/Fonts/**/OFL.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../Lain.Core/Lain.Core.csproj" />
     <ProjectReference Include="../Lain.Client/Lain.Client.csproj" />
   </ItemGroup>
