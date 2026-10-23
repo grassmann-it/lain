@@ -25,6 +25,7 @@ public sealed class MainWindow : Window
     private ConfigurationDto? _configuration;
     private QuotaDto[] _quotas = [];
     private string? _quotaError;
+    private ModelEntryDto[] _models = [];
     private StatusDto? _status;
     private string _section = "Overview";
     private bool _busy;
@@ -87,6 +88,8 @@ public sealed class MainWindow : Window
                 _configuration = await _client.GetConfigurationAsync(_lifetime.Token);
                 try { _quotas = await _client.QuotasAsync(_lifetime.Token); _quotaError = null; }
                 catch (Exception error) when (error is not OperationCanceledException) { _quotaError = Friendly(error); }
+                try { _models = (await _client.ModelsAsync(_lifetime.Token)).Models; }
+                catch (Exception error) when (error is not OperationCanceledException) { _models = []; }
             }
             if (explicitRefresh) { _editing = false; _notice.Text = ""; }
             if (!_editing && _section != "Usage") Render();
@@ -103,12 +106,12 @@ public sealed class MainWindow : Window
         finally { _refreshing = false; }
     }
 
-    private async Task RunAsync(Func<Task> operation, string success)
+    private async Task RunAsync(Func<Task> operation, string success, bool stayOnPage = false)
     {
         if (_busy) return;
         _busy = true; _notice.Text = "Working…";
         foreach (var action in _actions) action.IsEnabled = false;
-        try { await operation(); _editing = false; if (_notice.Text == "Working…") _notice.Text = success; }
+        try { await operation(); _editing = stayOnPage; if (_notice.Text == "Working…") _notice.Text = success; }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { return; }
         catch (Exception ex) { _notice.Text = Friendly(ex); }
         finally { _busy = false; foreach (var action in _actions) action.IsEnabled = true; }
@@ -121,9 +124,9 @@ public sealed class MainWindow : Window
         : error is TaskCanceledException ? "The host took too long to respond. Refresh to check its current state."
         : error.Message;
 
-    private Button Action(string label, Func<Task> operation, string success)
+    private Button Action(string label, Func<Task> operation, string success, bool stayOnPage = false)
     {
-        var button = Ui.Button(label, () => _ = RunAsync(operation, success)); _actions.Add(button); return button;
+        var button = Ui.Button(label, () => _ = RunAsync(operation, success, stayOnPage)); _actions.Add(button); return button;
     }
 
     private void Render()
@@ -262,8 +265,19 @@ public sealed class MainWindow : Window
         var pooled = new CheckBox { Content = "Explicit pool (allows these accounts to serve the route)", IsChecked = route?.Pooled ?? false };
         var choices = cfg.Accounts.Select(a => (Account: a, Box: new CheckBox { Content = $"{a.Name} · {a.Provider}", IsChecked = route?.AccountIds.Contains(a.Id) ?? false })).ToArray();
         var accounts = Ui.Stack(choices.Select(x => (Control)x.Box).ToArray());
+        var knownModels = _models;
+        var catalog = new ComboBox { ItemsSource = new[] { "Enter a model manually" }.Concat(knownModels.Select(m => $"{m.Id} · {m.Provider} · {m.Source}")).ToArray(), SelectedIndex = 0 };
+        catalog.SelectionChanged += (_, _) =>
+        {
+            if (catalog.SelectedIndex <= 0) return;
+            var selected = knownModels[catalog.SelectedIndex - 1];
+            model.Text = selected.Id; provider.Text = selected.Provider;
+            if (string.IsNullOrWhiteSpace(alias.Text)) alias.Text = selected.Id;
+            foreach (var choice in choices) choice.Box.IsChecked = selected.AccountIds.Contains(choice.Account.Id);
+            pooled.IsChecked = selected.AccountIds.Length > 1;
+        };
         _page.Content = Ui.Stack(Heading(route is null ? "Create a route" : "Edit route", "A strict route uses exactly one account. Multiple accounts require an explicit pool."),
-            Ui.Card(Ui.Stack(Ui.Field("Model alias", alias), Ui.Field("Upstream model", model), Ui.Field("Provider", provider), Ui.Field("Allowed accounts", accounts), pooled, enabled, visible)),
+            Ui.Card(Ui.Stack(Ui.Field("Known models (source shown; manual entry is also available)", catalog), Ui.Field("Model alias", alias), Ui.Field("Upstream model", model), Ui.Field("Provider", provider), Ui.Field("Allowed accounts", accounts), pooled, enabled, visible)),
             Ui.Row(Action("Save route", async () => {
                 var ids = choices.Where(x => x.Box.IsChecked == true).Select(x => x.Account.Id).ToArray();
                 if (string.IsNullOrWhiteSpace(alias.Text) || string.IsNullOrWhiteSpace(model.Text) || string.IsNullOrWhiteSpace(provider.Text) || ids.Length == 0) throw new InvalidOperationException("Enter an alias, upstream model, provider and at least one account.");
@@ -278,10 +292,50 @@ public sealed class MainWindow : Window
         if (_configuration is not { } cfg) { panel.Children.Add(Empty("Connect to the host to manage profiles.")); return panel; }
         if (cfg.Profiles.Length == 0) panel.Children.Add(Empty("No profiles yet. Create routes, then choose which models your client should offer."));
         foreach (var profile in cfg.Profiles)
-            panel.Children.Add(Ui.Card(Ui.Stack(Ui.Text(profile.Name, 20), Ui.Text(string.Join(" · ", profile.RouteIds.Select(id => cfg.Routes.FirstOrDefault(r => r.Id == id)?.Alias ?? id)), 13, Ui.Muted), Ui.Text($"Default: {cfg.Routes.FirstOrDefault(r => r.Id == profile.DefaultRouteId)?.Alias ?? "None"}", 12, Ui.Muted), Ui.Row(Ui.Button("Edit selection", () => EditProfile(profile)), Action("Export…", () => ExportProfileAsync(profile), "Profile exported without credentials."), Ui.Button("Remove…", () => ConfirmRemoval(profile.Name, async () => { _configuration = await _client.RemoveProfileAsync(cfg.Revision, profile.Id, _lifetime.Token); }))))));
+            panel.Children.Add(Ui.Card(Ui.Stack(Ui.Text(profile.Name, 20), Ui.Text(string.Join(" · ", profile.RouteIds.Select(id => cfg.Routes.FirstOrDefault(r => r.Id == id)?.Alias ?? id)), 13, Ui.Muted), Ui.Text($"Default: {cfg.Routes.FirstOrDefault(r => r.Id == profile.DefaultRouteId)?.Alias ?? "None"}", 12, Ui.Muted),
+                Ui.Row(Ui.Button("Edit selection", () => EditProfile(profile)), Action("Apply", async () => { _configuration = await _client.ApplyProfileAsync(cfg.Revision, profile.Id, _lifetime.Token); }, $"Profile '{profile.Name}' applied."), Ui.Button("Connect Codex…", () => ShowCodexExport(profile))),
+                Ui.Row(Action("Export profile…", () => ExportProfileAsync(profile), "Profile exported without credentials."), Ui.Button("Remove…", () => ConfirmRemoval(profile.Name, async () => { _configuration = await _client.RemoveProfileAsync(cfg.Revision, profile.Id, _lifetime.Token); }))))));
         return panel;
     }
 
+    private void ShowCodexExport(ProfileDto profile)
+    {
+        if (_configuration is not { } cfg) return;
+        _editing = true;
+        var launcher = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin", "lain");
+        var executable = Ui.Input(File.Exists(launcher) ? launcher : "", "/absolute/path/to/lain");
+        var folder = Ui.Input(hint: "Choose or enter an export destination");
+        var pick = Ui.Button("Choose folder…", async () => {
+            try
+            {
+                var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Choose a parent folder for a new Codex connection", AllowMultiple = false });
+                if (folders.FirstOrDefault()?.TryGetLocalPath() is { } path) folder.Text = path;
+            }
+            catch (Exception error) { _notice.Text = Friendly(error); }
+        });
+        _page.Content = Ui.Stack(Heading($"Connect Codex · {profile.Name}", "Export a separate Codex configuration and model catalog. A new folder is created inside your chosen destination."),
+            Ui.Card(Ui.Stack(Ui.Field("lain command-line executable (used as the local auth helper)", executable), Ui.Field("Destination parent folder", folder), pick)),
+            Ui.Row(Action("Export Codex connection", async () => {
+                if (string.IsNullOrWhiteSpace(executable.Text) || !Path.IsPathFullyQualified(executable.Text) || !File.Exists(executable.Text)) throw new InvalidOperationException("Choose an existing absolute path to the lain command-line executable.");
+                if (string.IsNullOrWhiteSpace(folder.Text) || !Directory.Exists(folder.Text)) throw new InvalidOperationException("Choose an existing local destination folder.");
+                var destination = Path.Combine(folder.Text, $"lain-codex-{DateTimeOffset.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..6]}");
+                var artifacts = await _client.ExportCodexProfileAsync(cfg.Revision, profile.Id, executable.Text.Trim(), Path.Combine(destination, "lain.models.json"), _lifetime.Token);
+                Directory.CreateDirectory(destination);
+                await WriteNewFileAsync(Path.Combine(destination, "lain.config.toml"), artifacts.Configuration);
+                await WriteNewFileAsync(Path.Combine(destination, "lain.models.json"), artifacts.Catalog);
+                static string Quote(string value) => "'" + value.Replace("'", "'\\''") + "'";
+                var command = $"CODEX_HOME={Quote(destination)} codex {string.Join(" ", artifacts.LaunchArguments.Select(Quote))}";
+                _notice.Text = $"Codex connection exported to {destination}";
+                _page.Content = Ui.Stack(Heading("Ready for Codex", $"Exported profile '{profile.Name}' at revision {artifacts.Revision}."), Ui.Card(Ui.Stack(Ui.Text("Launch this connection", 20), new TextBox { Text = command, IsReadOnly = true, TextWrapping = TextWrapping.Wrap }, Ui.Text("This uses the exported folder as Codex's home. Your existing Codex configuration is preserved.", 13, Ui.Muted))), Ui.Button("Back to profiles", () => { _editing = false; Render(); }));
+            }, "Codex connection exported.", stayOnPage: true), Ui.Button("Cancel", () => { _editing = false; Render(); })));
+    }
+
+    private static async Task WriteNewFileAsync(string path, string content)
+    {
+        await using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, true);
+        await using var writer = new StreamWriter(stream);
+        await writer.WriteAsync(content);
+    }
     private async Task ExportProfileAsync(ProfileDto profile)
     {
         var export = await _client.ExportProfileAsync(profile.Id, _lifetime.Token);
