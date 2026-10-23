@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import shutil
 import sys
+import subprocess
 import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
@@ -75,4 +76,11 @@ report = {"format": 1, "scope": "restored application graph including runtime do
     "license/third-party notice texts with source URLs and SHA-256 in sources.json. "
     "Core's license is separately in proxy/LICENSE. This inventory is evidence for review, "
     "not a declaration that every possible redistribution obligation has been satisfied.\n")
+subprocess.run([sys.executable, str(root / "scripts/collect-go-notices.py"),
+                str(output.parent / "proxy/lain-proxy"), str(output / "go")], check=True)
+with (output / "README.txt").open("a") as handle:
+    handle.write("\nGo: go/inventory.json lists the actual binary's linked module versions/checksums, "
+                 "source URLs, cached root LICENSE/COPYING/NOTICE files and the matching Go toolchain LICENSE. "
+                 "Missing evidence is explicit; no modules are downloaded/upgraded. Nested or generated "
+                 "third-party attribution obligations still require review.\n")
 print(f"Collected metadata for {len(inventory)} exact NuGet/runtime packages and pinned official notices")
