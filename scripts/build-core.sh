@@ -20,6 +20,8 @@ sha256sum "$output"
 python3 - "$root" "$output" "$go_bin" <<'PYBUILD'
 import hashlib,json,pathlib,subprocess,sys
 root=pathlib.Path(sys.argv[1]);binary=pathlib.Path(sys.argv[2])
-manifest={"schemaVersion":1,"binary":binary.name,"binarySha256":hashlib.sha256(binary.read_bytes()).hexdigest(),"sourceManifestSha256":hashlib.sha256((root/"proxy/source-manifest.json").read_bytes()).hexdigest(),"goVersion":subprocess.check_output([sys.argv[3],"version"],text=True).strip(),"snapshotVersion":"7.3.17-parent-request.3-model-compat.3-startup-readiness.1","lainPatchVersion":1}
+source_manifest_bytes=(root/"proxy/source-manifest.json").read_bytes()
+source_manifest=json.loads(source_manifest_bytes)
+manifest={"schemaVersion":1,"binary":binary.name,"binarySha256":hashlib.sha256(binary.read_bytes()).hexdigest(),"sourceManifestSha256":hashlib.sha256(source_manifest_bytes).hexdigest(),"goVersion":subprocess.check_output([sys.argv[3],"version"],text=True).strip(),"snapshotVersion":source_manifest["snapshotVersion"],"lainPatchVersion":source_manifest["lainPatchVersion"]}
 binary.with_suffix(binary.suffix+".manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
 PYBUILD
