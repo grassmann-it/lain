@@ -28,6 +28,7 @@ public sealed class ModelsService(ConfigurationRepository repository)
 
     public ConfigurationDto PutProfile(long revision, ProfileDto profile) => repository.Update(revision, config =>
     {
+        ArgumentNullException.ThrowIfNull(profile);
         Identity(profile.Id);
         Text(profile.Name, "Profile name");
         if (profile.RouteIds is null || profile.RouteIds.Length == 0 || profile.RouteIds.Distinct().Count() != profile.RouteIds.Length)
@@ -80,6 +81,7 @@ public sealed class ModelsService(ConfigurationRepository repository)
 
     private static void ValidateRoute(ConfigurationDto config, RouteDto route)
     {
+        ArgumentNullException.ThrowIfNull(route);
         Identity(route.Id);
         Text(route.Alias, "Alias"); Text(route.UpstreamModel, "Upstream model"); Text(route.Provider, "Provider");
         if (route.AccountIds is null || route.AccountIds.Length == 0 || route.AccountIds.Distinct().Count() != route.AccountIds.Length)

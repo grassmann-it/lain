@@ -36,6 +36,12 @@ capabilities not established by the route DTO are not advertised. The initial
 catalog explicitly lists configured models (`source: configured`); this is not
 an upstream availability or compatibility assertion.
 
+For a standalone export folder, place both generated files there and launch
+`CODEX_HOME=/absolute/export/folder codex --no-daemon --profile lain`.
+Codex resolves `lain.config.toml` beneath `CODEX_HOME`; the launch arguments alone
+use its default existing home. The profile uses top-level keys, not a nested
+`[profiles.lain]` table in this verified Codex version.
+
 Host integration: register `ModelsService` and `CodexProfileAdapter` as singletons
 and call `MapModelEndpoints` behind the host authorization boundary. The Codex
 export endpoint is `POST /api/v1/profiles/{id}/codex/export` with

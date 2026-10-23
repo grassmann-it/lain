@@ -13,9 +13,9 @@ public static class ModelEndpoints
         app.MapGet(Api.Prefix + "/profiles", (ModelsService models) => models.Snapshot.Profiles);
         app.MapGet(Api.Prefix + "/models", (ModelsService models) => models.ConfiguredModels());
         app.MapPut(Api.Prefix + "/routes/{id}", (string id, RevisionRequest<RouteDto> request, ModelsService models) =>
-            Execute(() => id == request.Value.Id ? Results.Ok(models.PutRoute(request.Revision, request.Value)) : Results.BadRequest(new ApiError("invalid_route", "Path and route identity differ."))));
+            Execute(() => request.Value is not null && id == request.Value.Id ? Results.Ok(models.PutRoute(request.Revision, request.Value)) : Results.BadRequest(new ApiError("invalid_route", "Path and route identity differ."))));
         app.MapPut(Api.Prefix + "/profiles/{id}", (string id, RevisionRequest<ProfileDto> request, ModelsService models) =>
-            Execute(() => id == request.Value.Id ? Results.Ok(models.PutProfile(request.Revision, request.Value)) : Results.BadRequest(new ApiError("invalid_profile", "Path and profile identity differ."))));
+            Execute(() => request.Value is not null && id == request.Value.Id ? Results.Ok(models.PutProfile(request.Revision, request.Value)) : Results.BadRequest(new ApiError("invalid_profile", "Path and profile identity differ."))));
         app.MapDelete(Api.Prefix + "/routes/{id}", (string id, long revision, ModelsService models) => Execute(() => Results.Ok(models.DeleteRoute(revision, id))));
         app.MapDelete(Api.Prefix + "/profiles/{id}", (string id, long revision, ModelsService models) => Execute(() => Results.Ok(models.DeleteProfile(revision, id))));
         app.MapGet(Api.Prefix + "/profiles/{id}/export", (string id, ModelsService models) => Execute(() => Results.Ok(models.Export(id))));
