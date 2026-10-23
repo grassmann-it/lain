@@ -39,6 +39,23 @@ class OrchestrationTests(unittest.TestCase):
         with mock.patch.object(orchestration, "api", return_value={"total": 3, "items": []}):
             self.assertIsNone(orchestration.capture_usage(types.SimpleNamespace(token="synthetic"), {}))
 
+    def test_cli_api_comparison_uses_exact_window_timezone_and_private_home(self):
+        import pathlib
+        window = {"from": "2026-10-23T10:00:00+00:00", "to": "2026-10-23T11:00:00+00:00", "timeZone": "UTC"}
+        summary = {"totals": {"attempts": 4, "tokens": {"total": None}}, "daily": [], "accounts": [], "models": [], "timeZone": "UTC"}
+        host = types.SimpleNamespace(token="local-token", state=pathlib.Path("/tmp/synthetic-lain-home"))
+        cli = types.SimpleNamespace(returncode=0, stdout=json.dumps(summary), stderr="")
+        with mock.patch.object(orchestration, "api", return_value=summary) as api, mock.patch.object(orchestration.subprocess, "run", return_value=cli) as run:
+            result = orchestration.compare_cli_usage(host, pathlib.Path("/tmp/Lain.Cli.dll"), window)
+        self.assertTrue(result["passed"])
+        self.assertEqual("/usage?" + orchestration.usage_query(window), api.call_args.args[0])
+        self.assertEqual(["dotnet", "/tmp/Lain.Cli.dll", "usage", "--from", window["from"], "--to", window["to"], "--timezone", "UTC", "--json"], run.call_args.args[0])
+        self.assertEqual(str(host.state), run.call_args.kwargs["env"]["LAIN_HOME"])
+        mismatched = dict(summary, totals={"attempts": 5})
+        with mock.patch.object(orchestration, "api", return_value=mismatched), mock.patch.object(orchestration.subprocess, "run", return_value=cli):
+            with self.assertRaises(orchestration.probe.ProbeError):
+                orchestration.compare_cli_usage(host, pathlib.Path("/tmp/Lain.Cli.dll"), window)
+
 
 if __name__ == "__main__":
     unittest.main()

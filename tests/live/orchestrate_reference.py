@@ -124,8 +124,13 @@ def prepare_routes(host, legacy_config):
     return config, {snapshots[0]["id"]: codex["id"], command_account["id"]: command["id"]}, imported
 
 
-def capture_usage(host, expected):
-    page = api("/attempts?limit=100", host.token)
+def usage_query(window):
+    return urllib.parse.urlencode(window or {})
+
+
+def capture_usage(host, expected, window=None):
+    query = usage_query(window)
+    page = api("/attempts?limit=100" + ("&" + query if query else ""), host.token)
     if page["total"] < 4 or any(a["finishedAt"] is None for a in page["items"]):
         return None
     require(page["total"] == 4 and len(page["items"]) == 4, "Expected exactly four durable attempts; no retries permitted.")
@@ -136,13 +141,28 @@ def capture_usage(host, expected):
                 "Attempt route or upstream model identity differs from the approved route.")
         require(item["state"] not in ("pending", "failed", "canceled") and item["statusCode"] in range(200, 300),
                 "A live attempt was unsuccessful.")
-    summary = api("/usage", host.token)
+    summary = api("/usage" + ("?" + query if query else ""), host.token)
     require(summary["totals"]["attempts"] == 4 and summary["totals"]["requests"] == 4 and summary["totals"]["errors"] == 0,
             "Independent usage summary differs from the four successful reference requests.")
     return {"totals": summary["totals"], "complete": summary["complete"], "cursor": summary["cursor"],
             "accounts": summary["accounts"], "models": summary["models"],
             "attempts": [{key: item[key] for key in ("id", "requestId", "accountId", "routeId", "provider", "model", "statusCode", "state", "tokens")}
                          for item in sorted(page["items"], key=lambda a: a["id"])]}
+
+
+def compare_cli_usage(host, cli_dll, window):
+    summary = api("/usage?" + usage_query(window), host.token)
+    arguments = ["dotnet", str(cli_dll), "usage", "--from", window["from"], "--to", window["to"],
+                 "--timezone", window["timeZone"], "--json"]
+    result = subprocess.run(arguments, env=dict(os.environ, LAIN_HOME=str(host.state)), cwd=host.state,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=25)
+    require(result.returncode == 0, "CLI usage command failed; raw output withheld.")
+    cli_summary = json.loads(result.stdout)
+    require(cli_summary["totals"] == summary["totals"], "CLI and Host API usage totals differ for the same explicit window.")
+    for key in ("daily", "accounts", "models", "timeZone"):
+        require(cli_summary[key] == summary[key], "CLI and Host API usage groups or timezone differ.")
+    return {"passed": True, "command": "dotnet Lain.Cli.dll usage --from FROM --to TO --timezone UTC --json",
+            "window": window, "totals": summary["totals"], "groupsMatch": True}
 
 
 def legacy_guard(root):
@@ -159,6 +179,7 @@ def main():
     parser.add_argument("--approved-sha256")
     parser.add_argument("--host-dll", type=pathlib.Path)
     parser.add_argument("--proxy-binary", type=pathlib.Path)
+    parser.add_argument("--cli-dll", type=pathlib.Path)
     parser.add_argument("--legacy-root", type=pathlib.Path, default=pathlib.Path.home() / ".local/share/easycliproxyapi")
     args = parser.parse_args()
     report = {"state": "planned", "plan": probe.plan(CODEX_ALIAS, COMMAND_ALIAS), "calls": []}
@@ -173,6 +194,7 @@ def main():
                 "Explicit built host, proxy and root-approved exact SHA are required.")
         binary = args.proxy_binary.resolve(strict=True)
         dll = args.host_dll.resolve(strict=True)
+        cli_dll = args.cli_dll.resolve(strict=True) if args.cli_dll is not None else None
         actual = probe.validate_gate(binary)
         require(args.approved_sha256 == actual, "Root-approved SHA does not match the synthetic-qualified binary.")
         report["qualifiedSha256"] = actual
@@ -186,15 +208,22 @@ def main():
         config, expected, imported = prepare_routes(host, args.legacy_root / "cpa-core/config.yaml")
         report.update(revision=config["revision"], importedAccounts=imported["added"], selectedAccounts=list(expected))
         token = api("/auth/token?audience=codex", host.token)["token"]
+        now = dt.datetime.now(dt.timezone.utc)
+        window = {"from": (now - dt.timedelta(minutes=1)).isoformat(), "to": (now + dt.timedelta(hours=1)).isoformat(), "timeZone": "UTC"}
+        report["usageWindow"] = window
         # These are the only inference-producing calls in the orchestrator.
         probe.run_pair(CODEX_ALIAS, probe.route_account(config, CODEX_ALIAS, True), token, report)
         probe.run_pair(COMMAND_ALIAS, probe.route_account(config, COMMAND_ALIAS, False), token, report)
-        initial_usage = wait_until(lambda: capture_usage(host, expected))
+        initial_usage = wait_until(lambda: capture_usage(host, expected, window))
         report["beforeRestart"] = initial_usage
+        if cli_dll is not None:
+            report["cliBeforeRestart"] = compare_cli_usage(host, cli_dll, window)
         host.stop()
         host.start()
-        recovered = wait_until(lambda: capture_usage(host, expected))
+        recovered = wait_until(lambda: capture_usage(host, expected, window))
         report["afterRestart"] = recovered
+        if cli_dll is not None:
+            report["cliAfterRestart"] = compare_cli_usage(host, cli_dll, window)
         require(initial_usage["totals"] == recovered["totals"] and initial_usage["attempts"] == recovered["attempts"]
                 and initial_usage["accounts"] == recovered["accounts"] and initial_usage["models"] == recovered["models"],
                 "Usage totals or attempt identity did not persist across own host restart.")

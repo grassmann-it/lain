@@ -83,6 +83,7 @@ Only after root confirms the exact W2/W11 synthetic-qualified SHA, with both
 python3 tests/live/orchestrate_reference.py --execute \
   --approved-sha256 EXACT_SHA_CONFIRMED_BY_ROOT \
   --host-dll /absolute/path/to/Lain.Host.dll \
+  --cli-dll /absolute/path/to/Lain.Cli.dll \
   --proxy-binary /absolute/path/to/qualified/lain-proxy
 ```
 
@@ -94,3 +95,11 @@ to isolated temporary state. The script fingerprints legacy files read-only
 before and after, reporting counts only; it never signals a discovered port
 owner or touches the legacy process/queue. Only its own launched host/session
 is cleaned up. A failure preserves records and stops without inference retries.
+
+The optional `--cli-dll` additionally runs the real CLI usage command before
+and after host restart. API and CLI receive the same fixed `from`, `to` and
+`timeZone=UTC` window (`--timezone UTC` is the actual CLI flag). Totals and
+daily/account/model groups must match exactly, including unknown JSON null
+values. The CLI uses the same private `LAIN_HOME` and Host API; no second
+collector or direct database access is introduced. This is also the command
+documented by `skills/lain-usage/SKILL.md`.
