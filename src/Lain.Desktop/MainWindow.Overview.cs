@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -11,42 +12,96 @@ public sealed partial class MainWindow
     {
         var status = _status;
         var configuration = _configuration;
-        var hostState = _hostAvailable ? "Online" : status is null ? "Unavailable" : "Offline · showing last known state";
-        var proxyState = status is null ? "Unknown" : status.ProxyReady ? "Ready" : status.State;
+        var panel = Ui.Stack(Heading("Overview", "Provider budgets and local proxy status."));
+        panel.Spacing = 14;
+
+        if (configuration is { Accounts.Length: > 0 })
+        {
+            var budgets = new StackPanel { Spacing = 8 };
+            var heading = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 16 };
+            var headingText = new StackPanel { Spacing = 3 };
+            var title = Ui.Text("Provider budgets", 14); title.FontWeight = FontWeight.SemiBold;
+            headingText.Children.Add(title);
+            headingText.Children.Add(Ui.Text("Most-used known window per account. Open an account to see all windows.", 12, Ui.Muted));
+            heading.Children.Add(headingText);
+            var manage = Ui.Button("Manage accounts", () => Navigate("Accounts"));
+            manage.VerticalAlignment = VerticalAlignment.Center;
+            Grid.SetColumn(manage, 1); heading.Children.Add(manage);
+            budgets.Children.Add(heading);
+            if (!_hostAvailable || _quotaError is not null) budgets.Children.Add(Ui.Text(BudgetSnapshotNote(), 12, Ui.Warning));
+
+            var rows = new StackPanel { Spacing = 0 };
+            rows.Children.Add(BudgetTableHeader());
+            foreach (var account in configuration.Accounts)
+            {
+                var quotas = _quotas.Where(q => q.AccountId == account.Id).ToArray();
+                var selectedQuota = MostLimitingWindow(quotas);
+                var row = Ui.Button("", () => { _selectedAccountId = account.Id; Navigate("Accounts"); });
+                row.Content = BudgetAccountCells(BudgetIdentity(account),
+                    BudgetWindowRow(account, selectedQuota, quotas.Length > 1 ? $"of {quotas.Length} windows" : null));
+                row.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+                row.Padding = new Thickness(12, 8);
+                row.Background = Brushes.Transparent;
+                row.BorderThickness = new Thickness(0);
+                row.CornerRadius = new CornerRadius(0);
+                AutomationProperties.SetName(row, $"Inspect budgets for {account.Name}");
+                AutomationProperties.SetHelpText(row, $"Open {account.Name} in Accounts to see every budget window and account controls.");
+                rows.Children.Add(new Border
+                {
+                    BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Child = row
+                });
+            }
+            budgets.Children.Add(new Border
+            {
+                BorderBrush = Ui.Edge, BorderThickness = new Thickness(1, 1, 1, 0),
+                CornerRadius = new CornerRadius(5), ClipToBounds = true, Child = rows
+            });
+            panel.Children.Add(budgets);
+        }
+
+        var hostState = _hostAvailable ? "Host online" : status is null ? "Host unavailable" : "Host offline";
+        var proxyState = status is null ? "Proxy unknown" : status.ProxyReady ? "Proxy ready" : $"Proxy {status.State}";
         if (!_hostAvailable && status is not null) proxyState = $"Last known: {proxyState}";
         var revisionState = configuration is null ? "Unavailable" : configuration.Revision == configuration.AppliedRevision
-            ? $"Revision {configuration.Revision} · applied"
-            : $"Revision {configuration.Revision} · pending; proxy uses {configuration.AppliedRevision}";
+            ? $"Configuration {configuration.Revision} applied"
+            : $"Configuration {configuration.Revision} pending · proxy uses {configuration.AppliedRevision}";
         if (!_hostAvailable && configuration is not null) revisionState = $"Last known: {revisionState}";
-
-        var service = OverviewGroup("Local service",
-            OverviewValue("Host", hostState, _hostAvailable),
-            OverviewValue("Proxy", proxyState, _hostAvailable && status?.ProxyReady == true),
-            OverviewValue("Configuration", revisionState),
-            OverviewValue("Observed", status is null ? "No host response yet" : Ui.When(status.ObservedAt)));
-        if (!string.IsNullOrWhiteSpace(status?.Error))
-            service.Children.Add(Ui.Text(_hostAvailable ? status.Error : $"Last host error: {status.Error}", 12, Ui.Muted));
         var start = Action("Start proxy", async () => { _status = await _client.ServiceAsync("start", _lifetime.Token); }, "Proxy start requested.");
         var restart = Ui.Button("Restart…", () => ConfirmProxyAction("restart"));
         var stop = Ui.Button("Stop…", () => ConfirmProxyAction("stop"));
         start.IsEnabled = restart.IsEnabled = stop.IsEnabled = _hostAvailable;
-        service.Children.Add(OverviewActions(start, restart, stop));
-        service.Children.Add(Ui.Text("Restarting or stopping the proxy may interrupt active requests.", 12, Ui.Muted));
-
-        var inventory = OverviewGroup(_hostAvailable ? "Configuration" : "Last known configuration");
+        var service = new StackPanel { Spacing = 8 };
+        var serviceHeader = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 16 };
+        var serviceTitle = new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
+        var serviceLabel = Ui.Text("Local service", 13); serviceLabel.FontWeight = FontWeight.SemiBold;
+        serviceTitle.Children.Add(serviceLabel);
+        serviceTitle.Children.Add(Ui.Text($"{hostState} · {proxyState}", 12, _hostAvailable && status?.ProxyReady == true ? Ui.Success : Ui.Muted));
+        serviceHeader.Children.Add(serviceTitle);
+        var serviceActions = OverviewActions(start, restart, stop);
+        serviceActions.VerticalAlignment = VerticalAlignment.Center;
+        Grid.SetColumn(serviceActions, 1); serviceHeader.Children.Add(serviceActions);
+        service.Children.Add(serviceHeader);
+        var serviceFooter = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 16 };
+        var revision = Ui.Text(revisionState, 12, Ui.Muted);
+        revision.VerticalAlignment = VerticalAlignment.Center;
+        serviceFooter.Children.Add(revision);
         if (configuration is null)
         {
-            inventory.Children.Add(Ui.Text("Connect to the host to load accounts, routes and profiles.", 13, Ui.Muted));
-            inventory.Children.Add(Ui.Button("Check connection", () => _ = RefreshAsync(true)));
+            var check = Ui.Button("Check connection", () => _ = RefreshAsync(true));
+            Grid.SetColumn(check, 1); serviceFooter.Children.Add(check);
         }
         else
         {
-            inventory.Children.Add(OverviewInventory("Accounts", $"{configuration.Accounts.Length} configured · {configuration.Accounts.Count(x => x.Enabled)} enabled", "Accounts"));
-            inventory.Children.Add(OverviewInventory("Model routes", $"{configuration.Routes.Length} configured · {configuration.Routes.Count(x => x.Enabled)} enabled", "Routes"));
-            inventory.Children.Add(OverviewInventory("Profiles", $"{configuration.Profiles.Length} configured", "Profiles"));
+            var inventory = OverviewActions(
+                Ui.Button($"{configuration.Accounts.Count(x => x.Enabled)} accounts enabled", () => Navigate("Accounts")),
+                Ui.Button($"{configuration.Routes.Length} routes", () => Navigate("Routes")),
+                Ui.Button($"{configuration.Profiles.Length} profiles", () => Navigate("Profiles")));
+            Grid.SetColumn(inventory, 1); serviceFooter.Children.Add(inventory);
         }
-
-        var panel = Ui.Stack(Heading("Overview", "Local proxy and configuration status."), Ui.Card(service), Ui.Card(inventory));
+        service.Children.Add(serviceFooter);
+        if (!string.IsNullOrWhiteSpace(status?.Error))
+            service.Children.Add(Ui.Text(_hostAvailable ? status.Error : $"Last host error: {status.Error}", 12, Ui.Warning));
+        panel.Children.Add(Ui.Card(service));
         if (!_hostAvailable)
             panel.Children.Add(OverviewNext("Connect to the host", "Start the lain user service, then refresh to see the current state.", "Setup guide", "Setup"));
         else if (configuration is { Accounts.Length: 0 })

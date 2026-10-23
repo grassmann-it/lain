@@ -15,13 +15,10 @@ public sealed partial class MainWindow
 
     private Control AccountsPage()
     {
-        var panel = Ui.Stack(Heading("Accounts", "Manage connections, credentials and provider budgets."));
-        panel.Spacing = 12;
-        var toolbar = Ui.Row(
+        var panel = Ui.Stack(Ui.PageHeader("Accounts", "Provider budgets and account controls.",
             Action(_login is { State: "waiting" } ? "Continue Codex login" : "Connect Codex", StartCodexLoginAsync, "Complete sign-in in your browser.", stayOnPage: true),
-            Ui.Button("Add API account", ShowAddAccount), Ui.Button("Import setup…", ShowImport));
-        toolbar.Spacing = 6;
-        panel.Children.Add(toolbar);
+            Ui.Button("Add API account", ShowAddAccount), Ui.Button("Import setup…", ShowImport)));
+        panel.Spacing = 10;
         if (_configuration is not { } cfg) { panel.Children.Add(Empty("Accounts are unavailable until the host responds.")); return panel; }
         if (cfg.Accounts.Length == 0)
         {
@@ -29,7 +26,7 @@ public sealed partial class MainWindow
             return panel;
         }
 
-        var count = Ui.Text($"{cfg.Accounts.Length} accounts · {cfg.Accounts.Count(a => a.Enabled)} enabled", 12, Ui.Muted);
+        var count = Ui.Text($"{cfg.Accounts.Length} accounts · {cfg.Accounts.Count(a => a.Enabled)} enabled · Select an account for controls and details.", 12, Ui.Muted);
         panel.Children.Add(count);
         var selected = cfg.Accounts.FirstOrDefault(a => a.Id == _selectedAccountId) ?? cfg.Accounts[0];
         _selectedAccountId = selected.Id;
@@ -39,13 +36,14 @@ public sealed partial class MainWindow
             ItemsSource = cfg.Accounts,
             ItemTemplate = new FuncDataTemplate<AccountDto>((account, _) => AccountRow(account!)),
             SelectedItem = selected,
-            MaxHeight = 300,
+            MaxHeight = 328,
             MinHeight = 52,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             BorderThickness = new Thickness(0),
             Background = Brushes.Transparent
         };
         AutomationProperties.SetName(list, "Accounts");
+        ScrollViewer.SetHorizontalScrollBarVisibility(list, Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled);
         list.SelectionChanged += (_, _) =>
         {
             if (list.SelectedItem is not AccountDto account) return;
@@ -61,13 +59,7 @@ public sealed partial class MainWindow
                 Spacing = 0,
                 Children =
                 {
-                    new Border
-                    {
-                        Background = Ui.Surface, Padding = new Thickness(12, 8),
-                        BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1),
-                        Child = AccountCells(Ui.Text("Account", 11, Ui.Muted), Ui.Text("Provider", 11, Ui.Muted),
-                            Ui.Text("Credential", 11, Ui.Muted), Ui.Text("Enabled", 11, Ui.Muted), Ui.Text("Quota", 11, Ui.Muted))
-                    },
+                    BudgetTableHeader(),
                     list
                 }
             }
@@ -78,24 +70,16 @@ public sealed partial class MainWindow
 
     private Control AccountRow(AccountDto account)
     {
-        var name = AccountCell(account.Name, 13);
-        name.FontWeight = FontWeight.Medium;
-        ToolTip.SetTip(name, account.Name);
-        var credential = new StackPanel { Spacing = 2 };
-        credential.Children.Add(AccountCell(account.CredentialKind, 12));
-        credential.Children.Add(AccountCell(account.State, 11, Ui.Muted));
-        var identity = new StackPanel { Spacing = 2 };
-        identity.Children.Add(name);
-        if (account.SharedWithLegacy) identity.Children.Add(AccountCell("Shared provider budget", 10, Ui.Muted));
         var quotas = _quotas.Where(q => q.AccountId == account.Id).ToArray();
-        var quotaSummary = AccountCell(quotas.Length > 1 ? $"{quotas.Length} budget windows" : AccountQuotaSummary(quotas.FirstOrDefault()), 12, Ui.Muted);
-        ToolTip.SetTip(quotaSummary, string.Join("\n", quotas.Select(q => $"{q.Source}: {AccountQuotaSummary(q)}")));
-        var grid = AccountCells(identity, AccountCell(account.Provider, 12), credential,
-            AccountCell(account.Enabled ? "Enabled" : "Disabled", 12, account.Enabled ? Ui.Accent : Ui.Muted),
-            quotaSummary);
-        grid.Margin = new Thickness(2, 5);
-        grid.MinHeight = 32;
-        return grid;
+        var windows = new StackPanel { Spacing = 7 };
+        if (quotas.Length == 0) windows.Children.Add(BudgetWindowRow(account, null));
+        foreach (var quota in quotas) windows.Children.Add(BudgetWindowRow(account, quota));
+        var grid = BudgetAccountCells(BudgetIdentity(account), windows);
+        return new Border
+        {
+            Padding = new Thickness(2, 7), BorderBrush = Ui.Edge,
+            BorderThickness = new Thickness(0, 0, 0, 1), Child = grid
+        };
     }
 
     private static TextBlock AccountCell(string text, double size, IBrush? color = null) => new()
@@ -104,51 +88,55 @@ public sealed partial class MainWindow
         TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center
     };
 
-    private static Grid AccountCells(params Control[] cells)
-    {
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("2*,1.15*,1.4*,0.85*,1.35*"), ColumnSpacing = 12 };
-        for (var i = 0; i < cells.Length; i++) { Grid.SetColumn(cells[i], i); grid.Children.Add(cells[i]); }
-        return grid;
-    }
-
-    private static string AccountQuotaSummary(QuotaDto? quota)
-    {
-        if (quota is null) return "Unknown";
-        if (quota.State is "stale" or "error" or "unavailable") return quota.State;
-        if (quota.Remaining is { } remaining) return $"{remaining:0.##} {quota.Unit} left";
-        if (quota.Used is { } used && quota.Limit is { } limit) return $"{used:0.##} / {limit:0.##} {quota.Unit}";
-        return quota.State is "ok" or "available" ? "Amount unknown" : quota.State;
-    }
-
     private Control AccountDetail(AccountDto account, long revision)
     {
-        var content = new StackPanel { Spacing = 10 };
-        var title = Ui.Text(account.Name, 15); title.FontWeight = FontWeight.SemiBold;
-        content.Children.Add(title);
-        var facts = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), ColumnSpacing = 24 };
-        var identity = new StackPanel { Spacing = 4 };
-        identity.Children.Add(Ui.Text($"{account.Provider} · {account.CredentialKind} · {account.State}", 12, Ui.Muted));
-        var id = new SelectableTextBlock { Text = account.Id, FontSize = 11, Foreground = Ui.Muted, TextWrapping = TextWrapping.Wrap };
-        identity.Children.Add(id);
-        var validity = new StackPanel { Spacing = 4 };
-        validity.Children.Add(Ui.Text(account.ExpiresAt is { } expiry ? $"Credential expires {Ui.When(expiry)}" : "Credential expiry not supplied", 12, Ui.Muted));
-        if (account.SharedWithLegacy) validity.Children.Add(Ui.Text("Shared provider budget with the imported account", 12, Ui.Accent));
-        if (account.BudgetPoolId is { } pool) validity.Children.Add(Ui.Text($"Budget pool · {pool}", 11, Ui.Muted));
-        facts.Children.Add(identity); Grid.SetColumn(validity, 1); facts.Children.Add(validity);
-        content.Children.Add(facts);
+        var content = new StackPanel { Spacing = 8 };
+        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 12 };
+        var title = AccountCell(AccountDisplayName(account), 14); title.FontWeight = FontWeight.SemiBold;
+        ToolTip.SetTip(title, account.Name);
+        header.Children.Add(title);
+        var enabled = Ui.Badge(account.Enabled ? "Enabled for routing" : "Disabled", account.Enabled ? "accent" : null);
+        Grid.SetColumn(enabled, 1); header.Children.Add(enabled);
+        content.Children.Add(header);
+
         var quotas = _quotas.Where(q => q.AccountId == account.Id).ToArray();
-        var budgets = new StackPanel { Spacing = 10 };
-        if (quotas.Length == 0) budgets.Children.Add(QuotaDetails(null));
-        foreach (var quota in quotas) budgets.Children.Add(QuotaDetails(quota));
-        content.Children.Add(new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(0, 10, 0, 0), Child = budgets });
-        if (_quotaError is not null) content.Children.Add(Ui.Text("Quota snapshot may be stale · " + _quotaError, 11, Ui.Muted));
-        var actions = Ui.Row(
+        var actions = OverviewActions(
             Action(account.Enabled ? "Disable" : "Enable", async () => { _configuration = await _client.SetAccountEnabledAsync(revision, account.Id, !account.Enabled, _lifetime.Token); }, "Account updated."),
             Action("Check credential", async () => { var result = await _client.CheckAccountAsync(account.Id, _lifetime.Token); _notice.Text = $"Credential status: {result.State}. Checked local presence and expiry only."; }, "Local credential check complete."),
             Action("Refresh quota", async () => { _quotas = await _client.RefreshQuotasAsync(account.Id, _lifetime.Token); }, "Quota refresh complete."),
             Ui.Button("Remove…", () => ConfirmRemoval(account.Name, async () => { _configuration = await _client.RemoveAccountAsync(revision, account.Id, _lifetime.Token); })));
-        actions.Spacing = 6;
         content.Children.Add(actions);
+
+        var notes = new List<string>();
+        if (account.ExpiresAt is { } expiry) notes.Add($"Credential expires {expiry.ToLocalTime():dd MMM · HH:mm}");
+        if (account.SharedWithLegacy) notes.Add("Shares the provider budget with the imported connection");
+        if (notes.Count > 0) content.Children.Add(Ui.Text(string.Join(" · ", notes), 11, Ui.Muted));
+        if (IsMiMo(account))
+        {
+            content.Children.Add(Ui.Text("Quota lookup for MiMo is not supported here yet. View the coding-plan allowance in the provider console.", 12, Ui.Muted));
+            content.Children.Add(Action("Check in provider console", async () =>
+            {
+                if (!await Launcher.LaunchUriAsync(new Uri("https://platform.xiaomimimo.com/#/console/plan-manage")))
+                    throw new InvalidOperationException("The browser could not be opened. Check your default browser and try again.");
+            }, "MiMo provider console opened."));
+        }
+        if (!_hostAvailable || _quotaError is not null) content.Children.Add(Ui.Text(BudgetSnapshotNote(), 11, Ui.Warning));
+
+        var technical = new StackPanel { Spacing = 9 };
+        technical.Children.Add(QuotaTechnicalField("Account ID", account.Id));
+        technical.Children.Add(QuotaTechnicalField("Credential", $"{account.CredentialKind} · local state: {account.State}"));
+        technical.Children.Add(Ui.Text("Credential checks confirm local presence and expiry only; provider access is not verified.", 11, Ui.Muted));
+        if (account.ExpiresAt is null) technical.Children.Add(Ui.Text("Credential expiry not supplied.", 11, Ui.Muted));
+        if (account.BudgetPoolId is { } pool) technical.Children.Add(QuotaTechnicalField("Account pool", pool));
+        if (quotas.Length == 0) technical.Children.Add(QuotaDetails(null));
+        foreach (var quota in quotas) technical.Children.Add(QuotaDetails(quota));
+        if (_quotaError is not null) technical.Children.Add(Ui.Text(_quotaError, 11, Ui.Warning));
+        content.Children.Add(new Expander
+        {
+            Header = "Technical details", HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Content = new Border { Padding = new Thickness(0, 8), Child = technical }
+        });
         return new Border { Padding = new Thickness(12), BorderBrush = Ui.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Child = content };
     }
 
