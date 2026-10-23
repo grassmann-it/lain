@@ -1,13 +1,14 @@
 # Independent acceptance
 
-W11 owns this independent evidence review. Backend qualification, staged-package
-acceptance, actual user installation and the isolated Codex CLI workflow have
-passed at the scopes below for the tested functional baseline. The user has
-rejected the current visual design and requested a MeowChan-style direction using
-Ursa/Semi. The desktop evidence below covers the prior design only; overall
-release acceptance remains open until the redesign is implemented and retested
-on Xvfb. Synthetic evidence never establishes real-provider or GUI compatibility,
-and success on a selected route does not qualify every model.
+The first Linux delivery and the requested MeowChan-aligned desktop redesign are
+accepted at the documented scope. The redesigned Semi/Ursa desktop passed 63
+fixture workflow assertions and independent review of 30 private-Xvfb renders,
+then an installed-binary real-host Usage/poll/close/reopen check on private Xvfb.
+Earlier native desktop evidence below is historical and describes the superseded
+interface. All redesign GUI tests used isolated Xvfb displays.
+
+Synthetic checks do not establish real-provider compatibility; selected reference
+routes do not qualify every model, and real owned OAuth renewal remains untested.
 
 ## Isolation baseline
 
@@ -264,6 +265,31 @@ a MeowChan direction using Ursa/Semi. Functional backend, persistence, isolation
 and installed-package evidence remains valid for its recorded artifacts; it does
 not establish acceptance of the requested new interface. In particular, the
 Desktop hash and screenshots above describe the **prior design**, not the pending
-redesign. The replacement UI must be reviewed and retested on Xvfb, including its
-real-host usage parity, refresh behavior and close/reopen independence. No overall
-release approval is issued while that requested work remains open.
+redesign. The required replacement was subsequently implemented and checked as recorded below.
+
+## Redesigned desktop final acceptance
+
+The [independent visual review](ui-redesign-review.md) inspected all 30 renders
+from 15 scenes at 1120×780 and 800×560. The [workflow report](../tests/acceptance/evidence/desktop-redesign.json)
+records 63 passing assertions against production UI/theme code with fake HTTP
+handlers. This includes account and route/profile workflows, login cancellation,
+export, unknown/error/offline states, five-second polling, focus retention,
+detachment and window reopening. Routed Click events are not physical pointer
+or exhaustive tab-order testing; the visual report retains these limits.
+
+Avalonia 12.1.4, Semi 12.1.0.1 and Ursa 2.2.0 replace the initial Simple theme.
+The desktop was published self-contained from `38a2d1c`, with DLL SHA-256
+`a7433e824304841e3d67522d28daa52afcf8af07d481e98b17fdb4dace917218`.
+The [desktop-only update report](../tests/acceptance/evidence/desktop-update.json)
+confirms byte-identical Host, CLI and Core, unchanged own/legacy service PID and
+start time, and unchanged normal Codex configuration. Previous desktop and notices
+are retained outside the installed app for rollback. No service restart occurred.
+
+The [installed private-Xvfb report](../tests/acceptance/evidence/desktop-redesign-installed.json)
+loads the actual installed assemblies and production App theme. It shows the same
+real recorded request and **81,986 tokens** before and after closing/reopening;
+each window observed at least one polling refresh, the host/proxy remained ready
+while closed, and cursor 2 stayed unchanged. No inference, credential operation
+or configuration mutation was performed. This closes the new UI's installed
+usage parity and background-independence gate; the prior CLI/API equality and
+own-service restart persistence remain valid for the unchanged backend.

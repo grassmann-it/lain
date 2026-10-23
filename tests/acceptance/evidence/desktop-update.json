@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "desktopUpdated": true,
+  "noticesUpdated": true,
+  "protectedComponentsIdentical": true,
+  "ownAndLegacyServicePidAndStartUnchanged": true,
+  "normalCodexConfigurationUnchanged": true,
+  "rollbackBackup": "/home/tomka/.local/share/lain/desktop-backups/20261023T222331",
+  "desktopSha256": "a7433e824304841e3d67522d28daa52afcf8af07d481e98b17fdb4dace917218"
+}

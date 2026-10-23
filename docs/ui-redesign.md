@@ -29,3 +29,11 @@ worktree; the integrator owns merges and final builds.
 The existing installed backend continues running. Only a tested desktop package
 will replace the desktop portion; no provider probes or legacy service changes
 are needed for this redesign.
+
+## Result
+
+Implemented and installed. Independent review accepted 30 private-Xvfb renders;
+63 workflow assertions passed. The installed Release desktop also preserved
+real Usage totals through polling and close/reopen on private Xvfb. See
+[acceptance](acceptance.md) and [visual review](ui-redesign-review.md) for scope.
+Host, CLI and Core binaries and both running services were unchanged.

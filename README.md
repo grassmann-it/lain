@@ -22,6 +22,9 @@ Verbrauch bleibt unbekannt; fehlgeschlagene echte Proben werden nicht gelöscht.
 Direkt verwaltete OAuth-Logins sind getrennt von externen Access-Token-Snapshots;
 reale OAuth-Rotation wurde nicht als getestet ausgegeben.
 
+Die Oberfläche verwendet jetzt Semi und Ursa im kompakten MeowChan-Stil.
+[Usage-Vorschau](docs/screenshots/usage-semi.png) · [Accounts](docs/screenshots/accounts-semi.png) · [Designprüfung](docs/ui-redesign-review.md)
+
 - [Installation und Betrieb](docs/install.md)
 - [Entwicklung und reproduzierbare Prüfung](docs/development.md)
 - [Backendqualifikation](docs/backend-qualification.md)
