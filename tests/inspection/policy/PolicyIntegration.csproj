@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../../src/Lain.Core/*.cs" Link="Core/%(Filename)%(Extension)" />
+    <Compile Include="../../../src/Lain.Host/Providers/ProviderCatalogRegistry.cs" Link="Providers/ProviderCatalogRegistry.cs" />
+    <Compile Include="../../../src/Lain.Host/Providers/ProviderCostPolicy.cs" Link="Providers/ProviderCostPolicy.cs" />
+    <EmbeddedResource Include="../../../src/Lain.Host/Providers/Catalog/*.json" LogicalName="Lain.Host.Providers.Catalog.%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

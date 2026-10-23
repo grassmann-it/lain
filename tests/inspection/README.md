@@ -25,3 +25,15 @@ synthetic upstream's returned tool call ID.
 
 A syntax check is not an execution result. Host collector/ring integration and
 provider-policy assertions are added as those public contracts become available.
+
+After merging the common contracts, provider registry/policy and all provider
+manifests, run the separate no-network policy/catalog executable:
+
+`dotnet run --project tests/inspection/policy/PolicyIntegration.csproj`
+
+It embeds the actual fifteen-provider manifests, verifies documented onboarding
+and billing units, and applies free-only checks to every declared route. Injected
+graphs cover paid/trial/unknown fallback opt-in, strict route/profile inheritance,
+cycles, missing/disabled targets, unqualified execution, forged free controls and
+concrete model-route mismatches. A declarative free label does not prove that
+runtime controls are qualified.
