@@ -93,6 +93,7 @@ public sealed partial class MainWindow
         var content = new StackPanel { Spacing = 8 };
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 12 };
         var title = AccountCell(AccountDisplayName(account), 14); title.FontWeight = FontWeight.SemiBold;
+        title.Classes.Add("section-title");
         ToolTip.SetTip(title, account.Name);
         header.Children.Add(title);
         var enabled = Ui.Badge(account.Enabled ? "Enabled for routing" : "Disabled", account.Enabled ? "accent" : null);

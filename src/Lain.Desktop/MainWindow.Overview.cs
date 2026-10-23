@@ -21,6 +21,7 @@ public sealed partial class MainWindow
             var heading = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 16 };
             var headingText = new StackPanel { Spacing = 3 };
             var title = Ui.Text("Provider budgets", 14); title.FontWeight = FontWeight.SemiBold;
+            title.Classes.Add("section-title");
             headingText.Children.Add(title);
             headingText.Children.Add(Ui.Text("Most-used known window per account. Open an account to see all windows.", 12, Ui.Muted));
             heading.Children.Add(headingText);
@@ -74,6 +75,7 @@ public sealed partial class MainWindow
         var serviceHeader = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 16 };
         var serviceTitle = new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
         var serviceLabel = Ui.Text("Local service", 13); serviceLabel.FontWeight = FontWeight.SemiBold;
+        serviceLabel.Classes.Add("section-title");
         serviceTitle.Children.Add(serviceLabel);
         serviceTitle.Children.Add(Ui.Text($"{hostState} · {proxyState}", 12, _hostAvailable && status?.ProxyReady == true ? Ui.Success : Ui.Muted));
         serviceHeader.Children.Add(serviceTitle);
@@ -154,7 +156,9 @@ public sealed partial class MainWindow
     private static StackPanel OverviewGroup(string title, params Control[] controls)
     {
         var panel = new StackPanel { Spacing = 9 };
-        panel.Children.Add(new TextBlock { Text = title, FontSize = 14, FontWeight = FontWeight.SemiBold, Foreground = Ui.Ink, Margin = new Thickness(0, 0, 0, 3), TextWrapping = TextWrapping.Wrap });
+        var heading = new TextBlock { Text = title, FontSize = 14, FontWeight = FontWeight.SemiBold, Foreground = Ui.Ink, Margin = new Thickness(0, 0, 0, 3), TextWrapping = TextWrapping.Wrap };
+        heading.Classes.Add("section-title");
+        panel.Children.Add(heading);
         foreach (var control in controls) panel.Children.Add(control);
         return panel;
     }
