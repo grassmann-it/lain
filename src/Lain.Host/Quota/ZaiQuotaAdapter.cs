@@ -65,7 +65,6 @@ public sealed class ZaiQuotaAdapter(HttpClient client) : IQuotaAdapter
             if (unit is null) continue;
 
             // Numeric unit/number describe the provider's window, not the count unit.
-            // Their enum-to-duration mapping is unverified; do not guess weekly/5h.
             // Counts and resets change over time and must not change cache identity.
             var windowUnit = JsonFields.Number(window, "unit")?.ToString("R", CultureInfo.InvariantCulture);
             var windowNumber = JsonFields.Number(window, "number")?.ToString("R", CultureInfo.InvariantCulture);
@@ -80,9 +79,17 @@ public sealed class ZaiQuotaAdapter(HttpClient client) : IQuotaAdapter
                 "TOKENS_LIMIT" => "Tokens",
                 _ => "MCP requests"
             };
-            label += windowUnit is not null || windowNumber is not null
-                ? $" · provider window {windowUnit ?? "?"}/{windowNumber ?? "?"}"
-                : " · provider window";
+            // Verified official my-plan frontend, 2026-10-23:
+            // static.bigmodel.cn/z-ai-website/_next/static/chunks/3i6jwetj169n2.js
+            // getCreditUsageLimitsDefaults/getDefaultUsageLimits identify unit 3
+            // as 5-hour and unit 6 as weekly for credits/tokens. Restrict friendly
+            // durations to the observed number as well; retain other enums in Source.
+            label += (type, windowUnit, windowNumber) switch
+            {
+                ("CREDIT_LIMIT" or "TOKENS_LIMIT", "3", "5") => " · 5 hours",
+                ("CREDIT_LIMIT" or "TOKENS_LIMIT", "6", "1") => " · 7 days",
+                _ => " · quota window"
+            };
             if (occurrence > 1) label += " · " + occurrence.ToString(CultureInfo.InvariantCulture);
 
             var percent = JsonFields.Number(window, "percentage");
