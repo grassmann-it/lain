@@ -53,7 +53,7 @@ builder.Services.AddSingleton<ProxyConfigurationWriter>();
 builder.Services.AddSingleton<SqliteUsageStore>(_ => new(Path.Combine(paths.Root, "usage.db")));
 builder.Services.AddSingleton<IUsageStore>(sp => sp.GetRequiredService<SqliteUsageStore>());
 builder.Services.AddSingleton<JournalUsageCollector>(sp => {
- var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { BaseAddress = new Uri("http://127.0.0.1:18417"), Timeout = TimeSpan.FromSeconds(10) };
+ var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false }) { BaseAddress = new Uri("http://127.0.0.1:18417"), Timeout = TimeSpan.FromSeconds(10) };
  http.DefaultRequestHeaders.Authorization = new("Bearer", managementToken);
  return new(http, sp.GetRequiredService<SqliteUsageStore>(), sp.GetRequiredService<ILogger<JournalUsageCollector>>());
 });
