@@ -199,7 +199,8 @@ public sealed partial class MainWindow : Window
                 catch (Exception error) when (error is not OperationCanceledException) { _models = []; }
             }
             if (explicitRefresh) { _editing = false; _loginVisible = false; _notice.Text = ""; }
-            if (_providerCatalog is not null) _providers.SetCatalog(_providerCatalog, _configuration?.Accounts);
+            if (_providerCatalog is not null && (explicitRefresh || !_providers.IsKeyboardFocusWithin))
+                _providers.SetCatalog(_providerCatalog, _configuration?.Accounts);
             if (_section == "Providers" && (explicitRefresh || _providerCatalog is null)) await RefreshProviderCatalogAsync();
             RefreshPage(explicitRefresh);
         }
