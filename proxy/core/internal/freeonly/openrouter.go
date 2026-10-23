@@ -72,6 +72,10 @@ func PrepareOpenRouterRequest(ctx context.Context, client *http.Client, req *htt
 	for name := range req.Header {
 		switch http.CanonicalHeaderKey(name) {
 		case "Authorization", "Content-Type", "Accept", "User-Agent", "Http-Referer", "X-Title", "X-Openrouter-Title", "X-Request-Id":
+		case "Cache-Control":
+			if req.Header.Get(name) != "no-cache" {
+				return reject("unqualified cache-control header")
+			}
 		default:
 			return reject("unqualified upstream header")
 		}

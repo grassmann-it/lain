@@ -37,6 +37,7 @@ func TestFreshZeroCapAndFinalPayload(t *testing.T) {
 	})}
 	for count := 1; count <= 2; count++ {
 		req := outgoing(t, `{"model":"qwen/qwen3-coder:free","messages":[{"role":"user","content":"hello"}],"stream":true,"tools":[{"type":"function","function":{"name":"read_file","parameters":{"type":"object"}}}]}`)
+		req.Header.Set("Cache-Control", "no-cache")
 		if err := PrepareOpenRouterRequest(context.Background(), client, req, pinnedModel); err != nil {
 			t.Fatal(err)
 		}
