@@ -346,7 +346,7 @@ The first full run stopped on provider-search timing before the queued text even
 (fixed by `f3453ba`); the second stopped on an Inspector fixture locator
 (`06d36d4`). Run 3 is the complete passing rerun, not a first-pass success.
 The later visual-only Usage header/filter alignment `f09f407` is outside this
-exact fixture hash and needs the final delivery render to bind its appearance.
+run-3 fixture hash. The final rerun after `f09f407` and `57db173` is recorded below.
 
 ## Final exact-Core synthetic checkpoint
 
@@ -371,16 +371,66 @@ The following final reports all pass and bind to Core SHA-256
   and kill-after-dispatch restart; exact binary unchanged, no invented completion.
 
 The earlier current-consumer replay report shows 200 requests/attempts, cursor600
-and 3,600 tokens, but predates this final binary. A final-hash-bound current-consumer
-result and the actual packaged/installed migration/restart remain separate
-requirements; this review does not silently promote the earlier report.
+and 3,600 tokens, but predates this final binary. The separately inspected final-hash-bound current-consumer result below closes
+that binding requirement. Actual packaged/installed migration/restart remains a
+separate requirement; this review does not silently promote the earlier report.
+
+## Final delivery fixture and consumer binding
+
+`/tmp/lain-expansion-ui-evidence-final/evidence.json` passes all 380 checks with
+68 PNGs after the final alignment/test refinements. Exact Desktop fixture SHA-256:
+`2EDC5F348B3A8C67A7974AC21B1033F6567DCB20E9D4368A5A311F8669F89727`.
+Independently viewed final Usage analysis at both widths, narrow Inspector and
+wide route policy. Header alignment is coherent; sample counts remain readable,
+narrow Inspector output remains immediately visible, and the wide route policy
+selector is explicit. No new visual blocker. The preceding fixture-only and
+below-fold limitations remain; this is not installed-binary visual evidence.
+
+`tests/acceptance/evidence/expansion-core-consumer-replay.json` is PASS and binds
+Core `bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87`,
+source manifest, input journal and consumer DLL by full hashes. Ten replays each
+reopen the store: cursor600, complete=true, 200 requests/attempts, 3,600 total
+tokens, zero errors/unknown-usage attempts. This closes the synthetic final-Core
+consumer binding, not actual installed migration evidence.
+
+## Controlled upgrade-helper source review
+
+Independently read `tests/acceptance/upgrade_probe.py`, its synthetic-test source,
+`docs/upgrade-verification.md` and the owned state-path implementation in the
+contracts worktree. No helper was executed by this reviewer. No source blocker
+was found for the proposed default-path controlled upgrade. Plan-only performs
+no service/install mutation. Execution pins the complete package/Core hashes,
+checks the owned service unit/executable, stages privately, stops only
+`lain.service`, verifies inactive PID/cgroup, copies the stopped DB/WAL/SHM,
+full proxy journal/auth/configuration and other owned state, retains the whole
+old app, swaps once and starts once. Verification uses authenticated loopback
+GETs against fixed historical usage and new schema endpoints, with no inference
+or second live SQLite read. Normal background refresh behavior can resume and
+is explicitly not represented as zero provider requests.
+
+Failures preserve private phase evidence and do not automatically rewind a
+migrated database or rotated auth. Explicit rollback first archives current
+stopped state and refuses changed durable journal/source or credentials/config;
+only an unchanged generation permits paired old-app/old-state restoration.
+Legacy service/config/auth and normal Codex are observed for interval changes,
+not modified. Legacy temporary auth files are explicitly excluded, as are logs,
+queues and databases; preservation must not be generalized beyond that scope.
+The quiesced-client flag records a prerequisite rather than enforcing exclusion
+of all external clients. Root must keep owned inference clients and Desktop quiet.
+
+A rollback hardening follow-up was reported: the first reviewed version flushes
+restored proxy files and the state directory but not every restored DB/credential
+file or rename directory before restart. This does not block the upgrade path,
+whose stopped backup is fully synced, but power-loss-durable rollback must wait
+for that follow-up or retain an explicit weaker durability scope. Synthetic
+helper tests do not establish an actual installed upgrade or rollback.
 
 ## Evidence ledger and final outcome
 
 This reviewer ran no builds or tests: execution was serialized by root, and the
 reports and rendered captures above were independently inspected. No remaining
 source or inspected-render blocker prevents controlled staging/install
-qualification once the final current-consumer binding passes. This is not yet
+qualification; the final current-consumer binding now passes. This is not yet
 acceptance of an installed expansion or broad `releaseQualified: true`.
 Packaging must bind the exact qualified Core and final Desktop/Host/CLI artifacts;
 installed migration/restart, rollback and interval-scoped isolation evidence must
