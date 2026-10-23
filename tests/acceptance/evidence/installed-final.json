@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "realCodexProfile": "lain",
+  "realModel": "gpt-6-luna",
+  "totals": {
+    "requests": 1,
+    "attempts": 1,
+    "errors": 0,
+    "tokens": {
+      "input": 81981,
+      "output": 5,
+      "cached": 3968,
+      "reasoning": 0,
+      "total": 81986
+    },
+    "unknownUsageAttempts": 0
+  },
+  "cursor": 2,
+  "cliApiParity": true,
+  "ownServiceRestartPreservesUsage": true,
+  "normalCodexConfigUnchanged": true,
+  "legacyServicePidAndStartUnchanged": true,
+  "catalogModels": 45,
+  "systemdEnabled": "enabled"
+}

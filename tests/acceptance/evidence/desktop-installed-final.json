@@ -1,0 +1,45 @@
+{
+  "result": "PASS",
+  "nativeDisplay": ":1",
+  "requests": 1,
+  "totalTokens": 81986,
+  "cursorBefore": 2,
+  "cursorWhileClosed": 2,
+  "cursorAfter": 2,
+  "hostReachableWhileWindowClosed": true,
+  "proxyReadyWhileWindowClosed": true,
+  "firstUi": {
+    "requests": 1,
+    "totalTokens": 81986,
+    "initialGeneration": 1,
+    "finalGeneration": 2,
+    "openAfterUsageLoadedSeconds": 6.5949547,
+    "image": "/tmp/lain-installed-gui-check/first-usage.png"
+  },
+  "reopenedUi": {
+    "requests": 1,
+    "totalTokens": 81986,
+    "initialGeneration": 1,
+    "finalGeneration": 2,
+    "openAfterUsageLoadedSeconds": 6.4915481,
+    "image": "/tmp/lain-installed-gui-check/reopened-usage.png"
+  },
+  "assemblies": [
+    {
+      "name": "Lain.Desktop",
+      "path": "/home/tomka/.local/share/lain/app/desktop/Lain.Desktop.dll",
+      "sha256": "da0961adf7ae2b8894f9c5c45596f03be2397e33c21fd032f7ce1ab84620ce67"
+    },
+    {
+      "name": "Lain.Client",
+      "path": "/home/tomka/.local/share/lain/app/desktop/Lain.Client.dll",
+      "sha256": "f89b3fdb0d720384dcd3fd1db16da328710acdc0173d4ef104aa5025582506c1"
+    },
+    {
+      "name": "Avalonia.Controls",
+      "path": "/home/tomka/.local/share/lain/app/desktop/Avalonia.Controls.dll",
+      "sha256": "7443c62f26877dbdb4d6344a80da0073581de81ff41f312cd89e303f8ad0d818"
+    }
+  ],
+  "scope": "Installed App/MainWindow/UsageView and real local API; GET-only observations and Usage navigation. No inference, configuration mutations, login or browser authorization. Window reopen in one harness process; separate native launcher start checked by parent."
+}
