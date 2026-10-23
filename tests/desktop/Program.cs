@@ -587,11 +587,13 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(HasText("No account configured") && !HasText("Connection verified"), "catalog is useful with no account and does not invent verification");
         await CaptureBoth("providers");
         Named<ComboBox>("Filter provider access type").SelectedIndex = 1;
-        Check(HasText("NVIDIA Build") && !HasText("Inception Mercury"), "free access filter excludes one-time trial and paid Inception access");
+        await Wait(() => HasText("1 of 2 providers", true) && HasText("NVIDIA Build") && !HasText("Inception Mercury"), "free access filter excludes one-time trial and paid Inception access");
         Named<ComboBox>("Filter provider access type").SelectedIndex = 0;
+        await Wait(() => HasText("2 of 2 providers", true) && HasText("Inception Mercury"), "clearing provider access filter restores all cards");
         Named<TextBox>("Search providers").Text = "step-5";
-        Check(HasText("NVIDIA Build") && !HasText("Inception Mercury"), "provider search includes concrete model identities");
+        await Wait(() => HasText("1 of 2 providers", true) && HasText("NVIDIA Build") && !HasText("Inception Mercury"), "provider search includes concrete model identities");
         Named<TextBox>("Search providers").Text = "";
+        await Wait(() => HasText("2 of 2 providers", true) && HasText("Inception Mercury"), "clearing provider search restores all cards");
         var card = Named<Expander>("Provider NVIDIA Build"); card.IsExpanded = true;
         await Task.Delay(100);
         Check(HasText("Unknown — no automatic budget source is available.") && HasText("Unknown requests/minute", true), "unobserved budgets and account limits remain unknown");
@@ -649,8 +651,9 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(!HasSelectable("First answer continued.") && HasText("Tool · fixture_tool"), "switching request clears preceding output and labels tool content");
         await CaptureBoth("inspector-tool");
         Named<TextBox>("Search live requests").Text = "request-unknown";
-        Check(HasGroup("request:request-unknown") && !HasGroup("conversation:conversation-ui"), "Inspector search filters observed groups locally");
+        await Wait(() => HasGroup("request:request-unknown") && !HasGroup("conversation:conversation-ui"), "Inspector search filters observed groups locally");
         Named<TextBox>("Search live requests").Text = "";
+        await Wait(() => HasGroup("request:request-unknown") && HasGroup("conversation:conversation-ui"), "clearing Inspector search restores observed groups");
         Named<ComboBox>("Inspector activity").SelectedIndex = 2;
         Check(HasGroup("request:request-error") && !HasGroup("conversation:conversation-ui"), "Inspector error filter uses observed failed status");
         Named<ComboBox>("Inspector activity").SelectedIndex = 0;
