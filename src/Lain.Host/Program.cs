@@ -9,7 +9,7 @@ using Lain.Host.Operations;
 using Lain.Host.Quota;
 using Lain.Host.Usage;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
 builder.WebHost.UseUrls("http://127.0.0.1:18418");
 builder.Logging.ClearProviders(); // Never log request bodies, credentials or upstream exception text.
 var paths = new OwnStatePaths();
