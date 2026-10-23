@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "archive": "/home/tomka/Desktop/lain/artifacts/lain-linux-x64-0.1.0-expansion-20261024.tar.gz",
+  "archiveSha256": "6bd8e39b0bf6e45ca13fce215b42f5a123279ee14a556c18fb7b391d726eff2b",
+  "manifestSha256": "693cfc1ac7de6af8135e1a590a74979ed52dc29501c964b5c471fc44ceb7a8cb",
+  "verifiedArchiveFiles": 1021,
+  "sourceCommit": "f713478bd7ef6c8895f0cb7e3d71875c374382a6",
+  "acceptanceSourceCommit": "f8410febee576f780cf494d9916720a59f06caf5",
+  "coreSha256": "bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87",
+  "qualifiedPayloadsUnchanged": true,
+  "installedMetadataMatchesFinalPackage": true,
+  "releaseScope": "Installed Linux expansion: durable own proxy, quota tiles, local Inspector, shared usage analysis, provider catalog and mock-qualified onboarding/transports.",
+  "newProviderLiveVerification": "not_tested",
+  "serviceOperations": 0,
+  "configurationMutations": 0
+}
