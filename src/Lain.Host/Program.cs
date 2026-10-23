@@ -1,11 +1,14 @@
+using System.Globalization;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Lain.Core;
 using Lain.Host.Accounts;
+using Lain.Host.Inspector;
 using Lain.Host.Models;
 using Lain.Host.Operations;
+using Lain.Host.Providers;
 using Lain.Host.Quota;
 using Lain.Host.Usage;
 
@@ -35,6 +38,10 @@ builder.Services.AddSingleton(paths);
 builder.Services.AddSingleton(secrets);
 builder.Services.AddSingleton(repository);
 builder.Services.AddSingleton(proxy);
+// Resolve the embedded catalog explicitly: DI would otherwise prefer the enumerable
+// constructor and silently create an empty registry from unregistered descriptors.
+builder.Services.AddSingleton(_ => new ProviderCatalogRegistry());
+builder.Services.AddSingleton<ProviderCostPolicy>();
 builder.Services.AddSingleton<AccountService>();
 var catalogPath = Path.Combine(Path.GetDirectoryName(binary)!, "codex-model-catalog.json");
 string[] codexModels = [];
@@ -52,15 +59,21 @@ builder.Services.AddSingleton<CodexProfileAdapter>();
 builder.Services.AddSingleton<ProxyConfigurationWriter>();
 builder.Services.AddSingleton<SqliteUsageStore>(_ => new(Path.Combine(paths.Root, "usage.db")));
 builder.Services.AddSingleton<IUsageStore>(sp => sp.GetRequiredService<SqliteUsageStore>());
+builder.Services.AddSingleton<IUsageAnalysisStore>(sp => sp.GetRequiredService<SqliteUsageStore>());
 builder.Services.AddSingleton<JournalUsageCollector>(sp => {
  var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false }) { BaseAddress = new Uri("http://127.0.0.1:18417"), Timeout = TimeSpan.FromSeconds(10) };
  http.DefaultRequestHeaders.Authorization = new("Bearer", managementToken);
  return new(http, sp.GetRequiredService<SqliteUsageStore>(), sp.GetRequiredService<ILogger<JournalUsageCollector>>());
 });
 builder.Services.AddHostedService(sp => sp.GetRequiredService<JournalUsageCollector>());
+builder.Services.AddInspector(managementToken);
 var providerHttp = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(20) };
 var quotaSource = new HostQuotaSource(repository, secrets);
-var quota = new QuotaService(quotaSource, quotaSource, [new CodexQuotaAdapter(providerHttp), new CommandCodeQuotaAdapter(providerHttp), new KimiQuotaAdapter(providerHttp), new ZaiQuotaAdapter(providerHttp)]);
+var quota = new QuotaService(quotaSource, quotaSource,
+ [new CodexQuotaAdapter(providerHttp), new CommandCodeQuotaAdapter(providerHttp),
+  new KimiQuotaAdapter(providerHttp), new ZaiQuotaAdapter(providerHttp),
+  new StepFunQuotaAdapter(providerHttp), new PoeQuotaAdapter(providerHttp),
+  new OpenRouterQuotaAdapter(providerHttp), new SyntheticQuotaAdapter(providerHttp)]);
 builder.Services.AddSingleton(quota);
 var app = builder.Build();
 using var mutations = new SemaphoreSlim(1, 1);
@@ -116,6 +129,8 @@ app.MapPost(Api.Prefix + "/accounts/login", async (LoginRequest request, LoginOp
 app.MapGet(Api.Prefix + "/accounts/login/{id}", (string id, LoginOperationService svc, CancellationToken ct) => svc.StatusAsync(id, ct));
 app.MapDelete(Api.Prefix + "/accounts/login/{id}", (string id, LoginOperationService svc, CancellationToken ct) => svc.CancelAsync(id, ct));
 app.MapModelEndpoints();
+app.MapProviderCatalogEndpoints();
+app.MapInspectorEndpoints();
 app.MapPost(Api.Prefix + "/profiles/{id}/apply", async (string id, ApplyRequest request, ModelsService models, ProxyConfigurationWriter writer, CancellationToken ct) => {
  var selected = models.ResolveForApply(id, request.Revision);
  var activeRoutes = selected.Routes.Where(r => r.Enabled).ToArray();
@@ -124,7 +139,8 @@ app.MapPost(Api.Prefix + "/profiles/{id}/apply", async (string id, ApplyRequest 
  await proxy.StopAsync(ct); // Stop before changing files observed by the Core's watcher.
  OwnStatePaths.WritePrivate(runtimeManifest, JsonSerializer.Serialize(new { valid = false, revision = request.Revision }));
  var identities = writer.Write(runtime);
- new RouteBindingsWriter(paths).Write(runtime, identities, writer.RouteCredentials);
+ new RouteBindingsWriter(paths).Write(runtime, identities, writer.RouteCredentials,
+  profileId: selected.Profile.Id, qualifiedProviderRouteIds: writer.QualifiedProviderRouteIds);
  await proxy.StartAsync(ct);
  repository.MarkApplied(request.Revision);
  OwnStatePaths.WritePrivate(runtimeManifest, JsonSerializer.Serialize(new { valid = true, revision = request.Revision }));
@@ -132,6 +148,7 @@ app.MapPost(Api.Prefix + "/profiles/{id}/apply", async (string id, ApplyRequest 
  return repository.Snapshot;
 });
 app.MapGet(Api.Prefix + "/usage", (HttpRequest request, IUsageStore store, CancellationToken ct) => store.SummaryAsync(ParseQuery(request), ct));
+app.MapGet(Api.Prefix + "/usage/analysis", (HttpRequest request, IUsageAnalysisStore store, CancellationToken ct) => store.AnalysisAsync(ParseQuery(request), ct));
 app.MapGet(Api.Prefix + "/attempts", (HttpRequest request, IUsageStore store, CancellationToken ct) => store.AttemptsAsync(ParseQuery(request), ct));
 app.MapGet(Api.Prefix + "/quotas", (CancellationToken ct) => quota.GetSnapshotsAsync(ct));
 app.MapPost(Api.Prefix + "/quotas/refresh", (QuotaRefreshRequest request, CancellationToken ct) => quota.RefreshAsync(request.AccountId, ct));
@@ -156,10 +173,45 @@ finally { shutdown.Cancel(); try { await quotaLoop; } catch (OperationCanceledEx
 
 static UsageQuery ParseQuery(HttpRequest request)
 {
- string? Get(string name) => request.Query[name].FirstOrDefault();
- DateTimeOffset? Date(string name) => Get(name) is { } value ? DateTimeOffset.Parse(value, System.Globalization.CultureInfo.InvariantCulture) : null;
- int? Number(string name) => Get(name) is { } value ? int.Parse(value, System.Globalization.CultureInfo.InvariantCulture) : null;
- return new(Date("from"), Date("to"), Get("timeZone") ?? "UTC", Get("accountId"), Get("model"), Number("statusCode"), Number("offset") ?? 0, Number("limit") ?? 100);
+ string? Get(string name, int maximumLength = 256)
+ {
+  if (!request.Query.TryGetValue(name, out var values)) return null;
+  if (values.Count != 1 || values[0] is not { } value || string.IsNullOrWhiteSpace(value) ||
+      value.Length > maximumLength || value.Any(char.IsControl)) throw new ArgumentException("Invalid usage query value.");
+  return value;
+ }
+ DateTimeOffset? Date(string name) => Get(name, 128) is { } value
+  ? DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal) : null;
+ int? Number(string name) => Get(name, 24) is { } value ? int.Parse(value, NumberStyles.None, CultureInfo.InvariantCulture) : null;
+ var from = Date("from"); var to = Date("to");
+ var end = to ?? DateTimeOffset.UtcNow; var start = from ?? end.AddDays(-30);
+ if (start >= end || end - start > TimeSpan.FromDays(366)) throw new ArgumentException("Invalid usage interval.");
+ var timeZone = Get("timeZone", 128) ?? "UTC";
+ try { _ = TimeZoneInfo.FindSystemTimeZoneById(timeZone); }
+ catch (Exception error) when (error is TimeZoneNotFoundException or InvalidTimeZoneException)
+ { throw new ArgumentException("Unknown usage time zone."); }
+ var offset = Number("offset") ?? 0; var limit = Number("limit") ?? 100;
+ var statusCode = Number("statusCode"); var groupLimit = Number("groupLimit") ?? 100;
+ if (offset < 0 || limit is < 1 or > 500 || statusCode is < 100 or > 599 || groupLimit is < 1 or > 500)
+  throw new ArgumentException("Invalid usage page or group bound.");
+ var groupBy = Get("groupBy", 512);
+ if (groupBy is not null)
+ {
+  string[] allowed = ["accountId", "routeId", "model", "provider", "modelFamily", "manufacturer",
+   "inferenceProvider", "gateway", "billingAccountId", "reasoningEffort", "effectiveReasoningEffort", "mode",
+   "conversationId", "turnId", "workerId", "parentWorkerId", "parentRequestId", "toolCallId",
+   "harness", "profileId", "responseId", "previousResponseId"];
+  var groups = groupBy.Split(',', StringSplitOptions.TrimEntries);
+  if (groups.Length is < 1 or > 3 || groups.Distinct(StringComparer.Ordinal).Count() != groups.Length ||
+      groups.Any(group => !allowed.Contains(group, StringComparer.Ordinal))) throw new ArgumentException("Invalid usage grouping.");
+  groupBy = string.Join(',', groups);
+ }
+ return new(from, to, timeZone, Get("accountId"), Get("model"), statusCode, offset, limit,
+  RouteId: Get("routeId"), ModelFamily: Get("modelFamily"), Manufacturer: Get("manufacturer"),
+  InferenceProvider: Get("inferenceProvider"), Gateway: Get("gateway"), BillingAccountId: Get("billingAccountId"),
+  ReasoningEffort: Get("reasoningEffort"), Mode: Get("mode"), ConversationId: Get("conversationId"),
+  TurnId: Get("turnId"), WorkerId: Get("workerId"), Harness: Get("harness"), ProfileId: Get("profileId"),
+  GroupBy: groupBy, GroupLimit: groupLimit, EffectiveReasoningEffort: Get("effectiveReasoningEffort"));
 }
 record ApplyRequest(long Revision);
 record LoginRequest(long Revision, string Provider);
