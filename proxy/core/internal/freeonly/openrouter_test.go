@@ -105,6 +105,11 @@ func TestUnsafeInputsNeverReachProofEndpoint(t *testing.T) {
 	if PrepareOpenRouterRequest(context.Background(), client, req, pinnedModel) == nil {
 		t.Fatal("alternate account header accepted")
 	}
+	req = outgoing(t, `{"model":"qwen/qwen3-coder:free","messages":[]}`)
+	req.Header["authorization"] = []string{"Bearer different-key"}
+	if PrepareOpenRouterRequest(context.Background(), client, req, pinnedModel) == nil {
+		t.Fatal("different proof and inference key ambiguity accepted")
+	}
 }
 
 func TestZeroCapProofFailsClosed(t *testing.T) {

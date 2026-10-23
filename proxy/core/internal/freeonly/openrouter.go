@@ -70,6 +70,11 @@ func PrepareOpenRouterRequest(ctx context.Context, client *http.Client, req *htt
 		return reject("unqualified inference endpoint")
 	}
 	for name := range req.Header {
+		// net/http permits directly constructed noncanonical map keys. Do not let
+		// two differently cased Authorization entries prove one key and send another.
+		if name != http.CanonicalHeaderKey(name) || len(req.Header[name]) != 1 {
+			return reject("ambiguous upstream header")
+		}
 		switch http.CanonicalHeaderKey(name) {
 		case "Authorization", "Content-Type", "Accept", "User-Agent", "Http-Referer", "X-Title", "X-Openrouter-Title", "X-Request-Id":
 		case "Cache-Control":
