@@ -34,7 +34,9 @@ public sealed partial class MainWindow
         var list = new ListBox
         {
             ItemsSource = cfg.Accounts,
-            ItemTemplate = new FuncDataTemplate<AccountDto>((account, _) => AccountRow(account!)),
+            // Virtualized containers clear their content while being recycled
+            // during scrolling or a resize; that template call has no account.
+            ItemTemplate = new FuncDataTemplate<AccountDto>((account, _) => account is null ? null : AccountRow(account)),
             SelectedItem = selected,
             MaxHeight = 328,
             MinHeight = 52,
