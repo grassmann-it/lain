@@ -11,8 +11,6 @@ namespace Lain.Desktop;
 
 public sealed partial class MainWindow
 {
-    private string? _selectedAccountId;
-
     private Control AccountsPage()
     {
         var panel = Ui.Stack(Ui.PageHeader("Accounts", "Provider budgets and account controls.",
@@ -26,62 +24,10 @@ public sealed partial class MainWindow
             return panel;
         }
 
-        var count = Ui.Text($"{cfg.Accounts.Length} accounts · {cfg.Accounts.Count(a => a.Enabled)} enabled · Select an account for controls and details.", 12, Ui.Muted);
-        panel.Children.Add(count);
-        var selected = cfg.Accounts.FirstOrDefault(a => a.Id == _selectedAccountId) ?? cfg.Accounts[0];
-        _selectedAccountId = selected.Id;
-        var detail = new ContentControl { Content = AccountDetail(selected, cfg.Revision) };
-        var list = new ListBox
-        {
-            ItemsSource = cfg.Accounts,
-            // Virtualized containers clear their content while being recycled
-            // during scrolling or a resize; that template call has no account.
-            ItemTemplate = new FuncDataTemplate<AccountDto>((account, _) => account is null ? null : AccountRow(account)),
-            SelectedItem = selected,
-            MaxHeight = 328,
-            MinHeight = 52,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            BorderThickness = new Thickness(0),
-            Background = Brushes.Transparent
-        };
-        AutomationProperties.SetName(list, "Accounts");
-        ScrollViewer.SetHorizontalScrollBarVisibility(list, Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled);
-        list.SelectionChanged += (_, _) =>
-        {
-            if (list.SelectedItem is not AccountDto account) return;
-            _selectedAccountId = account.Id;
-            // Keep the list and its keyboard focus stable when inspecting another account.
-            detail.Content = AccountDetail(account, cfg.Revision);
-        };
-        panel.Children.Add(new Border
-        {
-            BorderBrush = Ui.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4),
-            Child = new StackPanel
-            {
-                Spacing = 0,
-                Children =
-                {
-                    BudgetTableHeader(),
-                    list
-                }
-            }
-        });
-        panel.Children.Add(detail);
+        panel.Children.Add(Ui.Text($"{cfg.Accounts.Length} accounts · {cfg.Accounts.Count(a => a.Enabled)} enabled · Open a tile for controls and details.", 12, Ui.Muted));
+        if (!_hostAvailable || _quotaError is not null) panel.Children.Add(Ui.Text(BudgetSnapshotNote(), 12, Ui.Warning));
+        panel.Children.Add(AccountTiles(cfg));
         return panel;
-    }
-
-    private Control AccountRow(AccountDto account)
-    {
-        var quotas = _quotas.Where(q => q.AccountId == account.Id).ToArray();
-        var windows = new StackPanel { Spacing = 7 };
-        if (quotas.Length == 0) windows.Children.Add(BudgetWindowRow(account, null));
-        foreach (var quota in quotas) windows.Children.Add(BudgetWindowRow(account, quota));
-        var grid = BudgetAccountCells(BudgetIdentity(account), windows);
-        return new Border
-        {
-            Padding = new Thickness(2, 7), BorderBrush = Ui.Edge,
-            BorderThickness = new Thickness(0, 0, 0, 1), Child = grid
-        };
     }
 
     private static TextBlock AccountCell(string text, double size, IBrush? color = null) => new()
@@ -93,15 +39,6 @@ public sealed partial class MainWindow
     private Control AccountDetail(AccountDto account, long revision)
     {
         var content = new StackPanel { Spacing = 8 };
-        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 12 };
-        var title = AccountCell(AccountDisplayName(account), 14); title.FontWeight = FontWeight.SemiBold;
-        title.Classes.Add("section-title");
-        ToolTip.SetTip(title, account.Name);
-        header.Children.Add(title);
-        var enabled = Ui.Badge(account.Enabled ? "Enabled for routing" : "Disabled", account.Enabled ? "accent" : null);
-        Grid.SetColumn(enabled, 1); header.Children.Add(enabled);
-        content.Children.Add(header);
-
         var quotas = _quotas.Where(q => q.AccountId == account.Id).ToArray();
         var actions = OverviewActions(
             Action(account.Enabled ? "Disable" : "Enable", async () => { _configuration = await _client.SetAccountEnabledAsync(revision, account.Id, !account.Enabled, _lifetime.Token); }, "Account updated."),
@@ -140,7 +77,7 @@ public sealed partial class MainWindow
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Content = new Border { Padding = new Thickness(0, 8), Child = technical }
         });
-        return new Border { Padding = new Thickness(12), BorderBrush = Ui.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Child = content };
+        return content;
     }
 
     private void ShowAddAccount()

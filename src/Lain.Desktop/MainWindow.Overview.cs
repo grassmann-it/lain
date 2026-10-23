@@ -17,49 +17,13 @@ public sealed partial class MainWindow
 
         if (configuration is { Accounts.Length: > 0 })
         {
-            var budgets = new StackPanel { Spacing = 8 };
-            var heading = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 16 };
-            var headingText = new StackPanel { Spacing = 3 };
-            var title = Ui.Text("Provider budgets", 14); title.FontWeight = FontWeight.SemiBold;
-            title.Classes.Add("section-title");
-            headingText.Children.Add(title);
-            headingText.Children.Add(Ui.Text("Most-used known window per account. Open an account to see all windows.", 12, Ui.Muted));
-            heading.Children.Add(headingText);
-            var manage = Ui.Button("Manage accounts", () => Navigate("Accounts"));
-            manage.VerticalAlignment = VerticalAlignment.Center;
-            Grid.SetColumn(manage, 1); heading.Children.Add(manage);
+            var heading = Ui.Text("Provider budgets", 14);
+            heading.Classes.Add("section-title");
+            var budgets = new StackPanel { Spacing = 10 };
             budgets.Children.Add(heading);
+            budgets.Children.Add(Ui.Text("Every reported window at a glance. Open a tile for balances, controls and source details.", 12, Ui.Muted));
             if (!_hostAvailable || _quotaError is not null) budgets.Children.Add(Ui.Text(BudgetSnapshotNote(), 12, Ui.Warning));
-
-            var rows = new StackPanel { Spacing = 0 };
-            rows.Children.Add(BudgetTableHeader());
-            foreach (var account in configuration.Accounts)
-            {
-                var quotas = _quotas.Where(q => q.AccountId == account.Id).ToArray();
-                var selectedQuota = MostLimitingWindow(quotas);
-                var row = Ui.Button("", () => { _selectedAccountId = account.Id; Navigate("Accounts"); });
-                row.Content = BudgetAccountCells(BudgetIdentity(account),
-                    BudgetWindowRow(account, selectedQuota, quotas.Length > 1 ? $"of {quotas.Length} windows" : null));
-                // Semi centers Button itself by default; stretching only its
-                // content leaves each table row at a different intrinsic width.
-                row.HorizontalAlignment = HorizontalAlignment.Stretch;
-                row.HorizontalContentAlignment = HorizontalAlignment.Stretch;
-                row.Padding = new Thickness(12, 8);
-                row.Background = Brushes.Transparent;
-                row.BorderThickness = new Thickness(0);
-                row.CornerRadius = new CornerRadius(0);
-                AutomationProperties.SetName(row, $"Inspect budgets for {account.Name}");
-                AutomationProperties.SetHelpText(row, $"Open {account.Name} in Accounts to see every budget window and account controls.");
-                rows.Children.Add(new Border
-                {
-                    BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Child = row
-                });
-            }
-            budgets.Children.Add(new Border
-            {
-                BorderBrush = Ui.Edge, BorderThickness = new Thickness(1, 1, 1, 0),
-                CornerRadius = new CornerRadius(5), ClipToBounds = true, Child = rows
-            });
+            budgets.Children.Add(AccountTiles(configuration));
             panel.Children.Add(budgets);
         }
 
