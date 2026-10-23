@@ -22,7 +22,7 @@ import traceback
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from fake_provider import FakeProvider, KEYS, MODEL, marker
+from fake_provider import CLAUDE_KEYS, FakeProvider, KEYS, MODEL, marker
 
 CLIENT_KEY = "lain-synthetic-client-inference"
 MANAGEMENT_KEY = "lain-synthetic-private-management-token"
@@ -157,6 +157,35 @@ openai-compatibility:
     def responses(self, body):
         return urlopen(Request(self.url + "/v1/responses", json.dumps(body).encode(),
                                {"Authorization": "Bearer " + CLIENT_KEY, "Content-Type": "application/json"}), timeout=15)
+
+    def messages(self, body, account=None):
+        headers = {"x-api-key": CLIENT_KEY, "anthropic-version": "2023-06-01", "Content-Type": "application/json"}
+        if account:
+            headers["X-Lain-Account-ID"] = account
+        return urlopen(Request(self.url + "/v1/messages", json.dumps(body).encode(), headers), timeout=15)
+
+
+class ClaudeRun(Run):
+    def __init__(self, core):
+        super().__init__(core)
+        base = self.provider.url.removesuffix("/v1")
+        config = self.root / "core.yaml"
+        config_text = config.read_text() + "claude-api-key:\n"
+        for key, account in CLAUDE_KEYS.items():
+            kind = "claude:apikey"
+            credential = kind + ":" + hashlib.sha256("\0".join([kind, key, base, "", "", ""]).encode()).hexdigest()[:12]
+            self.bindings["accounts"][account] = credential
+            config_text += f'''  - api-key: {key}
+    base-url: "{base}"
+    models:
+      - name: fixture-claude
+        alias: fixture-claude
+'''
+        config.write_text(config_text)
+        for suffix in ("a", "b"):
+            self.bindings["routes"]["fixture-claude-" + suffix] = {"id": "route-claude-" + suffix, "model": "fixture-claude", "accounts": ["claude-account-" + suffix], "selection": "strict"}
+        self.bindings["routes"]["fixture-claude-shared"] = {"id": "route-claude-shared", "model": "fixture-claude", "accounts": list(CLAUDE_KEYS.values()), "selection": "pool"}
+        self.write_bindings()
 
 
 def assert_complete(events, requests, attempts=None):
@@ -308,6 +337,38 @@ def pool_429(core):
                 return {"requests": index + 1, "attempts": len(starts), "retryAccounts": [row["accountId"] for row in retried[0]],
                         "eventExamples": [row for row in events if row["requestId"] == retried[0][0]["requestId"]]}
         raise AssertionError("pool requests never proved same-request cross-account retry")
+
+
+def anthropic_tools(core):
+    with ClaudeRun(core) as run:
+        for account in CLAUDE_KEYS.values():
+            with run.messages({"model": "fixture-claude-shared", "max_tokens": 128,
+                               "messages": [{"role": "user", "content": marker("text", account)}]}, account=account) as response:
+                result = json.load(response)
+            expect(result["content"][0]["text"] == "synthetic response", "Anthropic nonstream content lost")
+        messages = [{"role": "user", "content": [{"type": "text", "text": marker("tool", "claude-tool")}]}]
+        tool = {"name": "fixture_echo", "description": "Harmless local echo", "input_schema": {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"], "additionalProperties": False}}
+        with run.messages({"model": "fixture-claude-a", "max_tokens": 128, "messages": messages, "tools": [tool], "stream": True}) as response:
+            raw = response.read().decode()
+        chunks = [json.loads(line[6:]) for line in raw.splitlines() if line.startswith("data: {")]
+        expect(chunks[-1]["type"] == "message_stop", "Anthropic message_stop missing/reordered")
+        block = next(chunk["content_block"] for chunk in chunks if chunk.get("type") == "content_block_start" and chunk["content_block"]["type"] == "tool_use")
+        arguments = "".join(chunk["delta"]["partial_json"] for chunk in chunks if chunk.get("type") == "content_block_delta" and chunk["delta"].get("type") == "input_json_delta")
+        expect(block["name"] == "fixture_echo" and json.loads(arguments) == {"value": "safe"}, "Anthropic tool metadata altered")
+        block["input"] = json.loads(arguments)
+        messages.extend([{"role": "assistant", "content": [block]}, {"role": "user", "content": [{"type": "tool_result", "tool_use_id": block["id"], "content": "safe"}]}])
+        with run.messages({"model": "fixture-claude-a", "max_tokens": 128, "messages": messages, "tools": [tool], "stream": True}) as response:
+            expect("synthetic tool result accepted" in response.read().decode(), "Anthropic tool continuation failed")
+        starts, usages = assert_complete(run.events()["events"], 4)
+        for row in usages:
+            expect([row["inputTokens"], row["outputTokens"], row["totalTokens"]] == [11, 7, None], "Anthropic known/unknown token presence not preserved")
+            expect(all(row[field] is None for field in ("cacheReadTokens", "cacheCreationTokens", "reasoningTokens")), "Anthropic absent breakdown invented")
+            expect(row["credentialId"] == run.bindings["accounts"][row["accountId"]], "Anthropic credential/account mapping wrong")
+        observations = run.provider.snapshot()
+        expect([row["account"] for row in observations] == ["claude-account-a", "claude-account-b", "claude-account-a", "claude-account-a"], "Anthropic strict route escaped account binding")
+        expect(observations[-1]["tool_result"], "Anthropic tool result never reached provider")
+        return {"requests": 4, "attempts": len(starts), "clientProtocol": "Anthropic Messages SSE/nonstream", "providerProtocol": "Anthropic Messages SSE/nonstream",
+                "distinctCredentials": 2, "toolContinuation": True, "totalTokens": None, "eventExamples": usages}
 
 
 def cancel(core):
@@ -560,6 +621,7 @@ def main():
     parser.add_argument("--report", required=True)
     parser.add_argument("--examples", help="optional sanitized observed-event fixture output JSON")
     parser.add_argument("--batch-fixture", help="optional full contiguous 200-request source envelope for consumer qualification")
+    parser.add_argument("--qualified-artifact", help="retain the exact frozen executable only if every check passes")
     args = parser.parse_args()
     core_data = Path(args.core).resolve(strict=True).read_bytes()
     # Freeze the artifact once: another worker rebuilding its path cannot change
@@ -576,7 +638,7 @@ def main():
                            ("unknown-token-components", unknown_token_components), ("credential-lifecycle", credential_lifecycle), ("deactivated-account", deactivated_account),
                            ("crash-inflight", crash_inflight), ("journal-failures", journal_failures), ("startup-failures", startup_failures),
                            ("terminal-write-failure", terminal_write_failure),
-                           ("responses-terminal-write-failure", lambda core: terminal_write_failure(core, "responses"))]:
+                           ("responses-terminal-write-failure", lambda core: terminal_write_failure(core, "responses")), ("anthropic-messages-tools", anthropic_tools)]:
         try:
             evidence = function(core)
             if "eventExamples" in evidence:
@@ -591,6 +653,15 @@ def main():
             print(f"FAIL {name}: {error}", flush=True)
             traceback.print_exc()
     report["passed"] = all(check["passed"] for check in report["checks"])
+    if report["passed"] and args.qualified_artifact:
+        destination = Path(args.qualified_artifact).resolve()
+        try:
+            with destination.open("xb") as handle:
+                handle.write(core_data)
+            destination.chmod(0o700)
+        except FileExistsError:
+            expect(hashlib.sha256(destination.read_bytes()).hexdigest() == report["coreSha256"], "qualified artifact destination already contains a different binary")
+        report["qualifiedArtifact"] = str(destination)
     report["pending"] = ["real Codex/ChatGPT and Command Code provider probes", "display-name and real OAuth credential lifecycle", "consumer transactional SQLite acknowledgement", "production service before/after isolation evidence", "product acceptance of unresolved in-flight usage after hard crash"]
     Path(args.report).write_text(json.dumps(report, indent=2) + "\n")
     if args.examples:

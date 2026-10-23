@@ -14,7 +14,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 MODEL = "fixture-model"
 KEYS = {"lain-synthetic-a": "account-a", "lain-synthetic-b": "account-b"}
-ALL_KEYS = {**KEYS, "lain-synthetic-a-rotated": "account-a-rotated"}
+CLAUDE_KEYS = {"lain-synthetic-claude-a": "claude-account-a", "lain-synthetic-claude-b": "claude-account-b"}
+ALL_KEYS = {**KEYS, **CLAUDE_KEYS, "lain-synthetic-a-rotated": "account-a-rotated"}
 USAGE = {"prompt_tokens": 11, "completion_tokens": 7, "total_tokens": 18}
 
 
@@ -83,9 +84,12 @@ class FakeProvider:
                 self.reply(404, {"error": {"message": "fixture endpoint not found"}})
 
             def do_POST(self):
-                if self.path not in ("/v1/chat/completions", "/chat/completions"):
+                path = self.path.split("?", 1)[0]
+                anthropic = path == "/v1/messages"
+                if path not in ("/v1/chat/completions", "/chat/completions", "/v1/messages"):
                     return self.reply(404, {"error": {"message": "fixture endpoint not found"}})
-                account = ALL_KEYS.get(self.headers.get("Authorization", "").removeprefix("Bearer "))
+                key = self.headers.get("x-api-key") or self.headers.get("Authorization", "").removeprefix("Bearer ")
+                account = ALL_KEYS.get(key)
                 if account is None:
                     return self.reply(401, {"error": {"message": "synthetic key required"}})
                 try:
@@ -93,7 +97,8 @@ class FakeProvider:
                     case, request_id = scenario(body)
                 except (ValueError, KeyError, TypeError):
                     return self.reply(400, {"error": {"message": "invalid fixture input"}})
-                tool_result = any(m.get("role") == "tool" for m in body.get("messages", []))
+                tool_result = any(m.get("role") == "tool" or (isinstance(m.get("content"), list) and any(
+                    part.get("type") == "tool_result" for part in m["content"] if isinstance(part, dict))) for m in body.get("messages", []))
                 row = {"account": account, "case": case, "request_id": request_id,
                        "model": body.get("model"), "stream": bool(body.get("stream")),
                        "tool_result": tool_result, "disconnected": False}
@@ -105,6 +110,8 @@ class FakeProvider:
                     row["status"] = 429
                     return self.reply(429, {"error": {"message": "synthetic quota exceeded", "type": "rate_limit_error", "code": "rate_limit_exceeded"}})
                 row["status"] = 200
+                if anthropic:
+                    return self.anthropic(body, row, tool_result)
                 usage = dict(USAGE)
                 if case == "partial_usage":
                     usage.pop("total_tokens")
@@ -149,6 +156,39 @@ class FakeProvider:
                     event({}, usage=usage)
                     self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
+                except (BrokenPipeError, ConnectionResetError):
+                    row["disconnected"] = True
+
+            def anthropic(self, body, row, tool_result):
+                tool = row["case"] == "tool" and not tool_result
+                content = {"type": "tool_use", "id": "toolu_fixture_1", "name": "fixture_echo", "input": {"value": "safe"}} if tool else {
+                    "type": "text", "text": "synthetic tool result accepted" if tool_result else "synthetic response"}
+                usage = {"input_tokens": 11, "output_tokens": 7}
+                message = {"id": "msg_" + row["request_id"], "type": "message", "role": "assistant", "model": "fixture-claude",
+                           "content": [content], "stop_reason": "tool_use" if tool else "end_turn", "stop_sequence": None, "usage": usage}
+                if not body.get("stream"):
+                    return self.reply(200, message)
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.close_connection = True
+
+                def event(kind, **fields):
+                    data = {"type": kind, **fields}
+                    self.wfile.write(("event: " + kind + "\ndata: " + json.dumps(data) + "\n\n").encode())
+                    self.wfile.flush()
+                try:
+                    event("message_start", message={**message, "content": [], "stop_reason": None, "usage": {"input_tokens": 11, "output_tokens": 0}})
+                    if tool:
+                        event("content_block_start", index=0, content_block={**content, "input": {}})
+                        event("content_block_delta", index=0, delta={"type": "input_json_delta", "partial_json": json.dumps(content["input"])})
+                    else:
+                        event("content_block_start", index=0, content_block={"type": "text", "text": ""})
+                        event("content_block_delta", index=0, delta={"type": "text_delta", "text": content["text"]})
+                    event("content_block_stop", index=0)
+                    event("message_delta", delta={"stop_reason": message["stop_reason"], "stop_sequence": None}, usage={"output_tokens": 7})
+                    event("message_stop")
                 except (BrokenPipeError, ConnectionResetError):
                     row["disconnected"] = True
 
