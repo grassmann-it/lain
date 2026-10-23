@@ -40,6 +40,16 @@ try
               !visibility.RootElement.GetProperty("routes").GetProperty("pool-test").GetProperty("visible").GetBoolean(), "launcher JSON preserves model menu visibility");
     var legacyRoute = JsonSerializer.Deserialize<CoreRouteBinding>("{\"id\":\"old\",\"model\":\"model\",\"accounts\":[\"account\"],\"selection\":\"strict\"}");
     Check(legacyRoute!.Visible, "legacy route bindings default to visible");
+    Check(legacyRoute.Provider is null, "legacy route bindings leave provider unspecified");
+    var commandConfig = config with
+    {
+        Accounts = config.Accounts.Select(account => account with { Provider = "command" }).ToArray(),
+        Routes = config.Routes.Select(selectedRoute => selectedRoute with { Provider = "command" }).ToArray()
+    };
+    var commandBindings = RouteBindings.Compile(commandConfig, bindings.Accounts);
+    Check(commandBindings.Routes["lain-test"].Provider == "command", "canonical route provider survives transport binding");
+    using (var providerFile = JsonDocument.Parse(JsonSerializer.Serialize(commandBindings)))
+        Check(providerFile.RootElement.GetProperty("routes").GetProperty("lain-test").GetProperty("provider").GetString() == "command", "launcher provider field is canonical");
     Check(JsonSerializer.Serialize(bindings).Contains("\"routes\"") && JsonSerializer.Serialize(bindings).Contains("\"accounts\""), "launcher JSON contract");
     var writer = new RouteBindingsWriter(new OwnStatePaths(directory));
     writer.Write(config, bindings.Accounts);

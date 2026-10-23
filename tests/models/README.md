@@ -62,3 +62,6 @@ of one logical account do not create two account or budget identities.
 Every enabled route remains in the launcher bindings, including hidden routes.
 The `visible` field preserves model-menu visibility separately from callability;
 legacy bindings without this field default to visible.
+The optional `provider` field carries `RouteDto.Provider` so usage can identify
+the canonical provider even when its core transport uses a different provider
+code. Legacy bindings leave this field unspecified.
