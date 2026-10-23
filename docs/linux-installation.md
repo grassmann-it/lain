@@ -55,3 +55,72 @@ exact proxy hash and per-component provenance. A changed Host requires its own
 controlled restart procedure; this staging helper performs no installation or
 restart. See [the Linux installation guide](install.md) for the existing package
 installation and rollback procedure. Keep the current UI acceptance gate open.
+
+## Frozen expansion with a new instrumented Core
+
+Use the separate `scripts/stage-expansion-release.py` for a new Core. The earlier
+`stage-component-refresh.py` intentionally remains locked to the old qualified
+Core and cannot be used to replace it. The standalone masonry archive is a
+separate checkpoint and is neither overwritten nor copied as the expansion base.
+
+Freeze the final application source commit and publish Host, CLI and Desktop
+from that exact commit, with the same complete informational version. Set
+`-p:IncludeSourceRevisionInInformationalVersion=false` during publishing to retain
+a supplied short version. Restore all three locked `linux-x64` self-contained
+graphs before publishing. The package helper requires executable launchers,
+matching complete version attributes, self-contained runtime configurations,
+RID-specific dependency manifests and restored graphs matching their lockfiles.
+Tracked source drift and untracked application sources cause refusal.
+
+Separately freeze the instrumented Core source after regenerating
+`proxy/source-manifest.json` with `lainPatchVersion: 2`. Build it using the pinned
+toolchain; retain the emitted binary sidecar. Obtain independent qualification for
+the exact binary SHA-256. Its report must contain `passed: true` and `sha256` for
+that binary, rather than a previous Core. If the report also records
+`sourceManifestSha256`, it must match. The helper retains the original report
+bytes and its scope; it never manufactures a qualification result. The sidecar
+must bind the binary, source manifest, patch version and snapshot version.
+
+```sh
+python3 scripts/stage-expansion-release.py /absolute/new/lain-expansion-staged \
+  --source-commit FINAL_SOURCE_SHA \
+  --informational-version 1.0.0+FINAL_SOURCE_SHORT_SHA \
+  --cli /absolute/frozen-cli --host /absolute/frozen-host \
+  --desktop /absolute/frozen-desktop \
+  --core /absolute/frozen/lain-proxy \
+  --core-build-manifest /absolute/frozen/lain-proxy.manifest.json \
+  --core-source-commit FROZEN_CORE_SOURCE_SHA \
+  --qualification /absolute/independent-core-qualification.json
+```
+
+Final application, Core source commit and working checkout must contain identical
+source-manifest bytes, and every current vendored Core file must match that
+manifest. The new package is assembled only from the explicit publishes, frozen
+git source objects and exact Core inputs. No prior accepted application evidence
+is inherited. The new `proxy/binary-manifest.json` supplies the hash used by Host;
+`proxy/build-manifest.json`, `source-manifest.json`, `qualification.json`, original
+Core license and pinned toolchain/baseline/catalog metadata preserve provenance.
+
+All five application/Core/Client lockfiles and project definitions are copied into
+`source-provenance/`. Provider catalog JSON, adapter source files and
+`docs/providers/` official-source research notes come from the frozen final
+commit. Each catalog must also occur unchanged as an embedded resource in the
+published Host DLL. Their inventory records source commits and file hashes;
+catalog inclusion does not establish working credentials or live inference.
+NuGet/runtime packages, linked Go modules, pinned official notices and bundled
+font OFLs are recollected. The Go notice inventory must describe the new binary
+hash; notice collection remains evidence for review, not legal approval.
+
+The helper verifies the new package manifest and produces a normalized gzip
+level 3 archive plus checksum. It does not execute application binaries, build,
+install, modify normal configuration, change services or touch prior archives.
+`backendQualified: true` refers only to the supplied exact-Core report;
+`releaseQualified` and `expansionQualified` remain `false` until separate package,
+installed workflow and current UI acceptance. A failure can leave incomplete
+staging output, which must not be installed.
+
+Synthetic guard verification:
+
+```sh
+python3 scripts/test-expansion-release.py
+```
