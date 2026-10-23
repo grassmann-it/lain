@@ -228,8 +228,8 @@ public sealed partial class MainWindow : Window
         // Observation time is visible in Overview; other pages should retain their
         // controls when the host only advances its observation timestamp.
         Status = _section == "Overview" ? _status : null,
-        Quotas = _section == "Accounts" ? _quotas : null,
-        QuotaError = _section == "Accounts" ? _quotaError : null,
+        Quotas = _section is "Accounts" or "Overview" ? _quotas : null,
+        QuotaError = _section is "Accounts" or "Overview" ? _quotaError : null,
         Models = _section is "Routes" or "Profiles" ? _models : null,
         LoginState = _section == "Accounts" ? _login?.State : null
     });

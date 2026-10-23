@@ -56,11 +56,11 @@ public sealed class CommandCodeQuotaAdapter(HttpClient client) : IQuotaAdapter
         double? total = active && monthly.HasValue && plan is not null && PlanCredits.TryGetValue(plan, out var cap)
             ? Math.Max(cap, monthly.Value) : null;
         if (monthly.HasValue) rows.Add(new(SourceUrl("monthlyCredits"), "USD-Credits",
-            total - monthly, total, monthly, active ? JsonFields.Date(sub, "currentPeriodEnd") : null));
+            total - monthly, total, monthly, active ? JsonFields.Date(sub, "currentPeriodEnd") : null, WindowLabel: "Monthly credits"));
         foreach (var key in new[] { "purchasedCredits", "freeCredits" })
         {
             var remaining = JsonFields.Number(credits, key);
-            if (remaining.HasValue) rows.Add(new(SourceUrl(key), "USD-Credits", Remaining: remaining));
+            if (remaining.HasValue) rows.Add(new(SourceUrl(key), "USD-Credits", Remaining: remaining, WindowLabel: key == "purchasedCredits" ? "Purchased credits" : "Free credits"));
         }
         var windows = JsonFields.Object(billing, "windowLimits");
         foreach (var key in new[] { "fiveHour", "weekly" })
@@ -71,7 +71,7 @@ public sealed class CommandCodeQuotaAdapter(HttpClient client) : IQuotaAdapter
             var used = JsonFields.Number(window, "used");
             rows.Add(new(SourceUrl(key), "USD-Credits", used, capValue,
                 capValue.HasValue && used.HasValue ? Math.Max(0, capValue.Value - used.Value) : null,
-                JsonFields.Date(window, "resetAt")));
+                JsonFields.Date(window, "resetAt"), WindowLabel: key == "fiveHour" ? "5 hours" : "7 days"));
         }
         var orgLimits = JsonFields.Object(whoami, "orgLimits");
         if (orgLimits.ValueKind == JsonValueKind.Array)
@@ -90,11 +90,11 @@ public sealed class CommandCodeQuotaAdapter(HttpClient client) : IQuotaAdapter
                     : "commandcode:org:" + orgId + (scope == "organization_model" ? ":model:" + model : "");
                 rows.Add(new(Api + "whoami#" + scope + "_" + index++, "USD-Credits", used, capValue,
                     capValue.HasValue && used.HasValue ? Math.Max(0, capValue.Value - used.Value) : null,
-                    JsonFields.Date(window, "resetAt"), pool, InheritAccountPool: false));
+                    JsonFields.Date(window, "resetAt"), pool, InheritAccountPool: false, WindowLabel: scope == "organization_model" ? $"Organization · {model ?? "model"}" : "Organization budget"));
             }
         }
         // Account credits and rolling windows do not reveal the additional model allowance.
-        rows.Add(new("https://commandcode.ai/docs/plans/pro#model-monthly-remaining-unknown", "USD"));
+        rows.Add(new("https://commandcode.ai/docs/plans#model-monthly-remaining-unknown", "USD", WindowLabel: "Monthly model limits"));
         return rows;
     }
 

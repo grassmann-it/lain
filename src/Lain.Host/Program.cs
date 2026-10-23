@@ -60,7 +60,7 @@ builder.Services.AddSingleton<JournalUsageCollector>(sp => {
 builder.Services.AddHostedService(sp => sp.GetRequiredService<JournalUsageCollector>());
 var providerHttp = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(20) };
 var quotaSource = new HostQuotaSource(repository, secrets);
-var quota = new QuotaService(quotaSource, quotaSource, [new CodexQuotaAdapter(providerHttp), new CommandCodeQuotaAdapter(providerHttp)]);
+var quota = new QuotaService(quotaSource, quotaSource, [new CodexQuotaAdapter(providerHttp), new CommandCodeQuotaAdapter(providerHttp), new KimiQuotaAdapter(providerHttp), new ZaiQuotaAdapter(providerHttp)]);
 builder.Services.AddSingleton(quota);
 var app = builder.Build();
 using var mutations = new SemaphoreSlim(1, 1);

@@ -23,7 +23,13 @@ public sealed class CodexQuotaAdapter(HttpClient client) : IQuotaAdapter
             var used = JsonFields.Number(window, "used_percent");
             if (used > 100) used = null;
             rows.Add(new(Endpoint + "#" + key, "percent", used, used.HasValue ? 100 : null,
-                used.HasValue ? 100 - used : null, JsonFields.Date(window, "reset_at")));
+                used.HasValue ? 100 - used : null, JsonFields.Date(window, "reset_at"),
+                WindowLabel: JsonFields.Number(window, "limit_window_seconds") switch
+                {
+                    18000 => "5 hours", 604800 => "7 days",
+                    { } seconds => $"{TimeSpan.FromSeconds(seconds).TotalHours:0.##}-hour window",
+                    _ => key == "primary_window" ? "Primary window" : "Secondary window"
+                }, UsedPercent: used));
         }
         return new(rows, rows.Count == 0 ? "No recognized quota windows; remaining budget unknown." : null);
     }

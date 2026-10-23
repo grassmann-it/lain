@@ -65,7 +65,7 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
             var result = await adapter.FetchAsync(account, credential, ct);
             var now = clock.GetUtcNow();
             // An unknown placeholder is not evidence of a successful quota read.
-            if (!result.Readings.Any(r => r.Used.HasValue || r.Limit.HasValue || r.Remaining.HasValue))
+            if (!result.Readings.Any(HasQuantity))
             { SaveFailure(account.Id, previous, result.Error ?? "Remaining budget unknown.", result.Readings); return; }
             var readings = result.Readings.Select(r => new CachedReading(r, now,
                 HasQuantity(r) ? now : null, null)).ToList();
@@ -103,6 +103,16 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
     private IEnumerable<QuotaDto> Project(AccountDto account)
     {
         var snapshot = snapshots.GetValueOrDefault(account.Id);
+        if (!providers.Any(adapter => adapter.Supports(account.Provider)))
+        {
+            var note = account.Provider.Equals("xiaomi-mimo", StringComparison.OrdinalIgnoreCase)
+                ? "Direct MiMo quota is not available through a verified API-key endpoint. Check the provider console."
+                : "Quota lookup is not available for this provider.";
+            yield return new(account.Id, account.BudgetPoolId, "unavailable", account.Enabled ? "unsupported" : "disabled",
+                snapshot?.ObservedAt, null, null, "unknown", null, null, null, account.SharedWithLegacy, note,
+                WindowLabel: "Quota unavailable");
+            yield break;
+        }
         var state = !account.Enabled ? "disabled" : snapshot?.Refreshing == true ? "refreshing"
             : snapshot?.LastSuccessAt is null ? snapshot?.Error is null ? "unknown" : "error"
             : snapshot.Error is not null || clock.GetUtcNow() - snapshot.LastSuccessAt >= RefreshInterval ? "stale" : "ok";
@@ -116,11 +126,11 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
                     : cached.Error is not null || clock.GetUtcNow() - cached.LastSuccessAt >= RefreshInterval ? "stale" : "ok";
             yield return new(account.Id, row.BudgetPoolId ?? (row.InheritAccountPool ? account.BudgetPoolId : null), row.Source, rowState,
                 cached.ObservedAt, cached.LastSuccessAt, row.ResetsAt, row.Unit, row.Used, row.Limit, row.Remaining,
-                account.SharedWithLegacy, cached.Error ?? snapshot?.Error);
+                account.SharedWithLegacy, cached.Error ?? snapshot?.Error, row.WindowLabel, row.UsedPercent);
         }
     }
 
-    private static bool HasQuantity(QuotaReading row) => row.Used.HasValue || row.Limit.HasValue || row.Remaining.HasValue;
+    private static bool HasQuantity(QuotaReading row) => row.Used.HasValue || row.Limit.HasValue || row.Remaining.HasValue || (row.UsedPercent is >= 0 and <= 100);
     private sealed record CachedReading(QuotaReading Reading, DateTimeOffset? ObservedAt, DateTimeOffset? LastSuccessAt, string? Error);
     private sealed record AccountSnapshot(DateTimeOffset? ObservedAt, DateTimeOffset? LastSuccessAt,
         IReadOnlyList<CachedReading> Readings, string? Error, bool Refreshing);
