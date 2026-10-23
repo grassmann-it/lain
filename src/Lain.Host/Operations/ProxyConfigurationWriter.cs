@@ -29,7 +29,7 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
             var name = metadata.RootElement.GetProperty("snapshot").GetString()!;
             if (Path.GetFileName(name) != name) throw new InvalidDataException("Invalid own import metadata.");
             var source = Parse(File.ReadAllText(Path.Combine(paths.Imports, name)));
-            foreach (var key in new[] { "routing", "oauth-model-alias", "oauth-excluded-models" })
+            foreach (var key in new[] { "routing", "oauth-model-alias", "oauth-excluded-models", "payload" })
                 if (LegacyImportService.Get(source, key) is { } value) config.Add(key, value);
             if (LegacyImportService.Get(config, "oauth-model-alias") is YamlMappingNode oauth)
                 foreach (var aliases in oauth.Children.Values.OfType<YamlSequenceNode>()) NormalizeModelAliases(aliases);

@@ -20,6 +20,12 @@ try
         api-keys: [legacy-client-secret]
         routing:
           strategy: round-robin
+        payload:
+          filter:
+            - models:
+                - name: cmd-*
+                  protocol: codex
+              params: [include, reasoning.encrypted_content]
         oauth-model-alias:
           codex:
             - name: gpt-test
@@ -60,6 +66,7 @@ try
     Check(compiled[importedApi.Id] == expectedCoreId, "per-entry transport participates in credential identity");
     Check(compiled.Count == 2 && ownConfig.Contains("proxy-url: http://127.0.0.1:19001") && ownConfig.Contains("18417"), "own runtime preserves per-entry proxy and uses own port");
     Check(!ownConfig.Contains("legacy-client-secret"), "inference uses an independent credential");
+    Check(ownConfig.Contains("payload:") && ownConfig.Contains("name: cmd-*") && ownConfig.Contains("reasoning.encrypted_content"), "legacy payload rules and original route patterns preserved at runtime");
     Check(ownConfig.Contains("alias: upstream-model"), "core-private model names normalized");
     var publicJson = JsonSerializer.Serialize(configuration.Snapshot);
     Check(!publicJson.Contains("upstream-secret") && !publicJson.Contains("access-secret") && !publicJson.Contains("legacy-client-secret"), "public DTOs secret free");
