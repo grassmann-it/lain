@@ -169,10 +169,17 @@ public sealed partial class MainWindow
             var freshness = quota.LastSuccessAt is { } success
                 ? "Checked " + success.ToLocalTime().ToString(success.ToLocalTime().Date == DateTimeOffset.Now.Date ? "HH:mm" : "dd MMM · HH:mm", CultureInfo.CurrentCulture)
                 : "Check time not supplied";
-            var note = TileText(string.IsNullOrWhiteSpace(state) ? freshness + " · local time" : state + " · " + freshness + " · local time", 10,
-                LastKnownQuota(quota) ? Ui.Warning : Ui.Muted);
+            var note = TileText(freshness + " · local time", 10, LastKnownQuota(quota) ? Ui.Warning : Ui.Muted);
             ToolTip.SetTip(note, $"Last successful quota update: {quota.LastSuccessAt?.ToLocalTime():yyyy-MM-dd HH:mm:ss zzz}");
-            panel.Children.Add(note);
+            var freshnessRow = new WrapPanel { Orientation = Orientation.Horizontal };
+            if (!string.IsNullOrWhiteSpace(state))
+            {
+                var status = TileText(state, 10, LastKnownQuota(quota) ? Ui.Warning : Ui.Muted);
+                status.Margin = new Thickness(0, 0, 7, 0);
+                freshnessRow.Children.Add(status);
+            }
+            freshnessRow.Children.Add(note);
+            panel.Children.Add(freshnessRow);
         }
         return panel;
     }
