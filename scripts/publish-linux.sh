@@ -22,7 +22,7 @@ for spec in 'Lain.Cli cli' 'Lain.Host host' 'Lain.Desktop desktop'; do
 done
 scripts/build-core.sh "$out/proxy/lain-proxy"
 cp proxy/core/LICENSE "$out/proxy/LICENSE"
-cp proxy/baseline.json proxy/source-manifest.json "$out/proxy/"
+cp proxy/baseline.json proxy/source-manifest.json proxy/codex-model-catalog.json "$out/proxy/"
 python3 - "$out/proxy" <<'PYMANIFEST'
 import hashlib, json, pathlib, sys
 root = pathlib.Path(sys.argv[1])

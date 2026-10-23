@@ -34,6 +34,25 @@ unavailable host report that state; `lain service status --json` may help diagno
 it. Start/stop/restart the service only when requested via
 `lain service start|stop|restart --json`. Opening the UI uses `lain ui`.
 
+For an explicitly requested account action, use the CLI mutation path:
+
+```sh
+lain accounts login codex --revision N --json
+lain accounts login-status LOGIN_ID --json
+lain accounts login-cancel LOGIN_ID --json
+lain accounts check ACCOUNT_ID --json
+lain accounts enable ACCOUNT_ID --revision N --json
+lain accounts disable ACCOUNT_ID --revision N --json
+lain accounts remove ACCOUNT_ID --revision N --json
+lain accounts add-api --name NAME --provider PROVIDER --base-url URL --key-env ENVNAME --revision N --json
+```
+
+`add-api` also accepts `--key-stdin` for a single input line. Never place API keys
+on argv, in generated command text, or reports. Prefer an already populated
+secret environment variable; do not print its value. Own Codex login is a
+separate operation from importing an external access-token snapshot. Poll only
+the requested login operation, and honor cancellation.
+
 Configuration mutations require a user request for that action. A request to
 inspect usage does not authorize importing accounts or changing routes. Imports
 use `lain import /absolute/config.yaml --auth-dir /absolute/auth --revision N
