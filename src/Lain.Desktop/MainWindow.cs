@@ -126,7 +126,7 @@ public sealed partial class MainWindow : Window
         {
             var nav = Ui.Button(name, () => Navigate(name));
             nav.Tag = name;
-            nav.Content = Ui.Row(Ui.Icon(name.ToLowerInvariant(), 16), Ui.Text(name, 13));
+            nav.Content = Ui.Row(Ui.Icon(name switch { "Providers" => "network", "Inspector" => "search", _ => name.ToLowerInvariant() }, 16), Ui.Text(name, 13));
             nav.Classes.Add("nav");
             nav.MinWidth = 0;
             nav.Height = 36;

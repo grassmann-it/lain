@@ -39,6 +39,12 @@ public sealed partial class MainWindow
         catch (Exception) { _notice.Text = "The official page could not be opened. Check the default browser and try again."; }
     }
 
+    private static string ProviderAccessLabel(string kind) => kind switch
+    {
+        "free" => "Free access", "trial" => "One-time trial", "subscription" => "Subscription",
+        "payg" => "Pay as you go", _ => "Unknown pricing"
+    };
+
     private void BeginProviderSetup(string providerId)
     {
         if (_configuration is not { } configuration) { _notice.Text = "Connect to the local host before adding credentials. You can still read the provider's setup guide."; return; }
@@ -106,7 +112,7 @@ public sealed partial class MainWindow
             if (route.SelectedIndex < 0 || route.SelectedIndex >= provider.Routes.Length) return;
             var selected = provider.Routes[route.SelectedIndex];
             planIds = selected.BillingPlanIds;
-            billing.ItemsSource = planIds.Select(id => provider.BillingPlans.FirstOrDefault(plan => plan.Id == id) is { } plan ? $"{plan.Name} · {plan.Kind}" : id).ToArray();
+            billing.ItemsSource = planIds.Select(id => provider.BillingPlans.FirstOrDefault(plan => plan.Id == id) is { } plan ? $"{plan.Name} · {ProviderAccessLabel(plan.Kind)}" : id).ToArray();
             billing.SelectedIndex = -1;
             routeNotes.Text = string.Join("\n", new[] { $"{selected.Model} · {selected.Protocol}", "Choose the plan for this route explicitly. No account balance or live access has been verified." }.Concat(selected.Restrictions ?? []));
             UpdateEndpoint();
