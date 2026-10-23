@@ -19,6 +19,7 @@ func TestLainFinalFreeOnlyBoundary(t *testing.T) {
 	for _, scenario := range []string{"allowed", "wrong-pin", "wrong-model", "responses", "redirect"} {
 		t.Run(scenario, func(t *testing.T) {
 			calls := 0
+			tracked := 0
 			client := &http.Client{Transport: lainGuardTransport(func(req *http.Request) (*http.Response, error) {
 				calls++
 				if req.URL.Path == "/api/v1/key" {
@@ -49,16 +50,25 @@ func TestLainFinalFreeOnlyBoundary(t *testing.T) {
 			request, _ := http.NewRequestWithContext(ctx, http.MethodPost, "https://openrouter.ai/api/v1/"+path, strings.NewReader(`{"model":"`+model+`","messages":[{"role":"user","content":"fixture"}],"stream":true}`))
 			request.Header.Set("Authorization", "Bearer fixture-key")
 			request.Header.Set("Cache-Control", "no-cache")
-			result, err := doOpenAICompatRequest(ctx, client, request)
+			result, err := doOpenAICompatRequest(ctx, client, request, func(inference *http.Client) *http.Client {
+				tracked++
+				if calls != 1 {
+					t.Fatal("inference instrumentation began before fresh proof completed")
+				}
+				return inference
+			})
 			if scenario == "allowed" || scenario == "redirect" {
 				if err != nil {
 					t.Fatal(err)
 				}
 				defer result.Body.Close()
+				if tracked != 1 {
+					t.Fatal("inference tracking absent or repeated")
+				}
 				if calls != 2 {
 					t.Fatalf("expected fresh proof and inference only; got %d", calls)
 				}
-			} else if err == nil || calls != 0 {
+			} else if err == nil || calls != 0 || tracked != 0 {
 				t.Fatal("invalid intent reached network")
 			}
 			if client.CheckRedirect != nil {
