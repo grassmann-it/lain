@@ -124,3 +124,15 @@ fields. Two successful Codex calls and two failed Command GPT calls were verifie
 unchanged across own Host restart, with exact CLI/API totals and groups matching.
 The later GLM first request also failed at Cloudflare and its continuation was
 not sent. This evidence does not mark final A qualification passed.
+
+The separately approved final pair corrected the diagnostic client's own
+application identification to truthful `User-Agent: lain-reference-probe/0.1.0`.
+The source and own Command transport had `disable-codex-cloaking: true`, which
+preserved the earlier Python client's User-Agent upstream. No provider/Core or
+production configuration changed. Both Command GLM streaming/tool requests then
+passed (245 and 112 tokens), as recorded in
+`reports/identified-client-20261023.json`. All seven terminal records, including
+the three historical failed attempts with unknown usage, survived restart;
+CLI/API totals and groups matched exactly before and after. The corrected-client
+pair did not retest Command GPT. Earlier evidence remains preserved. The probe
+itself does not award final product qualification.

@@ -1,0 +1,239 @@
+{
+  "date": "2026-10-23",
+  "state": "passed-explicit-route-reference",
+  "qualifiedSha256": "8edf8abf666e3c15f1a04c20c841a969d35229f09e7de5265755ab704cf9dfc0",
+  "privateStateDirectory": "/tmp/lain-reference-dxo_a12c",
+  "clientUserAgent": "lain-reference-probe/0.1.0",
+  "route": "cmd-glm-5.3",
+  "upstreamModel": "zai-org/GLM-5.3",
+  "selectedAccount": "acct-9285cf785075f27839a7ebd10550c705",
+  "selectedRouteId": "route-06b92eb470f3350a7ab7467326411495",
+  "calls": [
+    {
+      "route": "cmd-glm-5.3",
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "step": "tool",
+      "state": "passed",
+      "sseEvents": 44,
+      "responseBytes": 12834,
+      "usage": {
+        "input_tokens": 201,
+        "output_tokens": 44,
+        "total_tokens": 245
+      }
+    },
+    {
+      "route": "cmd-glm-5.3",
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "step": "continuation",
+      "state": "passed",
+      "sseEvents": 28,
+      "responseBytes": 9642,
+      "usage": {
+        "input_tokens": 93,
+        "output_tokens": 19,
+        "total_tokens": 112
+      }
+    }
+  ],
+  "quotaRequests": 0,
+  "previousEvidencePreserved": true,
+  "usagePersistencePassed": true,
+  "existingRecordCountPreserved": 5,
+  "beforeRestartTotals": {
+    "requests": 7,
+    "attempts": 7,
+    "errors": 3,
+    "tokens": {
+      "input": null,
+      "output": null,
+      "cached": null,
+      "reasoning": null,
+      "total": null
+    },
+    "unknownUsageAttempts": 3
+  },
+  "afterRestartTotals": {
+    "requests": 7,
+    "attempts": 7,
+    "errors": 3,
+    "tokens": {
+      "input": null,
+      "output": null,
+      "cached": null,
+      "reasoning": null,
+      "total": null
+    },
+    "unknownUsageAttempts": 3
+  },
+  "completeBefore": true,
+  "completeAfter": true,
+  "terminalAttemptsAfterRestart": [
+    {
+      "id": "001558f7-03a0-4d0d-b3aa-14cde1869f72",
+      "requestId": "75d7fa46-b37d-4924-8630-6eb3d44db401",
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "routeId": "route-3341982364192c8d94634f53fbbdbf2a",
+      "model": "gpt-6-luna",
+      "state": "failed",
+      "statusCode": 403,
+      "tokens": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "total": null
+      }
+    },
+    {
+      "id": "19e81b65-1b5e-4eb0-b325-7d6e6fecfed6",
+      "requestId": "c68e9a5a-0d35-4063-8e58-ed02cea057b9",
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "routeId": "route-06b92eb470f3350a7ab7467326411495",
+      "model": "zai-org/GLM-5.3",
+      "state": "success",
+      "statusCode": 200,
+      "tokens": {
+        "input": 93,
+        "output": 19,
+        "cached": 0,
+        "reasoning": 16,
+        "total": 112
+      }
+    },
+    {
+      "id": "86676421-5e95-4b6e-a56e-d17ffc073a5a",
+      "requestId": "77156ae9-4c78-4e45-85a7-dbe58a38136c",
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "routeId": "route-06b92eb470f3350a7ab7467326411495",
+      "model": "zai-org/GLM-5.3",
+      "state": "failed",
+      "statusCode": 403,
+      "tokens": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "total": null
+      }
+    },
+    {
+      "id": "8c1464f6-6bef-4137-8c02-67e661a2ecdc",
+      "requestId": "26e6600c-6d25-4ace-9e66-795a6433955d",
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "routeId": "route-06b92eb470f3350a7ab7467326411495",
+      "model": "zai-org/GLM-5.3",
+      "state": "success",
+      "statusCode": 200,
+      "tokens": {
+        "input": 201,
+        "output": 44,
+        "cached": 0,
+        "reasoning": 32,
+        "total": 245
+      }
+    },
+    {
+      "id": "91697fd8-94ed-4444-95e0-1881533c6bb1",
+      "requestId": "fe3c3a43-0295-4007-962f-d0f5f38fb239",
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "routeId": "route-3341982364192c8d94634f53fbbdbf2a",
+      "model": "gpt-6-luna",
+      "state": "failed",
+      "statusCode": 403,
+      "tokens": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "total": null
+      }
+    },
+    {
+      "id": "a7376cff-939b-4cf3-a3f2-ba0337a2e294",
+      "requestId": "28bff094-aad5-43b7-a2ba-04b795ffaacb",
+      "accountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+      "routeId": "live-codex-luna",
+      "model": "gpt-6-luna",
+      "state": "success",
+      "statusCode": 200,
+      "tokens": {
+        "input": 113,
+        "output": 5,
+        "cached": 0,
+        "reasoning": 0,
+        "total": 118
+      }
+    },
+    {
+      "id": "bf293dbb-cd0c-445c-a10f-611bedd6e25f",
+      "requestId": "24547671-ee80-4ea8-b5b7-c56566df6f7f",
+      "accountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+      "routeId": "live-codex-luna",
+      "model": "gpt-6-luna",
+      "state": "success",
+      "statusCode": 200,
+      "tokens": {
+        "input": 83,
+        "output": 18,
+        "cached": 0,
+        "reasoning": 0,
+        "total": 101
+      }
+    }
+  ],
+  "cliBeforeRestart": {
+    "passed": true,
+    "command": "dotnet Lain.Cli.dll usage --from FROM --to TO --timezone UTC --json",
+    "window": {
+      "from": "2026-10-23T17:57:04.193825+00:00",
+      "to": "2026-10-23T18:58:04.193825+00:00",
+      "timeZone": "UTC"
+    },
+    "totals": {
+      "requests": 7,
+      "attempts": 7,
+      "errors": 3,
+      "tokens": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "total": null
+      },
+      "unknownUsageAttempts": 3
+    },
+    "groupsMatch": true
+  },
+  "cliAfterRestart": {
+    "passed": true,
+    "command": "dotnet Lain.Cli.dll usage --from FROM --to TO --timezone UTC --json",
+    "window": {
+      "from": "2026-10-23T17:57:04.193825+00:00",
+      "to": "2026-10-23T18:58:04.193825+00:00",
+      "timeZone": "UTC"
+    },
+    "totals": {
+      "requests": 7,
+      "attempts": 7,
+      "errors": 3,
+      "tokens": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "total": null
+      },
+      "unknownUsageAttempts": 3
+    },
+    "groupsMatch": true
+  },
+  "ownProcessesStopped": true,
+  "qualificationNotClaimed": true,
+  "notes": [
+    "Only truthful reference-client identification changed. Frozen core and production/provider configuration remained unchanged.",
+    "Exactly two specifically authorized GLM requests passed; previous GPT and GLM failures remain recorded with unknown usage.",
+    "Command GPT was not retested with the corrected client identity. No conclusion about that model follows from GLM success.",
+    "All seven terminal records and exact CLI/API totals and groups survived own Host restart. Global token totals remain null because three failed attempts have unknown usage."
+  ]
+}
