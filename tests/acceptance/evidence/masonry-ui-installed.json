@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "desktopAndCliInstalled": true,
+  "servicesUnchanged": true,
+  "legacyServiceUnchanged": true,
+  "hostAndCoreUnchanged": true,
+  "credentialsUnchanged": true,
+  "normalCodexConfigUnchanged": true,
+  "usageSnapshotUnchanged": true,
+  "requestsBefore": 0,
+  "requestsAfter": 0,
+  "totalTokensBefore": null,
+  "totalTokensAfter": null,
+  "cursorBefore": 2,
+  "cursorAfter": 2,
+  "zaiWindows": 2,
+  "kimiWindows": 3,
+  "cliPreservesWindowLabelsAndPercentages": true,
+  "inferenceRequests": 0,
+  "serviceOperations": 0,
+  "backup": "/home/tomka/.local/share/lain/ui-backups/20261024T002545-quota",
+  "componentSourceCommits": {
+    "cli": "d9cfc2f7bfec7f4e77fe3cbf818135a3a0472755",
+    "desktop": "850cdc3ad8a643fd2576e143592a9fd2245577be",
+    "host": "de872b77a75676db52274512df2e3233aa15d58e"
+  }
+}
