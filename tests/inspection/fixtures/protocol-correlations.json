@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "cases": [
+    {
+      "id": "claude-worker-parent",
+      "protocol": "anthropic-messages",
+      "headers": {
+        "X-Claude-Code-Session-Id": "session-fixture",
+        "X-Claude-Code-Agent-Id": "worker-fixture",
+        "X-Claude-Code-Parent-Agent-Id": "parent-fixture"
+      },
+      "body": {
+        "model": "fixture-claude-a",
+        "max_tokens": 32,
+        "messages": [
+          {
+            "role": "user",
+            "content": "synthetic worker request"
+          }
+        ]
+      },
+      "expected": {
+        "conversationId": "session-fixture",
+        "workerId": "worker-fixture",
+        "parentWorkerId": "parent-fixture",
+        "turnId": null,
+        "evidence": "harness_header"
+      }
+    },
+    {
+      "id": "codex-turn-metadata",
+      "protocol": "openai-chat",
+      "headers": {
+        "X-Codex-Turn-Metadata": "{\"session_id\":\"session-fixture\",\"thread_id\":\"thread-fixture\",\"turn_id\":\"turn-fixture\",\"agent_id\":\"worker-fixture\",\"parent_agent_id\":\"parent-fixture\"}"
+      },
+      "body": {
+        "model": "fixture-a",
+        "messages": [
+          {
+            "role": "user",
+            "content": "synthetic agent request"
+          }
+        ]
+      },
+      "expected": {
+        "conversationId": "thread-fixture",
+        "workerId": "worker-fixture",
+        "parentWorkerId": "parent-fixture",
+        "turnId": "turn-fixture",
+        "evidence": "harness_header"
+      }
+    },
+    {
+      "id": "thread-header-precedence",
+      "protocol": "openai-chat",
+      "headers": {
+        "Session-Id": "session-fixture",
+        "Thread-Id": "thread-fixture"
+      },
+      "body": {
+        "model": "fixture-a",
+        "messages": [
+          {
+            "role": "user",
+            "content": "synthetic precedence request"
+          }
+        ]
+      },
+      "expected": {
+        "conversationId": "thread-fixture",
+        "workerId": null,
+        "parentWorkerId": null,
+        "turnId": null,
+        "evidence": "harness_header"
+      }
+    },
+    {
+      "id": "responses-explicit-tool-continuation",
+      "protocol": "openai-responses",
+      "headers": {},
+      "body": {
+        "model": "fixture-a",
+        "metadata": {
+          "thread_id": "thread-fixture",
+          "turn_id": "turn-fixture",
+          "agent_id": "worker-fixture",
+          "parent_agent_id": "parent-fixture"
+        },
+        "previous_response_id": "resp-fixture-previous",
+        "input": [
+          {
+            "type": "function_call_output",
+            "call_id": "call-fixture",
+            "output": "synthetic tool result"
+          }
+        ]
+      },
+      "expected": {
+        "conversationId": "thread-fixture",
+        "turnId": "turn-fixture",
+        "workerId": "worker-fixture",
+        "parentWorkerId": "parent-fixture",
+        "previousResponseId": "resp-fixture-previous",
+        "toolCallId": "call-fixture",
+        "evidence": "request_metadata"
+      }
+    },
+    {
+      "id": "chat-singleton-tool-result",
+      "protocol": "openai-chat",
+      "headers": {},
+      "body": {
+        "model": "fixture-a",
+        "messages": [
+          {
+            "role": "tool",
+            "tool_call_id": "call-fixture",
+            "content": "synthetic tool result"
+          }
+        ]
+      },
+      "expected": {
+        "conversationId": null,
+        "turnId": null,
+        "workerId": null,
+        "parentWorkerId": null,
+        "toolCallId": "call-fixture"
+      }
+    },
+    {
+      "id": "anthropic-singleton-tool-result",
+      "protocol": "anthropic-messages",
+      "headers": {},
+      "body": {
+        "model": "fixture-claude-a",
+        "max_tokens": 32,
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "toolu-fixture",
+                "content": "synthetic tool result"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "conversationId": null,
+        "turnId": null,
+        "workerId": null,
+        "parentWorkerId": null,
+        "toolCallId": "toolu-fixture"
+      }
+    },
+    {
+      "id": "parallel-tool-results-not-one-tool",
+      "protocol": "openai-responses",
+      "headers": {},
+      "body": {
+        "model": "fixture-a",
+        "input": [
+          {
+            "type": "function_call_output",
+            "call_id": "call-a",
+            "output": "synthetic a"
+          },
+          {
+            "type": "function_call_output",
+            "call_id": "call-b",
+            "output": "synthetic b"
+          }
+        ]
+      },
+      "expected": {
+        "conversationId": null,
+        "turnId": null,
+        "workerId": null,
+        "parentWorkerId": null,
+        "toolCallId": null
+      }
+    },
+    {
+      "id": "unknown-identities-common-prefix",
+      "protocol": "openai-chat",
+      "headers": {},
+      "repeat": 2,
+      "body": {
+        "model": "fixture-a",
+        "prompt_cache_key": "not-a-conversation",
+        "messages": [
+          {
+            "role": "system",
+            "content": "Identical synthetic system prefix"
+          },
+          {
+            "role": "user",
+            "content": "Identical synthetic user text"
+          }
+        ]
+      },
+      "expected": {
+        "conversationId": null,
+        "turnId": null,
+        "workerId": null,
+        "parentWorkerId": null,
+        "distinctRequestIds": true
+      }
+    },
+    {
+      "id": "untrusted-header-poison",
+      "protocol": "openai-chat",
+      "headers": {
+        "X-Unlisted-Conversation-Id": "not-a-conversation",
+        "X-Unlisted-Agent": "not-a-worker",
+        "Cookie": "synthetic-cookie-secret"
+      },
+      "body": {
+        "model": "fixture-a",
+        "messages": [
+          {
+            "role": "user",
+            "content": "synthetic redaction request"
+          }
+        ]
+      },
+      "expected": {
+        "conversationId": null,
+        "turnId": null,
+        "workerId": null,
+        "parentWorkerId": null,
+        "forbiddenLiterals": [
+          "synthetic-cookie-secret",
+          "not-a-conversation",
+          "not-a-worker"
+        ]
+      }
+    }
+  ]
+}
