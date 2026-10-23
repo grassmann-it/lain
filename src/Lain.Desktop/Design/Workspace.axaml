@@ -130,6 +130,14 @@
     <StaticResource x:Key="ToggleSwitchContainerCheckedPointeroverBackground" ResourceKey="Lain.AccentHover" />
     <StaticResource x:Key="ToggleSwitchContainerCheckedPressedBackground" ResourceKey="Lain.AccentPressed" />
     <StaticResource x:Key="ToggleSwitchIndicatorBackground" ResourceKey="Lain.Ink" />
+    <!-- Native disclosure headers must share the workspace palette too. -->
+    <StaticResource x:Key="ExpanderSeparatorBorderBrush" ResourceKey="Lain.Edge" />
+    <StaticResource x:Key="ExpanderHeaderForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="ExpanderHeaderDefaultBackground" ResourceKey="Lain.Surface" />
+    <StaticResource x:Key="ExpanderHeaderPointeroverBackground" ResourceKey="Lain.Raised" />
+    <StaticResource x:Key="ExpanderHeaderPressedBackground" ResourceKey="Lain.Hover" />
+    <StaticResource x:Key="ExpanderContentForeground" ResourceKey="Lain.Ink" />
+    <StaticResource x:Key="ExpanderIconForeground" ResourceKey="Lain.Muted" />
     <!-- Progress and elevated surfaces -->
     <StaticResource x:Key="ProgressBarIndicatorBrush" ResourceKey="Lain.Accent" />
     <StaticResource x:Key="ProgressBarPrimaryForeground" ResourceKey="Lain.Accent" />
@@ -204,6 +212,29 @@
   </Style>
   <Style Selector="Button.nav.selected TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource Lain.Ink}" />
+  </Style>
+  <!-- Semi's Expander binds HorizontalContentAlignment only to its body.
+       Stretch its header presenter explicitly for full-width quota summaries.
+       Keep the native toggle, chevron, keyboard behavior and control template. -->
+  <Style Selector="Expander.account-tile">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Lain.Edge}" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="Expander.account-tile /template/ ToggleButton#ExpanderHeader">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="FontFamily" Value="avares://Avalonia.Fonts.Inter/Assets#Inter" />
+  </Style>
+  <Style Selector="Expander.account-tile /template/ ToggleButton#ExpanderHeader /template/ ContentPresenter">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Expander.account-tile /template/ ToggleButton#ExpanderHeader:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource Lain.Accent}" />
+    <Setter Property="BorderThickness" Value="1" />
   </Style>
   <Style Selector="TextBox, ComboBox, NumericUpDown">
     <Setter Property="FontSize" Value="13" />

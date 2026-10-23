@@ -50,6 +50,23 @@ input boundaries against input backgrounds are 3.11:1. Success, warning and
 danger text on the main surface are 10.82:1, 9.42:1 and 7.28:1 respectively.
 Semantic labels and icons continue to convey status alongside color.
 
+## Native account disclosures
+
+Account tiles use the existing Semi native Expander, marked `account-tile`.
+Its header and content brushes use the same mint/near-black resources as the
+workspace. The class stretches the nested header ToggleButton and its own
+ContentPresenter: setting only `Expander.HorizontalContentAlignment` stretches
+the body, because the locked Semi template does not pass it to the header.
+A mint border identifies keyboard focus. The template and native chevron,
+keyboard toggle, expansion and accessibility behavior remain intact.
+
+This follows the exact Semi.Avalonia 12.1.0.1 source pinned in its NuGet metadata:
+
+<https://github.com/irihitech/Semi.Avalonia/blob/dc75ad45e3ab2c9cf99eefc23352a6767aeb47c6/src/Semi.Avalonia/Controls/Expander.axaml>
+
+The account header keeps Inter for quota figures and reset labels. Its account
+name can use `section-title` for the bundled IBM Plex heading family.
+
 ## Typography and redistribution
 
 - IBM Plex Sans Condensed Regular/SemiBold: page and section headings.
