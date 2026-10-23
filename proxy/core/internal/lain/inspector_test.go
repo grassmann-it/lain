@@ -98,6 +98,36 @@ func TestCaptureRedactsAcrossChunksAndBoundsUnterminatedLines(t *testing.T) {
 	}
 }
 
+func TestCaptureNormalizesSplitHiddenMarkersBeforeRedaction(t *testing.T) {
+	for _, fragments := range [][]string{
+		{"api\u200b", "key=synthetic-value\n"},
+		{"pass\x00", "word=fixture-value\n"},
+		{"abcdefghijklm\u202e", "nopqrstuvwxyz\n"},
+	} {
+		var b captureBuffer
+		if got := b.consume(fragments[0], false); len(got) != 0 {
+			t.Fatal("partial marker became visible", got)
+		}
+		got := b.consume(fragments[1], false)
+		if len(got) != 1 || got[0] != "[redacted sensitive content]\n" {
+			t.Fatal("normalized secret escaped", got)
+		}
+	}
+	var b captureBuffer
+	if got := b.consume("api\u200bkey", false); len(got) != 0 {
+		t.Fatal(got)
+	}
+	if got := b.consume("", true); len(got) != 1 || got[0] != "[redacted sensitive content]\n" {
+		t.Fatal("final partial marker escaped", got)
+	}
+	if got := b.consume("short-value\n", false); len(got) != 1 || got[0] != "[redacted sensitive content]\n" {
+		t.Fatal("normalized marker did not suppress following value", got)
+	}
+	if got := b.consume("hello\u200b world\n", false); len(got) != 1 || got[0] != "hello world\n" {
+		t.Fatal("safe display normalization changed", got)
+	}
+}
+
 func TestDimensionsRequireExplicitEvidenceAndRejectInferredIdentities(t *testing.T) {
 	headers := http.Header{}
 	headers.Set("Session-Id", "session")

@@ -192,13 +192,9 @@ func (b *captureBuffer) consume(value string, finish bool) []string {
 }
 
 func (b *captureBuffer) redact(line string) string {
-	marker := credentialLike.MatchString(line)
-	if marker || b.suppressNext || opaqueSecret.MatchString(line) {
-		b.suppressNext = marker
-		return "[redacted sensitive content]\n"
-	}
-	b.suppressNext = false
-	return strings.Map(func(r rune) rune {
+	// Match the exact display form. Removing invisible characters only after
+	// matching can turn a concealed marker into a visible, unredacted credential.
+	line = strings.Map(func(r rune) rune {
 		if r == '\n' || r == '\t' {
 			return r
 		}
@@ -207,4 +203,11 @@ func (b *captureBuffer) redact(line string) string {
 		}
 		return r
 	}, line)
+	marker := credentialLike.MatchString(line)
+	if marker || b.suppressNext || opaqueSecret.MatchString(line) {
+		b.suppressNext = marker
+		return "[redacted sensitive content]\n"
+	}
+	b.suppressNext = false
+	return line
 }

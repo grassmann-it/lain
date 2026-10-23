@@ -124,7 +124,9 @@ in the live display. Redaction sees assembled lines, so credentials fragmented
 across transport chunks cannot bypass a per-chunk matcher. Known key prefixes,
 JWT/bearer/password/token markers and long opaque values omit the entire line;
 credential-marked lines also suppress the next line. Control and bidi characters
-are removed. Arbitrary unmarked short secrets in model-generated content cannot
+are removed **before** matching: redaction evaluates the exact normalized display
+text, including markers or opaque values split by invisible characters across
+transport chunks. Arbitrary unmarked short secrets in model-generated content cannot
 be identified exhaustively; this is a conservative display filter, not a general
 data-loss-prevention claim.
 
@@ -170,3 +172,7 @@ observation identity. They are source fixtures pending the root's serialized
 Core test/build lane. This instrumentation change does not qualify a new provider
 adapter, regenerate source manifests, replace the installed binary or run a live
 provider request.
+
+Reports for earlier candidate binaries remain evidence for their recorded hashes.
+The display-normalization correction requires a new source-manifest hash, rebuilt
+candidate and repeated relevant qualification before those results apply to it.
