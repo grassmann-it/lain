@@ -460,9 +460,12 @@ def startup_failures(core):
         run.__exit__()
 
 
-def terminal_write_failure(core):
+def terminal_write_failure(core, protocol="chat"):
     with Run(core) as run:
-        response = run.post("gated_usage", "terminal-write-failure", route="fixture-a", stream=True)
+        if protocol == "responses":
+            response = run.responses({"model": "fixture-a", "input": marker("gated_usage", "terminal-write-failure"), "stream": True})
+        else:
+            response = run.post("gated_usage", "terminal-write-failure", route="fixture-a", stream=True)
         first_line = response.readline()
         expect(b"data:" in first_line, "gated stream did not produce first output")
         before = run.events()
@@ -474,6 +477,7 @@ def terminal_write_failure(core):
         finally:
             response.close()
         expect("[DONE]" not in remainder, "client received successful DONE before durable terminal usage")
+        expect("response.completed" not in remainder, "client received Responses completion before durable terminal usage")
         expect('"finish_reason":"stop"' not in remainder and '"finish_reason": "stop"' not in remainder, "client received successful finish before durable terminal usage")
         try:
             with run.post("text", "after-terminal-fault", route="fixture-a") as response:
@@ -485,7 +489,7 @@ def terminal_write_failure(core):
         expect(len(run.provider.snapshot()) == 1, "later work dispatched after terminal journal failure")
         after = run.events()
         expect(after == before, "failed terminal append was exposed as a persisted source event")
-        return {"startedPersisted": True, "clientCompletionSuppressed": True, "nextRequestStatus": 503,
+        return {"clientProtocol": protocol, "startedPersisted": True, "clientCompletionSuppressed": True, "nextRequestStatus": 503,
                 "upstreamAttempts": 1, "unresolvedAttempts": 1, "eventExamples": before["events"]}
 
 
@@ -510,7 +514,8 @@ def main():
                            ("strict-429", strict_429), ("pool-429-retry", pool_429), ("cancel", cancel),
                            ("unknown-token-components", unknown_token_components), ("credential-lifecycle", credential_lifecycle),
                            ("crash-inflight", crash_inflight), ("journal-failures", journal_failures), ("startup-failures", startup_failures),
-                           ("terminal-write-failure", terminal_write_failure)]:
+                           ("terminal-write-failure", terminal_write_failure),
+                           ("responses-terminal-write-failure", lambda core: terminal_write_failure(core, "responses"))]:
         try:
             evidence = function(core)
             if "eventExamples" in evidence:
