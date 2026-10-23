@@ -36,6 +36,7 @@ def scenario(body: dict) -> tuple[str, str]:
 class FakeProvider:
     def __init__(self):
         self.lock = threading.Lock()
+        self.usage_gate = threading.Event()
         self.observations: list[dict] = []
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), self._handler())
         self.server.daemon_threads = True
@@ -50,6 +51,7 @@ class FakeProvider:
         return self
 
     def __exit__(self, *_):
+        self.usage_gate.set()
         self.server.shutdown()
         self.server.server_close()
         self.thread.join(timeout=3)
@@ -136,6 +138,8 @@ class FakeProvider:
                         event({"tool_calls": [{"index": 0, **message["tool_calls"][0]}]})
                     else:
                         event({"content": message["content"]})
+                    if case == "gated_usage":
+                        owner.usage_gate.wait(timeout=8)
                     event({}, "tool_calls" if tool else "stop")
                     event({}, usage=USAGE)
                     self.wfile.write(b"data: [DONE]\n\n")

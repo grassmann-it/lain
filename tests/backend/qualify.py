@@ -198,7 +198,7 @@ def normal_and_restart(core):
         expect(run.events() == batch, "restart lost/changed persisted identity or events")
         return {"requests": 200, "attempts": len(starts), "events": len(batch["events"]), "tokensPerAccount": 1800,
                 "distinctCredentials": len({row["credentialId"] for row in starts}), "replayEqual": True, "restartEqual": True,
-                "eventExamples": [next(row for row in usages if row["accountId"] == account) for account in run.accounts]}
+                "eventExamples": [next(row for row in usages if row["accountId"] == account) for account in run.accounts], "batchExample": batch}
 
 
 def stream_tools(core):
@@ -460,11 +460,41 @@ def startup_failures(core):
         run.__exit__()
 
 
+def terminal_write_failure(core):
+    with Run(core) as run:
+        response = run.post("gated_usage", "terminal-write-failure", route="fixture-a", stream=True)
+        first_line = response.readline()
+        expect(b"data:" in first_line, "gated stream did not produce first output")
+        before = run.events()
+        expect(len(before["events"]) == 1 and before["events"][0]["kind"] == "attempt_started", "gated dispatch registration missing")
+        resource.prlimit(run.process.pid, resource.RLIMIT_FSIZE, (run.journal.stat().st_size + 1,) * 2)
+        run.provider.usage_gate.set()
+        try:
+            remainder = response.read().decode()
+        finally:
+            response.close()
+        expect("[DONE]" not in remainder, "client received successful DONE before durable terminal usage")
+        expect('"finish_reason":"stop"' not in remainder and '"finish_reason": "stop"' not in remainder, "client received successful finish before durable terminal usage")
+        try:
+            with run.post("text", "after-terminal-fault", route="fixture-a") as response:
+                response.read()
+                raise AssertionError("subsequent request succeeded after terminal persistence failure")
+        except HTTPError as error:
+            expect(error.code == 503, "subsequent request did not fail closed")
+            error.close()
+        expect(len(run.provider.snapshot()) == 1, "later work dispatched after terminal journal failure")
+        after = run.events()
+        expect(after == before, "failed terminal append was exposed as a persisted source event")
+        return {"startedPersisted": True, "clientCompletionSuppressed": True, "nextRequestStatus": 503,
+                "upstreamAttempts": 1, "unresolvedAttempts": 1, "eventExamples": before["events"]}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--core", required=True)
     parser.add_argument("--report", required=True)
     parser.add_argument("--examples", help="optional sanitized observed-event fixture output JSON")
+    parser.add_argument("--batch-fixture", help="optional full contiguous 200-request source envelope for consumer qualification")
     args = parser.parse_args()
     core_data = Path(args.core).resolve(strict=True).read_bytes()
     # Freeze the artifact once: another worker rebuilding its path cannot change
@@ -479,11 +509,15 @@ def main():
     for name, function in [("same-alias-200-replay-restart", normal_and_restart), ("sse-tool-continuation", stream_tools), ("responses-tool-translation", responses_tools),
                            ("strict-429", strict_429), ("pool-429-retry", pool_429), ("cancel", cancel),
                            ("unknown-token-components", unknown_token_components), ("credential-lifecycle", credential_lifecycle),
-                           ("crash-inflight", crash_inflight), ("journal-failures", journal_failures), ("startup-failures", startup_failures)]:
+                           ("crash-inflight", crash_inflight), ("journal-failures", journal_failures), ("startup-failures", startup_failures),
+                           ("terminal-write-failure", terminal_write_failure)]:
         try:
             evidence = function(core)
             if "eventExamples" in evidence:
                 examples["examples"][name] = evidence.pop("eventExamples")
+            batch_example = evidence.pop("batchExample", None)
+            if batch_example is not None and args.batch_fixture:
+                Path(args.batch_fixture).write_text(json.dumps(batch_example, indent=2) + "\n")
             report["checks"].append({"name": name, "passed": True, "evidence": evidence})
             print(f"PASS {name}", flush=True)
         except Exception as error:
