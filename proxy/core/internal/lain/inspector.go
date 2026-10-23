@@ -55,6 +55,7 @@ type Inspector struct {
 	instanceID          string
 	events              []InspectorEvent
 	sizes               []int
+	received            []time.Time
 	bytes               int
 	sequence, dropped   int64
 	maxEvents, maxBytes int
@@ -68,7 +69,7 @@ func newInspector() *Inspector {
 
 func (s *Inspector) prune(now time.Time) {
 	n := 0
-	for n < len(s.events) && (len(s.events)-n > s.maxEvents || s.bytes > s.maxBytes || now.Sub(s.events[n].ObservedAt) >= s.ttl) {
+	for n < len(s.events) && (len(s.events)-n > s.maxEvents || s.bytes > s.maxBytes || now.Sub(s.received[n]) >= s.ttl) {
 		s.bytes -= s.sizes[n]
 		s.events[n] = InspectorEvent{} // release payload references promptly
 		n++
@@ -77,6 +78,7 @@ func (s *Inspector) prune(now time.Time) {
 		s.dropped += int64(n)
 		s.events = append([]InspectorEvent(nil), s.events[n:]...)
 		s.sizes = append([]int(nil), s.sizes[n:]...)
+		s.received = append([]time.Time(nil), s.received[n:]...)
 	}
 }
 
@@ -100,8 +102,10 @@ func (s *Inspector) append(e InspectorEvent) {
 	}
 	s.events = append(s.events, e)
 	s.sizes = append(s.sizes, len(data))
+	now := s.now()
+	s.received = append(s.received, now)
 	s.bytes += len(data)
-	s.prune(s.now())
+	s.prune(now)
 }
 
 func (s *Inspector) Read(after int64, limit int) (InspectorBatch, error) {

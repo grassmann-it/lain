@@ -108,6 +108,8 @@ duration with that denominator explicitly named.
 Core replay is limited to 4,096 events, 4 MiB serialized event content and 15
 minutes, whichever limit evicts first. Host/UI retention may be shorter (the
 initial Host content policy is 120 seconds); these are separate buffer lifetimes.
+Core retention uses a separate monotonic receipt timestamp; UTC display times
+and wall-clock changes cannot extend the content lifetime.
 Limits are fixed Core constants, not inferred from Host DTO defaults. Expiration
 is enforced lazily when the feed is read or new observations arrive. Pending
 content expires at 15 minutes from attempt dispatch and cannot be revived by a

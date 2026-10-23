@@ -50,6 +50,20 @@ func TestInspectorReplayBoundsExpiryAndRestart(t *testing.T) {
 	}
 }
 
+func TestInspectorRetentionUsesReceiptClockInsteadOfWallTimestamp(t *testing.T) {
+	now := time.Now()
+	s := newInspector()
+	s.now = func() time.Time { return now }
+	// A UTC display time may be far ahead after a wall-clock correction. It must
+	// not lengthen retention beyond the monotonic receipt interval.
+	s.append(InspectorEvent{ObservedAt: now.Add(24 * time.Hour).UTC(), Kind: "text_delta", Text: "short-lived"})
+	now = now.Add(16 * time.Minute)
+	page, err := s.Read(0, 1)
+	if err != nil || len(page.Events) != 0 || page.DroppedCount != 1 {
+		t.Fatal("wall timestamp extended content lifetime", page, err)
+	}
+}
+
 func TestCaptureRedactsAcrossChunksAndBoundsUnterminatedLines(t *testing.T) {
 	var b captureBuffer
 	if lines := b.consume("safe text\nAuthor", false); len(lines) != 1 || lines[0] != "safe text\n" {
