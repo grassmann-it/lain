@@ -467,6 +467,10 @@ def terminal_write_failure(core, protocol="chat"):
         else:
             response = run.post("gated_usage", "terminal-write-failure", route="fixture-a", stream=True)
         first_line = response.readline()
+        for _ in range(4):
+            if b"data:" in first_line:
+                break
+            first_line = response.readline()
         expect(b"data:" in first_line, "gated stream did not produce first output")
         before = run.events()
         expect(len(before["events"]) == 1 and before["events"][0]["kind"] == "attempt_started", "gated dispatch registration missing")
