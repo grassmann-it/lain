@@ -87,6 +87,16 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Open();
         await CaptureBoth("overview");
         await Click("Accounts"); await CaptureBoth("accounts");
+        var accountList = Controls<ListBox>().Single(x => AutomationProperties.GetName(x) == "Accounts");
+        accountList.Focus();
+        Check(accountList.IsKeyboardFocusWithin, "account list accepts keyboard focus");
+        var statusCalls = fixture.StatusCalls;
+        await Task.Delay(10300);
+        Check(fixture.StatusCalls > statusCalls && accountList.IsKeyboardFocusWithin && Controls<ListBox>().Contains(accountList), "account list focus and identity survive passive refresh");
+        fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1,
+            Accounts = fixture.Config.Accounts.Select(a => a.Id == "a1" ? a with { Name = "Personal Codex updated" } : a).ToArray() };
+        await Click("Refresh");
+        await Wait(() => HasText("Personal Codex updated"), "explicit refresh displays changed configuration");
         await Click("Connect Codex");
         await Wait(() => HasText("Waiting for authorization"), "login waiting");
         await CaptureBoth("login");
@@ -146,6 +156,16 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Task.Delay(5300);
         Check(fixture.UsageCalls > pollStart && UsageConnected(), "usage refreshes after five seconds");
         Check(usageInput.IsFocused && usageInput.Text == unsubmittedFilter, "usage input focus and filter survive polling");
+        await Click("Details for attempt attempt-fixture");
+        var details = Controls<Button>().Single(b => AutomationProperties.GetName(b) == "Details for attempt attempt-fixture");
+        details.Focus();
+        Check(details.IsFocused, "attempt details accepts keyboard focus");
+        var attemptPollStart = fixture.UsageCalls;
+        await Task.Delay(5300);
+        Check(fixture.UsageCalls > attemptPollStart && Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Details for attempt attempt-fixture" && b.IsFocused), "attempt detail focus survives polling");
+        var daily = Controls<Expander>().Single(x => Equals(x.Header, "Daily totals"));
+        daily.IsExpanded = true;
+        await CaptureBoth("usage-details");
         fixture.NullTokens = true;
         await ClickUsageApply();
         Check(Controls<UsageView>().Single().GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "—"), "null tokens render unknown");

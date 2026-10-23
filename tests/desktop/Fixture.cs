@@ -13,7 +13,7 @@ internal sealed class Fixture : HttpMessageHandler
         Enumerable.Range(1, InitialAccounts).Select(i => new AccountDto($"a{i}", i == 1 ? "Personal Codex" : $"Team connection {i}", i == 5 ? "command-code" : "openai", true, i == 5 ? "api-key" : "oauth-snapshot", "ready", null, DateTimeOffset.UtcNow.AddHours(i), i == 1)).ToArray(),
         Enumerable.Range(1, InitialRoutes).Select(i => new RouteDto($"r{i}", $"gpt-lain-{i:00}", $"gpt-model-{i:00}", "openai", [$"a{(i - 1) % 4 + 1}"])).ToArray(),
         Enumerable.Range(1, InitialProfiles).Select(i => new ProfileDto($"p{i}", i == 1 ? "Daily" : $"Workspace {i}", Enumerable.Range(1, i * 5).Select(n => $"r{n}").ToArray(), "r1")).ToArray());
-    public int Imports, EnableCalls, ApplyCalls, ExportCalls, LoginBegins, LoginPolls, LoginCancels, UsageCalls;
+    public int Imports, EnableCalls, ApplyCalls, ExportCalls, LoginBegins, LoginPolls, LoginCancels, UsageCalls, StatusCalls;
     public bool Offline, UsageFailure, NullTokens;
     public readonly List<string> Requests = [];
     public readonly List<string> Unexpected = [];
@@ -34,13 +34,13 @@ internal sealed class Fixture : HttpMessageHandler
             value = path switch
             {
                 var p when p.StartsWith("/api/v1/accounts/login/") => CompleteLogin(p),
-                "/api/v1/status" => new StatusDto(1, "test", "ready", true, Config.Revision, Config.AppliedRevision, DateTimeOffset.UtcNow),
+                "/api/v1/status" => Status(),
                 "/api/v1/configuration" => Config,
                 "/api/v1/accounts" => Config.Accounts,
                 "/api/v1/models" => new ModelCatalogDto(1, Config.Revision, [new ModelEntryDto("gpt-model", "openai", ["a1"])]),
                 "/api/v1/quotas" => new[] { new QuotaDto("a1", null, "provider", "unknown", DateTimeOffset.UtcNow, null, null, "requests", null, null, null, true) },
                 "/api/v1/usage" => Usage(),
-                "/api/v1/attempts" => new PageDto<AttemptDto>([], 0, 25, 0),
+                "/api/v1/attempts" => new PageDto<AttemptDto>([new AttemptDto("attempt-fixture", "request-fixture", "a1", "r1", "openai", "gpt-model", DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(-1).AddSeconds(2), 200, "completed", new TokenCounts(72000, 9986, 18000, 2000, 81986), 2000, 250)], 0, 25, 1),
                 _ => throw UnexpectedRequest(request)
             };
         }
@@ -95,6 +95,11 @@ internal sealed class Fixture : HttpMessageHandler
         return new(HttpStatusCode.OK) { Content = JsonContent.Create(value) };
     }
 
+    private StatusDto Status()
+    {
+        StatusCalls++;
+        return new(1, "test", "ready", true, Config.Revision, Config.AppliedRevision, DateTimeOffset.UtcNow);
+    }
     private UsageSummaryDto Usage()
     {
         UsageCalls++;
