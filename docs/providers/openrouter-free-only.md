@@ -93,3 +93,28 @@ proofs, redirection, zero/unknown/positive caps, tiny nonzero cap values, saniti
 failures and attempted routing/tool/plugin overrides. Run only in the root's
 serialized Go slot; tests have not been executed in this worktree. Runtime activation
 also requires the Host writer and Core's startup/context guards, not just the helper.
+
+## Integrated boundary review
+
+Read-only source review on 24 October 2026 covered integrated Git commit
+`e605c641ffc0a16b52fdadba4e5a0593e82eeecf`. This is a source revision, distinct
+from the separately recorded Core binary SHA-256. The review traced catalog-bound
+Host transport qualification and account identities, inbound validation before
+alias rewriting, per-attempt Core policy/context checks, model remapping and
+credential/model-pool retries, and all five compatibility HTTP dispatch sites.
+Those dispatch sites run the final guard after payload and header customization;
+alternate endpoints fail closed. Retry attempts re-enter the identity/model checks
+and obtain a fresh proof for their final outgoing Bearer key.
+
+The proof client is not wrapped by inference instrumentation. Only the subsequent
+inference request receives the usage/first-byte transport wrapper, and only its
+response reaches usage parsing and downstream output observation. Proof bytes
+therefore do not supply inference tokens or first-byte/token measurements. Total
+attempt duration can include prerequisite work.
+
+No concrete local enforcement bypass was found in this review. The integrator
+reported the four Go package checks, 15 backend checks, 15 inspector checks and
+two Core acceptance checks passing; this review did not rerun them, build, make
+live requests or operate services. The external cap semantics, policy-change
+interval and untested zero-cap/free-model usability remain the boundaries
+described above.
