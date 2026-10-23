@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "source": "core/internal/registry/models/models.json",
+  "sourceSha256": "ca457e5269f67068fcd13de77a4eb55da603917cd77309e61e4661ef4327c85b",
+  "snapshotVersion": "7.3.17-parent-request.3-model-compat.3-startup-readiness.1",
+  "qualification": "static-catalog-not-provider-entitlement",
+  "models": [
+    {
+      "id": "gpt-6-luna",
+      "displayName": "GPT 6.0 Luna",
+      "contextLength": 272000,
+      "maxCompletionTokens": 128000,
+      "tools": true,
+      "reasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "outputModalities": [
+        "text"
+      ],
+      "tiers": [
+        "free",
+        "team",
+        "plus",
+        "pro"
+      ]
+    },
+    {
+      "id": "gpt-5.5",
+      "displayName": "GPT 5.5",
+      "contextLength": 272000,
+      "maxCompletionTokens": 128000,
+      "tools": true,
+      "reasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ],
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "outputModalities": [
+        "text"
+      ],
+      "tiers": [
+        "free",
+        "team",
+        "plus",
+        "pro"
+      ]
+    },
+    {
+      "id": "gpt-5.6-terra",
+      "displayName": "GPT 5.6 Terra",
+      "contextLength": 372000,
+      "maxCompletionTokens": 128000,
+      "tools": true,
+      "reasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "outputModalities": [
+        "text"
+      ],
+      "tiers": [
+        "free",
+        "team",
+        "plus",
+        "pro"
+      ]
+    },
+    {
+      "id": "gpt-5.6-luna",
+      "displayName": "GPT 5.6 Luna",
+      "contextLength": 372000,
+      "maxCompletionTokens": 128000,
+      "tools": true,
+      "reasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "outputModalities": [
+        "text"
+      ],
+      "tiers": [
+        "free",
+        "team",
+        "plus",
+        "pro"
+      ]
+    },
+    {
+      "id": "codex-auto-review",
+      "displayName": "Codex Auto Review",
+      "contextLength": 272000,
+      "maxCompletionTokens": 128000,
+      "tools": true,
+      "reasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ],
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "outputModalities": [
+        "text"
+      ],
+      "tiers": [
+        "free",
+        "team",
+        "plus",
+        "pro"
+      ]
+    },
+    {
+      "id": "gpt-6-astra",
+      "displayName": "GPT 6.0 Astra",
+      "contextLength": 272000,
+      "maxCompletionTokens": 128000,
+      "tools": true,
+      "reasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "outputModalities": [
+        "text"
+      ],
+      "tiers": [
+        "team",
+        "plus",
+        "pro"
+      ]
+    },
+    {
+      "id": "gpt-6-sol",
+      "displayName": "GPT 6.0 Sol",
+      "contextLength": 272000,
+      "maxCompletionTokens": 128000,
+      "tools": true,
+      "reasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "outputModalities": [
+        "text"
+      ],
+      "tiers": [
+        "team",
+        "plus",
+        "pro"
+      ]
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "displayName": "GPT 5.6 Sol",
+      "contextLength": 372000,
+      "maxCompletionTokens": 128000,
+      "tools": true,
+      "reasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "outputModalities": [
+        "text"
+      ],
+      "tiers": [
+        "team",
+        "plus",
+        "pro"
+      ]
+    }
+  ]
+}
