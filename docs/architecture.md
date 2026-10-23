@@ -1,8 +1,10 @@
 # Architektur für den ersten lieferbaren Stand
 
-Stand 23.10.2026. Dieses Dokument verbindet die bestätigten Ziele mit einem
-konkreten Architekturvorschlag für die [Arbeitspakete](implementation-plan.md).
-Es beschreibt keine bereits implementierte Anwendung.
+Architekturgrundlage vom 23.10.2026 für die [Arbeitspakete](implementation-plan.md).
+Die folgende Struktur wurde als Implementierungsgrundlage übernommen. Aktuelle
+Implementierung und Nachweise stehen in [README](../README.md) und
+[Abnahme](acceptance.md); historische Empfehlungen sind keine zusätzlichen
+Abnahmebehauptungen.
 
 ## Bestätigter Zuschnitt
 
