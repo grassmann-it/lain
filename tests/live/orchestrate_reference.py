@@ -32,7 +32,7 @@ def require(condition, message):
 
 
 def api(path, token, value=None, method=None):
-    headers = {"Authorization": "Bearer " + token, "Content-Type": "application/json"}
+    headers = {"Authorization": "Bearer " + token, "Content-Type": "application/json", "User-Agent": probe.CLIENT_USER_AGENT}
     request = probe.urllib.request.Request(probe.HOST + path, data=json.dumps(value).encode() if value is not None else None,
                                           headers=headers, method=method or ("POST" if value is not None else "GET"))
     try:

@@ -89,6 +89,13 @@ class ProbeTests(unittest.TestCase):
             probe.parse_sse(response)
         self.assertNotIn("sensitive", str(error.exception))
 
+    def test_truthful_client_user_agent_is_emitted(self):
+        with mock.patch.object(probe.OPENER, "open", return_value=io.BytesIO()) as opened:
+            probe.open_request(probe.PROXY, "synthetic-token", {"model": "synthetic"}, "synthetic-account")
+        request = opened.call_args.args[0]
+        self.assertEqual("lain-reference-probe/0.1.0", request.get_header("User-agent"))
+        self.assertEqual("Bearer synthetic-token", request.get_header("Authorization"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -112,7 +112,8 @@ def one_command_request(token, account, secrets):
                "instructions": "Reply exactly OK.",
                "input": [{"role": "user", "content": [{"type": "input_text", "text": "Say OK."}]}]}
     request = urllib.request.Request(probe.PROXY, json.dumps(payload).encode(), method="POST",
-        headers={"Authorization": "Bearer " + token, "Content-Type": "application/json", "X-Lain-Account-ID": account})
+        headers={"Authorization": "Bearer " + token, "Content-Type": "application/json", "X-Lain-Account-ID": account,
+                 "User-Agent": probe.CLIENT_USER_AGENT})
     try:
         response = probe.OPENER.open(request, timeout=45)
     except urllib.error.HTTPError as error:

@@ -18,6 +18,7 @@ HOST = "http://127.0.0.1:18418/api/v1"
 PROXY = "http://127.0.0.1:18417/v1/responses"
 MODEL = "gpt-6-luna"
 MAX_BYTES = 1024 * 1024
+CLIENT_USER_AGENT = "lain-reference-probe/0.1.0"
 
 
 class ProbeError(Exception):
@@ -59,7 +60,7 @@ def bounded_read(response):
 
 
 def open_request(url, token, payload=None, account_id=None):
-    headers = {"Authorization": "Bearer " + token, "Content-Type": "application/json"}
+    headers = {"Authorization": "Bearer " + token, "Content-Type": "application/json", "User-Agent": CLIENT_USER_AGENT}
     if account_id:
         headers["X-Lain-Account-ID"] = account_id
     request = urllib.request.Request(url, data=json.dumps(payload).encode() if payload is not None else None,
