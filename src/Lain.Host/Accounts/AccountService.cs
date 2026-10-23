@@ -13,6 +13,7 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
     public AccountDto[] List() => configuration.Snapshot.Accounts.Select(a => a.CredentialKind == "codex-owned" ? Check(a.Id) : a).ToArray();
     public ConfigurationDto AddApi(long revision, AddApiAccountRequest input)
     {
+        ArgumentNullException.ThrowIfNull(input);
         if (string.IsNullOrWhiteSpace(input.Name) || input.Name.Length > 120) throw new ArgumentException("Account name is required (maximum 120 characters).");
         if (string.IsNullOrWhiteSpace(input.Provider) || input.Provider.Length > 80 || input.Provider.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '-'))
             throw new ArgumentException("Invalid provider.");

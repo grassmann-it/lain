@@ -10,7 +10,7 @@ public sealed class HttpCodexOwnedLoginBackend : ICodexOwnedLoginBackend, IDispo
     private readonly HttpClient http;
     public HttpCodexOwnedLoginBackend(OwnStatePaths paths, SecretStore secrets, HttpMessageHandler? handler = null)
     {
-        http = handler is null ? new HttpClient() : new HttpClient(handler);
+        http = new HttpClient(handler ?? new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false });
         http.BaseAddress = new Uri($"http://127.0.0.1:{OwnStatePaths.ProxyPort}");
         http.Timeout = TimeSpan.FromSeconds(15);
         http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", secrets.GetOrCreateToken(paths.ManagementToken));

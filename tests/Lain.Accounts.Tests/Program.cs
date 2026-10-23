@@ -79,6 +79,7 @@ try
     var reloaded = new ConfigurationRepository(paths);
     Check(reloaded.Snapshot.Revision == first.Revision && reloaded.Snapshot.Accounts.Length == 2, "configuration survives restart");
     var service = new AccountService(configuration, secrets);
+    try { service.AddApi(configuration.Snapshot.Revision, null!); throw new Exception("Expected null API account rejection."); } catch (ArgumentNullException) { }
     var apiAccount = configuration.Snapshot.Accounts.Single(a => a.CredentialKind == "api-key");
     var replaced = service.ReplaceApiCredential(first.Revision, apiAccount.Id, "rotated-secret");
     Check(replaced.Accounts.Any(a => a.Id == apiAccount.Id), "explicit credential rotation retains stable account identity");
@@ -207,6 +208,10 @@ try
     File.WriteAllText(Path.Combine(ownLegacyAuth, "snapshot.json"), """{"type":"codex","account_id":"owned-provider-account","access_token":"external-old-access","refresh_token":"NEVER-IMPORT-OWN-REFRESH","expired":"2098-01-01T00:00:00Z"}""");
     new LegacyImportService(ownedPaths, ownedRepository, ownedSecrets, ["gpt-qualified"]).Import(new(ownedRepository.Snapshot.Revision, emptyAliasConfig, ownLegacyAuth));
     Check(ownedRepository.Snapshot.Accounts.Single().CredentialKind == "codex-owned" && ownedSecrets.ReadAccount(ownedAccount.Id).Contains("owned-access-two"), "legacy reimport cannot replace an explicitly owned login");
+    using (var redirectBackend = new HttpCodexOwnedLoginBackend(ownedPaths, ownedSecrets, new RedirectLoginHttpHandler()))
+    {
+        try { await redirectBackend.BeginAsync(default); throw new Exception("Expected redirect rejection."); } catch (InvalidOperationException) { }
+    }
     using (var httpBackend = new HttpCodexOwnedLoginBackend(ownedPaths, ownedSecrets, new FakeLoginHttpHandler()))
     {
         var started = await httpBackend.BeginAsync(default); var progress = await httpBackend.StatusAsync(started.State, default); await httpBackend.CancelAsync(started.State, default);
@@ -262,5 +267,15 @@ sealed class FakeLoginHttpHandler : HttpMessageHandler
         var json = request.Method == HttpMethod.Post ? """{"state":"test-state","status":"pending","authorizationUrl":"https://auth.openai.com/oauth/authorize"}"""
             : request.Method == HttpMethod.Delete ? """{"state":"test-state","status":"canceled"}""" : """{"state":"test-state","status":"exchanging"}""";
         return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent(json) });
+    }
+}
+
+sealed class RedirectLoginHttpHandler : HttpMessageHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        var response = new HttpResponseMessage(System.Net.HttpStatusCode.Redirect);
+        response.Headers.Location = new Uri("https://example.invalid/collect-token");
+        return Task.FromResult(response);
     }
 }
