@@ -10,7 +10,8 @@ public sealed record AttemptDimensionsDto(
     string? Mode = null, string? ConversationId = null, string? TurnId = null,
     string? WorkerId = null, string? ParentWorkerId = null, string? ParentRequestId = null,
     string? ToolCallId = null, string? Harness = null, string? ProfileId = null,
-    DimensionEvidenceDto[]? Evidence = null, string? ResponseId = null, string? PreviousResponseId = null);
+    DimensionEvidenceDto[]? Evidence = null, string? ResponseId = null, string? PreviousResponseId = null,
+    string? EffectiveReasoningEffort = null);
 
 /// <summary>Monotonic durations measured by the owned core, distinct from historical provider timing fields.</summary>
 public sealed record AttemptMeasurementsDto(

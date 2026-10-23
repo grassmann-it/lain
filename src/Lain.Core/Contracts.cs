@@ -14,7 +14,8 @@ public record UsageQuery(DateTimeOffset? From = null, DateTimeOffset? To = null,
     string? InferenceProvider = null, string? Gateway = null, string? BillingAccountId = null,
     string? ReasoningEffort = null, string? Mode = null, string? ConversationId = null,
     string? TurnId = null, string? WorkerId = null, string? Harness = null,
-    string? ProfileId = null, string? GroupBy = null, int GroupLimit = 100);
+    string? ProfileId = null, string? GroupBy = null, int GroupLimit = 100,
+    string? EffectiveReasoningEffort = null);
 public record TokenCounts(long? Input, long? Output, long? Cached, long? Reasoning, long? Total);
 public record UsageTotals(long Requests, long Attempts, long Errors, TokenCounts Tokens, long UnknownUsageAttempts);
 public record UsageGroup(string Key, UsageTotals Totals);

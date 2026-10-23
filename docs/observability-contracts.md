@@ -51,7 +51,7 @@ identity is private and is not a substitute for the stable lain account ID.
 | `modelFamily`, `manufacturer` | Documented comparable model family and model maker |
 | `inferenceProvider`, `gateway` | Actual known execution provider and intermediary; neither is guessed from the model name |
 | `billingAccountId` | Known stable billing identity, separate from provider/gateway labels |
-| `reasoningEffort`, `mode` | Explicit requested or observed settings, not conclusions drawn from generated text |
+| `reasoningEffort`, `effectiveReasoningEffort`, `mode` | Explicit requested reasoning setting, separately observed translated upstream level, and explicit mode; not conclusions drawn from generated text |
 | `conversationId`, `turnId` | Explicit harness conversation and turn references |
 | `workerId`, `parentWorkerId` | Explicit worker identity and parent relation |
 | `parentRequestId`, `toolCallId` | Explicit request parent or an unambiguous tool reference |
@@ -97,6 +97,10 @@ remain visible: matching text, timestamps, models, routes, or account names do
 not establish a conversation or worker. Several tool calls do not become one
 invented `toolCallId`; their individual event references remain separate.
 Response-chain links do not automatically fabricate a conversation or turn ID.
+Requested reasoning effort is not overwritten or filled from the effective
+translated level. The latter has its own field and provenance, for example
+`core` / `usage.reasoningEffort`, so requested and actual levels can be compared
+without mixing their grouping populations.
 
 ## Completion and performance
 
@@ -157,7 +161,7 @@ does not imply complete metric coverage; sample counts remain necessary.
 
 All usage endpoints share the original filters plus `routeId`, `modelFamily`,
 `manufacturer`, `inferenceProvider`, `gateway`, `billingAccountId`,
-`reasoningEffort`, `mode`, `conversationId`, `turnId`, `workerId`, `harness`, and
+`reasoningEffort`, `effectiveReasoningEffort`, `mode`, `conversationId`, `turnId`, `workerId`, `harness`, and
 `profileId`. All filters are exact identity matches, not fuzzy display labels.
 The interval is `[from, to)`, applied to attempt start time, positive and at most
 366 days. Default is the previous 30 days ending at Host time. Unknown time
@@ -227,8 +231,13 @@ is not a configuration revision conflict.
 The snapshot exposes actual configured `limits`; defaults are ceilings for
 the initial Host implementation: 256 stream descriptors, 8,192 events, 32 MiB
 global content, 1 MiB per stream, 256 KiB per event, 120 seconds content lifetime,
-60 seconds terminal metadata lifetime, and 500 events per page. The source may
-have tighter limits. Retention is independent of open clients. Dropped/expired
+60 seconds terminal metadata lifetime, and 500 events per page. The initial Core
+has a separate 4,096-event/4 MiB ring with a 15-minute age limit, up to 256
+concurrent capture streams and 2 KiB display fields. Thus a 120-second Host
+display lifetime does not mean all source content has been removed after 120
+seconds. Core age eviction is evaluated on reads and observations; it is not a
+secure-erasure timer. Actual limits and lifecycle tests remain the implementing
+owner's responsibility. Retention is bounded independently of open clients. Dropped/expired
 content is not reconstructed from durable records; a disconnected stream is not
 automatically marked successful.
 
