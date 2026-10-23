@@ -48,12 +48,17 @@ Throws<ArgumentException>(() => policy.ResolveProfile(config, new("p", "Profile"
 Throws<ArgumentException>(() => policy.ValidateRuntime(config with { Routes = [free with { Policy = strict }] }), "runtime policy catches direct writer callers");
 Throws<ArgumentException>(() => RouteBindings.Compile(config with { Routes = [free with { Policy = strict }] }, new Dictionary<string, string>(), catalog: catalog), "bindings cannot bypass free-only");
 
-var bindings = RouteBindings.Compile(config with { Routes = [free] }, new Dictionary<string, string> { [account.Id] = "private-core-credential" }, catalog: catalog, profileId: "profile");
+var bindings = RouteBindings.Compile(config with { Routes = [free] }, new Dictionary<string, string> { [account.Id] = "private-core-credential" }, catalog: catalog, profileId: "profile", qualifiedProviderRouteIds: new HashSet<string> { free.Id });
 Check(bindings.Routes[free.Alias].Dimensions?.Manufacturer == "test-manufacturer", "proven route dimensions carried");
 Check(bindings.Routes[free.Alias].Dimensions?.ProfileId == "profile", "applied profile identity carried");
 Check(bindings.Routes[free.Alias].CostPolicy == "configured", "runtime policy explicit");
+var unqualified = RouteBindings.Compile(config with { Routes = [free] }, new Dictionary<string, string> { [account.Id] = "private-core-credential" }, catalog: catalog);
+Check(unqualified.Routes[free.Alias].Dimensions is null && unqualified.Routes[free.Alias].PricingClass == "unknown", "catalog label alone cannot assert runtime provenance or price");
 var legacyBinding = JsonSerializer.Deserialize<CoreRouteBinding>("{\"id\":\"old\",\"model\":\"model\",\"accounts\":[\"account\"],\"selection\":\"strict\"}");
 Check(legacyBinding?.CostPolicy == "configured", "legacy bindings default configured");
+Check(ProxyConfigurationWriter.CoreCredentialId("claude-api-key", "provider", "key", "https://example.test", "") !=
+    ProxyConfigurationWriter.CoreCredentialId("claude-api-key", "provider", "key", "https://example.test", "", sortedHeaders: "User-Agent\0lain/1.0\0"),
+    "qualified direct headers participate in core credential identity");
 descriptor.Routes[0] = descriptor.Routes[0] with { PricingClass = "payg" };
 Check(catalog.FindRoute("test-provider", "free-route")?.PricingClass == "free", "catalog constructor copies mutable arrays");
 var snapshot = catalog.Snapshot(); snapshot.Providers[0].Routes[0] = snapshot.Providers[0].Routes[0] with { Model = "edited" };

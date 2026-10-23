@@ -19,7 +19,8 @@ public static class ProviderCatalogEndpoints
             var hasCredential = accounts.Any(a => secrets.HasAccount(a.Id));
             // Presence is not validation: this endpoint does not contact upstream or inspect secret contents.
             return Results.Ok(new ProviderOnboardingDto(Api.Version, id, hasCredential ? "credentials_present_unverified" : "credentials_required", provider,
-                accounts.Select(a => a.Id).ToArray(), hasCredential ? [] : provider.Credentials.Where(c => c.Required).Select(c => c.Id).ToArray(), "not_tested"));
+                accounts.Select(a => a.Id).ToArray(), provider.Credentials.Where(c => c.Required).Select(c => c.Id).ToArray(), "not_tested",
+                hasCredential ? "Credential presence does not verify required fields; these fields still require validation." : null));
         });
         app.MapGet(Api.Prefix + "/routes/{id}/cost-policy", (string id, string? costPolicy, ConfigurationRepository repository, ProviderCostPolicy policy) =>
         {

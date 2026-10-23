@@ -30,9 +30,10 @@ public sealed class RouteBindingsWriter(OwnStatePaths paths)
     public string BindingsPath => Path.Combine(paths.Proxy, "bindings.json");
 
     public string Write(ConfigurationDto config, IReadOnlyDictionary<string, string> credentialIds,
-        IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? routeCredentials = null, string? profileId = null)
+        IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? routeCredentials = null, string? profileId = null,
+        IReadOnlySet<string>? qualifiedProviderRouteIds = null)
     {
-        var bindings = RouteBindings.Compile(config, credentialIds, routeCredentials, profileId: profileId);
+        var bindings = RouteBindings.Compile(config, credentialIds, routeCredentials, profileId: profileId, qualifiedProviderRouteIds: qualifiedProviderRouteIds);
         OwnStatePaths.WritePrivate(BindingsPath, JsonSerializer.Serialize(bindings));
         return BindingsPath;
     }
@@ -43,7 +44,7 @@ public static class RouteBindings
     /// <summary>Startup contract for the qualified launcher. Every active route must have complete account bindings.</summary>
     public static CoreBindings Compile(ConfigurationDto config, IReadOnlyDictionary<string, string> credentialIds,
         IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? routeCredentials = null,
-        ProviderCatalogRegistry? catalog = null, string? profileId = null)
+        ProviderCatalogRegistry? catalog = null, string? profileId = null, IReadOnlySet<string>? qualifiedProviderRouteIds = null)
     {
         catalog ??= new();
         new ProviderCostPolicy(catalog).ValidateRuntime(config);
@@ -64,7 +65,8 @@ public static class RouteBindings
                 if (!config.Accounts.Any(x => x.Id == id && x.Enabled) || !effectiveCredentials.TryGetValue(id, out var credential) || string.IsNullOrWhiteSpace(credential))
                     throw new ArgumentException("Active route has no enabled qualified credential binding.");
             }
-            var descriptor = catalog.FindRoute(route.Provider, route.ProviderRouteId);
+            // Catalog identity alone cannot prove that the selected credential targets the documented inference endpoint.
+            var descriptor = qualifiedProviderRouteIds?.Contains(route.Id) == true ? catalog.FindRoute(route.Provider, route.ProviderRouteId) : null;
             var dimensions = descriptor is not null || profileId is not null
                 ? new CoreRouteDimensions(descriptor?.ModelFamily, descriptor?.Manufacturer, descriptor?.InferenceProvider, descriptor?.Gateway, ProfileId: profileId)
                 : null;

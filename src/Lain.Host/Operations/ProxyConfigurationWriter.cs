@@ -12,9 +12,13 @@ namespace Lain.Host.Operations;
 public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore secrets, ProviderCostPolicy? costPolicy = null)
 {
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> RouteCredentials { get; private set; } = new Dictionary<string, IReadOnlyDictionary<string, string>>();
+    public IReadOnlySet<string> QualifiedProviderRouteIds { get; private set; } = new HashSet<string>();
     public IReadOnlyDictionary<string, string> Write(ConfigurationDto state)
     {
+        QualifiedProviderRouteIds = new HashSet<string>();
         (costPolicy ?? ProviderCostPolicy.Embedded()).ValidateRuntime(state);
+        var catalog = new ProviderCatalogRegistry();
+        var qualifiedProviderRouteIds = new HashSet<string>(StringComparer.Ordinal);
         var config = new YamlMappingNode
         {
             { "host", "127.0.0.1" }, { "port", OwnStatePaths.ProxyPort.ToString() }, { "auth-dir", paths.ProxyAuth },
@@ -93,14 +97,20 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
                 var transportId = descriptor.Id;
                 var coreProvider = Read(transport, "coreProvider") ?? account.Provider;
                 var section = Read(transport, "sourceSection") ?? "openai-compatibility";
-                if (section is not ("openai-compatibility" or "codex-api-key" or "claude-api-key"))
+                if (section is not ("openai-compatibility" or "codex-api-key" or "claude-api-key" or "gemini-api-key"))
                     throw new InvalidDataException("Unsupported source section.");
                 var provider = Read(transport, "sourceConfig") is { } sourceConfig ? Parse(sourceConfig) : new YamlMappingNode();
-                if ((section is "codex-api-key" or "claude-api-key") && LegacyImportService.Get(provider, "headers") is YamlMappingNode headers && headers.Children.Count > 0)
-                    throw new InvalidDataException("Custom direct-provider headers require additional qualification.");
                 var key = Read(transport, "apiKey") ?? throw new InvalidDataException("Missing own API credential.");
                 var endpoint = Read(transport, "baseUrl") ?? "";
                 if (endpoint.Length > 0) { AccountService.ValidateEndpoint(endpoint); Set(provider, "base-url", new YamlScalarNode(endpoint)); }
+                var qualifiedDirectHeaders = false;
+                foreach (var route in selectedRoutes.Where(pair => pair.Value == transportId).Select(pair => state.Routes.Single(r => r.Id == pair.Key)))
+                {
+                    qualifiedDirectHeaders |= ProviderTransportValidation.ValidateCompiled(catalog, route, transport, section, endpoint, provider);
+                    if (route.ProviderRouteId is not null) qualifiedProviderRouteIds.Add(route.Id);
+                }
+                if (!qualifiedDirectHeaders && (section is "codex-api-key" or "claude-api-key" or "gemini-api-key") && LegacyImportService.Get(provider, "headers") is YamlMappingNode headers && headers.Children.Count > 0)
+                    throw new InvalidDataException("Custom direct-provider headers require additional qualification.");
                 provider.Children.Remove(new YamlScalarNode("disabled"));
                 // Public lain aliases are resolved by bindings. Core-private aliases use actual model names.
                 var models = LegacyImportService.Get(provider, "models") as YamlSequenceNode ?? new YamlSequenceNode();
@@ -123,7 +133,11 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
                 else Set(provider, "api-key", new YamlScalarNode(key));
                 if (LegacyImportService.Get(config, section) is not YamlSequenceNode entries) { entries = new(); config.Add(section, entries); }
                 entries.Add(provider);
-                var coreId = CoreCredentialId(section, coreProvider, key, endpoint, proxyUrl, LegacyImportService.Text(provider, "prefix") ?? "");
+                var sortedHeaders = LegacyImportService.Get(provider, "headers") is YamlMappingNode generatedHeaders
+                    ? string.Concat(generatedHeaders.Children.Select(pair => ((YamlScalarNode)pair.Key, (YamlScalarNode)pair.Value))
+                        .OrderBy(pair => pair.Item1.Value, StringComparer.Ordinal)
+                        .Select(pair => pair.Item1.Value + "\0" + pair.Item2.Value + "\0")) : "";
+                var coreId = CoreCredentialId(section, coreProvider, key, endpoint, proxyUrl, LegacyImportService.Text(provider, "prefix") ?? "", sortedHeaders);
                 identities.TryAdd(account.Id, coreId);
                 foreach (var pair in selectedRoutes.Where(pair => pair.Value == transportId)) routeCredentials[pair.Key][account.Id] = coreId;
             }
@@ -138,13 +152,14 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
         using (var writer = new StringWriter(output)) new YamlStream(new YamlDocument(config)).Save(writer, false);
         OwnStatePaths.WritePrivate(paths.ProxyConfig, output.ToString());
         RouteCredentials = routeCredentials.ToDictionary(p => p.Key, p => (IReadOnlyDictionary<string, string>)p.Value);
+        QualifiedProviderRouteIds = qualifiedProviderRouteIds;
         return identities;
     }
-    public static string CoreCredentialId(string section, string provider, string key, string endpoint, string proxyUrl, string prefix = "")
+    public static string CoreCredentialId(string section, string provider, string key, string endpoint, string proxyUrl, string prefix = "", string sortedHeaders = "")
     {
         var kind = section == "openai-compatibility" ? "openai-compatibility:" + provider.Trim().ToLowerInvariant() : section.Replace("-api-key", "") + ":apikey";
         var input = kind + "\0" + key.Trim() + "\0" + endpoint.Trim() + "\0" + proxyUrl.Trim();
-        if (section != "openai-compatibility") input += "\0" + prefix.Trim() + "\0";
+        if (section != "openai-compatibility") input += "\0" + prefix.Trim() + "\0" + sortedHeaders;
         return kind + ":" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(input))).ToLowerInvariant()[..12];
     }
     private static void NormalizeModelAliases(YamlSequenceNode models)
