@@ -57,7 +57,15 @@ public sealed class ModelsService(ConfigurationRepository repository, ProviderCo
     {
         var config = Snapshot;
         var profile = config.Profiles.SingleOrDefault(x => x.Id == id) ?? throw new KeyNotFoundException("Profile does not exist.");
-        var routes = profile.RouteIds.Select(id => config.Routes.Single(x => x.Id == id)).ToArray();
+        var selected = new HashSet<string>(StringComparer.Ordinal);
+        var pending = new Queue<string>(profile.RouteIds.Concat(profile.Policy?.FallbackRouteIds ?? []));
+        while (pending.TryDequeue(out var routeId))
+        {
+            if (!selected.Add(routeId)) continue;
+            var selectedRoute = config.Routes.Single(x => x.Id == routeId);
+            foreach (var fallbackId in selectedRoute.Policy?.FallbackRouteIds ?? []) pending.Enqueue(fallbackId);
+        }
+        var routes = selected.Select(id => config.Routes.Single(x => x.Id == id)).ToArray();
         var accountIds = routes.SelectMany(x => x.AccountIds).Distinct().Order(StringComparer.Ordinal).ToArray();
         var placeholders = accountIds.Select((id, index) => (id, placeholder: $"account-{index + 1}")).ToDictionary(x => x.id, x => x.placeholder);
         return new(Api.Version, config.Revision, profile,
