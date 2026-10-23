@@ -133,7 +133,7 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
                 else Set(provider, "api-key", new YamlScalarNode(key));
                 if (LegacyImportService.Get(config, section) is not YamlSequenceNode entries) { entries = new(); config.Add(section, entries); }
                 entries.Add(provider);
-                var sortedHeaders = LegacyImportService.Get(provider, "headers") is YamlMappingNode generatedHeaders
+                var sortedHeaders = section != "openai-compatibility" && LegacyImportService.Get(provider, "headers") is YamlMappingNode generatedHeaders
                     ? string.Concat(generatedHeaders.Children.Select(pair => ((YamlScalarNode)pair.Key, (YamlScalarNode)pair.Value))
                         .OrderBy(pair => pair.Item1.Value, StringComparer.Ordinal)
                         .Select(pair => pair.Item1.Value + "\0" + pair.Item2.Value + "\0")) : "";
