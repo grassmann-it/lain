@@ -350,8 +350,8 @@
     "internal/lain/free_only_test.go": "1809e36b36165945ef597f152ae9a365251c15e5fe06a7e2b6eb16941b5cfa95",
     "internal/lain/http.go": "f4ddeeee203b9cfdad8f71cee5224da22a1ec5107b9e042dbf20b40abde4be1e",
     "internal/lain/http_test.go": "c4c070d7c1f58384b51894f6bfee9c6dc13c19763b5c8cfe8bef1f813a569856",
-    "internal/lain/inspector.go": "be8be004cacaff9ff1fd13cdb5a9244d5a9d7a0507d58b1f9a48a0e26b3be25b",
-    "internal/lain/inspector_test.go": "b97009decaefa3b732c892cd0bd5554f93e265fcbb386cca206aa5f63fbe457b",
+    "internal/lain/inspector.go": "626ab6406b4774f104dd21073e11ca5ace599d6779beb5c100c066fc18e3da83",
+    "internal/lain/inspector_test.go": "8098ab96da6f7ef1ad224d65868d20f68928623843f584e5b775e782e1f6c49d",
     "internal/lain/integration.go": "7d12d5deb30ac2d281597ac8ed16cb9dc4a59e598a35983e56dce9cf3cc67292",
     "internal/lain/journal.go": "0ac23edb0bfb3c7b81faa7f110d9f4e4efa492ae409a379b97512f6cdc8a01da",
     "internal/lain/journal_test.go": "dd079c854ff461367015dd0c42c4a0855f33961ad0c90edfffdb2a93459a1d37",
@@ -1537,11 +1537,11 @@
     },
     "internal/lain/inspector.go": {
       "baseline": null,
-      "lain": "be8be004cacaff9ff1fd13cdb5a9244d5a9d7a0507d58b1f9a48a0e26b3be25b"
+      "lain": "626ab6406b4774f104dd21073e11ca5ace599d6779beb5c100c066fc18e3da83"
     },
     "internal/lain/inspector_test.go": {
       "baseline": null,
-      "lain": "b97009decaefa3b732c892cd0bd5554f93e265fcbb386cca206aa5f63fbe457b"
+      "lain": "8098ab96da6f7ef1ad224d65868d20f68928623843f584e5b775e782e1f6c49d"
     },
     "internal/lain/integration.go": {
       "baseline": null,
