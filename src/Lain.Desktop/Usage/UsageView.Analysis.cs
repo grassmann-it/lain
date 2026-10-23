@@ -128,7 +128,10 @@ public sealed partial class UsageView
         _dimensionGroups.Children.Clear();
         if (dimension is null) { _dimensionGroups.Children.Add(Label("This grouping is not reported by the host.", Muted)); return; }
         if (dimension.Truncated) _dimensionGroups.Children.Add(Label("Only a limited set of groups was returned; ordering applies to those groups.", Ui.Warning));
-        _dimensionGroups.Children.Add(TableRow(AnalysisCells("Group", "Attempts", "Tokens", "P50 first", "P50 total", "P50 output/s", true), true));
+        var columns = AnalysisCells("Group", "Attempts", "Tokens", "P50 first", "P50 total", "P50 output/s", true);
+        // Match the native disclosure header's content inset and trailing chevron.
+        columns.Margin = new Thickness(16, 0, 40, 0);
+        _dimensionGroups.Children.Add(TableRow(columns, true));
         IEnumerable<UsageDimensionGroupDto> groups = _dimensionOrder.SelectedIndex switch
         {
             1 => dimension.Groups.OrderBy(x => x.Totals.Attempts),
@@ -151,7 +154,7 @@ public sealed partial class UsageView
             } };
             if (group.Key is not null && dimension.Dimension != "provider")
             {
-                var filter = new Button { Content = "Filter to this group" };
+                var filter = new Button { Content = "Filter to this group", HorizontalAlignment = HorizontalAlignment.Left };
                 AutomationProperties.SetName(filter, $"Filter {dimension.Dimension} {group.Key}");
                 filter.Click += async (_, _) =>
                 {
