@@ -305,6 +305,52 @@ exit = await CliApplication.RunAsync(["inspector", "events", "--source", "source
 Require(exit == 0 && output.ToString().Contains("next cursor 5; high watermark 7") && output.ToString().Contains("Gap: buffer_evicted") &&
     output.ToString().Contains("Group identities: unknown") && !output.ToString().Contains('\u001b'), "event output preserves gaps/cursors and does not invent grouping"); assertions++;
 
+handler.Handle = request =>
+{
+    Require(request.Method == HttpMethod.Post && request.RequestUri!.AbsolutePath == "/api/v1/accounts", "catalog account uses existing revisioned endpoint");
+    using var payload = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
+    var value = payload.RootElement.GetProperty("value");
+    Require(value.GetProperty("providerRouteId").GetString() == "catalog/route" && value.GetProperty("settings").GetProperty("region").GetString() == "singapore" &&
+        value.GetProperty("settings").GetProperty("workspaceId").GetString() == "workspace" && value.GetProperty("apiKey").GetString() == "SYNTHETIC-API-KEY", "route selection and repeated nonsecret settings retained beside dedicated secret");
+    return new(HttpStatusCode.OK) { Content = JsonContent.Create(configuration) };
+};
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["accounts", "add-api", "--name", "test", "--provider", "test", "--base-url", "https://provider.test/v1",
+    "--provider-route", "catalog/route", "--setting", "region=singapore", "--setting", "workspaceId=workspace", "--key-stdin", "--revision", "3", "--json"],
+    output, error, () => client, input: new StringReader("SYNTHETIC-API-KEY\n"));
+Require(exit == 0 && !output.ToString().Contains("SYNTHETIC-API-KEY") && error.ToString() == "", "catalog account CLI does not echo secret or setting input"); assertions++;
+foreach (var settingsArgs in new[] {
+    new[] { "--provider-route", "route", "--setting", "apiKey=LEAK-ME" },
+    new[] { "--provider-route", "route", "--setting", "region=one", "--setting", "region=two" },
+    new[] { "--setting", "region=one" } })
+{
+    output = new(); error = new();
+    exit = await CliApplication.RunAsync(["accounts", "add-api", "--name", "test", "--provider", "test", "--base-url", "https://provider.test/v1",
+        "--key-stdin", .. settingsArgs], output, error, () => throw new Exception("invalid settings must not discover host"));
+    Require(exit == 2 && output.ToString() == "" && !error.ToString().Contains("LEAK-ME"), "invalid, duplicated or secret settings rejected before discovery without values"); assertions++;
+}
+
+handler.Handle = request =>
+{
+    Require(request.Method == HttpMethod.Put && request.RequestUri!.AbsolutePath == "/api/v1/routes/free-route", "policy mutation uses existing route API");
+    using var payload = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
+    var value = payload.RootElement.GetProperty("value");
+    var policy = value.GetProperty("policy");
+    Require(value.GetProperty("providerRouteId").GetString() == "catalog-route" && policy.GetProperty("costPolicy").GetString() == "free_only" &&
+        !policy.GetProperty("allowPaidFallback").GetBoolean() && policy.GetProperty("fallbackRouteIds")[0].GetString() == "explicit-free-fallback", "catalog identity and fail-closed explicit policy are preserved");
+    return new(HttpStatusCode.OK) { Content = JsonContent.Create(configuration) };
+};
+await client.SaveRouteAsync(3, new RouteDto("free-route", "free", "model", "provider", ["account"], ProviderRouteId: "catalog-route",
+    Policy: new RoutingPolicyDto("free_only", ["explicit-free-fallback"]))); assertions++;
+handler.Handle = request =>
+{
+    Require(request.Method == HttpMethod.Put && request.RequestUri!.AbsolutePath == "/api/v1/profiles/free-profile", "profile policy uses typed existing endpoint");
+    using var payload = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
+    Require(payload.RootElement.GetProperty("value").GetProperty("policy").GetProperty("costPolicy").GetString() == "free_only", "profile policy is serialized");
+    return new(HttpStatusCode.OK) { Content = JsonContent.Create(configuration) };
+};
+await client.SaveProfileAsync(3, new ProfileDto("free-profile", "Free", ["free-route"], Policy: new RoutingPolicyDto("free_only"))); assertions++;
+
 var state = Path.Combine(Path.GetTempPath(), "lain-discovery-" + Guid.NewGuid().ToString("N"));
 var previous = Environment.GetEnvironmentVariable("LAIN_HOME");
 try

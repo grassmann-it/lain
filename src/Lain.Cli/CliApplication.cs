@@ -17,7 +17,8 @@ public static partial class CliApplication
           accounts login-status|login-cancel|check ID [--json]
           accounts enable|disable|remove ID [--revision N] [--json]
           accounts add-api --name NAME --provider PROVIDER --base-url URL
-                   (--key-env ENVNAME | --key-stdin) [--revision N] [--json]
+                   (--key-env ENVNAME | --key-stdin) [--provider-route ID]
+                   [--setting NAME=VALUE ...] [--revision N] [--json]
           profiles apply ID [--revision N] [--json]
           profiles install-codex ID [--revision N] [--json]
           import CONFIG [--auth-dir DIR] [--revision N] [--json]
@@ -165,7 +166,7 @@ public static partial class CliApplication
             var action = options.Positionals[0];
             if (action == "add-api")
             {
-                options.RequireOnly("json", "revision", "name", "provider", "base-url", "key-env", "key-stdin");
+                options.RequireOnly("json", "revision", "name", "provider", "base-url", "key-env", "key-stdin", "provider-route", "setting");
                 options.RequirePositionals(1);
                 foreach (var required in new[] { "name", "provider", "base-url" })
                     if (string.IsNullOrWhiteSpace(options.Get(required))) throw new ArgumentException($"--{required} is required.");
@@ -173,6 +174,9 @@ public static partial class CliApplication
                     throw new ArgumentException("Specify exactly one of --key-env ENVNAME or --key-stdin. API keys cannot be passed as command arguments.");
                 if (options.Has("key-env") && string.IsNullOrWhiteSpace(options.Get("key-env")))
                     throw new ArgumentException("--key-env requires a nonempty environment variable name.");
+                if (options.Has("provider-route") && string.IsNullOrWhiteSpace(options.Get("provider-route")))
+                    throw new ArgumentException("--provider-route requires a nonempty catalog route ID.");
+                _ = ParseAccountSettings(options);
             }
             else
             {
@@ -236,7 +240,8 @@ public static partial class CliApplication
             "enable" => await client.SetAccountEnabledAsync(revision, options.Positionals[1], true, ct),
             "disable" => await client.SetAccountEnabledAsync(revision, options.Positionals[1], false, ct),
             "remove" => await client.RemoveAccountAsync(revision, options.Positionals[1], ct),
-            "add-api" => await client.AddApiAccountAsync(revision, new AddApiAccountRequest(options.Get("name")!, options.Get("provider")!, apiKey!, options.Get("base-url")!), ct),
+            "add-api" => await client.AddApiAccountAsync(revision, new AddApiAccountRequest(options.Get("name")!, options.Get("provider")!, apiKey!, options.Get("base-url")!,
+                options.Get("provider-route"), ParseAccountSettings(options)), ct),
             _ => throw new ArgumentException("Unsupported account action.")
         };
     }
@@ -355,6 +360,7 @@ public static partial class CliApplication
     {
         private readonly Dictionary<string, string?> values = new(StringComparer.Ordinal);
         public List<string> Positionals { get; } = [];
+        public List<string> Settings { get; } = [];
         public bool Json => Has("json");
         public bool Has(string name) => values.ContainsKey(name);
         public string? Get(string name) => values.GetValueOrDefault(name);
@@ -367,7 +373,7 @@ public static partial class CliApplication
                 if (!arg.StartsWith("--", StringComparison.Ordinal)) { options.Positionals.Add(arg); continue; }
                 var name = arg[2..];
                 if (name.Length == 0 || name.Contains('=')) throw new ArgumentException("Use options as '--name value'.");
-                if (options.values.ContainsKey(name)) throw new ArgumentException($"Duplicate option --{name}.");
+                if (options.values.ContainsKey(name) && name != "setting") throw new ArgumentException($"Duplicate option --{name}.");
                 string? value = null;
                 if (name is not ("json" or "today" or "key-stdin"))
                 {
@@ -375,6 +381,7 @@ public static partial class CliApplication
                     value = args[i];
                 }
                 options.values[name] = value;
+                if (name == "setting") options.Settings.Add(value!);
             }
             return options;
         }

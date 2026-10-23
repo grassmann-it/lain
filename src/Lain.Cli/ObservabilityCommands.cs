@@ -5,6 +5,25 @@ namespace Lain.Cli;
 
 public static partial class CliApplication
 {
+    // Credential values continue to use the dedicated env/stdin API-key path.
+    private static readonly string[] AccountSettingNames = ["accountId", "region", "workspaceId", "serviceDeploymentScope", "billingPlan"];
+    private static Dictionary<string, string>? ParseAccountSettings(Options options)
+    {
+        if (options.Settings.Count == 0) return null;
+        if (string.IsNullOrWhiteSpace(options.Get("provider-route")))
+            throw new ArgumentException("--setting requires --provider-route ID.");
+        if (options.Settings.Count > 16) throw new ArgumentException("At most 16 nonsecret provider settings may be supplied.");
+        var settings = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var supplied in options.Settings)
+        {
+            var pair = supplied.Split('=', 2);
+            if (pair.Length != 2 || !AccountSettingNames.Contains(pair[0], StringComparer.Ordinal) ||
+                string.IsNullOrWhiteSpace(pair[1]) || pair[1].Length > 4096 || pair[1].Any(char.IsControl))
+                throw new ArgumentException("--setting requires NAME=VALUE for a nonsecret provider setting: " + string.Join(",", AccountSettingNames) + ".");
+            if (!settings.TryAdd(pair[0], pair[1])) throw new ArgumentException("Duplicate provider setting name.");
+        }
+        return settings;
+    }
     private static readonly string[] UsageFilters = ["json", "today", "from", "to", "timezone", "account", "model", "status",
         "route", "model-family", "manufacturer", "inference-provider", "gateway", "billing-account", "reasoning", "mode",
         "conversation", "turn", "worker", "harness", "profile"];
