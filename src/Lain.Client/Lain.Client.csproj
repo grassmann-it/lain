@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup></PropertyGroup><ItemGroup><ProjectReference Include="../Lain.Core/Lain.Core.csproj" /></ItemGroup></Project>
