@@ -65,6 +65,22 @@ for entry in sources["files"]:
 shutil.copytree(source, output / "official", dirs_exist_ok=True)
 report = {"format": 1, "scope": "restored application graph including runtime downloads and conservative extra-platform dependencies",
           "reviewStatus": "inventory-and-source-notices-collected-not-a-legal-compliance-approval", "packages": inventory}
+# Fonts are embedded Avalonia resources, so NuGet metadata cannot account for them.
+font_inventory = []
+font_root = root / "src/Lain.Desktop/Assets/Fonts"
+for font in sorted(font_root.rglob("*.ttf")):
+    license_path = font.parent / "OFL.txt"
+    if not license_path.is_file():
+        raise SystemExit("Bundled font missing OFL: " + str(font.relative_to(root)))
+    destination = output / "fonts" / font.parent.name / "OFL.txt"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(license_path, destination)
+    font_inventory.append({"sourcePath": str(font.relative_to(root)),
+                           "sha256": hashlib.sha256(font.read_bytes()).hexdigest(),
+                           "license": "SIL Open Font License 1.1",
+                           "notice": str(destination.relative_to(output)),
+                           "noticeSha256": hashlib.sha256(license_path.read_bytes()).hexdigest()})
+report["bundledFonts"] = font_inventory
 (output / "inventory.json").write_text(json.dumps(report, indent=2) + "\n")
 (output / "README.txt").write_text(
     "Redistribution notice inventory\n\n"
@@ -77,6 +93,10 @@ report = {"format": 1, "scope": "restored application graph including runtime do
     "license/third-party notice texts with source URLs and SHA-256 in sources.json. "
     "Core's license is separately in proxy/LICENSE. This inventory is evidence for review, "
     "not a declaration that every possible redistribution obligation has been satisfied.\n")
+with (output / "README.txt").open("a") as handle:
+    handle.write("\nFonts: inventory.json bundledFonts lists embedded application font sources and hashes; "
+                 "fonts/ preserves their original family-specific OFL texts and copyright notices. "
+                 "The desktop publish also carries Assets/Fonts/<family>/OFL.txt.\n")
 subprocess.run([sys.executable, str(root / "scripts/collect-go-notices.py"),
                 str(output.parent / "proxy/lain-proxy"), str(output / "go")], check=True)
 with (output / "README.txt").open("a") as handle:
