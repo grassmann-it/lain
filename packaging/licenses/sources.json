@@ -31,6 +31,26 @@
       "file": "SQLitePCLRaw-2.1.12-LICENSE.TXT",
       "sourceUrl": "https://raw.githubusercontent.com/ericsink/SQLitePCL.raw/v2.1.12/LICENSE.TXT",
       "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "file": "Avalonia-12.1.4-LICENSE.md",
+      "sourceUrl": "https://raw.githubusercontent.com/AvaloniaUI/Avalonia/2d79ba55fae1b1e71c69f93a668080c9029e6a31/licence.md",
+      "sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b"
+    },
+    {
+      "file": "Semi.Avalonia-12.1.0.1-LICENSE",
+      "sourceUrl": "https://raw.githubusercontent.com/irihitech/Semi.Avalonia/dc75ad45e3ab2c9cf99eefc23352a6767aeb47c6/LICENSE",
+      "sha256": "ed829fc24561e453700d3b617321a1af37c5000d64ba4ae0085955eb87d6b688"
+    },
+    {
+      "file": "Ursa.Avalonia-2.2.0-LICENSE",
+      "sourceUrl": "https://raw.githubusercontent.com/irihitech/Ursa.Avalonia/00fef728ce87cc8cbc9085f3162867daa1d57490/LICENSE",
+      "sha256": "9053c8a1145c94b994011631ba3bcd2b01645bd3a1828fae3c76a10e2361fb9d"
+    },
+    {
+      "file": "Irihi.Avalonia.Shared-0.5.0-LICENSE",
+      "sourceUrl": "https://raw.githubusercontent.com/irihitech/Irihi.Avalonia.Shared/3514e169837878c80c71c315be1437ac942743b3/LICENSE",
+      "sha256": "ec35403fdfacfc7de897d520dc2d68387997eb881cf9f3eea45b89cbeae19f5b"
     }
   ]
 }

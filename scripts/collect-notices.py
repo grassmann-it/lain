@@ -72,7 +72,8 @@ report = {"format": 1, "scope": "restored application graph including runtime do
     "URLs/copyright/repository metadata, and any LICENSE/NOTICE files present in the package cache. "
     "nuget/ preserves those original files and nuspecs. The restored graph conservatively includes "
     "some build-only/other-platform packages in addition to shipped runtime dependencies.\n\n"
-    "official/ contains pinned upstream .NET runtime, ASP.NET Core, Avalonia and SQLitePCLRaw "
+    "official/ contains pinned upstream .NET runtime, ASP.NET Core, Avalonia, Semi.Avalonia, "
+    "Ursa.Avalonia, Irihi.Avalonia.Shared and SQLitePCLRaw "
     "license/third-party notice texts with source URLs and SHA-256 in sources.json. "
     "Core's license is separately in proxy/LICENSE. This inventory is evidence for review, "
     "not a declaration that every possible redistribution obligation has been satisfied.\n")

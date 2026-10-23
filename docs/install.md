@@ -46,6 +46,77 @@ dotnet restore Lain.sln -r linux-x64 -p:SelfContained=true
 Die Änderungen an allen Lockdateien prüfen und einchecken, dann erneut publizieren.
 Die Release-Pipeline aktualisiert Lockdateien niemals automatisch.
 
+## Nur den Desktop neu paketieren
+
+Ein reines UI-Update verwendet den bereits qualifizierten Paketordner als
+Basis und wird zuerst in einem neuen Staging-Ordner aufgebaut.
+`publish-linux.sh` ist dafür ungeeignet: Es baut auch Host, CLI und Core neu.
+Den Desktop mit dem aktuellen Lockstand separat veröffentlichen:
+
+```sh
+dotnet restore src/Lain.Desktop/Lain.Desktop.csproj --locked-mode -m:1 \
+  -p:BuildInParallel=false -nr:false -r linux-x64 -p:SelfContained=true
+dotnet publish src/Lain.Desktop/Lain.Desktop.csproj --no-restore -m:1 \
+  -p:BuildInParallel=false -nr:false -c Release -r linux-x64 --self-contained true \
+  -o /absolute/new/desktop-staging -p:ContinuousIntegrationBuild=true \
+  -p:Deterministic=true -p:DebugType=None -p:DebugSymbols=false \
+  -p:InformationalVersion=1.0.0+DESKTOP_COMMIT \
+  -p:PathMap="$PWD=/_/lain"
+```
+
+Im kopierten Paket ausschließlich den gesamten `desktop/`-Ordner ersetzen;
+ein Überschreiben einzelner Dateien würde entfernte Abhängigkeiten erhalten.
+Host, CLI und `proxy/` vor und nach dem Kopieren anhand aller Dateihashes
+vergleichen. Die Live-Installation und den Dienst bis zur Desktopprüfung
+unverändert lassen.
+
+Das neue NuGet-Inventar muss aus dem aktuellen Restoregraph stammen. Vor
+`python3 scripts/collect-notices.py /absolute/new/package/notices` auch Host
+und CLI mit ihren unveränderten Lockdateien wiederherstellen und prüfen, dass
+deren inventarisierte Abhängigkeiten zum Basispaket passen. Einen frischen
+`notices/`-Ordner verwenden, damit keine entfernten Pakete zurückbleiben. Das
+Skript erfasst Semi, Ursa und transitive Pakete automatisch; `official/`
+ergänzt die Lizenztexte aus den in `sources.json` festgehaltenen
+Repository-Commits der NuGet-Pakete. Der alte Avalonia-11-Lizenztext bleibt als
+historischer Zusatz erhalten; das aktuelle Inventar benennt die exakte Version.
+
+In `build-info.json` ausschließlich Desktop-Provenienz und den neuen
+Paketierungsstand aktualisieren, die bisherigen Komponentenstände erhalten.
+Backendabnahme und ihre exakten Hashes bleiben bestehen; alte Desktopbelege
+gelten nur für ihren aufgezeichneten Stand. `releaseQualified` bleibt bis zur
+erneuten visuellen Abnahme `false`. Anschließend `SHA256SUMS` für alle
+Paketdateien sowie Archiv und Archivprüfsumme neu erzeugen. Erst das geprüfte
+Paket für eine getrennte Desktopaktualisierung der Installation verwenden;
+der normale Installer ersetzt die ganze Anwendung.
+
+Diese Schritte automatisiert der Staging-Helfer nach dem Restore aller drei
+Projekte und dem separaten Desktop-Publish:
+
+```sh
+python3 scripts/stage-desktop-refresh.py /absolute/baseline-package \
+  /absolute/new/desktop-staging /absolute/new/lain-desktop-refresh \
+  --desktop-source-commit DESKTOP_COMMIT \
+  --desktop-informational-version 1.0.0+DESKTOP_COMMIT
+```
+
+Er verweigert vorhandene Ausgaben, prüft das Basispaket, vergleicht die
+Nicht-Desktop-Abhängigkeiten, erhält Host/CLI/Proxy bytegenau und erzeugt neue
+Provenienz, Notices, Prüfsummen und Archiv. Fehler hinterlassen einen
+unvollständigen Staging-Ordner zur Untersuchung; diesen nicht installieren.
+Der Helfer startet weder Programme noch Dienste und schreibt in keine Installation.
+
+Für die spätere Aktualisierung nur das GUI schließen; der Dienst bleibt aktiv.
+Vor jeder Installationsänderung die kompletten `cli/`, `host/` und `proxy/`
+Dateihashes von Installation und Staging vergleichen und bei einer Abweichung
+abbrechen. `desktop/` und `notices/` zunächst in neue Nachbarordner der
+Installation kopieren, die bisherigen Ordner in eindeutig benannte Backups
+außerhalb von `app/` verschieben und die vorbereiteten Ordner als `app/desktop`
+und `app/notices` einsetzen. Danach ausschließlich `build-info.json`,
+`gate-status.json` und `SHA256SUMS` aus dem geprüften Paket übernehmen und im
+installierten `app/` mit `sha256sum --check --quiet SHA256SUMS` prüfen. Launcher,
+Service-Datei und private Daten werden bei diesem Desktopwechsel nicht berührt;
+ein Dienstneustart ist nicht erforderlich.
+
 ## Installieren und starten
 
 Archivprüfsumme vor dem Entpacken prüfen; danach den absoluten Paketpfad angeben:
