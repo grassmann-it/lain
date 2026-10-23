@@ -16,24 +16,7 @@ public sealed partial class MainWindow
     private Control AccountTiles(ConfigurationDto configuration)
     {
         _expandedAccountIds.RemoveWhere(id => !configuration.Accounts.Any(a => a.Id == id));
-        var grid = new Grid { ColumnSpacing = 12, RowSpacing = 12, HorizontalAlignment = HorizontalAlignment.Stretch };
-        var tiles = new List<Expander>();
-        var columns = 2;
-        void ArrangeTiles()
-        {
-            grid.ColumnDefinitions = new ColumnDefinitions(columns == 2 ? "*,*" : "*");
-            var row = 0;
-            var column = 0;
-            foreach (var tile in tiles)
-            {
-                if (tile.IsExpanded && column != 0) { row++; column = 0; }
-                Grid.SetRow(tile, row);
-                Grid.SetColumn(tile, column);
-                Grid.SetColumnSpan(tile, tile.IsExpanded ? columns : 1);
-                if (tile.IsExpanded || ++column == columns) { row++; column = 0; }
-            }
-            grid.RowDefinitions = new RowDefinitions(string.Join(",", Enumerable.Repeat("Auto", Math.Max(1, row + (column > 0 ? 1 : 0)))));
-        }
+        var tiles = new MasonryPanel { HorizontalAlignment = HorizontalAlignment.Stretch };
 
         // Keep the configured order within each group. A changing percentage must
         // not move the tile the user is about to open.
@@ -102,21 +85,12 @@ public sealed partial class MainWindow
                 if (args.Property != Expander.IsExpandedProperty) return;
                 if (tile.IsExpanded) _expandedAccountIds.Add(account.Id); else _expandedAccountIds.Remove(account.Id);
                 hint.Text = tile.IsExpanded ? "Hide details" : "Show details";
-                ArrangeTiles();
+                tiles.InvalidateMeasure();
             };
             hint.Text = tile.IsExpanded ? "Hide details" : "Show details";
-            tiles.Add(tile);
-            grid.Children.Add(tile);
+            tiles.Children.Add(tile);
         }
-        grid.SizeChanged += (_, _) =>
-        {
-            var next = grid.Bounds.Width >= 700 ? 2 : 1;
-            if (next == columns) return;
-            columns = next;
-            ArrangeTiles();
-        };
-        ArrangeTiles();
-        return grid;
+        return tiles;
     }
 
     private static TextBlock TileText(string value, double size, IBrush? color = null)
