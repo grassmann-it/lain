@@ -1,6 +1,6 @@
 # Independent expansion review — 24 October 2026
 
-Status: **source, synthetic integration and rendered UI accepted within the scopes below; eligible for controlled staging/install qualification, not yet installed expansion acceptance**.
+Status: **installed expansion checkpoint accepted within the evidence scopes below; eligible for final scoped release packaging, with new-provider live access explicitly untested**.
 Review baseline: `7b3a990` on `next-review`. This reviewer owns this document only.
 No product edits, legacy writes, provider requests with credentials, service
 operations or builds have been performed for this expansion review. Integrated
@@ -26,7 +26,7 @@ None substitutes for the others.
 | Dense quota tiles | Unequal tile heights do not create large empty grid cells. Closed tiles retain named windows, bars, remaining/reset/freshness; native expansion exposes balances/actions/provenance. | Actual Masonry fixture renders independently inspected at 1120×780 and 800×560; closed-tile density accepted. Installed Desktop follow-up also inspected and accepted for this UI-only checkpoint; expansion stays separate. |
 | Own live streams | Owned core supplies request/attempt live lifecycle and content; UI stays useful while a stream is running, including cancellation/error. | Core/Host/Desktop source and final compact renders accepted; final exact-hash synthetic Core/Inspector qualification passes. Actual new-provider live traffic remains untested. |
 | Conversation/turn/tool/worker grouping | Group only by supported identities and recorded evidence. Retries, continuations and tool calls do not become invented independent conversations. Missing parents/workers remain unknown. | Source, adversarial Core/Host/Desktop fixtures and final renders inspected. Conflicting or missing evidence remains separate/unknown; no heuristic grouping accepted. |
-| Durable usage | Existing requests/tokens survive migration/restart/replay. Metadata additions do not change token/outcome facts or double-count a terminal event. | Additive migration and metadata-only completion source reviewed; data worktree suite passed 22 tests. Installed expansion migration/restart evidence pending. |
+| Durable usage | Existing requests/tokens survive migration/restart/replay. Metadata additions do not change token/outcome facts or double-count a terminal event. | Additive migration and metadata-only completion source reviewed; data worktree suite passed 22 tests. Actual installed upgrade/restart preserves the fixed-window historical request/tokens/cursor; ten synthetic reopen/replays also pass. Actual old-generation rollback was not executed. |
 | Useful dimensions | Route, model family, manufacturer, inference provider, gateway, billing account, reasoning/mode and supported grouping identities remain distinct and historically attributable. | DTOs, binding validation and analysis projections inspected with synthetic coverage. Historical missing dimensions remain unknown; no live provider attribution inferred. |
 | Performance | First-output latency, full duration and output/full-duration rate have explicit definitions and valid sample counts. Quantiles use the whole filtered dataset, not 25 displayed attempts. | Whole-population SQL and explicit denominator/sample semantics inspected; 22-test data suite and final rendered analysis accepted, including the 600-attempt percentile fixture. |
 | Token/cost semantics | Unknown is null, measured zero remains zero, cached/reasoning subsets are not added again. Costs require actual currency/unit/pricing basis; unknown pricing never becomes zero. | Synthetic exact-Core null/zero checks and rendered eligible/sample counts accepted. No cost aggregation promised where no source cost fact exists. |
@@ -34,7 +34,7 @@ None substitutes for the others.
 | Strict free-only | Actual route execution and every retry/fallback reject paid or unknown price, incompatible scope/eligibility and expired/unverified trial assumptions. A display toggle alone is insufficient. | Initial deny-all boundary reviewed; narrow guarded OpenRouter execution is now wired and source-reviewed. Same-key zero-cap proof remains mandatory; live usability not tested. |
 | Privacy/lifetime | Auth headers/keys/refresh tokens never enter public output or persistent Usage. Inspector content uses bounded local buffers, explicit redaction and TTL; gaps/evictions are visible. | Implementation inspected; final exact-Core privacy/restart cases and Host 32+80 regression assertions pass. Independent Core/Host TTL and redaction limits remain explicit. |
 | Accessible UI | Keyboard activation/focus/expansion survive polling; statuses are text as well as color; narrow viewport and long content stay reachable without hidden data. | Final private-Xvfb run passes 380 checks/68 PNG; key renders accepted at 1120×780 and 800×560. Routed events are not OS pointer hit testing. |
-| Safe delivery | Owned-core identity/durability qualification remains valid; controlled migration/install has rollback. No legacy proxy/queue mutation or normal Codex configuration rewrite. | Final root-owned integration and interval-scoped isolation evidence pending. |
+| Safe delivery | Owned-core identity/durability qualification remains valid; controlled migration/install has rollback. No legacy proxy/queue mutation or normal Codex configuration rewrite. | Actual stopped-state backup, whole-app upgrade/restart and interval-scoped protection checks pass. Final archive must retain the qualified payload hashes and explicit evidence limits. |
 
 ## Initial contract inspection
 
@@ -442,23 +442,95 @@ That last boundary matters: this does not demonstrate old-generation schema
 migration on the user's installation. Controlled installed upgrade and subsequent
 GET-only native evidence remain the next independent acceptance checkpoint.
 
+## Valid pending-configuration preflight correction
+
+The first real preflight rejected a healthy existing desired/applied revision
+pair 4/2 before service stop or application/state replacement; root observed the
+same old Host PID and old application afterward. This was the helper's incorrect
+readiness assumption, not failed product startup or a completed upgrade. Opening
+the advisory upgrade lock is not included in an unchanged-all-files claim.
+
+Inspected fix `6c86d55`: readiness accepts `proxyReady=true` with valid integer
+`0 <= appliedRevision <= revision`. Initial status must agree with the captured
+configuration; immediately before stopping, status/configuration/usage are read
+again and must match the baseline. Upgrade and rollback require the exact original
+desired/applied pair afterward. No apply endpoint or configuration mutation was
+added. This matches product startup, which binds runtime/active-profile to the
+applied revision independently of pending desired edits. The runtime and active
+profile file guards remain. The owner reports eleven synthetic helper tests
+passed, including actual readiness parsing, invalid pairs and preserved 4/2
+upgrade/rollback fixtures. No source blocker remains for this correction.
+
+## Actual installed expansion checkpoint
+
+Independently read `/tmp/lain-expansion-upgrade-result-2.json` and selected
+non-secret verification fields from the private backup record
+`upgrade-backups/20261023T230528Z-686dddd8/upgrade.json`: phase `verified`, PASS,
+manifest `eb425f60052969fdb16879e2cc88020c963515fdc6fe426d6e36d3ef038f7c79`,
+Core `bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87`.
+The actual old-to-new whole-application upgrade and owned Host/Core restart
+retained desired/applied revisions 4/2, one historical request/attempt,
+81,986 tokens and cursor2. New analysis/schema queries succeeded. Configuration,
+owned credentials, normal Codex, launcher/unit and protected stable legacy files
+and service state remained unchanged during this controlled interval. Legacy
+logs/temp files are excluded, and normal background quota/auth activity is not
+claimed to stop. The helper issued zero inference requests. A stopped paired
+backup exists; actual old-generation rollback was not exercised.
+
+The final installed GET-only Xvfb report at
+`/tmp/lain-quota-installed-gui-check/evidence.json` is PASS with 30 PNGs.
+This temporary path has been reused; the earlier Masonry checkpoint is its
+separately retained historical report, not the current file. The new run loads
+installed production Desktop/Client/Core assemblies and uses the real local
+Host API. Independently verified installed payload hashes match the staged
+package, rather than inferring that from source commits:
+
+| Component | Installed SHA-256 |
+| --- | --- |
+| Desktop DLL | `f6e27878441b099645c9557d10fc921ec2c0022922f45b842c59f7c4c92ffb4d` |
+| Host executable | `6812c2aac14c4a712574f345e500f2382481b7d535273fab47041bd8d6115595` |
+| CLI executable | `2dfbb1bea1b96dd5d4d8262a3f16bc64d0ce303e96d88c881511de05c69ee095` |
+| Core executable | `bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87` |
+
+Personally viewed installed provider catalog, connected-empty Inspector and
+Usage analysis at 1120×780 and 800×560, provider details at800, reopened Usage,
+closed Z.ai and expanded Kimi. No blocking visual defect was found. All fifteen
+actual catalog providers are represented; prepared versus live-unverified and
+missing accounts remain clear. Inspector is connected with zero streams and no
+invented identities/content. Historical usage has one eligible attempt but zero
+owned measurement samples; P50/P95 remain unknown rather than borrowing old
+legacy timing. The installed two Z.ai and three Kimi windows remain legible,
+with amounts/percentages, reset and freshness matching the captured API data.
+
+The harness's same-process window close/reopen preserved one request,
+81,986 tokens and cursor2 while Host/Core remained available. That is separate
+from the real service restart in the upgrade report. Harness operations were
+GET-only observations, navigation/expansion and read-filter application: no
+inference, credential validation, quota refresh, configuration mutation, login
+or official-link/browser action. The user's existing Desktop was not closed;
+these captures use private Xvfb. Active streaming/tool rendering remains covered
+by the synthetic exact-Core/Host/UI fixtures, not fabricated installed traffic.
+
 ## Evidence ledger and final outcome
 
-This reviewer ran no builds or tests: execution was serialized by root, and the
-reports and rendered captures above were independently inspected. No remaining
-source or inspected-render blocker prevents controlled staging/install
-qualification; the final current-consumer binding now passes. This is not yet
-acceptance of an installed expansion or broad `releaseQualified: true`.
-Packaging must bind the exact qualified Core and final Desktop/Host/CLI artifacts;
-installed migration/restart, rollback and interval-scoped isolation evidence must
-be reviewed before those claims are made.
-
+This reviewer ran no builds, tests, installation or service actions: execution
+was serialized by root, and the evidence and actual renders were independently
+inspected. The installed expansion checkpoint is accepted for the qualified
+scope: exact-Core synthetic execution and durability, installed migration/restart
+and historical Usage preservation, installed read-only UI, prepared onboarding
+and mock-tested provider adapters. No remaining reviewed blocker prevents final
+scoped release metadata/archive creation, provided final checksums retain the
+qualified executable payloads and these explicit evidence limits. A broad claim
+that every provider is live-tested or every workflow was exercised on the user's
+installation is not accepted. Final archive identity/checksum verification is a
+delivery step, separate from this installed acceptance.
 All 15 new provider integrations remain live `not_tested`: documentation,
 prepared setup and mock-tested execution are useful accepted scope without new
 keys or live calls. Earlier Z.ai/Kimi/quota observations are historical evidence
 for the existing integrations and Masonry checkpoint, not new expansion probes.
-No live OpenRouter zero-cap usability claim is accepted. Controlled staging and
-installation do not require inventing a live test or acquiring new credentials.
+No live OpenRouter zero-cap usability claim is accepted. Release acceptance within this declared scope does not require inventing a live
+test or acquiring new credentials. Actual zero-cap upstream usability, real
+owned-OAuth rotation and actual old-generation rollback remain untested.
 
 The preceding quota review's normal Codex preservation statement was separately
 corrected in `2ebcf8f`: the 23:58 Desktop/CLI update preserved the bytes it started
