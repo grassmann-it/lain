@@ -38,8 +38,12 @@ Configuration mutations require a user request for that action. A request to
 inspect usage does not authorize importing accounts or changing routes. Imports
 use `lain import /absolute/config.yaml --auth-dir /absolute/auth --revision N
 --json`; inspect current revision first and re-read state on conflict rather
-than forcing a write. Use installed help for profile/route/client binding
-mutations. Keep the ordinary Codex configuration and other proxies unchanged;
+than forcing a write. `lain profiles apply ID --revision N --json` applies a profile through the host.
+`lain profiles install-codex ID --revision N --json` privately replaces the
+separate `~/.codex/lain.config.toml` and `lain.models.json` using the absolute
+`~/.local/bin/lain` auth helper, which must exist. It preserves the ordinary Codex
+config; the two artifact replacements are not a single transaction. Use installed
+help for other profile/route/client binding mutations. Keep the ordinary Codex configuration and other proxies unchanged;
 lain's Codex integration uses its separate config/profile.
 
 `lain auth token --audience codex` returns an inference credential in plaintext

@@ -12,12 +12,12 @@ expected=$(python3 -c 'import json; print(json.load(open("global.json"))["sdk"][
 # Locked restore refuses package graph changes. Update committed lockfiles explicitly.
 for project in Lain.Cli Lain.Host Lain.Desktop; do
     [[ -f "src/$project/packages.lock.json" ]] || { echo "Missing lockfile: $project" >&2; exit 2; }
-    dotnet restore "src/$project/$project.csproj" --locked-mode -r linux-x64 -p:SelfContained=true
+    dotnet restore "src/$project/$project.csproj" --locked-mode -m:1 -p:BuildInParallel=false -nr:false -r linux-x64 -p:SelfContained=true
  done
 mkdir -p "$out/proxy" "$out/packaging" "$out/skills"
 for spec in 'Lain.Cli cli' 'Lain.Host host' 'Lain.Desktop desktop'; do
     read -r project directory <<< "$spec"
-    dotnet publish "src/$project/$project.csproj" --no-restore -c Release -r linux-x64 --self-contained true -o "$out/$directory" \
+    dotnet publish "src/$project/$project.csproj" --no-restore -m:1 -p:BuildInParallel=false -nr:false -c Release -r linux-x64 --self-contained true -o "$out/$directory" \
         -p:ContinuousIntegrationBuild=true -p:Deterministic=true -p:DebugType=None -p:DebugSymbols=false -p:PathMap="$root=/_/lain"
 done
 scripts/build-core.sh "$out/proxy/lain-proxy"
@@ -31,6 +31,21 @@ json.dump({'format': 1, 'binary': 'lain-proxy',
  'sourceManifestSha256': hashlib.sha256((root / 'source-manifest.json').read_bytes()).hexdigest()},
  (root / 'binary-manifest.json').open('w'), indent=2)
 PYMANIFEST
+# Final acceptance is separate from source/binary integrity. Never synthesize it.
+python3 - "$out" "${LAIN_QUALIFICATION_FILE:-}" <<'PYGATE'
+import hashlib, json, pathlib, shutil, sys
+root, approved = pathlib.Path(sys.argv[1]), sys.argv[2]
+qualified = False
+if approved:
+    report = json.loads(pathlib.Path(approved).read_text())
+    actual = hashlib.sha256((root / 'proxy/lain-proxy').read_bytes()).hexdigest()
+    if report.get('passed') is not True or report.get('sha256') != actual:
+        raise SystemExit('Qualification must be passed=true for the exact built proxy SHA-256')
+    shutil.copyfile(approved, root / 'proxy/qualification.json')
+    qualified = True
+(root / 'gate-status.json').write_text(json.dumps({'releaseQualified': qualified,
+    'status': 'qualified' if qualified else 'staged-awaiting-final-acceptance'}, indent=2))
+PYGATE
 cp packaging/lain packaging/lain.service.in "$out/packaging/"
 cp scripts/install-linux.sh "$out/install-linux.sh"
 cp -a skills/lain-usage "$out/skills/"
@@ -44,4 +59,4 @@ PY
 epoch=${SOURCE_DATE_EPOCH:-$(git log -1 --format=%ct)}
 tar --sort=name --mtime="@$epoch" --owner=0 --group=0 --numeric-owner -cf - -C "$(dirname "$out")" "$(basename "$out")" | gzip -n > "$out.tar.gz"
 sha256sum "$out.tar.gz" > "$out.tar.gz.sha256"
-printf 'Published %s.tar.gz\n' "$out"
+printf 'Staged %s.tar.gz (see gate-status.json for final acceptance status)\n' "$out"

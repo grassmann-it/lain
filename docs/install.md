@@ -25,7 +25,13 @@ sortierte Dateinamen, feste Eigentümer und Commitzeit (`SOURCE_DATE_EPOCH`
 `build-info.json` zeichnet Commit, SDK und uncommittierte Änderungen auf.
 Für einen vergleichbaren Releasebuild einen sauberen Commit und dieselben
 Toolchains verwenden. Die Manifestprüfung allein ersetzt die Backend-Abnahme
-nach `docs/execution.md` nicht.
+nach `docs/execution.md` nicht. Ohne endgültigen Abnahmebeleg ist das Ergebnis
+nur ein Staging-Paket: `gate-status.json` enthält `releaseQualified: false` und
+es wird keine `qualification.json` erzeugt. Für ein abgenommenes Paket
+`LAIN_QUALIFICATION_FILE=/absolute/approved/qualification.json` setzen. Dieser
+Beleg muss `passed: true` und den exakten `sha256` des neu gebauten Proxys
+enthalten; ein abweichender Beleg lässt den Build fehlschlagen. Der Publisher
+setzt niemals selbst ein positives Abnahmeergebnis.
 
 Falls der Lockstand bewusst aktualisiert werden muss:
 
@@ -102,3 +108,13 @@ Deinstallation: Dienst stoppen und deaktivieren, die ausgewiesene Service-Datei,
 den Launcher und den eigenen `app`-Ordner entfernen, anschließend
 `systemctl --user daemon-reload`. Private Daten nur auf ausdrücklichen Wunsch
 löschen.
+
+## Synthetisch prüfen
+
+`./scripts/verify.sh` baut seriell und prüft Accounts, CLI/Client, Modelle,
+Quota, SQLite-Usage, Installer und vorhandene Python-Unittests. Es führt keine
+realen Anbieterproben aus. Optional starten `--core /absolute/lain-proxy` und
+`--host /absolute/Lain.Host` zusätzlich synthetische Prozessprüfungen; der
+Hosttest benötigt den freien eigenen Port 18418. Backendberichte liegen im
+ausgegebenen temporären Verzeichnis. Diese Prüfungen ersetzen keine endgültige
+Abnahme für den exakten Lieferstand.
