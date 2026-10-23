@@ -1,0 +1,18 @@
+[Unit]
+Description=lain private API and proxy supervisor
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=@HOME@
+Environment="LAIN_HOME=@HOME@"
+Environment="LAIN_PROXY_PATH=@HOME@/app/proxy/lain-proxy"
+Environment="ASPNETCORE_URLS=http://127.0.0.1:18418"
+ExecStart="@HOME@/app/host/Lain.Host"
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

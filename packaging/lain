@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+umask 077
+: "${LAIN_HOME:=$HOME/.local/share/lain}"
+export LAIN_HOME
+case "$LAIN_HOME" in /*) ;; *) echo 'LAIN_HOME must be absolute' >&2; exit 2;; esac
+app="$LAIN_HOME/app"
+if [ "${1:-}" = ui ]; then
+    shift
+    exec "$app/desktop/Lain.Desktop" "$@"
+fi
+exec "$app/cli/Lain.Cli" "$@"
