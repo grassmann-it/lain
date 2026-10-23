@@ -1,5 +1,22 @@
 # Desktop redesign · 23 October 2026
 
+## Current follow-up
+
+The user subsequently rejected the installed account presentation and clarified
+the desired interaction: account tiles with named budget windows, consumed and
+available percentages/amounts, progress bars and supplied reset times visible
+before expanding. Clicking a tile opens its remaining details and actions.
+An aggregate “2 budget windows” label is insufficient. The interim table design
+is superseded by this explicit request; its renders do not qualify the tiles.
+
+The visual reference is now the verified mint/near-black palette and suitable
+bundled OFL fonts from grassmann-it.de. Semi/Ursa remain the component stack.
+See [brand reference](brand-reference.md), [TUI Usage findings](tui-usage-reference.md)
+and [product scope](product-scope.md). The new quota Host is installed; final
+tile/Desktop/CLI qualification and installation are still in progress.
+
+## Earlier installed checkpoint
+
 The user rejected the initial desktop styling and requested the direction of
 [MeowChan](https://github.com/tfgrass/MeowChan), including its Semi/Ursa component
 stack. Functional acceptance of the previous UI remains historical evidence;

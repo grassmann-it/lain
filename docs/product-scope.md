@@ -31,6 +31,16 @@ oder Implementierung wird damit nicht behauptet.
 - Viele Accounts, auch mehrere beim selben Anbieter, und weitere Anbieter sollen
   darstellbar und deren Kontingente abfragbar sein. Die gewünschte Größenordnung
   ist noch nicht quantifiziert.
+- **Kontingente als aufklappbare Accountkacheln**: Benannte Zeitfenster,
+  Verbrauch in Prozent, verfügbare Restmenge und gemeldeter Reset müssen bereits
+  auf den geschlossenen Kacheln erkennbar sein. Eine Angabe wie „2 budget windows“
+  ersetzt diese Werte nicht. Ein Klick öffnet weitere Details und Accountaktionen.
+  Unbekannte Werte bleiben sichtbar unbekannt; unterschiedliche Budgets werden
+  nicht addiert. Diese Präzisierung des Nutzers vom 23.10.2026 ersetzt die
+  zwischenzeitlich entworfene primäre Kontingenttabelle.
+- Farben und geeignete lokal gebündelte Schriften folgen **grassmann-it.de**;
+  die bisherige TUI dient als Referenz für nützliche Usage-Informationen.
+  **GUI-Tests ausschließlich auf privatem Xvfb**, ohne Testfenster auf dem Desktop.
 - **Historische Proxy-Usage** gehört in den Kern: Tokens und Requests nach Tag,
   Modell und weiteren sinnvollen Dimensionen, nachvollziehbare Summen und Verläufe.
   Ziel ist eine gut lesbare Übersicht ähnlich der geschätzten bisherigen Usage-
