@@ -217,12 +217,13 @@ class Api:
         while time.monotonic() < deadline:
             try:
                 value = self.get('/status')
-                if value.get('proxyReady') is True and value.get('revision') == value.get('appliedRevision'):
+                revision, applied = value.get('revision'), value.get('appliedRevision')
+                if value.get('proxyReady') is True and type(revision) is int and type(applied) is int and 0 <= applied <= revision:
                     return value
             except (OSError, ValueError, GuardError):
                 pass
             time.sleep(.25)
-        raise GuardError('Own API/Core did not become ready with the applied revision.')
+        raise GuardError('Own API/Core did not become ready.')
 
 
 def without_nulls(value):
@@ -300,6 +301,8 @@ def snapshot_state(state, destination):
 
 def verify_online(api, baseline, config):
     status = api.ready()
+    require((status.get('revision'), status.get('appliedRevision')) == (config['revision'], config['appliedRevision']),
+            'Desired/applied revision pair changed during upgrade.')
     require(without_nulls(api.get('/configuration')) == without_nulls(config), 'Account/route/profile configuration changed.')
     deadline = time.monotonic() + 30
     while True:
@@ -340,8 +343,10 @@ def upgrade(options):
     with lock_state(state):
         current_service = own_service(state, options.unit_file)
         require(current_service['ActiveState'] == 'active', 'Own service must be active for the baseline.')
-        api = Api(state); api.ready()
+        api = Api(state); status = api.ready()
         configuration = api.get('/configuration')
+        require((status.get('revision'), status.get('appliedRevision')) ==
+                (configuration['revision'], configuration['appliedRevision']), 'Configuration changed during the readiness baseline.')
         finish = dt.datetime.now(dt.timezone.utc)
         window = {'from': (finish - dt.timedelta(days=options.days)).isoformat(), 'to': finish.isoformat(), 'timeZone': 'UTC'}
         baseline = {'window': window, 'usage': usage(api, window)}
@@ -365,6 +370,11 @@ def upgrade(options):
                 os.chmod(entry, stat.S_IMODE(entry.stat().st_mode) & 0o700)
             package_check(staging, options.package_manifest_sha256, options.core_sha256, options.allow_unreleased)
             sync_tree(staging)
+            before_stop = api.ready()
+            require((before_stop['revision'], before_stop['appliedRevision']) ==
+                    (configuration['revision'], configuration['appliedRevision']) and
+                    without_nulls(api.get('/configuration')) == without_nulls(configuration) and
+                    usage(api, window) == baseline['usage'], 'Configuration or usage changed before the controlled stop.')
             transition('stop', state, options.unit_file)
             record['phase'] = 'own-service-stopped'; write_json(backup / 'upgrade.json', record)
             require(all((state / name).is_file() for name in ('usage.db', *JOURNAL_PARTS)), 'Owned database/journal/source files are missing after stop.')
@@ -446,7 +456,10 @@ def rollback(options):
         sync_tree(displaced); sync_directory(backup); sync_directory(state)
         rollback_report['phase'] = 'state-flushed'; write_json(backup / 'rollback.json', rollback_report)
         transition('start', state, options.unit_file)
-        api = Api(state); api.ready()
+        api = Api(state); status = api.ready()
+        require((status.get('revision'), status.get('appliedRevision')) ==
+                (record['configuration']['revision'], record['configuration']['appliedRevision']),
+                'Desired/applied revision pair changed during rollback.')
         require(without_nulls(api.get('/configuration')) == without_nulls(record['configuration']) and
                 usage(api, record['baseline']['window']) == record['baseline']['usage'], 'Rollback API/state verification failed.')
         require(record['outside'] == outside_fingerprints(options), 'Rollback changed a protected external resource.')

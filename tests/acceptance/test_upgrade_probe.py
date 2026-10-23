@@ -63,6 +63,7 @@ class UpgradeProbeTests(unittest.TestCase):
             unit_file=self.root / 'lain.service', legacy_service='legacy-fixture.service')
 
         owner = self
+        self.real_api = probe.Api
 
         class FakeApi:
             def __init__(self, state):
@@ -72,7 +73,7 @@ class UpgradeProbeTests(unittest.TestCase):
                 assert owner.service_active
                 if (owner.state / 'app/host/Lain.Host').read_text() == 'new-host':
                     owner.write(owner.state / 'usage.db', 'synthetic-migrated-schema-bytes')
-                return {'proxyReady': True, 'revision': 4, 'appliedRevision': 4}
+                return {'proxyReady': True, 'revision': owner.config['revision'], 'appliedRevision': owner.config['appliedRevision']}
 
             def get(self, path):
                 if path == '/configuration':
@@ -123,6 +124,34 @@ class UpgradeProbeTests(unittest.TestCase):
         self.assertTrue(probe.upgrade(self.options)['planOnly'])
         self.assertEqual(before, probe.fingerprint(self.state))
         self.assertEqual(self.transitions, [])
+
+    def test_ready_accepts_healthy_pending_configuration(self):
+        api = self.real_api(self.state)
+        pending = {'proxyReady': True, 'revision': 4, 'appliedRevision': 2, 'state': 'pending-application'}
+        with patch.object(api, 'get', return_value=pending), patch.object(probe.time, 'monotonic', side_effect=[0, 0, 50]):
+            self.assertEqual(api.ready(), pending)
+
+    def test_ready_rejects_invalid_revision_pairs(self):
+        api = self.real_api(self.state)
+        for revision, applied in [('4', 2), (True, 0), (2, 3), (-1, 0)]:
+            with self.subTest(revision=revision, applied=applied), patch.object(api, 'get',
+                    return_value={'proxyReady': True, 'revision': revision, 'appliedRevision': applied}), \
+                    patch.object(probe.time, 'monotonic', side_effect=[0, 0, 50]):
+                with self.assertRaises(probe.GuardError):
+                    api.ready()
+
+    def test_upgrade_and_rollback_preserve_pending_revision_pair(self):
+        self.config['appliedRevision'] = 2
+        self.write(self.state / 'configuration.json', json.dumps(self.config))
+        self.write(self.state / 'active-profile.json', '{"id":"fixture","revision":2}')
+        self.write(self.state / 'proxy/runtime.json', '{"valid":true,"revision":2}')
+        before = probe.selected_fingerprints(self.state, probe.PRESERVED_PARTS)
+        result = self.install()
+        self.assertEqual((result['revision'], result['appliedRevision']), (4, 2))
+        self.assertEqual(before, probe.selected_fingerprints(self.state, probe.PRESERVED_PARTS))
+        self.assertTrue(probe.rollback(self.options)['rolledBack'])
+        self.assertEqual(self.config['appliedRevision'], 2)
+        self.assertEqual(before, probe.selected_fingerprints(self.state, probe.PRESERVED_PARTS))
 
     def test_legacy_response_logs_and_temporary_auth_are_excluded(self):
         before = probe.outside_fingerprints(self.options)

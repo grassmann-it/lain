@@ -86,6 +86,11 @@ attempt schema. No second stop or direct read of the live database is used just
 to inspect `PRAGMA user_version`, and the report does not invent a numeric
 observed schema version. A new API listener alone is not enough: the own Core
 must be ready and old usage must still agree.
+Healthy pending configuration is valid: for example, desired revision 4 and
+applied revision 2 remain exactly 4/2 across the upgrade and rollback. Readiness
+does not require those revisions to be equal. The helper checks the pair against
+the configuration baseline again immediately before stopping and after restart;
+it never applies the user's pending configuration.
 
 Restarting the existing own service resumes its normal quota/owned-auth
 background behavior. The helper issues zero inference requests and no explicit
