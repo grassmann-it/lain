@@ -38,6 +38,29 @@ try
     var writer = new RouteBindingsWriter(new OwnStatePaths(directory));
     writer.Write(config, bindings.Accounts);
     Check(File.ReadAllText(writer.BindingsPath).Contains("core-a"), "private bindings artifact");
+    Check(!JsonSerializer.Serialize(bindings).Contains("\"credentials\""), "legacy binding shape omits credentials");
+    var transports = new Dictionary<string, IReadOnlyDictionary<string, string>>
+    {
+        ["route-a"] = new Dictionary<string, string> { ["private-account-a"] = "core-responses-a" },
+        ["pool"] = new Dictionary<string, string> { ["private-account-a"] = "core-chat-a", ["private-account-b"] = "core-chat-b" }
+    };
+    var multi = RouteBindings.Compile(config, bindings.Accounts, transports);
+    Check(multi.Accounts.Count == 2 && multi.Routes["lain-test"].Accounts.Single() == "private-account-a" &&
+          multi.Routes["lain-test"].Credentials!["private-account-a"] == "core-responses-a" &&
+          multi.Routes["pool-test"].Credentials!["private-account-a"] == "core-chat-a", "one logical account retains distinct route transport credentials");
+    var overridesOnly = RouteBindings.Compile(config, new Dictionary<string, string>(), transports);
+    Check(overridesOnly.Accounts.Count == 0, "complete route bindings do not need arbitrary account defaults");
+    writer.Write(config, bindings.Accounts, transports);
+    using (var transportFile = JsonDocument.Parse(File.ReadAllText(writer.BindingsPath)))
+        Check(transportFile.RootElement.GetProperty("routes").GetProperty("lain-test").GetProperty("credentials").GetProperty("private-account-a").GetString() == "core-responses-a", "route credentials serialized with launcher field names");
+    Throws<ArgumentException>(() => RouteBindings.Compile(config, bindings.Accounts,
+        new Dictionary<string, IReadOnlyDictionary<string, string>> { ["pool"] = new Dictionary<string, string> { ["private-account-a"] = "core-chat-a" } }));
+    Throws<ArgumentException>(() => RouteBindings.Compile(config, bindings.Accounts,
+        new Dictionary<string, IReadOnlyDictionary<string, string>> { ["route-a"] = new Dictionary<string, string> { ["private-account-b"] = "core-b" } }));
+    Throws<ArgumentException>(() => RouteBindings.Compile(config, bindings.Accounts,
+        new Dictionary<string, IReadOnlyDictionary<string, string>> { ["route-a"] = new Dictionary<string, string> { ["private-account-a"] = " " } }));
+    Throws<ArgumentException>(() => RouteBindings.Compile(config, bindings.Accounts,
+        new Dictionary<string, IReadOnlyDictionary<string, string>> { ["route-a"] = new Dictionary<string, string> { ["private-account-a"] = "core-b" } }));
     var reread = new ConfigurationRepository(new OwnStatePaths(directory));
     Check(reread.Snapshot.Revision == config.Revision && reread.Snapshot.Profiles.Length == 1, "configuration survives restart");
     if (args.Length >= 1)

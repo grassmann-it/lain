@@ -49,3 +49,12 @@ export endpoint is `POST /api/v1/profiles/{id}/codex/export` with
 Use `ResolveForApply` before runtime apply. `RouteBindings.Compile` builds the
 launcher startup contract using credential IDs from W3's config writer; the host
 must restart/apply successfully before calling `ConfigurationRepository.MarkApplied`.
+
+Multi-transport bindings accept an optional third argument keyed by route ID,
+then logical account ID, to the route-specific core credential ID. The runtime
+writer supplies this as `ProxyConfigurationWriter.RouteCredentials`. JSON emits
+`routes.<alias>.credentials` for those routes while retaining stable logical
+IDs in `accounts`. An explicit route map must cover exactly its members; missing,
+foreign, blank, or conflicting credential ownership fails compilation. Without a
+route map, the original global account mapping remains supported. Two transports
+of one logical account do not create two account or budget identities.
