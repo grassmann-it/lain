@@ -29,12 +29,12 @@ public sealed class QuotaCredential(string bearerToken, string? providerAccountI
         var kind = JsonFields.String(root, "kind");
         var token = kind switch
         {
-            "codex-access-snapshot" => JsonFields.String(root, "accessToken"),
+            "codex-access-snapshot" or "codex-owned" => JsonFields.String(root, "accessToken"),
             "api-key" => JsonFields.String(root, "apiKey"),
             _ => null
         };
         return string.IsNullOrWhiteSpace(token) ? null : new(token,
-            kind == "codex-access-snapshot" ? JsonFields.String(root, "accountId") : null,
+            kind is "codex-access-snapshot" or "codex-owned" ? JsonFields.String(root, "accountId") : null,
             JsonFields.Date(root, "expiresAt"));
     }
 }

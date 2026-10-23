@@ -11,6 +11,11 @@ Codex/Command Code adapters. Account identity, enabled state, explicit pool
 identity and `SharedWithLegacy` come from account management. Credentials can be
 resolved using `QuotaCredential.FromSecretJson(secretStore.ReadAccount(id))` on
 the normalized private W3 store. Never point the adapter at a legacy auth path.
+The normalized Codex kind may be `codex-access-snapshot` or `codex-owned`;
+both expose only `accessToken`, `accountId` and `expiresAt` to quota. For owned
+logins SecretStore hydrates current access material from the explicitly owned
+core file. Refresh ownership remains with that core; quota neither reads nor
+uses refresh/ID tokens, and missing access material stays unavailable.
 
 Use an `HttpClientHandler` with `AllowAutoRedirect = false` for the provider
 clients. Endpoints are fixed HTTPS URLs; 3xx responses must fail instead of

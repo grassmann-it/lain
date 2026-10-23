@@ -73,6 +73,18 @@ static class Test
         Check(partial.Error == "billing/credits unavailable.", "partial failure sanitized");
         var secret = QuotaCredential.FromSecretJson("""{"kind":"codex-access-snapshot","accessToken":"private","accountId":"provider-a","refreshToken":"never-used"}""");
         Check(secret?.BearerToken == "private" && secret.ProviderAccountId == "provider-a" && !secret.ToString().Contains("private"), "normalized secret parse and redaction");
+        var ownedSecret = QuotaCredential.FromSecretJson("""{"kind":"codex-owned","accessToken":"owned-access","accountId":"provider-owned","expiresAt":"2026-10-29T06:55:59Z","refreshToken":"must-not-be-used","idToken":"must-not-be-used"}""");
+        Check(ownedSecret?.BearerToken == "owned-access" && ownedSecret.ProviderAccountId == "provider-owned" && ownedSecret.ExpiresAt == DateTimeOffset.Parse("2026-10-29T06:55:59Z"), "owned normalized token identity and expiry");
+        var ownedHttp = new FakeHttp(request =>
+        {
+            Check(request.Method == HttpMethod.Get && request.RequestUri!.ToString() == CodexQuotaAdapter.Endpoint, "owned quota only GET usage; never refresh");
+            Check(request.Headers.Authorization?.Parameter == "owned-access" && request.Headers.GetValues("ChatGPT-Account-Id").Single() == "provider-owned", "owned current access token and account header");
+            return """{"rate_limit":{"primary_window":{"used_percent":9}}}""";
+        });
+        using var ownedClient = new HttpClient(ownedHttp);
+        var ownedResult = await new CodexQuotaAdapter(ownedClient).FetchAsync(account with { CredentialKind = "codex-owned" }, ownedSecret!);
+        Check(ownedResult.Readings.Single().Remaining == 91 && ownedHttp.Urls.Count == 1, "owned quota supports same percentage semantics without refresh");
+        Check(QuotaCredential.FromSecretJson("""{"kind":"codex-owned","refreshToken":"not-an-access-token"}""") is null, "refresh token never substitutes for owned access token");
         var noRequests = new FakeHttp(_ => throw new Exception("Must not call provider"));
         using var noClient = new HttpClient(noRequests);
         var blocked = new QuotaService(new Accounts([account with { Enabled = false }, account with { Id = "expired" }, account with { Id = "unsupported", Provider = "other" }]),

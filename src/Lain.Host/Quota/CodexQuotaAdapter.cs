@@ -11,8 +11,8 @@ public sealed class CodexQuotaAdapter(HttpClient client) : IQuotaAdapter
 
     public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
-        if (account.CredentialKind != "codex-access-snapshot")
-            throw new QuotaFetchException("Codex quota requires an access snapshot; API-key quota is unknown.");
+        if (account.CredentialKind is not ("codex-access-snapshot" or "codex-owned"))
+            throw new QuotaFetchException("Codex quota requires a qualified access token; API-key quota is unknown.");
         using var doc = await QuotaHttp.GetAsync(client, Endpoint, credential, ct, codex: true);
         var limits = JsonFields.Object(doc.RootElement, "rate_limit");
         var rows = new List<QuotaReading>();
