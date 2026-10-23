@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
   <ItemGroup>
-    <Compile Include="../../src/Lain.Core/Contracts.cs" Link="Core/Contracts.cs" />
+    <Compile Include="../../src/Lain.Core/*.cs" Link="Core/%(Filename)%(Extension)" />
     <Compile Include="../../src/Lain.Host/Quota/QuotaContracts.cs" Link="Quota/QuotaContracts.cs" />
     <Compile Include="../../src/Lain.Host/Quota/QuotaHttp.cs" Link="Quota/QuotaHttp.cs" />
     <Compile Include="../../src/Lain.Host/Quota/OpenRouterQuotaAdapter.cs" Link="Quota/OpenRouterQuotaAdapter.cs" />
