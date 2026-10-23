@@ -107,10 +107,12 @@ internal sealed class Fixture : HttpMessageHandler
     {
         var observed = DateTimeOffset.Parse("2026-10-23T12:00:00Z");
         QuotaDto Reading(string id, string source, string label, double used, double limit, string unit, double percent, bool shared = false)
-            => new(id, null, source, "ok", observed, observed, observed.AddHours(5), unit, used, limit, limit - used,
-                shared, WindowLabel: label, UsedPercent: percent);
+            => new(id, null, source, "ok", observed, observed,
+                label.Contains("7 days", StringComparison.Ordinal) || label == "Weekly" ? observed.AddDays(7)
+                    : label.StartsWith("Monthly", StringComparison.Ordinal) ? DateTimeOffset.Parse("2026-11-01T00:00:00Z") : observed.AddHours(5),
+                unit, used, limit, limit - used, shared, WindowLabel: label, UsedPercent: percent);
         return [
-            Reading("a1", "https://chatgpt.com/backend-api/wham/usage#primary_window", "5 hours", 37, 100, "%", 37, true),
+            Reading("a1", "https://chatgpt.com/backend-api/wham/usage#primary_window", "7 days", 37, 100, "%", 37, true),
             Reading("a2", "https://api.commandcode.ai/alpha/billing/credits#fiveHour", "5 hours", 4, 20, "USD-Credits", 20),
             Reading("a2", "https://api.commandcode.ai/alpha/billing/credits#weekly", "Weekly", 22, 40, "USD-Credits", 55)
                 with { State = "stale", ObservedAt = observed.AddMinutes(6), Error = "Quota refresh temporarily unavailable; previous observation retained." },
@@ -121,11 +123,14 @@ internal sealed class Fixture : HttpMessageHandler
                 "USD-Credits", null, null, 0, false, WindowLabel: "Free credits"),
             new("a2", null, "https://commandcode.ai/docs/plans/pro#model-monthly-remaining-unknown", "unknown", observed, null, null,
                 "USD", null, null, null, false, WindowLabel: "Model allowance"),
-            Reading("a3", "https://api.z.ai/api/monitor/usage/quota/limit#credit_limit", "Credits", 250, 1000, "credits", 25),
+            Reading("a3", "https://api.z.ai/api/monitor/usage/quota/limit#CREDIT_LIMIT/unit/3/number/5", "Credits · 5 hours", 250, 1000, "credits", 25),
+            new("a3", null, "https://api.z.ai/api/monitor/usage/quota/limit#CREDIT_LIMIT/unit/6/number/1", "ok", observed, observed, observed.AddDays(7),
+                "credits", null, null, null, false, WindowLabel: "Credits · 7 days", UsedPercent: 72),
             Reading("a4", "https://api.kimi.com/coding/v1/usages#limit_5h", "5 hours", 100, 100, "%", 100),
             // Some provider windows supply only a consumed percentage, with no absolute amounts.
-            Reading("a4", "https://api.kimi.com/coding/v1/usages#limit_month_total", "Monthly", 62, 100, "%", 62)
+            Reading("a4", "https://api.kimi.com/coding/v1/usages#limit_month_total", "Monthly total", 62, 100, "%", 62)
                 with { Used = null, Limit = null, Remaining = null },
+            Reading("a4", "https://api.kimi.com/coding/v1/usages#limit_month_code", "Monthly coding", 18, 100, "%", 18),
             new("a5", null, "unavailable", "unsupported", observed, null, null, "unknown", null, null, null, false,
                 "Provider quota is not available.", "Provider quota")
         ];

@@ -7,6 +7,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Automation;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -89,15 +90,19 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await CheckQuotaOverview();
         await CaptureBoth("overview");
         await Click("Accounts");
+        await CheckClosedQuotaTiles("accounts");
+        await CaptureBoth("accounts-closed");
         await CheckQuotaAccounts();
         await CaptureBoth("accounts");
-        var accountList = Controls<ListBox>().Single(x => AutomationProperties.GetName(x) == "Accounts");
-        var accountItem = accountList.GetVisualDescendants().OfType<ListBoxItem>().Single(x => x.IsSelected);
-        accountItem.Focus();
-        Check(accountItem.IsFocused, "selected account row accepts keyboard focus");
+        var accountTile = QuotaTile("Personal Codex");
+        var accountHeader = TileHeader(accountTile);
+        accountHeader.BringIntoView();
+        accountHeader.Focus();
+        Check(accountHeader.IsFocused, "account tile header accepts keyboard focus");
         var statusCalls = fixture.StatusCalls;
         await Task.Delay(10300);
-        Check(fixture.StatusCalls > statusCalls && accountItem.IsFocused && Controls<ListBox>().Contains(accountList) && accountList.GetVisualDescendants().Contains(accountItem), "account list focus and identity survive passive refresh");
+        Check(fixture.StatusCalls > statusCalls && accountHeader.IsFocused && accountTile.IsExpanded && Controls<Expander>().Contains(accountTile)
+            && accountTile.GetVisualDescendants().Contains(accountHeader), "account tile focus expansion and identity survive passive refresh");
         fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1,
             Accounts = fixture.Config.Accounts.Select(a => a.Id == "a1" ? a with { Name = "Personal Codex updated" } : a).ToArray() };
         await Click("Refresh");
@@ -268,73 +273,108 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Named<TextBox>("From · inclusive").BringIntoView();
     }
 
-    private async Task CheckQuotaOverview()
+    private static readonly (string Account, (string Label, double Percent)[] Windows)[] ExpectedProviderWindows =
+    [
+        ("Personal Codex", [("7 days", 37)]),
+        ("Command Code Pro", [("5 hours", 20), ("Weekly", 55), ("Monthly credits", 25)]),
+        ("Z.ai Coding", [("Credits · 5 hours", 25), ("Credits · 7 days", 72)]),
+        ("Kimi Coding", [("5 hours", 100), ("Monthly total", 62), ("Monthly coding", 18)])
+    ];
+
+    private Expander QuotaTile(string account) => Controls<Expander>().Single(x => AutomationProperties.GetName(x) == $"Account budgets for {account}");
+    private static ToggleButton TileHeader(Expander tile) => tile.GetVisualDescendants().OfType<ToggleButton>()
+        .Single(x => AutomationProperties.GetName(x) == AutomationProperties.GetName(tile)!.Replace("Account budgets for ", "Toggle account budgets for ", StringComparison.Ordinal));
+    private async Task ExpandTile(Expander tile, bool expanded)
     {
-        await Wait(() => Controls<ProgressBar>().Length >= 4, "overview displays known provider budgets");
-        CheckQuotaBar("Personal Codex", "5 hours", 37);
-        CheckQuotaBar("Command Code Pro", "Weekly", 55);
-        CheckQuotaBar("Z.ai Coding", "Credits", 25);
-        CheckQuotaBar("Kimi Coding", "5 hours", 100);
-        Check(HasText("MiMo API") && HasText("Not available", true), "overview distinguishes unsupported MiMo from an empty balance");
-        Check(!Controls<ProgressBar>().Any(x => AutomationProperties.GetName(x)?.Contains("MiMo", StringComparison.Ordinal) == true), "unsupported overview provider has no invented progress");
+        // Exercise the native Expander header's two-way toggle binding without an OS pointer event.
+        var header = TileHeader(tile);
+        Check(header.IsEnabled, $"{AutomationProperties.GetName(tile)} header is interactive");
+        header.SetCurrentValue(ToggleButton.IsCheckedProperty, expanded);
+        await Task.Delay(100);
+        Check(tile.IsExpanded == expanded, $"{AutomationProperties.GetName(tile)} {(expanded ? "expands" : "closes")} through its header");
     }
+
+    private async Task CheckClosedQuotaTiles(string page)
+    {
+        await Wait(() => Controls<Expander>().Count(x => AutomationProperties.GetName(x)?.StartsWith("Account budgets for ", StringComparison.Ordinal) == true) == Fixture.InitialAccounts,
+            $"{page} displays one quota tile per account");
+        foreach (var (account, windows) in ExpectedProviderWindows)
+        {
+            var tile = QuotaTile(account);
+            Check(!tile.IsExpanded, $"{page} {account} first-look tile is closed");
+            foreach (var (label, percent) in windows)
+            {
+                CheckQuotaBar(account, label, percent);
+                var observed = DateTimeOffset.Parse("2026-10-23T12:00:00Z");
+                var resets = label.Contains("7 days", StringComparison.Ordinal) || label == "Weekly" ? observed.AddDays(7)
+                    : label.StartsWith("Monthly", StringComparison.Ordinal) ? DateTimeOffset.Parse("2026-11-01T00:00:00Z") : observed.AddHours(5);
+                var resetText = resets.ToLocalTime().ToString("dd MMM · HH:mm", System.Globalization.CultureInfo.CurrentCulture);
+                var bar = tile.GetVisualDescendants().OfType<ProgressBar>().Single(x => AutomationProperties.GetName(x) == $"{account} · {label} · consumed");
+                var header = (Control)tile.Header!;
+                Check(AutomationProperties.GetHelpText(bar)?.Contains(resetText, StringComparison.Ordinal) == true
+                    && header.GetVisualDescendants().OfType<TextBlock>().Any(x => x.Text?.Contains(resetText, StringComparison.Ordinal) == true),
+                    $"{page} closed {account} {label} exposes its actual local reset");
+            }
+            Check(tile.GetVisualDescendants().OfType<ProgressBar>().Count() == windows.Length, $"{page} {account} closed tile includes every known percentage window exactly once");
+        }
+        var mimo = QuotaTile("MiMo API");
+        Check(!mimo.IsExpanded && HasText("Not available", true), $"{page} explains unsupported MiMo quota in its closed tile");
+        Check(!mimo.GetVisualDescendants().OfType<ProgressBar>().Any(), $"{page} unsupported provider has no invented progress");
+    }
+
+    private Task CheckQuotaOverview() => CheckClosedQuotaTiles("overview");
 
     private async Task CheckQuotaAccounts()
     {
-        await Wait(() => Controls<ListBox>().Any(x => AutomationProperties.GetName(x) == "Accounts"), "account list ready for quota inspection");
-        var accounts = Controls<ListBox>().Single(x => AutomationProperties.GetName(x) == "Accounts");
-        foreach (var (id, name, windows) in new (string, string, (string Label, double Percent)[])[]
+        foreach (var (name, windows) in ExpectedProviderWindows)
         {
-            ("a1", "Personal Codex", [("5 hours", 37)]),
-            ("a2", "Command Code Pro", [("5 hours", 20), ("Weekly", 55), ("Monthly credits", 25)]),
-            ("a3", "Z.ai Coding", [("Credits", 25)]),
-            ("a4", "Kimi Coding", [("5 hours", 100), ("Monthly", 62)])
-        })
-        {
-            var account = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == id);
-            accounts.SelectedItem = account;
-            accounts.ScrollIntoView(account);
-            await Task.Delay(120);
+            var tile = QuotaTile(name);
+            await ExpandTile(tile, true);
             foreach (var (label, percent) in windows) CheckQuotaBar(name, label, percent);
-            if (id == "a2") Check(HasText("Last known"), "stale Command window is labelled as last known");
-            if (id == "a4") Check(HasText("38% left"), "percentage-only Kimi window shows justified remaining percentage");
-            if (id != "a1") await CaptureBoth($"accounts-{id}", () => accounts.ScrollIntoView(account));
-            if (id == "a2")
+            if (name == "Command Code Pro")
             {
-                var lastWindow = accounts.GetVisualDescendants().OfType<TextBlock>().Single(x => x.Text == "Model allowance");
+                Check(HasText("Last known"), "stale Command window is labelled as last known");
+                var lastWindow = tile.GetVisualDescendants().OfType<TextBlock>().Single(x => x.Text == "Model allowance");
                 Check(!Controls<ProgressBar>().Any(x => AutomationProperties.GetName(x) == "Command Code Pro · Model allowance · consumed"), "unknown model allowance has no invented progress bar");
-                await CaptureBoth("accounts-a2-last-window", () => lastWindow.BringIntoView());
-                // CaptureBoth restores the large viewport, so explicitly prove reachability at the small size too.
+                await CaptureBoth("accounts-command", () => TileHeader(tile).BringIntoView());
+                await CaptureBoth("accounts-command-last-window", () => lastWindow.BringIntoView());
                 await ResizeViewport(800, 560);
                 lastWindow.BringIntoView();
                 await Task.Delay(100); window.UpdateLayout();
-                Check(FitsScrollViewports(lastWindow), "sixth Command window is visibly reachable inside every scroll viewport at 800x560");
+                Check(FitsScrollViewports(lastWindow), "sixth Command window is visibly reachable by ordinary page scroll at 800x560");
                 await ResizeViewport(1120, 780);
             }
+            if (name == "Z.ai Coding")
+            {
+                Check(HasText("750", true) && HasText("credits", true), "Z.ai exposes its numeric remaining credit balance");
+                await CaptureBoth("accounts-zai", () => TileHeader(tile).BringIntoView());
+                var technical = tile.GetVisualDescendants().OfType<Expander>().Single(x => Equals(x.Header, "Technical details"));
+                technical.IsExpanded = true;
+                await Task.Delay(120);
+                var values = technical.GetVisualDescendants().OfType<SelectableTextBlock>().ToArray();
+                Check(values.Any(x => x.Text?.Contains("https://api.z.ai/", StringComparison.Ordinal) == true)
+                    && values.Any(x => x.Text?.Contains("observed", StringComparison.Ordinal) == true && x.Text.Contains("last success", StringComparison.Ordinal)), "expanded quota details expose source and snapshot freshness");
+                var percentOnly = values.Single(x => x.Text == "Used: Not supplied · limit: Not supplied · remaining: Not supplied");
+                Check(percentOnly is not null, "percentage-only Z.ai quota does not invent absolute counts");
+                await CaptureBoth("accounts-zai-technical", () => percentOnly.BringIntoView());
+                technical.IsExpanded = false;
+            }
+            if (name == "Kimi Coding")
+            {
+                Check(HasText("38% left"), "percentage-only Kimi window shows justified remaining percentage");
+                await CaptureBoth("accounts-kimi", () => TileHeader(tile).BringIntoView());
+            }
+            await ExpandTile(tile, false);
         }
-        accounts.SelectedItem = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == "a3");
-        await Task.Delay(120);
-        Check(HasText("750", true) && HasText("credits", true), "Z.ai exposes its numeric remaining credit balance");
-        var technical = Controls<Expander>().Single(x => Equals(x.Header, "Technical details"));
-        technical.IsExpanded = true;
-        await Task.Delay(120);
-        var provenance = technical.GetVisualDescendants().OfType<SelectableTextBlock>().Single(x => x.Text?.Contains("observed", StringComparison.Ordinal) == true);
-        Check(technical.GetVisualDescendants().OfType<SelectableTextBlock>().Any(x => x.Text?.Contains("https://api.z.ai/", StringComparison.Ordinal) == true)
-            && provenance.Text!.Contains("last success", StringComparison.Ordinal), "expanded quota details expose source and snapshot freshness");
-        await CaptureBoth("accounts-a3-technical", () => provenance.BringIntoView());
-        technical.IsExpanded = false;
-        var mimo = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == "a5");
-        accounts.SelectedItem = mimo;
-        accounts.ScrollIntoView(mimo);
-        await Task.Delay(120);
-        await CaptureBoth("accounts-a5", () => accounts.ScrollIntoView(mimo));
-        Check(HasText("Not available", true), "accounts explain unavailable MiMo quota");
-        Check(!Controls<ProgressBar>().Any(x => AutomationProperties.GetName(x)?.Contains("MiMo", StringComparison.Ordinal) == true), "unsupported account has no zero-percent quota bar");
-        // Keep the existing account/focus workflows on Personal Codex.
-        var personal = accounts.ItemsSource!.Cast<AccountDto>().Single(a => a.Id == "a1");
-        accounts.SelectedItem = personal;
-        accounts.ScrollIntoView(personal);
-        accounts.BringIntoView();
+        var mimo = QuotaTile("MiMo API");
+        await ExpandTile(mimo, true);
+        await CaptureBoth("accounts-mimo", () => TileHeader(mimo).BringIntoView());
+        Check(HasText("Not available", true), "expanded MiMo tile explains unsupported quota");
+        Check(!mimo.GetVisualDescendants().OfType<ProgressBar>().Any(), "expanded unsupported account has no zero-percent quota bar");
+        await ExpandTile(mimo, false);
+        var personal = QuotaTile("Personal Codex");
+        await ExpandTile(personal, true);
+        TileHeader(personal).BringIntoView();
         await Task.Delay(120);
     }
 
@@ -358,7 +398,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     {
         var name = $"{account} · {label} · consumed";
         var bars = Controls<ProgressBar>().Where(x => AutomationProperties.GetName(x) == name).ToArray();
-        Check(bars.Length > 0, $"semantic quota progress label: {name}");
+        Check(bars.Length == 1, $"one semantic quota progress label: {name}");
         Check(bars.All(bar => Math.Abs(bar.Minimum) < .001 && Math.Abs(bar.Maximum - 100) < .001 && Math.Abs(bar.Value - percent) < .001 && !bar.IsIndeterminate),
             $"{account} {label} progress is {percent}% consumed");
     }
@@ -371,7 +411,8 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         lifetime.MainWindow = window; window.Show();
         await Wait(() => HasText("ready", true), "main window ready");
     }
-    private T[] Controls<T>() where T : Control => window.GetVisualDescendants().OfType<T>().Where(c => c.IsVisible).ToArray();
+    private T[] Controls<T>() where T : Control => window.GetVisualDescendants().OfType<T>()
+        .Where(c => c.IsVisible && c.GetVisualAncestors().OfType<Control>().All(parent => parent.IsVisible)).ToArray();
     private TextBox Input(string watermark) => Controls<TextBox>().Single(x => Equals(x.PlaceholderText, watermark));
     private bool HasText(string value, bool contains = false) => Controls<TextBlock>().Any(t => contains ? t.Text?.Contains(value, StringComparison.OrdinalIgnoreCase) == true : t.Text == value);
     private bool UsageConnected() => HasText("Connected · source: lain host / persistent usage API");
