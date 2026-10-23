@@ -85,8 +85,14 @@ public sealed partial class MainWindow
         form.Children.Add(AccountFormRow("Base URL", endpoint));
         form.Children.Add(AccountFormRow(secretFields[0].Label, secret));
         if (!string.IsNullOrWhiteSpace(secretFields[0].Help)) form.Children.Add(Ui.Text(secretFields[0].Help!, 11, Ui.Muted));
-        var accessNotes = string.Join("\n", provider.Restrictions);
-        if (!string.IsNullOrWhiteSpace(accessNotes)) form.Children.Add(Ui.Text(accessNotes, 11, Ui.Muted));
+        var restrictionText = Ui.Text(string.Join("\n\n", provider.Restrictions), 11, Ui.Muted);
+        var restrictions = new Expander
+        {
+            Header = "Provider terms and route details", HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch, Content = restrictionText
+        };
+        AutomationProperties.SetName(restrictions, "Provider terms and route details");
+        form.Children.Add(restrictions);
         string[] planIds = [];
         Dictionary<string, string> CurrentSettings()
         {
@@ -114,7 +120,8 @@ public sealed partial class MainWindow
             planIds = selected.BillingPlanIds;
             billing.ItemsSource = planIds.Select(id => provider.BillingPlans.FirstOrDefault(plan => plan.Id == id) is { } plan ? $"{plan.Name} · {ProviderAccessLabel(plan.Kind)}" : id).ToArray();
             billing.SelectedIndex = -1;
-            routeNotes.Text = string.Join("\n", new[] { $"{selected.Model} · {selected.Protocol}", "Choose the plan for this route explicitly. No account balance or live access has been verified." }.Concat(selected.Restrictions ?? []));
+            routeNotes.Text = string.Join("\n", new[] { $"{selected.Model} · {selected.Protocol}", "Choose the plan for this route explicitly. No account balance or live access has been verified.", provider.Summary });
+            restrictionText.Text = string.Join("\n\n", provider.Restrictions.Concat(selected.Restrictions ?? []).Distinct(StringComparer.Ordinal));
             UpdateEndpoint();
         };
         billing.SelectionChanged += (_, _) => UpdateEndpoint();
