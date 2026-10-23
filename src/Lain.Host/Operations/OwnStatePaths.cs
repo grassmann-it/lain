@@ -13,6 +13,7 @@ public sealed class OwnStatePaths
     public string Imports => Path.Combine(Root, "imports");
     public string Proxy => Path.Combine(Root, "proxy");
     public string ProxyAuth => Path.Combine(Proxy, "auth");
+    public string OwnedAuth => Path.Combine(Proxy, "auth-owned");
     public string ProxyConfig => Path.Combine(Proxy, "config.yaml");
     public string Configuration => Path.Combine(Root, "configuration.json");
     public string ApiToken => Path.Combine(Credentials, "host.token");
@@ -23,7 +24,7 @@ public sealed class OwnStatePaths
     {
         Root = Path.GetFullPath(root ?? Environment.GetEnvironmentVariable("LAIN_HOME") ??
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "lain"));
-        foreach (var path in new[] { Root, Credentials, Imports, Proxy, ProxyAuth }) EnsurePrivateDirectory(path);
+        foreach (var path in new[] { Root, Credentials, Imports, Proxy, ProxyAuth, OwnedAuth }) EnsurePrivateDirectory(path);
     }
 
     public static void EnsurePrivateDirectory(string path)
@@ -77,7 +78,23 @@ public sealed class SecretStore(OwnStatePaths paths)
             return token;
         }
     }
-    public string ReadAccount(string accountId) => ReadPrivate(AccountPath(accountId));
+    public string ReadAccount(string accountId)
+    {
+        var stored = ReadPrivate(AccountPath(accountId));
+        var descriptor = System.Text.Json.Nodes.JsonNode.Parse(stored)!.AsObject();
+        if (descriptor["kind"]?.GetValue<string>() != "codex-owned") return stored;
+        var filename = descriptor["ownedAuthFile"]?.GetValue<string>();
+        if (filename is null || Path.GetFileName(filename) != filename || !filename.EndsWith(".json", StringComparison.Ordinal))
+            throw new InvalidDataException("Invalid owned credential reference.");
+        var owned = System.Text.Json.Nodes.JsonNode.Parse(ReadPrivate(Path.Combine(paths.OwnedAuth, filename)))!.AsObject();
+        if (owned["type"]?.GetValue<string>() != "codex" || owned["account_id"]?.GetValue<string>() != descriptor["accountId"]?.GetValue<string>())
+            throw new InvalidDataException("Owned credential identity mismatch.");
+        descriptor["accessToken"] = owned["access_token"]?.DeepClone();
+        if (owned["expired"] is { } expires) descriptor["expiresAt"] = expires.DeepClone();
+        // Refresh tokens never leave the core-owned credential file.
+        return descriptor.ToJsonString();
+    }
+    internal string ReadAccountDescriptor(string accountId) => ReadPrivate(AccountPath(accountId));
     public void WriteAccount(string accountId, string json) => OwnStatePaths.WritePrivate(AccountPath(accountId), json);
     public void DeleteAccount(string accountId) { var path = AccountPath(accountId); if (File.Exists(path)) File.Delete(path); }
     public bool HasAccount(string accountId) => File.Exists(AccountPath(accountId));

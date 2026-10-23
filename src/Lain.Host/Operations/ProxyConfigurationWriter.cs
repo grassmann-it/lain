@@ -45,6 +45,13 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
             using var credential = JsonDocument.Parse(secrets.ReadAccount(account.Id));
             var secret = credential.RootElement;
             var kind = Read(secret, "kind");
+            if (kind == "codex-owned")
+            {
+                var ownedFilename = Read(secret, "ownedAuthFile") ?? throw new InvalidDataException("Missing owned credential reference.");
+                identities.Add(account.Id, "owned/" + ownedFilename);
+                foreach (var route in state.Routes.Where(r => r.Enabled && r.AccountIds.Contains(account.Id))) routeCredentials[route.Id][account.Id] = "owned/" + ownedFilename;
+                continue;
+            }
             if (kind == "codex-access-snapshot")
             {
                 var filename = account.Id + ".json";

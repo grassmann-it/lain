@@ -9,7 +9,7 @@ using YamlDotNet.RepresentationModel;
 namespace Lain.Host.Accounts;
 
 /// <summary>Read-only snapshot import. Never calls legacy management, refresh, revoke, or queue endpoints.</summary>
-public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationRepository configuration, SecretStore secrets, IReadOnlyList<string>? qualifiedCodexModels = null)
+public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationRepository configuration, SecretStore secrets, IReadOnlyList<string>? codexModelCatalog = null)
 {
     private static readonly string[] ProviderSections = ["codex-api-key", "claude-api-key", "gemini-api-key", "vertex-api-key", "openai-compatibility"];
     private static readonly string[] ConfigSections = [.. ProviderSections, "routing", "oauth-model-alias", "oauth-excluded-models", "disabled"];
@@ -75,7 +75,12 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
         var added = 0; var updated = 0;
         var current = configuration.Snapshot;
         var remappedAccounts = NormalizeImportedIdentities(candidates, current);
-        var unique = candidates.GroupBy(c => c.Account.Id).Select(MergeCredentialTransports).ToArray();
+        var unique = candidates.GroupBy(c => c.Account.Id).Select(MergeCredentialTransports).Select(candidate =>
+        {
+            var own = current.Accounts.SingleOrDefault(a => a.Id == candidate.Account.Id && a.CredentialKind == "codex-owned");
+            return candidate.Account.CredentialKind == "codex-access-snapshot" && own is not null
+                ? (Account: own with { SharedWithLegacy = true }, Credential: secrets.ReadAccountDescriptor(own.Id)) : candidate;
+        }).ToArray();
         if (current.Revision != request.Revision) throw new RevisionConflictException(request.Revision, current.Revision);
         var changed = unique.Where(candidate =>
         {
@@ -133,7 +138,7 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
                 if (yaml.Documents[0].RootNode is YamlMappingNode provider && Get(provider, "models") is YamlSequenceNode models)
                     sources.AddRange(models.Children.OfType<YamlMappingNode>().Select(model => (candidate.Account, model, transportId, !transport.TryGetProperty("sourceEnabled", out var enabled) || enabled.GetBoolean())));
             }
-            if (candidate.Account.CredentialKind == "codex-access-snapshot")
+            if (candidate.Account.CredentialKind is "codex-access-snapshot" or "codex-owned")
             {
                 var aliases = Get(legacy, "oauth-model-alias") is YamlMappingNode oauth ? Get(oauth, "codex") as YamlSequenceNode : null;
                 if (aliases is { Children.Count: > 0 })
@@ -142,7 +147,7 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
                 {
                     var excluded = Get(legacy, "oauth-excluded-models") is YamlMappingNode exclusions && Get(exclusions, "codex") is YamlSequenceNode patterns
                         ? patterns.Children.OfType<YamlScalarNode>().Select(p => p.Value ?? "").ToArray() : [];
-                    foreach (var model in (qualifiedCodexModels ?? []).Distinct(StringComparer.Ordinal))
+                    foreach (var model in (codexModelCatalog ?? []).Distinct(StringComparer.Ordinal))
                     {
                         if (string.IsNullOrWhiteSpace(model) || model.Length > 200 || excluded.Any(pattern => System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(pattern, model, ignoreCase: false))) continue;
                         sources.Add((candidate.Account, new YamlMappingNode { { "name", model }, { "alias", model } }, null, true));

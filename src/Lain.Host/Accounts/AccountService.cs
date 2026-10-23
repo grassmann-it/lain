@@ -10,7 +10,7 @@ public sealed record AddApiAccountRequest(string Name, string Provider, string A
 
 public sealed class AccountService(ConfigurationRepository configuration, SecretStore secrets)
 {
-    public AccountDto[] List() => configuration.Snapshot.Accounts;
+    public AccountDto[] List() => configuration.Snapshot.Accounts.Select(a => a.CredentialKind == "codex-owned" ? Check(a.Id) : a).ToArray();
     public ConfigurationDto AddApi(long revision, AddApiAccountRequest input)
     {
         if (string.IsNullOrWhiteSpace(input.Name) || input.Name.Length > 120) throw new ArgumentException("Account name is required (maximum 120 characters).");
@@ -75,6 +75,15 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
     {
         var account = configuration.Snapshot.Accounts.SingleOrDefault(a => a.Id == id) ?? throw new KeyNotFoundException("Account not found.");
         if (!secrets.HasAccount(id)) return account with { State = "missing-credential" };
+        if (account.CredentialKind == "codex-owned")
+        {
+            try
+            {
+                using var own = JsonDocument.Parse(secrets.ReadAccount(id));
+                if (own.RootElement.TryGetProperty("expiresAt", out var expiry) && DateTimeOffset.TryParse(expiry.GetString(), out var expires)) account = account with { ExpiresAt = expires };
+            }
+            catch (Exception error) when (error is IOException or JsonException or InvalidDataException) { return account with { State = "missing-credential" }; }
+        }
         return account with { State = account.ExpiresAt <= DateTimeOffset.UtcNow ? "expired" : "unverified" };
     }
     internal static string CanonicalProvider(string provider, string? endpoint)
@@ -110,9 +119,11 @@ public sealed class LoginOperationService(IEnumerable<IQualifiedLoginAdapter>? q
 {
     private readonly Dictionary<string, IQualifiedLoginAdapter> adapters = (qualifiedAdapters ?? []).ToDictionary(a => a.Provider, StringComparer.Ordinal);
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, LoginDto> operations = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> operationGates = new();
     public async Task<LoginDto> BeginAsync(string provider, CancellationToken ct = default)
     {
         var id = Guid.NewGuid().ToString("N");
+        operationGates[id] = new(1, 1);
         if (!adapters.TryGetValue(provider, out var adapter))
         {
             var unsupported = new LoginDto(id, provider, "unsupported", Error: "New login is unavailable until this provider is qualified.");
@@ -126,21 +137,35 @@ public sealed class LoginOperationService(IEnumerable<IQualifiedLoginAdapter>? q
     }
     public async Task<LoginDto> StatusAsync(string id, CancellationToken ct = default)
     {
-        if (!operations.TryGetValue(id, out var operation)) throw new KeyNotFoundException("Login operation not found.");
-        if (operation.State is "unsupported" or "cancelled" or "completed" or "failed") return operation;
-        var login = await adapters[operation.Provider].StatusAsync(id, ct);
-        Validate(login, id, operation.Provider);
-        operations[id] = login;
-        return login;
+
+        if (!operationGates.TryGetValue(id, out var gate)) throw new KeyNotFoundException("Login operation not found.");
+        await gate.WaitAsync(ct);
+        try
+        {
+            if (!operations.TryGetValue(id, out var operation)) throw new KeyNotFoundException("Login operation not found.");
+            if (operation.State is "unsupported" or "cancelled" or "completed" or "failed") return operation;
+            var login = await adapters[operation.Provider].StatusAsync(id, ct);
+            Validate(login, id, operation.Provider);
+            operations[id] = login;
+            return login;
+        }
+        finally { gate.Release(); }
     }
     public async Task<LoginDto> CancelAsync(string id, CancellationToken ct = default)
     {
-        if (!operations.TryGetValue(id, out var operation)) throw new KeyNotFoundException("Login operation not found.");
-        if (operation.State is "unsupported" or "cancelled" or "completed" or "failed") return operation;
-        await adapters[operation.Provider].CancelAsync(id, ct);
-        var cancelled = operation with { State = "cancelled", Url = null };
-        operations[id] = cancelled;
-        return cancelled;
+
+        if (!operationGates.TryGetValue(id, out var gate)) throw new KeyNotFoundException("Login operation not found.");
+        await gate.WaitAsync(ct);
+        try
+        {
+            if (!operations.TryGetValue(id, out var operation)) throw new KeyNotFoundException("Login operation not found.");
+            if (operation.State is "unsupported" or "cancelled" or "completed" or "failed") return operation;
+            await adapters[operation.Provider].CancelAsync(id, ct);
+            var cancelled = operation with { State = "cancelled", Url = null };
+            operations[id] = cancelled;
+            return cancelled;
+        }
+        finally { gate.Release(); }
     }
     private static void Validate(LoginDto login, string id, string provider)
     {

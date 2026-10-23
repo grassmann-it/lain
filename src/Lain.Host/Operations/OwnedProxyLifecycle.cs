@@ -43,6 +43,7 @@ public sealed class OwnedProxyLifecycle(OwnStatePaths paths, SecretStore secrets
                 CreateNoWindow = true
             };
             start.ArgumentList.Add("--config"); start.ArgumentList.Add(paths.ProxyConfig);
+            start.ArgumentList.Add("--owned-auth-dir"); start.ArgumentList.Add(paths.OwnedAuth);
             start.ArgumentList.Add("--bindings"); start.ArgumentList.Add(Path.Combine(paths.Proxy, "bindings.json"));
             start.ArgumentList.Add("--journal"); start.ArgumentList.Add(Path.Combine(paths.Proxy, "events.jsonl"));
             start.ArgumentList.Add("--management-token-file"); start.ArgumentList.Add(paths.ManagementToken);
@@ -60,16 +61,22 @@ public sealed class OwnedProxyLifecycle(OwnStatePaths paths, SecretStore secrets
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 timeout.CancelAfter(TimeSpan.FromSeconds(20));
                 using var http = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{OwnStatePaths.ProxyPort}"), Timeout = TimeSpan.FromSeconds(2) };
-                http.DefaultRequestHeaders.Authorization = new("Bearer", secrets.GetOrCreateToken(paths.InferenceToken));
+                http.DefaultRequestHeaders.Authorization = new("Bearer", secrets.GetOrCreateToken(paths.ManagementToken));
                 while (!process.HasExited)
                 {
                     timeout.Token.ThrowIfCancellationRequested();
                     try
                     {
-                        using var response = await http.GetAsync("/v1/models", timeout.Token);
-                        if (response.IsSuccessStatusCode) { ready = true; return Status; }
+                        using var response = await http.GetAsync("/lain/health", timeout.Token);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            using var health = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync(timeout.Token));
+                            if (health.RootElement.TryGetProperty("ready", out var readiness) && readiness.ValueKind == System.Text.Json.JsonValueKind.True)
+                            { ready = true; return Status; }
+                        }
                     }
                     catch (HttpRequestException) { }
+                    catch (System.Text.Json.JsonException) { }
                     catch (TaskCanceledException) when (!timeout.IsCancellationRequested) { }
                     await Task.Delay(100, timeout.Token);
                 }

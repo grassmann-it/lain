@@ -154,6 +154,44 @@ try
     var catalogPaths = new OwnStatePaths(Path.Combine(testRoot, "catalog")); var catalogRepository = new ConfigurationRepository(catalogPaths);
     new LegacyImportService(catalogPaths, catalogRepository, new SecretStore(catalogPaths), ["gpt-qualified", "hidden-qualified"]).Import(new(0, emptyAliasConfig, legacy));
     Check(catalogRepository.Snapshot.Routes.Length == 1 && catalogRepository.Snapshot.Routes[0].Alias == "gpt-qualified", "qualified Codex catalog seeds empty aliases while preserving exclusions");
+    var ownedPaths = new OwnStatePaths(Path.Combine(testRoot, "owned-login"));
+    var ownedSecrets = new SecretStore(ownedPaths); var ownedRepository = new ConfigurationRepository(ownedPaths);
+    var ownedBackend = new FakeCodexOwnedBackend(ownedPaths);
+    var ownedAdapter = new CodexOwnedLoginAdapter(ownedBackend, ownedPaths, ownedRepository, ownedSecrets, ["gpt-qualified"]);
+    var ownedLogins = new LoginOperationService([ownedAdapter]);
+    var pendingLogin = await ownedLogins.BeginAsync("codex");
+    Check(pendingLogin.State == "waiting" && pendingLogin.Url!.StartsWith("https://auth.openai.com/"), "own Codex login begins with authorization URL");
+    Check((await ownedLogins.StatusAsync(pendingLogin.Id)).State == "waiting", "own login pending state preserved");
+    var cancelledLogin = await ownedLogins.CancelAsync(pendingLogin.Id);
+    Check(cancelledLogin.State == "cancelled" && cancelledLogin.Url is null && ownedRepository.Snapshot.Accounts.Length == 0, "cancelled own login adopts no credentials");
+    ownedBackend.Complete(ownedBackend.LatestState, "owned-provider-account");
+    Check((await ownedLogins.StatusAsync(pendingLogin.Id)).State == "cancelled" && ownedRepository.Snapshot.Accounts.Length == 0, "late callback after cancellation cannot adopt credentials");
+    var successfulLogin = await ownedLogins.BeginAsync("codex"); ownedBackend.Complete(ownedBackend.LatestState, "owned-provider-account");
+    var completedLogin = await ownedLogins.StatusAsync(successfulLogin.Id);
+    Check(completedLogin.State == "completed" && completedLogin.Url is null, "own login completes");
+    var ownedAccount = ownedRepository.Snapshot.Accounts.Single();
+    Check(ownedAccount.CredentialKind == "codex-owned" && !ownedAccount.SharedWithLegacy && ownedRepository.Snapshot.Routes.Length == 1, "own account and pinned catalog routes adopted");
+    var descriptorText = File.ReadAllText(Path.Combine(ownedPaths.Credentials, ownedAccount.Id + ".json"));
+    Check(!descriptorText.Contains("owned-access") && !descriptorText.Contains("owned-refresh"), "Host persists ownership descriptor without copying core credentials");
+    var hydrated = ownedSecrets.ReadAccount(ownedAccount.Id);
+    Check(hydrated.Contains("owned-access-one") && !hydrated.Contains("owned-refresh"), "internal quota credential hydration excludes refresh material");
+    var ownedFile = Path.Combine(ownedPaths.OwnedAuth, ownedBackend.LatestFilename);
+    File.WriteAllText(ownedFile, File.ReadAllText(ownedFile).Replace("owned-access-one", "owned-access-two").Replace("2099-01-01", "2099-02-01"));
+    Check(ownedSecrets.ReadAccount(ownedAccount.Id).Contains("owned-access-two"), "core-owned token rotation remains authoritative");
+    var ownedHash = SHA256.HashData(File.ReadAllBytes(ownedFile)); var ownedWriter = new ProxyConfigurationWriter(ownedPaths, ownedSecrets);
+    var ownedCoreIds = ownedWriter.Write(ownedRepository.Snapshot);
+    Check(ownedCoreIds[ownedAccount.Id] == "owned/" + ownedBackend.LatestFilename && SHA256.HashData(File.ReadAllBytes(ownedFile)).SequenceEqual(ownedHash), "runtime apply binds and preserves owned credential source");
+    var publicOwned = JsonSerializer.Serialize(ownedRepository.Snapshot) + JsonSerializer.Serialize(completedLogin);
+    Check(!publicOwned.Contains("owned-access") && !publicOwned.Contains("owned-refresh") && !publicOwned.Contains(ownedBackend.LatestFilename), "own login public DTOs contain no credentials or private references");
+    var ownLegacyAuth = Path.Combine(legacy, "own-legacy-auth"); Directory.CreateDirectory(ownLegacyAuth);
+    File.WriteAllText(Path.Combine(ownLegacyAuth, "snapshot.json"), """{"type":"codex","account_id":"owned-provider-account","access_token":"external-old-access","refresh_token":"NEVER-IMPORT-OWN-REFRESH","expired":"2098-01-01T00:00:00Z"}""");
+    new LegacyImportService(ownedPaths, ownedRepository, ownedSecrets, ["gpt-qualified"]).Import(new(ownedRepository.Snapshot.Revision, emptyAliasConfig, ownLegacyAuth));
+    Check(ownedRepository.Snapshot.Accounts.Single().CredentialKind == "codex-owned" && ownedSecrets.ReadAccount(ownedAccount.Id).Contains("owned-access-two"), "legacy reimport cannot replace an explicitly owned login");
+    using (var httpBackend = new HttpCodexOwnedLoginBackend(ownedPaths, ownedSecrets, new FakeLoginHttpHandler()))
+    {
+        var started = await httpBackend.BeginAsync(default); var progress = await httpBackend.StatusAsync(started.State, default); await httpBackend.CancelAsync(started.State, default);
+        Check(progress.State == "waiting", "narrow HTTP login contract uses typed state without exposing core errors");
+    }
     var login = await new LoginOperationService().BeginAsync("codex");
     Check(login.State == "unsupported" && login.Url is null, "unqualified login fails closed");
     await using (var lifecycle = new OwnedProxyLifecycle(paths, secrets, new ProxyLaunchOptions("unused", "unused")))
@@ -171,3 +209,38 @@ try
 }
 finally { Directory.Delete(testRoot, recursive: true); }
 static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
+
+sealed class FakeCodexOwnedBackend(OwnStatePaths paths) : ICodexOwnedLoginBackend
+{
+    private readonly Dictionary<string, CoreCodexLoginProgress> states = [];
+    public string LatestState { get; private set; } = "";
+    public string LatestFilename { get; private set; } = "";
+    public Task<CoreCodexLoginStart> BeginAsync(CancellationToken ct)
+    {
+        LatestState = Guid.NewGuid().ToString("N"); states[LatestState] = new("waiting");
+        return Task.FromResult(new CoreCodexLoginStart(LatestState, "https://auth.openai.com/oauth/authorize?state=" + LatestState));
+    }
+    public Task<CoreCodexLoginProgress> StatusAsync(string state, CancellationToken ct) => Task.FromResult(states[state]);
+    public Task CancelAsync(string state, CancellationToken ct)
+    {
+        if (states[state].State == "completed") throw new InvalidOperationException("Already completed.");
+        states[state] = new("cancelled"); return Task.CompletedTask;
+    }
+    public void Complete(string state, string accountId)
+    {
+        if (states[state].State == "cancelled") return;
+        LatestFilename = "codex-" + state + ".json";
+        OwnStatePaths.WritePrivate(Path.Combine(paths.OwnedAuth, LatestFilename), JsonSerializer.Serialize(new { type = "codex", account_id = accountId, access_token = "owned-access-one", refresh_token = "owned-refresh-one", expired = "2099-01-01T00:00:00Z" }));
+        states[state] = new("completed", LatestFilename);
+    }
+}
+sealed class FakeLoginHttpHandler : HttpMessageHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        if (request.RequestUri!.Host != "127.0.0.1" || request.RequestUri.Port != OwnStatePaths.ProxyPort || request.Headers.Authorization?.Scheme != "Bearer") throw new Exception("Invalid management transport.");
+        var json = request.Method == HttpMethod.Post ? """{"state":"test-state","status":"pending","authorizationUrl":"https://auth.openai.com/oauth/authorize"}"""
+            : request.Method == HttpMethod.Delete ? """{"state":"test-state","status":"canceled"}""" : """{"state":"test-state","status":"pending"}""";
+        return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent(json) });
+    }
+}
