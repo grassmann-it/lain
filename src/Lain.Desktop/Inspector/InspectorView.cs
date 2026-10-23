@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -16,6 +17,8 @@ public sealed class InspectorView : UserControl
 {
     private const int DisplayEventLimit = 500;
     private const int DisplayCharacterLimit = 262144;
+    private static readonly HashSet<string> EvidenceSources = new(StringComparer.Ordinal)
+        { "route_binding", "harness_header", "request_body", "provider_response", "core" };
     private readonly LainApiClient _client;
     private readonly TextBlock _status = Ui.Text("Waiting for the live inspector", 12, Ui.Muted);
     private readonly TextBlock _buffer = Ui.Text("No live buffer received", 11, Ui.Muted);
@@ -38,7 +41,7 @@ public sealed class InspectorView : UserControl
     private readonly Dictionary<string, Button> _groupButtons = new(StringComparer.Ordinal);
     private readonly Dictionary<string, GroupChoice> _groups = new(StringComparer.Ordinal);
     private readonly List<InspectorEventDto> _events = [];
-    private readonly Dictionary<long, DateTimeOffset> _eventReceived = [];
+    private readonly Dictionary<long, long> _eventReceived = [];
     private CancellationTokenSource? _lifetime;
     private TopLevel? _topLevel;
     private InspectorSnapshotDto? _snapshot;
@@ -46,7 +49,7 @@ public sealed class InspectorView : UserControl
     private string? _selectedGroup;
     private string? _selectedRequest;
     private long _after;
-    private DateTimeOffset _nextSnapshot;
+    private long _nextSnapshot;
     private bool _paused;
     private bool _refreshOnce;
     private bool _connected;
@@ -57,7 +60,7 @@ public sealed class InspectorView : UserControl
     public InspectorView(LainApiClient client)
     {
         _client = client;
-        var refresh = Ui.Button("Refresh inspector", () => { _nextSnapshot = DateTimeOffset.MinValue; _refreshOnce = true; });
+        var refresh = Ui.Button("Refresh inspector", () => { _nextSnapshot = 0; _refreshOnce = true; });
         var clear = Ui.Button("Clear displayed events", () =>
         {
             ClearEvents(); _after = _snapshot?.Cursor ?? _after;
@@ -68,7 +71,7 @@ public sealed class InspectorView : UserControl
         {
             _paused = !_paused;
             _pause.Content = _paused ? "Resume updates" : "Pause updates";
-            _nextSnapshot = DateTimeOffset.MinValue;
+            _nextSnapshot = 0;
             UpdateStatus();
         };
         AutomationProperties.SetName(refresh, "Refresh inspector");
@@ -162,9 +165,9 @@ public sealed class InspectorView : UserControl
                 PruneEvents();
                 if (_paused && !_refreshOnce) continue;
                 _refreshOnce = false;
-                if (DateTimeOffset.UtcNow >= _nextSnapshot)
+                if (Stopwatch.GetTimestamp() >= _nextSnapshot)
                 {
-                    _nextSnapshot = DateTimeOffset.UtcNow.AddSeconds(1);
+                    _nextSnapshot = Stopwatch.GetTimestamp() + Stopwatch.Frequency;
                     await RefreshSnapshotAsync(token);
                 }
                 if (_connected && _selectedRequest is not null) await RefreshEventsAsync(token);
@@ -184,7 +187,7 @@ public sealed class InspectorView : UserControl
                 ResetSource(snapshot.SourceId);
             _sourceId = snapshot.SourceId;
             _snapshot = snapshot;
-            _connected = snapshot.State is not ("offline" or "unavailable" or "error");
+            _connected = snapshot.State == "live";
             UpdateStatus();
             RenderGroups();
             RenderSelection();
@@ -214,13 +217,13 @@ public sealed class InspectorView : UserControl
                 ResetSource(page.SourceId);
                 _snapshot = null; _connected = false;
                 _status.Text = "Live source changed · loading its new snapshot";
-                _nextSnapshot = DateTimeOffset.MinValue;
+                _nextSnapshot = 0;
                 return;
             }
             if (page.Truncated || page.GapReason is not null)
                 _contentGap = "Content gap · " + (page.GapReason ?? "part of the live buffer is no longer available");
             foreach (var entry in page.Events.Where(e => e.RequestId == request).OrderBy(e => e.Cursor))
-                if (!_events.Any(existing => existing.Cursor == entry.Cursor)) { _events.Add(entry); _eventReceived[entry.Cursor] = DateTimeOffset.UtcNow; }
+                if (!_events.Any(existing => existing.Cursor == entry.Cursor)) { _events.Add(entry); _eventReceived[entry.Cursor] = Stopwatch.GetTimestamp(); }
             _after = Math.Max(_after, page.NextCursor);
             var characters = _events.Sum(e => e.Text?.Length ?? 0);
             while (_events.Count > DisplayEventLimit || characters > DisplayCharacterLimit)
@@ -244,12 +247,15 @@ public sealed class InspectorView : UserControl
     private void UpdateStatus()
     {
         if (_snapshot is null) return;
-        _status.Text = (_paused ? "Updates paused" : _connected ? "Connected to the live inspector" : "Live source unavailable")
-            + $" · {_snapshot.Streams.Length:N0} observed streams · checked {_snapshot.ObservedAt.ToLocalTime():HH:mm:ss} local"
+        var state = _snapshot.State switch { "live" => "Connected to the live inspector", "waiting" => "Waiting for the owned proxy stream",
+            "connecting" => "Connecting to the owned proxy stream", _ => "Live source unavailable" };
+        var observed = _snapshot.ObservedAt > DateTimeOffset.UnixEpoch ? $" · checked {_snapshot.ObservedAt.ToLocalTime():HH:mm:ss} local" : " · no source snapshot yet";
+        _status.Text = (_paused ? "Updates paused" : state)
+            + $" · {_snapshot.Streams.Length:N0} observed streams" + observed
             + (_snapshot.Complete ? "" : " · snapshot incomplete");
         if (_snapshot.Error is not null) _status.Text += " · " + _snapshot.Error;
         _status.Foreground = _connected && _snapshot.Complete ? Ui.Accent : Ui.Warning;
-        _buffer.Text = $"Host content buffer: {_snapshot.Limits.ContentTtlSeconds:N0}s · {_snapshot.DroppedEvents:N0} dropped events · live contents are separate from persistent usage";
+        _buffer.Text = $"Host content buffer: {_snapshot.Limits.ContentTtlSeconds:N0}s · this view keeps content at most {_snapshot.Limits.ContentTtlSeconds:N0}s after receipt · {_snapshot.DroppedEvents:N0} dropped events";
         if (_sourceNotice is not null) _buffer.Text += "\n" + _sourceNotice;
     }
 
@@ -306,25 +312,30 @@ public sealed class InspectorView : UserControl
 
     private string GroupKey(InspectorStreamDto stream)
     {
-        var current = stream;
+        var current = stream.RequestId;
         var visited = new HashSet<string>(StringComparer.Ordinal);
-        while (visited.Add(current.RequestId))
+        while (visited.Add(current))
         {
-            var conversations = _snapshot!.Streams.Where(candidate => candidate.RequestId == current.RequestId)
+            var attempts = _snapshot!.Streams.Where(candidate => candidate.RequestId == current).ToArray();
+            var conversations = attempts
                 .Select(candidate => KnownIdentity(candidate.Dimensions, "conversationId", candidate.Dimensions?.ConversationId))
                 .OfType<string>().Distinct(StringComparer.Ordinal).ToArray();
-            if (conversations.Length == 1) return "conversation:" + conversations[0];
-            if (conversations.Length > 1) return "request:" + current.RequestId;
-            var parent = KnownIdentity(current.Dimensions, "parentRequestId", current.Dimensions?.ParentRequestId);
-            if (parent is null && KnownIdentity(current.Dimensions, "previousResponseId", current.Dimensions?.PreviousResponseId) is { } previous)
+            var parents = attempts.Select(candidate => KnownIdentity(candidate.Dimensions, "parentRequestId", candidate.Dimensions?.ParentRequestId))
+                .OfType<string>().ToHashSet(StringComparer.Ordinal);
+            var previousResponses = attempts.Select(candidate => KnownIdentity(candidate.Dimensions, "previousResponseId", candidate.Dimensions?.PreviousResponseId))
+                .OfType<string>().Distinct(StringComparer.Ordinal);
+            foreach (var previous in previousResponses)
             {
                 var matches = _snapshot!.Streams.Where(candidate => KnownIdentity(candidate.Dimensions, "responseId", candidate.Dimensions?.ResponseId) == previous).Select(x => x.RequestId).Distinct().ToArray();
-                if (matches.Length == 1) parent = matches[0];
+                if (matches.Length > 1) return "request:" + stream.RequestId;
+                if (matches.Length == 1) parents.Add(matches[0]);
             }
-            if (parent is null) return "request:" + current.RequestId;
-            var ancestor = _snapshot!.Streams.FirstOrDefault(candidate => candidate.RequestId == parent);
-            if (ancestor is null) return "request:" + parent;
-            current = ancestor;
+            // Resolve relationships for the logical request, not an arbitrary
+            // retry. Conflicting evidence must never split its attempts.
+            if (conversations.Length > 1 || parents.Count > 1) return "request:" + stream.RequestId;
+            if (conversations.Length == 1) return "conversation:" + conversations[0];
+            if (parents.Count == 0) return "request:" + current;
+            current = parents.Single();
         }
         return "request:" + stream.RequestId;
     }
@@ -371,7 +382,8 @@ public sealed class InspectorView : UserControl
                     ("Worker", "workerId", dimensions.WorkerId), ("Parent worker", "parentWorkerId", dimensions.ParentWorkerId), ("Parent request", "parentRequestId", dimensions.ParentRequestId) };
                 foreach (var (name, field, value) in ids)
                     facts.Children.Add(Selectable(name + ": " + (KnownIdentity(dimensions, field, value) ?? "Unknown")));
-                foreach (var evidence in dimensions.Evidence ?? []) facts.Children.Add(Ui.Text($"{evidence.Field} · {evidence.Source}" + (evidence.Key is null ? "" : " · " + evidence.Key), 10, Ui.Muted));
+                foreach (var evidence in (dimensions.Evidence ?? []).Where(e => e is not null && EvidenceSources.Contains(e.Source)))
+                    facts.Children.Add(Ui.Text($"{evidence.Field} · {evidence.Source}" + (evidence.Key is null ? "" : " · " + evidence.Key), 10, Ui.Muted));
             }
             else facts.Children.Add(Ui.Text("Conversation, turn and worker identities are unknown.", 11, Ui.Muted));
             if (stream.Truncated) facts.Children.Add(Ui.Text("This stream is incomplete in the live buffer.", 11, Ui.Warning));
@@ -381,8 +393,9 @@ public sealed class InspectorView : UserControl
 
     private void PruneEvents()
     {
-        var cutoff = DateTimeOffset.UtcNow.AddSeconds(-(_snapshot?.Limits.ContentTtlSeconds ?? 120));
-        var expired = _events.Where(entry => entry.ObservedAt < cutoff || _eventReceived.GetValueOrDefault(entry.Cursor) < cutoff).Select(entry => entry.Cursor).ToHashSet();
+        var lifetime = TimeSpan.FromSeconds(_snapshot?.Limits.ContentTtlSeconds ?? 120);
+        var expired = _events.Where(entry => !_eventReceived.TryGetValue(entry.Cursor, out var received)
+            || Stopwatch.GetElapsedTime(received) >= lifetime).Select(entry => entry.Cursor).ToHashSet();
         if (expired.Count == 0) return;
         _events.RemoveAll(entry => expired.Contains(entry.Cursor));
         foreach (var cursor in expired) _eventReceived.Remove(cursor);
@@ -410,7 +423,8 @@ public sealed class InspectorView : UserControl
         foreach (var block in blocks)
         {
             var entry = block.First;
-            var label = block.Channel switch { "text" or "output" or "assistant" => "Assistant", "reasoning" => "Reasoning", "tool" or "tool_call" or "tool_result" => "Tool", _ => entry.Kind };
+            var label = block.Channel switch { "text" or "output" or "assistant" => "Assistant", "reasoning" => "Reasoning", "tool" or "tool_call" or "tool_result" => "Tool",
+                _ => entry.Kind switch { "attempt_started" => "Attempt started", "attempt_finished" => "Attempt finished", "metadata" => "Metadata", _ => "Status" } };
             if (entry.ToolName is not null) label += " · " + entry.ToolName;
             var metadata = new List<string> { entry.ObservedAt.ToLocalTime().ToString("HH:mm:ss", CultureInfo.CurrentCulture) + " local" };
             if (entry.AttemptId is not null) metadata.Add("attempt " + Short(entry.AttemptId));
@@ -431,10 +445,10 @@ public sealed class InspectorView : UserControl
     {
         if (string.IsNullOrWhiteSpace(value)) return null;
         static string Normalize(string text) => new(text.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
-        return dimensions?.Evidence?.Any(e => Normalize(e.Field) == Normalize(field) && !string.IsNullOrWhiteSpace(e.Source)) == true ? value : null;
+        return dimensions?.Evidence?.Any(e => e is not null && !string.IsNullOrWhiteSpace(e.Field) && Normalize(e.Field) == Normalize(field) && EvidenceSources.Contains(e.Source)) == true ? value : null;
     }
     private static bool IsActive(InspectorStreamDto stream) => stream.State is "active" or "pending" or "streaming" or "started";
-    private static bool IsTerminal(InspectorStreamDto stream) => stream.State is "completed" or "succeeded" or "failed" or "error" or "canceled" or "cancelled" or "finished";
+    private static bool IsTerminal(InspectorStreamDto stream) => stream.State is "success" or "completed" or "succeeded" or "failed" or "error" or "canceled" or "cancelled" or "finished";
     private void ClearEvents() { _events.Clear(); _eventReceived.Clear(); }
     private void ResetSource(string sourceId)
     {
