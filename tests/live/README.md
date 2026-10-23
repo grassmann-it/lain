@@ -64,3 +64,33 @@ account identity and an access token, and reported expiry
 the provider still accepts the token. No refresh/revoke call is permitted.
 The legacy config had no Codex OAuth alias mapping; the integrator may need to
 create the approved direct Codex route explicitly after checking Core catalog.
+
+## Complete orchestration
+
+`orchestrate_reference.py` prepares own temporary state, imports through the
+host API, creates the Codex strict route and two-route profile, applies it,
+runs exactly the same four requests, independently queries Usage until four
+terminal attempts exist (two per correct account/route), then stops and restarts
+the own host with unchanged state to verify totals and attempt identity persist.
+All temporary records and `sanitized-report.json` remain under the reported
+private `/tmp/lain-reference-*` directory. Its default invocation prints a plan
+without starting processes or opening sockets.
+
+Only after root confirms the exact W2/W11 synthetic-qualified SHA, with both
+18417 and 18418 free and the current main Host DLL already built:
+
+```sh
+python3 tests/live/orchestrate_reference.py --execute \
+  --approved-sha256 EXACT_SHA_CONFIRMED_BY_ROOT \
+  --host-dll /absolute/path/to/Lain.Host.dll \
+  --proxy-binary /absolute/path/to/qualified/lain-proxy
+```
+
+The orchestrator never creates or edits qualification evidence. The host gets
+`LAIN_REFERENCE_QUALIFICATION=1` and `LAIN_REFERENCE_DISABLE_QUOTA=1`; current
+host support for the latter is required to suppress background real quota
+requests, especially at restart. These reference overrides must be restricted
+to isolated temporary state. The script fingerprints legacy files read-only
+before and after, reporting counts only; it never signals a discovered port
+owner or touches the legacy process/queue. Only its own launched host/session
+is cleaned up. A failure preserves records and stops without inference retries.
