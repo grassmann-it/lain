@@ -83,6 +83,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     private readonly List<string> checks = [];
     private readonly List<object> screenshots = [];
     private readonly List<object> tileLayouts = [];
+    private readonly List<object> inspectorLayouts = [];
     private MainWindow window = null!;
     private readonly List<HttpClient> transports = [];
 
@@ -224,7 +225,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         {
             result = "PASS", display = Environment.GetEnvironmentVariable("DISPLAY"), privateXvfb = true,
             assembly = assembly.Location, sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))),
-            checks, screenshots, tileLayouts, requests = fixture.Requests,
+            checks, screenshots, tileLayouts, inspectorLayouts, requests = fixture.Requests,
             scope = "Production MainWindow, UsageView, ProviderCatalogView, InspectorView and App theme initialization; in-memory HTTP only. Button Click routed events exercise handlers, not OS pointer hit-testing. No real credentials, host, authorization browser, inference or service mutation."
         }, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"PASS desktop smoke: {checks.Count} checks, {screenshots.Count} screenshots. {Output}/evidence.json");
@@ -645,11 +646,25 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(HasSelectable("Conversation: conversation-ui") && HasSelectable("Worker: worker-ui") && HasText("conversationId · harness_header", true),
             "Inspector exposes identities together with their evidence sources");
         identities.IsExpanded = false;
-        await CaptureBoth("inspector");
-        Named<ComboBox>("Request within this group").SelectedIndex = 1;
+        var requestPicker = Named<ComboBox>("Request within this group");
+        var groupButton = Named<Button>("Inspect group conversation:conversation-ui");
+        var selectedRequest = requestPicker.SelectedItem?.ToString();
+        await CaptureBoth("inspector", verify: () =>
+        {
+            CheckInspectorViewport("inspector");
+            var descendants = window.GetVisualDescendants().ToArray();
+            Check(descendants.Contains(requestPicker) && descendants.Contains(groupButton)
+                && ReferenceEquals(Named<ComboBox>("Request within this group"), requestPicker)
+                && requestPicker.SelectedItem?.ToString() == selectedRequest,
+                $"Inspector resize preserves native picker group control and selected request at {window.Bounds.Width:0}px");
+            if (window.Bounds.Width < 900)
+                Check(FitsScrollViewports(Named<ComboBox>("Conversation / linked requests")) && FitsScrollViewports(requestPicker),
+                    "narrow Inspector conversation and request pickers fit within the initial viewport");
+        });
+        requestPicker.SelectedIndex = 1;
         await Wait(() => HasSelectable("Fixture tool result.") && HasSelectable("Answer after tool. Still streaming."), "tool continuation stays within its selected request");
         Check(!HasSelectable("First answer continued.") && HasText("Tool · fixture_tool"), "switching request clears preceding output and labels tool content");
-        await CaptureBoth("inspector-tool");
+        await CaptureBoth("inspector-tool", verify: () => CheckInspectorViewport("inspector-tool"));
         Named<TextBox>("Search live requests").Text = "request-unknown";
         await Wait(() => HasGroup("request:request-unknown") && !HasGroup("conversation:conversation-ui"), "Inspector search filters observed groups locally");
         Named<TextBox>("Search live requests").Text = "";
@@ -678,12 +693,12 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Wait(() => HasSelectable("New source output only."), "Inspector attaches to the new live source");
         Check(!HasGroup("conversation:conversation-ui") && !HasSelectable("First answer") && !HasSelectable("Fixture tool result.")
             && HasText("Live source restarted; previous content and relationships were cleared.", true), "source restart purges prior content and relationships");
-        await CaptureBoth("inspector-source-restarted");
+        await CaptureBoth("inspector-source-restarted", verify: () => CheckInspectorViewport("inspector-source-restarted"));
         fixture.InspectorFailure = true;
         await Click("Refresh inspector");
         await Wait(() => HasText("Inspector disconnected · active state is unknown", true), "Inspector failures report unknown active state");
         Check(HasText("Active state unknown", true), "connection loss cannot leave a falsely active request");
-        await CaptureBoth("inspector-disconnected");
+        await CaptureBoth("inspector-disconnected", verify: () => CheckInspectorViewport("inspector-disconnected"));
         fixture.InspectorFailure = false;
         await Click("Toggle inspector updates");
         await Wait(() => HasText("Connected to the live inspector", true), "Inspector recovers from a local source outage");
@@ -691,6 +706,42 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         var detached = fixture.InspectorCalls + fixture.InspectorEventCalls;
         await Task.Delay(550);
         Check(fixture.InspectorCalls + fixture.InspectorEventCalls == detached, "Inspector polling stops when detached");
+    }
+
+    private void CheckInspectorViewport(string page)
+    {
+        var events = Named<StackPanel>("Inspector events");
+        var output = events.GetVisualDescendants().OfType<SelectableTextBlock>().Where(IsShown).ToArray();
+        Check(output.Length > 0, $"{page} has retained output to inspect at {window.Bounds.Width:0}px");
+        var inner = events.GetVisualAncestors().OfType<ScrollViewer>().First();
+        var outer = inner.GetVisualAncestors().OfType<ScrollViewer>().First();
+        inspectorLayouts.Add(new
+            {
+                page, width = window.Bounds.Width, height = window.Bounds.Height,
+                outputCount = output.Length,
+                innerViewport = new { inner.Viewport.Width, inner.Viewport.Height },
+                innerExtent = new { inner.Extent.Width, inner.Extent.Height },
+                outerViewport = new { outer.Viewport.Width, outer.Viewport.Height },
+                outerExtent = new { outer.Extent.Width, outer.Extent.Height },
+                outerOffsetY = outer.Offset.Y
+            });
+        Check(inner.Viewport.Height >= 64 && inner.Viewport.Width >= 160,
+            $"{page} provides a usable native output viewport at {window.Bounds.Width:0}px ({inner.Viewport.Width:0}×{inner.Viewport.Height:0})");
+        Check(outer.Extent.Height <= outer.Viewport.Height + 2 && Math.Abs(outer.Offset.Y) <= 1,
+            $"{page} does not require a second outer scroll at {window.Bounds.Width:0}px (extent {outer.Extent.Height:0}, viewport {outer.Viewport.Height:0}, offset {outer.Offset.Y:0})");
+        Check(output.Any(FitsScrollViewports), $"{page} displays actual output within the initial inner and outer viewports at {window.Bounds.Width:0}px");
+        var previous = inner.Offset;
+        try
+        {
+            // Scroll only the native output pane. BringIntoView could hide a broken outer layout by moving both scrollers.
+            var firstY = output[0].TranslatePoint(default, inner)?.Y ?? throw new Exception("Inspector output detached");
+            var firstOffset = Math.Clamp(inner.Offset.Y + firstY - 4, 0, Math.Max(0, inner.Extent.Height - inner.Viewport.Height));
+            inner.Offset = new Vector(previous.X, firstOffset); window.UpdateLayout();
+            Check(FitsScrollViewports(output[0]), $"{page} first output is reachable within inner and outer viewports at {window.Bounds.Width:0}px");
+            inner.Offset = new Vector(previous.X, Math.Max(0, inner.Extent.Height - inner.Viewport.Height)); window.UpdateLayout();
+            Check(FitsScrollViewports(output[^1]), $"{page} last output is reachable with the native output scroller at {window.Bounds.Width:0}px");
+        }
+        finally { inner.Offset = previous; window.UpdateLayout(); }
     }
 
     private void CheckBundledFonts()
@@ -736,7 +787,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Task.Delay(180);
     }
-    private async Task CaptureBoth(string page, Action? reveal = null)
+    private async Task CaptureBoth(string page, Action? reveal = null, Action? verify = null)
     {
         foreach (var (width, height) in new[] { (1120, 780), (800, 560) })
         {
@@ -751,6 +802,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             if (!matches)
                 await File.WriteAllTextAsync(Path.Combine(Output, $"{page}-{width}x{height}-layout.json"), JsonSerializer.Serialize(LayoutEvidence(), new JsonSerializerOptions { WriteIndented = true }));
             Check(matches, $"{page} viewport {width}x{height}; actual bounds {actual.Width:0.##}x{actual.Height:0.##}, client {window.ClientSize.Width:0.##}x{window.ClientSize.Height:0.##}; image {file}");
+            verify?.Invoke();
         }
         await ResizeViewport(1120, 780);
     }
@@ -802,7 +854,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             SaveWindowImage("failure.png");
             await File.WriteAllTextAsync(Path.Combine(Output, "failure-evidence.json"), JsonSerializer.Serialize(new
             {
-                error = error.ToString(), layout = LayoutEvidence(), checks, screenshots, requests = fixture.Requests
+                error = error.ToString(), layout = LayoutEvidence(), checks, screenshots, inspectorLayouts, requests = fixture.Requests
             }, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception diagnosticError) { Console.Error.WriteLine("Failure evidence could not be saved: " + diagnosticError.Message); }
