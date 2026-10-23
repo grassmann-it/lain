@@ -170,7 +170,17 @@ def legacy_guard(root):
     spec = importlib.util.spec_from_file_location("reference_legacy_guard", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module, module.capture(root)
+    return module, capture_persistent_legacy(module, root)
+
+
+def capture_persistent_legacy(module, root):
+    # The personal service creates/removes OAuth .tmp files independently.
+    # They are not persistent configuration evidence and can vanish during reads.
+    files = [root / "cpa-core/cli-proxy-api", root / "cpa-core/config.yaml"]
+    files += sorted(path for path in (root / "oauth").rglob("*") if not path.name.endswith(".tmp") and path.is_file())
+    return {"schema": 1, "root": str(root.resolve()), "files": {
+        str(path.relative_to(root)): {"sha256": module.digest(path), "mode": path.stat().st_mode & 0o777}
+        for path in files}}
 
 
 def main():
@@ -202,15 +212,19 @@ def main():
         state.chmod(0o700)
         report["privateStateDirectory"] = str(state)
         report_path = state / "sanitized-report.json"
+        report["stage"] = "legacy-fingerprint"
         guard, before = legacy_guard(args.legacy_root)
         host = Host(dll, binary, state)
+        report["stage"] = "host-start"
         host.start()
+        report["stage"] = "import-and-profile"
         config, expected, imported = prepare_routes(host, args.legacy_root / "cpa-core/config.yaml")
         report.update(revision=config["revision"], importedAccounts=imported["added"], selectedAccounts=list(expected))
         token = api("/auth/token?audience=codex", host.token)["token"]
         now = dt.datetime.now(dt.timezone.utc)
         window = {"from": (now - dt.timedelta(minutes=1)).isoformat(), "to": (now + dt.timedelta(hours=1)).isoformat(), "timeZone": "UTC"}
         report["usageWindow"] = window
+        report["stage"] = "live-four-calls"
         # These are the only inference-producing calls in the orchestrator.
         probe.run_pair(CODEX_ALIAS, probe.route_account(config, CODEX_ALIAS, True), token, report)
         probe.run_pair(COMMAND_ALIAS, probe.route_account(config, COMMAND_ALIAS, False), token, report)
@@ -218,6 +232,7 @@ def main():
         report["beforeRestart"] = initial_usage
         if cli_dll is not None:
             report["cliBeforeRestart"] = compare_cli_usage(host, cli_dll, window)
+        report["stage"] = "host-restart"
         host.stop()
         host.start()
         recovered = wait_until(lambda: capture_usage(host, expected, window))
@@ -227,21 +242,21 @@ def main():
         require(initial_usage["totals"] == recovered["totals"] and initial_usage["attempts"] == recovered["attempts"]
                 and initial_usage["accounts"] == recovered["accounts"] and initial_usage["models"] == recovered["models"],
                 "Usage totals or attempt identity did not persist across own host restart.")
-        report.update(state="passed", usagePersistencePassed=True)
+        report.update(state="passed", stage="complete", usagePersistencePassed=True)
         return 0
     except probe.ProbeError as error:
         report.update(state="failed", error=str(error))
         return 1
-    except Exception:
-        report.update(state="failed", error="Reference orchestration failed; no raw data emitted.")
+    except Exception as error:
+        report.update(state="failed", errorType=type(error).__name__, error="Reference orchestration failed; no raw data emitted.")
         return 1
     finally:
         if host is not None:
             host.stop()
         if guard is not None and before is not None:
             try:
-                comparison = guard.compare(before, guard.capture(args.legacy_root))
-                report["legacyFiles"] = {"unchanged": not any(comparison.values()), **comparison}
+                comparison = guard.compare(before, capture_persistent_legacy(guard, args.legacy_root))
+                report["legacyFiles"] = {"unchanged": not any(comparison.values()), "temporaryFilesExcluded": True, **comparison}
             except Exception:
                 report["legacyFiles"] = {"state": "comparison-unavailable"}
         output = json.dumps(report, indent=2)
