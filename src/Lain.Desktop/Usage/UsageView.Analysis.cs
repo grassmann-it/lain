@@ -29,6 +29,7 @@ public sealed partial class UsageView
     private readonly HashSet<string> _configuredAccounts = new(StringComparer.Ordinal);
     private readonly HashSet<string> _expandedAnalysisGroups = new(StringComparer.Ordinal);
     private UsageAnalysisDto? _analysis;
+    private string? _analysisError;
 
     private Control BuildDimensionFilters()
     {
@@ -57,7 +58,7 @@ public sealed partial class UsageView
             _query = _query with { GroupBy = (_dimension.SelectedItem as FilterChoice)?.Key };
             await RefreshAsync(_lifetime.Token);
         };
-        _dimensionOrder.SelectionChanged += (_, _) => { if (_analysis is not null) RenderAnalysis(_analysis, null); };
+        _dimensionOrder.SelectionChanged += (_, _) => { if (_analysis is not null) RenderAnalysis(_analysis, _analysisError); };
         var controls = new WrapPanel { Children = { Field("Compare by", _dimension), Field("Group order", _dimensionOrder) } };
         return Section("Usage & performance", "Whole filtered range · measured values and sample counts", new StackPanel
         {
@@ -102,6 +103,7 @@ public sealed partial class UsageView
 
     private void RenderAnalysis(UsageAnalysisDto? analysis, string? error)
     {
+        _analysisError = error;
         if (analysis is null)
         {
             _analysisStatus.Text = "Analysis unavailable" + (error is null ? "" : " · " + error) + (_analysis is null ? "" : " · showing the last analysis snapshot");
@@ -111,7 +113,8 @@ public sealed partial class UsageView
         _analysis = analysis;
         var zone = TimeZoneInfo.FindSystemTimeZoneById(analysis.TimeZone);
         _analysisStatus.Text = $"{TimeZoneInfo.ConvertTime(analysis.From, zone):dd MMM HH:mm} → {TimeZoneInfo.ConvertTime(analysis.To, zone):dd MMM HH:mm} · {(analysis.Complete ? "Complete coverage" : "Incomplete coverage")} · observed {TimeZoneInfo.ConvertTime(analysis.ObservedAt, zone):HH:mm:ss} · {analysis.TimeZone}";
-        _analysisStatus.Foreground = analysis.Complete ? Muted : Ui.Warning;
+        if (error is not null) _analysisStatus.Text = "Analysis unavailable · " + error + " · showing the last analysis snapshot · " + _analysisStatus.Text;
+        _analysisStatus.Foreground = analysis.Complete && error is null ? Muted : Ui.Warning;
         _performance.Children.Clear();
         var metrics = new UniformGrid { Columns = 3 };
         metrics.Children.Add(PerformanceMetric("First output", analysis.Performance.FirstOutputLatencyMs, Milliseconds));
