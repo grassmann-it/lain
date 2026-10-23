@@ -35,16 +35,16 @@ rotation, restart, configuration write, or queue consumption is authorized.
 | --- | --- | --- |
 | A provenance | Manifest-bound source/build/license and private owned processes/ports | Fresh-worktree 1463-input source manifest passed; exact final binary checked |
 | A identity | Two distinct credentials for one provider, strict HTTP pinning on 429/deactivation, explicit pool behavior | W2 final synthetic suite passed; real routes pending |
-| A durability | Dispatch persisted before send; sync completion usage; restart/replay; write failure, crash and unknown coverage | W2 final suite + independent Core crash/auth + 9 SQLite tests passed |
+| A durability | Dispatch persisted before send; sync completion usage; restart/replay; write failure, crash and unknown coverage | W2 final suite + independent Core crash/auth + 13 SQLite tests passed |
 | A protocol | Nonstream, SSE, harmless tool + continuation, cancel; synthetic retry counted as one request and multiple attempts | Chat, Responses translation, native Messages synthetic tests passed; real probes pending |
-| B host | Unauthorized local API rejected, revision races rejected, failure distinguishes desired/applied revision | HTTP auth, concurrency, pending revision passed; failed live apply/restart pending |
+| B host | Unauthorized local API rejected, revision races rejected, failure distinguishes desired/applied revision | HTTP auth, concurrency, pending revision and failed-apply restart guard passed |
 | B data/privacy | SQLite restart and dedup; no headers/credentials/payloads in usage/export/errors; unknown amounts serialized null | Pending |
 | B accounts/quota | API/Codex snapshot import, no refresh token; separate same-provider accounts, isolated quota failure/last-good | Pending |
 | C desktop | Actual Linux window, clickable account/model/profile/usage flows; closes without stopping collector | Pending |
 | D harness | Isolated Codex config/helper/model menu and harmless actual request; no existing configuration changes | Pending |
 | D consistency | CLI/UI/skill consume same host snapshot and bounded queries; no duplicate collector | Pending |
-| E delivery | Fresh staged install outside cwd, start/stop/restart, update/rollback, uninstall preserving data | Stub-package installer passed; actual staged application pending |
-| Real providers | Explicitly authorized minimal Codex and Command Code stream/tool continuation, usage attribution and persistence | Pending |
+| E delivery | Fresh staged install outside cwd, start/stop/restart, update/rollback, uninstall preserving data | Actual staged Host/Core/CLI, usage, restart, same-artifact update/rollback and data-preserving uninstall passed; native user install/GUI pending |
+| Real providers | Explicitly authorized minimal Codex and Command Code stream/tool continuation, usage attribution and persistence | Codex Responses + Command GLM Responses tool/continuation passed; earlier Command GPT failures retained; real OAuth renewal untested |
 | Final isolation | Same existing service PID/start and unchanged legacy binary/config/auth hashes, or documented attributable exception | Pending |
 
 ## Reproduction and review rules
@@ -140,3 +140,57 @@ A fresh W11 checkout merged from main passed `python3 scripts/build-core-verify.
 was found independently and corrected before this pass. This gate permits the
 authorized short real-provider probes; it is not a real-provider/desktop/package
 acceptance or a claim of independently proven real OAuth renewal.
+
+## Final Host, persistence and staged package evidence
+
+The expanded HTTP probe passed with Host DLL SHA-256
+`47d119af3bc17a1d081697e59e918a5405f6bf8462a81392a4e2997119cea09d`:
+in addition to the earlier checks, a failed unqualified profile apply kept the
+previous applied revision, invalidated its runtime generation, remained not-ready,
+and could not be restarted through either service action.
+
+Independent review found a second coverage gap: replacing a journal source UUID
+between clean polls could otherwise hide its unread tail. Migration 002 records
+source transitions and time-bounded uncertainty in the same SQLite transaction as
+events and the cursor. Overlapping filters cannot erase that gap. After a forced
+fresh build, W11 independently ran **13 tests: 13 passed, 0 skipped**, including
+empty/nonempty replacement, same-source restart, rollback without phantom gaps,
+and v1-to-v2 preservation of existing usage/cursors.
+
+The first actual package failed to start from working directory `/`. The corrected
+Host pins its content root to its executable directory. Two subagent rerun tools
+stalled before returning execution sessions; the integrator therefore ran the
+same W11 probe in the foreground. The corrected package passed all seven check
+groups. W11 reviewed the report and the frozen artifact hashes independently.
+
+The [staged-package report](../tests/acceptance/evidence/package-final.json) records
+fresh private installation, actual installed Host → bundled Core → synthetic
+provider inference, exactly one request/attempt with 18 tokens, installed CLI/API
+parity, preserved usage through stop/update/restart and rollback/restart, explicit
+offline CLI failure, and uninstall preserving credentials and the usage database.
+There was **one synthetic provider call, zero real provider calls and zero systemd
+operations**. Update/rollback used the same artifact; cross-schema downgrade is
+not claimed. This run exercised the real self-contained package from `/`, not
+stub executables. The frozen tested Host DLL is
+`a2a6778a41ad05f65ca3aac201f2975751b8cfb6e241273adc8e6b8d1eded93d`,
+and bundled Core remains the exact accepted `8edf8abf…04cf9dfc0` artifact.
+
+The real-provider reports were independently inspected: two Codex Responses
+stream/tool-continuation calls passed; the two authorized Command GLM calls passed
+with truthful client identification `lain-reference-probe/0.1.0`. Seven terminal
+records, including three earlier failures with unknown usage, survived restart
+with identical CLI/API totals and groups. This does not qualify Command GPT,
+which was not retested successfully, or prove real owned OAuth renewal.
+
+After the corrected package run, the private legacy guard again showed **zero
+persistent additions/removals/changes** for binary, configuration and auth files.
+Only transient `.tmp` churn was observed (four added, three removed at that
+instant). A first read raced a disappearing temporary file and was retried;
+no credential content was emitted. The integrator will make the final service
+PID/start-time check after the persistent user installation.
+
+Overall release acceptance remains open for the integrator's actual user
+installation, native desktop workflow and actual isolated Codex CLI session.
+Backend qualification and staged-package acceptance are passed at the stated
+scope; those are not a blanket claim that all provider models or OAuth lifecycle
+operations have been tested.

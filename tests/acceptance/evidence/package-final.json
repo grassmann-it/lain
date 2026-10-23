@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "checks": [
+    "fresh actual-package installation with private state",
+    "actual installed host bundled Core inference and CLI from unrelated cwd",
+    "synthetic usage captured once and CLI/API totals match",
+    "actual update with preserved state and restart",
+    "actual rollback with preserved state and restart",
+    "offline CLI fails explicitly",
+    "documented staged uninstall preserves private data"
+  ],
+  "realProviderCalls": 0,
+  "syntheticProviderCalls": 1,
+  "systemdOperations": 0,
+  "sameArtifactUpdateAndRollback": true,
+  "hostExecutableSha256": "6812c2aac14c4a712574f345e500f2382481b7d535273fab47041bd8d6115595",
+  "execution": "Integrator foreground execution of W11 acceptance probe; W11 independently reviewed report and frozen package hashes.",
+  "packageHostDllSha256ObservedAfterRun": "a2a6778a41ad05f65ca3aac201f2975751b8cfb6e241273adc8e6b8d1eded93d",
+  "packageCoreSha256ObservedAfterRun": "8edf8abf666e3c15f1a04c20c841a969d35229f09e7de5265755ab704cf9dfc0"
+}
