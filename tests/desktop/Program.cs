@@ -103,7 +103,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await CaptureBoth("login");
         await Wait(() => HasText("Codex account connected."), "login completion", 6000);
         Check(fixture.LoginPolls > 0, "login polled fake provider");
-        await Click("Connect Codex"); await Click("Cancel login");
+        await Click("Connect Codex"); await Click("Cancel sign-in");
         Check(fixture.LoginCancels == 1, "login cancellation");
 
         await Click("Add API account");
@@ -218,7 +218,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     private TextBox Input(string watermark) => Controls<TextBox>().Single(x => Equals(x.PlaceholderText, watermark));
     private bool HasText(string value, bool contains = false) => Controls<TextBlock>().Any(t => contains ? t.Text?.Contains(value, StringComparison.OrdinalIgnoreCase) == true : t.Text == value);
     private bool UsageConnected() => HasText("Connected · source: lain host / persistent usage API");
-    private Task ClickUsageApply() => Click(Controls<Button>().Any(b => Equals(b.Content, "Apply filters")) ? "Apply filters" : "Apply");
+    private Task ClickUsageApply() => Click("Apply");
     private async Task Click(string label)
     {
         // Selected-list pages may have several row actions. Select the first visible action.
