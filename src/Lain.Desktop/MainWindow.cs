@@ -189,7 +189,7 @@ public sealed class MainWindow : Window
             if (_quotaError is not null) details.Children.Add(Ui.Text("Quota snapshot may be stale · " + _quotaError, 12, Ui.Muted));
             details.Children.Add(Ui.Row(
                 Action(account.Enabled ? "Disable" : "Enable", async () => { _configuration = await _client.SetAccountEnabledAsync(cfg.Revision, account.Id, !account.Enabled, _lifetime.Token); }, "Account updated."),
-                Action("Check connection", async () => { var result = await _client.CheckAccountAsync(account.Id, _lifetime.Token); _notice.Text = $"Connection: {result.State}"; }, "Connection check complete."),
+                Action("Check credential", async () => { var result = await _client.CheckAccountAsync(account.Id, _lifetime.Token); _notice.Text = $"Credential status: {result.State}. Checked local presence and expiry only."; }, "Local credential check complete."),
                 Ui.Button("Remove…", () => ConfirmRemoval(account.Name, async () => { _configuration = await _client.RemoveAccountAsync(cfg.Revision, account.Id, _lifetime.Token); }))));
             details.Children.Add(Action("Refresh quota", async () => { _quotas = await _client.RefreshQuotasAsync(account.Id, _lifetime.Token); }, "Quota refresh complete."));
             panel.Children.Add(Ui.Card(details));
