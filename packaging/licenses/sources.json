@@ -1,0 +1,36 @@
+{
+  "format": 1,
+  "retrievedDate": "2026-10-23",
+  "files": [
+    {
+      "file": "dotnet-runtime-10.0.11-LICENSE.TXT",
+      "sourceUrl": "https://raw.githubusercontent.com/dotnet/runtime/v10.0.11/LICENSE.TXT",
+      "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310"
+    },
+    {
+      "file": "dotnet-runtime-10.0.11-THIRD-PARTY-NOTICES.TXT",
+      "sourceUrl": "https://raw.githubusercontent.com/dotnet/runtime/v10.0.11/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "66f1d4e44973185519bb4aa8a9718eb22fc7af2cc532e3ae9cfc4c127ee7fc54"
+    },
+    {
+      "file": "aspnetcore-10.0.11-LICENSE.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/dotnet/aspnetcore/v10.0.11/LICENSE.txt",
+      "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310"
+    },
+    {
+      "file": "aspnetcore-10.0.11-THIRD-PARTY-NOTICES.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/dotnet/aspnetcore/v10.0.11/THIRD-PARTY-NOTICES.txt",
+      "sha256": "52af3d603b6d069e635f8afd08ec44ec01559255b5f3afd161ae9e6fe7e7aa54"
+    },
+    {
+      "file": "Avalonia-11.3.22-LICENSE.md",
+      "sourceUrl": "https://raw.githubusercontent.com/AvaloniaUI/Avalonia/11.3.22/licence.md",
+      "sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b"
+    },
+    {
+      "file": "SQLitePCLRaw-2.1.12-LICENSE.TXT",
+      "sourceUrl": "https://raw.githubusercontent.com/ericsink/SQLitePCL.raw/v2.1.12/LICENSE.TXT",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    }
+  ]
+}

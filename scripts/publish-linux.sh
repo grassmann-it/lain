@@ -48,6 +48,7 @@ if approved:
 PYGATE
 cp packaging/lain packaging/lain.service.in "$out/packaging/"
 cp scripts/install-linux.sh "$out/install-linux.sh"
+python3 scripts/collect-notices.py "$out/notices"
 cp -a skills/lain-usage "$out/skills/"
 python3 - "$out/build-info.json" "$expected" <<'PY'
 import json, subprocess, sys

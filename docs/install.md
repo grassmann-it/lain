@@ -18,7 +18,8 @@ Vom Checkout aus, mit .NET SDK und der vom Proxy-Build geforderten Go-Version:
 
 Der Zielordner muss neu sein. Das Skript veröffentlicht `cli/Lain.Cli`,
 `host/Lain.Host`, `desktop/Lain.Desktop` und `proxy/lain-proxy`, Lizenz,
-Quellmanifeste, statischen `proxy/codex-model-catalog.json`, CLI-Skill und Installer. `SHA256SUMS` schützt die Paketdateien;
+Quellmanifeste, ein `notices/`-Inventar mit exakten NuGet-Lizenzmetadaten und
+verfügbaren Paket-/offiziellen Runtime-Lizenztexten, statischen `proxy/codex-model-catalog.json`, CLI-Skill und Installer. `SHA256SUMS` schützt die Paketdateien;
 neben dem Ordner entstehen `.tar.gz` und dessen Prüfsumme. Das Archiv verwendet
 sortierte Dateinamen, feste Eigentümer und Commitzeit (`SOURCE_DATE_EPOCH`
 überschreibt diese). .NET baut deterministisch mit normalisierten Quellpfaden.
