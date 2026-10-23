@@ -298,6 +298,8 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     {
         await Wait(() => Controls<Expander>().Count(x => AutomationProperties.GetName(x)?.StartsWith("Account budgets for ", StringComparison.Ordinal) == true) == Fixture.InitialAccounts,
             $"{page} displays one quota tile per account");
+        await Wait(() => Controls<ProgressBar>().Length == ExpectedProviderWindows.Sum(x => x.Windows.Length),
+            $"{page} native tile headers realize every quota bar");
         foreach (var (account, windows) in ExpectedProviderWindows)
         {
             var tile = QuotaTile(account);
