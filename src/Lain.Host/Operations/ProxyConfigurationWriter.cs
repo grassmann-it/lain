@@ -30,6 +30,8 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
             var source = Parse(File.ReadAllText(Path.Combine(paths.Imports, name)));
             foreach (var key in new[] { "routing", "oauth-model-alias", "oauth-excluded-models" })
                 if (LegacyImportService.Get(source, key) is { } value) config.Add(key, value);
+            if (LegacyImportService.Get(config, "oauth-model-alias") is YamlMappingNode oauth)
+                foreach (var aliases in oauth.Children.Values.OfType<YamlSequenceNode>()) NormalizeModelAliases(aliases);
         }
         var identities = new Dictionary<string, string>();
         var authFiles = new Dictionary<string, string>();
@@ -62,9 +64,12 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
             if (endpoint.Length > 0) { AccountService.ValidateEndpoint(endpoint); Set(provider, "base-url", new YamlScalarNode(endpoint)); }
             provider.Children.Remove(new YamlScalarNode("disabled"));
             // Public lain aliases are resolved by bindings. Core-private aliases use actual model names.
-            if (LegacyImportService.Get(provider, "models") is YamlSequenceNode models)
-                foreach (var model in models.Children.OfType<YamlMappingNode>())
-                    if (LegacyImportService.Text(model, "name") is { } modelName) Set(model, "alias", new YamlScalarNode(modelName));
+            var models = LegacyImportService.Get(provider, "models") as YamlSequenceNode ?? new YamlSequenceNode();
+            NormalizeModelAliases(models);
+            foreach (var route in state.Routes.Where(r => r.Enabled && r.AccountIds.Contains(account.Id)))
+                if (!models.Children.OfType<YamlMappingNode>().Any(m => LegacyImportService.Text(m, "name") == route.UpstreamModel))
+                    models.Add(new YamlMappingNode { { "name", route.UpstreamModel }, { "alias", route.UpstreamModel } });
+            Set(provider, "models", models);
             var proxyUrl = LegacyImportService.Text(provider, "proxy-url") ?? "";
             if (section == "openai-compatibility")
             {
@@ -96,6 +101,11 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
         var input = kind + "\0" + key.Trim() + "\0" + endpoint.Trim() + "\0" + proxyUrl.Trim();
         if (section != "openai-compatibility") input += "\0" + prefix.Trim() + "\0";
         return kind + ":" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(input))).ToLowerInvariant()[..12];
+    }
+    private static void NormalizeModelAliases(YamlSequenceNode models)
+    {
+        foreach (var model in models.Children.OfType<YamlMappingNode>())
+            if (LegacyImportService.Text(model, "name") is { } modelName) Set(model, "alias", new YamlScalarNode(modelName));
     }
     private static string? Read(JsonElement node, string name) => node.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     private static void Set(YamlMappingNode mapping, string key, YamlNode value) => mapping.Children[new YamlScalarNode(key)] = value;

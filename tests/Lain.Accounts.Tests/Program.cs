@@ -20,6 +20,11 @@ try
         api-keys: [legacy-client-secret]
         routing:
           strategy: round-robin
+        oauth-model-alias:
+          codex:
+            - name: gpt-test
+              alias: my-codex
+              visible: false
         openai-compatibility:
           - name: command-code
             base-url: https://example.test/v1
@@ -46,9 +51,13 @@ try
         Check(!text.Contains("NEVER-COPY-ME") && !text.Contains("NEVER-COPY-ID"), "OAuth refresh and ID tokens never copied");
         if (!OperatingSystem.IsWindows()) Check((File.GetUnixFileMode(file) & (UnixFileMode.GroupRead | UnixFileMode.OtherRead)) == 0, "private file permissions");
     }
-    Check(configuration.Snapshot.Routes.Length == 1 && configuration.Snapshot.Routes[0].Alias == "short-model", "model aliases imported");
+    Check(configuration.Snapshot.Routes.Length == 2 && configuration.Snapshot.Routes.Any(r => r.Alias == "short-model"), "model aliases imported");
+    Check(configuration.Snapshot.Routes.Any(r => r.Alias == "my-codex" && !r.Visible), "Codex OAuth alias and visibility imported");
     var compiled = new ProxyConfigurationWriter(paths, secrets).Write(configuration.Snapshot with { Accounts = configuration.Snapshot.Accounts.Select(a => a with { Enabled = true }).ToArray() });
     var ownConfig = File.ReadAllText(paths.ProxyConfig);
+    var importedApi = configuration.Snapshot.Accounts.Single(a => a.CredentialKind == "api-key");
+    var expectedCoreId = "openai-compatibility:command-code:" + Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("openai-compatibility:command-code\0upstream-secret\0https://example.test/v1\0http://127.0.0.1:19001"))).ToLowerInvariant()[..12];
+    Check(compiled[importedApi.Id] == expectedCoreId, "per-entry transport participates in credential identity");
     Check(compiled.Count == 2 && ownConfig.Contains("proxy-url: http://127.0.0.1:19001") && ownConfig.Contains("18417"), "own runtime preserves per-entry proxy and uses own port");
     Check(!ownConfig.Contains("legacy-client-secret"), "inference uses an independent credential");
     Check(ownConfig.Contains("alias: upstream-model"), "core-private model names normalized");
@@ -67,8 +76,32 @@ try
     var replaced = service.ReplaceApiCredential(first.Revision, apiAccount.Id, "rotated-secret");
     Check(replaced.Accounts.Any(a => a.Id == apiAccount.Id), "explicit credential rotation retains stable account identity");
     try { service.AddApi(replaced.Revision, new("duplicate", apiAccount.Provider, "rotated-secret", "https://example.test/v1")); throw new Exception("Expected duplicate rejection."); } catch (ArgumentException) { }
+    var priorApiRoute = replaced.Routes.Single(r => r.Alias == "short-model");
+    var priorCodexRoute = replaced.Routes.Single(r => r.Alias == "my-codex");
+    File.WriteAllText(configPath, File.ReadAllText(configPath).Replace("alias: short-model", "alias: renamed-model").Replace("name: gpt-test", "name: gpt-next"));
+    var changedSourceHash = SHA256.HashData(File.ReadAllBytes(configPath));
+    var refreshed = importer.Import(new(replaced.Revision, configPath, legacy));
+    Check(configuration.Snapshot.Routes.Single(r => r.Id == priorApiRoute.Id).Alias == "renamed-model", "reimport updates alias while preserving imported route identity");
+    Check(configuration.Snapshot.Routes.Single(r => r.Id == priorCodexRoute.Id).UpstreamModel == "gpt-next", "reimport updates upstream model while preserving route identity");
+    Check(SHA256.HashData(File.ReadAllBytes(configPath)).SequenceEqual(changedSourceHash), "reimport remains read-only");
+    var manual = service.AddApi(refreshed.Revision, new("manual", "manual-provider", "manual-secret", "https://manual.test/v1"));
+    var manualAccount = manual.Accounts.Single(a => a.Name == "manual");
+    var manualRoute = new RouteDto("route-manual", "manual-alias", "manual-upstream", manualAccount.Provider, [manualAccount.Id]);
+    new ProxyConfigurationWriter(paths, secrets).Write(manual with { Accounts = [manualAccount], Routes = [manualRoute] });
+    Check(File.ReadAllText(paths.ProxyConfig).Contains("name: manual-upstream"), "manual API accounts receive selected core model declarations");
     var login = await new LoginOperationService().BeginAsync("codex");
     Check(login.State == "unsupported" && login.Url is null, "unqualified login fails closed");
+    await using (var lifecycle = new OwnedProxyLifecycle(paths, secrets, new ProxyLaunchOptions("unused", "unused")))
+    {
+        try { await lifecycle.StartAsync(); throw new Exception("Expected qualification rejection."); } catch (InvalidOperationException) { }
+        Check(lifecycle.Status.State == "stopped", "qualification rejects launch before touching any process");
+    }
+    try { secrets.ReadAccount("../legacy"); throw new Exception("Expected path rejection."); } catch (ArgumentException) { }
+    if (!OperatingSystem.IsWindows())
+    {
+        var link = Path.Combine(testRoot, "linked-state"); Directory.CreateSymbolicLink(link, legacy);
+        try { _ = new OwnStatePaths(link); throw new Exception("Expected symlink rejection."); } catch (IOException) { }
+    }
     Console.WriteLine("Accounts/operations checks passed.");
 }
 finally { Directory.Delete(testRoot, recursive: true); }
