@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -35,29 +36,89 @@ public sealed partial class MainWindow
     {
         if (_login is not { } login) return;
         _loginVisible = true; _editing = true; _actions.Clear();
-        var guidance = login.State switch
+        var waiting = login.State == "waiting";
+        var (label, guidance) = login.State switch
         {
-            "completed" => "Your Codex account is connected.",
-            "cancelled" => "Authorization was cancelled. Return to accounts to start again.",
-            "failed" or "unsupported" => "Authorization could not finish. Return to accounts to retry.",
-            _ => "Finish the Codex authorization in your browser. lain checks the result automatically."
+            "completed" => ("Connected", "Your Codex account is ready. Return to accounts to manage the connection."),
+            "cancelled" => ("Sign-in cancelled", "No new account was connected. You can start again from accounts."),
+            "failed" => ("Sign-in failed", "Authorization could not finish. Return to accounts and try connecting again."),
+            "unsupported" => ("Sign-in unavailable", "This host does not support this authorization. Return to accounts to choose another connection method."),
+            "waiting" => ("Waiting for authorization", "Open the authorization page and finish signing in. lain checks for your response automatically."),
+            _ => ("Sign-in status", "Return to accounts to check this connection.")
         };
-        var details = Ui.Stack(Ui.Text($"Sign-in · {login.State}", 20), Ui.Text(login.Error ?? _loginError ?? guidance, 14, Ui.Muted));
-        if (login.Url is { } url)
+        var status = Ui.Text(label, 14);
+        status.FontWeight = FontWeight.SemiBold;
+        AutomationProperties.SetLiveSetting(status, AutomationLiveSetting.Polite);
+        var details = new StackPanel { Spacing = 12 };
+        details.Children.Add(status);
+        details.Children.Add(Ui.Text(guidance, 13, Ui.Muted));
+        if (waiting)
         {
-            details.Children.Add(new TextBox { Text = url, IsReadOnly = true, TextWrapping = TextWrapping.Wrap });
-            details.Children.Add(Action("Open authorization page", async () => {
-                if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http")) throw new InvalidOperationException("The host returned an invalid authorization URL.");
-                if (!await Launcher.LaunchUriAsync(uri)) throw new InvalidOperationException("The browser could not be opened. Copy the authorization URL into your browser.");
-            }, "Complete sign-in in your browser.", stayOnPage: true));
+            details.Children.Add(new ProgressBar
+            {
+                IsIndeterminate = true, Height = 3, MinHeight = 3,
+                Foreground = Ui.Accent, Background = Ui.Edge,
+                Margin = new Thickness(0, 4)
+            });
+            if (_loginError is not null)
+            {
+                var feedback = Ui.Text(_loginError, 13, Ui.Muted);
+                AutomationProperties.SetLiveSetting(feedback, AutomationLiveSetting.Polite);
+                details.Children.Add(feedback);
+            }
+            if (login.Url is { } url)
+            {
+                var open = Action("Open authorization page", async () => {
+                    if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http")) throw new InvalidOperationException("The host returned an invalid authorization URL.");
+                    if (!await Launcher.LaunchUriAsync(uri)) throw new InvalidOperationException("The browser could not be opened. Check your default browser and try again.");
+                }, "Finish signing in in your browser. This page checks automatically.", stayOnPage: true);
+                open.Classes.Add("primary");
+                open.HorizontalAlignment = HorizontalAlignment.Left;
+                AutomationProperties.SetHelpText(open, "Opens your default browser only when you activate this button. You can return here while authorization is pending.");
+                details.Children.Add(open);
+                details.Children.Add(Ui.Text("Already opened it? Continue in that browser tab; this page can stay open.", 12, Ui.Muted));
+                var manualUrl = new TextBox { IsReadOnly = true, TextWrapping = TextWrapping.Wrap, FontSize = 12 };
+                AutomationProperties.SetName(manualUrl, "Authorization link");
+                AutomationProperties.SetHelpText(manualUrl, "Select all and copy this link into your browser. The link is only shown when you expand this section.");
+                var manual = new Expander
+                {
+                    Header = "Use the authorization link manually",
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                    Content = Ui.Stack(Ui.Text("Copy this link into your browser if the button cannot open it. Keep the authorization link private.", 12, Ui.Muted), manualUrl)
+                };
+                manual.PropertyChanged += (_, change) =>
+                {
+                    if (change.Property == Expander.IsExpandedProperty)
+                        manualUrl.Text = manual.IsExpanded ? url : "";
+                };
+                details.Children.Add(manual);
+            }
+            else
+                details.Children.Add(Ui.Text("The host has not supplied an authorization link. You can cancel and try again from accounts.", 13, Ui.Muted));
         }
-        var buttons = Ui.Row(Ui.Button("Back to accounts", () => Navigate("Accounts")));
-        if (login.State == "waiting") buttons.Children.Add(Action("Cancel login", async () => {
-            _login = await _client.CancelLoginAsync(login.Id, _lifetime.Token);
-            _loginPolling?.Cancel(); _loginVisible = false;
-            _notice.Text = $"Codex login {_login.State}.";
-        }, "Codex login cancelled."));
-        _page.Content = Ui.Stack(Heading("Connect your Codex account", "This opens a new authorization for lain's own account storage."), Ui.Card(details), buttons);
+        var back = Ui.Button("Back to accounts", () => Navigate("Accounts"));
+        AutomationProperties.SetHelpText(back, waiting ? "Return to accounts. Sign-in continues in the background." : "Return to the list of connected accounts.");
+        var buttons = new WrapPanel { Orientation = Orientation.Horizontal, ItemSpacing = 8, LineSpacing = 8 };
+        buttons.Children.Add(back);
+        if (waiting)
+        {
+            var cancel = Action("Cancel sign-in", async () => {
+                _login = await _client.CancelLoginAsync(login.Id, _lifetime.Token);
+                _loginPolling?.Cancel(); _loginVisible = false;
+                _notice.Text = $"Codex login {_login.State}.";
+            }, "Codex sign-in cancelled.");
+            AutomationProperties.SetHelpText(cancel, "Stops this authorization request and returns to accounts.");
+            buttons.Children.Add(cancel);
+        }
+        var content = new StackPanel { Spacing = 20, MaxWidth = 680, HorizontalAlignment = HorizontalAlignment.Stretch };
+        content.Children.Add(Heading("Connect Codex", "Sign in to add a Codex account to lain."));
+        var card = Ui.Card(details);
+        card.Padding = new Thickness(20);
+        content.Children.Add(card);
+        content.Children.Add(Ui.Text("Authorization is saved in lain’s own account storage.", 12, Ui.Muted));
+        content.Children.Add(buttons);
+        _page.Content = content;
     }
 
     private async Task PollLoginAsync(string id, CancellationTokenSource polling)
@@ -71,6 +132,7 @@ public sealed partial class MainWindow
                 {
                     var login = await _client.GetLoginAsync(id, polling.Token);
                     if (_login?.Id != id) return;
+                    var feedbackChanged = _login.State != login.State || _login.Url != login.Url || _loginError is not null;
                     _login = login; _loginError = null;
                     if (_login.State == "completed")
                     {
@@ -81,7 +143,7 @@ public sealed partial class MainWindow
                         _notice.Text = "Codex account connected.";
                         return;
                     }
-                    if (_loginVisible && _section == "Accounts" && !_busy) ShowLoginPage();
+                    if (feedbackChanged && _loginVisible && _section == "Accounts" && !_busy) ShowLoginPage();
                     if (_login.State is "failed" or "cancelled" or "unsupported")
                     {
                         _notice.Text = $"Codex authorization {_login.State}.";
@@ -89,10 +151,12 @@ public sealed partial class MainWindow
                     }
                 }
                 catch (OperationCanceledException) when (polling.IsCancellationRequested) { return; }
-                catch (Exception error)
+                catch (Exception)
                 {
-                    _loginError = "Sign-in status is unavailable. Retrying automatically. " + Friendly(error);
-                    if (_loginVisible && _section == "Accounts" && !_busy) ShowLoginPage();
+                    // Host error text may contain authorization details; keep feedback local.
+                    var feedbackChanged = _loginError is null;
+                    _loginError = "Status is temporarily unavailable. Checking again automatically; you can continue in your browser.";
+                    if (feedbackChanged && _loginVisible && _section == "Accounts" && !_busy) ShowLoginPage();
                 }
             }
         }
