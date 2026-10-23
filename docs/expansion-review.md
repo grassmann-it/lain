@@ -1,6 +1,6 @@
 # Independent expansion review — 24 October 2026
 
-Status: **in progress; no integrated release acceptance yet**.
+Status: **source, synthetic integration and rendered UI accepted within the scopes below; eligible for controlled staging/install qualification, not yet installed expansion acceptance**.
 Review baseline: `7b3a990` on `next-review`. This reviewer owns this document only.
 No product edits, legacy writes, provider requests with credentials, service
 operations or builds have been performed for this expansion review. Integrated
@@ -24,16 +24,16 @@ None substitutes for the others.
 | Requirement | Independent acceptance check | Evidence/status |
 | --- | --- | --- |
 | Dense quota tiles | Unequal tile heights do not create large empty grid cells. Closed tiles retain named windows, bars, remaining/reset/freshness; native expansion exposes balances/actions/provenance. | Actual Masonry fixture renders independently inspected at 1120×780 and 800×560; closed-tile density accepted. Installed Desktop follow-up also inspected and accepted for this UI-only checkpoint; expansion stays separate. |
-| Own live streams | Owned core supplies request/attempt live lifecycle and content; UI stays useful while a stream is running, including cancellation/error. | Core/Host/Desktop source reviewed; focused Host and Go suites passed at recorded checkpoints. Final compact UI renders and exact final Core qualification pending. |
-| Conversation/turn/tool/worker grouping | Group only by supported identities and recorded evidence. Retries, continuations and tool calls do not become invented independent conversations. Missing parents/workers remain unknown. | Shared contract inspected; source and adversarial grouping fixtures pending. |
+| Own live streams | Owned core supplies request/attempt live lifecycle and content; UI stays useful while a stream is running, including cancellation/error. | Core/Host/Desktop source and final compact renders accepted; final exact-hash synthetic Core/Inspector qualification passes. Actual new-provider live traffic remains untested. |
+| Conversation/turn/tool/worker grouping | Group only by supported identities and recorded evidence. Retries, continuations and tool calls do not become invented independent conversations. Missing parents/workers remain unknown. | Source, adversarial Core/Host/Desktop fixtures and final renders inspected. Conflicting or missing evidence remains separate/unknown; no heuristic grouping accepted. |
 | Durable usage | Existing requests/tokens survive migration/restart/replay. Metadata additions do not change token/outcome facts or double-count a terminal event. | Additive migration and metadata-only completion source reviewed; data worktree suite passed 22 tests. Installed expansion migration/restart evidence pending. |
-| Useful dimensions | Route, model family, manufacturer, inference provider, gateway, billing account, reasoning/mode and supported grouping identities remain distinct and historically attributable. | Additive DTOs inspected; end-to-end projection pending. |
-| Performance | First-output latency, full duration and output/full-duration rate have explicit definitions and valid sample counts. Quantiles use the whole filtered dataset, not 25 displayed attempts. | Whole-population SQL and explicit denominator/sample semantics inspected; 22-test data suite passed, including 600-attempt percentile fixture. Final UI evidence pending. |
-| Token/cost semantics | Unknown is null, measured zero remains zero, cached/reasoning subsets are not added again. Costs require actual currency/unit/pricing basis; unknown pricing never becomes zero. | No cost aggregation promised where no source cost fact exists. Integration pending. |
-| Declarative provider setup | Capabilities/protocol, account link, required credentials, billing kind/scope, limits and route matrix are available without a key. Missing credentials visibly block live verification, not documentation/mocks. | Catalog/onboarding implementation pending. |
+| Useful dimensions | Route, model family, manufacturer, inference provider, gateway, billing account, reasoning/mode and supported grouping identities remain distinct and historically attributable. | DTOs, binding validation and analysis projections inspected with synthetic coverage. Historical missing dimensions remain unknown; no live provider attribution inferred. |
+| Performance | First-output latency, full duration and output/full-duration rate have explicit definitions and valid sample counts. Quantiles use the whole filtered dataset, not 25 displayed attempts. | Whole-population SQL and explicit denominator/sample semantics inspected; 22-test data suite and final rendered analysis accepted, including the 600-attempt percentile fixture. |
+| Token/cost semantics | Unknown is null, measured zero remains zero, cached/reasoning subsets are not added again. Costs require actual currency/unit/pricing basis; unknown pricing never becomes zero. | Synthetic exact-Core null/zero checks and rendered eligible/sample counts accepted. No cost aggregation promised where no source cost fact exists. |
+| Declarative provider setup | Capabilities/protocol, account link, required credentials, billing kind/scope, limits and route matrix are available without a key. Missing credentials visibly block live verification, not documentation/mocks. | Catalog/onboarding source, mock adapters and final provider/setup renders inspected. Required-field and consent boundaries remain explicit; all 15 new providers live not_tested. |
 | Strict free-only | Actual route execution and every retry/fallback reject paid or unknown price, incompatible scope/eligibility and expired/unverified trial assumptions. A display toggle alone is insufficient. | Initial deny-all boundary reviewed; narrow guarded OpenRouter execution is now wired and source-reviewed. Same-key zero-cap proof remains mandatory; live usability not tested. |
-| Privacy/lifetime | Auth headers/keys/refresh tokens never enter public output or persistent Usage. Inspector content uses bounded local buffers, explicit redaction and TTL; gaps/evictions are visible. | Contract bounds inspected; implementation/negative tests pending. |
-| Accessible UI | Keyboard activation/focus/expansion survive polling; statuses are text as well as color; narrow viewport and long content stay reachable without hidden data. | Private-Xvfb actual renders and functional checks pending. |
+| Privacy/lifetime | Auth headers/keys/refresh tokens never enter public output or persistent Usage. Inspector content uses bounded local buffers, explicit redaction and TTL; gaps/evictions are visible. | Implementation inspected; final exact-Core privacy/restart cases and Host 32+80 regression assertions pass. Independent Core/Host TTL and redaction limits remain explicit. |
+| Accessible UI | Keyboard activation/focus/expansion survive polling; statuses are text as well as color; narrow viewport and long content stay reachable without hidden data. | Final private-Xvfb run passes 380 checks/68 PNG; key renders accepted at 1120×780 and 800×560. Routed events are not OS pointer hit testing. |
 | Safe delivery | Owned-core identity/durability qualification remains valid; controlled migration/install has rollback. No legacy proxy/queue mutation or normal Codex configuration rewrite. | Final root-owned integration and interval-scoped isolation evidence pending. |
 
 ## Initial contract inspection
@@ -56,7 +56,7 @@ worktree, including normative `observability-contracts.md`, without building:
   eligibility/enforcement metadata. Unknown capabilities/prices remain unknown.
 
 No blocking contract incompatibility was found in that limited static inspection.
-The following integration questions were sent to owners and remain open:
+The following integration questions were sent to owners at the initial checkpoint; later resolutions and remaining delivery checks are recorded below:
 
 1. The initial account creation request accepted name/provider/API key/base URL,
    while catalogs can require an account ID, region/workspace or OAuth. Each
@@ -75,11 +75,11 @@ The following integration questions were sent to owners and remain open:
 
 | Finding | Inspected evidence and consequence | Disposition |
 | --- | --- | --- |
-| Catalog identity could misstate actual inference provider | In policy `bfd8068`, cost validation compared descriptor model only; binding compilation attached descriptor dimensions even when the selected secret had a custom endpoint/protocol. A declared NVIDIA route could therefore claim NVIDIA inference through another gateway. | Inspected fix `aec3f78`: bindings require explicit qualified route IDs and writer calls `ProviderTransportValidation.ValidateCompiled`. Also inspected `3178c53` validator: exact endpoint/model/protocol/core identity and generated-header checks. Root wiring and execution evidence remain pending. |
+| Catalog identity could misstate actual inference provider | In policy `bfd8068`, cost validation compared descriptor model only; binding compilation attached descriptor dimensions even when the selected secret had a custom endpoint/protocol. A declared NVIDIA route could therefore claim NVIDIA inference through another gateway. | Inspected fix `aec3f78`: bindings require explicit qualified route IDs and writer calls `ProviderTransportValidation.ValidateCompiled`. Also inspected `3178c53` validator: exact endpoint/model/protocol/core identity and generated-header checks. Root wiring and synthetic transport/policy execution were subsequently inspected and passed. |
 | Secret presence falsely cleared onboarding requirements | Initial onboarding endpoint used any provider account secret's existence to return an empty missing-fields list. It did not establish required account/region/workspace fields. | Inspected fix `aec3f78`: required fields remain unverified even with a secret; endpoint explicitly says presence is not validation. Static finding resolved. |
 | Free-only execution is not yet a qualified usable path | Policy `bfd8068` always adds `upstream_cost_controls_unavailable`; both runtime writers reject it and explicit cross-route fallback execution. | Safe fail-closed boundary, not evidence that free-only requests can execute. Final product/evidence must disclose this limitation unless provider controls are qualified. Core `8fe73e3` startup defense inspected: missing/configured accepted, free_only and unknown policies rejected regardless of claimed free labels. |
 | Content lifetime spans two buffers | W1 WIP has 15-minute Core ring retention, while public DTO defaults describe a 120-second Host buffer. | Inspected documentation fix `d1188ab`: both independent lifetimes and on-read/observation expiry are explicit; no secure-erasure timer claim. Static documentation finding resolved. |
-| OpenCode Gemini Contributor needs explicit data-use permission | Transport `3178c53` prepared the route without a privacy permission setting despite the provider research documenting that requirement. | Inspected fix `941d0fc`: absent/false consent rejects the Contributor route in shared Prepare validation; manifest explicitly describes the non-secret opt-in. Runtime fixtures pending. |
+| OpenCode Gemini Contributor needs explicit data-use permission | Transport `3178c53` prepared the route without a privacy permission setting despite the provider research documenting that requirement. | Inspected fix `941d0fc`: absent/false consent rejects the Contributor route in shared Prepare validation; manifest explicitly describes the non-secret opt-in. Subsequent mock transport fixtures passed; live consent/onboarding remains untested. |
 
 Static W1 inspection found separate content-only RAM storage, 4 MiB/4,096-event
 ring bounds, 256 pending-capture slots and 2 KiB line buffers. Redaction precedes
@@ -101,7 +101,7 @@ Published consumer subscriptions are not presumed to fund arbitrary proxy calls.
 | Provider | Specific boundary from the full request | Review status |
 | --- | --- | --- |
 | NVIDIA Build / Step Preview | Development/evaluation eligibility and real limits; official route supports the claimed streaming/tool/reasoning behavior. | Manifest/config/research doc statically reviewed. Independent FAQ fetch failed; no independent live verification or inference. |
-| StepFun direct / Step Plan | Subscription versus PAYG endpoint; credits are not tokens; supported coding-tool/general-proxy scope. | Independently retrieved official pricing and accounts markdown: confirms monthly credits/prices and separate GET /v1/accounts balance. Transport/quota test execution pending. |
+| StepFun direct / Step Plan | Subscription versus PAYG endpoint; credits are not tokens; supported coding-tool/general-proxy scope. | Independently retrieved official pricing and accounts markdown: confirms monthly credits/prices and separate GET /v1/accounts balance. Subsequent NVIDIA/Step mock harness passed 40 assertions; live not tested. |
 | Poe | Points shared across models; official API/OAuth only; manufacturer bot versus third-party publisher explicit. | Research and OAuth source inspected: prepared PKCE/state/one-use token-request helper, no active callback or persistence. Points/publisher distinctions explicit; live not tested. |
 | OpenCode Go / Go Plus | Shared weighted quota and time windows; route-specific protocols; model budgets not added. | Research and request adapter inspected: explicit protocol table/session header, no quota endpoint claim; live not tested. |
 | Gemini API | API/project-based free tier versus paid models and consumer subscription. | Research/model metadata adapter inspected: fixed official endpoint, no redirect, bounded response, metadata is not inference entitlement; live not tested. |
@@ -119,9 +119,10 @@ Published consumer subscriptions are not presumed to fund arbitrary proxy calls.
 Gateway source inspection also confirms that OpenRouter, Requesty and Cloudflare
 manifests distinguish fixed free IDs, random free routing, organizational/account
 scope, paid overflow, Neurons and unknown live state. Their helper validation is
-not itself a dispatch boundary. Host policy unconditionally denies free-only and
-Core independently rejects it during startup. A positive helper result or catalog
-`freeOnlyEligible` flag therefore must not be presented as executable support.
+not itself a dispatch boundary. At that initial checkpoint Host policy denied all
+free-only and Core independently rejected it during startup. The later narrow
+OpenRouter execution boundary below supersedes that deny-all implementation; a
+positive catalog/helper result alone still does not qualify dispatch.
 
 ## Additional data and Inspector source inspection
 
@@ -264,7 +265,7 @@ at each executor attempt before the durable dispatch gate; exact auth/provider/
 protocol/base/model checks and a second pin check precede execution; every final
 compatibility HTTP send uses the guard after translation/customization. The proof
 uses an isolated client copy and is excluded from inference response tracking.
-No further static boundary blocker was found; integrated Go execution is pending.
+No further static boundary blocker was found; the final focused Go execution and exact-binary synthetic qualification below now pass.
 
 Further integrated logs passed 27 focused Host Inspector assertions and 80
 independent fake-HTTP collector boundary assertions. They cover split credentials,
@@ -277,7 +278,7 @@ Inspector service/endpoint wiring were inspected in root Program.cs.
 Route/Profile UI source `01fb567` preserves optional policy/provenance fields and
 unchanged selection order by editing original records. The policy-check wording
 correctly distinguishes saved-configuration eligibility from a fresh upstream cap
-proof or live access. Actual policy-editor renders/mutation fixtures remain pending.
+proof or live access. Final policy-editor renders and mutation fixtures are accepted within the run-3 scope below.
 Preliminary provider renders at 1120×780 and 800×560 are readable with explicit
 prepared/live-unknown distinctions and eight navigation labels. Their first suite
 stopped on a provider-search assertion; the reported event-loop timing fix and full
@@ -287,11 +288,9 @@ Further follow-up source review found no new blocker in Host `540b2af` (root
 `ad29d94`): normalized metadata is checked for secrets after control/invisible
 character removal; canonical generation IDs are required; held characters keep
 their original monotonic receipt age through later chunks and terminal flushing;
-expiry handles delayed events whose ages are older than earlier cursors. Five
-additional regression assertions are prepared; the earlier 27-assertion result
-alone does not certify this follow-up. Core `fc916d7` applies the same
+expiry handles delayed events whose ages are older than earlier cursors. The fresh 32-assertion and 80-boundary-assertion results below certify this follow-up within their synthetic scope; the earlier 27-assertion result alone did not. Core `fc916d7` applies the same
 normalize-before-secret-matching order and adds split/hidden-marker/final-flush
-fixtures. Its new binary needs fresh exact-hash qualification.
+fixtures. Its new binary receives the fresh exact-hash synthetic qualification recorded below.
 
 The data worktree's `/tmp/lain-usage-next-tests.log` reports 22 tests passed, zero
 failed/skipped, for the Usage store suite. The focused final Go log
@@ -309,11 +308,90 @@ was found. `backendQualified` inherits only the supplied independent report's
 scope: focused Go tests must not be substituted for full exact-binary Core
 qualification. Final archive/installed hashes remain separate checks.
 
+## Final rendered expansion checkpoint
+
+`/tmp/lain-expansion-ui-evidence-3/evidence.json` is PASS: 380 checks and 68 PNGs
+on private Xvfb `:2`. It uses production MainWindow, UsageView,
+ProviderCatalogView, InspectorView and App theme with in-memory HTTP only.
+Exact Desktop fixture SHA-256:
+`360CFFEB234E10F4FA112FA084C8FF2BE29A2E5436F17AE0287CC6B25FCBF23D`.
+This is an actual rendered fixture, with routed Button Click events, not OS
+pointer hit testing or an installed Host/provider integration. No real credential,
+auth browser, inference or service mutation was involved.
+
+Independently viewed Inspector, Usage analysis/unobserved coverage, provider
+catalog/capabilities/setup, route policy and profile editor captures at 1120×780
+and 800×560, plus narrow tool/restart/disconnected, Usage details/error and route
+editor captures. No blocking visual defect was found. Narrow Inspector output is
+visible immediately; its 760×142 inner viewport scrolls to remaining output while
+the outer viewport has zero offset and no excess extent. Restart clears old
+relationships/output with an explicit notice; disconnection marks active state
+unknown and retained text as context. Actual success is terminal. Known request
+relationships group only with evidence; conflicting retry parents remain separate.
+The fixture's tool-result text is mocked Host data and does not prove actual Core
+captures tool arguments/results; actual Core/Host exclude those payloads.
+
+Analysis exposes whole-range P50/P95, measured/eligible counts and unknown groups;
+narrow expanded details and incomplete-coverage qualifications are readable.
+Providers visibly distinguish prepared/mock-tested from live-unverified, missing
+accounts and advertised free offers from runtime free-only controls. Setup terms
+are collapsed and long forms use ordinary page scrolling. The explicit route
+policy dropdown was viewed at 1120; at 800 its lower policy section is below the
+captured fold, so this review does not claim every lower label was visually seen.
+Profile policy controls are visible at both sizes. Mutation fixtures cover
+preservation of original policy, provenance, fallback IDs, order and consent;
+configuration eligibility never implies a fresh cap proof or live access.
+
+The first full run stopped on provider-search timing before the queued text event
+(fixed by `f3453ba`); the second stopped on an Inspector fixture locator
+(`06d36d4`). Run 3 is the complete passing rerun, not a first-pass success.
+The later visual-only Usage header/filter alignment `f09f407` is outside this
+exact fixture hash and needs the final delivery render to bind its appearance.
+
+## Final exact-Core synthetic checkpoint
+
+Independently read `/tmp/lain-core-patch2-final-go.log`: all four packages pass
+(`internal/lain`, `internal/freeonly`, `sdk/cliproxy/auth`,
+`internal/runtime/executor`). Also read `/tmp/lain-inspector-age-regression.log`:
+32 focused Host assertions and 80 independent fake-HTTP boundary assertions pass,
+including normalized secret matching and original per-character receipt ages.
+
+The following final reports all pass and bind to Core SHA-256
+`bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87`
+(root source `42e2c3d`), rather than the superseded candidate:
+
+- `/tmp/lain-final-core-qualification.json`: 15 synthetic backend cases,
+  including 200-request replay/restart equality, retries, protocol/tool
+  continuation, null/zero usage, credential binding revisions, crash and journal
+  failures. Real OAuth/display-name lifecycle and provider probes are excluded.
+- `/tmp/lain-final-inspector-core.json`: 15 synthetic cases covering provenance,
+  conversation/turn/worker boundaries, cancellation, secret/payload exclusion and
+  new-process generation without payload replay or durable-Usage alteration.
+- `/tmp/lain-final-core-acceptance.json`: management/inference auth separation
+  and kill-after-dispatch restart; exact binary unchanged, no invented completion.
+
+The earlier current-consumer replay report shows 200 requests/attempts, cursor600
+and 3,600 tokens, but predates this final binary. A final-hash-bound current-consumer
+result and the actual packaged/installed migration/restart remain separate
+requirements; this review does not silently promote the earlier report.
+
 ## Evidence ledger and final outcome
 
-No integrated builds or tests have been assigned to this reviewer yet. Code/test
-source inspection does not imply execution. The targeted Masonry fixture layout is accepted above; the expansion as a whole
-is not accepted for release at this stage.
+This reviewer ran no builds or tests: execution was serialized by root, and the
+reports and rendered captures above were independently inspected. No remaining
+source or inspected-render blocker prevents controlled staging/install
+qualification once the final current-consumer binding passes. This is not yet
+acceptance of an installed expansion or broad `releaseQualified: true`.
+Packaging must bind the exact qualified Core and final Desktop/Host/CLI artifacts;
+installed migration/restart, rollback and interval-scoped isolation evidence must
+be reviewed before those claims are made.
+
+All 15 new provider integrations remain live `not_tested`: documentation,
+prepared setup and mock-tested execution are useful accepted scope without new
+keys or live calls. Earlier Z.ai/Kimi/quota observations are historical evidence
+for the existing integrations and Masonry checkpoint, not new expansion probes.
+No live OpenRouter zero-cap usability claim is accepted. Controlled staging and
+installation do not require inventing a live test or acquiring new credentials.
 
 The preceding quota review's normal Codex preservation statement was separately
 corrected in `2ebcf8f`: the 23:58 Desktop/CLI update preserved the bytes it started
