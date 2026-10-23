@@ -187,8 +187,7 @@ func (e *OpenAICompatExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
 	})
 
 	httpClient := helps.NewProxyAwareHTTPClient(ctx, e.cfg, auth, 0)
-	httpClient = reporter.TrackHTTPClient(httpClient)
-	httpResp, err := doOpenAICompatRequest(ctx, httpClient, httpReq)
+	httpResp, err := doOpenAICompatRequest(ctx, httpClient, httpReq, reporter.TrackHTTPClient)
 	if err != nil {
 		helps.RecordAPIResponseError(ctx, e.cfg, err)
 		return resp, err
@@ -282,8 +281,7 @@ func (e *OpenAICompatExecutor) executeImages(ctx context.Context, auth *cliproxy
 	})
 
 	httpClient := helps.NewProxyAwareHTTPClient(ctx, e.cfg, auth, 0)
-	httpClient = reporter.TrackHTTPClient(httpClient)
-	httpResp, err := doOpenAICompatRequest(ctx, httpClient, httpReq)
+	httpResp, err := doOpenAICompatRequest(ctx, httpClient, httpReq, reporter.TrackHTTPClient)
 	if err != nil {
 		helps.RecordAPIResponseError(ctx, e.cfg, err)
 		return resp, err
@@ -416,8 +414,7 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
 	})
 
 	httpClient := helps.NewProxyAwareHTTPClient(ctx, e.cfg, auth, 0)
-	httpClient = reporter.TrackHTTPClient(httpClient)
-	httpResp, err := doOpenAICompatRequest(ctx, httpClient, httpReq)
+	httpResp, err := doOpenAICompatRequest(ctx, httpClient, httpReq, reporter.TrackHTTPClient)
 	if err != nil {
 		helps.RecordAPIResponseError(ctx, e.cfg, err)
 		return nil, err
@@ -663,8 +660,7 @@ func (e *OpenAICompatExecutor) executeImagesStream(ctx context.Context, auth *cl
 	})
 
 	httpClient := helps.NewProxyAwareHTTPClient(ctx, e.cfg, auth, 0)
-	httpClient = reporter.TrackHTTPClient(httpClient)
-	httpResp, err := doOpenAICompatRequest(ctx, httpClient, httpReq)
+	httpResp, err := doOpenAICompatRequest(ctx, httpClient, httpReq, reporter.TrackHTTPClient)
 	if err != nil {
 		helps.RecordAPIResponseError(ctx, e.cfg, err)
 		return nil, err
