@@ -307,16 +307,19 @@ Require(exit == 0 && output.ToString().Contains("next cursor 5; high watermark 7
 
 handler.Handle = request =>
 {
+    if (request.RequestUri!.AbsolutePath == "/api/v1/providers")
+        return new(HttpStatusCode.OK) { Content = JsonContent.Create(new ProviderCatalogDto(1, DateTimeOffset.UtcNow,
+            [providerDescriptor with { Id = "test", Credentials = [new ProviderCredentialFieldDto("region", "Region", "text", Secret: false), new ProviderCredentialFieldDto("project", "Project", "text", Secret: false)] }])) };
     Require(request.Method == HttpMethod.Post && request.RequestUri!.AbsolutePath == "/api/v1/accounts", "catalog account uses existing revisioned endpoint");
     using var payload = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
     var value = payload.RootElement.GetProperty("value");
     Require(value.GetProperty("providerRouteId").GetString() == "catalog/route" && value.GetProperty("settings").GetProperty("region").GetString() == "singapore" &&
-        value.GetProperty("settings").GetProperty("workspaceId").GetString() == "workspace" && value.GetProperty("apiKey").GetString() == "SYNTHETIC-API-KEY", "route selection and repeated nonsecret settings retained beside dedicated secret");
+        value.GetProperty("settings").GetProperty("workspaceId").GetString() == "workspace" && value.GetProperty("settings").GetProperty("project").GetString() == "project-one" && value.GetProperty("apiKey").GetString() == "SYNTHETIC-API-KEY", "route selection and repeated nonsecret settings retained beside dedicated secret");
     return new(HttpStatusCode.OK) { Content = JsonContent.Create(configuration) };
 };
 output = new(); error = new();
 exit = await CliApplication.RunAsync(["accounts", "add-api", "--name", "test", "--provider", "test", "--base-url", "https://provider.test/v1",
-    "--provider-route", "catalog/route", "--setting", "region=singapore", "--setting", "workspaceId=workspace", "--key-stdin", "--revision", "3", "--json"],
+    "--provider-route", "catalog/route", "--setting", "region=singapore", "--setting", "workspaceId=workspace", "--setting", "project=project-one", "--key-stdin", "--revision", "3", "--json"],
     output, error, () => client, input: new StringReader("SYNTHETIC-API-KEY\n"));
 Require(exit == 0 && !output.ToString().Contains("SYNTHETIC-API-KEY") && error.ToString() == "", "catalog account CLI does not echo secret or setting input"); assertions++;
 foreach (var settingsArgs in new[] {
@@ -330,6 +333,16 @@ foreach (var settingsArgs in new[] {
     Require(exit == 2 && output.ToString() == "" && !error.ToString().Contains("LEAK-ME"), "invalid, duplicated or secret settings rejected before discovery without values"); assertions++;
 }
 
+handler.Handle = request =>
+{
+    Require(request.Method == HttpMethod.Get && request.RequestUri!.AbsolutePath == "/api/v1/providers", "secret setting validation performs only catalog read");
+    return new(HttpStatusCode.OK) { Content = JsonContent.Create(new ProviderCatalogDto(1, DateTimeOffset.UtcNow,
+        [providerDescriptor with { Id = "test", Credentials = [new ProviderCredentialFieldDto("session", "Session", "secret", Secret: true)] }])) };
+};
+output = new(); error = new();
+exit = await CliApplication.RunAsync(["accounts", "add-api", "--name", "test", "--provider", "test", "--base-url", "https://provider.test/v1",
+    "--provider-route", "route", "--setting", "session=LEAK-ME", "--key-stdin"], output, error, () => client);
+Require(exit == 2 && output.ToString() == "" && !error.ToString().Contains("LEAK-ME"), "descriptor secret fields cannot be passed as settings"); assertions++;
 handler.Handle = request =>
 {
     Require(request.Method == HttpMethod.Put && request.RequestUri!.AbsolutePath == "/api/v1/routes/free-route", "policy mutation uses existing route API");

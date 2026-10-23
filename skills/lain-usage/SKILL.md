@@ -99,8 +99,9 @@ the requested login operation, and honor cancellation.
 
 Catalog-backed providers use `--provider-route CATALOG_ROUTE_ID`; retain the
 exact endpoint and protocol shown by onboarding. Repeat `--setting NAME=VALUE`
-for nonsecret `accountId`, `region`, `workspaceId`, `serviceDeploymentScope` or
-`billingPlan` values required by that provider. Settings require a catalog route;
+for declared provider fields with `secret: false`, or nonsecret `accountId`,
+`region`, `workspaceId`, `serviceDeploymentScope` or `billingPlan` values required
+by the provider validator. Settings require a catalog route;
 keys and other secret values must use the dedicated secret input path. Host
 validation remains authoritative for supported protocols, routes and settings.
 Preparing an account does not establish live provider verification.

@@ -224,6 +224,8 @@ public static partial class CliApplication
         if (action == "login-status") return await client.GetLoginAsync(options.Positionals[1], ct);
         if (action == "login-cancel") return await client.CancelLoginAsync(options.Positionals[1], ct);
         if (action == "check") return await client.CheckAccountAsync(options.Positionals[1], ct);
+        var settings = action == "add-api" ? ParseAccountSettings(options) : null;
+        if (settings is not null) await ValidateAccountSettings(client, options.Get("provider")!, settings, ct);
         string? apiKey = null;
         if (action == "add-api")
         {
@@ -241,7 +243,7 @@ public static partial class CliApplication
             "disable" => await client.SetAccountEnabledAsync(revision, options.Positionals[1], false, ct),
             "remove" => await client.RemoveAccountAsync(revision, options.Positionals[1], ct),
             "add-api" => await client.AddApiAccountAsync(revision, new AddApiAccountRequest(options.Get("name")!, options.Get("provider")!, apiKey!, options.Get("base-url")!,
-                options.Get("provider-route"), ParseAccountSettings(options)), ct),
+                options.Get("provider-route"), settings), ct),
             _ => throw new ArgumentException("Unsupported account action.")
         };
     }
