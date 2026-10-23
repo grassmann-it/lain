@@ -29,8 +29,8 @@ reale OAuth-Rotation wurde nicht als getestet ausgegeben.
 - [Produktumfang](docs/product-scope.md)
 - [Ausführungsplan](docs/execution.md)
 
-Die bestehenden persönlichen Proxy-/Codex-Einstellungen werden nicht übernommen
-oder umgeschrieben. Lain besitzt eigene Dienste, Ports (18417/18418), Secrets,
+Die bestehenden persönlichen Proxy-Dienste und die normale Codex-Konfiguration
+bleiben unverändert. Lain besitzt eigene Dienste, Ports (18417/18418), Secrets,
 Konfiguration und Journale. Der Codex-Export schreibt ausschließlich
 `lain.config.toml` und `lain.models.json`; das Authkommando liefert nur einen
 lokalen Inferenzschlüssel.
