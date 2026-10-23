@@ -56,6 +56,7 @@ public sealed partial class MainWindow : Window
         var shell = new Grid { RowDefinitions = new RowDefinitions("48,Auto,*,26,52") };
 
         var brand = Ui.Text("lain", 21);
+        brand.FontFamily = Ui.BrandFont;
         brand.FontWeight = FontWeight.SemiBold;
         var subtitle = Ui.Text("Local proxy manager", 12, Ui.Muted);
         subtitle.TextWrapping = TextWrapping.NoWrap;
