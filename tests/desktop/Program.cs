@@ -182,7 +182,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(fixture.UsageCalls == detachedCalls, "usage polling stops when detached");
 
         fixture.Offline = true; await Click("Refresh");
-        await Wait(() => HasText("stale", true), "stale host snapshot");
+        await Wait(() => HasText("Local host unavailable", true), "offline host state visible");
         await CaptureBoth("offline");
         fixture.Offline = false; await Click("Refresh");
         await Click("Usage"); await Wait(UsageConnected, "usage reattaches");
