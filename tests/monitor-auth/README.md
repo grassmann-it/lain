@@ -10,3 +10,7 @@ and resource boundaries, snapshot expiry, malformed credential data, symlinks,
 private file modes and local removal.
 
 Source/auth decisions: [monitor-auth.md](../../docs/providers/monitor-auth.md).
+
+Local result, 24 October 2026: **58 checks passed**, zero build warnings/errors.
+The coordinated run used `TMPDIR` under the worktree `artifacts/tmp`; the runner
+honors that directory for its temporary project and synthetic state.

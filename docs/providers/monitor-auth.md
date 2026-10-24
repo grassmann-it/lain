@@ -115,6 +115,8 @@ local file and never revokes an externally owned token. Reconnect means entering
 a replacement credential locally. The separate capability is not exported to the
 inference proxy.
 
-Package status: implementation and synthetic fixtures prepared; no installed or
-live-qualified monitor access is claimed. The coordinated Main test run must
-execute `tests/monitor-auth/run.sh` and verify the integrated host endpoints.
+Package status: locally checked in the Main-assigned slot on 24 October 2026.
+`tests/monitor-auth/run.sh` passed 58 synthetic checks with zero build warnings
+and errors. Its temporary project and state honor `TMPDIR`; the accepted rerun
+used the worktree `artifacts/tmp` directory. No installed or live-qualified
+monitor access is claimed. Main still verifies the integrated host endpoints.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 root="$(cd "$(dirname "$0")/../.." && pwd)"
-temp="$(mktemp -d /tmp/lain-monitor-auth-tests.XXXXXX)"
+temp="$(mktemp -d "${TMPDIR:-/tmp}/lain-monitor-auth-tests.XXXXXX")"
 trap 'rm -rf "$temp"' EXIT
 cat > "$temp/MonitorAuthTests.csproj" <<PROJECT
 <Project Sdk="Microsoft.NET.Sdk">
