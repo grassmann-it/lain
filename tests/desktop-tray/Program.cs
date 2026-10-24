@@ -28,6 +28,8 @@ internal static class TraySmokeProgram
             || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"))
             || Environment.GetEnvironmentVariable("LAIN_TEST_PRIVATE_BUS") != "1"
             || string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"))
+            || !PrivateProcess("LAIN_TEST_WM_PID", "openbox")
+            || !PrivateProcess("LAIN_TEST_BUS_STUB_PID", "python3")
             || !File.Exists($"/proc/{pid}/cmdline")
             || Path.GetFileName(File.ReadAllText($"/proc/{pid}/cmdline").Split('\0')[0]) != "Xvfb")
         {
@@ -37,6 +39,13 @@ internal static class TraySmokeProgram
         if (args.FirstOrDefault() == "--ipc-owner") return IpcProbe.Owner(args[1], args[2], args[3], args[4]);
         if (args.FirstOrDefault() == "--ipc-client") return IpcProbe.Client(args[1], args[2]);
         return AppBuilder.Configure<TraySmokeApp>().UsePlatformDetect().WithInterFont().StartWithClassicDesktopLifetime(args);
+    }
+
+    private static bool PrivateProcess(string variable, string executable)
+    {
+        var value = Environment.GetEnvironmentVariable(variable);
+        return int.TryParse(value, out _) && File.Exists($"/proc/{value}/cmdline")
+            && Path.GetFileName(File.ReadAllText($"/proc/{value}/cmdline").Split('\0')[0]) == executable;
     }
 }
 
@@ -80,6 +89,7 @@ internal sealed class TrayScenario
     public async Task Run()
     {
         Directory.CreateDirectory(Output);
+        await NativeBoundary();
         await MinimizeAndClose();
         await MissingHost();
         await VisibilityRaces();
@@ -91,9 +101,66 @@ internal sealed class TrayScenario
         {
             result = "PASS", privateXvfb = true, privateDbus = true, display = Environment.GetEnvironmentVariable("DISPLAY"),
             assembly = assembly.Location, sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))), checks, images,
-            scope = "Production Avalonia Window/MainWindow/TrayWorkspaceController; injected quota polls, notification sink and tray availability. UiInstanceOwner from the production assembly in real child processes, isolated XDG runtime. No normal desktop bus, real credentials, providers or host/service operations. Native menu events exercise Avalonia's exporter bridge; no OS pointer hit-testing."
+            scope = "Native Avalonia StatusNotifier registration/PID/property read, real Linux TrayAvailability and notify-send adapter against private D-Bus fixture; production Avalonia Window/MainWindow/TrayWorkspaceController; injected quota polls, notification sink and tray availability. UiInstanceOwner from the production assembly in real child processes, isolated XDG runtime. Private Openbox on owned Xvfb; no normal desktop bus, real credentials, providers or host/service operations. Native menu events exercise Avalonia's exporter bridge; no OS pointer hit-testing."
         }, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"PASS tray smoke: {checks.Count} checks, {images.Count} screenshots. {Output}/evidence.json");
+    }
+
+    private async Task NativeBoundary()
+    {
+        Check(!await TrayAvailability.IsAvailableAsync(CancellationToken.None),
+            "a real private watcher alone does not prove this process registered a native icon");
+        var window = NewWindow(); var input = new TrayInputs();
+        using var tray = new TrayWorkspaceController(window, new UiExitProbe().Quit, input.Poll,
+            new FakeSink(), TrayAvailability.IsAvailableAsync);
+        var timer = Stopwatch.StartNew();
+        while (!await TrayAvailability.IsAvailableAsync(CancellationToken.None))
+        {
+            if (timer.Elapsed > TimeSpan.FromSeconds(8)) throw new Exception("Native Avalonia icon did not register with the private watcher");
+            await Task.Delay(80);
+        }
+        Check(true, "real Linux TrayAvailability finds the native Avalonia registration owned by this process");
+        using var snapshot = ReadBusEvidence();
+        var item = snapshot.RootElement.GetProperty("items").EnumerateArray()
+            .Single(x => x.GetProperty("processId").GetInt32() == Environment.ProcessId);
+        var status = await BusCall(item.GetProperty("service").GetString()!, item.GetProperty("path").GetString()!,
+            "org.freedesktop.DBus.Properties.Get", "org.kde.StatusNotifierItem", "Status");
+        Check(status.Contains("Active", StringComparison.Ordinal), "the registered native StatusNotifierItem exports its active status over private D-Bus");
+        await BusCall("org.kde.StatusNotifierWatcher", "/StatusNotifierWatcher", "org.lain.TrayTest.SetHostRegistered", "false");
+        Check(!await TrayAvailability.IsAvailableAsync(CancellationToken.None), "real Linux availability becomes false when the private tray host disappears");
+        await BusCall("org.kde.StatusNotifierWatcher", "/StatusNotifierWatcher", "org.lain.TrayTest.SetHostRegistered", "true");
+        Check(await TrayAvailability.IsAvailableAsync(CancellationToken.None), "real Linux availability recovers with the registered native icon and restored host");
+        var sink = new LinuxDesktopNotificationSink();
+        Check(await sink.SendAsync(new DesktopAlert("private-native", "Fixture <quota> & alert", "Private <body> & \"quoted\""), CancellationToken.None),
+            "the production notify-send adapter delivers to the private Notifications service");
+        using var delivered = ReadBusEvidence();
+        var notification = delivered.RootElement.GetProperty("notifications").EnumerateArray().Single();
+        Check(notification.GetProperty("app").GetString() == "lain"
+            && notification.GetProperty("summary").GetString() == "Fixture &lt;quota&gt; &amp; alert"
+            && notification.GetProperty("body").GetString() == "Private &lt;body&gt; &amp; &quot;quoted&quot;"
+            && notification.GetProperty("desktopEntry").GetString() == "lain"
+            && notification.GetProperty("urgency").GetInt32() == 1
+            && notification.GetProperty("timeout").GetInt32() == 8000
+            && notification.GetProperty("icon").GetString()!.EndsWith("lain-cat.png", StringComparison.Ordinal),
+            "the native notification preserves the application icon, plain-text escaping, urgency and expiry");
+        tray.Dispose(); window.Close();
+    }
+
+    private static JsonDocument ReadBusEvidence() => JsonDocument.Parse(File.ReadAllText(Path.Combine(Output, "native-bus.json")));
+
+    private static async Task<string> BusCall(string destination, string path, string method, params string[] arguments)
+    {
+        var start = new ProcessStartInfo("/usr/bin/gdbus") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+        foreach (var value in new[] { "call", "--session", "--timeout", "2", "--dest", destination, "--object-path", path, "--method", method }.Concat(arguments))
+            start.ArgumentList.Add(value);
+        using var process = Process.Start(start) ?? throw new Exception("Private bus probe did not start");
+        var output = process.StandardOutput.ReadToEndAsync();
+        var errors = process.StandardError.ReadToEndAsync();
+        try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(4)); }
+        catch (TimeoutException) { process.Kill(entireProcessTree: true); await process.WaitForExitAsync(); throw; }
+        if (process.ExitCode != 0) throw new Exception("Private bus probe failed: " + await errors);
+        await errors;
+        return await output;
     }
 
     private Window NewWindow()
