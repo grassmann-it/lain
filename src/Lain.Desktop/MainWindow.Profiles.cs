@@ -25,8 +25,28 @@ public sealed partial class MainWindow
     private Vector _profileListOffset;
     private readonly Dictionary<string, Vector> _profileDetailOffsets = new(StringComparer.Ordinal);
     private bool _profileNarrowDetail;
-    private bool _profileDialogOpen;
     private Button? _profileApplyFocus;
+    private ProfileReview? _profileReview;
+    private string? _profileUnconfirmedApplyId;
+    private long? _profileUnconfirmedApplyRevision;
+    private StatusDto? _profileLastConfirmedStatus;
+    private bool ProfileApplyOutcomeUnknown => _profileUnconfirmedApplyId is not null;
+    private StatusDto? ProfileConfirmedStatus => ProfileApplyOutcomeUnknown ? _profileLastConfirmedStatus : _status;
+
+    private sealed class ProfileReview(string profileId, string profileName)
+    {
+        public string ProfileId { get; } = profileId;
+        public string ProfileName { get; } = profileName;
+        public ProfileApplyPreviewDto? Preview;
+        public ConfigurationDto? Snapshot;
+        public int Request;
+        public bool Working;
+        public bool Committing;
+        public bool Stale;
+        public string Message = "Loading current saved configuration…";
+        public Action? RefreshUi;
+        public Button? CancelButton;
+    }
 
     private Control ProfilesPage()
     {
@@ -64,10 +84,11 @@ public sealed partial class MainWindow
         detailScroll.ScrollChanged += (_, _) => { if (detailScroll.IsEffectivelyVisible && detailScroll.Bounds.Height > 0 && _selectedProfileId is { } id) _profileDetailOffsets[id] = detailScroll.Offset; };
         var selectors = new Dictionary<string, Button>();
         var detailActions = new List<Button>();
+        var reviewHost = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch };
         var back = Ui.Button("Back to profiles", () => { });
         back.IsVisible = false;
         var detail = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 6 };
-        detail.Children.Add(back); Grid.SetRow(detailScroll, 1); detail.Children.Add(detailScroll);
+        detail.Children.Add(back); Grid.SetRow(detailScroll, 1); detail.Children.Add(detailScroll); Grid.SetRow(reviewHost, 1); detail.Children.Add(reviewHost);
         var inventory = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto,*"), RowSpacing = 8 };
         inventory.Children.Add(ProfileHeader("Profiles", "Select to view", create));
         Grid.SetRow(search, 1); inventory.Children.Add(search);
@@ -82,7 +103,7 @@ public sealed partial class MainWindow
         bool Narrow() => viewportWidth is > 0 and < 800;
         void Arrange()
         {
-            var narrow = Narrow();
+            var narrow = Narrow() && _profileReview is null;
             layout.ColumnDefinitions = new ColumnDefinitions(narrow ? "*" : "220,*");
             Grid.SetColumn(detail, narrow ? 0 : 1);
             inventory.IsVisible = !narrow || !_profileNarrowDetail;
@@ -97,8 +118,13 @@ public sealed partial class MainWindow
         };
         void SelectProfile(ProfileDto profile, bool openDetail = true)
         {
-            if (_busy) return;
+            if (_busy && openDetail) return;
             if (openDetail && _selectedProfileId is { } previous) _profileDetailOffsets[previous] = detailScroll.Offset;
+            if (_profileReview is { } previousReview && previousReview.ProfileId != profile.Id)
+            {
+                previousReview.Request++;
+                _profileReview = null;
+            }
             _selectedProfileId = profile.Id;
             if (openDetail) _profileNarrowDetail = true;
             foreach (var (id, selector) in selectors)
@@ -109,7 +135,11 @@ public sealed partial class MainWindow
             }
             foreach (var action in detailActions) _actions.Remove(action);
             detailActions.Clear();
-            detailHost.Content = ProfileDetails(cfg, profile, detailActions, presentation);
+            var reviewing = _profileReview is { } review && review.ProfileId == profile.Id;
+            detailScroll.IsVisible = !reviewing;
+            reviewHost.IsVisible = reviewing;
+            if (reviewing) reviewHost.Content = ProfileApplyReview(_profileReview!);
+            else detailHost.Content = ProfileDetails(cfg, profile, detailActions, presentation);
             Arrange();
             var restore = _profileDetailOffsets.GetValueOrDefault(profile.Id);
             Dispatcher.UIThread.Post(() => { detailScroll.Offset = restore; if (openDetail && Narrow()) back.Focus(); }, DispatcherPriority.Loaded);
@@ -118,7 +148,9 @@ public sealed partial class MainWindow
         {
             var button = Ui.Button("", () => SelectProfile(profile));
             var label = new StackPanel { Spacing = 3, Children = { Ui.Text(profile.Name, 14), Ui.Text($"{profile.RouteIds.Length} models", 12, Ui.Muted) } };
-            if (_status?.ActiveProfileId == profile.Id) label.Children.Add(Ui.Text("Applied · revision " + (_status.ActiveProfileRevision?.ToString() ?? "unknown"), 11, Ui.Accent));
+            if (ProfileConfirmedStatus?.ActiveProfileId == profile.Id) label.Children.Add(Ui.Text((ProfileApplyOutcomeUnknown ? "Last confirmed · revision " : "Applied · revision ") + (ProfileConfirmedStatus.ActiveProfileRevision?.ToString() ?? "unknown"), 11, Ui.Accent));
+            if (ProfileApplyOutcomeUnknown && _profileUnconfirmedApplyId == profile.Id)
+                label.Children.Add(Ui.Text("Apply outcome unknown · requested " + _profileUnconfirmedApplyRevision, 11, Ui.Warning));
             button.Content = label;
             AutomationProperties.SetName(button, $"Select profile {profile.Name}");
             button.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -144,11 +176,16 @@ public sealed partial class MainWindow
 
     private string AppliedProfileDescription(ConfigurationDto cfg)
     {
-        var lastReport = _hostAvailable ? "Applied to proxy" : "Last host report: applied to proxy";
-        var configuration = $"Configuration: saved {cfg.Revision} / proxy {cfg.AppliedRevision}";
-        if (_status?.ActiveProfileId is not { } id) return $"Applied profile not reported by the host · {configuration}";
+        var lastReport = ProfileApplyOutcomeUnknown ? "Apply outcome unknown · Last confirmed" : _hostAvailable ? "Applied to proxy" : "Last host report: applied to proxy";
+        var reported = ProfileConfirmedStatus;
+        var configuration = ProfileApplyOutcomeUnknown
+            ? $"Requested {_profileUnconfirmedApplyId} · revision {_profileUnconfirmedApplyRevision} · Configuration: saved {cfg.Revision}; active outcome unconfirmed"
+            : $"Configuration: saved {cfg.Revision} / proxy {cfg.AppliedRevision}";
+        if (reported?.ActiveProfileId is not { } id) return ProfileApplyOutcomeUnknown
+            ? $"Apply outcome unknown · Last confirmed profile not reported · {configuration}"
+            : $"Applied profile not reported by the host · {configuration}";
         var name = cfg.Profiles.FirstOrDefault(p => p.Id == id)?.Name ?? id;
-        var revision = _status?.ActiveProfileRevision is { } value ? value.ToString() : "unknown";
+        var revision = reported?.ActiveProfileRevision is { } value ? value.ToString() : "unknown";
         return $"{lastReport}: {name} · Profile revision {revision} · {configuration}";
     }
 
@@ -236,151 +273,247 @@ public sealed partial class MainWindow
         return details;
     }
 
-    private async void ConfirmProfileApplication(ProfileDto profile)
+    private void ConfirmProfileApplication(ProfileDto profile)
     {
-        if (_configuration is null || _busy || _profileDialogOpen) return;
-        _profileDialogOpen = true;
-        var wasEditing = _editing;
-        _editing = true;
-        var origin = FocusManager?.GetFocusedElement() as Control;
-        var ownerContent = _page.Content;
-        using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
-        var dialog = new Window
+        if (_configuration is null || _busy) return;
+        var review = new ProfileReview(profile.Id, profile.Name);
+        if (ProfileApplyOutcomeUnknown) review.Message = "A previous apply outcome is unknown. Check current status before preparing another apply.";
+        _profileReview = review;
+        _profileNarrowDetail = true;
+        Render();
+        Dispatcher.UIThread.Post(() => review.CancelButton?.Focus(), DispatcherPriority.Loaded);
+        _ = LoadProfilePreviewAsync(review);
+    }
+
+    // Called by the shell after polling too: a focused review must become invalid
+    // without replacing the mounted controls or removing its readable old diff.
+    private void RefreshProfileReviewState()
+    {
+        if (_profileReview is not { } review) return;
+        if (review.Preview is { } preview && (_configuration?.Revision != preview.Revision ||
+            _configuration.Profiles.All(profile => profile.Id != preview.ProfileId)))
         {
-            Title = "Review profile changes", Width = Math.Min(620, Math.Max(360, Bounds.Width - 48)),
-            Height = Math.Min(660, Math.Max(320, Bounds.Height - 64)), MinWidth = 320, MinHeight = 280,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner, CanResize = true,
-            Background = Ui.Background, RequestedThemeVariant = RequestedThemeVariant
-        };
-        var message = Ui.Text("Loading current saved configuration…", 13, Ui.Muted);
-        var changes = new StackPanel { Spacing = 10 };
-        var confirm = Ui.Button("Apply to proxy", () => { });
-        confirm.Classes.Add("primary"); confirm.IsEnabled = false;
-        var cancel = Ui.Button("Cancel", () => dialog.Close());
-        var refresh = Ui.Button("Refresh preview", () => { });
-        var body = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto,*,Auto"), RowSpacing = 10, Margin = new Thickness(18) };
-        body.Children.Add(Ui.Text("Review profile changes", 20));
-        Grid.SetRow(message, 1); body.Children.Add(message);
-        var scroll = new ScrollViewer { Content = changes, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-        Grid.SetRow(scroll, 2); body.Children.Add(scroll);
-        var actions = ProfileWrap(cancel, refresh, confirm);
-        actions.HorizontalAlignment = HorizontalAlignment.Right;
-        Grid.SetRow(actions, 3); body.Children.Add(actions);
-        KeyboardNavigation.SetTabNavigation(body, KeyboardNavigationMode.Cycle);
-        dialog.Content = body;
-        ProfileApplyPreviewDto? preview = null;
-        var working = false;
-        var applying = false;
-        var confirmed = false;
-        void Busy(bool value) { working = value; refresh.IsEnabled = !value; confirm.IsEnabled = !value && preview is not null; cancel.IsEnabled = !applying; }
-        async Task LoadPreview(string? reason = null)
-        {
-            if (working) return;
-            preview = null; Busy(true);
-            message.Text = reason ?? "Loading current saved configuration…";
-            try
-            {
-                var current = await _client.GetConfigurationAsync(lifetime.Token);
-                var selected = current.Profiles.FirstOrDefault(p => p.Id == profile.Id)
-                    ?? throw new InvalidOperationException("This profile was removed. Close this review and choose another profile.");
-                var result = await _client.PreviewProfileAsync(selected.Id, current.Revision, lifetime.Token);
-                if (result.Revision != current.Revision || result.ProfileId != selected.Id)
-                    throw new InvalidOperationException("Preview identity does not match the saved profile. Refresh to review again.");
-                _configuration = current;
-                preview = result;
-                changes.Children.Clear();
-                string Routes(string[] ids) => ids.Length == 0 ? "None" : string.Join(", ", ids.Select(id => current.Routes.FirstOrDefault(r => r.Id == id)?.Alias ?? id));
-                string Default(string? id) => id is null ? "No explicit default" : current.Routes.FirstOrDefault(r => r.Id == id)?.Alias ?? id;
-                var active = current.Profiles.FirstOrDefault(p => p.Id == result.ActiveProfileId)?.Name ?? result.ActiveProfileId ?? "Unknown profile";
-                changes.Children.Add(Ui.Text("GLOBAL · Shared proxy runtime for every connected client", 12, Ui.Warning));
-                changes.Children.Add(Ui.Card(Ui.Stack(Ui.Text($"{active}  →  {selected.Name}", 17),
-                    Ui.Text($"Applied revision {result.ActiveRevision?.ToString() ?? "unknown"} → Saved revision {result.Revision}", 12, Ui.Muted))));
-                if (!result.BaselineKnown) changes.Children.Add(Ui.Text("Applied baseline unknown. This is not a complete comparison with the running proxy.", 12, Ui.Warning));
-                changes.Children.Add(Ui.Text("Added: " + Routes(result.AddedRouteIds), 13));
-                changes.Children.Add(Ui.Text("Changed: " + Routes(result.ChangedRouteIds), 13));
-                changes.Children.Add(Ui.Text("Removed: " + Routes(result.RemovedRouteIds), 13));
-                if (result.ProfileChanged || result.DefaultRouteId != result.ActiveDefaultRouteId)
-                    changes.Children.Add(Ui.Text($"Default: {Default(result.ActiveDefaultRouteId)} → {Default(result.DefaultRouteId)}", 13));
-                changes.Children.Add(Ui.Text("Accounts: " + (result.AffectedAccountIds.Length == 0 ? "None reported" : string.Join(", ", result.AffectedAccountIds.Select(id => current.Accounts.FirstOrDefault(a => a.Id == id)?.Name ?? id))), 12, Ui.Muted));
-                changes.Children.Add(Ui.Text("Clients: " + string.Join(", ", result.AffectedClients), 12, Ui.Muted));
-                changes.Children.Add(Ui.Card(Ui.Text(result.StreamBehavior, 13, Ui.Warning)));
-                changes.Children.Add(Ui.Text("Includes all saved changes listed by the host. Client exports and installations remain separate.", 12, Ui.Muted));
-                message.Text = reason ?? "Review the saved changes before applying.";
-            }
-            catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
-            catch (Exception error) { preview = null; message.Text = "Preview unavailable. " + Friendly(error); }
-            finally { Busy(false); }
+            review.Stale = true;
+            review.Message = "Saved configuration changed. This old preview is invalid. Refresh preview and confirm again.";
         }
-        refresh.Click += async (_, _) => await LoadPreview();
-        confirm.Click += async (_, _) =>
+        review.RefreshUi?.Invoke();
+    }
+
+    private Control ProfileApplyReview(ProfileReview review)
+    {
+        var title = Ui.Text("Review profile changes · " + review.ProfileName, 18);
+        var message = Ui.Text(review.Message, 13, Ui.Warning);
+        AutomationProperties.SetName(message, "Profile apply review message");
+        var changes = new StackPanel { Spacing = 10 };
+        if (review.Preview is { } preview && review.Snapshot is { } snapshot)
         {
-            if (working || preview is not { } reviewed) return;
-            applying = true; Busy(true); _busy = true;
-            var sent = false;
-            var refreshRequired = false;
-            try
-            {
-                var current = await _client.GetConfigurationAsync(lifetime.Token);
-                _configuration = current;
-                if (current.Revision != reviewed.Revision)
-                {
-                    refreshRequired = true;
-                    return;
-                }
-                sent = true;
-                _configuration = await _client.ApplyProfileAsync(reviewed.Revision, profile.Id, lifetime.Token);
-                _status = await _client.StatusAsync(lifetime.Token);
-                if (_status.ActiveProfileId != profile.Id || _status.ActiveProfileRevision != reviewed.Revision)
-                    throw new InvalidOperationException("The host has not confirmed this profile as active. Refresh the preview to inspect its current state.");
-                confirmed = true;
-                _notice.Text = $"Applied {profile.Name} · revision {reviewed.Revision}. Client files are unchanged.";
-            }
-            catch (LainApiException error) when (error.Code == "revision_conflict") { refreshRequired = true; }
-            catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
-            catch (Exception error)
-            {
-                preview = null;
-                message.Text = (sent ? "Apply is not confirmed. " : "Apply unavailable. ") + Friendly(error) + " Refresh preview before retrying.";
-                try
-                {
-                    _status = await _client.StatusAsync(lifetime.Token);
-                    if (_status.Application?.RecoveryAction is { } recovery) message.Text += " " + recovery;
-                }
-                catch { /* The failed status read is not evidence of a successful apply. */ }
-            }
-            finally
-            {
-                applying = false; _busy = false; Busy(false);
-                if (confirmed) dialog.Close();
-                else if (refreshRequired && !lifetime.IsCancellationRequested)
-                    await LoadPreview("Saved configuration changed. Review this refreshed preview, then confirm again.");
-            }
+            string Routes(string[] ids) => ids.Length == 0 ? "None" : string.Join(", ", ids.Select(id => snapshot.Routes.FirstOrDefault(route => route.Id == id)?.Alias ?? id));
+            string Default(string? id) => id is null ? "No explicit default" : snapshot.Routes.FirstOrDefault(route => route.Id == id)?.Alias ?? id;
+            var active = snapshot.Profiles.FirstOrDefault(profile => profile.Id == preview.ActiveProfileId)?.Name ?? preview.ActiveProfileId ?? "Unknown profile";
+            changes.Children.Add(Ui.Text("GLOBAL · Shared proxy runtime for every connected client", 12, Ui.Warning));
+            changes.Children.Add(Ui.Text($"{active} → {review.ProfileName} · Profile ID {preview.ProfileId}", 14));
+            changes.Children.Add(Ui.Text($"Applied revision {preview.ActiveRevision?.ToString() ?? "unknown"} → Saved revision {preview.Revision}", 12, Ui.Muted));
+            if (!preview.BaselineKnown) changes.Children.Add(Ui.Text("Applied baseline unknown. This is not a complete comparison with the running proxy.", 12, Ui.Warning));
+            changes.Children.Add(Ui.Text("Added: " + Routes(preview.AddedRouteIds), 13));
+            changes.Children.Add(Ui.Text("Changed: " + Routes(preview.ChangedRouteIds), 13));
+            changes.Children.Add(Ui.Text("Removed: " + Routes(preview.RemovedRouteIds), 13));
+            if (preview.ProfileChanged || preview.DefaultRouteId != preview.ActiveDefaultRouteId)
+                changes.Children.Add(Ui.Text($"Default: {(preview.BaselineKnown ? Default(preview.ActiveDefaultRouteId) : "Unknown applied default")} → {Default(preview.DefaultRouteId)}", 13));
+            changes.Children.Add(Ui.Text("Accounts: " + (preview.AffectedAccountIds.Length == 0 ? "None reported" : string.Join(", ", preview.AffectedAccountIds.Select(id => snapshot.Accounts.FirstOrDefault(account => account.Id == id)?.Name ?? id))), 12, Ui.Muted));
+            changes.Children.Add(Ui.Text("Clients: " + string.Join(", ", preview.AffectedClients), 12, Ui.Muted));
+            changes.Children.Add(Ui.Text(preview.StreamBehavior, 13, Ui.Warning));
+            changes.Children.Add(Ui.Text("Includes all saved changes listed by the host. Client exports and installations remain separate.", 12, Ui.Muted));
+        }
+        var status = Ui.Text("", 12, Ui.Warning);
+        AutomationProperties.SetName(status, "Profile apply confirmed status");
+        var confirm = Ui.Button("Apply to proxy", () => _ = CommitProfileReviewAsync(review));
+        confirm.Classes.Add("primary");
+        var refresh = Ui.Button("Refresh preview", () => _ = LoadProfilePreviewAsync(review));
+        var check = Ui.Button("Check current status", () => _ = CheckProfileStatusAsync(review));
+        void CancelReview()
+        {
+            if (review.Committing) return;
+            review.Request++;
+            _profileReview = null;
+            Render();
+            Dispatcher.UIThread.Post(() => _profileApplyFocus?.Focus(), DispatcherPriority.Loaded);
+        }
+        var cancel = Ui.Button("Cancel review", CancelReview);
+        review.CancelButton = cancel;
+        review.RefreshUi = () =>
+        {
+            message.Text = review.Message;
+            status.Text = (_configuration is { } cfg ? AppliedProfileDescription(cfg) : "Applied profile not reported") +
+                (ProfileApplyOutcomeUnknown ? ". Check current status before another apply." : "");
+            confirm.IsEnabled = _hostAvailable && !review.Working && !review.Stale && review.Preview is not null && !ProfileApplyOutcomeUnknown;
+            refresh.IsEnabled = !review.Working && !ProfileApplyOutcomeUnknown;
+            check.IsEnabled = !review.Working;
+            cancel.IsEnabled = !review.Committing;
         };
-        dialog.Closing += (_, e) => { if (applying && !confirmed) e.Cancel = true; };
-        dialog.KeyDown += (_, e) => { if (e.Key == Key.Escape && !applying) { e.Handled = true; dialog.Close(); } };
-        dialog.Opened += async (_, _) => { cancel.Focus(); await LoadPreview(); };
-        dialog.Closed += (_, _) => lifetime.Cancel();
-        try { await dialog.ShowDialog(this); }
+        var scroll = new ScrollViewer { Content = changes, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        AutomationProperties.SetName(scroll, "Profile apply diff");
+        var body = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*,Auto"), RowSpacing = 10 };
+        AutomationProperties.SetName(body, "Profile apply review");
+        body.Children.Add(title);
+        Grid.SetRow(message, 1); body.Children.Add(message);
+        Grid.SetRow(status, 2); body.Children.Add(status);
+        Grid.SetRow(scroll, 3); body.Children.Add(scroll);
+        var actions = ProfileWrap(cancel, check, refresh, confirm);
+        Grid.SetRow(actions, 4); body.Children.Add(actions);
+        body.KeyDown += (_, e) => { if (e.Key == Key.Escape && !review.Committing) { e.Handled = true; CancelReview(); } };
+        RefreshProfileReviewState();
+        return body;
+    }
+
+    private void RenderProfileReview(ProfileReview review)
+    {
+        UpdateServiceSummary();
+        if (ReferenceEquals(_profileReview, review) && _section == "Profiles" && !_editing)
+        {
+            Render();
+            Dispatcher.UIThread.Post(() => { if (ReferenceEquals(_profileReview, review) && !review.Committing) review.CancelButton?.Focus(); }, DispatcherPriority.Loaded);
+        }
+    }
+
+    private async Task LoadProfilePreviewAsync(ProfileReview review)
+    {
+        if (review.Working || ProfileApplyOutcomeUnknown || !ReferenceEquals(_profileReview, review)) return;
+        review.Working = true;
+        var request = ++review.Request;
+        review.Message = "Loading current saved configuration…";
+        review.RefreshUi?.Invoke();
+        try
+        {
+            var current = await _client.GetConfigurationAsync(_lifetime.Token);
+            if (!ReferenceEquals(_profileReview, review) || review.Request != request || _selectedProfileId != review.ProfileId) return;
+            if (current.Profiles.All(profile => profile.Id != review.ProfileId)) throw new InvalidOperationException("This profile was removed. Cancel review and choose another profile.");
+            var result = await _client.PreviewProfileAsync(review.ProfileId, current.Revision, _lifetime.Token);
+            if (!ReferenceEquals(_profileReview, review) || review.Request != request || _selectedProfileId != review.ProfileId) return;
+            if (result.Revision != current.Revision || result.ProfileId != review.ProfileId)
+                throw new InvalidOperationException("Preview identity does not match the saved profile. Refresh to review again.");
+            // A poll may already have observed a newer revision while preview was in flight.
+            if (_configuration is null || _configuration.Revision <= current.Revision) _configuration = current;
+            review.Snapshot = current;
+            review.Preview = result;
+            review.Stale = _configuration.Revision != result.Revision;
+            review.Message = review.Stale ? "Saved configuration changed. This old preview is invalid. Refresh preview and confirm again." : "Review the saved changes before applying.";
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (Exception error) { review.Stale = true; review.Message = "Preview unavailable. " + Friendly(error); }
+        finally { review.Working = false; RenderProfileReview(review); }
+    }
+
+    private async Task CommitProfileReviewAsync(ProfileReview review)
+    {
+        RefreshProfileReviewState();
+        if (review.Working || review.Stale || ProfileApplyOutcomeUnknown || !ReferenceEquals(_profileReview, review) || review.Preview is not { } preview) return;
+        review.Working = true;
+        review.Committing = true;
+        _busy = true;
+        var sent = false;
+        review.Message = "Checking saved revision before applying…";
+        review.RefreshUi?.Invoke();
+        try
+        {
+            var current = await _client.GetConfigurationAsync(_lifetime.Token);
+            _configuration = current;
+            if (current.Revision != preview.Revision || current.Profiles.All(profile => profile.Id != preview.ProfileId))
+            {
+                review.Stale = true;
+                review.Message = "Saved configuration changed. This old preview is invalid. Refresh preview and confirm again.";
+                return;
+            }
+            _profileLastConfirmedStatus = _status;
+            _profileUnconfirmedApplyId = preview.ProfileId;
+            _profileUnconfirmedApplyRevision = preview.Revision;
+            sent = true;
+            review.Message = "Apply sent. Waiting for host confirmation; leaving this page does not roll it back.";
+            RenderProfileReview(review);
+            _configuration = await _client.ApplyProfileAsync(preview.Revision, preview.ProfileId, _lifetime.Token);
+            await ReadProfileStatusAsync(review);
+            if (!ProfileApplyOutcomeUnknown) review.Stale = true;
+        }
+        catch (LainApiException error) when (error.Code == "revision_conflict")
+        {
+            _profileUnconfirmedApplyId = null; _profileUnconfirmedApplyRevision = null;
+            review.Stale = true;
+            review.Message = "Apply rejected: saved configuration changed. The old preview remains below. Refresh preview and confirm again.";
+        }
+        catch (Exception error)
+        {
+            review.Stale = true;
+            review.Message = (sent ? "Apply outcome unknown. " : "Apply was not sent. ") + Friendly(error) +
+                (sent ? " Check current status; no automatic retry will be sent." : " Refresh preview before trying again.");
+        }
         finally
         {
-            _profileDialogOpen = false; _editing = wasEditing;
-            // Keep the mounted context and its scroll anchors; polling may refresh it after focus leaves.
-            if (confirmed && !wasEditing)
-            {
-                Render();
-                Dispatcher.UIThread.Post(() => _profileApplyFocus?.Focus(), DispatcherPriority.Loaded);
-            }
-            else if (ReferenceEquals(_page.Content, ownerContent)) origin?.Focus();
+            review.Working = false; review.Committing = false; _busy = false;
+            RenderProfileReview(review);
         }
+    }
+
+    private async Task ReadProfileStatusAsync(ProfileReview review)
+    {
+        var current = await _client.StatusAsync(_lifetime.Token);
+        _status = current;
+        _hostAvailable = true;
+        if (ProfileApplyOutcomeUnknown)
+        {
+            var fresh = _profileLastConfirmedStatus is null || current.ObservedAt > _profileLastConfirmedStatus.ObservedAt;
+            var application = current.Application;
+            var completed = application is { State: "completed", OperationId: not null, ProfileId: not null, Revision: not null }
+                && current.ActiveProfileId == application.ProfileId && current.ActiveProfileRevision == application.Revision
+                && current.AppliedRevision == application.Revision
+                && application.OperationId != _profileLastConfirmedStatus?.Application?.OperationId;
+            var recovery = application is { State: "recovery-required" } && application.ProfileId == _profileUnconfirmedApplyId
+                && application.Revision == _profileUnconfirmedApplyRevision;
+            if (fresh && (completed || recovery))
+            {
+                _profileUnconfirmedApplyId = null; _profileUnconfirmedApplyRevision = null;
+                review.Stale = true;
+                review.Message = recovery ? "Host reports recovery required. " + application?.RecoveryAction + " Refresh preview before a new explicit apply."
+                    : "Current host state confirmed. Refresh preview before any new apply.";
+            }
+            else review.Message = "Apply outcome remains unknown. The returned status does not establish a new completed operation. Check current status again; no apply was repeated.";
+        }
+        else review.Message = "Current host status read. " + current.Application?.RecoveryAction;
+    }
+
+    private async Task CheckProfileStatusAsync(ProfileReview review)
+    {
+        if (review.Working) return;
+        review.Working = true; review.RefreshUi?.Invoke();
+        try { await ReadProfileStatusAsync(review); }
+        catch (Exception error) { review.Message = "Current status unavailable. " + Friendly(error) + (ProfileApplyOutcomeUnknown ? " Apply outcome remains unknown; last confirmed status is retained." : ""); }
+        finally { review.Working = false; RenderProfileReview(review); }
     }
 
     private void ShowCodexExport(ProfileDto profile)
     {
         if (_configuration is not { } cfg) return;
+        RegisterEditor(() =>
+        {
+            var latest = _configuration?.Profiles.FirstOrDefault(item => item.Id == profile.Id)
+                ?? throw new InvalidOperationException("This profile was removed. Cancel setup and review Profiles.");
+            ShowCodexExport(latest);
+        }, cfg.Revision, profile.Name + " · Codex setup");
         _editing = true;
         var launcher = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin", "lain");
         var executable = Ui.Input(File.Exists(launcher) ? launcher : "", "/absolute/path/to/lain");
         var folder = Ui.Input(hint: "Choose or enter an existing parent folder");
+        var validation = Ui.Text("", 12, Ui.Warning);
+        AutomationProperties.SetName(validation, "Client setup validation");
+        Button? prepare = null;
+        bool ValidInputs()
+        {
+            var executableError = ValidateCodexExecutable(executable.Text);
+            var parentError = ValidateCodexParent(folder.Text);
+            validation.Text = string.Join(" ", new[] { executableError, parentError }.Where(error => error is not null));
+            if (prepare is not null) prepare.IsEnabled = !_busy && executableError is null && parentError is null;
+            return executableError is null && parentError is null;
+        }
+        executable.TextChanged += (_, _) => ValidInputs();
+        folder.TextChanged += (_, _) => ValidInputs();
         AutomationProperties.SetName(folder, "Destination parent folder");
         AutomationProperties.SetName(executable, "lain command-line executable");
         var pick = Ui.Button("Browse…", async () => {
@@ -389,61 +522,109 @@ public sealed partial class MainWindow
                 var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Choose a parent folder for a new Codex connection", AllowMultiple = false });
                 if (folders.FirstOrDefault()?.TryGetLocalPath() is { } path) folder.Text = path;
             }
-            catch (Exception error) { _notice.Text = Friendly(error); }
+            catch (Exception error) { validation.Text = Friendly(error); }
+            finally { folder.Focus(); }
         });
         var destinationRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 8 };
         destinationRow.Children.Add(folder);
         Grid.SetColumn(pick, 1);
         destinationRow.Children.Add(pick);
-        var export = Action("Prepare Codex files", async () => {
-            if (string.IsNullOrWhiteSpace(executable.Text) || !Path.IsPathFullyQualified(executable.Text) || !File.Exists(executable.Text)) throw new InvalidOperationException("Choose an existing absolute path to the lain command-line executable.");
-            if (string.IsNullOrWhiteSpace(folder.Text) || !Directory.Exists(folder.Text)) throw new InvalidOperationException("Choose an existing local destination folder.");
-            var destination = Path.Combine(folder.Text, $"lain-codex-{DateTimeOffset.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..6]}");
-            var artifacts = await _client.ExportCodexProfileAsync(cfg.Revision, profile.Id, executable.Text.Trim(), Path.Combine(destination, "lain.models.json"), _lifetime.Token);
-            var install = Action("Install client files", async () =>
+        Control? setup = null;
+        prepare = Ui.Button("Prepare Codex files", () => _ = PrepareAsync());
+        async Task PrepareAsync()
+        {
+            // Recheck at the action boundary too: the file or directory may have
+            // disappeared since TextChanged last validated the retained inputs.
+            if (_busy || !ValidInputs()) return;
+            await RunAsync(async () =>
             {
-                var installed = CodexArtifactInstaller.Install(artifacts, destination);
-                var installation = CodexArtifactInstaller.Inspect(destination, _status?.ActiveProfileId, _status?.ActiveProfileRevision);
-                if (installation.State != "installed") throw new InvalidOperationException(installation.RecoveryAction ?? "Client installation needs recovery.");
-                static string Quote(string value) => "'" + value.Replace("'", "'\\''") + "'";
-                var command = $"CODEX_HOME={Quote(destination)} codex {string.Join(" ", installed.LaunchArguments.Select(Quote))}";
-                var copy = Ui.Button("Copy command", async () =>
+                var destination = Path.Combine(folder.Text!.Trim(), $"lain-codex-{DateTimeOffset.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..6]}");
+                var artifacts = await _client.ExportCodexProfileAsync(cfg.Revision, profile.Id, executable.Text.Trim(), Path.Combine(destination, "lain.models.json"), _lifetime.Token);
+                if (artifacts.ProfileId != profile.Id || artifacts.Revision != cfg.Revision || string.IsNullOrWhiteSpace(artifacts.GenerationId))
+                    throw new InvalidOperationException("The prepared artifact does not identify this saved profile and revision. Nothing was installed; prepare again.");
+                var installationStarted = false;
+                var install = Action("Install client files", async () =>
                 {
-                    try
+                    if (!installationStarted && (Directory.Exists(destination) || File.Exists(destination)))
+                        throw new InvalidOperationException("This destination already exists. Prepare a new private client folder before installing.");
+                    installationStarted = true;
+                    var installed = CodexArtifactInstaller.Install(artifacts, destination);
+                    var installation = CodexArtifactInstaller.Inspect(destination, ProfileApplyOutcomeUnknown ? null : _status?.ActiveProfileId, ProfileApplyOutcomeUnknown ? null : _status?.ActiveProfileRevision);
+                    if (installation.State != "installed") throw new InvalidOperationException(installation.RecoveryAction ?? "Client installation needs recovery.");
+                    static string Quote(string value) => "'" + value.Replace("'", "'\\''") + "'";
+                    var command = $"CODEX_HOME={Quote(destination)} codex {string.Join(" ", installed.LaunchArguments.Select(Quote))}";
+                    var copy = Ui.Button("Copy command", async () =>
                     {
-                        if (Clipboard is not { } clipboard) throw new InvalidOperationException("Clipboard is unavailable. Select the command below.");
-                        await clipboard.SetTextAsync(command); _notice.Text = "Launch command copied.";
-                    }
-                    catch (Exception error) { _notice.Text = Friendly(error); }
-                });
-                _page.Content = Ui.Stack(ProfileHeader("Codex files installed", $"{profile.Name} · Exported revision {installed.Revision}"),
-                    Ui.Card(Ui.Stack(Ui.Text(installation.Stale switch
-                    {
-                        true => "This export differs from the last reported applied profile. Apply and client setup are separate operations.",
-                        false => "Matches the last reported applied profile and revision.",
-                        _ => "Applied profile identity is unknown; client/runtime alignment cannot be confirmed."
-                    }, 13, installation.Stale == false ? Ui.Muted : Ui.Warning),
-                        ProfileReadOnly(installed.ConfigurationPath), ProfileReadOnly(installed.CatalogPath),
-                        Ui.Text("Installed generation: " + installed.GenerationId, 11, Ui.Muted))),
-                    Ui.Card(Ui.Stack(ProfileHeader("Launch this connection", "Run the command in your terminal.", copy), ProfileReadOnly(command))),
-                    Ui.Text("Separate client files were installed. The global proxy and ordinary Codex configuration were not changed.", 12, Ui.Muted),
-                    Ui.Button("Back to profiles", () => { _editing = false; Render(); }));
-                await Task.CompletedTask;
-            }, "Client files installed. Proxy unchanged.", stayOnPage: true);
-            install.Classes.Add("primary");
-            _page.Content = Ui.Stack(ProfileHeader("Codex export prepared", $"{profile.Name} · Saved export revision {artifacts.Revision}"),
-                Ui.Card(Ui.Stack(Ui.Text("No files installed yet", 15), ProfileReadOnly(destination),
-                    Ui.Text("Profile: " + (artifacts.ProfileId ?? "not reported") + " · Export generation: " + (artifacts.GenerationId ?? "not reported"), 12, Ui.Muted),
-                    Ui.Text("Install creates a separate private configuration with an immutable model catalog. This does not apply the profile.", 12, Ui.Muted))),
-                ProfileWrap(install, Ui.Button("Cancel", () => { _editing = false; Render(); })));
-        }, "Codex export prepared. No files installed yet.", stayOnPage: true);
-        export.Classes.Add("primary");
-        _page.Content = Ui.Stack(ProfileHeader("Set up Codex client", $"{profile.Name}  ·  {profile.RouteIds.Length} routes  ·  Saved revision {cfg.Revision}"),
+                        try
+                        {
+                            if (Clipboard is not { } clipboard) throw new InvalidOperationException("Clipboard is unavailable. Select the command below.");
+                            await clipboard.SetTextAsync(command); _notice.Text = "Launch command copied.";
+                        }
+                        catch (Exception error) { _notice.Text = Friendly(error); }
+                    });
+                    _page.Content = Ui.Stack(ProfileHeader("Codex files installed", $"{profile.Name} · Exported revision {installed.Revision}"),
+                        Ui.Card(Ui.Stack(Ui.Text(installation.Stale switch
+                        {
+                            true => "This export differs from the last reported applied profile. Apply and client setup are separate operations.",
+                            false => "Matches the last reported applied profile and revision.",
+                            _ => "Applied profile identity is unknown; client/runtime alignment cannot be confirmed."
+                        }, 13, installation.Stale == false ? Ui.Muted : Ui.Warning),
+                            ProfileReadOnly(installed.ConfigurationPath), ProfileReadOnly(installed.CatalogPath),
+                            Ui.Text("Installed generation: " + installed.GenerationId, 11, Ui.Muted))),
+                        Ui.Card(Ui.Stack(ProfileHeader("Launch this connection", "Run the command in your terminal.", copy), ProfileReadOnly(command))),
+                        Ui.Text("Separate client files were installed. The global proxy and ordinary Codex configuration were not changed.", 12, Ui.Muted),
+                        Ui.Button("Back to profiles", () => { _editing = false; Render(); }));
+                    await Task.CompletedTask;
+                }, "Client files installed. Proxy unchanged.", stayOnPage: true);
+                install.Classes.Add("primary");
+                var preparedIdentity = Ui.Text("Profile: " + artifacts.ProfileId + " · Export generation: " + artifacts.GenerationId + " · Revision: " + artifacts.Revision, 12, Ui.Muted);
+                AutomationProperties.SetName(preparedIdentity, "Prepared Codex artifact");
+                var preparedStatus = Ui.Text("No files installed yet", 15);
+                AutomationProperties.SetName(preparedStatus, "Codex setup status");
+                _page.Content = Ui.Stack(ProfileHeader("Codex export prepared", $"{profile.Name} · Saved export revision {artifacts.Revision}"),
+                    Ui.Card(Ui.Stack(preparedStatus, ProfileReadOnly(destination),
+                        preparedIdentity,
+                        Ui.Text("Install creates a separate private configuration with an immutable model catalog. This does not apply the profile.", 12, Ui.Muted))),
+                    ProfileWrap(install, Ui.Button("Cancel", () => { _editing = false; Render(); })));
+            }, "Codex export prepared. No files installed yet.", stayOnPage: true);
+            if (ReferenceEquals(_page.Content, setup)) ValidInputs();
+        }
+        prepare.Classes.Add("primary");
+        setup = Ui.Stack(ProfileHeader("Set up Codex client", $"{profile.Name}  ·  {profile.RouteIds.Length} routes  ·  Saved revision {cfg.Revision}"),
             Ui.Card(Ui.Stack(Ui.Text("1  Local authentication helper", 14), Ui.Field("lain command-line executable", executable),
                 Ui.Text("Select the installed lain executable used by Codex to authenticate locally.", 12, Ui.Muted))),
             Ui.Card(Ui.Stack(Ui.Text("2  Export destination", 14), Ui.Field("Parent folder", destinationRow),
                 Ui.Text("Prepare generates a saved-profile export without writing files. Review it, then choose Install client files to create a separate lain-codex-… folder. Neither action applies the profile.", 12, Ui.Muted))),
-            ProfileWrap(export, Ui.Button("Cancel", () => { _editing = false; Render(); })));
+            validation,
+            ProfileWrap(prepare, Ui.Button("Cancel", () => { _editing = false; Render(); })));
+        _page.Content = setup;
+        ValidInputs();
+    }
+
+    private static string? ValidateCodexExecutable(string? value)
+    {
+        var path = value?.Trim();
+        if (string.IsNullOrEmpty(path) || !Path.IsPathFullyQualified(path) || !File.Exists(path))
+            return "Choose an existing absolute path to the lain command-line executable.";
+        try
+        {
+            if (!OperatingSystem.IsWindows() && (File.GetUnixFileMode(path) &
+                (UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute)) == 0)
+                return "The selected lain file is not executable. Choose an installed executable.";
+            if (OperatingSystem.IsWindows() && !new[] { ".exe", ".com", ".cmd", ".bat" }.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+                return "Choose a runnable lain command-line executable.";
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        { return "The selected executable cannot be inspected. Choose an accessible lain executable."; }
+        return null;
+    }
+
+    private static string? ValidateCodexParent(string? value)
+    {
+        var path = value?.Trim();
+        return string.IsNullOrEmpty(path) || !Path.IsPathFullyQualified(path) || !Directory.Exists(path)
+            ? "Choose an existing absolute destination parent folder. No folder or client files have been created."
+            : null;
     }
 
     private async Task ExportProfileAsync(ProfileDto profile)
@@ -466,7 +647,7 @@ public sealed partial class MainWindow
             var latest = _configuration?.Profiles.FirstOrDefault(item => item.Id == profileId)
                 ?? throw new InvalidOperationException("This profile was removed from the latest configuration. Cancel this draft and review Profiles.");
             EditProfile(latest);
-        }, cfg.Revision);
+        }, cfg.Revision, profile?.Name ?? "New profile");
         _editing = true;
         var name = Ui.Input(profile?.Name, "Profile name");
         var search = Ui.Input(hint: "Search model access, providers or models");
