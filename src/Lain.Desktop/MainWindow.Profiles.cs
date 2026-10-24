@@ -168,7 +168,7 @@ public sealed partial class MainWindow
             open.Content = ProfileRouteContent(route.Alias, $"{route.UpstreamModel} · {accounts} · {state}", id == selected.DefaultRouteId);
             open.HorizontalAlignment = HorizontalAlignment.Stretch;
             open.HorizontalContentAlignment = HorizontalAlignment.Stretch;
-            open.Padding = new Thickness(10, 8);
+            open.Padding = new Thickness(10, 6);
             open.Background = Brushes.Transparent;
             AutomationProperties.SetName(open, $"Open model access {route.Alias}");
             routes.Children.Add(new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Child = open });
@@ -188,22 +188,36 @@ public sealed partial class MainWindow
         moreButton.ContextMenu = menu;
         AutomationProperties.SetName(moreButton, $"Actions for profile {selected.Name}");
         var defaultRoute = cfg.Routes.FirstOrDefault(route => route.Id == selected.DefaultRouteId);
-        var details = new StackPanel { Spacing = 10 };
-        details.Children.Add(selectionState);
-        details.Children.Add(ProfileWrap(apply, Ui.Button("Edit selection", () => EditProfile(selected)), moreButton));
-        details.Children.Add(Ui.Text($"{selected.RouteIds.Length} models · Saved revision {cfg.Revision}", 12, Ui.Muted));
-        details.Children.Add(Ui.Card(Ui.Stack(Ui.Text("DEFAULT CLIENT MODEL", 11, Ui.Muted),
+        var details = new StackPanel { Spacing = 8 };
+        var title = Ui.Stack(selectionState, Ui.Text($"{selected.RouteIds.Length} models · Saved revision {cfg.Revision}", 12, Ui.Muted));
+        title.Spacing = 3;
+        var actions = ProfileWrap(apply, Ui.Button("Edit selection", () => EditProfile(selected)), moreButton);
+        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 10, RowSpacing = 6 };
+        header.Children.Add(title); Grid.SetColumn(actions, 1); header.Children.Add(actions);
+        header.SizeChanged += (_, _) =>
+        {
+            var narrow = header.Bounds.Width > 0 && header.Bounds.Width < 640;
+            header.ColumnDefinitions = new ColumnDefinitions(narrow ? "*" : "*,Auto");
+            header.RowDefinitions = new RowDefinitions(narrow ? "Auto,Auto" : "Auto");
+            Grid.SetColumn(actions, narrow ? 0 : 1); Grid.SetRow(actions, narrow ? 1 : 0);
+        };
+        details.Children.Add(header);
+        var summary = Ui.Stack(Ui.Text("DEFAULT CLIENT MODEL", 11, Ui.Muted),
             Ui.Text(defaultRoute?.Alias ?? "No explicit default", 15),
             Ui.Text(selected.Policy?.CostPolicy switch
             {
                 "free_only" => "Only free · no paid fallback",
                 null or "configured" => "Configured access · route policies still apply",
                 var policy => "Spending policy: " + policy
-            }, 12, Ui.Muted))));
+            }, 12, Ui.Muted));
+        summary.Spacing = 3;
+        var summaryCard = Ui.Card(summary); summaryCard.Padding = new Thickness(10);
+        details.Children.Add(summaryCard);
         if (defaultRoute is { Enabled: false } or { Visible: false })
             details.Children.Add(Ui.Text("The saved default is disabled or hidden. Edit this profile or its model before applying.", 12, Ui.Warning));
         details.Children.Add(Ui.Text("MODEL VISIBILITY & ROUTING", 11, Ui.Muted));
-        details.Children.Add(Ui.Card(routes));
+        var routeCard = Ui.Card(routes); routeCard.Padding = new Thickness(0);
+        details.Children.Add(routeCard);
         details.Children.Add(ProfileWrap(export, Ui.Button("Set up Codex client…", () => ShowCodexExport(selected))));
         var technical = Ui.Stack(Ui.Text($"Profile ID: {selected.Id} · Default ID: {selected.DefaultRouteId ?? "none"}", 11, Ui.Muted),
             Ui.Text("Apply updates the global proxy. Export and client installation are separate operations.", 12, Ui.Muted));
