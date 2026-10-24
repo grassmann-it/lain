@@ -28,6 +28,7 @@ public sealed partial class MainWindow
     private readonly Dictionary<string, PageDraft> _drafts = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Vector> _scrollPositions = new(StringComparer.Ordinal);
     private bool _navigating;
+    private long _workspaceNavigationGeneration;
     private bool _viewOptionsUpdating;
     private Control? _providerDiscoveryPage;
     private long? _editorRevision;
@@ -270,6 +271,9 @@ public sealed partial class MainWindow
         {
             var section = NormalizeSection(target.Section);
             if (section is not ("Accounts" or "Models" or "Profiles" or "Usage" or "Live" or "Providers" or "Setup" or "Service" or "Settings" or "About")) return;
+            // Late page-specific reads cannot reclaim a workspace the user has
+            // left and revisited, even when both visits have the same section.
+            _workspaceNavigationGeneration++;
             if (section == "Settings" && _section is not ("Settings" or "About"))
                 _settingsDensitySection = PrimarySection(_section);
             SaveCurrentPage();
