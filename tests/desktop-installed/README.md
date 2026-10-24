@@ -64,7 +64,9 @@ Checks cover Accounts as the initial page, exactly five destinations, the semant
 and named quota windows with supplied percentages and explicit remaining states,
 configured Models, explicit known/unknown applied profile state, real provider
 catalog names, persistent Usage and the observed Live source state. Screenshots
-cover each area and Accounts in Barebones/Advanced/Simple with independent density.
+cover each area, Accounts in Barebones/Advanced/Simple, Settings and About.
+Footer-only mode changes, Settings/Back, independent density persistence and
+About identity are checked against the selected loaded Desktop build at both sizes.
 Presentation writes only the explicit temporary preferences path; its final JSON
 is copied to `preferences-observed.json`, never to installed preferences.
 Opening waits for successful status/configuration GETs from the new window and

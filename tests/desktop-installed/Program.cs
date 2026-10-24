@@ -182,19 +182,38 @@ internal sealed class Probe
         await Click("Accounts");
         foreach (var preset in new[] { "Barebones", "Simple", "Advanced" })
         {
-            Check(!Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "View density"), "View stays closed before footer selects " + preset);
+            Check(!Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Density section"), "Settings stays closed before footer selects " + preset);
             Named<ComboBox>("Information level").SelectedItem = preset;
             await Task.Delay(100);
-            Check(!Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "View density"), "footer switches to " + preset + " without opening View");
-            await Click("View");
-            Check(AllControls<ComboBox>().Count(x => AutomationProperties.GetName(x) == "Information level") == 1, "View does not duplicate the footer selector in " + preset);
-            Named<ComboBox>("View density").SelectedIndex = preset == "Barebones" ? 1 : 0;
-            await Click("Close view options");
+            Check(!Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Density section"), "footer switches to " + preset + " without entering Settings");
+            await Click("Settings");
+            Check(AllControls<ComboBox>().Count(x => AutomationProperties.GetName(x) == "Information level") == 1, "Settings does not duplicate the footer selector in " + preset);
+            Named<ComboBox>("Density section").SelectedItem = "Accounts";
+            Named<ComboBox>("Density for Accounts").SelectedIndex = preset == "Barebones" ? 1 : 0;
+            Named<ComboBox>("Density section").SelectedItem = "Models";
+            await Task.Delay(80);
+            Named<ComboBox>("Density for Models").SelectedIndex = 1;
+            await Click("Back");
+            Check(Controls<Expander>().Any(x => AutomationProperties.GetName(x)?.StartsWith("Account budgets for ", StringComparison.Ordinal) == true)
+                || Controls<Button>().Any(x => Equals(x.Content, "Discover providers")), "Settings Back returns to Accounts after " + preset);
             await Wait(() => File.Exists(Program.Preferences), "presentation writes only isolated preferences");
             Check(File.ReadAllText(Program.Preferences).Contains(preset, StringComparison.Ordinal), preset + " is saved in isolated preferences");
             Check(Controls<Button>().Count(x => x.Classes.Contains("nav")) == 5, preset + " keeps all five destinations");
             await CaptureBoth("accounts-" + preset.ToLowerInvariant(), verifyFooter: true);
         }
+        await Click("Settings");
+        await CaptureBoth("settings-persisted", verifyFooter: true);
+        await Click("About lain");
+        var desktopAssembly = typeof(MainWindow).Assembly;
+        var expectedVersion = desktopAssembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+            ?? desktopAssembly.GetName().Version?.ToString();
+        Check(Named<TextBlock>("Application version").Text == expectedVersion
+            && Named<TextBlock>("Project repository").Text == "https://github.com/grassmann-it/lain",
+            "About identifies the selected installed Desktop build and project repository");
+        await CaptureBoth("about-build-identity", verifyFooter: true);
+        await Click("Back");
+        Check(Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Density section"), "About Back returns to Settings");
+        await Click("Back");
         await Click("Usage"); await HistoricalUsage();
         window!.Close();
         await Task.Delay(350);
@@ -203,8 +222,13 @@ internal sealed class Probe
         Check(StableUsage(await observer.UsageAsync(query)) == before, "fixed historical usage unchanged while closed");
         await Open();
         Check(Equals(Named<ComboBox>("Information level").SelectedItem, "Advanced")
-            && !Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "View density"),
-            "reopened exact-target window restores Advanced in its permanent footer with View closed");
+            && !Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Density section"),
+            "reopened exact-target window restores Advanced in its permanent footer outside Settings");
+        await Click("Settings");
+        Named<ComboBox>("Density section").SelectedItem = "Models";
+        await Task.Delay(80);
+        Check(Named<ComboBox>("Density for Models").SelectedIndex == 1, "reopened exact-target Settings preserves the Models density independently");
+        await Click("Back");
         await Click("Usage"); await HistoricalUsage(); await CaptureBoth("reopened-usage", verifyFooter: true);
         window!.Close(); await Task.Delay(200);
         var final = await observer.UsageAsync(query);
@@ -285,13 +309,17 @@ internal sealed class Probe
     private T Named<T>(string name) where T : Control => Controls<T>().Single(x => AutomationProperties.GetName(x) == name);
     private async Task Click(string name)
     {
-        if (!Destinations.Contains(name) && name is not ("Discover providers" or "View" or "Close view options" or "Apply")) throw new Exception("Nonallowlisted UI click");
+        if (!Destinations.Contains(name) && name is not ("Discover providers" or "Settings" or "About lain" or "Back" or "Apply")) throw new Exception("Nonallowlisted UI click");
         var button = Controls<Button>().First(x => x.IsEnabled && (AutomationProperties.GetName(x) == name || Equals(x.Content, name)));
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Task.Delay(180);
     }
     private void CheckInformationFooter()
     {
-        var mode = Named<ComboBox>("Information level");
+        var modes = AllControls<ComboBox>().Where(x => x.Items.Cast<object>().Select(item => item.ToString())
+            .SequenceEqual(new[] { "Barebones", "Simple", "Advanced" })).ToArray();
+        Check(modes.Length == 1 && AutomationProperties.GetName(modes[0]) == "Information level",
+            "the exact-target footer remains the sole Barebones Simple Advanced selector");
+        var mode = modes.Single();
         var point = mode.TranslatePoint(default, window!) ?? throw new Exception("Footer selector is detached");
         Check(mode.Bounds.Width > 0 && mode.Bounds.Height > 0 && point.X > window!.Bounds.Width / 2
             && point.Y > window.Bounds.Height * .75 && point.X + mode.Bounds.Width <= window.Bounds.Width + 1
@@ -299,6 +327,16 @@ internal sealed class Probe
             && window.Bounds.Width - point.X - mode.Bounds.Width <= 40
             && window.Bounds.Height - point.Y - mode.Bounds.Height <= 40,
             $"exact-target information-level selector fits the bottom right at {window.Bounds.Width:0}px");
+        var layoutControls = window.GetVisualDescendants().OfType<Control>().Where(control =>
+            AutomationProperties.GetName(control) is "Density section" or "Minimize to tray" or "Close to tray" or "Usage and rate-limit alerts"
+                or "About lain" or "Application version" or "Project repository" or "License information"
+            || AutomationProperties.GetName(control)?.StartsWith("Density for ", StringComparison.Ordinal) == true).ToArray();
+        Check(layoutControls.All(control =>
+        {
+            var origin = control.TranslatePoint(default, window);
+            return origin is { } position && control.Bounds.Width > 0 && position.X >= 0
+                && position.X + control.Bounds.Width <= window.Bounds.Width + 1;
+        }), $"Settings and About controls fit the available width at {window.Bounds.Width:0}px");
     }
 
     private async Task CaptureBoth(string page, bool verifyFooter = false)

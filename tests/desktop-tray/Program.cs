@@ -94,7 +94,7 @@ internal sealed class TrayScenario
         await MissingHost();
         await VisibilityRaces();
         await HostLossAndMenu();
-        await ViewOptions();
+        await SettingsAndAbout();
         await IpcProcesses();
         var assembly = typeof(TrayWorkspaceController).Assembly;
         await File.WriteAllTextAsync(Path.Combine(Output, "evidence.json"), JsonSerializer.Serialize(new
@@ -274,7 +274,7 @@ internal sealed class TrayScenario
         tray.Dispose(); window.Close();
     }
 
-    private async Task ViewOptions()
+    private async Task SettingsAndAbout()
     {
         using var fixture = new Fixture(); using var http = new HttpClient(fixture, disposeHandler: false) { BaseAddress = new Uri("http://fixture.invalid") };
         var config = JsonSerializer.Serialize(fixture.Config);
@@ -290,38 +290,80 @@ internal sealed class TrayScenario
         var window = Create(out var tray);
         await Wait(() => fixture.StatusCalls > 0, "production MainWindow uses only the in-memory host fixture");
         Check(Named<ComboBox>(window, "Information level").SelectedIndex == (int)InformationLevel.Simple,
-            "permanent information-level footer starts at Simple without opening View");
+            "permanent information-level footer starts at Simple outside Settings");
         await CaptureBoth(window, "information-level-footer", () => CheckInformationFooter(window));
         foreach (var level in new[] { InformationLevel.Barebones, InformationLevel.Simple, InformationLevel.Advanced })
         {
             Named<ComboBox>(window, "Information level").SelectedIndex = (int)level;
             await Task.Delay(100);
             Check(new WorkspacePreferencesStore().Current.Level == level
-                && !window.GetVisualDescendants().OfType<ComboBox>().Any(x => AutomationProperties.GetName(x) == "View density" && IsShown(x)),
-                $"footer switches and saves {level} while View stays closed");
+                && !window.GetVisualDescendants().OfType<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Density section" && IsShown(x)),
+                $"footer switches and saves {level} without entering Settings");
         }
-        Click(window, "View"); await Task.Delay(100);
+        Click(window, "Settings"); await Task.Delay(100);
         Check(window.GetVisualDescendants().OfType<ComboBox>().Count(x => AutomationProperties.GetName(x) == "Information level") == 1,
-            "opening View never duplicates the permanent information-level selector");
+            "Settings never duplicates the permanent information-level selector");
         Check(Named<CheckBox>(window, "Minimize to tray").IsChecked == true && Named<CheckBox>(window, "Close to tray").IsChecked == false
-            && Named<CheckBox>(window, "Usage and rate-limit alerts").IsChecked == true, "View exposes separate minimize close and notification defaults");
+            && Named<CheckBox>(window, "Usage and rate-limit alerts").IsChecked == true, "Settings exposes separate minimize close and notification defaults");
+        var densities = new Dictionary<string, ViewDensity> { ["Accounts"] = ViewDensity.Compact, ["Models"] = ViewDensity.Normal,
+            ["Profiles"] = ViewDensity.Compact, ["Usage"] = ViewDensity.Normal, ["Live"] = ViewDensity.Compact };
+        foreach (var (section, density) in densities)
+        {
+            Named<ComboBox>(window, "Density section").SelectedItem = section;
+            await Wait(() => window.GetVisualDescendants().OfType<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Density for " + section && IsShown(x)),
+                "Settings selects the density for " + section);
+            Named<ComboBox>(window, "Density for " + section).SelectedIndex = (int)density;
+        }
+        Check(densities.All(pair => new WorkspacePreferencesStore().Current.Densities.GetValueOrDefault(pair.Key) == pair.Value),
+            "Settings saves densities independently for all five main areas");
+        Click(window, "Back"); await Task.Delay(100);
+        Check(window.GetVisualDescendants().OfType<TextBox>().Any(x => AutomationProperties.GetName(x) == "Search accounts" && IsShown(x)),
+            "Back from Settings returns to the previous Accounts inventory");
+        Click(window, "Settings"); await Task.Delay(100);
+        foreach (var (section, density) in densities)
+        {
+            Named<ComboBox>(window, "Density section").SelectedItem = section;
+            await Task.Delay(60);
+            Check(Named<ComboBox>(window, "Density for " + section).SelectedIndex == (int)density, "reopening Settings restores the density for " + section);
+        }
         Named<CheckBox>(window, "Minimize to tray").IsChecked = false;
         Named<CheckBox>(window, "Close to tray").IsChecked = true;
         Named<CheckBox>(window, "Usage and rate-limit alerts").IsChecked = false;
         var saved = new WorkspacePreferencesStore().Current;
         Check(!saved.MinimizeToTray && saved.CloseToTray && !saved.NotificationsEnabled, "all three background preferences save independently");
-        await CaptureBoth(window, "background-view-options");
+        await CaptureBoth(window, "background-settings", () => CheckInformationFooter(window));
+        Click(window, "About lain"); await Task.Delay(100);
+        var desktopAssembly = typeof(MainWindow).Assembly;
+        var expectedVersion = desktopAssembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+            ?? desktopAssembly.GetName().Version?.ToString();
+        Check(Named<TextBlock>(window, "Application version").Text == expectedVersion
+            && Named<TextBlock>(window, "Project repository").Text == "https://github.com/grassmann-it/lain",
+            "About identifies the actually loaded Desktop build and its project repository");
+        await CaptureBoth(window, "about-build-identity", () => CheckInformationFooter(window));
+        Click(window, "Back"); await Task.Delay(100);
+        Check(window.GetVisualDescendants().OfType<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Density section" && IsShown(x)),
+            "Back from About returns to Settings");
+        Click(window, "Back"); await Task.Delay(100);
+        Check(window.GetVisualDescendants().OfType<TextBox>().Any(x => AutomationProperties.GetName(x) == "Search accounts" && IsShown(x)),
+            "Back from reopened Settings returns to Accounts");
         tray.Dispose(); window.Close();
         window = Create(out tray);
         Check(Named<ComboBox>(window, "Information level").SelectedIndex == (int)InformationLevel.Advanced,
-            "new MainWindow restores the footer level before View is opened");
-        Click(window, "View"); await Task.Delay(100);
+            "new MainWindow restores the footer level before Settings is opened");
+        Click(window, "Settings"); await Task.Delay(100);
+        foreach (var (section, density) in densities)
+        {
+            Named<ComboBox>(window, "Density section").SelectedItem = section;
+            await Task.Delay(60);
+            Check(Named<ComboBox>(window, "Density for " + section).SelectedIndex == (int)density,
+                "new MainWindow Settings restores the independent density for " + section);
+        }
         Check(Named<CheckBox>(window, "Minimize to tray").IsChecked == false && Named<CheckBox>(window, "Close to tray").IsChecked == true
             && Named<CheckBox>(window, "Usage and rate-limit alerts").IsChecked == false, "new MainWindow restores each independent background preference");
         MenuClick(MenuItem("Notifications:")); await Task.Delay(100);
         saved = new WorkspacePreferencesStore().Current;
         Check(!saved.MinimizeToTray && saved.CloseToTray && saved.NotificationsEnabled
-            && Named<CheckBox>(window, "Usage and rate-limit alerts").IsChecked == true, "native notification toggle updates its View checkbox without changing hide preferences");
+            && Named<CheckBox>(window, "Usage and rate-limit alerts").IsChecked == true, "native notification toggle updates its Settings checkbox without changing hide preferences");
         var preferencePath = Path.Combine(Environment.GetEnvironmentVariable("LAIN_HOME")!, "ui", "workspace-preferences.json");
         var beforeFailedSave = File.ReadAllBytes(preferencePath);
         var oldNotificationMenu = MenuItem("Notifications:").Header;
@@ -330,7 +372,7 @@ internal sealed class TrayScenario
             MenuClick(MenuItem("Notifications:"));
             Check(MenuItem("Notifications:").Header == oldNotificationMenu
                 && Named<CheckBox>(window, "Usage and rate-limit alerts").IsChecked == true,
-                "failed native notification preference save restores the previous menu and View checkbox");
+                "failed native notification preference save restores the previous menu and Settings checkbox");
             await Wait(() => window.GetVisualDescendants().OfType<TextBlock>().Any(x => x.Text?.Contains("could not be saved", StringComparison.Ordinal) == true),
                 "failed native notification preference save reports its storage failure");
         }
@@ -396,7 +438,11 @@ internal sealed class TrayScenario
 
     private void CheckInformationFooter(Window window)
     {
-        var mode = window.GetVisualDescendants().OfType<ComboBox>().Single(x => AutomationProperties.GetName(x) == "Information level");
+        var modes = window.GetVisualDescendants().OfType<ComboBox>()
+            .Where(x => x.Items.Cast<object>().Select(item => item.ToString()).SequenceEqual(Enum.GetNames<InformationLevel>())).ToArray();
+        Check(modes.Length == 1 && AutomationProperties.GetName(modes[0]) == "Information level",
+            "the footer remains the sole Barebones Simple Advanced selector on this page");
+        var mode = modes.Single();
         var point = mode.TranslatePoint(default, window) ?? throw new Exception("Footer selector is detached");
         Check(IsShown(mode) && mode.Bounds.Width > 0 && mode.Bounds.Height > 0 && point.X > window.Bounds.Width / 2
             && point.Y > window.Bounds.Height * .75 && point.X + mode.Bounds.Width <= window.Bounds.Width + 1
@@ -404,6 +450,16 @@ internal sealed class TrayScenario
             && window.Bounds.Width - point.X - mode.Bounds.Width <= 40
             && window.Bounds.Height - point.Y - mode.Bounds.Height <= 40,
             $"permanent information-level selector fits the bottom right at {window.Bounds.Width:0}px");
+        var layoutControls = window.GetVisualDescendants().OfType<Control>().Where(control =>
+            AutomationProperties.GetName(control) is "Density section" or "Minimize to tray" or "Close to tray" or "Usage and rate-limit alerts"
+                or "About lain" or "Application version" or "Project repository" or "License information"
+            || AutomationProperties.GetName(control)?.StartsWith("Density for ", StringComparison.Ordinal) == true).ToArray();
+        Check(layoutControls.All(control =>
+        {
+            var origin = control.TranslatePoint(default, window);
+            return origin is { } position && control.Bounds.Width > 0 && position.X >= 0
+                && position.X + control.Bounds.Width <= window.Bounds.Width + 1;
+        }), $"Settings and About controls fit the available width at {window.Bounds.Width:0}px");
     }
 
     private async Task CaptureBoth(Window window, string page, Action? verify = null)

@@ -175,16 +175,16 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Rect Bounds(Control control) => new(control.TranslatePoint(default, window) ?? throw new Exception("Detached header control"), control.Bounds.Size);
         var logo = Named<Image>("Application logo");
         var back = Named<Button>("Back");
-        var view = Named<Button>("View");
-        var logoBounds = Bounds(logo); var backBounds = Bounds(back); var viewBounds = Bounds(view);
-        Check(logoBounds.Left <= 24 && logoBounds.Right < backBounds.Left && backBounds.Right <= viewBounds.Left,
-            $"application logo stays at the far left before Back and View at {window.Bounds.Width:0}px");
-        Check(Equals(back.Content, "← Back") && FitsScrollViewports(logo) && FitsScrollViewports(back) && FitsScrollViewports(view),
+        var settings = Named<Button>("Settings");
+        var logoBounds = Bounds(logo); var backBounds = Bounds(back); var settingsBounds = Bounds(settings);
+        Check(logoBounds.Left <= 24 && logoBounds.Right < backBounds.Left && backBounds.Right <= settingsBounds.Left,
+            $"application logo stays at the far left before Back and Settings at {window.Bounds.Width:0}px");
+        Check(Equals(back.Content, "← Back") && FitsScrollViewports(logo) && FitsScrollViewports(back) && FitsScrollViewports(settings),
             $"Back is labelled and header controls remain visible at {window.Bounds.Width:0}px");
         headerLayouts.Add(new { width = window.Bounds.Width, height = window.Bounds.Height,
             logo = new { logoBounds.X, logoBounds.Y, logoBounds.Width, logoBounds.Height },
             back = new { backBounds.X, backBounds.Y, backBounds.Width, backBounds.Height },
-            view = new { viewBounds.X, viewBounds.Y, viewBounds.Width, viewBounds.Height } });
+            settings = new { settingsBounds.X, settingsBounds.Y, settingsBounds.Width, settingsBounds.Height } });
     }
 
     public async Task Run()
@@ -403,7 +403,11 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
 
     private void CheckInformationFooter()
     {
-        var mode = Named<ComboBox>("Information level");
+        var modes = window.GetVisualDescendants().OfType<ComboBox>()
+            .Where(x => x.Items.Cast<object>().Select(item => item.ToString()).SequenceEqual(Enum.GetNames<InformationLevel>())).ToArray();
+        Check(modes.Length == 1 && AutomationProperties.GetName(modes[0]) == "Information level",
+            "the footer remains the sole Barebones Simple Advanced selector");
+        var mode = modes.Single();
         var point = mode.TranslatePoint(default, window) ?? throw new Exception("Footer selector is detached");
         Check(mode.Bounds.Width > 0 && mode.Bounds.Height > 0 && point.X > window.Bounds.Width / 2
             && point.Y > window.Bounds.Height * .75 && point.X + mode.Bounds.Width <= window.Bounds.Width + 1
@@ -416,18 +420,21 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     private async Task SelectPresentation(InformationLevel level, ViewDensity? density = null)
     {
         Check(Controls<ComboBox>().Count(x => AutomationProperties.GetName(x) == "Information level") == 1,
-            "one permanent Information level selector is available without opening View");
+            "one permanent Information level selector is available outside Settings");
         var mode = Named<ComboBox>("Information level");
         mode.SelectedIndex = (int)level;
         await Task.Delay(100);
         if (density is { } value)
         {
-            if (!Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "View density")) await Click("View");
-            Named<ComboBox>("View density").SelectedIndex = (int)value;
+            var section = Controls<Button>().Single(x => x.Classes.Contains("nav")
+                && AutomationProperties.GetHelpText(x) == "Current page").Tag!.ToString()!;
+            await Click("Settings");
+            Named<ComboBox>("Density section").SelectedItem = section;
+            await Wait(() => Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Density for " + section), "Settings selects the " + section + " density");
+            Named<ComboBox>("Density for " + section).SelectedIndex = (int)value;
             await Task.Delay(100);
+            await Click("Back");
         }
-        // The View panel is a toggle; leave the workspace ready for ordinary interaction.
-        if (Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "View density")) await Click("Close view options");
     }
 
     private async Task CheckEditorPreservation(string placeholder, string value)

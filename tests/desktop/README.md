@@ -61,7 +61,7 @@ The UI structure regression checks verify exactly five primary destinations and
 Accounts at startup; one nested provider catalog and one account-method chooser;
 all quota windows including pure balances/unknown windows in closed tiles;
 Barebones/Simple/Advanced and independent Normal/Compact section density;
-unsaved account/model/profile controls and focus across reload/view changes;
+unsaved account/model/profile controls and focus across reload and Settings/Back;
 authoritative applied profile metadata; one Usage breakdown with unchanged
 measurement coverage; contextual drillthrough/Back; and singleton, no-match,
 empty-source and retention-gap Live states. Pins, order, sort, grouping, mode and
@@ -79,7 +79,7 @@ For the narrow header/account-order regression, reuse this same runner and fixtu
 ```
 
 This entry renders both required sizes, checks the leftmost logo and labelled
-Back/View order, distinguishes current/stale/unknown five-hour windows from
+Back/Settings order, distinguishes current/stale/unknown five-hour windows from
 weekly quotas, verifies threshold colors, holds account IDs through quota reload
 and passive polling, then updates the rank explicitly and reloads the sort
 preference in a new window. All requests remain in the in-memory fixture; no

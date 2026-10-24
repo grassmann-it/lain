@@ -51,9 +51,12 @@ not claim interoperability with every Linux panel or compositor.
 
 Coverage includes independent minimize/close behavior, no-host fallback, reopening
 when a tray host disappears, Reopen racing an in-flight hide/close check, quota
-menu lines, notification enable/disable, Quit UI, separately persisted View
+menu lines, notification enable/disable, Quit UI, separately persisted Settings
 checkboxes, native notification-toggle rollback when the preference lock blocks
-saving, and two required screenshot sizes. MainWindow uses the existing
+saving, per-area density persistence through Settings/Back and a new window,
+and About identity against the loaded assembly version and project repository.
+The footer remains the only information-level selector on Settings and About.
+Both required screenshot sizes check footer placement and content width. MainWindow uses the existing
 in-memory allowlisted HTTP fixture. No service command is available to the fake.
 
 IPC tests load UiInstanceOwner from the production assembly in real .NET child
