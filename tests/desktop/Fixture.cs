@@ -24,7 +24,8 @@ internal sealed class Fixture : HttpMessageHandler
     public int Imports, EnableCalls, ApplyCalls, ExportCalls, LoginBegins, LoginPolls, LoginCancels, UsageCalls, StatusCalls, AnalysisCalls;
     public bool Offline, UsageFailure, NullTokens, IncompleteCoverage, AnalysisFailure, InspectorFailure;
     public int ProviderCalls, InspectorCalls, InspectorEventCalls, CostPolicyCalls;
-    public bool InspectorRestarted, InspectorEmpty, InspectorGap, QuotaAvailabilityChanged;
+    public bool InspectorRestarted, InspectorEmpty, InspectorGap, InspectorAdditionalEvent, QuotaAvailabilityChanged;
+    public long InspectorHighWater => InspectorRestarted ? 1 : InspectorAdditionalEvent ? 14 : 13;
     public string? ActiveProfileId = "p2";
     public long? ActiveProfileRevision = 1;
     private readonly DateTimeOffset inspectorStarted = DateTimeOffset.UtcNow;
@@ -187,7 +188,8 @@ internal sealed class Fixture : HttpMessageHandler
                 E(9, "request-error", "assistant", "Retained partial output before failure."),
                 // Events can advance between snapshot polls; Clear must never return to the older snapshot cursor.
                 E(12, "request-b", "assistant", " Ahead-of-snapshot output."), E(13, "request-b", "assistant", " Still retained.") };
-        var high = InspectorRestarted ? 1 : 13;
+        if (!InspectorRestarted && InspectorAdditionalEvent) all = all.Append(E(14, "request-a", "assistant", "Follow-up event after presentation change.")).ToArray();
+        var high = InspectorHighWater;
         return new(InspectorSource, all.Where(e => e.Cursor > (changed ? 0 : after) && e.RequestId == request).ToArray(), high, high, 1, 0,
             Truncated: InspectorGap || changed && after > 0, GapReason: InspectorGap ? "retention_limit" : changed && after > 0 ? "source_changed" : null);
     }

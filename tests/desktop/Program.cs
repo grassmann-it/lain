@@ -952,6 +952,20 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
                 Check(FitsScrollViewports(Named<ComboBox>("Conversation / linked requests")) && FitsScrollViewports(requestPicker),
                     "narrow Inspector conversation and request pickers fit within the initial viewport");
         });
+        var eventDetail = Named<StackPanel>("Inspector events").GetVisualDescendants().OfType<Expander>().First(x => Equals(x.Header, "Event details"));
+        eventDetail.IsExpanded = true;
+        await SelectPresentation(InformationLevel.Barebones);
+        Check(eventDetail.IsExpanded, "manually opened live event details stay open when changing to Barebones");
+        eventDetail.IsExpanded = false;
+        await SelectPresentation(InformationLevel.Advanced);
+        Check(!eventDetail.IsExpanded, "manually closed live event details stay closed when changing to Advanced");
+        fixture.InspectorAdditionalEvent = true;
+        await Click("Refresh inspector");
+        await Wait(() => HasSelectable("Follow-up event after presentation change."), "live appends new output after a presentation change");
+        var regeneratedDetail = Named<StackPanel>("Inspector events").GetVisualDescendants().OfType<Expander>().First(x => Equals(x.Header, "Event details"));
+        Check(!regeneratedDetail.IsExpanded, "new live events preserve the explicit detail choice for retained source events");
+        await SelectPresentation(InformationLevel.Simple);
+        Check(!regeneratedDetail.IsExpanded, "returning to Simple preserves the explicit live detail choice");
         requestPicker.SelectedIndex = 1;
         await Wait(() => HasSelectable("Fixture tool result.") && HasSelectable("Answer after tool. Still streaming."), "tool continuation stays within its selected request");
         Check(!HasSelectable("First answer continued.") && HasText("Tool · fixture_tool"), "switching request clears preceding output and labels tool content");
@@ -986,7 +1000,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         var beforeClearRefresh = fixture.InspectorEventCalls;
         await Click("Refresh inspector");
         await Wait(() => fixture.InspectorEventCalls > beforeClearRefresh, "cleared Inspector can refresh while its snapshot cursor trails events");
-        Check(fixture.InspectorEventAfters[^1] == 13 && !HasSelectable("Ahead-of-snapshot output.") && HasText("Displayed events cleared.", true),
+        Check(fixture.InspectorEventAfters[^1] == fixture.InspectorHighWater && !HasSelectable("Ahead-of-snapshot output.") && HasText("Displayed events cleared.", true),
             "clear never regresses the event cursor or replays output ahead of the snapshot");
         fixture.InspectorGap = true;
         await Click("Refresh inspector");
