@@ -1,0 +1,122 @@
+{
+  "id": "cohere",
+  "name": "Cohere",
+  "summary": "Cohere evaluation access through its official OpenAI-compatible Chat endpoint. Evaluation is separate from production approval.",
+  "accountUrl": "https://dashboard.cohere.com/api-keys",
+  "documentationUrl": "https://docs.cohere.com/docs/compatibility-api",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "Cohere evaluation API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true,
+      "help": "Use your own evaluation key from the API keys page for the intended Cohere organization. Enter it privately in lain; do not paste it into chat."
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Open API keys",
+      "description": "Use the existing account and choose an evaluation key. Keep the key private in lain.",
+      "url": "https://dashboard.cohere.com/api-keys"
+    },
+    {
+      "title": "Confirm evaluation entitlement",
+      "description": "Check that Command A+ is enabled for this key. Evaluation limits and newer-model production restrictions are distinct from production rights.",
+      "url": "https://docs.cohere.com/v2/docs/rate-limits"
+    },
+    {
+      "title": "Use the concrete compatibility route",
+      "description": "Select Command A+ on https://api.cohere.ai/compatibility/v1. Start with short text and max_tokens 64; do not assume support for every OpenAI parameter."
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "evaluation",
+      "name": "Cohere evaluation",
+      "kind": "trial",
+      "scope": "evaluation-key",
+      "unit": "requests",
+      "includedAmount": 1000,
+      "resetDescription": null,
+      "limits": [
+        {
+          "kind": "rate",
+          "value": 20,
+          "unit": "requests",
+          "window": "minute",
+          "scope": "model/evaluation-key",
+          "notes": "Published trial Chat limit, not a measured account allowance."
+        }
+      ],
+      "notes": "Published trial ceiling: 1,000 calls/month; remaining calls and exact reset are unknown. Newer Chat variants can retain trial limits on production keys. No paid upgrade or production approval is performed. Shared organization pooling is not qualified; do not aggregate key limits into an organization allowance."
+    }
+  ],
+  "routes": [
+    {
+      "id": "cohere/command-a-plus-05-2026",
+      "model": "command-a-plus-05-2026",
+      "name": "Command A+ \u00b7 evaluation",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "tools": true,
+        "streaming": true
+      },
+      "modelFamily": "command-a-plus",
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "trial",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        }
+      ],
+      "restrictions": [
+        "Only the documented OpenAI compatibility subset is supported; this is not the native /v2/chat protocol.",
+        "Use max_tokens. No Responses API, parallel_tool_calls, store, metadata, n, or Cohere-native documents/connectors are qualified.",
+        "reasoning_effort supports only none/high in the compatibility API; this route makes no reasoning capability claim.",
+        "Tools and streaming are documented, but vendor execution remains untested."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://docs.cohere.com/docs/compatibility-api",
+      "title": "Official Cohere OpenAI compatibility contract",
+      "checkedAt": "2026-10-24T15:47:23Z",
+      "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+    },
+    {
+      "url": "https://docs.cohere.com/v2/docs/rate-limits",
+      "title": "Evaluation and production key limits",
+      "checkedAt": "2026-10-24T15:47:23Z",
+      "notes": "Trial and newer Chat variants: 1,000 calls/month; advertised limits are not observed remaining quota."
+    },
+    {
+      "url": "https://docs.cohere.com/v2/docs/going-live",
+      "title": "Production approval and agreements",
+      "checkedAt": "2026-10-24T15:47:23Z",
+      "notes": "Evaluation access does not confer production rights; newer model variants may require sales approval even with a production key."
+    }
+  ],
+  "restrictions": [
+    "No credentials or live inference were used. Evaluation is not production authorization.",
+    "No independent remaining-quota endpoint is implemented; published trial limits are not observed quota.",
+    "A plan selection describes intent and does not prove key type, available allowance, or enforce a spending cap.",
+    "No strict free_only eligibility or automatic paid fallback."
+  ],
+  "adapterState": "prepared",
+  "liveVerification": "not_tested",
+  "quotaSupport": "unsupported"
+}
