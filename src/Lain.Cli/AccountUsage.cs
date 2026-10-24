@@ -34,7 +34,7 @@ public static partial class CliApplication
             await HumanTable.WriteTextAsync(output, $"{Cell(account.Name)} · {Cell(account.Provider)} · {(account.Enabled ? "Enabled" : "Disabled")}", context);
             await output.WriteLineAsync("  ID: " + Cell(account.Id));
             if (account.State is not ("ready" or "ok" or "available"))
-                await HumanTable.WriteTextAsync(output, "Credential state: " + ReadableState(account.State), context, "  ");
+                await HumanTable.WriteTextAsync(output, "Credential state: " + (account.State == "unverified" ? "Not checked" : ReadableState(account.State)), context, "  ");
             if (account.ExpiresAt is { } expiry && expiry <= DateTimeOffset.UtcNow)
                 await HumanTable.WriteTextAsync(output, "Credential expired.", context, "  ");
             if (account.SharedWithLegacy || item.Quotas.Any(quota => quota.SharedWithLegacy))
@@ -43,8 +43,7 @@ public static partial class CliApplication
                 await HumanTable.WriteTextAsync(output, "Provider budget pool · balances may be shared.", context, "  ");
             if (item.Quotas.Length == 0)
             {
-                await HumanTable.WriteTextAsync(output, "Quota not reported · percentage unknown", context, "  ");
-                await WriteQuotaPair(output, "Remaining unknown", "Reset unknown", context);
+                await HumanTable.WriteTextAsync(output, "Quota not reported. See provider setup for available access.", context, "  ");
             }
             else await WriteQuotaWindows(output, item.Quotas, context, disabled: !account.Enabled, checkAge: true);
         }

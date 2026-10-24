@@ -5,6 +5,12 @@ using Lain.Client;
 using Lain.Cli;
 using Lain.Core;
 
+if (args.FirstOrDefault() == "--wizard-fixture")
+{
+    Environment.ExitCode = await AccountWizardChecks.RunFixtureAsync(Console.Out, Console.Error);
+    return;
+}
+
 if (args.FirstOrDefault() == "--render-fixture")
 {
     Environment.ExitCode = await CliPresentationFixtures.RunAsync(args[1..], Console.Out, Console.Error);
@@ -209,7 +215,7 @@ handler.Handle = _ => new(HttpStatusCode.OK) { Content = JsonContent.Create(new[
     new QuotaDto("account", "shared-pool", "provider", "unavailable", null, null, null, "points", null, null, null, true) }) };
 output = new(); error = new();
 exit = await CliApplication.RunAsync(["quotas"], output, error, () => client);
-Require(exit == 0 && output.ToString().Contains("Remaining unknown points") && output.ToString().Contains("Percentage unknown") &&
+Require(exit == 0 && output.ToString().Contains("Quota values not reported") &&
     output.ToString().Contains("Shared budget with legacy"), "quota text preserves native units and shared budget scope"); assertions++;
 
 var providerRoute = new ProviderRouteDescriptorDto("route/test", "vendor/model", "Test model", "https://provider.test/v1", "openai-chat", ["trial"],
@@ -395,6 +401,9 @@ finally
 }
 assertions += await ExpansionContractChecks.RunAsync();
 assertions += await HumanRenderingChecks.RunAsync();
+assertions += await SetupPresentationChecks.RunAsync();
+assertions += await AccountWizardChecks.RunAsync();
+assertions += await MonitorWizardChecks.RunAsync();
 assertions += await AccountUsageChecks.RunAsync();
 Console.WriteLine($"PASS: {assertions} client/CLI contract checks.");
 

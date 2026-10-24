@@ -18,9 +18,17 @@ public sealed partial class MainWindow
         title.FontWeight = FontWeight.SemiBold;
         panel.Children.Add(title);
         panel.Children.Add(QuotaTechnicalField("Source", string.IsNullOrWhiteSpace(quota.Source) ? "Not supplied" : quota.Source));
+        if (quota.Support is { } support) panel.Children.Add(QuotaTechnicalField("Quota access", support.Message));
+        if (quota.MeasurementKind is not null) panel.Children.Add(QuotaTechnicalField("Measurement", quota.MeasurementKind));
+        if (quota.ApprovedLimit is { } approved) panel.Children.Add(QuotaTechnicalField("Approved limit", BudgetAmount(approved, quota.Unit)));
+        if (quota.SourceUrl is { } sourceUrl && sourceUrl != quota.Source) panel.Children.Add(QuotaTechnicalField("Source URL", sourceUrl));
+        if (quota.WindowStart is not null || quota.WindowEnd is not null) panel.Children.Add(QuotaTechnicalField("Window", Ui.When(quota.WindowStart) + " – " + Ui.When(quota.WindowEnd)));
+        if (quota.Scope is not null) panel.Children.Add(QuotaTechnicalField("Scope", string.Join(" · ", new[] { quota.Scope, quota.ScopeId, quota.Model }.Where(value => !string.IsNullOrWhiteSpace(value)))));
+        if (quota.DataAsOf is { } dataAsOf) panel.Children.Add(QuotaTechnicalField("Data as of", Ui.When(dataAsOf)));
+        if (quota.ProviderUpdatedAt is { } updated) panel.Children.Add(QuotaTechnicalField("Provider update", Ui.When(updated)));
         panel.Children.Add(QuotaTechnicalField("Snapshot", $"{quota.State} · observed {Ui.When(quota.ObservedAt)} · last success {Ui.When(quota.LastSuccessAt)}"));
         string Amount(double? value) => ValidAmount(value) is { } amount ? BudgetAmount(amount, quota.Unit) : "Not supplied";
-        panel.Children.Add(QuotaTechnicalField("Amounts", $"Used: {Amount(quota.Used)} · limit: {Amount(quota.Limit)} · remaining: {Amount(quota.Remaining)}"));
+        panel.Children.Add(QuotaTechnicalField("Amounts", $"Used: {Amount(quota.Used)} · limit: {Amount(quota.Limit)} · remaining: {(ReportedRemaining(quota) is { } remaining ? BudgetAmount(remaining, quota.Unit) : "Not supplied")}"));
         panel.Children.Add(QuotaTechnicalField("Consumption", QuotaUsedPercent(quota) is { } percent ? $"{BudgetNumber(percent)}% used" : "Percentage not available"));
         panel.Children.Add(QuotaTechnicalField("Reset", QuotaResetText(quota, QuotaUnavailable(quota))));
         if (!string.IsNullOrWhiteSpace(quota.BudgetPoolId)) panel.Children.Add(QuotaTechnicalField("Window pool", quota.BudgetPoolId));

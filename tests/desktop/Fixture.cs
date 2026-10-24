@@ -32,6 +32,11 @@ internal sealed class Fixture : HttpMessageHandler
     public long? ActiveProfileRevision = 1;
     private readonly DateTimeOffset inspectorStarted = DateTimeOffset.UtcNow;
     public static readonly ProviderCatalogDto ProviderCatalog = LoadProviders();
+    public ProviderCatalogDto? CatalogOverride;
+    public QuotaDto[]? QuotaOverride;
+    public AddApiAccountRequest? LastAddedAccount;
+    public MonitorAccessRequest? LastMonitorAccess;
+    public string? LastMonitorAccount;
     public readonly List<string> Requests = [];
     public readonly List<long> InspectorEventAfters = [];
     public readonly List<string> Unexpected = [];
@@ -70,6 +75,7 @@ internal sealed class Fixture : HttpMessageHandler
                 "/api/v1/models" => new ModelCatalogDto(1, Config.Revision, [new ModelEntryDto("gpt-model", "openai", ["a1"])]),
                 "/api/v1/quotas" => Quotas(),
                 "/api/v1/providers" => Providers(),
+                var p when p.StartsWith("/api/v1/accounts/") && p.EndsWith("/monitor") => new MonitorAccessDto(p.Split('/')[4], "nvidia-build", "not-configured"),
                 var p when p.StartsWith("/api/v1/routes/") && p.EndsWith("/cost-policy") => CostPolicy(request.RequestUri!),
                 "/api/v1/inspector" => Inspector(),
                 "/api/v1/inspector/events" => InspectorEvents(request.RequestUri!),
@@ -118,7 +124,14 @@ internal sealed class Fixture : HttpMessageHandler
         {
             var body = await request.Content!.ReadFromJsonAsync<RevisionRequest<AddApiAccountRequest>>(cancellationToken: ct);
             Revision(body!.Revision);
+            LastAddedAccount = body.Value;
             Config = Config with { Revision = Config.Revision + 1, Accounts = Config.Accounts.Append(new AccountDto("a-new", body.Value.Name, body.Value.Provider, true, "api-key", "ready")).ToArray() }; value = Config;
+        }
+        else if (request.Method == HttpMethod.Put && path.EndsWith("/monitor"))
+        {
+            var body = await request.Content!.ReadFromJsonAsync<RevisionRequest<MonitorAccessRequest>>(cancellationToken: ct);
+            Revision(body!.Revision); LastMonitorAccess = body.Value; LastMonitorAccount = path.Split('/')[4];
+            Config = Config with { Revision = Config.Revision + 1 }; value = Config;
         }
         else if (request.Method == HttpMethod.Put && path.EndsWith("/enabled"))
         {
@@ -145,7 +158,7 @@ internal sealed class Fixture : HttpMessageHandler
         return new(uri.AbsolutePath.Split('/')[4], !strict, strict ? "free_only" : "configured", "unknown",
             strict ? ["upstream_cost_controls_unavailable"] : []);
     }
-    private ProviderCatalogDto Providers() { ProviderCalls++; return ProviderCatalog; }
+    private ProviderCatalogDto Providers() { ProviderCalls++; return CatalogOverride ?? ProviderCatalog; }
     private string InspectorSource => InspectorRestarted ? "source-ui-2" : "source-ui-1";
     private static AttemptDimensionsDto ProvenDimensions(string? parent = null) => new(
         ConversationId: "conversation-ui", TurnId: "turn-ui", WorkerId: "worker-ui", ParentRequestId: parent,
@@ -199,6 +212,7 @@ internal sealed class Fixture : HttpMessageHandler
     // Concrete provider budgets exercise percentage, numeric balance, exhaustion and unsupported rendering.
     private QuotaDto[] Quotas()
     {
+        if (QuotaOverride is { } quotaOverride) return quotaOverride;
         if (AccountSortScenario) return AccountSortQuotas();
         var observed = DateTimeOffset.Parse("2026-10-23T12:00:00Z");
         QuotaDto Reading(string id, string source, string label, double used, double limit, string unit, double percent, bool shared = false)

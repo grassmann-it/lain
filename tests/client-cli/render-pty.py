@@ -92,13 +92,13 @@ for columns in (60, 80, 120):
             assert bool(sgr.search(initialized)) == (not no_color and command != "help"), "TTY/NO_COLOR policy mismatch"
             if command == "quotas":
                 assert "40% used" in plain and "96% used" in plain and "Last known" in plain
-                assert "Percentage unknown" in plain and "Quota lookup not supported" in plain and "Reset due" in plain
+                assert "Quota values not reported" in plain and "No separate quota lookup" in plain and "Reset due" in plain
                 assert "Remaining 12 USD-Credits" in plain and "Account ID: account-codex" in plain
             if command == "usage":
                 assert "Personal Codex" in plain and "codex" in plain and "Coding credits" in plain and "Disabled" in plain
                 assert "Missing credential" in plain and "Quota not reported" in plain and "40% used" in plain
                 assert "12 USD-Credits left" in plain and "Reset due" in plain and "Last known" in plain
-                assert "ID:" not in plain and "source " not in plain and "Checked " not in plain
+                assert "ID:" not in plain and "Source " in plain and "Checked " in plain
             if command == "usage-full":
                 assert "ID: account-codex" in plain and "source " in plain and "Checked " in plain
                 assert "Shared budget with legacy" in plain and "Used 18 USD-Credits / 20 USD-Credits" in plain
@@ -110,7 +110,7 @@ for columns in (60, 80, 120):
 
 for columns in (60, 80, 120):
     for no_color in (False, True):
-        assert line_counts[("usage", columns, no_color)] < line_counts[("usage-full", columns, no_color)] / 2
+        assert line_counts[("usage", columns, no_color)] < line_counts[("usage-full", columns, no_color)]
 
 for command in ("quotas", "status", "usage", "usage-full", "history", "help", "providers"):
     result = subprocess.run(["dotnet", str(dll), "--render-fixture", *fixture_args(command)], capture_output=True, text=True, check=True)

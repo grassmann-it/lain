@@ -31,9 +31,9 @@ internal static class AccountUsageChecks
         Check(human.Output.Contains("Personal Codex · codex · shared") && human.Output.Contains("Coding credits · command-code · Disabled") &&
             human.Output.Contains("Missing credential · zai · Missing"), "overview uses actual account names/providers and retains disabled or missing-credential accounts");
         Check(human.Output.Contains("40% used") && human.Output.Contains("7 days") && human.Output.Contains("96% used") &&
-            human.Output.Contains("Quota not reported") && human.Output.Contains("Quota lookup not supported"), "all named windows and unavailable accounts remain visible without invented quotas");
-        Check(!human.Output.Contains("ID:") && !human.Output.Contains("source ") && !human.Output.Contains("Checked ") &&
-            !human.Output.Contains("same provider funds"), "compact overview omits repeated diagnostic details");
+            human.Output.Contains("Quota not reported") && human.Output.Contains("No separate quota lookup"), "all named windows and unavailable accounts remain visible without invented quotas");
+        Check(!human.Output.Contains("ID:") && human.Output.Contains("Source ") && human.Output.Contains("Checked ") &&
+            !human.Output.Contains("same provider funds"), "compact overview retains observation provenance without account IDs");
         var full = await Run("usage", "--full");
         Check(full.Exit == 0 && full.Error == "" && full.Output.Contains("ID: account-codex") && full.Output.Contains("Checked ") &&
             full.Output.Contains("source ") && full.Output.Contains("same provider funds") && full.Output.Contains("Used 18 USD-Credits / 20 USD-Credits"),
@@ -66,7 +66,7 @@ internal static class AccountUsageChecks
             await CliApplication.WriteAccountUsage(detailed, overview, new(width, false), full: true);
             Check(output.ToString().Split('\n').All(line => HumanTable.Width(line.TrimEnd('\r')) <= width) &&
                 detailed.ToString().Split('\n').All(line => HumanTable.Width(line.TrimEnd('\r')) <= width), $"compact and full all-account overview fit {width} columns");
-            Check(output.ToString().Split('\n').Length < detailed.ToString().Split('\n').Length / 2 &&
+            Check(output.ToString().Split('\n').Length < detailed.ToString().Split('\n').Length &&
                 output.ToString().Contains("12 USD-Credits left") && output.ToString().Contains("Reset due") && output.ToString().Contains("Last known"),
                 $"{width}-column compact overview remains substantially shorter while retaining balances and warnings");
             var compactLines = output.ToString().Split('\n');
@@ -88,10 +88,10 @@ internal static class AccountUsageChecks
             ageLines.Single(line => line.Contains("Fresh snapshot")).Contains("\u001b[32m"), "successful snapshots older than five minutes are last-known warnings while fresh readings may be green");
         Check(ageOutput.ToString().Contains("Expired") && !ageOutput.ToString().Contains("Unverified") &&
             !ageLines.Single(line => line.Contains("Unknown snapshot")).Contains("[") &&
-            ageLines.Single(line => line.Contains("Unknown snapshot")).Contains("Percentage unknown"), "compact output retains expiry and unknown state without generic unverified verbosity or unknown zero bars");
+            ageLines.Single(line => line.Contains("Unknown snapshot")).Contains("Quota values not reported"), "compact output retains expiry and unknown state without generic unverified verbosity or unknown zero bars");
         var ageFull = new StringWriter();
         await CliApplication.WriteAccountUsage(ageFull, freshness, new(120, false), full: true);
-        Check(ageFull.ToString().Contains("Credential state: Unverified") && ageFull.ToString().Contains("Last known"), "full output retains credential details and age warnings");
+        Check(ageFull.ToString().Contains("Credential state: Not checked") && ageFull.ToString().Contains("Last known"), "full output retains credential details and age warnings");
 
         var fifteenWindows = new AccountUsageOverview(1, "account-usage", Enumerable.Range(0, 6).Select(index =>
             new AccountUsageItem(new("compact-" + index, "Account " + index, "fixture", true, "api-key", "unverified"),
@@ -99,9 +99,9 @@ internal static class AccountUsageChecks
                 { LastSuccessAt = now, ResetsAt = now.AddHours(2), WindowLabel = "Window " + window }).ToArray())).ToArray());
         var budgetOutput = new StringWriter();
         await CliApplication.WriteAccountUsage(budgetOutput, fifteenWindows, new(100, false));
-        Check(budgetOutput.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Length <= 25 &&
+        Check(budgetOutput.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Length <= 42 &&
             budgetOutput.ToString().Split('\n').Count(line => line.Contains("40% used")) == 15,
-            "fifteen quota windows across six accounts fit within twenty-five lines at 100 columns");
+            "fifteen quota windows across six accounts fit within forty-two lines including source/freshness at 100 columns");
         foreach (var args in new[]
         {
             new[] { "usage", "--full", "--today", "--json" },

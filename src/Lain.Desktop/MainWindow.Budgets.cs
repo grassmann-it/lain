@@ -27,21 +27,32 @@ public sealed partial class MainWindow
 
     private static bool IsMiMo(AccountDto account) => account.Provider.ToLowerInvariant() is "xiaomi-mimo" or "mimo" or "xiaomi";
 
-    private static bool QuotaUnavailable(QuotaDto? quota) => quota?.State is "unsupported" or "not-supported";
+    private static string QuotaSupportMessage(QuotaDto? quota) => string.IsNullOrWhiteSpace(quota?.Support?.Message)
+        ? "No separate quota lookup is configured. See provider setup for available access." : quota.Support.Message;
+
+    private static bool QuotaUnavailable(QuotaDto? quota) => quota?.State is "unsupported" or "not-supported"
+        || quota is not null && quota.State is not ("error" or "unavailable" or "stale") && quota.Used is null && quota.Remaining is null && quota.Limit is null && quota.UsedPercent is null
+        && quota.Support?.Kind is "console" or "unsupported" or "unimplemented" or "setup-required" or "awaiting-observation" or "passive";
 
     private static double? ValidAmount(double? value) => value is { } number && double.IsFinite(number) && number >= 0 ? number : null;
+
+    private static double? ReportedRemaining(QuotaDto? quota) => quota?.Remaining is { } remaining && double.IsFinite(remaining)
+        && quota.MeasurementKind is not ("usage" or "limit") ? remaining : null;
+
+    private static bool QuotaExhausted(QuotaDto? quota) => quota is not null && !QuotaUnavailable(quota)
+        && (QuotaUsedPercent(quota) >= 100 || ReportedRemaining(quota) <= 0);
 
     // Percentages describe consumption. Never paint a missing value as zero, clamp
     // an invalid percentage, or combine separate windows into an account balance.
     private static double? QuotaUsedPercent(QuotaDto? quota)
     {
-        if (quota is null || QuotaUnavailable(quota)) return null;
+        if (quota is null || QuotaUnavailable(quota) || quota.MeasurementKind is "balance" or "usage" or "limit") return null;
         if (quota.UsedPercent is { } supplied)
             return double.IsFinite(supplied) && supplied is >= 0 and <= 100 ? supplied : null;
         if (ValidAmount(quota.Limit) is not { } limit || limit <= 0) return null;
         if (ValidAmount(quota.Used) is { } used)
             return used <= limit ? used / limit * 100 : null;
-        if (ValidAmount(quota.Remaining) is { } remaining && remaining <= limit)
+        if (ReportedRemaining(quota) is { } remaining && remaining <= limit)
             return (limit - remaining) / limit * 100;
         return null;
     }
@@ -81,9 +92,9 @@ public sealed partial class MainWindow
     private static QuotaDto? MostLimitingWindow(IEnumerable<QuotaDto> quotas)
     {
         var rows = quotas.ToArray();
-        return rows.Where(q => QuotaUsedPercent(q).HasValue)
+        return rows.FirstOrDefault(QuotaExhausted) ?? rows.Where(q => QuotaUsedPercent(q).HasValue)
             .OrderByDescending(q => QuotaUsedPercent(q)).FirstOrDefault()
-            ?? rows.FirstOrDefault(q => ValidAmount(q.Remaining).HasValue && !QuotaUnavailable(q))
+            ?? rows.FirstOrDefault(q => ReportedRemaining(q).HasValue && !QuotaUnavailable(q))
             ?? rows.FirstOrDefault();
     }
 
@@ -112,14 +123,15 @@ public sealed partial class MainWindow
         .OrderBy(quota => QuotaUsedPercent(quota).HasValue ? CurrentFiveHourWindow(quota) ? 0 : 1 : 2)
         .ThenByDescending(QuotaUsedPercent).ThenBy(quota => quota.Source, StringComparer.Ordinal).FirstOrDefault();
 
-    private bool LastKnownQuota(QuotaDto quota) => !_hostAvailable || _quotaError is not null
-        || quota.State is "stale" or "error" or "unavailable" || QuotaResetOverdue(quota);
+    private bool LastKnownQuota(QuotaDto quota) => !QuotaUnavailable(quota) && (!_hostAvailable || _quotaError is not null
+        || quota.State is "stale" or "error" or "unavailable" || QuotaResetOverdue(quota)
+        || quota.FreshUntil is { } freshUntil && freshUntil <= DateTimeOffset.UtcNow);
 
     private string QuotaStateLabel(QuotaDto? quota)
     {
         if (quota is null) return "Not loaded";
         if (QuotaUnavailable(quota)) return "Not available";
-        if (LastKnownQuota(quota) && (QuotaUsedPercent(quota).HasValue || ValidAmount(quota.Remaining).HasValue || ValidAmount(quota.Used).HasValue)) return "Last known";
+        if (LastKnownQuota(quota) && (QuotaUsedPercent(quota).HasValue || ReportedRemaining(quota).HasValue || ValidAmount(quota.Used).HasValue)) return "Last known";
         return quota.State switch
         {
             "ok" or "available" => "",
@@ -181,7 +193,7 @@ public sealed partial class MainWindow
         var percent = unavailable ? null : QuotaUsedPercent(quota);
         if (percent is { } usedPercent)
         {
-            var knownRemaining = ValidAmount(quota!.Remaining);
+            var knownRemaining = ReportedRemaining(quota);
             var remaining = knownRemaining is { } amount
                 ? BudgetAmount(amount, quota.Unit) + " left"
                 : $"{BudgetNumber(100 - usedPercent)}% left";
@@ -207,21 +219,21 @@ public sealed partial class MainWindow
             if (!PercentUnit(quota.Unit) && ValidAmount(quota.Used) is { } amountUsed && ValidAmount(quota.Limit) is { } limit)
                 consumption.Children.Add(Ui.Text($"{BudgetNumber(amountUsed)} of {BudgetAmount(limit, quota.Unit)} used", 11, Ui.Muted));
         }
-        else if (!unavailable && quota is not null && (ValidAmount(quota.Remaining).HasValue || ValidAmount(quota.Used).HasValue || ValidAmount(quota.Limit).HasValue))
+        else if (!unavailable && quota is not null && (ReportedRemaining(quota).HasValue || ValidAmount(quota.Used).HasValue || ValidAmount(quota.Limit).HasValue))
         {
-            if (ValidAmount(quota.Remaining) is { } remaining)
+            if (ReportedRemaining(quota) is { } remaining)
                 consumption.Children.Add(Ui.Text(BudgetAmount(remaining, quota.Unit) + " left", 12));
             if (ValidAmount(quota.Used) is { } used)
                 consumption.Children.Add(Ui.Text(ValidAmount(quota.Limit) is { } limit
                     ? $"{BudgetNumber(used)} of {BudgetAmount(limit, quota.Unit)} used" : BudgetAmount(used, quota.Unit) + " used", 11, Ui.Muted));
             else if (ValidAmount(quota.Limit) is { } limit)
                 consumption.Children.Add(Ui.Text(BudgetAmount(limit, quota.Unit) + " limit", 11, Ui.Muted));
-            consumption.Children.Add(Ui.Text("Percentage not available", 11, Ui.Muted));
+
         }
         else
         {
-            consumption.Children.Add(Ui.Text(unavailable ? "Not available" : quota?.State is "error" or "unavailable" ? "Could not load budget" : "Usage not supplied", 12, Ui.Muted));
-            if (unavailable) consumption.Children.Add(Ui.Text("Quota API not supported", 11, Ui.Muted));
+            consumption.Children.Add(Ui.Text(unavailable ? QuotaSupportMessage(quota) : quota?.State is "error" or "unavailable" ? "Could not load budget" : "Usage not supplied", 12, Ui.Muted));
+
         }
 
         var reset = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };

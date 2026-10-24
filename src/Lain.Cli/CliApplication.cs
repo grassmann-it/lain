@@ -14,7 +14,9 @@ public static partial class CliApplication
         Usage: lain <command> [options]
           status | accounts | models | profiles | quotas [--json]
           usage [--full] [--json]  Current quotas for every configured account
-                Compact by default; --full includes IDs, sources and check times.
+                Compact by default; --full includes IDs and complete source details.
+          accounts add  Private interactive account setup (TTY required)
+          accounts monitor ID  Private optional monitoring setup (TTY required)
           accounts login codex [--revision N] [--json]
           accounts login-status|login-cancel|check ID [--json]
           accounts enable|disable|remove ID [--revision N] [--json]
@@ -49,7 +51,7 @@ public static partial class CliApplication
         """;
 
     public static async Task<int> RunAsync(string[] args, TextWriter output, TextWriter error,
-        Func<LainApiClient>? clientFactory = null, CancellationToken ct = default, TextReader? input = null)
+        Func<LainApiClient>? clientFactory = null, CancellationToken ct = default, TextReader? input = null, IAccountWizardTerminal? wizardTerminal = null)
     {
         try
         {
@@ -89,6 +91,12 @@ public static partial class CliApplication
             if (command is not ("status" or "accounts" or "import" or "models" or "profiles" or "usage" or "history" or "attempts" or "quotas" or "auth" or "service" or "providers" or "inspector"))
                 throw new ArgumentException($"Unknown command '{command}'. Run 'lain help'.");
             Validate(command, options);
+            if (command == "accounts" && options.Positionals.FirstOrDefault() is "add" or "monitor")
+            {
+                wizardTerminal ??= new ConsoleAccountWizardTerminal(output);
+                if (!wizardTerminal.IsInteractive)
+                    throw new ArgumentException("Account setup requires an interactive terminal. Use accounts add-api --key-stdin or --key-env for automation.");
+            }
             using var client = (clientFactory ?? LainApiClient.CreateLocal)();
             object result;
             switch (command)
@@ -96,6 +104,18 @@ public static partial class CliApplication
                 case "status":
                 case "service": result = await client.StatusAsync(ct); break;
                 case "accounts":
+                    if (options.Positionals.FirstOrDefault() == "add")
+                    {
+                        var saved = await AddAccountWizard(client, output, wizardTerminal!, ct);
+                        if (!saved) await output.WriteLineAsync("Account setup cancelled. No account was saved.");
+                        return 0;
+                    }
+                    if (options.Positionals.FirstOrDefault() == "monitor")
+                    {
+                        if (!await MonitorAccountWizard(client, options.Positionals[1], output, wizardTerminal!, ct))
+                            await output.WriteLineAsync("Monitoring setup cancelled. Saved account is unchanged.");
+                        return 0;
+                    }
                     result = await Accounts(client, options, input ?? Console.In, ct);
                     break;
                 case "models": result = await client.ModelsAsync(ct); break;
@@ -171,6 +191,14 @@ public static partial class CliApplication
         if (command == "accounts" && options.Positionals.Count > 0)
         {
             var action = options.Positionals[0];
+            if (action == "add")
+            {
+                options.RequireOnly(); options.RequirePositionals(1); return;
+            }
+            if (action == "monitor")
+            {
+                options.RequireOnly(); options.RequirePositionals(2); return;
+            }
             if (action == "add-api")
             {
                 options.RequireOnly("json", "revision", "name", "provider", "base-url", "key-env", "key-stdin", "provider-route", "setting");
@@ -190,7 +218,7 @@ public static partial class CliApplication
                 options.RequirePositionals(2);
                 if (action is "enable" or "disable" or "remove" or "login") options.RequireOnly("json", "revision");
                 else if (action is "check" or "login-status" or "login-cancel") options.RequireOnly("json");
-                else throw new ArgumentException("Account action must be add-api, login, login-status, login-cancel, enable, disable, remove or check.");
+                else throw new ArgumentException("Account action must be add, add-api, monitor, login, login-status, login-cancel, enable, disable, remove or check.");
                 if (action == "login" && options.Positionals[1] != "codex")
                     throw new ArgumentException("Only the qualified Codex login is available: accounts login codex.");
             }

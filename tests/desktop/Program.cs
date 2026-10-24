@@ -38,14 +38,16 @@ internal static class Program
             return 2;
         }
         SmokeApp.AccountSortOnly = args.Contains("--account-sort-smoke", StringComparer.Ordinal);
+        SmokeApp.ProviderSetupOnly = args.Contains("--provider-setup-smoke", StringComparer.Ordinal);
         return AppBuilder.Configure<SmokeApp>().UsePlatformDetect().WithInterFont()
-            .StartWithClassicDesktopLifetime(args.Where(x => x != "--account-sort-smoke").ToArray());
+            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--account-sort-smoke" or "--provider-setup-smoke")).ToArray());
     }
 }
 
 internal sealed class SmokeApp : Application
 {
     public static bool AccountSortOnly { get; set; }
+    public static bool ProviderSetupOnly { get; set; }
     public override void Initialize()
     {
         // Reuse production initialization (Semi/Ursa resources included), not a test theme.
@@ -70,7 +72,8 @@ internal sealed class SmokeApp : Application
             var scenario = new Scenario(lifetime);
             try
             {
-                if (AccountSortOnly) await scenario.RunAccountSortSmoke();
+                if (ProviderSetupOnly) await scenario.RunProviderSetupSmoke();
+                else if (AccountSortOnly) await scenario.RunAccountSortSmoke();
                 else await scenario.Run();
                 lifetime.Shutdown(0);
             }
@@ -97,6 +100,83 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     private readonly List<object> headerLayouts = [];
     private MainWindow window = null!;
     private readonly List<HttpClient> transports = [];
+
+    public async Task RunProviderSetupSmoke()
+    {
+        Directory.CreateDirectory(Output);
+        var provider = Fixture.ProviderCatalog.Providers[0];
+        var first = provider.Routes[0];
+        var second = first with { Id = "fixture-second-model", Model = "fixture-second-model", Name = "Synthetic second model" };
+        provider = provider with { Routes = [first, second], Connections = [provider.Connections![0] with { ProviderRouteIds = [first.Id, second.Id] }],
+            MonitorAccessOptions = [new("api-token", "Synthetic read access", true, "Account ID", "Use the matching reporting account.", "https://example.invalid/monitor", ["usage.read"], "Synthetic read-only monitoring fixture; saving does not fetch usage.")] };
+        fixture.CatalogOverride = Fixture.ProviderCatalog with { Providers = [provider] };
+        var names = new[] { "Research Groq", "Project Gemini", "NVIDIA custom", "Workers project", "Router key" };
+        var providers = new[] { "groq", "gemini-api", "nvidia-build", "cloudflare-workers-ai", "openrouter" };
+        fixture.Config = fixture.Config with { Accounts = names.Select((name, index) => new AccountDto("a" + (index + 1), name, providers[index], true, "api-key", "unverified")).ToArray() };
+        var now = DateTimeOffset.UtcNow;
+        fixture.QuotaOverride = fixture.Config.Accounts.Select((account, index) => index == 4
+            ? new QuotaDto(account.Id, null, "https://openrouter.ai/api/v1/key#key-spend-cap", "ok", now, now, null, "USD", 2, 10, 8, false, WindowLabel: "API key spend cap")
+            : new(account.Id, null, "unavailable", "unsupported", now, null, null, "unknown", null, null, null, false)).ToArray();
+        await Open();
+        Check(names.All(name => HasText(name)), "five synthetic provider accounts retain their custom names");
+        Check(Controls<ProgressBar>().Length == 1 && HasText("20% used") && HasText("API key spend cap"), "only the observed bounded key budget gets a percentage bar");
+        Check(Controls<TextBlock>().Count(text => text.Text?.StartsWith("No separate quota lookup is configured.", StringComparison.Ordinal) == true) == 4, "unsupported accounts each get one neutral explanation");
+        Check(!HasText("Credential state: unverified", true) && !HasText("Check credential details", true), "unverified credential presence is neutral and does not warn on each usable account");
+        Check(!HasText("Remaining not available") && !HasText("Reset not available") && !HasText("Quota warning"), "unsupported accounts do not repeat missing measurements or warnings");
+        await CaptureBoth("provider-five-account-quotas");
+        await Click("Discover providers");
+        await Wait(() => HasText("NVIDIA Build"), "synthetic connection catalog loaded");
+        Named<Expander>("Provider NVIDIA Build").IsExpanded = true; await Task.Delay(100);
+        await Click("Add NVIDIA Build account");
+        Check(Named<TextBox>("Display name").Text == "NVIDIA Build", "provider setup suggests a short new name without touching custom accounts");
+        Check(!Controls<ComboBox>().Any(control => AutomationProperties.GetName(control)?.Contains("Connection", StringComparison.Ordinal) == true), "single account connection does not ask for a model");
+        Check(!Named<Expander>("Technical details and provider terms").IsExpanded, "Simple starts with endpoint details collapsed");
+        Named<ComboBox>("Billing plan").SelectedIndex = 0;
+        Named<TextBox>("Own API key").Text = "SYNTHETIC-UI-KEY";
+        var displayName = Named<TextBox>("Display name"); displayName.Text = "My custom NVIDIA";
+        await SelectPresentation(InformationLevel.Barebones);
+        Check(ReferenceEquals(displayName, Named<TextBox>("Display name")) && displayName.Text == "My custom NVIDIA"
+            && Named<TextBox>("Own API key").Text == "SYNTHETIC-UI-KEY", "presentation changes preserve custom name and credential control");
+        Check(!Named<Expander>("Technical details and provider terms").IsExpanded, "Barebones leaves technical details collapsed");
+        var models = Named<Expander>("Choose models (optional)"); models.IsExpanded = true; await Task.Delay(100);
+        var checksBefore = Controls<CheckBox>().Where(check => AutomationProperties.GetName(check)?.StartsWith("Add model ", StringComparison.Ordinal) == true).ToArray();
+        Check(checksBefore.Length == 2 && checksBefore.All(check => check.IsChecked != true), "optional model selection lists all compatible models, initially unchecked");
+        foreach (var check in checksBefore) check.IsChecked = true;
+        await CaptureBoth("provider-connection-credentials-models");
+        var writes = MutatingRequestCount();
+        await Click("Add account");
+        await Wait(() => fixture.LastAddedAccount is not null, "account save reached synthetic Host");
+        var request = fixture.LastAddedAccount!;
+        Check(request.ProviderRouteId is null && request.ProviderConnectionId == provider.Connections![0].Id
+            && request.SelectedModelRouteIds!.Order().SequenceEqual(new[] { first.Id, second.Id }.Order()), "one key/account request binds both explicitly selected compatible model routes");
+        Check(request.Name == "My custom NVIDIA" && request.ApiKey == "SYNTHETIC-UI-KEY" && MutatingRequestCount() == writes + 1,
+            "custom name and credential are saved once without quota refresh or inference");
+        await Wait(() => HasText("My custom NVIDIA"), "saved account returned to account inventory");
+        QuotaTile("My custom NVIDIA").IsExpanded = true; await Task.Delay(100);
+        await Click("Monitoring access");
+        Check(HasText("Monitoring access for My custom NVIDIA") && Named<TextBox>("Monitoring token").PasswordChar == '●'
+            && HasText("Required read permissions: usage.read"), "monitor editor explains same-account read access and masks the additional token");
+        var monitorToken = Named<TextBox>("Monitoring token"); monitorToken.Text = "SYNTHETIC-UI-MONITOR";
+        Named<TextBox>("Account ID").Text = "fixture-reporting-account";
+        await Click("Cancel");
+        Check(monitorToken.Text == "" && fixture.LastMonitorAccess is null, "monitor cancellation clears the draft secret without a write");
+        QuotaTile("My custom NVIDIA").IsExpanded = true; await Task.Delay(100); await Click("Monitoring access");
+        Named<TextBox>("Monitoring token").Text = "SYNTHETIC-UI-MONITOR";
+        Named<TextBox>("Account ID").Text = "fixture-reporting-account";
+        await CaptureBoth("provider-monitoring-access");
+        await Click("Save monitoring access");
+        await Wait(() => fixture.LastMonitorAccess is not null, "monitor request reached the synthetic Host");
+        Check(fixture.LastMonitorAccount == "a-new" && fixture.LastMonitorAccess is { Kind: "api-token", ResourceId: "fixture-reporting-account", Secret: "SYNTHETIC-UI-MONITOR" }
+            && fixture.Config.Accounts.Length == 6, "monitor token attaches to the saved account without creating a second inference account");
+        Check(fixture.Unexpected.Count == 0 && fixture.LoginBegins == 0, "focused setup has no external login or unexpected request");
+        window.Close(); foreach (var transport in transports) transport.Dispose();
+        await File.WriteAllTextAsync(Path.Combine(Output, "evidence.json"), JsonSerializer.Serialize(new {
+            result = "PASS", scenario = "provider-setup-smoke", privateXvfb = true,
+            assembly = typeof(MainWindow).Assembly.Location, checks, screenshots, requests = fixture.Requests,
+            scope = "Production MainWindow on private Xvfb, in-memory Host fixtures only; five-account neutral presentation, private credential control, connection-first setup and one atomic multi-model request. No real credentials, providers, host or service operations."
+        }, new JsonSerializerOptions { WriteIndented = true }));
+        Console.WriteLine($"PASS provider setup smoke: {checks.Count} checks, {screenshots.Count} screenshots. {Output}/evidence.json");
+    }
 
     public async Task RunAccountSortSmoke()
     {
@@ -857,7 +937,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(commandHeader.GetVisualDescendants().OfType<TextBlock>().Any(x => x.Text?.Contains("12", StringComparison.Ordinal) == true),
             $"{page} closed purchased-credit window includes its remaining balance");
         var mimo = QuotaTile("MiMo API");
-        Check(!mimo.IsExpanded && HasText("Not available", true), $"{page} explains unsupported MiMo quota in its closed tile");
+        Check(!mimo.IsExpanded && HasText("No separate quota lookup", true), $"{page} explains unsupported MiMo quota in its closed tile");
         Check(!mimo.GetVisualDescendants().OfType<ProgressBar>().Any(), $"{page} unsupported provider has no invented progress");
         foreach (var (width, height) in new[] { (1120, 780), (800, 560) })
         {
@@ -919,7 +999,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         var mimo = QuotaTile("MiMo API");
         await ExpandTile(mimo, true);
         await CaptureBoth("accounts-mimo", () => TileHeader(mimo).BringIntoView());
-        Check(HasText("Not available", true), "expanded MiMo tile explains unsupported quota");
+        Check(HasText("No separate quota lookup", true), "expanded MiMo tile explains unsupported quota");
         Check(!mimo.GetVisualDescendants().OfType<ProgressBar>().Any(), "expanded unsupported account has no zero-percent quota bar");
         await ExpandTile(mimo, false);
         var personal = QuotaTile("Personal Codex");
@@ -1073,12 +1153,13 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Click("Reload status");
         Check(card.IsExpanded && route.IsExpanded && header.IsFocused && Controls<Expander>().Contains(card), "identical catalog refresh preserves card identity expansion and focus");
         await Click("Add NVIDIA Build account");
-        Check(HasText("Set up NVIDIA Build") && Named<ComboBox>("Connection / API endpoint").SelectedIndex == -1 && Named<ComboBox>("Billing plan").SelectedIndex == -1,
-            "assisted provider setup requires an explicit route and billing choice");
-        Named<ComboBox>("Connection / API endpoint").SelectedIndex = 0;
-        Check(Named<ComboBox>("Billing plan").SelectedIndex == -1 && Named<TextBox>("Base URL").IsReadOnly
-            && Named<TextBox>("Base URL").Text == "https://integrate.api.nvidia.com/v1" && Named<TextBox>("Own API key").PasswordChar == '●',
-            "setup derives a read-only official endpoint and masks the private credential");
+        Check(HasText("Set up NVIDIA Build") && !Controls<ComboBox>().Any(control => AutomationProperties.GetName(control) == "Connection / API endpoint")
+            && Named<ComboBox>("Billing plan").SelectedIndex == -1, "assisted setup starts with provider credentials and an explicit billing choice, with no model as connection picker");
+        Check(Named<TextBox>("Own API key").PasswordChar == '●', "provider credential stays masked");
+        var details = Named<Expander>("Technical details and provider terms");
+        details.IsExpanded = true; await Task.Delay(100);
+        Check(Named<TextBox>("Base URL").IsReadOnly && Named<TextBox>("Base URL").Text == "https://integrate.api.nvidia.com/v1", "connection supplies the official read-only endpoint without a model choice");
+        details.IsExpanded = false;
         await CaptureBoth("provider-setup");
         await Click("Cancel");
 

@@ -22,11 +22,16 @@ public static partial class CliApplication
                 tags.Add("shared");
             await HumanTable.WriteTextAsync(output, string.Join(" · ", tags), context);
             if (item.Quotas.Length == 0)
-                await WriteCompactQuotaFields(output, ["Quota not reported", "Remaining unknown", "Reset unknown"], context);
+                await WriteCompactQuotaFields(output, ["Quota not reported. See provider setup for available access."], context);
             foreach (var quota in item.Quotas)
             {
                 var percent = QuotaPercentage(quota);
-                var unsupported = quota.State is "unsupported" or "not-supported";
+                var unsupported = QuotaHasSupportOnly(quota);
+                if (unsupported)
+                {
+                    await WriteCompactQuotaFields(output, new[] { QuotaSupportMessage(quota), quota.Support?.ActionUrl is { Length: > 0 } url ? "Next step: " + Cell(url) : "" }.Where(value => value.Length > 0), context);
+                    continue;
+                }
                 var due = quota.ResetsAt is { } reset && reset <= now;
                 var stale = !unsupported && (due || quota.State is "stale" or "error" or "unavailable" or "refreshing" || QuotaCheckIsOld(quota, now));
                 var hasNumber = percent.HasValue || quota.Remaining.HasValue || quota.Used.HasValue;
@@ -39,15 +44,22 @@ public static partial class CliApplication
                     fields.Add("[" + new string('#', consumed) + new string('-', cells - consumed) + "] "
                         + used.ToString("0.##", CultureInfo.InvariantCulture) + "% used");
                 }
-                else fields.Add(unsupported ? "Quota lookup not supported" : "Percentage unknown");
-                fields.Add(CompactRemaining(quota, percent, unsupported));
-                fields.Add(unsupported ? "Reset unavailable" : due ? "Reset due" : quota.ResetsAt is { } next
-                    ? "Reset " + next.UtcDateTime.ToString(next.Year == now.Year ? "MM-dd HH:mm'Z'" : "yyyy-MM-dd HH:mm'Z'", CultureInfo.InvariantCulture)
-                    : "Reset unknown");
-                if (stale && hasNumber) fields.Add("Last known");
+                else if (quota.Remaining is null && quota.Used is null && quota.Limit is null) fields.Add("Quota values not reported");
+                if (quota.MeasurementKind is not ("usage" or "limit"))
+                    fields.Add(CompactRemaining(quota, percent, unsupported));
+                if (quota.MeasurementKind == "limit" && quota.Limit is { } reportedLimit && double.IsFinite(reportedLimit)) fields.Add("Limit " + QuotaAmount(reportedLimit, quota.Unit));
+                if (percent is null && quota.Used is { } amountUsed && double.IsFinite(amountUsed) && amountUsed >= 0)
+                    fields.Add("Used " + QuotaAmount(amountUsed, quota.Unit));
+                if (quota.ResetsAt is { } next)
+                    fields.Add(due ? "Reset due" : "Reset " + next.UtcDateTime.ToString(next.Year == now.Year ? "MM-dd HH:mm'Z'" : "yyyy-MM-dd HH:mm'Z'", CultureInfo.InvariantCulture));
+                if (quota.MeasurementKind is not ("usage" or "limit") && quota.Remaining is { } left && double.IsFinite(left) && left <= 0)
+                    fields.Add(stale ? "Last known exhausted" : "Exhausted");
+                else if (stale && hasNumber) fields.Add("Last known");
                 if (!unsupported && quota.State is not ("ok" or "available") && !(quota.State == "stale" && hasNumber))
                     fields.Add(ReadableState(quota.State));
-                if (!string.IsNullOrWhiteSpace(quota.Error) && quota.State != "error") fields.Add("Quota warning");
+                if (!string.IsNullOrWhiteSpace(quota.Error)) fields.Add("Note: " + Cell(quota.Error));
+                if (!string.IsNullOrWhiteSpace(quota.Source)) fields.Add("Source " + QuotaSource(quota.Source, 80));
+                if (quota.LastSuccessAt is { } success) fields.Add("Checked " + Timestamp(success) + " UTC");
                 var color = !percent.HasValue ? null : !account.Enabled || quota.State == "disabled" ? "2"
                     : stale ? "33" : percent >= 95 ? "31" : percent >= 80 ? "33" : "32";
                 await WriteCompactQuotaFields(output, fields, context, color);
@@ -74,12 +86,12 @@ public static partial class CliApplication
     }
 
     private static bool QuotaCheckIsOld(QuotaDto quota, DateTimeOffset now) =>
-        quota.LastSuccessAt is not { } success || now - success > TimeSpan.FromMinutes(5);
+        quota.FreshUntil is { } freshUntil ? freshUntil <= now : quota.LastSuccessAt is not { } success || now - success > TimeSpan.FromMinutes(5);
 
     private static string CompactRemaining(QuotaDto quota, double? percent, bool unsupported)
     {
         if (unsupported) return "Remaining unavailable";
-        if (quota.Remaining is { } amount && double.IsFinite(amount) && amount >= 0) return QuotaAmount(amount, quota.Unit) + " left";
+        if (quota.Remaining is { } amount && double.IsFinite(amount)) return QuotaAmount(amount, quota.Unit) + " left";
         if (percent is { } known && quota.Unit is ("percent" or "%"))
             return (100 - known).ToString("0.##", CultureInfo.InvariantCulture) + "% left";
         return "Remaining unknown";

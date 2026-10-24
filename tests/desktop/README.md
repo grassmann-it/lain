@@ -85,3 +85,11 @@ and passive polling, then updates the rank explicitly and reloads the sort
 preference in a new window. All requests remain in the in-memory fixture; no
 provider refresh or host configuration mutation is involved. Frozen rank IDs are
 window-local; a new window computes its first rank from its current quota snapshot.
+
+Focused provider/account setup coverage uses the same private runner:
+
+```sh
+./tests/desktop/run-private-xvfb.sh /tmp/lain-provider-setup --provider-setup-smoke
+```
+
+It checks five synthetic Groq/Gemini/NVIDIA/Cloudflare/OpenRouter accounts, neutral unsupported/unverified presentation, a bounded OpenRouter key cap, connection-first credentials, optional unchecked model selections, private key controls, Simple/Barebones details, custom names, one multiple-model account request, and separate same-account monitoring access including cancel. All requests use the in-memory fixture; no real account, browser, quota endpoint or inference is contacted.

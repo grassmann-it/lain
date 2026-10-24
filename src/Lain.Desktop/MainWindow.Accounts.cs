@@ -219,9 +219,8 @@ public sealed partial class MainWindow
     {
         if (!account.Enabled || AccountCredentialWarning(account) is not null) return true;
         var quotas = _quotas.Where(quota => quota.AccountId == account.Id).ToArray();
-        return quotas.Length == 0 || quotas.Any(quota => LastKnownQuota(quota) || QuotaUsedPercent(quota) >= 90
-            || QuotaUnavailable(quota) || !string.IsNullOrWhiteSpace(quota.Error)
-            || !QuotaUsedPercent(quota).HasValue && !ValidAmount(quota.Remaining).HasValue);
+        return quotas.Any(quota => !QuotaUnavailable(quota) && (LastKnownQuota(quota) || QuotaUsedPercent(quota) >= 90
+            || quota.State is "error" or "unavailable" || !string.IsNullOrWhiteSpace(quota.Error)));
     }
 
     private static string? AccountCredentialWarning(AccountDto account)
@@ -229,10 +228,11 @@ public sealed partial class MainWindow
         if (account.ExpiresAt is { } expiry && expiry <= DateTimeOffset.UtcNow) return "Credential expired · reconnect this account.";
         return account.State.ToLowerInvariant() switch
         {
-            "ready" or "ok" or "available" => null,
+            "ready" or "ok" or "available" or "unverified" or "not-checked" or "unknown" => null,
             "missing" or "missing-credential" => "Credential missing · reconnect this account.",
             "expired" => "Credential expired · reconnect this account.",
-            _ => $"Credential state: {account.State}. Check credential details."
+            "error" or "invalid" or "unauthorized" or "forbidden" or "auth-failed" or "authentication-failed" => "Credential access failed · check account details.",
+            _ => null
         };
     }
 
@@ -263,6 +263,7 @@ public sealed partial class MainWindow
         var actions = OverviewActions(
             Action(account.Enabled ? "Disable" : "Enable", async () => { _configuration = await _client.SetAccountEnabledAsync(revision, account.Id, !account.Enabled, _lifetime.Token); }, "Account updated."),
             Action("Check credential", async () => { var result = await _client.CheckAccountAsync(account.Id, _lifetime.Token); _notice.Text = $"Credential status: {result.State}. Checked local presence and expiry only."; }, "Local credential check complete."),
+            Action("Monitoring access", () => OpenMonitorSetupAsync(account), "Review the available monitoring access.", stayOnPage: true),
             Action("Refresh quota", async () => { _quotas = await _client.RefreshQuotasAsync(account.Id, _lifetime.Token); }, "Quota refresh complete."),
             Ui.Button("Remove…", ConfirmAccountRemoval));
         content.Children.Add(actions);
@@ -289,7 +290,7 @@ public sealed partial class MainWindow
 
         var technical = new StackPanel { Spacing = 9 };
         technical.Children.Add(QuotaTechnicalField("Account ID", account.Id));
-        technical.Children.Add(QuotaTechnicalField("Credential", $"{account.CredentialKind} · local state: {account.State}"));
+        technical.Children.Add(QuotaTechnicalField("Credential", $"{account.CredentialKind} · {(account.State == "unverified" ? "Not checked" : "local state: " + account.State)}"));
         technical.Children.Add(Ui.Text("Credential checks confirm local presence and expiry only; provider access is not verified.", 11, Ui.Muted));
         if (account.ExpiresAt is null) technical.Children.Add(Ui.Text("Credential expiry not supplied.", 11, Ui.Muted));
         if (account.BudgetPoolId is { } pool) technical.Children.Add(QuotaTechnicalField("Account pool", pool));

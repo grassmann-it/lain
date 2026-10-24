@@ -96,8 +96,8 @@ internal static class HumanRenderingChecks
             Check(text.Split('\n').All(line => HumanTable.Width(line.TrimEnd('\r')) <= width), $"quota fixture fits {width} columns");
             Check(text.Contains("[" + new string('#', 18)) && text.Contains("40% used") && text.Contains("96% used") && text.Split('\n').Any(line => line.TrimEnd('\r').EndsWith(" 0% used", StringComparison.Ordinal)), $"{width}-column quotas retain actual bars, percentages and known zero");
             Check(text.Split('\n').Count(line => line.TrimStart().StartsWith("[", StringComparison.Ordinal)) == 4 && !text.Contains('\u001b'), "unknown, balance-only and unsupported windows do not become empty zero bars or emit colour to captures");
-            Check(text.Contains("Last known") && text.Contains("Reset due") && text.Contains("Percentage unknown") && text.Contains("Quota lookup not supported"), $"{width}-column quota states distinguish stale, due, unknown and unsupported");
-            Check(text.Contains("Remaining 12 USD-Credits") && text.Contains("Remaining 0 USD-Credits") && text.Contains("Reset unknown"), $"{width}-column balance-only windows retain amounts and explicit unknown resets");
+            Check(text.Contains("Last known") && text.Contains("Reset due") && text.Contains("Quota values not reported") && text.Contains("No separate quota lookup"), $"{width}-column quota states distinguish stale, due, unknown and unsupported");
+            Check(text.Contains("Remaining 12 USD-Credits") && text.Contains("Remaining 0 USD-Credits") && !text.Contains("Reset unknown"), $"{width}-column balance-only windows retain amounts without repeated unknown resets");
             Check(text.Split("Account ID: account-codex", StringSplitOptions.None).Length == 2 && !text.Contains("Pool ID:") && !text.Contains("https://"), "account identity is grouped and technical source noise is reduced without inventing names");
             foreach (var command in new[] { "status", "usage", "help" })
             {

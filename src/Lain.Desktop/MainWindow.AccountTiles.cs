@@ -48,7 +48,7 @@ public sealed partial class MainWindow
             var percent = QuotaUsedPercent(limiting);
             var lastKnown = limiting is not null && LastKnownQuota(limiting);
             var badge = !account.Enabled ? Ui.Badge("Disabled")
-                : percent >= 100 ? Ui.Badge(lastKnown ? "Last known exhausted" : "Exhausted", lastKnown ? "warning" : "danger")
+                : QuotaExhausted(limiting) ? Ui.Badge(lastKnown ? "Last known exhausted" : "Exhausted", lastKnown ? "warning" : "danger")
                 : percent >= 90 ? Ui.Badge(lastKnown ? "Last known near limit" : "Near limit", "warning")
                 : IsAccountPinned(account) ? Ui.Badge("Pinned", "accent") : null;
             if (badge is not null) { Grid.SetColumn(badge, 1); identity.Children.Add(badge); }
@@ -86,7 +86,7 @@ public sealed partial class MainWindow
             {
                 Header = header, Content = detail, IsExpanded = _expandedAccountIds.Contains(account.Id),
                 HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Top, BorderBrush = percent >= 100 ? lastKnown ? Ui.Warning : Ui.Danger : Ui.Edge,
+                VerticalAlignment = VerticalAlignment.Top, BorderBrush = QuotaExhausted(limiting) ? lastKnown ? Ui.Warning : Ui.Danger : Ui.Edge,
                 BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6)
             };
             tile.Classes.Add("account-tile");
@@ -137,17 +137,25 @@ public sealed partial class MainWindow
         var compact = options.Density == ViewDensity.Compact;
         var panel = new StackPanel { Spacing = compact ? 3 : 4, HorizontalAlignment = HorizontalAlignment.Stretch };
         var unavailable = QuotaUnavailable(quota) || IsMiMo(account) && quota?.Source == "unavailable";
-        var percent = unavailable ? null : QuotaUsedPercent(quota);
+        if (unavailable)
+        {
+            panel.Children.Add(TileText(QuotaSupportMessage(quota), 12, Ui.Muted));
+            if (Uri.TryCreate(quota?.Support?.ActionUrl, UriKind.Absolute, out var actionUri) && actionUri.Scheme == Uri.UriSchemeHttps)
+                panel.Children.Add(Ui.Button("View quota access guidance", async () => await OpenProviderLinkAsync(actionUri)));
+            return panel;
+        }
+        var percent = QuotaUsedPercent(quota);
         var lastKnown = quota is not null && LastKnownQuota(quota);
         var heading = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 10 };
         heading.Children.Add(TileText(QuotaWindowLabel(quota), 12));
         var value = percent is { } used ? $"{BudgetNumber(used)}% used" : unavailable ? "Not available"
-            : quota is null ? "No quota snapshot" : "Percentage not available";
+            : ReportedRemaining(quota) is { } balance ? BudgetAmount(balance, quota!.Unit) + " left"
+            : quota is null ? "No quota snapshot" : "Usage";
         var metric = TileText(value, 12, lastKnown ? Ui.Warning : percent >= 100 ? Ui.Danger : Ui.Ink);
         metric.FontWeight = FontWeight.Medium;
         Grid.SetColumn(metric, 1); heading.Children.Add(metric);
         panel.Children.Add(heading);
-        var remaining = !unavailable && ValidAmount(quota?.Remaining) is { } amount ? BudgetAmount(amount, quota!.Unit) + " left"
+        var remaining = !unavailable && ReportedRemaining(quota) is { } amount ? BudgetAmount(amount, quota!.Unit) + " left"
             : percent is { } consumed ? $"{BudgetNumber(100 - consumed)}% left"
             : unavailable ? "Remaining not available" : "Remaining not supplied";
         var resetText = QuotaResetText(quota, unavailable);
@@ -167,8 +175,8 @@ public sealed partial class MainWindow
         var amounts = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 10 };
         amounts.Children.Add(TileText(remaining, 11, Ui.Muted));
         var resetLabel = TileText(resetText, 11, quota is not null && QuotaResetOverdue(quota) ? Ui.Warning : Ui.Muted);
-        Grid.SetColumn(resetLabel, 1); amounts.Children.Add(resetLabel);
-        panel.Children.Add(amounts);
+        if (quota?.ResetsAt is not null) { Grid.SetColumn(resetLabel, 1); amounts.Children.Add(resetLabel); }
+        if (quota?.Remaining is not null || percent is not null || quota?.ResetsAt is not null) panel.Children.Add(amounts);
         if (!unavailable && quota is not null && !PercentUnit(quota.Unit))
         {
             if (ValidAmount(quota.Used) is { } amountUsed)
@@ -189,9 +197,11 @@ public sealed partial class MainWindow
             // are supplementary context and remain available in local details.
             if (options.Level != InformationLevel.Barebones || !string.IsNullOrWhiteSpace(state))
             {
-                var note = TileText((string.IsNullOrWhiteSpace(state) ? "" : state + " · ") + freshness, 10, lastKnown ? Ui.Warning : Ui.Muted);
+                var source = Uri.TryCreate(quota.Source, UriKind.Absolute, out var sourceUri) && sourceUri.Host.Length > 0 ? sourceUri.Host : quota.Source;
+                var note = TileText((string.IsNullOrWhiteSpace(state) ? "" : state + " · ") + freshness + " · Source " + source, 10, lastKnown ? Ui.Warning : Ui.Muted);
                 ToolTip.SetTip(note, $"Last successful quota update: {quota.LastSuccessAt?.ToLocalTime():yyyy-MM-dd HH:mm:ss zzz}");
                 panel.Children.Add(note);
+                if (quota.DataAsOf is { } dataAsOf) panel.Children.Add(TileText("Data as of " + dataAsOf.ToLocalTime().ToString("dd MMM · HH:mm", CultureInfo.CurrentCulture), 10, Ui.Muted));
             }
         }
         if (quota is not null && !string.IsNullOrWhiteSpace(quota.Error))

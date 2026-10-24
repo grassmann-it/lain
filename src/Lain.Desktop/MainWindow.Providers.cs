@@ -77,23 +77,23 @@ public sealed partial class MainWindow
         _editing = true;
         _loginVisible = false;
         _actions.Clear();
-        _providerOptionalSettings = null;
-        _providerTerms = null;
+        _providerOptionalSettings = _providerTerms = null;
         _providerOptionalOverride = _providerTermsOverride = false;
         _workspace.Offset = default;
-        var name = Ui.Input($"My {provider.Name} account");
-        var route = new ComboBox { ItemsSource = provider.Routes.Select(item => $"{item.Name} · {item.Protocol}").ToArray(), PlaceholderText = "Choose a connection / API endpoint", HorizontalAlignment = HorizontalAlignment.Stretch };
-        var billing = new ComboBox { PlaceholderText = "Choose an access / billing plan", HorizontalAlignment = HorizontalAlignment.Stretch };
-        var endpoint = Ui.Input(hint: "Derived from the selected connection and account settings");
-        endpoint.IsReadOnly = true;
-        var secretFields = provider.Credentials.Where(field => field.Secret).ToArray();
-        if (secretFields.Length != 1)
+        var connections = provider.Connections ?? [];
+        var secretFields = provider.Credentials.Where(field => field.Secret && field.Required).ToArray();
+        if (secretFields.Length != 1 || connections.Length == 0)
         {
             _page.Content = Ui.Stack(Heading($"Set up {provider.Name}", "This provider needs a credential flow that is not prepared in this account form."),
                 Ui.Text("Review the official access requirements before returning with credentials.", 13, Ui.Muted),
+                Ui.Button("Official credential setup", async () => await OpenProviderLinkAsync(new Uri(provider.AccountUrl))),
                 Ui.Button("Back to Discover providers", ShowProviderCatalog));
             return;
         }
+        var name = Ui.Input(AccountNameSuggestions.Suggest(provider.Id, provider.DefaultAccountName ?? provider.Name, configuration.Accounts.Select(account => account.Name)));
+        var connection = new ComboBox { ItemsSource = connections.Select(item => item.Name).ToArray(), PlaceholderText = "Choose an account connection", HorizontalAlignment = HorizontalAlignment.Stretch };
+        var billing = new ComboBox { PlaceholderText = "Choose your access / billing plan", HorizontalAlignment = HorizontalAlignment.Stretch };
+        var endpoint = Ui.Input(hint: "Derived from the account connection and scope"); endpoint.IsReadOnly = true;
         var secret = Ui.Input(hint: secretFields[0].Label); secret.PasswordChar = '●';
         var settings = new Dictionary<string, (ProviderCredentialFieldDto Field, Control Input)>(StringComparer.Ordinal);
         var settingRows = new StackPanel { Spacing = 6 };
@@ -105,45 +105,51 @@ public sealed partial class MainWindow
             var rows = field.Required ? settingRows : optionalRows;
             rows.Children.Add(AccountFormRow(field.Label + (field.Required ? " *" : ""), input));
             AutomationProperties.SetName(input, field.Label);
-            AutomationProperties.SetHelpText(input, field.Required ? "Required account setting" : "Optional account setting");
+            AutomationProperties.SetHelpText(input, field.Required ? "Required account scope setting" : "Optional account scope setting");
             if (!string.IsNullOrWhiteSpace(field.Help)) rows.Children.Add(Ui.Text(field.Help, 11, Ui.Muted));
         }
-        var routeNotes = Ui.Text("Choose a connection to review its protocol, billing plans and restrictions.", 12, Ui.Muted);
-        var form = AccountForm($"Set up {provider.Name}", "Save your own credentials locally. Saving does not verify provider access or enable free-only routing.",
-            AccountFormRow("Display name", name), AccountFormRow("Connection / API endpoint", route), AccountFormRow("Billing plan", billing));
-        form.Children.Add(routeNotes);
+        var form = AccountForm($"Set up {provider.Name}", "Add credentials for your provider account. Choose models now or later without entering the key again.", AccountFormRow("Display name", name));
+        form.Children.Add(Ui.Button("Open official credential page", async () => await OpenProviderLinkAsync(new Uri(provider.AccountUrl))));
+        foreach (var step in provider.SetupSteps)
+        {
+            form.Children.Add(Ui.Text(step.Title + " · " + step.Description, 11, Ui.Muted));
+            if (Uri.TryCreate(step.Url, UriKind.Absolute, out var link) && link.Scheme == Uri.UriSchemeHttps)
+                form.Children.Add(Ui.Button(step.Title, async () => await OpenProviderLinkAsync(link)));
+        }
+        if (connections.Length > 1) form.Children.Add(AccountFormRow("Account connection", connection));
+        form.Children.Add(AccountFormRow("Billing plan", billing));
+        form.Children.Add(Ui.Text("Select the plan on your account. No entitlement, balance or live access has been verified.", 11, Ui.Muted));
         form.Children.Add(settingRows);
         if (optionalRows.Children.Count > 0)
         {
-            _providerOptionalSettings = new Expander
-            {
-                Header = "Optional connection settings", Content = optionalRows,
-                HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch
-            };
-            AutomationProperties.SetName(_providerOptionalSettings, "Optional connection settings");
-            _providerOptionalSettings.PropertyChanged += (_, change) =>
-            {
-                if (change.Property == Expander.IsExpandedProperty && !_applyingProviderPresentation) _providerOptionalOverride = true;
-            };
+            _providerOptionalSettings = new Expander { Header = "Optional account settings", Content = optionalRows, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+            AutomationProperties.SetName(_providerOptionalSettings, "Optional account settings");
+            _providerOptionalSettings.PropertyChanged += (_, change) => { if (change.Property == Expander.IsExpandedProperty && !_applyingProviderPresentation) _providerOptionalOverride = true; };
             form.Children.Add(_providerOptionalSettings);
         }
-        form.Children.Add(AccountFormRow("Base URL", endpoint));
         form.Children.Add(AccountFormRow(secretFields[0].Label, secret));
+        if (provider.MonitorAccessOptions is { Length: > 0 })
+        {
+            form.Children.Add(Ui.Text("Optional monitoring access can be attached to this same account after saving, from account details. The inference key does not need to be entered again.", 11, Ui.Muted));
+            foreach (var option in provider.MonitorAccessOptions)
+                if (!string.IsNullOrWhiteSpace(option.Description)) form.Children.Add(Ui.Text(option.Description, 11, Ui.Muted));
+        }
         if (!string.IsNullOrWhiteSpace(secretFields[0].Help)) form.Children.Add(Ui.Text(secretFields[0].Help!, 11, Ui.Muted));
+        var modelRows = new StackPanel { Spacing = 6 };
+        modelRows.Children.Add(Ui.Text("No models selected by default. Saving only the account lets you choose compatible models later.", 11, Ui.Muted));
+        var modelOptions = new StackPanel { Spacing = 6 };
+        modelRows.Children.Add(modelOptions);
+        var models = new Expander { Header = "Choose models (optional)", Content = modelRows, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+        AutomationProperties.SetName(models, "Choose models (optional)");
+        form.Children.Add(models);
         var restrictionText = Ui.Text(string.Join("\n\n", provider.Restrictions), 11, Ui.Muted);
-        var restrictions = new Expander
-        {
-            Header = "Provider terms and connection details", HorizontalAlignment = HorizontalAlignment.Stretch,
-            HorizontalContentAlignment = HorizontalAlignment.Stretch, Content = restrictionText
-        };
-        AutomationProperties.SetName(restrictions, "Provider terms and connection details");
-        _providerTerms = restrictions;
-        restrictions.PropertyChanged += (_, change) =>
-        {
-            if (change.Property == Expander.IsExpandedProperty && !_applyingProviderPresentation) _providerTermsOverride = true;
-        };
-        form.Children.Add(restrictions);
-        form.Children.Add(Ui.Text("Saving credentials leaves the applied proxy policy unchanged. A documented free plan does not enable strict free-only routing; check Profiles for the applied policy.", 12, Ui.Muted));
+        var technical = Ui.Stack(AccountFormRow("Base URL", endpoint), restrictionText);
+        _providerTerms = new Expander { Header = "Technical details and provider terms", Content = technical, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+        AutomationProperties.SetName(_providerTerms, "Technical details and provider terms");
+        _providerTerms.PropertyChanged += (_, change) => { if (change.Property == Expander.IsExpandedProperty && !_applyingProviderPresentation) _providerTermsOverride = true; };
+        form.Children.Add(_providerTerms);
+        form.Children.Add(Ui.Text("Saving does not refresh quota, test inference or change the applied routing policy. A documented free plan does not enable strict free-only routing.", 12, Ui.Muted));
+        var modelChecks = new Dictionary<string, CheckBox>(StringComparer.Ordinal);
         string[] planIds = [];
         Dictionary<string, string> CurrentSettings()
         {
@@ -158,40 +164,47 @@ public sealed partial class MainWindow
         }
         void UpdateEndpoint()
         {
-            if (route.SelectedIndex < 0 || route.SelectedIndex >= provider.Routes.Length) { endpoint.Text = ""; return; }
+            if (connection.SelectedIndex < 0 || connection.SelectedIndex >= connections.Length) { endpoint.Text = ""; return; }
             var values = CurrentSettings();
             static string Normalize(string key) => new(key.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
-            endpoint.Text = Regex.Replace(provider.Routes[route.SelectedIndex].BaseUrl, "\\{([A-Za-z0-9_]+)\\}", match =>
-                values.FirstOrDefault(pair => Normalize(pair.Key) == Normalize(match.Groups[1].Value)).Value ?? match.Value);
+            endpoint.Text = Regex.Replace(connections[connection.SelectedIndex].BaseUrl, "\\{([A-Za-z0-9_]+)\\}", match => values.FirstOrDefault(pair => Normalize(pair.Key) == Normalize(match.Groups[1].Value)).Value ?? match.Value);
         }
-        route.SelectionChanged += (_, _) =>
+        void UpdateModels()
         {
-            if (route.SelectedIndex < 0 || route.SelectedIndex >= provider.Routes.Length) return;
-            var selected = provider.Routes[route.SelectedIndex];
-            planIds = selected.BillingPlanIds;
+            modelChecks.Clear(); modelOptions.Children.Clear();
+            if (connection.SelectedIndex < 0 || billing.SelectedIndex < 0) return;
+            var selected = connections[connection.SelectedIndex];
+            var plan = planIds[billing.SelectedIndex];
+            foreach (var route in provider.Routes.Where(route => selected.ProviderRouteIds.Contains(route.Id, StringComparer.Ordinal) && route.BillingPlanIds.Contains(plan, StringComparer.Ordinal)))
+            {
+                var check = new CheckBox { Content = route.Name, IsChecked = false };
+                AutomationProperties.SetName(check, "Add model " + route.Name);
+                ToolTip.SetTip(check, route.Model);
+                modelChecks.Add(route.Id, check); modelOptions.Children.Add(check);
+            }
+        }
+        connection.SelectionChanged += (_, _) =>
+        {
+            if (connection.SelectedIndex < 0 || connection.SelectedIndex >= connections.Length) return;
+            planIds = connections[connection.SelectedIndex].BillingPlanIds;
             billing.ItemsSource = planIds.Select(id => provider.BillingPlans.FirstOrDefault(plan => plan.Id == id) is { } plan ? $"{plan.Name} · {ProviderAccessLabel(plan.Kind)}" : id).ToArray();
             billing.SelectedIndex = -1;
-            routeNotes.Text = string.Join("\n", new[] { $"{selected.Model} · {selected.Protocol}", "Choose the plan for this connection explicitly. No account balance or live access has been verified.", provider.Summary });
-            restrictionText.Text = string.Join("\n\n", provider.Restrictions.Concat(selected.Restrictions ?? []).Distinct(StringComparer.Ordinal));
-            UpdateEndpoint();
+            UpdateEndpoint(); UpdateModels();
         };
-        billing.SelectionChanged += (_, _) => UpdateEndpoint();
-        foreach (var item in settings.Values)
-            if (item.Input is TextBox text) text.TextChanged += (_, _) => UpdateEndpoint();
+        billing.SelectionChanged += (_, _) => { UpdateEndpoint(); UpdateModels(); };
+        foreach (var item in settings.Values) if (item.Input is TextBox text) text.TextChanged += (_, _) => UpdateEndpoint();
+        connection.SelectedIndex = connections.Length == 1 ? 0 : -1;
         form.Children.Add(Ui.Row(Action("Add account", async () =>
         {
             if (string.IsNullOrWhiteSpace(name.Text) || string.IsNullOrWhiteSpace(secret.Text)) throw new InvalidOperationException("Enter an account name and your own API credential.");
-            if (route.SelectedIndex < 0 || route.SelectedIndex >= provider.Routes.Length) throw new InvalidOperationException("Choose a connection / API endpoint.");
-            if (billing.SelectedIndex < 0 || billing.SelectedIndex >= planIds.Length) throw new InvalidOperationException("Choose the access or billing plan you intend to use.");
+            if (connection.SelectedIndex < 0 || connection.SelectedIndex >= connections.Length) throw new InvalidOperationException("Choose an account connection.");
+            if (billing.SelectedIndex < 0 || billing.SelectedIndex >= planIds.Length) throw new InvalidOperationException("Choose the access or billing plan on your account.");
             foreach (var item in settings.Values.Where(item => item.Field.Required))
-                if ((item.Input is TextBox text && string.IsNullOrWhiteSpace(text.Text)) || (item.Input is CheckBox check && check.IsChecked != true))
-                    throw new InvalidOperationException($"Enter the required {item.Field.Label}.");
-            if (!Uri.TryCreate(endpoint.Text, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || endpoint.Text!.Contains('{'))
-                throw new InvalidOperationException("Complete the account settings to resolve the official HTTPS endpoint.");
-            _configuration = await _client.AddApiAccountAsync(configuration.Revision,
-                new AddApiAccountRequest(name.Text.Trim(), provider.Id, secret.Text, endpoint.Text.Trim(), provider.Routes[route.SelectedIndex].Id, CurrentSettings()), _lifetime.Token);
-            secret.Text = "";
-            _section = "Accounts";
+                if ((item.Input is TextBox text && string.IsNullOrWhiteSpace(text.Text)) || (item.Input is CheckBox check && check.IsChecked != true)) throw new InvalidOperationException($"Enter the required {item.Field.Label}.");
+            if (!Uri.TryCreate(endpoint.Text, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || endpoint.Text!.Contains('{')) throw new InvalidOperationException("Complete the account scope settings to resolve the official HTTPS endpoint.");
+            _configuration = await _client.AddApiAccountAsync(configuration.Revision, new(name.Text.Trim(), provider.Id, secret.Text, endpoint.Text.Trim(), Settings: CurrentSettings(),
+                ProviderConnectionId: connections[connection.SelectedIndex].Id, SelectedModelRouteIds: modelChecks.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key).ToArray()), _lifetime.Token);
+            secret.Text = ""; _section = "Accounts";
         }, "Account saved. Provider access and live budgets remain unverified."), Ui.Button("Cancel", () => { secret.Text = ""; _editing = false; Render(); })));
         _providerForm = form;
         SetProviderPresentation(PresentationFor("Accounts"));

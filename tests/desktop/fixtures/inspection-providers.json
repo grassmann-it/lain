@@ -158,7 +158,21 @@
       ],
       "adapterState": "available",
       "liveVerification": "not_tested",
-      "quotaSupport": "unsupported"
+      "quotaSupport": "unsupported",
+      "connections": [
+        {
+          "id": "nvidia-build-account-1",
+          "name": "NVIDIA Build account",
+          "baseUrl": "https://integrate.api.nvidia.com/v1",
+          "protocol": "openai-chat",
+          "billingPlanIds": [
+            "developer"
+          ],
+          "providerRouteIds": [
+            "nvidia-build:step-5-preview"
+          ]
+        }
+      ]
     },
     {
       "id": "inception",
@@ -282,7 +296,7 @@
           "FreeOnlyEligible": false,
           "FreeOnlyEnforcement": "No independently verified billing cutoff; trial credit is not a free route.",
           "Restrictions": [
-            "Temperature is documented as 0.5\u20131.0. Streaming has not been verified for this route."
+            "Temperature is documented as 0.5–1.0. Streaming has not been verified for this route."
           ]
         }
       ],
@@ -313,7 +327,22 @@
       ],
       "adapterState": "prepared",
       "liveVerification": "not_tested",
-      "quotaSupport": "unsupported"
+      "quotaSupport": "unsupported",
+      "connections": [
+        {
+          "id": "inception-account-1",
+          "name": "Inception Mercury account",
+          "baseUrl": "https://api.inceptionlabs.ai/v1",
+          "protocol": "openai-chat",
+          "billingPlanIds": [
+            "new-account-trial",
+            "payg"
+          ],
+          "providerRouteIds": [
+            "inception-mercury-3"
+          ]
+        }
+      ]
     }
   ]
 }
