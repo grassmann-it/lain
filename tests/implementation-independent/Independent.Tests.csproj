@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <ProductRoot Condition="'$(ProductRoot)' == ''">../..</ProductRoot>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="$(ProductRoot)/src/Lain.Host/Lain.Host.csproj" /></ItemGroup>
+</Project>
