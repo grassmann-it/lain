@@ -77,6 +77,27 @@ public sealed class MiMoConsoleLoginAdapter(IMiMoConsoleBrowser browser, TimePro
         // their browser, and future reads request explicit reconnection.
         if (!attempt.Prepared) await browser.CloseAsync(attempt.Profile, true, ct);
     }
+    public async Task TargetRemovedAsync(LoginOperationContext context, PreparedLoginCredential? prepared, CancellationToken ct)
+    {
+        string? profile = null;
+        if (attempts.TryGetValue(context.OperationId, out var attempt))
+        { Same(attempt.Context, context); profile = attempt.Profile; }
+        else if (prepared is { Owner: "console-browser" } && context.Request.Provider == Provider && context.Request.Method == Method)
+        {
+            // A recovery-required operation may already have released its adapter
+            // bookkeeping. Its saved descriptor still identifies our own browser only.
+            using var document = JsonDocument.Parse(prepared.PrivateJson);
+            var root = document.RootElement;
+            if (root.TryGetProperty("kind", out var kind) && kind.GetString() == "mimo-console-session"
+                && root.TryGetProperty("profileReference", out var reference)) profile = reference.GetString();
+        }
+        if (profile is not null)
+        {
+            if (profile.Length != 32 || profile.Any(c => !char.IsAsciiHexDigit(c))) throw new InvalidDataException("Invalid owned MiMo profile reference.");
+            await browser.CloseAsync(profile, true, ct);
+        }
+        attempts.TryRemove(context.OperationId, out _);
+    }
     private void Validate(LoginOperationContext context)
     {
         if (context.Request.Provider != Provider || context.Request.Method != Method || context.Request.Purposes.Length != 1 || context.Request.Purposes[0] != "quota"

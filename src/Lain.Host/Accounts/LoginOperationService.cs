@@ -26,6 +26,9 @@ public interface IAccountLoginAdapter
     Task<LoginAdapterResult> StatusAsync(LoginOperationContext context, CancellationToken ct);
     Task CancelAsync(LoginOperationContext context, CancellationToken ct);
     Task ReleaseAsync(LoginOperationContext context, CancellationToken ct) => Task.CompletedTask;
+    // The explicit target no longer exists, so this result cannot be adopted. Default
+    // cleanup releases local operation state only; it never revokes an external grant.
+    Task TargetRemovedAsync(LoginOperationContext context, PreparedLoginCredential? prepared, CancellationToken ct) => ReleaseAsync(context, ct);
 }
 public sealed record LoginOperationContext(string OperationId, string AccountId, long Revision, long AccountGeneration,
     ConnectAccountRequest Request, DateTimeOffset ExpiresAt)
@@ -73,6 +76,8 @@ public sealed class LoginOperationService : IAsyncDisposable
         public DateTimeOffset CreatedAt = createdAt;
         public DateTimeOffset? FinishedAt;
         public bool Invalidated;
+        public bool TargetRemoved;
+        public bool TargetCleanupCompleted;
         public ITimer? Expiry;
         public CredentialHandleDto? Prepared;
         public PreparedLoginCredential? PreparedCredential;
@@ -117,15 +122,24 @@ public sealed class LoginOperationService : IAsyncDisposable
                 }
                 if (CredentialRecoveryService.FindRequest(secrets.Generations, key, fingerprint) is { } recovered)
                 {
+                    if (recovered.State == "target-removed" && operations.Values.Count(NeedsActiveSlot) >= MaximumActiveOperations)
+                        throw new InvalidOperationException("Too many active connection operations. Finish local cleanup before retrying recovery.");
                     var status = new LoginDto(recovered.OperationId, recovered.Request.Provider,
-                        recovered.State == "published" ? "completed" : "recovery-required", Method: recovered.Request.Method,
+                        recovered.State == "published" ? "completed" : recovered.State == "target-removed" ? "cancelled" : "recovery-required", Method: recovered.Request.Method,
                         Purposes: recovered.Request.Purposes, AccountId: recovered.AccountId,
-                        NextAction: recovered.State == "published" ? null : "review-recovery");
-                    operations[recovered.OperationId] = new(status, null, clock.GetUtcNow()) { FinishedAt = clock.GetUtcNow() };
-                    return Task.FromResult(status);
+                        NextAction: recovered.State is "published" or "target-removed" ? null : "review-recovery");
+                    if (recovered.State == "target-removed") status = status with { Error = "Target account was removed. Connect a new account." };
+                    var recoveredContext = new LoginOperationContext(recovered.OperationId, recovered.AccountId, recovered.Revision,
+                        recovered.AccountGeneration, recovered.Request, DateTimeOffset.MaxValue);
+                    var restored = new Operation(status, recoveredContext, clock.GetUtcNow())
+                    { FinishedAt = clock.GetUtcNow(), Prepared = recovered.Handle, TargetRemoved = recovered.State == "target-removed", RequestFingerprint = fingerprint };
+                    operations[recovered.OperationId] = restored;
+                    idempotency[key] = recovered.OperationId;
+                    restored.BeginTask = restored.TargetRemoved ? CompleteRecoveredTargetCleanupAsync(restored) : Task.FromResult(status);
+                    return restored.BeginTask;
                 }
             }
-            if (operations.Values.Count(o => !Terminal(o.Status.State) || o.PendingPersistence) >= MaximumActiveOperations)
+            if (operations.Values.Count(NeedsActiveSlot) >= MaximumActiveOperations)
                 throw new InvalidOperationException("Too many active connection operations. Finish or cancel an operation first.");
             var id = Guid.NewGuid().ToString("N");
             var context = accounts.ReserveConnect(revision, request, id, clock.GetUtcNow() + InteractiveLifetime);
@@ -156,7 +170,7 @@ public sealed class LoginOperationService : IAsyncDisposable
         lock (gate)
         {
             ThrowIfDisposed(); Prune();
-            if (operations.Values.Count(o => !Terminal(o.Status.State) || o.PendingPersistence) >= MaximumActiveOperations)
+            if (operations.Values.Count(NeedsActiveSlot) >= MaximumActiveOperations)
                 throw new InvalidOperationException("Too many active connection operations.");
             var id = Guid.NewGuid().ToString("N");
             operation = new(new(id, provider, "preparing", ExpiresAt: clock.GetUtcNow() + InteractiveLifetime), null, clock.GetUtcNow());
@@ -188,8 +202,12 @@ public sealed class LoginOperationService : IAsyncDisposable
         finally
         {
             operation.Gate.Release();
-            if (operation.Status.State is "failed" or "cancelled" or "expired") await CleanupAdapterAsync(operation);
-            if (Terminal(operation.Status.State)) await ReleaseAdapterAsync(operation);
+            if (operation.TargetRemoved) await CleanupRemovedTargetAsync(operation);
+            else
+            {
+                if (operation.Status.State is "failed" or "cancelled" or "expired") await CleanupAdapterAsync(operation);
+                if (Terminal(operation.Status.State)) await ReleaseAdapterAsync(operation);
+            }
         }
     }
 
@@ -217,8 +235,12 @@ public sealed class LoginOperationService : IAsyncDisposable
         finally
         {
             operation.Gate.Release();
-            if (operation.Status.State is "failed" or "cancelled" or "expired") await CleanupAdapterAsync(operation);
-            if (Terminal(operation.Status.State)) await ReleaseAdapterAsync(operation);
+            if (operation.TargetRemoved) await CleanupRemovedTargetAsync(operation);
+            else
+            {
+                if (operation.Status.State is "failed" or "cancelled" or "expired") await CleanupAdapterAsync(operation);
+                if (Terminal(operation.Status.State)) await ReleaseAdapterAsync(operation);
+            }
         }
     }
 
@@ -254,6 +276,38 @@ public sealed class LoginOperationService : IAsyncDisposable
         await CleanupAdapterAsync(operation);
         await ReleaseAdapterAsync(operation);
         return operation.Status;
+    }
+
+    /// <summary>Invalidate only operations reconnecting an account whose removal was persisted.</summary>
+    public async Task CancelRemovedAccountAsync(string accountId, CancellationToken? budget = null)
+    {
+        if (configuration?.Snapshot.Accounts.Any(a => a.Id == accountId) == true) return;
+        Operation[] selected;
+        lock (gate)
+        {
+            if (disposed) return;
+            selected = operations.Values.Where(o => o.Context is { } context && context.AccountId == accountId
+                && context.Request.AccountId == accountId && o.Status.State != "completed").ToArray();
+            foreach (var operation in selected)
+                lock (operation.PublicationGate)
+                {
+                    operation.TargetRemoved = true;
+                    operation.Invalidated = true;
+                    Finish(operation, "cancelled");
+                }
+        }
+        // Invalidate every matching operation before awaiting any provider-specific local
+        // cleanup. A late checkpoint remains private and cannot regain publication rights.
+        foreach (var operation in selected)
+        {
+            try { operation.Cancellation.Cancel(); }
+            catch (Exception error) when (error is not OutOfMemoryException and not StackOverflowException) { }
+            try { if (operation.Context is { } context) CredentialRecoveryService.MarkTargetRemoved(secrets!.Generations, context); }
+            catch (Exception error) when (error is not OutOfMemoryException and not StackOverflowException)
+            { /* Cleanup retries the durable invalidation before deleting any owned profile. */ }
+        }
+        using var timeout = budget is null ? new CancellationTokenSource(TimeSpan.FromSeconds(5)) : null;
+        await Task.WhenAll(selected.Select(operation => CleanupRemovedTargetAsync(operation, budget ?? timeout!.Token)));
     }
 
     private async Task<LoginDto> AcceptAsync(Operation operation, LoginAdapterResult result, CancellationToken ct)
@@ -345,6 +399,7 @@ public sealed class LoginOperationService : IAsyncDisposable
                 operation.Prepared = secrets!.Generations.Prepare(context.AccountId, durable, context.OperationId,
                     operation.Prepared?.Id, operation.Prepared is null ? 1 : checked(operation.Prepared.Generation + 1));
                 operation.PreparedCredential = durable;
+                if (operation.TargetRemoved) operation.TargetCleanupCompleted = false;
             }
             CredentialRecoveryService.SavePrepared(secrets!.Generations, context, operation.Prepared!, durable.RemoteId);
             operation.PendingPersistence = false;
@@ -368,6 +423,7 @@ public sealed class LoginOperationService : IAsyncDisposable
         lock (operation.PublicationGate)
         {
             if (operation.Status.State == "completed") return operation.Status;
+            if (operation.TargetRemoved) { state = "cancelled"; error = "Target account was removed. Connect a new account."; }
             operation.Status = operation.Status with { State = state, Url = null, Resources = null, Error = error,
                 NextAction = state == "recovery-required" ? "review-recovery" : null };
             operation.FinishedAt ??= clock.GetUtcNow();
@@ -419,13 +475,45 @@ public sealed class LoginOperationService : IAsyncDisposable
         }
         catch (Exception error) when (error is not OutOfMemoryException and not StackOverflowException) { }
     }
+    private async Task CleanupRemovedTargetAsync(Operation operation, CancellationToken? budget = null)
+    {
+        using var timeout = budget is null ? new CancellationTokenSource(TimeSpan.FromSeconds(5)) : null;
+        var ct = budget ?? timeout!.Token;
+        try
+        {
+            await operation.Gate.WaitAsync(ct);
+            try
+            {
+                if (!operation.TargetRemoved || operation.TargetCleanupCompleted) return;
+                if (operation.Context is { } context && adapters.TryGetValue((context.Request.Provider, context.Request.Method), out var adapter))
+                {
+                    CredentialRecoveryService.MarkTargetRemoved(secrets!.Generations, context);
+                    var prepared = operation.PendingCredential ?? operation.PreparedCredential;
+                    if (prepared is null && operation.Prepared is { } handle)
+                        prepared = new(handle.Owner, handle.Purposes, handle.Binding, secrets.Generations.Read(context.AccountId, handle).PrivateJson, handle.ExpiresAt);
+                    await adapter.TargetRemovedAsync(context, prepared, ct);
+                }
+                operation.TargetCleanupCompleted = true;
+                operation.Released = true;
+            }
+            finally { operation.Gate.Release(); }
+        }
+        catch (Exception error) when (error is not OutOfMemoryException and not StackOverflowException)
+        { /* Keep the active cleanup slot; polling or shutdown retries after a late result. */ }
+    }
+    private async Task<LoginDto> CompleteRecoveredTargetCleanupAsync(Operation operation)
+    {
+        await CleanupRemovedTargetAsync(operation);
+        return operation.Status;
+    }
     private Operation Find(string id)
     {
         lock (gate) { ThrowIfDisposed(); Prune(); return operations.GetValueOrDefault(id) ?? throw new KeyNotFoundException("Login operation not found."); }
     }
     private void Prune()
     {
-        var terminal = operations.Where(p => p.Value.FinishedAt is not null && !p.Value.PendingPersistence).OrderByDescending(p => p.Value.FinishedAt).ToArray();
+        var terminal = operations.Where(p => p.Value.FinishedAt is not null && !p.Value.PendingPersistence
+            && (!p.Value.TargetRemoved || p.Value.TargetCleanupCompleted)).OrderByDescending(p => p.Value.FinishedAt).ToArray();
         foreach (var pair in terminal.Where((p, index) => index >= MaximumTerminalOperations || p.Value.FinishedAt + TerminalLifetime <= clock.GetUtcNow()))
         {
             operations.Remove(pair.Key); pair.Value.Expiry?.Dispose();
@@ -433,6 +521,8 @@ public sealed class LoginOperationService : IAsyncDisposable
         }
     }
     private void ThrowIfDisposed() { if (disposed) throw new ObjectDisposedException(nameof(LoginOperationService)); }
+    private static bool NeedsActiveSlot(Operation operation) => !Terminal(operation.Status.State) || operation.PendingPersistence
+        || operation.TargetRemoved && !operation.TargetCleanupCompleted;
     private static bool Terminal(string state) => state is "completed" or "cancelled" or "expired" or "failed" or "unsupported" or "recovery-required";
     private static void ValidateUrl(string? url)
     {
@@ -454,7 +544,8 @@ public sealed class LoginOperationService : IAsyncDisposable
                     try { PrepareResult(operation, credential); } catch (IOException) { }
             }
             finally { operation.Gate.Release(); }
-            await ReleaseAdapterAsync(operation);
+            if (operation.TargetRemoved) await CleanupRemovedTargetAsync(operation);
+            else await ReleaseAdapterAsync(operation);
         }));
     }
 }

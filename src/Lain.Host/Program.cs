@@ -181,7 +181,14 @@ app.Use(async (context, next) => {
   if (mutation) mutations.Release();
   // Includes successful login polling/resource selection and recovery publication.
   // Browser/owner cleanup happens after persistence and outside the shared CAS gate.
-  if (beforeAccounts is not null) await quotaConnectionCleanup.AfterPublicationAsync(beforeAccounts);
+  if (beforeAccounts is not null)
+  {
+   using var cleanupBudget = new CancellationTokenSource(QuotaConnectionCleanup.CleanupBudget);
+   var remainingAccounts = repository.Snapshot.Accounts.Select(account => account.Id).ToHashSet(StringComparer.Ordinal);
+   foreach (var removed in beforeAccounts.Accounts.Where(account => !remainingAccounts.Contains(account.Id)))
+    await app.Services.GetRequiredService<LoginOperationService>().CancelRemovedAccountAsync(removed.Id, cleanupBudget.Token);
+   await quotaConnectionCleanup.AfterPublicationAsync(beforeAccounts, cleanupBudget.Token);
+  }
  }
 });
 var runtimeManifest = Path.Combine(paths.Proxy, "runtime.json");

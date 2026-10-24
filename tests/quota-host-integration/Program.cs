@@ -109,6 +109,104 @@ try
     await cleanup.AfterPublicationAsync(beforeDelete);
     Check(!browser.Active.Contains(onlyProfile), "account removal closes selected owned session");
 
+    AccountDto AddPendingTarget(string id)
+    {
+        var target = legacy with { Id = id, Binding = repository.Snapshot.Accounts.Single(a => a.Id == legacy.Id).Binding };
+        secrets.WriteAccount(id, "{\"kind\":\"api-key\",\"apiKey\":\"pending-fixture-inference\"}");
+        repository.Update(repository.Snapshot.Revision, state => state with { Accounts = [.. state.Accounts, target] });
+        return target;
+    }
+    async Task RemoveTarget(AccountDto target)
+    {
+        var before = repository.Snapshot;
+        accounts.Remove(before.Revision, target.Id);
+        await operations.CancelRemovedAccountAsync(target.Id);
+        await cleanup.AfterPublicationAsync(before);
+    }
+    var waitingTarget = AddPendingTarget("acct-remove-waiting");
+    var waitingLogin = await operations.BeginAsync(repository.Snapshot.Revision, request with { AccountId = waitingTarget.Id });
+    var waitingProfile = browser.LastOpened;
+    var unaffected = await operations.BeginAsync(repository.Snapshot.Revision, request);
+    var unaffectedProfile = browser.LastOpened;
+    await RemoveTarget(waitingTarget);
+    Check((await operations.StatusAsync(waitingLogin.Id)).State == "cancelled" && !browser.Active.Contains(waitingProfile), "removing target cancels waiting reconnect and closes its unpublished browser");
+    Check(browser.Active.Contains(unaffectedProfile), "target removal does not cancel another account's login");
+    Check(CredentialRecoveryService.Read(secrets.Generations, waitingLogin.Id).State == "target-removed", "waiting target removal is durably recorded");
+    await operations.CancelAsync(unaffected.Id);
+
+    var lateTarget = AddPendingTarget("acct-remove-inflight");
+    var lateLogin = await operations.BeginAsync(repository.Snapshot.Revision, request with { AccountId = lateTarget.Id });
+    var lateProfile = browser.LastOpened;
+    var usageEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var releaseUsage = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    browser.BeforeRead = (operation, _) =>
+    {
+        if (operation != ConsoleReadOperation.MiMoIndividualUsage) return Task.CompletedTask;
+        usageEntered.TrySetResult();
+        return releaseUsage.Task; // Deliberately finish a provider result after local cancellation.
+    };
+    var lateStatus = operations.StatusAsync(lateLogin.Id);
+    await usageEntered.Task;
+    var beforeLateRemoval = repository.Snapshot;
+    accounts.Remove(beforeLateRemoval.Revision, lateTarget.Id);
+    var targetCancellation = operations.CancelRemovedAccountAsync(lateTarget.Id);
+    releaseUsage.SetResult();
+    await targetCancellation;
+    Check((await lateStatus).State == "cancelled" && !browser.Active.Contains(lateProfile), "late prepared browser is closed after its target disappeared");
+    browser.BeforeRead = null;
+    await cleanup.AfterPublicationAsync(beforeLateRemoval);
+    var removedRecord = CredentialRecoveryService.Read(secrets.Generations, lateLogin.Id);
+    Check(removedRecord is { State: "target-removed", Handle: not null }, "late checkpoint retains private evidence without restoring adoption rights");
+    CredentialRecoveryService.MarkPublished(secrets.Generations, lateLogin.Id);
+    Check(CredentialRecoveryService.Read(secrets.Generations, lateLogin.Id).State == "target-removed", "late publication marker cannot resurrect a removed target");
+    repository.Update(repository.Snapshot.Revision, state => state with { Accounts = [.. state.Accounts, lateTarget] });
+    var removedAdoptionRejected = false;
+    try { new CredentialRecoveryService(repository, accounts, secrets.Generations).Adopt(repository.Snapshot.Revision, lateLogin.Id); }
+    catch (InvalidOperationException) { removedAdoptionRejected = true; }
+    Check(removedAdoptionRejected, "recreating same account ID and generation cannot adopt target-removed authorization");
+    await RemoveTarget(lateTarget);
+
+    var recoveryTarget = AddPendingTarget("acct-remove-recovery");
+    var unrecoverable = await operations.BeginAsync(repository.Snapshot.Revision, request with { AccountId = recoveryTarget.Id });
+    var releasedProfile = browser.LastOpened;
+    accounts.SetEnabled(repository.Snapshot.Revision, legacy.Id, true);
+    Check((await FinishLogin(unrecoverable)).State == "recovery-required" && browser.Active.Contains(releasedProfile), "existing target preserves ordinary late-conflict recovery");
+    await RemoveTarget(recoveryTarget);
+    Check(!browser.Active.Contains(releasedProfile) && (await operations.StatusAsync(unrecoverable.Id)).State == "cancelled", "target removal closes a prepared profile even after adapter release");
+    Check(CredentialRecoveryService.Read(secrets.Generations, unrecoverable.Id).State == "target-removed", "released recovery is permanently invalidated for removed target");
+
+    var externalTarget = new AccountDto("acct-external-grant", "External fixture", "external-fixture", true, "api-key", "unverified");
+    repository.Update(repository.Snapshot.Revision, state => state with { Accounts = [.. state.Accounts, externalTarget] });
+    var externalAdapter = new ExternalGrantFixture();
+    await using var externalOperations = new LoginOperationService(configuration: repository, accounts: accounts, secrets: secrets, accountAdapters: [externalAdapter]);
+    var externalLogin = await externalOperations.BeginAsync(repository.Snapshot.Revision, new("external-fixture", "fixture", ["quota"], AccountId: externalTarget.Id));
+    accounts.Remove(repository.Snapshot.Revision, externalTarget.Id);
+    await externalOperations.CancelRemovedAccountAsync(externalTarget.Id);
+    Check(externalAdapter.CancelCalls == 0 && externalAdapter.ReleaseCalls == 1, "default target cleanup releases local state without cancelling or revoking an issued external grant");
+    Check(CredentialRecoveryService.Read(secrets.Generations, externalLogin.Id) is { State: "target-removed", Handle: not null }, "external checkpoint evidence remains private and unadoptable");
+
+    var beforeFair = repository.Snapshot;
+    var retryTargets = Enumerable.Range(0, 9).Select(index =>
+    {
+        var id = index == 8 ? "z-healthy" : "a-poison-" + index;
+        return new AccountDto(id, id, "fixture", true, "monitor", "unverified", Credentials:
+            [new("cred-" + id, 1, "fixture-owner", ["quota"], new("fixture"))], Capabilities: [new("quota", "unverified", "cred-" + id)]);
+    }).ToArray();
+    repository.Update(beforeFair.Revision, state => state with { Accounts = [.. state.Accounts, .. retryTargets] });
+    var beforeRetryRemove = repository.Snapshot;
+    var retryIds = retryTargets.Select(account => account.Id).ToHashSet(StringComparer.Ordinal);
+    repository.Update(beforeRetryRemove.Revision, state => state with { Accounts = state.Accounts.Where(account => !retryIds.Contains(account.Id)).ToArray() });
+    var attempted = new List<string>(); var budgets = new List<CancellationToken>();
+    var fairCleanup = new QuotaConnectionCleanup(repository, [(account, ct) =>
+    {
+        attempted.Add(account.Id); budgets.Add(ct);
+        return account.Id == "z-healthy" ? Task.CompletedTask : Task.FromException(new IOException("fixture-cleanup-poison"));
+    }]);
+    await fairCleanup.AfterPublicationAsync(beforeRetryRemove);
+    Check(attempted.Count == 8 && budgets.Distinct().Count() == 1 && QuotaConnectionCleanup.CleanupBudget == TimeSpan.FromSeconds(5), "one shared five-second budget covers whole eight-item cleanup pass");
+    await fairCleanup.AfterPublicationAsync(repository.Snapshot);
+    Check(attempted[8] == "z-healthy" && fairCleanup.PendingCount == 8, "eight failing retries cannot starve ninth healthy cleanup target");
+
     // Same composition used by Host: passive source can be unavailable while the explicit
     // Enterprise monitor reads independently, and missing opt-in never calls the provider.
     var now = DateTimeOffset.UtcNow;
@@ -156,6 +254,20 @@ sealed class FixtureHttp(Func<HttpRequestMessage, HttpResponseMessage> send) : H
     public int Calls;
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) { Calls++; return Task.FromResult(send(request)); }
 }
+sealed class ExternalGrantFixture : IAccountLoginAdapter
+{
+    public string Provider => "external-fixture";
+    public string Method => "fixture";
+    public int CancelCalls, ReleaseCalls;
+    public async Task<LoginAdapterResult> BeginAsync(LoginOperationContext context, CancellationToken ct)
+    {
+        await context.CheckpointCredentialAsync!(new("external-fixture", ["quota"], new(Provider), "{\"kind\":\"api-key\",\"apiKey\":\"fixture-issued-grant\"}", PreserveForRecovery: true), ct);
+        return new("waiting");
+    }
+    public Task<LoginAdapterResult> StatusAsync(LoginOperationContext context, CancellationToken ct) => Task.FromResult(new LoginAdapterResult("waiting"));
+    public Task CancelAsync(LoginOperationContext context, CancellationToken ct) { CancelCalls++; return Task.CompletedTask; }
+    public Task ReleaseAsync(LoginOperationContext context, CancellationToken ct) { ReleaseCalls++; return Task.CompletedTask; }
+}
 sealed class FixtureBrowser : IMiMoConsoleBrowser, IAsyncDisposable
 {
     public bool Available, FailCloseOnce, Disposed;
@@ -164,6 +276,7 @@ sealed class FixtureBrowser : IMiMoConsoleBrowser, IAsyncDisposable
     public string LastOpened = "";
     public HashSet<string> Active = [];
     public List<string> Closed = [];
+    public Func<ConsoleReadOperation, CancellationToken, Task>? BeforeRead;
     public Task<string> OpenAsync(string accountId, CancellationToken ct)
     { LastOpened = (++Opens).ToString("x32", CultureInfo.InvariantCulture); Active.Add(LastOpened); return Task.FromResult(LastOpened); }
     public Task CloseAsync(string profile, bool erase, CancellationToken ct)
@@ -173,15 +286,16 @@ sealed class FixtureBrowser : IMiMoConsoleBrowser, IAsyncDisposable
         if (Active.Remove(profile)) Closed.Add(profile);
         return Task.CompletedTask;
     }
-    public Task<JsonDocument> ReadAsync(string profile, ConsoleReadOperation operation, CancellationToken ct)
+    public async Task<JsonDocument> ReadAsync(string profile, ConsoleReadOperation operation, CancellationToken ct)
     {
         if (!Active.Contains(profile)) throw new InvalidOperationException("Fixture session closed.");
         Reads++;
-        return Task.FromResult(JsonDocument.Parse(operation switch {
+        if (BeforeRead is not null) await BeforeRead(operation, ct);
+        return JsonDocument.Parse(operation switch {
             ConsoleReadOperation.MiMoIdentity => "{\"code\":0,\"data\":{\"userId\":\"fixture-user\",\"idc\":310}}",
             ConsoleReadOperation.MiMoIndividualUsage => "{\"code\":0,\"data\":{\"usage\":{\"items\":[{\"name\":\"yearly\",\"used\":25,\"limit\":100,\"percent\":0.25}]}}}",
             ConsoleReadOperation.MiMoIndividualDetail => "{\"code\":0,\"data\":{\"currentPeriodEnd\":\"2027-10-24T12:00:00Z\"}}",
-            _ => throw new InvalidOperationException("Unexpected fixture operation.") }));
+            _ => throw new InvalidOperationException("Unexpected fixture operation.") });
     }
     public async ValueTask DisposeAsync() { foreach (var profile in Active.ToArray()) await CloseAsync(profile, false, CancellationToken.None); Disposed = true; }
 }
