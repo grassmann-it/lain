@@ -59,6 +59,11 @@ public sealed partial class MainWindow
 
     private void RegisterEditor(Action rebuild, long revision)
     {
+        // New task editors start at their identity. Restoring a mounted draft
+        // remains separate and restores that draft's own scroll position.
+        _workspace.Offset = default;
+        Dispatcher.UIThread.Post(() => _workspace.Offset = default, DispatcherPriority.Loaded);
+        CloseAccountInspector(restoreFocus: false);
         _editorRevision = revision;
         _editorRebuild = rebuild;
         _displayedDraftSection = _section;
@@ -137,6 +142,7 @@ public sealed partial class MainWindow
         SetProviderPresentation(PresentationFor("Accounts"));
         SynchronizeInformationLevel();
         SynchronizeSettings();
+        UpdateNavigationDestinations();
         if (_workspace is not null)
             _workspace.Margin = PresentationFor(_section).Density == ViewDensity.Compact
                 ? new Thickness(14, 12) : new Thickness(20, 18);
@@ -179,6 +185,7 @@ public sealed partial class MainWindow
             if (section is not ("Accounts" or "Models" or "Profiles" or "Usage" or "Live" or "Providers" or "Setup" or "Service" or "Settings" or "About")) return;
             if (section == "Settings" && _section is not ("Settings" or "About"))
                 _settingsDensitySection = PrimarySection(_section);
+            CloseAccountInspector(restoreFocus: false);
             SaveCurrentPage();
             if (remember && (section != _section || target.AccountId is not null || target.RouteId is not null || target.Model is not null))
             {
@@ -271,6 +278,8 @@ public sealed partial class MainWindow
 
     private string ServiceSummary(StatusDto status)
     {
+        if (IsMonitorMode) return "Monitor · " + (status.Capabilities?.QuotaMonitoring == false ? "Quota monitoring unavailable" : "Account quotas")
+            + (HasHistory ? " · Recorded history available" : "");
         var text = status.ProxyReady ? "Proxy ready" : "Proxy " + status.State;
         // Keep operational warnings before a user-controlled, potentially long name.
         if (status.Revision != status.AppliedRevision) text += $" · Changes pending ({status.Revision} / {status.AppliedRevision})";

@@ -16,16 +16,16 @@ public sealed partial class MainWindow
         panel.Spacing = 14;
 
         var hostState = _hostAvailable ? "Host online" : status is null ? "Host unavailable" : "Host offline";
-        var proxyState = status is null ? "Proxy unknown" : status.ProxyReady ? "Proxy ready" : $"Proxy {status.State}";
+        var proxyState = IsMonitorMode ? "Monitor · no proxy configured" : status is null ? "Proxy unknown" : status.ProxyReady ? "Proxy ready" : $"Proxy {status.State}";
         if (!_hostAvailable && status is not null) proxyState = $"Last known: {proxyState}";
-        var revisionState = configuration is null ? "Unavailable" : configuration.Revision == configuration.AppliedRevision
+        var revisionState = IsMonitorMode ? $"Monitor configuration {configuration?.Revision}" : configuration is null ? "Unavailable" : configuration.Revision == configuration.AppliedRevision
             ? $"Configuration {configuration.Revision} applied"
             : $"Configuration {configuration.Revision} pending · proxy uses {configuration.AppliedRevision}";
         if (!_hostAvailable && configuration is not null) revisionState = $"Last known: {revisionState}";
         var start = Action("Start proxy", async () => { _status = await _client.ServiceAsync("start", _lifetime.Token); }, "Proxy start requested.");
         var restart = Ui.Button("Restart…", () => ConfirmProxyAction("restart"));
         var stop = Ui.Button("Stop…", () => ConfirmProxyAction("stop"));
-        start.IsEnabled = restart.IsEnabled = stop.IsEnabled = _hostAvailable;
+        start.IsEnabled = restart.IsEnabled = stop.IsEnabled = _hostAvailable && !IsMonitorMode;
         var service = new StackPanel { Spacing = 8 };
         var serviceHeader = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 16 };
         var serviceTitle = new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
@@ -35,6 +35,7 @@ public sealed partial class MainWindow
         serviceTitle.Children.Add(Ui.Text($"{hostState} · {proxyState}", 12, _hostAvailable && status?.ProxyReady == true ? Ui.Success : Ui.Muted));
         serviceHeader.Children.Add(serviceTitle);
         var serviceActions = OverviewActions(start, restart, stop);
+        serviceActions.IsVisible = !IsMonitorMode;
         serviceActions.VerticalAlignment = VerticalAlignment.Center;
         Grid.SetColumn(serviceActions, 1); serviceHeader.Children.Add(serviceActions);
         service.Children.Add(serviceHeader);
@@ -65,11 +66,11 @@ public sealed partial class MainWindow
             panel.Children.Add(OverviewNext("Connect an account", "Add an API key, authorize Codex or import a supported configuration.", "Add account", "Accounts"));
         else if (configuration is not null && !configuration.Accounts.Any(x => x.Enabled))
             panel.Children.Add(OverviewNext("Enable an account", "A route needs an enabled account to serve requests.", "Manage accounts", "Accounts"));
-        else if (configuration is { Routes.Length: 0 })
+        else if (!IsMonitorMode && configuration is { Routes.Length: 0 })
             panel.Children.Add(OverviewNext("Create a model route", "Choose an upstream model and the account that will serve it.", "Model routes", "Routes"));
-        else if (configuration is not null && !configuration.Routes.Any(x => x.Enabled))
+        else if (!IsMonitorMode && configuration is not null && !configuration.Routes.Any(x => x.Enabled))
             panel.Children.Add(OverviewNext("Enable a model route", "Enable a route before using it in a client profile.", "Model routes", "Routes"));
-        else if (configuration is { Profiles.Length: 0 })
+        else if (!IsMonitorMode && configuration is { Profiles.Length: 0 })
             panel.Children.Add(OverviewNext("Create a profile", "Select routes and export a separate configuration for your client.", "Profiles", "Profiles"));
         return panel;
     }

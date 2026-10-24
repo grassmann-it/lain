@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
+using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Lain.Client;
@@ -30,9 +31,11 @@ public sealed partial class UsageView : UserControl, IPresentationView
     private readonly TextBlock _error = Label("", Ui.Warning);
     private readonly TextBlock _filterError = Label("", Ui.Warning);
     private readonly UniformGrid _totals = new() { Columns = 4 };
+    private readonly TextBlock _reportedTotal = Label("", Muted);
+    private readonly StackPanel _reportedComponents = new() { Spacing = 3 };
     private readonly UniformGrid _tokenTotals = new() { Columns = 4 };
     private readonly Expander _tokenDetails = new() { Header = "Token details", HorizontalAlignment = HorizontalAlignment.Stretch };
-    private readonly Expander _filterDetails = new() { Header = "Filters & range", IsExpanded = true, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+    private readonly Expander _filterDetails = new() { Header = "Filters & range", IsExpanded = false, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
     private readonly Expander _sourceDetails = new() { Header = "Source & freshness", HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly Expander _historyDetails = new() { Header = "Attempt history & errors", IsExpanded = true, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
     private readonly StackPanel _layout = new() { Spacing = 12 };
@@ -113,7 +116,7 @@ public sealed partial class UsageView : UserControl, IPresentationView
         _attempts.Children.Add(Label("Waiting for attempts", Muted));
         _filterDetails.Content = new StackPanel { Spacing = 4, Children = { ranges, filters, BuildDimensionFilters(), _filterError } };
         _sourceDetails.Content = new StackPanel { Spacing = 3, Children = { _connection, _freshness } };
-        _tokenDetails.Content = _tokenTotals;
+        _tokenDetails.Content = new StackPanel { Spacing = 6, Children = { _tokenTotals, _reportedComponents } };
         _historyDetails.Content = new StackPanel { Spacing = 6, Children =
         {
             Label("25 per page · expand a row for tokens, timing, identifiers and account/model links", Muted), _attempts, paging
@@ -121,7 +124,7 @@ public sealed partial class UsageView : UserControl, IPresentationView
         _layout.Children.Add(new StackPanel { Spacing = 3, Children = { Ui.Title("Usage"), Label("Persistent activity · updates every 5 seconds", Muted) } });
         _layout.Children.Add(_error);
         _layout.Children.Add(new StackPanel { Spacing = 3, Children = { _scope, _coverage, _sourceDetails } });
-        _layout.Children.Add(UsagePanel(new StackPanel { Children = { _totals, _tokenDetails } }, 0));
+        _layout.Children.Add(UsagePanel(new StackPanel { Spacing = 4, Children = { _totals, _reportedTotal, _tokenDetails } }, 0));
         _layout.Children.Add(UsagePanel(_filterDetails));
         _layout.Children.Add(BuildAnalysisSection());
         _layout.Children.Add(UsageSection("Daily activity", "Calendar days · historical errors · unknown values stay —", new StackPanel { Spacing = 6, Children = { measure, _daily, _dailyDetails } }));
@@ -153,11 +156,11 @@ public sealed partial class UsageView : UserControl, IPresentationView
             if (!Equals(panel.Tag, "stat-strip")) panel.Padding = new Thickness(compact ? 8 : 12);
         if (levelChanged)
         {
-            PresentDetails(_filterDetails, options.Level != InformationLevel.Barebones || _filterError.IsVisible);
+            PresentDetails(_filterDetails, _filterError.IsVisible);
             PresentDetails(_historyDetails, options.Level != InformationLevel.Barebones);
             PresentDetails(_tokenDetails, options.Level == InformationLevel.Advanced);
             PresentDetails(_sourceDetails, options.Level == InformationLevel.Advanced);
-            PresentDetails(_moreFilters, options.Level == InformationLevel.Advanced);
+            PresentDetails(_moreFilters, false);
             PresentDetails(_performanceDetails, options.Level != InformationLevel.Barebones);
             PresentDetails(_dailyDetails, options.Level == InformationLevel.Advanced);
         }
@@ -478,6 +481,15 @@ public sealed partial class UsageView : UserControl, IPresentationView
         _coverage.Foreground = summary.Complete ? Muted : Ui.Warning;
         _coverage.Text += $" · observed {TimeZoneInfo.ConvertTime(summary.ObservedAt, zone):HH:mm:ss}";
         RenderTotals(summary.Totals);
+        _reportedComponents.Children.Clear();
+        _reportedTotal.IsVisible = summary.Totals.Measurements is not null;
+        if (summary.Totals.Measurements is { } measurements)
+        {
+            _reportedTotal.Text = Lain.Client.UsageDisplayFacts.Describe("Total tokens", measurements.Total)
+                + (summary.Totals.Tokens.Total is null ? " · full total unknown" : "");
+            foreach (var (name, value) in Lain.Client.UsageDisplayFacts.Components(measurements))
+                _reportedComponents.Children.Add(Label(Lain.Client.UsageDisplayFacts.Describe(name, value), Muted));
+        }
         RenderDaily(summary.Daily);
         RenderAttempts(page, zone);
         RenderUnobservedAccounts(summary, query);
@@ -672,7 +684,9 @@ public sealed partial class UsageView : UserControl, IPresentationView
                 if (dimensions.Evidence is { Length: > 0 } evidence)
                     details.Children.Add(new Expander { Header = "Attribution sources", Content = Label(string.Join("\n", evidence.Select(x => $"{x.Field} · {x.Source}" + (x.Key is null ? "" : " · " + x.Key))), Muted) });
             }
-            if (!string.IsNullOrWhiteSpace(attempt.Error)) details.Children.Add(Label(attempt.Error, Ui.Warning));
+            if (attempt.ErrorDetails is { } errorDetails)
+                details.Children.Add(Label($"Error category: {errorDetails.Category} · evidence: {errorDetails.Evidence} · next action: {errorDetails.Action}", Ui.Warning));
+            else if (!string.IsNullOrWhiteSpace(attempt.Error)) details.Children.Add(Label(attempt.Error, Ui.Warning));
             var accountLink = NavigationButton("Open account", $"Open account for attempt {attempt.Id}", new WorkspaceNavigationRequest("Accounts", AccountId: attempt.AccountId));
             var modelLink = NavigationButton("Open model", $"Open model for attempt {attempt.Id}", new WorkspaceNavigationRequest("Models", AccountId: attempt.AccountId, RouteId: attempt.RouteId, Model: attempt.Model));
             _attemptLinks[attempt.Id + "/account"] = accountLink;
@@ -684,7 +698,13 @@ public sealed partial class UsageView : UserControl, IPresentationView
                 toggle.Content = details.IsVisible ? "⌄" : "›";
                 if (details.IsVisible) _expandedAttempts.Add(attempt.Id); else _expandedAttempts.Remove(attempt.Id);
             };
-            var entry = new StackPanel { Children = { row, details } };
+            ObjectCommand[] commands =
+            [
+                new("details", "Attempt details", () => { if (!details.IsVisible) toggle.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); }),
+                new("account", "Open account", () => accountLink.RaiseEvent(new RoutedEventArgs(Button.ClickEvent))),
+                new("model", "Open model", () => modelLink.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)))
+            ];
+            var entry = new StackPanel { Children = { row, details }, ContextMenu = ObjectCommands.Menu(commands) };
             // Errors are visible without opening the detail row.
             if (!string.IsNullOrWhiteSpace(attempt.Error))
                 entry.Children.Add(new Border { Padding = new Thickness(32, 0, 8, 6), Child = Cell(attempt.Error, Ui.Warning) });

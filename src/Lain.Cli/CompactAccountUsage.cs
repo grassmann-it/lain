@@ -57,6 +57,8 @@ public static partial class CliApplication
                 else if (stale && hasNumber) fields.Add("Last known");
                 if (!unsupported && quota.State is not ("ok" or "available") && !(quota.State == "stale" && hasNumber))
                     fields.Add(ReadableState(quota.State));
+                fields.AddRange(Lain.Client.QuotaDisplayFacts.Describe(quota));
+                if (quota.ExactRemaining is not null) fields.Add("Exact remaining " + quota.ExactRemaining + " " + Cell(quota.Unit));
                 if (!string.IsNullOrWhiteSpace(quota.Error)) fields.Add("Note: " + Cell(quota.Error));
                 if (!string.IsNullOrWhiteSpace(quota.Source)) fields.Add("Source " + QuotaSource(quota.Source, 80));
                 if (quota.LastSuccessAt is { } success) fields.Add("Checked " + Timestamp(success) + " UTC");

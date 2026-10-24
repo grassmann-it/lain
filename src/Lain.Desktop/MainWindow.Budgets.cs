@@ -63,7 +63,7 @@ public sealed partial class MainWindow
 
     private static bool PercentUnit(string unit) => unit.Equals("percent", StringComparison.OrdinalIgnoreCase) || unit == "%";
 
-    private static string BudgetNumber(double value) => value.ToString("#,0.##", CultureInfo.CurrentCulture);
+    private static string BudgetNumber(double value) => value.ToString("#,0.###############", CultureInfo.CurrentCulture);
 
     private static string BudgetAmount(double value, string unit)
     {

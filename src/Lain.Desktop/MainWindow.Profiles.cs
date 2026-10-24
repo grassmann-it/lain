@@ -29,6 +29,10 @@ public sealed partial class MainWindow
         var applied = Ui.Text(AppliedProfileDescription(cfg), 12, Ui.Muted);
         AutomationProperties.SetName(applied, "Applied proxy profile status");
         panel.Children.Add(applied);
+        if (_status?.Application is { } application)
+            panel.Children.Add(Ui.Text($"Application: {application.State} · operation {application.OperationId ?? "none"} · revision {application.Revision?.ToString() ?? "unknown"}"
+                + (application.RecoveryAction is null ? "" : " · Next action: " + application.RecoveryAction), 12,
+                application.RecoveryAction is null ? Ui.Muted : Ui.Warning));
         if (cfg.Revision != cfg.AppliedRevision)
             panel.Children.Add(Ui.Text("Saved changes are pending; the applied proxy settings remain unchanged.", 12, Ui.Warning));
         else if (_status?.ActiveProfileRevision is { } activeRevision && activeRevision != cfg.Revision)
@@ -101,20 +105,33 @@ public sealed partial class MainWindow
         foreach (var id in selected.RouteIds)
         {
             var route = cfg.Routes.FirstOrDefault(r => r.Id == id);
-            var content = Ui.Stack(ProfileRouteContent(route?.Alias ?? id, route is null ? "Model access unavailable" : $"Provider model: {route.Provider} / {route.UpstreamModel}", id == selected.DefaultRouteId));
+            var content = Ui.Stack();
             content.Spacing = 4;
             if (route is not null)
             {
-                var open = CompactRouteButton("Open model access", () => NavigateTo(new WorkspaceNavigationRequest("Models", RouteId: id)));
+                var open = CompactRouteButton(route.Alias + (id == selected.DefaultRouteId ? " · Default" : ""), () => NavigateTo(new WorkspaceNavigationRequest("Models", RouteId: id)));
                 AutomationProperties.SetName(open, $"Open model access {route.Alias}");
                 content.Children.Add(open);
             }
+            else content.Children.Add(Ui.Text(id + " · Model access unavailable", 12, Ui.Muted));
             routes.Children.Add(new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(0, presentation.Density == ViewDensity.Compact ? 5 : 8), Child = content });
         }
         var selectionState = Ui.Text($"Selected profile: {selected.Name}", 18);
         AutomationProperties.SetName(selectionState, "Selected profile status");
+        ObjectCommand[] commands =
+        [
+            new("apply", "Preview and apply…", () => ConfirmProfileApplication(selected)),
+            new("edit", "Edit selection", () => EditProfile(selected)),
+            new("export", "Export profile…", () => _ = RunAsync(() => ExportProfileAsync(selected), "Profile exported without credentials.")),
+            new("codex", "Set up Codex client…", () => ShowCodexExport(selected)),
+            new("remove", "Remove profile…", () => ConfirmRemoval(selected.Name, async () => _configuration = await _client.RemoveProfileAsync(cfg.Revision, selected.Id, _lifetime.Token)))
+        ];
+        var menu = ObjectCommandMenu(commands);
+        var moreButton = Ui.Button("More…", () => menu.Open());
+        moreButton.ContextMenu = menu;
+        AutomationProperties.SetName(moreButton, $"Actions for profile {selected.Name}");
         var details = Ui.Stack(selectionState,
-            ProfileWrap(apply, Ui.Button("Set up Codex client…", () => ShowCodexExport(selected)), Ui.Button("Edit selection", () => EditProfile(selected))),
+            ProfileWrap(apply, Ui.Button("Edit selection", () => EditProfile(selected)), moreButton),
             Ui.Text("Apply changes the global proxy for every client. Codex setup exports separate client files.", 12, Ui.Muted),
             Ui.Text($"{selected.RouteIds.Length} selected model access entries · Default client name: {cfg.Routes.FirstOrDefault(r => r.Id == selected.DefaultRouteId)?.Alias ?? "None"}", 12, Ui.Muted),
             Ui.Text(selected.Policy?.CostPolicy switch {
@@ -122,34 +139,57 @@ public sealed partial class MainWindow
                 null or "configured" => "Spending policy: Configured access; stricter model access policies still apply",
                 var policy => $"Spending policy: {policy}"
             }, 12, Ui.Muted),
-            new ScrollViewer { MaxHeight = presentation.Level == InformationLevel.Barebones ? 220 : 310, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = routes });
+            routes);
         var technical = Ui.Stack(Ui.Text($"Profile ID: {selected.Id}", 11, Ui.Muted),
             Ui.Text($"Default model access ID: {selected.DefaultRouteId ?? "None"}", 11, Ui.Muted));
         if (selected.Policy?.FallbackRouteIds is { Length: > 0 } fallbacks)
             technical.Children.Add(Ui.Text($"Saved fallback selections: {string.Join(", ", fallbacks.Select(id => cfg.Routes.FirstOrDefault(r => r.Id == id)?.Alias ?? id))} · Paid fallback permission: {(selected.Policy.AllowPaidFallback ? "allowed" : "not allowed")}", 12, Ui.Muted));
         technical.Children.Add(ProfileWrap(export, Ui.Button("Remove…", () => ConfirmRemoval(selected.Name, async () => { _configuration = await _client.RemoveProfileAsync(cfg.Revision, selected.Id, _lifetime.Token); }))));
         var more = new Expander { Header = "Profile details and export", Content = technical,
-            IsExpanded = _profileDetails.TryGetValue(selected.Id, out var expanded) ? expanded : presentation.Level == InformationLevel.Advanced,
+            IsExpanded = _profileDetails.TryGetValue(selected.Id, out var expanded) && expanded,
             HorizontalAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetName(more, $"Details and export for profile {selected.Name}");
         more.PropertyChanged += (_, e) => { if (e.Property == Expander.IsExpandedProperty) _profileDetails[selected.Id] = more.IsExpanded; };
         details.Children.Add(more);
         details.Spacing = presentation.Density == ViewDensity.Compact ? 7 : 10;
-        return Ui.Card(details);
+        var card = Ui.Card(details);
+        card.ContextMenu = ObjectCommandMenu(commands);
+        return card;
     }
 
-    private void ConfirmProfileApplication(ProfileDto profile)
+    private async void ConfirmProfileApplication(ProfileDto profile)
     {
         if (_configuration is not { } cfg) return;
         _editing = true;
-        var confirm = Action("Apply to proxy", async () => {
-            _configuration = await _client.ApplyProfileAsync(cfg.Revision, profile.Id, _lifetime.Token);
-        }, $"Profile '{profile.Name}' applied to the global proxy.");
-        confirm.Classes.Add("primary");
-        _page.Content = Ui.Stack(ProfileHeader($"Apply {profile.Name} to the proxy?", "This changes the GLOBAL proxy configuration for every connected client."),
-            Ui.Card(Ui.Stack(Ui.Text("Active requests may be interrupted while the proxy applies this profile.", 14, Ui.Warning),
-                Ui.Text($"Apply saved profile '{profile.Name}' from configuration revision {cfg.Revision}. Selecting a profile or exporting a Codex client connection does not perform this action.", 13))),
-            ProfileWrap(confirm, Ui.Button("Cancel", () => { _editing = false; Render(); })));
+        _workspace.Offset = default;
+        _page.Content = Ui.Stack(ProfileHeader("Review global Apply", "Loading the saved and active configuration differences…"));
+        try
+        {
+            var preview = await _client.PreviewProfileAsync(profile.Id, cfg.Revision, _lifetime.Token);
+            if (preview.Revision != cfg.Revision || preview.ProfileId != profile.Id) throw new InvalidOperationException("The preview does not match the selected saved profile. Reload and review again.");
+            var confirm = Action("Apply to proxy", async () => {
+                _configuration = await _client.ApplyProfileAsync(preview.Revision, profile.Id, _lifetime.Token);
+            }, $"Profile '{profile.Name}' applied to the global proxy.");
+            confirm.Classes.Add("primary");
+            string Names(string[] ids) => ids.Length == 0 ? "None" : string.Join(", ", ids.Select(id => cfg.Routes.FirstOrDefault(r => r.Id == id)?.Alias ?? id));
+            var active = cfg.Profiles.FirstOrDefault(p => p.Id == preview.ActiveProfileId)?.Name ?? preview.ActiveProfileId ?? "Not reported";
+            _page.Content = Ui.Stack(ProfileHeader($"Apply {profile.Name} to the proxy?", "This changes the GLOBAL proxy configuration for every connected client."),
+                Ui.Card(Ui.Stack(Ui.Text($"Selected: {profile.Name} · saved revision {preview.Revision}", 14),
+                    Ui.Text($"Active: {active} · revision {preview.ActiveRevision?.ToString() ?? "unknown"}", 13, Ui.Muted),
+                    Ui.Text(preview.BaselineKnown ? "Active baseline is known." : "Active baseline is unknown; the host cannot report a complete difference.", 12, preview.BaselineKnown ? Ui.Muted : Ui.Warning),
+                    Ui.Text("Added: " + Names(preview.AddedRouteIds), 13), Ui.Text("Changed: " + Names(preview.ChangedRouteIds), 13), Ui.Text("Removed: " + Names(preview.RemovedRouteIds), 13),
+                    Ui.Text("Affected accounts: " + string.Join(", ", preview.AffectedAccountIds.Select(id => cfg.Accounts.FirstOrDefault(a => a.Id == id)?.Name ?? id)), 12, Ui.Muted),
+                    Ui.Text("Affected clients: " + string.Join(", ", preview.AffectedClients), 12, Ui.Muted),
+                    Ui.Text("Streams: " + preview.StreamBehavior + ". Active requests may be interrupted by the global proxy restart.", 13, Ui.Warning),
+                    Ui.Text("All saved route/account changes in this preview are included. Selection and client export remain separate actions.", 12, Ui.Muted))),
+                ProfileWrap(confirm, Ui.Button("Cancel", () => { _editing = false; Render(); })));
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (Exception error)
+        {
+            _page.Content = Ui.Stack(ProfileHeader("Apply preview unavailable", Friendly(error)),
+                Ui.Button("Retry preview", () => ConfirmProfileApplication(profile)), Ui.Button("Back to profiles", () => { _editing = false; Render(); }));
+        }
     }
 
     private void ShowCodexExport(ProfileDto profile)
@@ -193,7 +233,7 @@ public sealed partial class MainWindow
                 catch (Exception error) { _notice.Text = Friendly(error); }
             });
             _notice.Text = $"Codex connection exported to {destination}";
-            _page.Content = Ui.Stack(ProfileHeader("Ready for Codex", $"{profile.Name}  ·  {profile.RouteIds.Length} routes  ·  Exported revision {artifacts.Revision}"),
+            _page.Content = Ui.Stack(ProfileHeader("Ready for Codex", $"{profile.Name}  ·  {profile.RouteIds.Length} routes  ·  Exported revision {artifacts.Revision} · Profile {artifacts.ProfileId ?? profile.Id} · Generation {artifacts.GenerationId ?? "not reported"}"),
                 Ui.Card(Ui.Stack(Ui.Text("1  Exported files", 14), ProfileReadOnly(destination), Ui.Text("lain.config.toml  ·  lain.models.json", 12, Ui.Muted))),
                 Ui.Card(Ui.Stack(ProfileHeader("2  Launch this connection", "Run this command in your terminal.", copy), ProfileReadOnly(command),
                     Ui.Text("This launch uses the exported folder as CODEX_HOME. Your existing Codex configuration is preserved.", 12, Ui.Muted))),

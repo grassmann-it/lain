@@ -137,14 +137,15 @@ public sealed partial class ProviderCatalogView : UserControl, IPresentationView
         }
         var heading = new StackPanel { Spacing = 6, HorizontalAlignment = HorizontalAlignment.Stretch, Children = { identity, Ui.Text(provider.Summary, 12, Ui.Muted), tags } };
         var actions = new WrapPanel { Orientation = Orientation.Horizontal };
-        AddLink(actions, provider, new CatalogLink("Official account / keys", provider.AccountUrl), primary: true);
+        AddLink(actions, provider, new CatalogLink("Official account / keys", provider.AccountUrl), primary: false);
         AddLink(actions, provider, new CatalogLink("Official documentation", provider.DocumentationUrl));
         var setup = Ui.Button("Add this provider account", () => _beginSetup?.Invoke(provider.Id));
         setup.IsEnabled = _beginSetup is not null;
         setup.Margin = new Thickness(0, 0, 8, 6);
         AutomationProperties.SetName(setup, $"Add {provider.Name} account");
-        ToolTip.SetTip(setup, "Choose a connection and billing plan, then enter your own credentials. Saving does not verify access.");
-        actions.Children.Add(setup);
+        ToolTip.SetTip(setup, "Choose an available provider connection. Models follow optionally; saving is separate from live access.");
+        setup.Classes.Add("primary");
+        actions.Children.Insert(0, setup);
         var details = new StackPanel { Spacing = 15 };
         details.Children.Add(Facts("Access and credentials", provider.Access));
         details.Children.Add(Facts("Billing and budgets", provider.Budgets));

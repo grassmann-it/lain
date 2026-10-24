@@ -17,12 +17,16 @@ public static partial class CliApplication
                 Compact by default; --full includes IDs and complete source details.
           accounts add  Private interactive account setup (TTY required)
           accounts monitor ID  Private optional monitoring setup (TTY required)
-          accounts login codex [--revision N] [--json]
+          accounts methods [PROVIDER] [--json]
+          accounts login PROVIDER [--method ID] [--purpose quota,inference]
+                   [--account ID] [--name NAME] [--revision N] [--json]
           accounts login-status|login-cancel|check ID [--json]
           accounts enable|disable|remove ID [--revision N] [--json]
           accounts add-api --name NAME --provider PROVIDER --base-url URL
                    (--key-env ENVNAME | --key-stdin) [--provider-route ID]
                    [--setting NAME=VALUE ...] [--revision N] [--json]
+          mode [monitor|gateway] [--revision N] [--json]
+          profiles preview ID [--revision N] [--json]
           profiles apply ID [--revision N] [--json]
           profiles install-codex ID [--revision N] [--json]
           import CONFIG [--auth-dir DIR] [--revision N] [--json]
@@ -88,7 +92,7 @@ public static partial class CliApplication
                 return 0;
             }
             // Validate the command before discovery, so misspellings work even when the host is stopped.
-            if (command is not ("status" or "accounts" or "import" or "models" or "profiles" or "usage" or "history" or "attempts" or "quotas" or "auth" or "service" or "providers" or "inspector"))
+            if (command is not ("status" or "accounts" or "import" or "models" or "profiles" or "usage" or "history" or "attempts" or "quotas" or "auth" or "service" or "providers" or "inspector" or "mode"))
                 throw new ArgumentException($"Unknown command '{command}'. Run 'lain help'.");
             Validate(command, options);
             if (command == "accounts" && options.Positionals.FirstOrDefault() is "add" or "monitor")
@@ -103,6 +107,14 @@ public static partial class CliApplication
             {
                 case "status":
                 case "service": result = await client.StatusAsync(ct); break;
+                case "mode":
+                    if (options.Positionals.Count == 0) result = await client.StatusAsync(ct);
+                    else
+                    {
+                        var modeRevision = options.Get("revision") is { } modeText ? ParseLong(modeText, "revision") : (await client.GetConfigurationAsync(ct)).Revision;
+                        result = await client.SetRuntimeModeAsync(new(modeRevision, options.Positionals[0]), ct);
+                    }
+                    break;
                 case "accounts":
                     if (options.Positionals.FirstOrDefault() == "add")
                     {
@@ -123,7 +135,8 @@ public static partial class CliApplication
                     if (options.Positionals.Count == 0) { result = await client.ProfilesAsync(ct); break; }
                     var profileRevision = options.Get("revision") is { } revisionValue ? ParseLong(revisionValue, "revision") :
                         (await client.GetConfigurationAsync(ct)).Revision;
-                    if (options.Positionals[0] == "apply")
+                    if (options.Positionals[0] == "preview") result = await client.PreviewProfileAsync(options.Positionals[1], profileRevision, ct);
+                    else if (options.Positionals[0] == "apply")
                         result = await client.ApplyProfileAsync(profileRevision, options.Positionals[1], ct);
                     else
                     {
@@ -186,11 +199,24 @@ public static partial class CliApplication
 
     private static void Validate(string command, Options options)
     {
+        if (command == "mode")
+        {
+            options.RequireOnly("json", "revision");
+            if (options.Positionals.Count > 1 || options.Positionals.FirstOrDefault() is { } mode && mode is not ("monitor" or "gateway")) throw new ArgumentException("Use mode monitor or mode gateway.");
+            if (options.Get("revision") is { } revision) _ = ParseLong(revision, "revision");
+            return;
+        }
         if (command == "providers") { ValidateProviders(options); return; }
         if (command == "inspector") { ValidateInspector(options); return; }
         if (command == "accounts" && options.Positionals.Count > 0)
         {
             var action = options.Positionals[0];
+            if (action == "methods")
+            {
+                options.RequireOnly("json");
+                if (options.Positionals.Count is not (1 or 2)) throw new ArgumentException("Use accounts methods [PROVIDER].");
+                return;
+            }
             if (action == "add")
             {
                 options.RequireOnly(); options.RequirePositionals(1); return;
@@ -216,11 +242,14 @@ public static partial class CliApplication
             else
             {
                 options.RequirePositionals(2);
-                if (action is "enable" or "disable" or "remove" or "login") options.RequireOnly("json", "revision");
+                if (action == "login")
+                {
+                    options.RequireOnly("json", "revision", "method", "purpose", "account", "name");
+                    if (options.Get("purpose") is { } purposes && purposes.Split(',', StringSplitOptions.TrimEntries).Any(p => p is not ("quota" or "inference" or "cost" or "models"))) throw new ArgumentException("Unknown connection purpose.");
+                }
+                else if (action is "enable" or "disable" or "remove") options.RequireOnly("json", "revision");
                 else if (action is "check" or "login-status" or "login-cancel") options.RequireOnly("json");
                 else throw new ArgumentException("Account action must be add, add-api, monitor, login, login-status, login-cancel, enable, disable, remove or check.");
-                if (action == "login" && options.Positionals[1] != "codex")
-                    throw new ArgumentException("Only the qualified Codex login is available: accounts login codex.");
             }
             if (options.Get("revision") is { } revision) _ = ParseLong(revision, "revision");
             return;
@@ -238,8 +267,8 @@ public static partial class CliApplication
         if (command == "profiles" && options.Positionals.Count > 0)
         {
             options.RequireOnly("json", "revision"); options.RequirePositionals(2);
-            if (options.Positionals[0] is not ("apply" or "install-codex"))
-                throw new ArgumentException("Profile action must be apply or install-codex.");
+            if (options.Positionals[0] is not ("apply" or "preview" or "install-codex"))
+                throw new ArgumentException("Profile action must be preview, apply or install-codex.");
             if (options.Get("revision") is { } revision) _ = ParseLong(revision, "revision");
             return;
         }
@@ -260,6 +289,7 @@ public static partial class CliApplication
     {
         if (options.Positionals.Count == 0) return await client.AccountsAsync(ct);
         var action = options.Positionals[0];
+        if (action == "methods") return await client.ConnectionMethodsAsync(options.Positionals.Count > 1 ? options.Positionals[1] : null, ct);
         if (action == "login-status") return await client.GetLoginAsync(options.Positionals[1], ct);
         if (action == "login-cancel") return await client.CancelLoginAsync(options.Positionals[1], ct);
         if (action == "check") return await client.CheckAccountAsync(options.Positionals[1], ct);
@@ -275,9 +305,17 @@ public static partial class CliApplication
         }
         var revision = options.Get("revision") is { } supplied ? ParseLong(supplied, "revision") :
             (await client.GetConfigurationAsync(ct)).Revision;
+        if (action == "login")
+        {
+            var accountId = options.Get("account");
+            var target = accountId is null ? null : (await client.GetConfigurationAsync(ct)).Accounts.FirstOrDefault(a => a.Id == accountId)
+                ?? throw new ArgumentException("The reconnect account is no longer configured.");
+            return await client.LoginAsync(new LoginRequest(revision, options.Positionals[1], options.Get("method"),
+                options.Get("purpose")?.Split(',', StringSplitOptions.TrimEntries), accountId, target?.Binding,
+                target?.Generation, options.Get("name"), Guid.NewGuid().ToString("N")), ct);
+        }
         return action switch
         {
-            "login" => await client.LoginAsync(revision, options.Positionals[1], ct),
             "enable" => await client.SetAccountEnabledAsync(revision, options.Positionals[1], true, ct),
             "disable" => await client.SetAccountEnabledAsync(revision, options.Positionals[1], false, ct),
             "remove" => await client.RemoveAccountAsync(revision, options.Positionals[1], ct),
@@ -356,6 +394,8 @@ public static partial class CliApplication
                     await HumanTable.WriteTextAsync(output, $"Attempt {Cell(a.Id)} · {Cell(a.State)}; completion {Cell(a.CompletionState)}");
                     await HumanTable.WriteTextAsync(output, $"Account {Cell(a.AccountId)}; provider {Cell(a.Provider)}; model {Cell(a.Model)}", indent: "  ");
                     await HumanTable.WriteTextAsync(output, $"HTTP {Number(a.StatusCode)}; tokens {Number(a.Tokens.Total)}; first output {Number(a.Measurements?.FirstOutputLatencyMs)} ms; duration {Number(a.Measurements?.TotalDurationMs)} ms", indent: "  ");
+                    if (a.ErrorDetails is { } errorDetails)
+                        await HumanTable.WriteTextAsync(output, $"Error category {Cell(errorDetails.Category)}; evidence {Cell(errorDetails.Evidence)}; next action {Cell(errorDetails.Action)}", indent: "  ");
                     if (a.FirstTokenMs is not null || a.DurationMs is not null)
                         await output.WriteLineAsync($"  Historical timing: first token {Number(a.FirstTokenMs)} ms; duration {Number(a.DurationMs)} ms");
                 }

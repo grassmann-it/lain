@@ -30,17 +30,16 @@ internal sealed class MasonryPanel : Panel
         foreach (var child in Children)
         {
             if (!child.IsVisible) continue;
-            var expanded = child is Expander { IsExpanded: true };
+
             // Keep each account in its stable column when a quota snapshot adds
-            // data or changes height. Expanding a tile still spans both columns.
+            // data or changes height. Details live outside the inventory layout.
             var column = position++ % columns;
-            var top = expanded ? bottoms.Max() : bottoms[column];
-            var childWidth = expanded ? width : columnWidth;
+            var top = bottoms[column];
+            var childWidth = columnWidth;
             if (measure) child.Measure(new Size(childWidth, double.PositiveInfinity));
             var height = child.DesiredSize.Height;
-            if (!measure) child.Arrange(new Rect(expanded ? 0 : column * (columnWidth + ItemGap), top, childWidth, height));
-            if (expanded) Array.Fill(bottoms, top + height + ItemGap);
-            else bottoms[column] = top + height + ItemGap;
+            if (!measure) child.Arrange(new Rect(column * (columnWidth + ItemGap), top, childWidth, height));
+            bottoms[column] = top + height + ItemGap;
         }
         return Math.Max(0, bottoms.Max() - ItemGap);
     }

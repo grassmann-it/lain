@@ -35,7 +35,7 @@
     },
     {
       "title": "Optional official OAuth",
-      "description": "Register an application client; use authorization code, S256 PKCE and state. Host callback and secure key persistence are integration work.",
+      "description": "The application maintainer registers the OAuth client; use authorization code, S256 PKCE and state. Host callback and secure key persistence are integration work.",
       "url": "https://poe.com/api/clients"
     },
     {

@@ -13,7 +13,6 @@ namespace Lain.Desktop;
 
 public sealed partial class MainWindow
 {
-    private readonly HashSet<string> _expandedAccountIds = [];
     private readonly Dictionary<string, bool> _accountTechnicalExpansion = new(StringComparer.Ordinal);
     private string? _accountNavigationId;
 
@@ -21,7 +20,6 @@ public sealed partial class MainWindow
     {
         if (target.AccountId is not { } id) return;
         _accountSearch = ""; _accountProvider = "All providers"; _accountStatus = "All states";
-        _expandedAccountIds.Add(id);
         _accountNavigationId = id;
         if (_configuration is { } configuration && !configuration.Accounts.Any(account => account.Id == id))
             _notice.Text = "This account is no longer configured. Historical usage remains available.";
@@ -29,9 +27,8 @@ public sealed partial class MainWindow
 
     private Control AccountTiles(ConfigurationDto configuration, IReadOnlyList<AccountDto>? accounts = null, Action? inventoryChanged = null)
     {
-        _expandedAccountIds.RemoveWhere(id => !configuration.Accounts.Any(a => a.Id == id));
         var options = PresentationFor("Accounts");
-        var compact = options.Density == ViewDensity.Compact;
+        var compact = options.Density == ViewDensity.Compact || options.Level == InformationLevel.Barebones;
         var tiles = new MasonryPanel { HorizontalAlignment = HorizontalAlignment.Stretch, ItemGap = compact ? 8 : 12 };
 
         foreach (var account in accounts ?? OrderedAccounts(configuration.Accounts).ToArray())
@@ -48,8 +45,8 @@ public sealed partial class MainWindow
             var percent = QuotaUsedPercent(limiting);
             var lastKnown = limiting is not null && LastKnownQuota(limiting);
             var badge = !account.Enabled ? Ui.Badge("Disabled")
-                : QuotaExhausted(limiting) ? Ui.Badge(lastKnown ? "Last known exhausted" : "Exhausted", lastKnown ? "warning" : "danger")
-                : percent >= 90 ? Ui.Badge(lastKnown ? "Last known near limit" : "Near limit", "warning")
+                : QuotaExhausted(limiting) ? Ui.Badge(lastKnown ? "Window empty · last known" : "Window empty", lastKnown ? "warning" : "danger")
+                : percent >= 90 ? Ui.Badge(lastKnown ? "Window near limit · last known" : "Window near limit", "warning")
                 : IsAccountPinned(account) ? Ui.Badge("Pinned", "accent") : null;
             if (badge is not null) { Grid.SetColumn(badge, 1); identity.Children.Add(badge); }
             var provider = ProviderName(account) + (account.Enabled ? " · Enabled" : " · Disabled") + (IsAccountPinned(account) ? " · Pinned" : "");
@@ -78,47 +75,31 @@ public sealed partial class MainWindow
             // windows beside percentage windows and explicitly unknown windows.
             if (quotas.Length == 0) header.Children.Add(AccountTileWindow(account, null));
             foreach (var quota in quotas) header.Children.Add(AccountTileWindow(account, quota));
-            var hint = TileText("Show details", 11, Ui.Accent);
-            header.Children.Add(hint);
-
-            var detail = AccountDetail(account, configuration.Revision, inventoryChanged);
-            var tile = new Expander
-            {
-                Header = header, Content = detail, IsExpanded = _expandedAccountIds.Contains(account.Id),
-                HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Top, BorderBrush = QuotaExhausted(limiting) ? lastKnown ? Ui.Warning : Ui.Danger : Ui.Edge,
-                BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6)
-            };
+            var commands = AccountCommands(account, configuration.Revision, inventoryChanged);
+            var details = Ui.Button("Details", () => ShowAccountInspector(account.Id));
+            AutomationProperties.SetName(details, $"Open account details for {account.Name}");
+            var refresh = Ui.Button("Refresh quota", () => commands.First(command => command.Key == "refresh").Execute());
+            AutomationProperties.SetName(refresh, $"Refresh quota for {account.Name}");
+            var menu = ObjectCommandMenu(commands);
+            var more = Ui.Button("⋯", () => menu.Open());
+            more.ContextMenu = menu;
+            AutomationProperties.SetName(more, $"Actions for account {account.Name}");
+            ToolTip.SetTip(more, "Account actions (also available by right-click or Shift+F10)");
+            header.Children.Add(OverviewActions(details, refresh, more));
+            var tile = Ui.Card(header);
             tile.Classes.Add("account-tile");
-            if (this.TryFindResource("CardExpander", out var theme) && theme is Avalonia.Styling.ControlTheme controlTheme) tile.Theme = controlTheme;
-            var padding = compact ? 9 : 12;
-            tile.Resources["ExpanderHeaderPadding"] = new Thickness(padding);
-            tile.Resources["ExpanderHeaderMargin"] = new Thickness(0);
-            tile.Resources["ExpanderContentPadding"] = new Thickness(padding, 0, padding, padding);
-            tile.Resources["ExpanderContentMinLength"] = 0d;
+            tile.ContextMenu = ObjectCommandMenu(commands);
+            tile.BorderBrush = Ui.Edge;
+            tile.Focusable = true;
             AutomationProperties.SetName(tile, $"Account budgets for {account.Name}");
-            AutomationProperties.SetHelpText(tile, "All reported budget windows are shown. Expand for account actions, recorded usage, models, pins and source details.");
-            tile.TemplateApplied += (_, args) =>
-            {
-                if (args.NameScope.Find<ToggleButton>("ExpanderHeader") is not { } toggle) return;
-                AutomationProperties.SetName(toggle, $"Toggle account budgets for {account.Name}");
-                toggle.HorizontalAlignment = HorizontalAlignment.Stretch;
-                toggle.HorizontalContentAlignment = HorizontalAlignment.Stretch;
-            };
-            tile.PropertyChanged += (_, args) =>
-            {
-                if (args.Property != Expander.IsExpandedProperty) return;
-                if (tile.IsExpanded) _expandedAccountIds.Add(account.Id); else _expandedAccountIds.Remove(account.Id);
-                hint.Text = tile.IsExpanded ? "Hide details" : "Show details";
-                tiles.InvalidateMeasure();
-            };
+            AutomationProperties.SetHelpText(tile, "All reported windows. A window's empty balance does not prove that the whole account is exhausted.");
             tile.Loaded += (_, _) =>
             {
                 if (_accountNavigationId != account.Id) return;
                 _accountNavigationId = null;
-                Dispatcher.UIThread.Post(() => tile.BringIntoView(), DispatcherPriority.Background);
+                Dispatcher.UIThread.Post(() => { tile.BringIntoView(); ShowAccountInspector(account.Id, details); }, DispatcherPriority.Background);
             };
-            hint.Text = tile.IsExpanded ? "Hide details" : "Show details";
+            details.Click += (_, _) => _accountInspectorOrigin = details;
             tiles.Children.Add(tile);
         }
         return tiles;
@@ -134,9 +115,9 @@ public sealed partial class MainWindow
     private Control AccountTileWindow(AccountDto account, QuotaDto? quota)
     {
         var options = PresentationFor("Accounts");
-        var compact = options.Density == ViewDensity.Compact;
+        var compact = options.Density == ViewDensity.Compact || options.Level == InformationLevel.Barebones;
         var panel = new StackPanel { Spacing = compact ? 3 : 4, HorizontalAlignment = HorizontalAlignment.Stretch };
-        var unavailable = QuotaUnavailable(quota) || IsMiMo(account) && quota?.Source == "unavailable";
+        var unavailable = QuotaUnavailable(quota);
         if (unavailable)
         {
             panel.Children.Add(TileText(QuotaSupportMessage(quota), 12, Ui.Muted));
@@ -204,6 +185,8 @@ public sealed partial class MainWindow
                 if (quota.DataAsOf is { } dataAsOf) panel.Children.Add(TileText("Data as of " + dataAsOf.ToLocalTime().ToString("dd MMM · HH:mm", CultureInfo.CurrentCulture), 10, Ui.Muted));
             }
         }
+        if (quota is not null)
+            foreach (var fact in QuotaPresentationFacts(quota)) panel.Children.Add(TileText(fact, 11, Ui.Muted));
         if (quota is not null && !string.IsNullOrWhiteSpace(quota.Error))
             panel.Children.Add(TileText(quota.Error, 11, unavailable ? Ui.Muted : Ui.Warning));
         if (quota is null) panel.Children.Add(TileText("Quota has not been loaded. Refresh quota from account details.", 11, Ui.Muted));

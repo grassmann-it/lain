@@ -73,6 +73,9 @@ public static partial class CliApplication
                 else if (quota.Limit is { } limit && double.IsFinite(limit) && limit >= 0)
                     await HumanTable.WriteTextAsync(output, "Limit " + QuotaAmount(limit, quota.Unit) + (quota.MeasurementKind == "limit" ? "" : " · usage unknown"), context, "  ");
             }
+            foreach (var fact in Lain.Client.QuotaDisplayFacts.Describe(quota)) await HumanTable.WriteTextAsync(output, fact, context, "  ");
+            if (quota.ExactUsed is not null || quota.ExactLimit is not null || quota.ExactRemaining is not null)
+                await HumanTable.WriteTextAsync(output, $"Exact amounts · used {quota.ExactUsed ?? "unknown"} · limit {quota.ExactLimit ?? "unknown"} · remaining {quota.ExactRemaining ?? "unknown"} {Cell(quota.Unit)}", context, "  ");
             if (!string.IsNullOrWhiteSpace(quota.Error)) await HumanTable.WriteTextAsync(output, "Note: " + Cell(quota.Error), context, "  ");
             if (quota.MeasurementKind is { Length: > 0 } || quota.Scope is { Length: > 0 })
                 await HumanTable.WriteTextAsync(output, string.Join(" · ", new[] { quota.MeasurementKind, quota.Scope, quota.ScopeId, quota.Model }.Where(value => !string.IsNullOrWhiteSpace(value)).Select(Cell)), context, "  ", subtle: true);
@@ -106,7 +109,7 @@ public static partial class CliApplication
         }
     }
 
-    private static string QuotaAmount(double amount, string unit) => (double.IsFinite(amount) ? amount.ToString("0.##", CultureInfo.InvariantCulture) : "unknown")
+    private static string QuotaAmount(double amount, string unit) => (double.IsFinite(amount) ? Lain.Client.QuotaDisplayFacts.Number(amount) : "unknown")
         + (unit is "%" or "percent" ? "%" : unit is "" or "unknown" ? "" : " " + Cell(unit));
 
     private static string QuotaWindowName(QuotaDto quota)

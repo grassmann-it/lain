@@ -9,10 +9,13 @@ public static partial class CliApplication
     {
         context ??= HumanOutputContext.Detect(output);
         await HumanTable.WriteAsync(output, "lain status", [new("Item"), new("State", Status: true)],
-            [new(["Proxy", status.ProxyReady ? "Ready" : "Unavailable"]), new(["Host", ReadableState(status.State)])], context);
+            [new(["Mode", status.RuntimeMode]), new([status.RuntimeMode == "monitor" ? "Quota monitoring" : "Proxy", status.RuntimeMode == "monitor" ? (status.Capabilities?.QuotaMonitoring == true ? "Available" : "Not available") : status.ProxyReady ? "Ready" : "Unavailable"]), new(["Host", ReadableState(status.State)])], context);
         await HumanTable.WriteTextAsync(output, $"Configuration: {status.Revision} saved / {status.AppliedRevision} applied"
             + (status.Revision == status.AppliedRevision ? "" : " · changes pending"), context);
         await HumanTable.WriteTextAsync(output, $"Version {Cell(status.Version)} · updated {Timestamp(status.ObservedAt)} UTC", context, subtle: true);
+        if (status.Application is { } application)
+            await HumanTable.WriteTextAsync(output, $"Application {Cell(application.State)} · operation {Cell(application.OperationId)} · profile {Cell(application.ProfileId)} · revision {application.Revision?.ToString() ?? "unknown"}"
+                + (application.RecoveryAction is null ? "" : " · next action " + Cell(application.RecoveryAction)), context);
         if (!string.IsNullOrWhiteSpace(status.Error)) await HumanTable.WriteTextAsync(output, "Error: " + Cell(status.Error), context);
     }
 
@@ -29,6 +32,9 @@ public static partial class CliApplication
                 new(["Errors", usage.Totals.Errors.ToString(CultureInfo.InvariantCulture)]),
                 new(["Tokens", Number(usage.Totals.Tokens.Total)]),
                 new(["Unknown usage attempts", usage.Totals.UnknownUsageAttempts.ToString(CultureInfo.InvariantCulture)])], context);
+        if (usage.Totals.Measurements is { } measurements)
+            foreach (var (component, value) in Lain.Client.UsageDisplayFacts.Components(measurements))
+                await HumanTable.WriteTextAsync(output, Lain.Client.UsageDisplayFacts.Describe(component, value), context);
         await WriteUsageGroups(output, "Account ID", usage.Accounts, context);
         await WriteUsageGroups(output, "Model", usage.Models, context);
         await WriteUsageGroups(output, "Day", usage.Daily, context);

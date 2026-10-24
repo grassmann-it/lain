@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Automation;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
+using Avalonia.Input.Platform;
 using Avalonia.Media;
 using Lain.Client;
 using Lain.Core;
@@ -76,7 +77,7 @@ public sealed partial class MainWindow
     private Control RoutesPage()
     {
         var presentation = PresentationFor("Models");
-        var dense = presentation.Density == ViewDensity.Compact;
+        var dense = presentation.Density == ViewDensity.Compact || presentation.Level == InformationLevel.Barebones;
         var create = Ui.Button("Add model access", () => EditRoute(null));
         create.Classes.Add("primary");
         var panel = Ui.Stack(ProfileHeader("Models", presentation.Level == InformationLevel.Barebones ? "Configured model access." : "Configured model access: the name clients use, its provider model and account binding.", create));
@@ -140,7 +141,7 @@ public sealed partial class MainWindow
 
     private Control ModelAccessCard(ConfigurationDto cfg, RouteDto route, PresentationOptions presentation)
     {
-        var dense = presentation.Density == ViewDensity.Compact;
+        var dense = presentation.Density == ViewDensity.Compact || presentation.Level == InformationLevel.Barebones;
         var names = string.Join(", ", route.AccountIds.Select(id => cfg.Accounts.FirstOrDefault(a => a.Id == id)?.Name ?? id));
         var identity = Ui.Stack(Ui.Text($"Client name: {route.Alias}", 15), Ui.Text($"Provider model: {route.Provider} / {route.UpstreamModel}", 12, Ui.Muted),
             Ui.Text($"Account binding: {names} · {(route.Pooled ? "Explicit pool" : "Strict · one account")}", 12));
@@ -170,15 +171,45 @@ public sealed partial class MainWindow
             Ui.Text($"Used by {cfg.Profiles.Count(p => p.RouteIds.Contains(route.Id))} saved profiles", 12, Ui.Muted));
         if (route.Policy?.FallbackRouteIds is { Length: > 0 } fallbacks)
             detail.Children.Add(Ui.Text($"Saved fallback selections: {string.Join(", ", fallbacks.Select(id => cfg.Routes.FirstOrDefault(r => r.Id == id)?.Alias ?? id))} · Paid fallback permission: {(route.Policy.AllowPaidFallback ? "allowed" : "not allowed")}", 12, Ui.Muted));
-        detail.Children.Add(ProfileWrap(edit, usage, remove));
-        var expanded = _modelDetails.TryGetValue(route.Id, out var chosen) ? chosen : presentation.Level == InformationLevel.Advanced;
+        detail.Children.Add(ProfileWrap(usage, remove));
+        var expanded = _modelDetails.TryGetValue(route.Id, out var chosen) && chosen;
         var details = new Expander { Header = "Details", Content = detail, IsExpanded = expanded, HorizontalAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetName(details, $"Details for model access {route.Alias}");
         details.PropertyChanged += (_, e) => { if (e.Property == Expander.IsExpandedProperty) _modelDetails[route.Id] = details.IsExpanded; };
-        var body = Ui.Stack(identity, state, details);
-        body.Spacing = dense ? 5 : 9;
+        void RunSave(RouteDto updated) => _ = RunAsync(async () => _configuration = await _client.SaveRouteAsync(cfg.Revision, updated, _lifetime.Token), "Model access saved. Apply a profile to update the global proxy.");
+        ObjectCommand[] commands =
+        [
+            new("edit", "Edit model access", () => EditRoute(route)),
+            new("enabled", route.Enabled ? "Disable model access" : "Enable model access", () => RunSave(route with { Enabled = !route.Enabled })),
+            new("visibility", route.Visible ? "Hide from model menu" : "Show in model menu", () => RunSave(route with { Visible = !route.Visible })),
+            new("usage", "Recorded usage", () => NavigateTo(new("Usage", RouteId: route.Id)), HasHistory, "No recorded history source."),
+            new("profiles", "Profile uses and technical details", () => { details.IsVisible = true; details.IsExpanded = true; }),
+            new("copy", "Copy client model name", () => { if (Clipboard is { } clipboard) _ = clipboard.SetTextAsync(route.Alias); }),
+            new("remove", "Remove model access…", () => ConfirmRemoval(route.Alias, async () => _configuration = await _client.RemoveRouteAsync(cfg.Revision, route.Id, _lifetime.Token)))
+        ];
+        var moreMenu = ObjectCommandMenu(commands);
+        var more = CompactRouteButton("⋯", () => moreMenu.Open());
+        more.ContextMenu = moreMenu;
+        AutomationProperties.SetName(more, $"Actions for model access {route.Alias}");
+        var title = CompactRouteButton(route.Alias, () => EditRoute(route));
+        title.HorizontalAlignment = HorizontalAlignment.Left;
+        title.Background = Brushes.Transparent;
+        var summary = Ui.Stack(title, Ui.Text($"{route.Provider} / {route.UpstreamModel}", 12, Ui.Muted));
+        summary.Spacing = 2;
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("1.2*,1.2*,Auto"), ColumnSpacing = 12 };
+        row.Children.Add(summary);
+        var binding = Ui.Stack(Ui.Text(names, 12), state);
+        binding.Spacing = 3;
+        Grid.SetColumn(binding, 1); row.Children.Add(binding);
+        var buttons = ProfileWrap(edit, more);
+        Grid.SetColumn(buttons, 2); row.Children.Add(buttons);
+        details.IsVisible = expanded;
+        var body = Ui.Stack(row, details);
+        if (presentation.Level == InformationLevel.Advanced) body.Children.Insert(1, Ui.Text($"ID {route.Id} · catalog {route.ProviderRouteId ?? "custom"} · {(route.Pooled ? "explicit pool" : "strict account")}", 11, Ui.Muted));
+        body.Spacing = dense ? 3 : 5;
         var card = Ui.Card(body);
-        card.Padding = new Thickness(dense ? 10 : 14);
+        card.ContextMenu = ObjectCommandMenu(commands);
+        card.Padding = new Thickness(dense ? 6 : 8);
         if (_routeContextId == route.Id) card.BorderBrush = Ui.Accent;
         return card;
     }

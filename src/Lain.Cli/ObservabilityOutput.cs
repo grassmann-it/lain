@@ -9,6 +9,16 @@ public static partial class CliApplication
     {
         switch (value)
         {
+            case ConnectionMethodCatalogDto methodCatalog:
+                foreach (var method in methodCatalog.Methods)
+                    await HumanTable.WriteTextAsync(output, $"{Cell(method.Provider)} · {Cell(method.Id)} · {Cell(method.Title)} · {Cell(method.Availability)} · {string.Join(", ", method.Purposes.Select(Cell))}"
+                        + (method.Guidance is null ? "" : " · " + Cell(method.Guidance)));
+                return true;
+            case ProfileApplyPreviewDto preview:
+                await HumanTable.WriteTextAsync(output, $"Apply preview · profile {Cell(preview.ProfileId)} · saved revision {preview.Revision} · active {Cell(preview.ActiveProfileId)} / {preview.ActiveRevision?.ToString() ?? "unknown"}");
+                await HumanTable.WriteTextAsync(output, "Baseline " + (preview.BaselineKnown ? "known" : "unknown") + " · added " + string.Join(", ", preview.AddedRouteIds.Select(Cell)) + " · changed " + string.Join(", ", preview.ChangedRouteIds.Select(Cell)) + " · removed " + string.Join(", ", preview.RemovedRouteIds.Select(Cell)));
+                await HumanTable.WriteTextAsync(output, "Affected clients: " + string.Join(", ", preview.AffectedClients.Select(Cell)) + "; streams: " + Cell(preview.StreamBehavior));
+                return true;
             case UsageAnalysisDto analysis:
                 await output.WriteLineAsync($"{analysis.From:O} to {analysis.To:O} ({Cell(analysis.TimeZone)})");
                 await output.WriteLineAsync($"Observed {analysis.ObservedAt:O}; cursor {analysis.Cursor}; coverage {(analysis.Complete ? "complete" : "incomplete")}");
@@ -83,6 +93,9 @@ public static partial class CliApplication
     {
         await output.WriteLineAsync($"{indent}Requests {totals.Requests}; attempts {totals.Attempts}; errors {totals.Errors}; unknown usage attempts {totals.UnknownUsageAttempts}");
         await output.WriteLineAsync($"{indent}Tokens input {Number(totals.Tokens.Input)}; output {Number(totals.Tokens.Output)}; cached {Number(totals.Tokens.Cached)}; reasoning {Number(totals.Tokens.Reasoning)}; total {Number(totals.Tokens.Total)}");
+        if (totals.Measurements is { } measurements)
+            foreach (var (component, value) in Lain.Client.UsageDisplayFacts.Components(measurements))
+                await output.WriteLineAsync(indent + Lain.Client.UsageDisplayFacts.Describe(component, value));
     }
 
     private static async Task WritePerformance(TextWriter output, PerformanceSummaryDto performance, string indent = "")

@@ -69,7 +69,8 @@ public sealed partial class MainWindow
         var about = Ui.Button("About lain", () => Navigate("About"));
         AutomationProperties.SetName(about, "About lain");
         var page = Ui.Stack(
-            Heading("Settings", "Changes are saved locally for this workspace."),
+            Heading("Settings", "Window preferences and explicit host operation."),
+            RuntimeModeSettings(),
             Ui.Card(Ui.Stack(Ui.Text("Density", 15), densityRow,
                 Ui.Text("Choose Normal or Compact independently for each main area. The information level remains available in the bottom navigation.", 12, Ui.Muted))),
             Ui.Card(Ui.Stack(Ui.Text("Background and notifications", 15), minimize, close, alerts, _settingsTrayHint,
@@ -81,6 +82,28 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(page, "Settings page");
         SynchronizeSettings();
         return page;
+    }
+
+    private Control RuntimeModeSettings()
+    {
+        var mode = new ComboBox { ItemsSource = new[] { "Monitor", "Gateway" }, SelectedIndex = IsMonitorMode ? 0 : 1, MinWidth = 160 };
+        AutomationProperties.SetName(mode, "Host operating mode");
+        return Ui.Card(Ui.Stack(Ui.Text("Host operating mode", 15), mode,
+            Ui.Text("Monitor reads account quotas and available saved history. Gateway adds model access, profiles and the optional proxy Core. This choice is separate from the information level.", 12, Ui.Muted),
+            Ui.Button("Review mode change…", () => {
+                if (_configuration is not { } cfg) return;
+                var selected = mode.SelectedIndex == 0 ? "monitor" : "gateway";
+                if (selected == cfg.RuntimeMode) { _notice.Text = "This operating mode is already configured."; return; }
+                _editing = true;
+                var apply = Action("Change host mode", async () => {
+                    _status = await _client.SetRuntimeModeAsync(new Lain.Core.RuntimeModeRequest(cfg.Revision, selected), _lifetime.Token);
+                    _configuration = await _client.GetConfigurationAsync(_lifetime.Token);
+                    UpdateNavigationDestinations();
+                }, "Host operating mode changed.");
+                _page.Content = Ui.Stack(Heading("Change host to " + selected + "?", "This changes the host's configured operation, independently of window density."),
+                    Ui.Text("The proxy Core may stop or start. Active requests can be interrupted. Existing accounts, profiles and recorded history are preserved.", 13, Ui.Warning),
+                    OverviewActions(apply, Ui.Button("Cancel", () => { _editing = false; Render(); })));
+            })));
     }
 
     private void SynchronizeSettings()

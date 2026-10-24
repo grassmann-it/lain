@@ -5,6 +5,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
+using Avalonia.Input.Platform;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -109,7 +110,16 @@ public sealed class InspectorView : UserControl, IPresentationView
         ToolTip.SetTip(clear, "Clears this view. The host's bounded live buffer expires automatically.");
         ToolTip.SetTip(_follow, "Turn off to read earlier output while new events arrive.");
         var toolbar = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var control in new Control[] { _search, _activity, _pause, refresh, clear, _follow })
+        var toolsMenu = new ContextMenu();
+        var refreshItem = new MenuItem { Header = "Refresh once" };
+        refreshItem.Click += (_, _) => { _nextSnapshot = 0; _refreshOnce = true; };
+        var clearItem = new MenuItem { Header = "Clear displayed events" };
+        clearItem.Click += (_, _) => { ClearEvents(); _after = Math.Max(_after, _snapshot?.Cursor ?? 0); _contentGap = "Displayed events cleared. New events will appear as they arrive."; RenderEvents(); };
+        toolsMenu.Items.Add(refreshItem); toolsMenu.Items.Add(clearItem);
+        var more = Ui.Button("More…", () => toolsMenu.Open());
+        more.ContextMenu = toolsMenu;
+        AutomationProperties.SetName(more, "Live tools");
+        foreach (var control in new Control[] { _search, _activity, _pause, _follow, more })
         {
             control.Margin = new Thickness(0, 0, 7, 5);
             control.VerticalAlignment = VerticalAlignment.Center;
@@ -143,7 +153,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         AutomationProperties.SetName(_empty, "Live empty state");
         Content = new StackPanel { Spacing = 10, Children =
         {
-            Ui.PageHeader("Live", "Inspector · output, attempts and tool continuations grouped by proven identities."),
+            Ui.PageHeader("Live", null),
             new StackPanel { Spacing = 3, Children = { _status, _buffer } }, toolbar, _layout
         } };
         _search.TextChanged += (_, _) => RenderGroups();
@@ -626,7 +636,7 @@ public sealed class InspectorView : UserControl, IPresentationView
             var detailKey = EventKey(entry);
             var details = new Expander { Header = "Event details", Content = technical,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
-                IsExpanded = _eventDetailOverrides.GetValueOrDefault(detailKey, _presentation.Level == InformationLevel.Advanced) };
+                IsExpanded = _eventDetailOverrides.GetValueOrDefault(detailKey, false) };
             details.PropertyChanged += (_, args) =>
             {
                 if (args.Property == Expander.IsExpandedProperty && !_applyingEventDefaults
@@ -634,8 +644,12 @@ public sealed class InspectorView : UserControl, IPresentationView
                     && _eventReceived.ContainsKey(detailKey.Cursor))
                     _eventDetailOverrides[detailKey] = details.IsExpanded;
             };
+            var identities = $"Request {entry.RequestId} · attempt {entry.AttemptId ?? "unknown"} · event {entry.Cursor}";
+            void CopyIdentities() { if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard) _ = clipboard.SetTextAsync(identities); }
+            technical.Children.Add(Ui.Button("Copy full identities", CopyIdentities));
+            ObjectCommand[] commands = [new("details", "Event details", () => details.IsExpanded = true), new("copy", "Copy full identities", CopyIdentities)];
             content.Children.Add(details); _eventDetails.Add((details, detailKey));
-            var surface = Surface(content); _eventSurfaces.Add(surface); _eventList.Children.Add(surface);
+            var surface = Surface(content); surface.ContextMenu = ObjectCommands.Menu(commands); _eventSurfaces.Add(surface); _eventList.Children.Add(surface);
         }
         if (blocks.Count == 0) _eventList.Children.Add(Ui.Text("No retained content for this request. Metadata may be available before the first output or after content expires.", 12, Ui.Muted));
         ApplyPresentation();

@@ -125,8 +125,16 @@ public sealed partial class MainWindow : Window
         _workspace = new ScrollViewer { Content = _page, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, Margin = new Thickness(20, 18, 20, 18) };
         _page.HorizontalContentAlignment = HorizontalAlignment.Stretch;
         _page.VerticalContentAlignment = VerticalAlignment.Stretch;
+        _page.PropertyChanged += (_, args) => { if (args.Property == ContentControl.ContentProperty) UpdateAccountInspectorLayout(); };
         _page.GotFocus += (_, args) => { if (args.Source is Control control) _lastEditorFocus = control; };
-        Grid.SetRow(_workspace, 2); shell.Children.Add(_workspace);
+        _workspaceRegion.Children.Add(_workspace);
+        Grid.SetColumn(_accountInspector, 1); _workspaceRegion.Children.Add(_accountInspector);
+        Grid.SetRow(_workspaceRegion, 2); shell.Children.Add(_workspaceRegion);
+        KeyDown += (_, args) =>
+        {
+            if (args.Key == Avalonia.Input.Key.Escape && _inspectedAccountId is not null)
+            { CloseAccountInspector(); args.Handled = true; }
+        };
 
         _connection.TextWrapping = TextWrapping.NoWrap;
         _connection.TextTrimming = TextTrimming.CharacterEllipsis;
@@ -166,6 +174,10 @@ public sealed partial class MainWindow : Window
             AutomationProperties.SetName(nav, name);
             _navigation.Children.Add(nav);
         }
+        _moreNavigation.Classes.Add("nav");
+        _moreNavigation.Click += (_, _) => _moreNavigation.ContextMenu?.Open();
+        AutomationProperties.SetName(_moreNavigation, "More destinations");
+        _navigation.Children.Add(_moreNavigation);
         AutomationProperties.SetName(_informationLevel, "Information level");
         const string levelHelp = "Barebones: essentials with local details available. Simple: everyday summaries. Advanced: more technical detail.";
         AutomationProperties.SetHelpText(_informationLevel, levelHelp);
@@ -181,7 +193,7 @@ public sealed partial class MainWindow : Window
         var navigationBar = new Border { Background = Ui.Surface, BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 1, 0, 0), Child = navigationContent };
         Grid.SetRow(navigationBar, 4); shell.Children.Add(navigationBar);
         Content = shell;
-        SizeChanged += (_, _) => UpdateNavigationLayout();
+        SizeChanged += (_, _) => { UpdateNavigationLayout(); UpdateAccountInspectorLayout(); };
         UpdateNavigationLayout();
         Opened += async (_, _) => { await RefreshAsync(true); _poll.Start(); };
         _poll.Tick += async (_, _) => await RefreshAsync(false);
@@ -221,13 +233,15 @@ public sealed partial class MainWindow : Window
         {
             var status = await _client.StatusAsync(_lifetime.Token);
             _status = status;
+            UpdateNavigationDestinations();
             _hostAvailable = true;
             _connection.Text = ServiceSummary(status);
-            _hostIndicator.Background = status.ProxyReady ? Ui.Success : Ui.Warning;
+            _hostIndicator.Background = IsMonitorMode || status.ProxyReady ? Ui.Success : Ui.Warning;
             ToolTip.SetTip(_connection, $"lain host {status.Version} · {status.State}\nConfiguration {status.Revision} · Applied {status.AppliedRevision}");
             if (!_editing || explicitRefresh)
             {
                 _configuration = await _client.GetConfigurationAsync(_lifetime.Token);
+                UpdateNavigationDestinations();
                 try { _quotas = await _client.QuotasAsync(_lifetime.Token); _quotaError = null; }
                 catch (Exception error) when (error is not OperationCanceledException) { _quotaError = Friendly(error); }
                 try { _models = (await _client.ModelsAsync(_lifetime.Token)).Models; }
@@ -285,7 +299,7 @@ public sealed partial class MainWindow : Window
 
     private void RefreshPage(bool explicitRefresh)
     {
-        if (_editing || _section is "Usage" or "Live" or "Providers" or "Settings" or "About") return;
+        if (_editing || _inspectedAccountId is not null || _section is "Usage" or "Live" or "Providers" or "Settings" or "About") return;
         // Polling updates the shell immediately, but must not remove the control being
         // used with the keyboard. A changed snapshot remains pending until focus leaves
         // the page, navigation occurs, or the user explicitly refreshes.
@@ -331,6 +345,7 @@ public sealed partial class MainWindow : Window
             "Usage" => _usage, "Setup" => SetupPage(), "Service" => ServicePage(),
             "Settings" => SettingsPage(), "About" => AboutPage(), _ => AccountsPage()
         };
+        UpdateAccountInspectorLayout();
         _renderedPageState = PageState();
         _backButton.IsEnabled = _history.Count > 0;
         Dispatcher.UIThread.Post(() => _workspace.Offset = offset, DispatcherPriority.Loaded);

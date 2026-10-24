@@ -41,7 +41,7 @@ public sealed partial class MainWindow
             Ui.Button("Discover providers", ShowProviderCatalog),
             Ui.PrimaryButton("Add account", ShowAddAccountChooser)));
         panel.Spacing = options.Density == ViewDensity.Compact ? 8 : 12;
-        if (_login is { State: "waiting" }) panel.Children.Add(Action("Continue Codex sign-in", StartCodexLoginAsync,
+        if (LoginPending(_login)) panel.Children.Add(Action("Continue " + ConnectProviderName(_login!.Provider) + " sign-in", () => { ShowLoginPage(); return Task.CompletedTask; },
             "Complete sign-in in your browser.", stayOnPage: true));
         if (_configuration is not { } cfg)
         {
@@ -251,44 +251,29 @@ public sealed partial class MainWindow
             content.Children.Add(Ui.Text("This account shares the provider budget with the imported connection. These balances describe the same budget and must not be added together.", 12, Ui.Warning));
         else if (account.BudgetPoolId is not null || quotas.Any(quota => quota.BudgetPoolId is not null))
             content.Children.Add(Ui.Text("This account uses a provider budget pool. Balances can be shared across accounts using that pool; do not assume separate capacity.", 12, Ui.Muted));
-        var removal = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch };
-        void ConfirmAccountRemoval()
+        var commands = AccountCommands(account, revision, inventoryChanged);
+        var actions = OverviewActions();
+        foreach (var command in commands.Where(command => command.Key is "refresh" or "usage" or "models"
+            || command.Key == "reconnect" && AccountCredentialWarning(account) is not null))
         {
-            var remove = Action("Remove", async () => { _configuration = await _client.RemoveAccountAsync(revision, account.Id, _lifetime.Token); }, "Account removed. Historical usage remains available.");
-            remove.Classes.Add("danger");
-            removal.Content = Ui.Card(Ui.Stack(Ui.Text($"Remove {account.Name}?", 13, Ui.Warning),
-                Ui.Text("This removes the saved account. Historical usage remains available. Model route bindings must be removed first.", 12, Ui.Muted),
-                OverviewActions(remove, Ui.Button("Cancel removal", () => removal.Content = null))));
+            var button = Ui.Button(command.Label, command.Execute);
+            button.IsEnabled = command.Available;
+            if (!command.Available) ToolTip.SetTip(button, command.Reason);
+            actions.Children.Add(button);
         }
-        var actions = OverviewActions(
-            Action(account.Enabled ? "Disable" : "Enable", async () => { _configuration = await _client.SetAccountEnabledAsync(revision, account.Id, !account.Enabled, _lifetime.Token); }, "Account updated."),
-            Action("Check credential", async () => { var result = await _client.CheckAccountAsync(account.Id, _lifetime.Token); _notice.Text = $"Credential status: {result.State}. Checked local presence and expiry only."; }, "Local credential check complete."),
-            Action("Monitoring access", () => OpenMonitorSetupAsync(account), "Review the available monitoring access.", stayOnPage: true),
-            Action("Refresh quota", async () => { _quotas = await _client.RefreshQuotasAsync(account.Id, _lifetime.Token); }, "Quota refresh complete."),
-            Ui.Button("Remove…", ConfirmAccountRemoval));
+        var menu = ObjectCommandMenu(commands);
+        var more = Ui.Button("More account actions…", () => menu.Open()); more.ContextMenu = menu;
+        actions.Children.Add(more);
         content.Children.Add(actions);
-        content.Children.Add(removal);
-        var context = OverviewActions(Ui.Button("Recorded usage", () => ShowUsageForAccount(account.Id)),
-            Ui.Button("Models for this account", () => ShowModelsForAccount(account.Id)));
-        content.Children.Add(context);
-        content.Children.Add(AccountPinControls(account, inventoryChanged));
 
         if (account.ExpiresAt is { } expiry) content.Children.Add(Ui.Text($"Credential expires {expiry.ToLocalTime():dd MMM · HH:mm} local time", 11, expiry <= DateTimeOffset.UtcNow ? Ui.Warning : Ui.Muted));
         var boundRoutes = _configuration?.Routes.Count(route => route.AccountIds.Contains(account.Id, StringComparer.Ordinal)) ?? 0;
         if (boundRoutes > 0) content.Children.Add(Ui.Text($"Used by {boundRoutes} model {(boundRoutes == 1 ? "route" : "routes")}. Remove those bindings before removing the account.", 11, Ui.Muted));
-        if (IsMiMo(account))
-        {
-            content.Children.Add(Ui.Text("Quota lookup for MiMo is not supported here yet. View the coding-plan allowance in the provider console.", 12, Ui.Muted));
-            content.Children.Add(Action("Check in provider console", async () =>
-            {
-                if (!await Launcher.LaunchUriAsync(new Uri("https://platform.xiaomimimo.com/#/console/plan-manage")))
-                    throw new InvalidOperationException("The browser could not be opened. Check your default browser and try again.");
-            }, "MiMo provider console opened."));
-        }
         if (!_hostAvailable || _quotaError is not null) content.Children.Add(Ui.Text(BudgetSnapshotNote(), 11, Ui.Warning));
         if (_quotaError is not null) content.Children.Add(Ui.Text(_quotaError, 11, Ui.Warning));
 
         var technical = new StackPanel { Spacing = 9 };
+        technical.Children.Add(AccountPinControls(account, inventoryChanged));
         technical.Children.Add(QuotaTechnicalField("Account ID", account.Id));
         technical.Children.Add(QuotaTechnicalField("Credential", $"{account.CredentialKind} · {(account.State == "unverified" ? "Not checked" : "local state: " + account.State)}"));
         technical.Children.Add(Ui.Text("Credential checks confirm local presence and expiry only; provider access is not verified.", 11, Ui.Muted));
@@ -298,7 +283,7 @@ public sealed partial class MainWindow
         foreach (var quota in quotas) technical.Children.Add(QuotaDetails(quota));
         var technicalDetails = new Expander
         {
-            Header = "Technical details", IsExpanded = _accountTechnicalExpansion.TryGetValue(account.Id, out var expanded) ? expanded : options.Level == InformationLevel.Advanced,
+            Header = "Technical details", IsExpanded = _accountTechnicalExpansion.TryGetValue(account.Id, out var expanded) ? expanded : false,
             HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Content = new Border { Padding = new Thickness(0, 8), Child = technical }
         };

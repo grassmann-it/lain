@@ -7,77 +7,107 @@ public static partial class CliApplication
 {
     private static async Task<bool> AddAccountWizard(LainApiClient client, TextWriter output, IAccountWizardTerminal terminal, CancellationToken ct)
     {
+        string? activeLogin = null;
         try
         {
-            await output.WriteLineAsync("Private account setup. Press Esc or Ctrl-C to cancel. Credentials stay with your local lain host.");
-            var catalog = await client.ProvidersAsync(ct);
-            var configuration = await client.GetConfigurationAsync(ct);
-            var provider = await WizardChoice(output, terminal, "Provider", catalog.Providers, item => item.Name, ct);
-            await output.WriteLineAsync(Cell(provider.Summary));
-            await output.WriteLineAsync("Official credentials: " + Cell(provider.AccountUrl));
-            foreach (var step in provider.SetupSteps)
-                await output.WriteLineAsync(Cell(step.Title + ": " + step.Description + (step.Url is null ? "" : " " + step.Url)));
-            var connections = provider.Connections ?? [];
-            if (connections.Length == 0) throw new InvalidOperationException("This provider has no prepared API credential connection. Review its official setup guide or use its qualified login command.");
-            var connection = connections.Length == 1 ? connections[0]
-                : await WizardChoice(output, terminal, "Account connection", connections, item => item.Name, ct);
-            await output.WriteLineAsync("Account connection: " + Cell(connection.Name));
-            var plans = provider.BillingPlans.Where(plan => connection.BillingPlanIds.Contains(plan.Id, StringComparer.Ordinal)).ToArray();
-            var plan = await WizardChoice(output, terminal, "Access / billing plan", plans,
-                item => item.Name + " (" + ReadableState(item.Kind) + ")", ct);
-            await output.WriteLineAsync("This is your selected plan; no entitlement, balance or provider access is verified.");
-            var settings = new Dictionary<string, string>(StringComparer.Ordinal) { ["billingPlan"] = plan.Id };
-            foreach (var field in provider.Credentials.Where(field => !field.Secret && (field.Kind != "client-id" || field.Required)))
+            await output.WriteLineAsync("Private account setup. Esc/Ctrl-C cancels. Credentials stay with your local host.");
+            var catalog = await client.ConnectionMethodsAsync(ct: ct);
+            var cfg = await client.GetConfigurationAsync(ct);
+            var monitor = cfg.RuntimeMode == "monitor";
+            bool Available(ProviderConnectionMethodDto method) => method.Availability == "available"
+                && (!monitor || !method.RequiresCore && method.Purposes.Any(p => p is "quota" or "cost"));
+            var providers = catalog.Methods.Select(m => m.Provider).Distinct(StringComparer.Ordinal).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+            var provider = await WizardChoice(output, terminal, "Provider", providers, ProviderDisplayNames.Get, ct);
+            var methods = catalog.Methods.Where(m => m.Provider == provider).OrderByDescending(m => m.Recommended).ToArray();
+            foreach (var blocked in methods.Where(m => !Available(m)))
+                await output.WriteLineAsync(Cell(blocked.Title + ": " + (blocked.Guidance ?? "Unavailable for this host mode. Choose another method.")));
+            var available = methods.Where(Available).ToArray();
+            var method = available.Length == 1 ? available[0] : await WizardChoice(output, terminal, "Connection method", available, m => m.Title, ct);
+            if (method.Description is { } description) await output.WriteLineAsync(Cell(description));
+            if (method.DocumentationUrl is { } url) await output.WriteLineAsync("Official guidance: " + Cell(url));
+            var settings = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var field in method.RequiredSettings ?? [])
             {
-                if (!string.IsNullOrWhiteSpace(field.Help)) await output.WriteLineAsync(Cell(field.Help));
-                var value = await WizardValue(terminal, field.Label + (field.Kind == "consent" ? " (type yes to allow)" : ""), false, ct, required: field.Required);
-                if (field.Kind == "consent")
-                {
-                    if (value.Equals("yes", StringComparison.OrdinalIgnoreCase)) settings[field.Id] = "true";
-                    else if (field.Required) throw new ArgumentException("Required provider consent was not granted. No account was saved.");
-                }
-                else if (value.Length > 0) settings[field.Id] = value;
+                if (field.Help is { } help) await output.WriteLineAsync(Cell(help));
+                var value = field.Choices is { Length: > 0 } choices
+                    ? choices.Length == 1 ? choices[0] : await WizardChoice(output, terminal, field.Label, choices, choice => choice, ct)
+                    : await WizardValue(terminal, field.Label, false, ct, required: field.Required);
+                if (value.Length > 0) settings[field.Id] = value;
             }
-            var secrets = provider.Credentials.Where(field => field.Secret && field.Required).ToArray();
-            if (secrets.Length != 1) throw new InvalidOperationException("This provider requires a credential flow that is not prepared in this wizard.");
-            if (!string.IsNullOrWhiteSpace(secrets[0].Help)) await output.WriteLineAsync(Cell(secrets[0].Help));
-            var key = await WizardValue(terminal, secrets[0].Label + " (hidden)", true, ct);
-            var suggested = AccountNameSuggestions.Suggest(provider.Id, provider.DefaultAccountName ?? provider.Name, configuration.Accounts.Select(account => account.Name));
-            var name = await WizardValue(terminal, "Display name", false, ct, suggested);
-            var candidates = provider.Routes.Where(route => connection.ProviderRouteIds.Contains(route.Id, StringComparer.Ordinal) && route.BillingPlanIds.Contains(plan.Id, StringComparer.Ordinal)).ToArray();
-            await output.WriteLineAsync("Optional models: leave blank to save only the account. Compatible models can use this credential later without re-entering it.");
-            for (var index = 0; index < candidates.Length; index++) await output.WriteLineAsync($"  {index + 1}. {Cell(candidates[index].Name)}");
-            string[] selected;
-            while (true)
+            var suggested = AccountNameSuggestions.Suggest(provider, ProviderDisplayNames.Get(provider), cfg.Accounts.Select(a => a.Name));
+            var name = await WizardValue(terminal, "Account name", false, ct, suggested);
+            var purposes = monitor ? method.Purposes.Where(p => p is "quota" or "cost").ToArray() : method.Purposes;
+            var key = method.SecretRequired ? await WizardValue(terminal, (method.SecretKind ?? "Credential") + " (hidden)", true, ct) : "";
+            DateTimeOffset? expiresAt = null;
+            if (method.SecretKind == "access-token-snapshot")
             {
-                var choices = await WizardValue(terminal, "Model numbers (comma-separated)", false, ct, required: false);
-                var parts = choices.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                var numbers = parts.Select(part => int.TryParse(part, out var number) ? number : 0).ToArray();
-                if (numbers.All(number => number > 0 && number <= candidates.Length)) { selected = numbers.Distinct().Select(number => candidates[number - 1].Id).ToArray(); break; }
-                await output.WriteLineAsync("Enter listed model numbers or leave blank.");
+                var expiry = await WizardValue(terminal, "Snapshot expires at (ISO8601 with timezone)", false, ct);
+                if (!DateTimeOffset.TryParse(expiry, out var suppliedExpiry) || suppliedExpiry <= DateTimeOffset.UtcNow) throw new ArgumentException("The snapshot requires its future expiry.");
+                expiresAt = suppliedExpiry;
             }
-            await output.WriteLineAsync($"Save {Cell(name)} · {Cell(provider.Name)} · {Cell(plan.Name)} · {selected.Length} model routes.");
-            await output.WriteLineAsync("Saving is separate from quota refresh and real inference. Saving performs neither provider action.");
-            var confirm = await WizardValue(terminal, "Save locally? Type yes", false, ct, required: false);
+            await output.WriteLineAsync("Connect " + Cell(name) + " · " + Cell(method.Title) + " · " + string.Join(", ", purposes.Select(Cell)) + ". Models are optional later.");
+            var confirm = await WizardValue(terminal, "Connect? Type yes", false, ct, required: false);
             if (!confirm.Equals("yes", StringComparison.OrdinalIgnoreCase)) return false;
-            static string Normalize(string value) => new(value.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
-            var endpoint = System.Text.RegularExpressions.Regex.Replace(connection.BaseUrl, "\\{([A-Za-z0-9_]+)\\}", match =>
-                settings.FirstOrDefault(pair => Normalize(pair.Key) == Normalize(match.Groups[1].Value)).Value ?? match.Value);
-            if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || endpoint.Contains('{'))
-                throw new ArgumentException("Complete the account settings to resolve the official HTTPS endpoint. No account was saved.");
-            var saved = await client.AddApiAccountAsync(configuration.Revision, new(name, provider.Id, key, endpoint,
-                Settings: settings, ProviderConnectionId: connection.Id, SelectedModelRouteIds: selected), ct);
-            key = "";
-            await output.WriteLineAsync("Account saved locally. Provider access and live budgets remain unverified. Use 'lain usage' to inspect reported data.");
-            if (provider.MonitorAccessOptions is { Length: > 0 })
+            var resourceKey = settings.ContainsKey("projectId") ? "projectId" : settings.ContainsKey("accountId") ? "accountId" : settings.ContainsKey("workspaceId") ? "workspaceId" : "resourceId";
+            var binding = settings.Count == 0 ? null : new ResourceBindingDto(provider, settings.GetValueOrDefault("subject"), settings.GetValueOrDefault("product"), settings.GetValueOrDefault("region"),
+                resourceKey == "projectId" ? "project" : resourceKey == "accountId" ? "account" : resourceKey == "workspaceId" ? "workspace" : null, settings.GetValueOrDefault(resourceKey));
+            var operationKey = Guid.NewGuid().ToString("N");
+            ConfigurationDto saved;
+            if (method.SecretRequired)
             {
-                await output.WriteLineAsync("Optional monitoring access belongs to this same account; it does not require entering the inference key again.");
-                foreach (var option in provider.MonitorAccessOptions) if (!string.IsNullOrWhiteSpace(option.Description)) await output.WriteLineAsync(Cell(option.Description));
-                var added = saved.Accounts.FirstOrDefault(account => !configuration.Accounts.Any(existing => existing.Id == account.Id));
-                if (added is not null) await output.WriteLineAsync("Set up optional monitoring access: lain accounts monitor " + Cell(added.Id));
+                saved = await client.ConnectAccountAsync(cfg.Revision, new(new(provider, method.Id, purposes, name, Binding: binding, IdempotencyKey: operationKey), key,
+                    method.SecretKind ?? "api-key", ExpiresAt: expiresAt, BaseUrl: method.DefaultBaseUrl, Settings: settings), ct);
+                key = "";
+            }
+            else
+            {
+                var login = await client.LoginAsync(new LoginRequest(cfg.Revision, provider, method.Id, purposes, Binding: binding, Name: name, IdempotencyKey: operationKey), ct);
+                activeLogin = login.Id;
+                while (login.State is "waiting" or "pending" or "resource-required" or "awaiting-resource")
+                {
+                    if (login.Url is { } authorization) await output.WriteLineAsync("Continue in your browser: " + Cell(authorization));
+                    if (login.Resources is { Length: > 0 } resources)
+                    {
+                        var resource = await WizardChoice(output, terminal, "Verified resource", resources,
+                            item => string.Join(" · ", new[] { item.Product, item.Region, item.ResourceType, item.ResourceId }.Where(x => x is not null)), ct);
+                        login = await client.SelectLoginResourceAsync(login.Id, new(cfg.Revision, resource), ct);
+                    }
+                    else
+                    {
+                        await WizardValue(terminal, "Complete the provider step, then press Enter to check (Esc cancels)", false, ct, required: false);
+                        login = await client.GetLoginAsync(login.Id, ct);
+                    }
+                }
+                activeLogin = null;
+                if (login.State != "completed") throw new InvalidOperationException("Connection " + Cell(login.State) + ". " + Cell(login.NextAction ?? login.Error));
+                saved = await client.GetConfigurationAsync(ct);
+            }
+            var account = saved.Accounts.FirstOrDefault(a => !cfg.Accounts.Any(previous => previous.Id == a.Id));
+            await output.WriteLineAsync("Credential connected locally. Provider access, quota observations and inference are separate facts.");
+            if (account is not null)
+            {
+                foreach (var capability in account.Capabilities ?? []) await output.WriteLineAsync(Cell(capability.Purpose + ": " + capability.State));
+                try
+                {
+                    var quotas = (await client.QuotasAsync(ct)).Where(q => q.AccountId == account.Id).ToArray();
+                    if (quotas.Length == 0) await output.WriteLineAsync("No quota observation yet. Refresh quota explicitly from the account.");
+                    else await WriteQuotas(output, quotas);
+                }
+                catch (Exception error) when (error is not OperationCanceledException)
+                { await output.WriteLineAsync("Quota observation unavailable. The account remains connected; check it from Accounts."); }
+                if (!monitor && purposes.Contains("inference")) await output.WriteLineAsync("Optional: choose models for account " + Cell(account.Id) + ". No models or profiles were enabled.");
             }
             return true;
         }
-        catch (WizardCancelledException) { return false; }
+        catch (WizardCancelledException)
+        {
+            if (activeLogin is not null) await client.CancelLoginAsync(activeLogin, CancellationToken.None);
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            if (activeLogin is not null) await client.CancelLoginAsync(activeLogin, CancellationToken.None);
+            throw;
+        }
     }
 }

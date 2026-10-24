@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
+using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Lain.Core;
 using Lain.Desktop.Presentation;
@@ -171,6 +172,9 @@ public sealed partial class UsageView
                 Label(PerformanceDetails("Total duration", group.Performance.TotalDurationMs, Milliseconds), Muted),
                 Label(PerformanceDetails("Output / total time", group.Performance.OutputTokensPerSecond, TokenRate), Muted)
             } };
+            if (group.Totals.Measurements is { } measurements)
+                foreach (var (component, value) in Lain.Client.UsageDisplayFacts.Components(measurements))
+                    detail.Children.Add(Label(Lain.Client.UsageDisplayFacts.Describe(component, value), Muted));
             if (group.Key is not null && dimension.Dimension != "provider")
             {
                 var filter = new Button { Content = "Filter to this group", HorizontalAlignment = HorizontalAlignment.Left };
@@ -205,6 +209,15 @@ public sealed partial class UsageView
             }
             var expander = new Expander { Header = header, Content = detail, IsExpanded = _expandedAnalysisGroups.Contains(stateKey),
                 HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+            var commands = new List<ObjectCommand> { new("details", "Token and measurement details", () => expander.IsExpanded = true) };
+            commands.AddRange(detail.Children.OfType<Button>().Select((button, index) => new ObjectCommand("action-" + index, button.Content?.ToString() ?? "Open context", () => button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)))));
+            expander.ContextMenu = ObjectCommands.Menu(commands);
+            var menu = ObjectCommands.Menu(commands);
+            var more = Ui.Button("⋯", () => menu.Open()); more.ContextMenu = menu;
+            AutomationProperties.SetName(more, $"Actions for usage group {name}");
+            var groupHeader = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+            groupHeader.Children.Add(header); Grid.SetColumn(more, 1); groupHeader.Children.Add(more);
+            expander.Header = groupHeader;
             expander.Classes.Add("account-tile");
             AutomationProperties.SetName(expander, $"Analysis group {dimension.Dimension} {name}");
             expander.TemplateApplied += (_, args) =>
