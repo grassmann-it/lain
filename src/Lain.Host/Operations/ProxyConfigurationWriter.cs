@@ -4,26 +4,75 @@ using System.Text.Json;
 using Lain.Core;
 using Lain.Host.Accounts;
 using Lain.Host.Providers;
+using Lain.Host.Models;
 using YamlDotNet.RepresentationModel;
 
 namespace Lain.Host.Operations;
+
+/// <summary>Credential identities and transport provenance only; contains no credential material.</summary>
+public sealed record ProxyTransportDescription(
+    IReadOnlyDictionary<string, string> CredentialIds,
+    IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> RouteCredentials,
+    IReadOnlySet<string> QualifiedProviderRouteIds,
+    IReadOnlyDictionary<string, ModelCompatibilityTransportBinding> TransportBindings);
 
 /// <summary>Compiles only private lain snapshots into the isolated proxy configuration.</summary>
 public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore secrets, ProviderCostPolicy? costPolicy = null)
 {
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> RouteCredentials { get; private set; } = new Dictionary<string, IReadOnlyDictionary<string, string>>();
     public IReadOnlySet<string> QualifiedProviderRouteIds { get; private set; } = new HashSet<string>();
+    public IReadOnlyDictionary<string, ModelCompatibilityTransportBinding> TransportBindings { get; private set; } = new Dictionary<string, ModelCompatibilityTransportBinding>();
+
+    /// <summary>Uses exactly the runtime compiler, without creating tokens or touching generated runtime files.</summary>
+    public ProxyTransportDescription Describe(ConfigurationDto state) => Compile(state).Description;
+
     public IReadOnlyDictionary<string, string> Write(ConfigurationDto state)
     {
-        QualifiedProviderRouteIds = new HashSet<string>();
+        var compiled = Compile(state);
+        // Compilation, credential resolution and binding validation all precede the first mutation.
+        Set(compiled.Config, "api-keys", new YamlSequenceNode(new YamlScalarNode(secrets.GetOrCreateToken(paths.InferenceToken))));
+        Set(compiled.Config, "remote-management", new YamlMappingNode { { "allow-remote", "false" },
+            { "secret-key", secrets.GetOrCreateToken(paths.ManagementToken) }, { "disable-control-panel", "true" } });
+        foreach (var filename in Directory.EnumerateFiles(paths.ProxyAuth, "acct-*.json"))
+            if (!compiled.AuthFiles.ContainsKey(Path.GetFileName(filename))) File.Delete(filename);
+        foreach (var pair in compiled.AuthFiles) OwnStatePaths.WritePrivate(Path.Combine(paths.ProxyAuth, pair.Key), pair.Value);
+        var output = new StringBuilder();
+        using (var writer = new StringWriter(output)) new YamlStream(new YamlDocument(compiled.Config)).Save(writer, false);
+        OwnStatePaths.WritePrivate(paths.ProxyConfig, output.ToString());
+        RouteCredentials = compiled.Description.RouteCredentials;
+        QualifiedProviderRouteIds = compiled.Description.QualifiedProviderRouteIds;
+        TransportBindings = compiled.Description.TransportBindings;
+        return compiled.Description.CredentialIds;
+    }
+
+    private sealed record Compilation(YamlMappingNode Config, Dictionary<string, string> AuthFiles, ProxyTransportDescription Description);
+    private Compilation Compile(ConfigurationDto state)
+    {
         (costPolicy ?? ProviderCostPolicy.Embedded()).ValidateRuntime(state);
         var catalog = costPolicy?.Catalog ?? new ProviderCatalogRegistry();
         var qualifiedProviderRouteIds = new HashSet<string>(StringComparer.Ordinal);
+        var transportBindings = new Dictionary<string, ModelCompatibilityTransportBinding>(StringComparer.Ordinal);
+        var activeRoutes = state.Routes.Where(r => r.Enabled).ToArray();
+        var referencedAccounts = activeRoutes.SelectMany(r => r.AccountIds).ToHashSet(StringComparer.Ordinal);
+        foreach (var id in referencedAccounts)
+        {
+            var account = state.Accounts.SingleOrDefault(a => a.Id == id);
+            if (account is null || !account.Enabled || AccountService.EffectiveCapabilities(account).LastOrDefault(c => c.Purpose == "inference")?.State is not ("unverified" or "available"))
+                throw new InvalidOperationException("Active route requires an enabled account with inference capability.");
+        }
+        foreach (var route in activeRoutes)
+            if (route.AccountIds.Any(id => !string.Equals(state.Accounts.Single(a => a.Id == id).Provider, route.Provider, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidDataException("Route and inference account providers differ.");
+        void BindTransport(RouteDto route, string protocol, string source)
+        {
+            var binding = new ModelCompatibilityTransportBinding(route.Provider, route.UpstreamModel, protocol, source);
+            if (transportBindings.TryGetValue(route.Id, out var prior) && prior.UpstreamProtocol != protocol)
+                throw new InvalidDataException("A route pool cannot mix upstream protocols.");
+            transportBindings[route.Id] = binding;
+        }
         var config = new YamlMappingNode
         {
             { "host", "127.0.0.1" }, { "port", OwnStatePaths.ProxyPort.ToString() }, { "auth-dir", paths.ProxyAuth },
-            { "api-keys", new YamlSequenceNode(new YamlScalarNode(secrets.GetOrCreateToken(paths.InferenceToken))) },
-            { "remote-management", new YamlMappingNode { { "allow-remote", "false" }, { "secret-key", secrets.GetOrCreateToken(paths.ManagementToken) }, { "disable-control-panel", "true" } } },
             { "debug", "false" }, { "logging-to-file", "false" }, { "request-log", "false" },
             { "usage-statistics-enabled", "false" }
         };
@@ -41,25 +90,32 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
                 foreach (var aliases in oauth.Children.Values.OfType<YamlSequenceNode>()) NormalizeModelAliases(aliases);
         }
         var identities = new Dictionary<string, string>();
+        var identityProtocols = new Dictionary<string, string>(StringComparer.Ordinal);
         var authFiles = new Dictionary<string, string>();
         var routeCredentials = state.Routes.Where(r => r.Enabled).ToDictionary(r => r.Id, _ => new Dictionary<string, string>());
         var metadataPath = Path.Combine(paths.Imports, "routes.json");
         var routeMetadata = File.Exists(metadataPath)
             ? JsonSerializer.Deserialize<Dictionary<string, LegacyImportService.ImportedRouteSource>>(File.ReadAllText(metadataPath)) ?? [] : [];
-        foreach (var account in state.Accounts.Where(a => a.Enabled))
+        foreach (var account in state.Accounts.Where(a => a.Enabled && referencedAccounts.Contains(a.Id)))
         {
-            using var credential = JsonDocument.Parse(secrets.ReadAccount(account.Id));
+            using var credential = JsonDocument.Parse(ReadInferenceCredential(account));
             var secret = credential.RootElement;
             var kind = Read(secret, "kind");
             if (kind == "codex-owned")
             {
                 var ownedFilename = Read(secret, "ownedAuthFile") ?? throw new InvalidDataException("Missing owned credential reference.");
+                if (Path.GetFileName(ownedFilename) != ownedFilename || !ownedFilename.EndsWith(".json", StringComparison.Ordinal))
+                    throw new InvalidDataException("Invalid owned credential reference.");
+                if (string.IsNullOrWhiteSpace(Read(secret, "accessToken"))) throw new InvalidDataException("Missing inference access token.");
+                foreach (var route in activeRoutes.Where(r => r.AccountIds.Contains(account.Id))) BindTransport(route, "responses", "compiled:codex-owned");
                 identities.Add(account.Id, "owned/" + ownedFilename);
                 foreach (var route in state.Routes.Where(r => r.Enabled && r.AccountIds.Contains(account.Id))) routeCredentials[route.Id][account.Id] = "owned/" + ownedFilename;
                 continue;
             }
             if (kind == "codex-access-snapshot")
             {
+                if (string.IsNullOrWhiteSpace(Read(secret, "accessToken"))) throw new InvalidDataException("Missing inference access token.");
+                foreach (var route in activeRoutes.Where(r => r.AccountIds.Contains(account.Id))) BindTransport(route, "responses", "compiled:codex-access-snapshot");
                 var filename = account.Id + ".json";
                 var auth = JsonSerializer.Serialize(new Dictionary<string, object?>
                 {
@@ -97,7 +153,7 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
                 if (matches.Length != 1) throw new InvalidOperationException("Route transport is missing or ambiguous; select an imported transport-specific route.");
                 selectedRoutes[route.Id] = matches[0].Id;
             }
-            var selectedTransports = selectedRoutes.Count > 0 ? descriptors.Where(d => selectedRoutes.ContainsValue(d.Id)) : descriptors.Take(1);
+            var selectedTransports = descriptors.Where(d => selectedRoutes.ContainsValue(d.Id));
             foreach (var descriptor in selectedTransports)
             {
                 var transport = descriptor.Secret;
@@ -107,7 +163,8 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
                 if (section is not ("openai-compatibility" or "codex-api-key" or "claude-api-key" or "gemini-api-key"))
                     throw new InvalidDataException("Unsupported source section.");
                 var provider = Read(transport, "sourceConfig") is { } sourceConfig ? Parse(sourceConfig) : new YamlMappingNode();
-                var key = Read(transport, "apiKey") ?? throw new InvalidDataException("Missing own API credential.");
+                var key = Read(transport, "apiKey");
+                if (string.IsNullOrWhiteSpace(key)) throw new InvalidDataException("Missing own API credential.");
                 var endpoint = Read(transport, "baseUrl") ?? "";
                 if (endpoint.Length > 0) { AccountService.ValidateEndpoint(endpoint); Set(provider, "base-url", new YamlScalarNode(endpoint)); }
                 var qualifiedDirectHeaders = false;
@@ -116,6 +173,11 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
                     qualifiedDirectHeaders |= ProviderTransportValidation.ValidateCompiled(catalog, route, transport, section, endpoint, provider);
                     if (route.ProviderRouteId is not null) qualifiedProviderRouteIds.Add(route.Id);
                 }
+                var protocol = CompiledProtocol(section, provider);
+                if (section == "openai-compatibility")
+                    Set(provider, "upstream-protocol", new YamlScalarNode(protocol == "responses" ? "openai-responses" : "openai-chat"));
+                foreach (var route in activeRoutes.Where(r => selectedRoutes.GetValueOrDefault(r.Id) == transportId))
+                    BindTransport(route, protocol, "compiled:" + section);
                 if (!qualifiedDirectHeaders && (section is "codex-api-key" or "claude-api-key" or "gemini-api-key") && LegacyImportService.Get(provider, "headers") is YamlMappingNode headers && headers.Children.Count > 0)
                     throw new InvalidDataException("Custom direct-provider headers require additional qualification.");
                 provider.Children.Remove(new YamlScalarNode("disabled"));
@@ -145,23 +207,66 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
                         .OrderBy(pair => pair.Item1.Value, StringComparer.Ordinal)
                         .Select(pair => pair.Item1.Value + "\0" + pair.Item2.Value + "\0")) : "";
                 var coreId = CoreCredentialId(section, coreProvider, key, endpoint, proxyUrl, LegacyImportService.Text(provider, "prefix") ?? "", sortedHeaders);
+                if (identityProtocols.TryGetValue(coreId, out var priorProtocol) && priorProtocol != protocol)
+                    throw new InvalidDataException("A compiled credential identity cannot select multiple upstream protocols.");
+                identityProtocols[coreId] = protocol;
                 identities.TryAdd(account.Id, coreId);
                 foreach (var pair in selectedRoutes.Where(pair => pair.Value == transportId)) routeCredentials[pair.Key][account.Id] = coreId;
             }
         }
         foreach (var route in state.Routes.Where(r => r.Enabled))
             if (route.AccountIds.Any(id => !routeCredentials[route.Id].ContainsKey(id))) throw new InvalidOperationException("Route contains an unavailable account credential.");
-        // Only own generated auth files are ever deleted. External source directories are never consulted here.
-        foreach (var filename in Directory.EnumerateFiles(paths.ProxyAuth, "acct-*.json"))
-            if (!authFiles.ContainsKey(Path.GetFileName(filename))) File.Delete(filename);
-        foreach (var pair in authFiles) OwnStatePaths.WritePrivate(Path.Combine(paths.ProxyAuth, pair.Key), pair.Value);
-        var output = new StringBuilder();
-        using (var writer = new StringWriter(output)) new YamlStream(new YamlDocument(config)).Save(writer, false);
-        OwnStatePaths.WritePrivate(paths.ProxyConfig, output.ToString());
-        RouteCredentials = routeCredentials.ToDictionary(p => p.Key, p => (IReadOnlyDictionary<string, string>)p.Value);
-        QualifiedProviderRouteIds = qualifiedProviderRouteIds;
-        return identities;
+        var description = new ProxyTransportDescription(identities,
+            routeCredentials.ToDictionary(p => p.Key, p => (IReadOnlyDictionary<string, string>)p.Value),
+            qualifiedProviderRouteIds, transportBindings);
+        _ = RouteBindings.Compile(state, identities, description.RouteCredentials, catalog,
+            qualifiedProviderRouteIds: qualifiedProviderRouteIds, transportBindings: transportBindings);
+        return new(config, authFiles, description);
     }
+
+    private string ReadInferenceCredential(AccountDto account)
+    {
+        var inference = AccountService.EffectiveCapabilities(account).LastOrDefault(c => c.Purpose == "inference");
+        var handle = inference?.CredentialId is { } id ? account.Credentials?.SingleOrDefault(h => h.Id == id)
+            : account.Credentials?.LastOrDefault(h => h.Purposes.Contains("inference", StringComparer.Ordinal));
+        if (inference?.CredentialId is not null && handle is null)
+            throw new InvalidDataException("Referenced inference credential is missing.");
+        if (handle is null)
+        {
+            if (account.Credentials is { Length: > 0 }) throw new InvalidDataException("Inference credential generation is missing.");
+            return secrets.ReadAccount(account.Id);
+        }
+        if (!handle.Purposes.Contains("inference", StringComparer.Ordinal))
+            throw new InvalidDataException("Referenced credential does not grant inference.");
+        if (!string.Equals(account.Provider, handle.Binding.Provider, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("Inference credential provider does not match the account.");
+        AccountService.EnsureCompatibleBinding(account.Binding, handle.Binding);
+        if (secrets.Generations.IsRetired(handle)) throw new InvalidDataException("Credential owner recovery is required.");
+        return secrets.ProjectAccessCredential(secrets.Generations.Read(account.Id, handle).PrivateJson);
+    }
+
+    private static string CompiledProtocol(string section, YamlMappingNode provider) => section switch
+    {
+        "codex-api-key" => "responses",
+        "claude-api-key" => "anthropic",
+        "gemini-api-key" => "gemini",
+        // The compatibility executor defaults to Chat. Only its actual compiled switch selects Responses.
+        "openai-compatibility" => ReadProtocol(provider) switch
+        {
+            null or "" or "openai-chat" => "openai",
+            "openai-responses" => "responses",
+            _ => throw new InvalidDataException("Unsupported compiled compatibility protocol.")
+        },
+        _ => throw new InvalidDataException("Unsupported compiled transport section.")
+    };
+
+    private static string? ReadProtocol(YamlMappingNode provider) => LegacyImportService.Get(provider, "upstream-protocol") switch
+    {
+        null => null,
+        YamlScalarNode scalar => scalar.Value,
+        _ => throw new InvalidDataException("Compiled compatibility protocol must be a scalar.")
+    };
+
     public static string CoreCredentialId(string section, string provider, string key, string endpoint, string proxyUrl, string prefix = "", string sortedHeaders = "")
     {
         var kind = section == "openai-compatibility" ? "openai-compatibility:" + provider.Trim().ToLowerInvariant() : section.Replace("-api-key", "") + ":apikey";

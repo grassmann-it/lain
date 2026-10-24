@@ -14,7 +14,8 @@ public record CoreRouteBinding([property: JsonPropertyName("id")] string Id, [pr
     [property: JsonPropertyName("costPolicy")] string CostPolicy = "configured",
     [property: JsonPropertyName("pricingClass")] string PricingClass = "unknown",
     [property: JsonPropertyName("freeOnlyEnforcement"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? FreeOnlyEnforcement = null,
-    [property: JsonPropertyName("dimensions"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] CoreRouteDimensions? Dimensions = null);
+    [property: JsonPropertyName("dimensions"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] CoreRouteDimensions? Dimensions = null,
+    [property: JsonPropertyName("upstreamProtocol"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? UpstreamProtocol = null);
 public record CoreRouteDimensions(
     [property: JsonPropertyName("modelFamily"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ModelFamily = null,
     [property: JsonPropertyName("manufacturer"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Manufacturer = null,
@@ -31,9 +32,10 @@ public sealed class RouteBindingsWriter(OwnStatePaths paths)
 
     public string Write(ConfigurationDto config, IReadOnlyDictionary<string, string> credentialIds,
         IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? routeCredentials = null, string? profileId = null,
-        IReadOnlySet<string>? qualifiedProviderRouteIds = null)
+        IReadOnlySet<string>? qualifiedProviderRouteIds = null,
+        IReadOnlyDictionary<string, ModelCompatibilityTransportBinding>? transportBindings = null)
     {
-        var bindings = RouteBindings.Compile(config, credentialIds, routeCredentials, profileId: profileId, qualifiedProviderRouteIds: qualifiedProviderRouteIds);
+        var bindings = RouteBindings.Compile(config, credentialIds, routeCredentials, profileId: profileId, qualifiedProviderRouteIds: qualifiedProviderRouteIds, transportBindings: transportBindings);
         OwnStatePaths.WritePrivate(BindingsPath, JsonSerializer.Serialize(bindings));
         return BindingsPath;
     }
@@ -44,7 +46,8 @@ public static class RouteBindings
     /// <summary>Startup contract for the qualified launcher. Every active route must have complete account bindings.</summary>
     public static CoreBindings Compile(ConfigurationDto config, IReadOnlyDictionary<string, string> credentialIds,
         IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? routeCredentials = null,
-        ProviderCatalogRegistry? catalog = null, string? profileId = null, IReadOnlySet<string>? qualifiedProviderRouteIds = null)
+        ProviderCatalogRegistry? catalog = null, string? profileId = null, IReadOnlySet<string>? qualifiedProviderRouteIds = null,
+        IReadOnlyDictionary<string, ModelCompatibilityTransportBinding>? transportBindings = null)
     {
         catalog ??= new();
         var costPolicy = new ProviderCostPolicy(catalog);
@@ -66,6 +69,14 @@ public static class RouteBindings
                 if (!config.Accounts.Any(x => x.Id == id && x.Enabled) || !effectiveCredentials.TryGetValue(id, out var credential) || string.IsNullOrWhiteSpace(credential))
                     throw new ArgumentException("Active route has no enabled qualified credential binding.");
             }
+            ModelCompatibilityTransportBinding? transport = null;
+            if (transportBindings is not null)
+            {
+                if (!transportBindings.TryGetValue(route.Id, out transport) || transport.Provider != route.Provider ||
+                    transport.UpstreamModel != route.UpstreamModel || string.IsNullOrWhiteSpace(transport.Source) ||
+                    transport.UpstreamProtocol is not ("openai" or "responses" or "anthropic" or "gemini"))
+                    throw new ArgumentException("Active route requires matching compiled transport provenance.");
+            }
             // Catalog identity alone cannot prove that the selected credential targets the documented inference endpoint.
             var descriptor = qualifiedProviderRouteIds?.Contains(route.Id) == true ? catalog.FindRoute(route.Provider, route.ProviderRouteId) : null;
             var freeOnly = route.Policy?.CostPolicy == "free_only";
@@ -77,7 +88,7 @@ public static class RouteBindings
                 : null;
             if (!routes.TryAdd(route.Alias, new(route.Id, route.UpstreamModel, route.AccountIds.ToArray(), route.Pooled ? "pool" : "strict",
                     overrides?.ToDictionary(x => x.Key, x => x.Value), route.Visible, route.Provider,
-                    route.Policy?.CostPolicy ?? "configured", descriptor?.PricingClass ?? "unknown", enforcement, dimensions)))
+                    route.Policy?.CostPolicy ?? "configured", descriptor?.PricingClass ?? "unknown", enforcement, dimensions, transport?.UpstreamProtocol)))
                 throw new ArgumentException("Duplicate route alias.");
         }
         var used = routes.Values.SelectMany(x => x.Accounts).ToHashSet();

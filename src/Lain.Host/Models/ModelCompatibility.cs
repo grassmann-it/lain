@@ -33,12 +33,12 @@ public sealed class ModelCompatibilityCatalog(ProviderCatalogRegistry? registry 
         if (transport is null) transports.TryGetValue(route.Id, out transport);
         if (transport is not null && (transport.Provider != route.Provider || transport.UpstreamModel != route.UpstreamModel || string.IsNullOrWhiteSpace(transport.Source)))
             transport = null;
-        if (transport is not null && descriptor is not null && transport.UpstreamProtocol != descriptor.Protocol)
+        if (transport is not null && descriptor is not null && transport.UpstreamProtocol != NormalizeProtocol(descriptor.Protocol))
         {
             descriptor = null;
             notes.Add("Compiled protocol differs from the documented model template; template capabilities remain unknown.");
         }
-        var upstreamProtocol = transport?.UpstreamProtocol ?? descriptor?.Protocol;
+        var upstreamProtocol = transport?.UpstreamProtocol ?? NormalizeProtocol(descriptor?.Protocol);
         if (transport is not null) notes.Add($"Compiled transport source: {transport.Source}");
         if (descriptor is not null)
         {
@@ -85,6 +85,12 @@ public sealed class ModelCompatibilityCatalog(ProviderCatalogRegistry? registry 
             upstreamProtocol, clientVersion == ClientVersion ? "local_fixture" : "unqualified",
             new(functions, namespaces, custom, search, streaming, continuation, maximumTools, context, output), notes.ToArray());
     }
+
+    private static string? NormalizeProtocol(string? protocol) => protocol switch
+    {
+        "openai" or "openai-chat" => "openai", "responses" or "openai-responses" => "responses", "anthropic" or "anthropic-messages" => "anthropic",
+        "gemini" => "gemini", _ => null
+    };
 
     public ModelCompatibilityManifestDto Manifest(IEnumerable<RouteDto> routes, string clientVersion = ClientVersion) =>
         new(1, "codex", clientVersion, routes.Select(route => Resolve(route, clientVersion)).ToArray(),
