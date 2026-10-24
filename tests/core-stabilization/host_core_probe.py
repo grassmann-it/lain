@@ -82,6 +82,7 @@ class HostRun:
         self.log = (root / "host.log").open("w+")
         self.env = {name: os.environ[name] for name in ("PATH", "DOTNET_ROOT", "DOTNET_ROOT_X64") if name in os.environ}
         self.env.update(LANG="C.UTF-8", LAIN_HOME=str(self.state), LAIN_PROXY_PATH=str(core),
+                        TMPDIR=tempfile.gettempdir(),
                         LAIN_REFERENCE_QUALIFICATION="1", LAIN_REFERENCE_DISABLE_QUOTA="1",
                         LAIN_REFERENCE_HOST_PORT=str(self.host_port), LAIN_REFERENCE_PROXY_PORT=str(self.core_port),
                         DOTNET_CLI_TELEMETRY_OPTOUT="1")
