@@ -66,7 +66,7 @@ public sealed partial class MainWindow : Window
         WindowDecorations = WindowDecorations.BorderOnly;
         ExtendClientAreaToDecorationsHint = true;
         ExtendClientAreaTitleBarHeightHint = 48;
-        var shell = new Grid { RowDefinitions = new RowDefinitions("48,Auto,Auto,*,32,52") };
+        var shell = new Grid { RowDefinitions = new RowDefinitions("48,Auto,*,32,52") };
 
         var brand = Ui.Text("lain", 21);
         brand.FontFamily = Ui.BrandFont;
@@ -101,10 +101,10 @@ public sealed partial class MainWindow : Window
         _backButton.Margin = new Thickness(0, 6, 8, 6);
         AutomationProperties.SetName(_backButton, "Back"); ToolTip.SetTip(_backButton, "Back to previous view");
         Grid.SetColumn(_backButton, 1); header.Children.Add(_backButton);
-        _viewButton = Ui.Button("View", ToggleViewOptions);
-        _viewButton.Margin = new Thickness(0, 6, 8, 6);
-        AutomationProperties.SetName(_viewButton, "View");
-        Grid.SetColumn(_viewButton, 2); header.Children.Add(_viewButton);
+        _settingsButton = Ui.IconButton("settings", "Settings", () => Navigate("Settings"));
+        _settingsButton.Margin = new Thickness(0, 6, 8, 6);
+        _settingsButton.VerticalAlignment = VerticalAlignment.Center;
+        Grid.SetColumn(_settingsButton, 2); header.Children.Add(_settingsButton);
         Grid.SetColumn(_refresh, 3); header.Children.Add(_refresh);
         Grid.SetColumn(captions, 4); header.Children.Add(captions);
         shell.Children.Add(new Border { Background = Ui.Surface, BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Child = header });
@@ -122,12 +122,11 @@ public sealed partial class MainWindow : Window
         _notice.PropertyChanged += (_, args) => { if (args.Property == TextBlock.TextProperty) noticeBox.IsVisible = !string.IsNullOrWhiteSpace(_notice.Text); };
         Grid.SetRow(noticeBox, 1); shell.Children.Add(noticeBox);
 
-        _presentationPanel = new Border { IsVisible = false, Background = Ui.Surface, Padding = new Thickness(20, 8), BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1) };
-        Grid.SetRow(_presentationPanel, 2); shell.Children.Add(_presentationPanel);
         _workspace = new ScrollViewer { Content = _page, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, Margin = new Thickness(20, 18, 20, 18) };
         _page.HorizontalContentAlignment = HorizontalAlignment.Stretch;
         _page.VerticalContentAlignment = VerticalAlignment.Stretch;
-        Grid.SetRow(_workspace, 3); shell.Children.Add(_workspace);
+        _page.GotFocus += (_, args) => { if (args.Source is Control control) _lastEditorFocus = control; };
+        Grid.SetRow(_workspace, 2); shell.Children.Add(_workspace);
 
         _connection.TextWrapping = TextWrapping.NoWrap;
         _connection.TextTrimming = TextTrimming.CharacterEllipsis;
@@ -148,7 +147,7 @@ public sealed partial class MainWindow : Window
         lifecycle.VerticalAlignment = VerticalAlignment.Center;
         Grid.SetColumn(lifecycle, 1); footerContent.Children.Add(lifecycle);
         var footer = new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 1, 0, 0), Child = footerContent };
-        Grid.SetRow(footer, 4); shell.Children.Add(footer);
+        Grid.SetRow(footer, 3); shell.Children.Add(footer);
 
         foreach (var name in new[] { "Accounts", "Models", "Profiles", "Usage", "Live" })
         {
@@ -180,7 +179,7 @@ public sealed partial class MainWindow : Window
         navigationContent.Children.Add(_navigation);
         Grid.SetColumn(_informationLevel, 1); navigationContent.Children.Add(_informationLevel);
         var navigationBar = new Border { Background = Ui.Surface, BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 1, 0, 0), Child = navigationContent };
-        Grid.SetRow(navigationBar, 5); shell.Children.Add(navigationBar);
+        Grid.SetRow(navigationBar, 4); shell.Children.Add(navigationBar);
         Content = shell;
         SizeChanged += (_, _) => UpdateNavigationLayout();
         UpdateNavigationLayout();
@@ -261,12 +260,12 @@ public sealed partial class MainWindow : Window
         var operationSection = _section;
         _busy = true; _notice.Text = "Working…";
         _refresh.IsEnabled = false;
-        _page.IsEnabled = false; _navigation.IsEnabled = false; _viewButton.IsEnabled = false; _backButton.IsEnabled = false;
+        _page.IsEnabled = false; _navigation.IsEnabled = false; _settingsButton.IsEnabled = false; _backButton.IsEnabled = false;
         foreach (var action in _actions) action.IsEnabled = false;
         try { await operation(); _editing = stayOnPage; if (_notice.Text == "Working…") _notice.Text = success; }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { return; }
         catch (Exception ex) { _notice.Text = Friendly(ex); }
-        finally { _busy = false; _refresh.IsEnabled = !_refreshing; _page.IsEnabled = true; _navigation.IsEnabled = true; _viewButton.IsEnabled = true; _backButton.IsEnabled = _history.Count > 0; foreach (var action in _actions) action.IsEnabled = true; }
+        finally { _busy = false; _refresh.IsEnabled = !_refreshing; _page.IsEnabled = true; _navigation.IsEnabled = true; _settingsButton.IsEnabled = true; _backButton.IsEnabled = _history.Count > 0; foreach (var action in _actions) action.IsEnabled = true; }
         if (!_editing) { _drafts.Remove(operationSection); await RefreshAsync(false); Render(); }
         UpdateServiceSummary();
     }
@@ -286,7 +285,7 @@ public sealed partial class MainWindow : Window
 
     private void RefreshPage(bool explicitRefresh)
     {
-        if (_editing || _section is "Usage" or "Live" or "Providers") return;
+        if (_editing || _section is "Usage" or "Live" or "Providers" or "Settings" or "About") return;
         // Polling updates the shell immediately, but must not remove the control being
         // used with the keyboard. A changed snapshot remains pending until focus leaves
         // the page, navigation occurs, or the user explicitly refreshes.
@@ -329,7 +328,8 @@ public sealed partial class MainWindow : Window
         {
             "Accounts" => AccountsPage(), "Models" => RoutesPage(), "Profiles" => ProfilesPage(),
             "Providers" => ProviderDiscoveryPage(), "Live" => _inspector,
-            "Usage" => _usage, "Setup" => SetupPage(), "Service" => ServicePage(), _ => AccountsPage()
+            "Usage" => _usage, "Setup" => SetupPage(), "Service" => ServicePage(),
+            "Settings" => SettingsPage(), "About" => AboutPage(), _ => AccountsPage()
         };
         _renderedPageState = PageState();
         _backButton.IsEnabled = _history.Count > 0;

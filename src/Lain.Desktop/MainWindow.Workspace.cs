@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Lain.Core;
 using Lain.Desktop.Presentation;
@@ -13,8 +14,7 @@ public sealed partial class MainWindow
 {
     private readonly WorkspacePreferencesStore _preferencesStore;
     private WorkspacePreferences _preferences => _preferencesStore.Current;
-    private readonly Border _presentationPanel;
-    private readonly Button _viewButton;
+    private readonly Button _settingsButton;
     private readonly Button _backButton;
     private readonly Button _reviewDraftButton;
     private readonly ComboBox _informationLevel = new()
@@ -32,9 +32,10 @@ public sealed partial class MainWindow
     private long? _editorRevision;
     private Action? _editorRebuild;
     private string? _displayedDraftSection;
+    private Control? _lastEditorFocus;
     private TrayWorkspaceController? _trayController;
     private sealed record PageVisit(string Section, Vector Offset, Action Restore);
-    private sealed record PageDraft(Control Content, Button[] Actions, bool LoginVisible, long? Revision, Action? Rebuild);
+    private sealed record PageDraft(Control Content, Button[] Actions, bool LoginVisible, long? Revision, Action? Rebuild, Control? FocusedControl);
 
     public void AttachTrayController(TrayWorkspaceController controller)
     {
@@ -44,11 +45,11 @@ public sealed partial class MainWindow
             SavePreferences(p => p with { NotificationsEnabled = enabled }, render: false);
             // A failed save keeps the stored choice authoritative for the tray too.
             ConfigureTray();
-            if (_presentationPanel.IsVisible) BuildViewOptions();
+            SynchronizeSettings();
         };
         controller.AvailabilityChanged += _ => Dispatcher.UIThread.Post(() =>
         {
-            if (_presentationPanel.IsVisible) BuildViewOptions();
+            SynchronizeSettings();
         });
         ConfigureTray();
     }
@@ -121,6 +122,7 @@ public sealed partial class MainWindow
         {
             _notice.Text = _preferencesStore.Error ?? "View preferences could not be saved.";
             SynchronizeInformationLevel();
+            SynchronizeSettings();
             return;
         }
         ApplyPresentation(render);
@@ -134,12 +136,13 @@ public sealed partial class MainWindow
         _providers.SetPresentation(PresentationFor("Accounts"));
         SetProviderPresentation(PresentationFor("Accounts"));
         SynchronizeInformationLevel();
+        SynchronizeSettings();
         if (_workspace is not null)
             _workspace.Margin = PresentationFor(_section).Density == ViewDensity.Compact
                 ? new Thickness(14, 12) : new Thickness(20, 18);
         // Edit controls stay mounted: preferences cannot discard drafts or secrets.
         // Live/Usage have in-place presentation; detaching Live would clear its buffer.
-        if (render && !_editing && _section is not ("Usage" or "Live" or "Providers")) Render();
+        if (render && !_editing && _section is not ("Usage" or "Live" or "Providers" or "Settings" or "About")) Render();
     }
 
     private void SynchronizeInformationLevel()
@@ -150,64 +153,16 @@ public sealed partial class MainWindow
         _viewOptionsUpdating = wasUpdating;
     }
 
-    private void ToggleViewOptions()
-    {
-        _presentationPanel.IsVisible = !_presentationPanel.IsVisible;
-        if (_presentationPanel.IsVisible) BuildViewOptions();
-    }
-
-    private void BuildViewOptions()
-    {
-        _viewOptionsUpdating = true;
-        var density = new ComboBox { ItemsSource = Enum.GetNames<ViewDensity>(), SelectedIndex = (int)PresentationFor(_section).Density, MinWidth = 125 };
-        var primary = PrimarySection(_section);
-        var row = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var control in new Control[] {
-            Ui.Field("View density", density),
-            Ui.Text($"Density for {primary} · details remain available in every view", 12, Ui.Muted),
-            Ui.Button("Getting started", () => Navigate("Setup")),
-            Ui.Button("Close view options", () => _presentationPanel.IsVisible = false) })
-        {
-            control.Margin = new Thickness(0, 0, 12, 4);
-            control.VerticalAlignment = VerticalAlignment.Center;
-            row.Children.Add(control);
-        }
-        var background = new WrapPanel { Orientation = Orientation.Horizontal };
-        void AddBackgroundOption(string label, Func<WorkspacePreferences, bool> value,
-            Func<WorkspacePreferences, bool, WorkspacePreferences> change)
-        {
-            var toggle = new CheckBox { Content = label, IsChecked = value(_preferences), Margin = new Thickness(0, 0, 18, 4) };
-            AutomationProperties.SetName(toggle, label);
-            toggle.IsCheckedChanged += (_, _) =>
-            {
-                if (_viewOptionsUpdating) return;
-                SavePreferences(p => change(p, toggle.IsChecked == true), render: false);
-                _viewOptionsUpdating = true;
-                toggle.IsChecked = value(_preferences);
-                _viewOptionsUpdating = false;
-            };
-            background.Children.Add(toggle);
-        }
-        AddBackgroundOption("Minimize to tray", p => p.MinimizeToTray, (p, value) => p with { MinimizeToTray = value });
-        AddBackgroundOption("Close to tray", p => p.CloseToTray, (p, value) => p with { CloseToTray = value });
-        AddBackgroundOption("Usage and rate-limit alerts", p => p.NotificationsEnabled, (p, value) => p with { NotificationsEnabled = value });
-        var trayHint = Ui.Text(_trayController?.TrayAvailable == true
-            ? "Tray and alerts keep working while the window is hidden. Quit UI from the tray menu."
-            : "Without an available tray, the window uses normal minimize and close behavior.", 12, Ui.Muted);
-        _presentationPanel.Child = Ui.Stack(row, background, trayHint);
-        density.SelectionChanged += (_, _) =>
-        {
-            if (_viewOptionsUpdating || density.SelectedIndex < 0) return;
-            SavePreferences(p => p with { Densities = new Dictionary<string, ViewDensity>(p.Densities, StringComparer.Ordinal) { [primary] = (ViewDensity)density.SelectedIndex } });
-        };
-        _viewOptionsUpdating = false;
-    }
-
     private void SaveCurrentPage()
     {
         _scrollPositions[_section] = _workspace.Offset;
         if (_editing && _page.Content is Control draft)
-            _drafts[_section] = new(draft, _actions.ToArray(), _loginVisible, _editorRevision, _editorRebuild);
+        {
+            var controls = draft.GetLogicalDescendants().OfType<Control>().Prepend(draft).ToArray();
+            var focused = controls.FirstOrDefault(control => control.IsFocused)
+                ?? controls.FirstOrDefault(control => ReferenceEquals(control, _lastEditorFocus));
+            _drafts[_section] = new(draft, _actions.ToArray(), _loginVisible, _editorRevision, _editorRebuild, focused);
+        }
     }
 
     private void Navigate(string section) => NavigateTo(new(NormalizeSection(section)));
@@ -221,7 +176,9 @@ public sealed partial class MainWindow
         try
         {
             var section = NormalizeSection(target.Section);
-            if (section is not ("Accounts" or "Models" or "Profiles" or "Usage" or "Live" or "Providers" or "Setup" or "Service")) return;
+            if (section is not ("Accounts" or "Models" or "Profiles" or "Usage" or "Live" or "Providers" or "Setup" or "Service" or "Settings" or "About")) return;
+            if (section == "Settings" && _section is not ("Settings" or "About"))
+                _settingsDensitySection = PrimarySection(_section);
             SaveCurrentPage();
             if (remember && (section != _section || target.AccountId is not null || target.RouteId is not null || target.Model is not null))
             {
@@ -245,20 +202,26 @@ public sealed partial class MainWindow
             _editorRevision = null; _editorRebuild = null; _displayedDraftSection = null;
             if (section == "Accounts") ApplyAccountNavigation(target);
             if (section == "Models") ApplyModelsNavigation(target);
+            Control? restoreFocus = null;
             if (target.AccountId is null && target.RouteId is null && target.Model is null && _drafts.TryGetValue(section, out var draft))
             {
                 _editing = true; _loginVisible = draft.LoginVisible;
                 _editorRevision = draft.Revision; _editorRebuild = draft.Rebuild; _displayedDraftSection = section;
                 _actions.Clear(); _actions.AddRange(draft.Actions);
                 _page.Content = draft.Content;
+                restoreFocus = draft.FocusedControl;
                 UpdateNavigationSelection();
                 if (draft.LoginVisible) RestoreLoginPresentation();
             }
             else Render();
             ApplyPresentation(false);
-            if (_presentationPanel.IsVisible) BuildViewOptions();
             var scroll = offset ?? _scrollPositions.GetValueOrDefault(section);
-            Dispatcher.UIThread.Post(() => _workspace.Offset = scroll, DispatcherPriority.Loaded);
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_section != section) return;
+                _workspace.Offset = scroll;
+                if (_editing) restoreFocus?.Focus();
+            }, DispatcherPriority.Loaded);
             _backButton.IsEnabled = _history.Count > 0;
             UpdateDraftStatus();
             if (section == "Providers") _ = RefreshProviderCatalogAsync();
