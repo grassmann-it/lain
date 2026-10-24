@@ -35,10 +35,18 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
                 DocumentationUrl: options[0].DocumentationUrl);
         }
         var expired = stored.ExpiresAt <= clock.GetUtcNow();
+        var selectedId = account.Capabilities?.SingleOrDefault(c => c.Purpose == "quota")?.CredentialId;
+        var owner = account.Credentials?.SingleOrDefault(h => h.Id == selectedId)?.Owner;
+        var managedName = owner switch { "google-oauth" => "Google OAuth", "cloudflare-oauth" => "Cloudflare OAuth", _ => null };
+        var guidance = managedName is not null
+            ? expired
+                ? $"{managedName} monitor access expired. Refresh this connection or reconnect; its registered owner manages token rotation."
+                : $"{managedName} manages this monitor credential. Permissions and reported values remain unverified until a supported read succeeds."
+            : expired
+                ? "Monitor token expired. Enter a new token locally; external tokens are never refreshed or revoked."
+                : "Monitor access is saved locally. Permissions and reported values remain unverified until a supported read succeeds.";
         return new(account.Id, account.Provider, expired ? "expired" : "configured-unverified", stored.Kind,
-            stored.ResourceId, stored.ExpiresAt,
-            expired ? "Monitor token expired. Enter a new token locally; external tokens are never refreshed or revoked."
-                : "Monitor access is saved locally. Permissions and reported values remain unverified until a supported read succeeds.",
+            stored.ResourceId, stored.ExpiresAt, guidance,
             options.First(o => o.Kind == stored.Kind).DocumentationUrl);
     }
 

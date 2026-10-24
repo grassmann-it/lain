@@ -135,10 +135,11 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         if (Missing(expected.Subject, actual.Subject) || Missing(expected.Product, actual.Product) || Missing(expected.Region, actual.Region) ||
             Missing(expected.ResourceType, actual.ResourceType) || Missing(expected.ResourceId, actual.ResourceId))
             throw new ArgumentException("The new credential has not established the existing account identity and resource binding.");
-        if (expected.Provenance is "verified" or "observed" && actual.Provenance is not ("verified" or "observed"))
+        if (VerifiedProvenance(expected.Provenance) && !VerifiedProvenance(actual.Provenance))
             throw new ArgumentException("Reconnect must verify the existing account identity before replacing its credential.");
         static bool Missing(string? previous, string? current) => previous is not null && current is null;
     }
+    private static bool VerifiedProvenance(string provenance) => provenance is "verified" or "observed" or "provider-discovery";
     private static ResourceBindingDto MergeBinding(ResourceBindingDto? prior, ResourceBindingDto next) => prior is null ? next :
         next with { Provider = prior.Provider, Subject = next.Subject ?? prior.Subject, Product = next.Product ?? prior.Product, Region = next.Region ?? prior.Region,
             ResourceType = next.ResourceType ?? prior.ResourceType, ResourceId = next.ResourceId ?? prior.ResourceId,
@@ -369,7 +370,7 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
     {
         var account = state.Accounts.Single(a => a.Id == id);
         var binding = account.Binding ?? new ResourceBindingDto(account.Provider);
-        if (!sameCredential && binding.Provenance is "verified" or "observed")
+        if (!sameCredential && VerifiedProvenance(binding.Provenance))
             throw new InvalidOperationException("Reconnect through an identity-verifying method before replacing this confirmed credential.");
         var currentCapabilities = EffectiveCapabilities(account);
         var inference = currentCapabilities.SingleOrDefault(c => c.Purpose == "inference");

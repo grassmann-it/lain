@@ -318,7 +318,7 @@ async Task ReviewRegressions()
     Check(!Directory.EnumerateFiles(Path.Combine(shared.Paths.Credentials, "generations"), "*.json", SearchOption.AllDirectories)
         .Any(path => File.ReadAllText(path).Contains("same-suitable-fixture-key")), "generation envelopes do not duplicate shared key material");
     var cloud = New("cloud-owner");
-    var cloudBinding = new ResourceBindingDto("gemini-api", Subject: "123456", ResourceType: "project", ResourceId: "my-project", Provenance: "observed");
+    var cloudBinding = new ResourceBindingDto("gemini-api", Subject: "123456", ResourceType: "project", ResourceId: "my-project", Provenance: "provider-discovery");
     var cloudAccount = cloud.Accounts.Connect(0, new("gemini-api", "oauth", ["quota"]), new("google-oauth", ["quota"], cloudBinding,
         "{\"kind\":\"cloud-oauth\",\"accessToken\":\"cloud-access\",\"refreshToken\":\"private-refresh\",\"clientSecret\":\"private-client\",\"settings\":{\"projectNumber\":\"123456\"}}",
         DateTimeOffset.UtcNow.AddHours(1), PreserveForRecovery: true)).Accounts.Single();
@@ -327,6 +327,10 @@ async Task ReviewRegressions()
         "provider-specific cloud owner projects scoped monitor access and safe settings");
     var cloudLease = new CredentialResolver(cloud.Repository, cloud.Secrets).Resolve(cloudAccount.Id, "quota")!;
     Check(!cloudLease.PrivateJson.Contains("private-refresh") && !cloudLease.PrivateJson.Contains("private-client"), "monitor lease excludes refresh and client secrets");
+    ThrowsSync<ArgumentException>(() => cloud.Accounts.ConnectCredential(1, new(new("gemini-api", "manual", ["quota"], AccountId: cloudAccount.Id, Binding: cloudBinding), "unverified-replacement")),
+        "provider-discovered identity cannot be replaced by declared static credentials");
+    Check(cloud.Monitor.Get(cloudAccount.Id).Guidance is { } cloudGuidance && cloudGuidance.Contains("Google OAuth") && !cloudGuidance.Contains("never refreshed"),
+        "managed cloud monitor guidance identifies its rotating owner instead of external snapshot rules");
     var incomplete = New("unqualified-grant");
     var incompleteContext = incomplete.Accounts.ReserveConnect(0, new("gemini-api", "oauth", ["quota"]), "unqualified-cloud-result", DateTimeOffset.UtcNow.AddMinutes(10));
     var incompleteHandle = incomplete.Secrets.Generations.Prepare(incompleteContext.AccountId,
