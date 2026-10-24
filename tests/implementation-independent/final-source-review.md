@@ -105,3 +105,22 @@ release report. They are not grounds to rewrite
 passing tests or silently mark the complete work packages accepted. UI/native
 acceptance is owned by the separately running acceptance work and is not claimed
 by this source review.
+
+## Post-install formatting follow-up, 25 October
+
+Root reported successful r1 installation and an installed Desktop observation of
+overlong quota decimals. The reviewer source-checked the narrow correction
+`37bb56d` in the desktop-quota worktree; it did not inspect private installed CLI
+baselines or repeat runtime checks. Shared CLI/UI amount labels now use at most
+two decimals and percentage labels one, with explicit tiny/nonexhausted boundary
+labels. Raw exact provider strings, JSON, ratios, progress values and exhaustion
+logic are unchanged.
+
+The review found and the owner corrected conversion of exact decimal strings
+through `double`, which would lose integer precision above 2^53, and a percent
+operand still using generic amount formatting. The final source preserves decimal
+precision and uses the shared percentage formatter consistently. Focused test
+source covers installed examples, locale/grouping, tiny/negative/zero values,
+99.96/100/over-limit boundaries, exact large integers and nonfinite inputs. There
+is no remaining source blocker; execution and refreshed artifact qualification
+remain with Root.
