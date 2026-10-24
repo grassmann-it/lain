@@ -83,6 +83,38 @@ project with `projects.get`; it does not enumerate unrelated projects or silentl
 switch the selected resource. A new connection still uses `projects:search` and
 the existing project picker.
 
+## Official gcloud fallback assessment
+
+`/usr/bin/gcloud` is present on the qualification machine; only binary presence
+was checked. No CLI command or user gcloud configuration was read or executed.
+A CLI-owned authorization flow can avoid a lain OAuth client registration while
+keeping Google's client identity inside Google's official CLI. This is distinct
+from copying that client ID into lain's OAuth implementation.
+
+The official configuration reference supports `CLOUDSDK_CONFIG` for a separate
+writeable configuration directory. `gcloud auth login --launch-browser` uses the
+browser by default. `--no-launch-browser` is **not** a drop-in automated callback:
+the documented flow requires copying an authorization code into the CLI's stdin.
+`--no-browser` instead requires a remote bootstrap command on a trusted machine
+with gcloud. `--update-adc` must not be used because it overwrites well-known ADC.
+
+The current shared CLI runner accepts neither `CLOUDSDK_CONFIG` nor streamed
+browser actions/interactive stdin. A separate qualified runner/owner is therefore
+needed: private isolated CLI profile, bounded process lifetime/cancel, fixed
+command arguments, verified account/project, and access-only renewal projection
+with real expiry. `gcloud auth print-access-token ACCOUNT` is documented, but a
+cached token must not be assigned a fictitious new one-hour expiry. The official
+command reference also warns some APIs need `X-Goog-User-Project` and
+`serviceusage.services.use`; these need qualification on the chosen read path.
+This assessment does not mark a gcloud browser method available.
+
+References read 2026-10-25:
+
+- https://cloud.google.com/sdk/gcloud/reference/auth/login
+- https://cloud.google.com/sdk/gcloud/reference/auth/print-access-token
+- https://cloud.google.com/sdk/gcloud/reference/auth/list
+- https://docs.cloud.google.com/sdk/docs/configurations
+
 ## Verification
 
 `tests/cloud-connections/Cloud.Connections.Tests.csproj` extends synthetic HTTP
