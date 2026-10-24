@@ -5,6 +5,7 @@ using System.Text.Json;
 using Lain.Core;
 using Lain.Host.Accounts;
 using Lain.Host.Accounts.Credentials;
+using Lain.Host.Accounts.Cloud;
 using Lain.Host.Accounts.Monitoring;
 using Lain.Host.Models;
 using Lain.Host.Operations;
@@ -28,10 +29,11 @@ try
     await Run("failed newer generation write retries newer payload", PersistenceRetry);
     await Run("legacy preservation rejects contradictory profile identities", LegacyContradictions);
     await Run("new Codex snapshot reaches qualified quota read", CodexSnapshotQuota);
+    await Run("cloud-discovered identity rejects unverified replacement", CloudIdentity);
     await Run("historical canonical journal digest survives replay", HistoricalJournal);
 }
 finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
-Console.WriteLine($"Independent scenarios: {11 - failures.Count}/11 passed.");
+Console.WriteLine($"Independent scenarios: {12 - failures.Count}/12 passed.");
 Environment.ExitCode = failures.Count == 0 ? 0 : 1;
 
 async Task Run(string label, Func<Task> test)
@@ -214,6 +216,26 @@ async Task CodexSnapshotQuota()
     var result = await new CodexQuotaAdapter(client).FetchAsync(account, credential!);
     Require(calls == 1 && result.Readings.Single().UsedPercent == 0);
     Require(!f.Secrets.HasAccount(account.Id));
+}
+
+async Task CloudIdentity()
+{
+    using var http = new CloudProviderHttp(new Handler(_ => new(HttpStatusCode.OK)
+    {
+        Content = new StringContent("{\"projects\":[{\"state\":\"ACTIVE\",\"projectId\":\"fixture-project\",\"name\":\"projects/123456\"}]}")
+    }));
+    var binding = (await new CloudResourceDiscovery(http).GoogleProjectsAsync("synthetic-access")).Single();
+    var f = Fresh("cloud-identity");
+    var state = f.Accounts.Connect(0, new("gemini-api", "browser", ["quota"]), new("google-oauth", ["quota"], binding,
+        "{\"kind\":\"cloud-oauth\",\"accessToken\":\"synthetic-access\",\"refreshToken\":\"synthetic-refresh\"}", DateTimeOffset.UtcNow.AddHours(1), PreserveForRecovery: true));
+    var refused = false;
+    try
+    {
+        f.Accounts.ConnectCredential(state.Revision, new(new("gemini-api", "monitor-access-token-snapshot", ["quota"],
+            AccountId: state.Accounts.Single().Id, Binding: binding), "synthetic-other-access", "access-token-snapshot", DateTimeOffset.UtcNow.AddHours(1)));
+    }
+    catch (Exception error) when (error is ArgumentException or InvalidDataException or InvalidOperationException) { refused = true; }
+    Require(refused && f.Repository.Snapshot.Revision == state.Revision);
 }
 
 async Task HistoricalJournal()

@@ -22,6 +22,14 @@ below do not establish AC-10 completion.
 | Drain timeout followed by failed admission-resume request | Old Core may remain draining while prior completed/ready status is restored | Reported to integrator; degraded/recovery state must expose an unconfirmed resume without killing streams |
 | Legacy runtime and active-profile explicitly name different profiles at same revision | Legacy fallback accepts contradictory files | Reported to application owner; unknown legacy identity must remain distinct from affirmative mismatch |
 
+Main integration follow-up additionally caught new Codex credential kind versus
+legacy quota-adapter guards, malformed optional Poe constructor validation outside
+the boot catch, Monitor inference-export gating, provider-wide Step Plan quota
+claims, and cloud discovery provenance not recognized by the central verified
+identity guard. Root addressed the first four in evolving source; an independent
+cloud-discovery-to-manual-reconnect scenario protects the last invariant. Exact
+Host Monitor probe and all C# scenarios remain not_run until the allocated slot.
+
 Additional source checks found no concrete blocker in bounded loopback callback
 parsing/state validation, profile transaction marker checks, partial token SQL
 aggregation, or Core original/final tool-validation placement. This is not a
