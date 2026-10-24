@@ -182,8 +182,10 @@ public sealed partial class MainWindow
             {
                 var grid = RowGrid();
                 var title = CompactRouteButton(route.Alias, () => ShowDetails(route.Id));
-                title.Background = Brushes.Transparent; title.HorizontalContentAlignment = HorizontalAlignment.Left;
-                title.Content = Ui.Text(route.Alias, 12); title.Padding = new Thickness(0, 3);
+                title.Background = Brushes.Transparent; title.HorizontalAlignment = HorizontalAlignment.Stretch;
+                title.HorizontalContentAlignment = HorizontalAlignment.Stretch; title.BorderThickness = new Thickness(0); title.CornerRadius = new CornerRadius(0);
+                var alias = Ui.Text(route.Alias, 12); alias.TextAlignment = TextAlignment.Left;
+                title.Content = alias; title.Padding = new Thickness(0, 3);
                 AutomationProperties.SetName(title, "Select model access " + route.Alias); rowOrigins[route.Id] = title;
                 grid.Children.Add(title);
                 var binding = Ui.Stack(Ui.Text($"{route.Provider} / {route.UpstreamModel}", 11), Ui.Text(AccountNames(route.AccountIds), 11, Ui.Muted)); binding.Spacing = 1;

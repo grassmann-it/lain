@@ -80,6 +80,7 @@ public sealed partial class MainWindow
     private void ShowLoginPage()
     {
         if (_login is not { } login) return;
+        _notice.Text = "";
         _loginVisible = true; _editing = true; _actions.Clear();
         var waiting = LoginPending(login);
         var providerName = ConnectProviderName(login.Provider);
@@ -99,6 +100,7 @@ public sealed partial class MainWindow
         status.FontWeight = FontWeight.SemiBold;
         AutomationProperties.SetLiveSetting(status, AutomationLiveSetting.Polite);
         var details = new StackPanel { Spacing = 12 };
+        var buttons = new WrapPanel { Orientation = Orientation.Horizontal, ItemSpacing = 8, LineSpacing = 8 };
         details.Children.Add(status);
         details.Children.Add(Ui.Text(guidance, 13, Ui.Muted));
         if (waiting)
@@ -109,6 +111,7 @@ public sealed partial class MainWindow
                 Foreground = Ui.Accent, Background = Ui.Edge,
                 Margin = new Thickness(0, 4)
             });
+            details.Children.Add(buttons);
             if (_loginError is not null)
             {
                 var feedback = Ui.Text(_loginError, 13, Ui.Muted);
@@ -124,7 +127,7 @@ public sealed partial class MainWindow
                 open.Classes.Add("primary");
                 open.HorizontalAlignment = HorizontalAlignment.Left;
                 AutomationProperties.SetHelpText(open, "Opens your default browser only when you activate this button. You can return here while authorization is pending.");
-                details.Children.Add(open);
+                buttons.Children.Add(open);
                 details.Children.Add(Ui.Text("Already opened it? Continue in that browser tab; this page can stay open.", 12, Ui.Muted));
                 var manualUrl = new TextBox { IsReadOnly = true, TextWrapping = TextWrapping.Wrap, FontSize = 12 };
                 AutomationProperties.SetName(manualUrl, "Authorization link");
@@ -162,8 +165,6 @@ public sealed partial class MainWindow
         }
         var back = Ui.Button("Back to accounts", () => Navigate("Accounts"));
         AutomationProperties.SetHelpText(back, waiting ? "Return to accounts. Sign-in continues in the background." : "Return to the list of connected accounts.");
-        var buttons = new WrapPanel { Orientation = Orientation.Horizontal, ItemSpacing = 8, LineSpacing = 8 };
-        buttons.Children.Add(back);
         if (waiting)
         {
             var cancel = Action("Cancel sign-in", async () => {
@@ -180,13 +181,14 @@ public sealed partial class MainWindow
             AutomationProperties.SetHelpText(cancel, "Stops this authorization request and returns to accounts.");
             buttons.Children.Add(cancel);
         }
-        var content = new StackPanel { Spacing = 20, MaxWidth = 680, HorizontalAlignment = HorizontalAlignment.Stretch };
+        buttons.Children.Add(back);
+        if (!waiting) details.Children.Add(buttons);
+        var content = new StackPanel { Spacing = 14, MaxWidth = 680, HorizontalAlignment = HorizontalAlignment.Stretch };
         content.Children.Add(Heading("Connect " + providerName, "Continue the selected provider connection."));
         var card = Ui.Card(details);
-        card.Padding = new Thickness(20);
+        card.Padding = new Thickness(16);
         content.Children.Add(card);
-        content.Children.Add(Ui.Text("Authorization is saved in lain’s own account storage. Applying a proxy profile or exporting settings for the Codex client are separate actions in Profiles.", 12, Ui.Muted));
-        content.Children.Add(buttons);
+        content.Children.Add(new Expander { Header = "Storage and proxy changes", Content = Ui.Text("Authorization is saved in lain’s own account storage. Applying a proxy profile or exporting settings for the Codex client are separate actions in Profiles.", 12, Ui.Muted) });
         _page.Content = content;
     }
 
@@ -208,20 +210,21 @@ public sealed partial class MainWindow
                         var configuration = await _client.GetConfigurationAsync(polling.Token);
                         if (polling.IsCancellationRequested || !ReferenceEquals(_loginPolling, polling) || _login?.Id != id) return;
                         _configuration = configuration;
-                        if (_loginVisible && _section == "Accounts")
+                        var showCompletion = _loginVisible && _section == "Accounts";
+                        if (showCompletion)
                         {
                             _loginVisible = false;
                             if (login.AccountId is { } accountId) await ShowConnectionResultAsync(accountId);
                             else { _editing = false; Render(); }
                         }
                         else await RefreshAsync(false);
-                        _notice.Text = ConnectProviderName(login.Provider) + " credential connected.";
+                        if (!_editing && !showCompletion) _notice.Text = ConnectProviderName(login.Provider) + " credential connected.";
                         return;
                     }
                     if (feedbackChanged && _loginVisible && _section == "Accounts" && !_busy) ShowLoginPage();
                     if (_login.State is "failed" or "cancelled" or "unsupported" or "expired")
                     {
-                        _notice.Text = $"{ConnectProviderName(login.Provider)} authorization {_login.State}.";
+                        if (!_editing) _notice.Text = $"{ConnectProviderName(login.Provider)} authorization {_login.State}.";
                         return;
                     }
                 }

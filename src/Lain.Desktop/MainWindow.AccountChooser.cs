@@ -1,5 +1,7 @@
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia;
+using Avalonia.Layout;
 using Lain.Core;
 using Lain.Desktop.Providers;
 
@@ -13,6 +15,7 @@ public sealed partial class MainWindow
 
     private async void ShowAddAccountChooser()
     {
+        _notice.Text = "";
         _editing = true;
         _loginVisible = false;
         _actions.Clear();
@@ -37,7 +40,7 @@ public sealed partial class MainWindow
             if (!_editing || _section != "Accounts") return;
             var search = Ui.Input(_connectProviderSearch, "Search providers");
             AutomationProperties.SetName(search, "Choose account provider");
-            var rows = Ui.Stack();
+            var rows = Ui.Stack(); rows.Spacing = 6;
             void Populate()
             {
                 rows.Children.Clear();
@@ -45,15 +48,26 @@ public sealed partial class MainWindow
                 {
                     var available = methods.Methods.Any(m => m.Provider == provider.Id && ConnectionMethodAvailable(m));
                     var choose = Ui.Button(provider.Name, () => ShowConnectionMethods(provider.Id));
+                    var identity = Ui.Stack(Ui.Text(provider.Name, 13), Ui.Text(available ? "Use the recommended available method" : "Review connection requirements and alternatives", 11, Ui.Muted));
+                    identity.Spacing = 2;
+                    var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 12 };
+                    row.Children.Add(identity);
+                    var arrow = Ui.Text("›", 20, Ui.Muted); Grid.SetColumn(arrow, 1); row.Children.Add(arrow);
+                    choose.Content = row;
+                    choose.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    choose.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+                    choose.Padding = new Thickness(14, 7); choose.MinHeight = 56;
                     AutomationProperties.SetName(choose, "Connect provider " + provider.Id);
-                    rows.Children.Add(Ui.Card(Ui.Stack(choose, Ui.Text(available ? "Choose a connection method" : "View connection requirements and alternatives", 12, Ui.Muted))));
+                    rows.Children.Add(choose);
                 }
                 if (rows.Children.Count == 0) rows.Children.Add(Ui.Text("No providers match this search.", 13, Ui.Muted));
             }
             search.TextChanged += (_, _) => { _connectProviderSearch = search.Text ?? ""; Populate(); }; Populate();
-            _page.Content = Ui.Stack(Heading("Add account", "Choose a provider. Models and profiles are optional later."), search, rows,
+            var content = Ui.Stack(Heading("Add account", "Choose a provider. Models and profiles are optional later."), search, rows,
                 new Expander { Header = "Manual account or existing setup", Content = OverviewActions(Ui.Button("Manual API account", ShowAddAccount), Ui.Button("Import setup", ShowImport)) },
                 Ui.Button("Back to accounts", () => { _editing = false; Render(); }));
+            content.MaxWidth = 720;
+            _page.Content = content;
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception error)
@@ -67,6 +81,7 @@ public sealed partial class MainWindow
 
     private async Task BeginProviderConnectionAsync(string providerId, AccountDto? reconnect = null)
     {
+        _notice.Text = "";
         try
         {
             if (_section != "Accounts") await NavigateToAsync(new("Accounts", AccountId: reconnect?.Id));
@@ -88,6 +103,8 @@ public sealed partial class MainWindow
 
     private void ShowConnectionMethods(string provider, AccountDto? reconnect = null)
     {
+        _notice.Text = "";
+        _loginVisible = false;
         _editing = true; _workspace.Offset = default;
         var methods = _connectionMethods?.Methods.Where(m => m.Provider == provider).OrderByDescending(m => m.Recommended).ToArray() ?? [];
         if (methods.FirstOrDefault(ConnectionMethodAvailable) is { } preferred)
@@ -113,6 +130,8 @@ public sealed partial class MainWindow
 
     private void ShowConnectionMethod(ProviderConnectionMethodDto method, AccountDto? reconnect)
     {
+        _notice.Text = "";
+        _loginVisible = false;
         if (_configuration is not { } cfg) return;
         RegisterEditor(() => ShowConnectionMethod(method, reconnect), cfg.Revision);
         _editing = true; _workspace.Offset = default;
@@ -180,7 +199,7 @@ public sealed partial class MainWindow
                 await StartConnectionLoginAsync(new(cfg.Revision, method.Provider, method.Id, ConnectionPurposes(method), reconnect?.Id, binding,
                     reconnect?.Generation, name.Text.Trim(), operationKey));
             }
-        }, "Connection saved.", stayOnPage: true);
+        }, method.SecretRequired ? "Credential connected." : "Authorization started. Waiting for completion.", stayOnPage: true);
         form.Children.Add(OverviewActions(connect, Ui.Button("Back to providers", () => { SaveSafeDraft(); secret.Text = ""; ShowAddAccountChooser(); }),
             Ui.Button("Cancel", () => { SaveSafeDraft(); secret.Text = ""; _editing = false; Render(); })));
         var alternatives = Ui.Stack();
@@ -201,6 +220,8 @@ public sealed partial class MainWindow
     private async Task ShowConnectionResultAsync(string accountId)
     {
         if (_configuration?.Accounts.FirstOrDefault(a => a.Id == accountId) is not { } account) return;
+        _notice.Text = "";
+        _loginVisible = false;
         try { _quotas = await _client.QuotasAsync(_lifetime.Token); } catch (Exception error) when (error is not OperationCanceledException) { _quotaError = Friendly(error); }
         _workspace.Offset = default;
         var details = Ui.Stack(Ui.Text(account.Name, 18), Ui.Text(ConnectProviderName(account.Provider) + " · Credential connected", 13, Ui.Accent));
