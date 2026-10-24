@@ -540,7 +540,10 @@ async Task AutomaticRenewal()
     Check(boundedOwner.Calls == 2 && !pass.IsCompleted, "automatic renewal limits simultaneous provider operations");
     release.SetResult();
     var completed = await pass;
-    Check(boundedOwner.Calls == 8 && maximumActive == 2 && completed.All(o => o.State == "renewed"), "one pass is bounded and unrelated account commits revalidate safely");
+    Check(boundedOwner.Calls == 8, $"one pass attempts exactly eight independent owners (observed {boundedOwner.Calls})");
+    Check(maximumActive == 2, $"remote owners retain two-way concurrency (observed {maximumActive})");
+    Check(completed.Length == 8 && completed.All(o => o.State == "renewed"),
+        "unrelated account publications preserve all renewal results: " + string.Join(", ", completed.GroupBy(o => o.State).Select(group => group.Key + "=" + group.Count())));
     await boundedLoop.RefreshDueAsync();
     Check(boundedOwner.Calls == 10, "later pass handles remaining due accounts without repeating completed generations");
 
@@ -548,14 +551,22 @@ async Task AutomaticRenewal()
     var firstSelection = Add(changed, "changing-oauth", ["quota"], clock.GetUtcNow());
     Add(changed, "changing-oauth", ["quota"], clock.GetUtcNow());
     var superseded = Add(changed, "changing-oauth", ["quota"], clock.GetUtcNow());
+    using var changedMutations = new SemaphoreSlim(1, 1);
     var changingOwner = new ScheduledOwner("changing-oauth", (context, _) =>
     {
         if (context.AccountId == firstSelection.Id)
-            changed.Accounts.Connect(changed.Repository.Snapshot.Revision, new("test", "replace-selection", ["quota"], AccountId: superseded.Id),
-                Key("new-static-quota"));
+        {
+            changedMutations.Wait();
+            try
+            {
+                changed.Accounts.Connect(changed.Repository.Snapshot.Revision, new("test", "replace-selection", ["quota"], AccountId: superseded.Id),
+                    Key("new-static-quota"));
+            }
+            finally { changedMutations.Release(); }
+        }
         return Task.FromResult(Renewed(context));
     });
-    var changedOwners = new CredentialOwnerService(changed.Repository, changed.Accounts, changed.Secrets.Generations, [changingOwner]);
+    var changedOwners = new CredentialOwnerService(changed.Repository, changed.Accounts, changed.Secrets.Generations, [changingOwner], changedMutations);
     var changedLoop = new OwnedCredentialRefreshService(changed.Repository, changedOwners, changed.Secrets.Generations, [changingOwner], clock);
     var changedStatus = await changedLoop.RefreshDueAsync();
     Check(changingOwner.Calls == 2 && changedStatus.Single(status => status.AccountId == superseded.Id).State == "superseded",
@@ -563,14 +574,27 @@ async Task AutomaticRenewal()
 
     var blocked = New("owner-publication-gate");
     var blockedAccount = Add(blocked, owner.Owner, ["quota"], clock.GetUtcNow());
-    using var publication = new SemaphoreSlim(0, 1);
+    using var publication = new SemaphoreSlim(1, 1);
     using var cancellation = new CancellationTokenSource();
-    var blockedService = new CredentialOwnerService(blocked.Repository, blocked.Accounts, blocked.Secrets.Generations, [owner], publication);
+    var remoteStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var remoteResult = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var blockedOwner = new ScheduledOwner(owner.Owner, async (context, token) =>
+    {
+        remoteStarted.SetResult();
+        await remoteResult.Task.WaitAsync(token);
+        return Renewed(context);
+    });
+    var blockedService = new CredentialOwnerService(blocked.Repository, blocked.Accounts, blocked.Secrets.Generations, [blockedOwner], publication);
     var blockedHandle = blockedAccount.Credentials!.Single();
     var pending = blockedService.RefreshAsync(blockedAccount.Id, blockedHandle.Id, cancellation.Token);
+    await remoteStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    await publication.WaitAsync().WaitAsync(TimeSpan.FromSeconds(2)); // Apply can acquire the gate during the provider wait.
+    remoteResult.SetResult();
     Check(!pending.IsCompleted && blocked.Secrets.Generations.IsRetired(blockedHandle), "owner refresh runs and retires old material outside blocked publication gate");
     var recoveryFile = Directory.EnumerateFiles(Path.Combine(blocked.Paths.Credentials, "recovery"), "rotation-*.json").Single();
     var recoveryId = Path.GetFileNameWithoutExtension(recoveryFile);
+    for (var attempt = 0; attempt < 200 && CredentialRecoveryService.Read(blocked.Secrets.Generations, recoveryId).Handle?.Generation != 2; attempt++)
+        await Task.Delay(10);
     Check(CredentialRecoveryService.Read(blocked.Secrets.Generations, recoveryId).Handle?.Generation == 2, "new rotation result is durable before waiting for apply gate");
     cancellation.Cancel();
     await Throws<OperationCanceledException>(() => pending, "cancelled publication wait must not publish owner result");

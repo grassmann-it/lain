@@ -27,9 +27,11 @@ Der gemeinsame `CredentialOwnerService` serialisiert denselben Credentialowner p
 Credential-ID. Vor dem Remoteaufruf wird die alte Generation dauerhaft als verbraucht
 markiert. Das empfangene neue Material und sein Recoveryverweis werden vor lokaler
 Publikation gesichert, auch bei eingeschränkten Rechten oder abweichender Bindung.
-Nur die abschließende lokale Prüfung und Config-CAS warten auf die gemeinsame
-Publikationssperre des Hosts. Netzwerk-/Ownerarbeit und private Checkpoints halten diese
-Sperre nicht. Unverwandte Änderungen dürfen nach erneuter Prüfung des weiterhin gleichen
+Nur die kurze lokale Startvalidierung sowie die abschließende Prüfung und Config-CAS
+warten auf die gemeinsame Publikationssperre des Hosts. Dadurch kann die Publikation eines
+anderen Accounts die Startrevision nicht zwischen Snapshot und Validierung überholen.
+Netzwerk-/Ownerarbeit und private Checkpoints halten diese Sperre nicht. Unverwandte
+Änderungen dürfen nach erneuter Prüfung des weiterhin gleichen
 Accounts, Aktivierungszustands, Handles und seiner Zwecke eine neue lokale Revision
 verwenden. Disconnect, Reconnect, geänderte Zwecke und Scopewechsel überschreibt die
 Erneuerung nicht.

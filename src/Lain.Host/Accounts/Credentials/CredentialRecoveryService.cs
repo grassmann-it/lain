@@ -133,20 +133,34 @@ public sealed class CredentialOwnerService(ConfigurationRepository configuration
         await gate.WaitAsync(ct);
         try
         {
-            var snapshot = configuration.Snapshot;
-            var currentAccount = snapshot.Accounts.SingleOrDefault(a => a.Id == accountId);
-            if (selection is not null && !MatchesSelection(currentAccount, credentialId, selection)) return snapshot;
-            var account = currentAccount ?? throw new KeyNotFoundException("Account not found.");
-            var handle = account.Credentials?.SingleOrDefault(h => h.Id == credentialId) ?? throw new KeyNotFoundException("Credential not found.");
-            if (handle.Generation != requested.Generation) return snapshot; // A concurrent owner already rotated this generation.
-            if (handle.Owner is "static-key" or "external-snapshot" or "core")
-                throw new InvalidOperationException("This credential is not refreshed by the host.");
-            if (!implementations.TryGetValue(handle.Owner, out var owner)) throw new InvalidOperationException("Credential owner is not available.");
-            var stored = generations.Read(account.Id, handle);
             var operationId = "rotation-" + Guid.NewGuid().ToString("N");
-            var purposes = AccountService.EffectiveCapabilities(account).Where(c => c.CredentialId == handle.Id).Select(c => c.Purpose).ToArray();
-            var context = accounts.ReserveConnect(snapshot.Revision, new(account.Provider, "owner-refresh", purposes,
-                AccountId: account.Id, Binding: handle.Binding, ExpectedGeneration: account.Generation), operationId, DateTimeOffset.MaxValue);
+            var commitGate = publicationGate ?? localPublicationGate;
+            AccountDto account;
+            CredentialHandleDto handle;
+            ICredentialOwner owner;
+            string[] purposes;
+            LoginOperationContext context;
+            // ReserveConnect deliberately retains its full revision/identity validation. Serialize this
+            // short local preflight with other publications so an unrelated renewal cannot stale its revision.
+            await commitGate.WaitAsync(ct);
+            try
+            {
+                var snapshot = configuration.Snapshot;
+                var currentAccount = snapshot.Accounts.SingleOrDefault(a => a.Id == accountId);
+                if (selection is not null && !MatchesSelection(currentAccount, credentialId, selection)) return snapshot;
+                account = currentAccount ?? throw new KeyNotFoundException("Account not found.");
+                handle = account.Credentials?.SingleOrDefault(h => h.Id == credentialId) ?? throw new KeyNotFoundException("Credential not found.");
+                if (handle.Generation != requested.Generation) return snapshot; // A concurrent owner already rotated this generation.
+                if (handle.Owner is "static-key" or "external-snapshot" or "core")
+                    throw new InvalidOperationException("This credential is not refreshed by the host.");
+                if (!implementations.TryGetValue(handle.Owner, out var selectedOwner)) throw new InvalidOperationException("Credential owner is not available.");
+                owner = selectedOwner;
+                purposes = AccountService.EffectiveCapabilities(account).Where(c => c.CredentialId == handle.Id).Select(c => c.Purpose).ToArray();
+                context = accounts.ReserveConnect(snapshot.Revision, new(account.Provider, "owner-refresh", purposes,
+                    AccountId: account.Id, Binding: handle.Binding, ExpectedGeneration: account.Generation), operationId, DateTimeOffset.MaxValue);
+            }
+            finally { commitGate.Release(); }
+            var stored = generations.Read(account.Id, handle);
             CredentialRecoveryService.SaveStarted(generations, context);
             // This marker is durable before the remote call. Backups cannot reactivate consumed refresh material.
             generations.RetireForRotation(handle, operationId);
@@ -158,7 +172,6 @@ public sealed class CredentialOwnerService(ConfigurationRepository configuration
             AccountService.EnsureCompatibleBinding(handle.Binding, refreshed.Binding);
             // Remote rotation may have consumed the old token; no error path restores it.
             var acquired = false;
-            var commitGate = publicationGate ?? localPublicationGate;
             try
             {
                 await commitGate.WaitAsync(ct);
