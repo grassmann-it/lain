@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using Lain.Core;
 using Lain.Host.Operations;
 using Lain.Host.Providers;
+using Lain.Host.Accounts.Credentials;
 
 namespace Lain.Host.Accounts;
 
@@ -16,7 +17,133 @@ public sealed record AddApiAccountRequest(string Name, string Provider, string A
 
 public sealed class AccountService(ConfigurationRepository configuration, SecretStore secrets, ProviderCatalogRegistry? catalog = null)
 {
-    public AccountDto[] List() => configuration.Snapshot.Accounts.Select(a => a.CredentialKind == "codex-owned" ? Check(a.Id) : a).ToArray();
+    public LoginOperationContext ReserveConnect(long revision, ConnectAccountRequest request, string operationId, DateTimeOffset expiresAt)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var state = configuration.Snapshot;
+        if (state.Revision != revision) throw new RevisionConflictException(revision, state.Revision);
+        if (string.IsNullOrWhiteSpace(request.Provider) || request.Provider.Length > 80 || request.Provider.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '-'))
+            throw new ArgumentException("Invalid provider.");
+        if (string.IsNullOrWhiteSpace(request.Method) || request.Method.Length > 100 || request.Method.Any(char.IsControl))
+            throw new ArgumentException("A connection method is required.");
+        if (request.Purposes.Length == 0 || request.Purposes.Any(p => p is not ("inference" or "quota" or "cost" or "models")))
+            throw new ArgumentException("Choose supported connection purposes.");
+        if (request.Name is { } name && (string.IsNullOrWhiteSpace(name) || name.Length > 120 || name.Any(char.IsControl)))
+            throw new ArgumentException("Invalid account name.");
+        if (request.Binding is { } binding && binding.Provider != request.Provider) throw new ArgumentException("Resource provider does not match the connection.");
+        var target = request.AccountId is null ? null : state.Accounts.SingleOrDefault(a => a.Id == request.AccountId)
+            ?? throw new KeyNotFoundException("Account not found.");
+        if (target is not null)
+        {
+            if (target.Provider != request.Provider) throw new ArgumentException("Reconnect provider does not match the account.");
+            if (request.ExpectedGeneration is { } generation && generation != target.Generation)
+                throw new InvalidOperationException("Account generation changed; reconnect again.");
+            EnsureCompatibleBinding(target.Binding, request.Binding);
+        }
+        return new(operationId, target?.Id ?? "acct-" + Guid.NewGuid().ToString("N"), revision, target?.Generation ?? 0,
+            request with { Binding = request.Binding ?? target?.Binding, Purposes = request.Purposes.Distinct(StringComparer.Ordinal).ToArray() }, expiresAt);
+    }
+
+    public ConfigurationDto CommitPrepared(LoginOperationContext context, CredentialHandleDto handle, Func<bool>? mayCommit = null)
+    {
+        // The immutable secret already exists. Only this short local CAS publishes it.
+        return configuration.Update(context.Revision, state =>
+        {
+            if (mayCommit is not null && !mayCommit()) throw new OperationCanceledException("Connect operation is no longer active.");
+            var existing = state.Accounts.SingleOrDefault(a => a.Id == context.AccountId);
+            if (context.Request.AccountId is not null && (existing is null || existing.Generation != context.AccountGeneration))
+                throw new InvalidOperationException("Account was removed or changed during connection.");
+            if (context.Request.AccountId is null && existing is not null) throw new InvalidOperationException("Reserved account identity is already in use.");
+            if (handle.Binding.Provider != context.Request.Provider || context.Request.Purposes.Any(p => !handle.Purposes.Contains(p, StringComparer.Ordinal)))
+                throw new InvalidDataException("Prepared credential does not grant the requested account purposes.");
+            EnsureBoundResult(context.Request.Binding, handle.Binding);
+            EnsureBoundResult(existing?.Binding, handle.Binding);
+            var capabilities = EffectiveCapabilities(existing).Where(c => !context.Request.Purposes.Contains(c.Purpose, StringComparer.Ordinal))
+                .Concat(context.Request.Purposes.Select(p => new AccountCapabilityDto(p, "unverified", handle.Id))).ToArray();
+            var handles = (existing?.Credentials ?? []).Where(h => h.Id != handle.Id).Append(handle).Where(h => capabilities.Any(c => c.CredentialId == h.Id)).ToArray();
+            var account = (existing ?? new AccountDto(context.AccountId, context.Request.Name?.Trim() ?? context.Request.Provider,
+                context.Request.Provider, true, handle.Owner == "static-key" ? "api-key" : handle.Owner, "unverified")) with
+            {
+                Generation = checked((existing?.Generation ?? 0) + 1), Binding = MergeBinding(existing?.Binding, handle.Binding),
+                Credentials = handles, Capabilities = capabilities, State = "unverified",
+                ExpiresAt = capabilities.Any(c => c.Purpose == "inference" && c.CredentialId == handle.Id) ? handle.ExpiresAt : existing?.ExpiresAt
+            };
+            return state with { Accounts = existing is null ? [.. state.Accounts, account] : state.Accounts.Select(a => a.Id == account.Id ? account : a).ToArray() };
+        });
+    }
+
+    public ConfigurationDto Connect(long revision, ConnectAccountRequest request, PreparedLoginCredential credential)
+    {
+        var context = ReserveConnect(revision, request, "connect-" + Guid.NewGuid().ToString("N"), DateTimeOffset.UtcNow.AddMinutes(10));
+        var handle = secrets.Generations.Prepare(context.AccountId, credential, context.OperationId);
+        try { return CommitPrepared(context, handle); }
+        catch { secrets.Generations.DiscardStaticPreparation(handle); throw; }
+    }
+
+    public ConfigurationDto ConnectCredential(long revision, ConnectCredentialRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (string.IsNullOrWhiteSpace(request.Secret) || request.Secret.Length > 65536 || request.Secret.Any(c => char.IsControl(c) || char.IsWhiteSpace(c)))
+            throw new ArgumentException("A valid access credential is required.");
+        if (request.Kind is not ("api-key" or "access-token-snapshot")) throw new ArgumentException("Unsupported static credential kind.");
+        if (request.Kind == "access-token-snapshot" && (request.ExpiresAt is null || request.ExpiresAt <= DateTimeOffset.UtcNow))
+            throw new ArgumentException("An access snapshot requires a future expiry.");
+        if (request.BaseUrl is { } endpoint) ValidateEndpoint(endpoint);
+        if (request.Settings?.Any(p => p.Key is not ("accountId" or "region" or "workspaceId" or "workspace_id" or "serviceDeploymentScope" or "service_deployment_scope" or "billingPlan" or "allowTrainingData")) == true)
+            throw new ArgumentException("Unsupported provider setting. Submit secrets only in the private credential field.");
+        var binding = (request.Connection.Binding ?? new ResourceBindingDto(request.Connection.Provider)) with { Provenance = "declared" };
+        var json = request.Kind == "api-key"
+            ? JsonSerializer.Serialize(new { kind = "api-key", apiKey = request.Secret, provider = request.Connection.Provider,
+                baseUrl = request.BaseUrl, settings = request.Settings, sourceSection = "openai-compatibility", coreProvider = request.Connection.Provider })
+            : JsonSerializer.Serialize(new { kind = "access-token-snapshot", accessToken = request.Secret, expiresAt = request.ExpiresAt,
+                provider = request.Connection.Provider, accountId = binding.Subject, baseUrl = request.BaseUrl, settings = request.Settings });
+        return Connect(revision, request.Connection, new(request.Kind == "api-key" ? "static-key" : "external-snapshot",
+            request.Connection.Purposes, binding, json, request.ExpiresAt));
+    }
+
+    public ConfigurationDto ObserveBinding(string accountId, long expectedGeneration, ResourceBindingDto binding)
+    {
+        var snapshot = configuration.Snapshot;
+        return configuration.Update(snapshot.Revision, state =>
+        {
+            var account = state.Accounts.SingleOrDefault(a => a.Id == accountId) ?? throw new KeyNotFoundException("Account not found.");
+            if (account.Generation != expectedGeneration) throw new InvalidOperationException("Credential generation changed before identity observation.");
+            EnsureCompatibleBinding(account.Binding, binding);
+            return state with { Accounts = state.Accounts.Select(a => a.Id == accountId ? a with {
+                Binding = MergeBinding(a.Binding, binding), Generation = checked(a.Generation + 1) } : a).ToArray() };
+        });
+    }
+
+    internal static AccountCapabilityDto[] EffectiveCapabilities(AccountDto? account) => account?.Capabilities ??
+        account?.Credentials?.SelectMany(h => h.Purposes.Select(p => new AccountCapabilityDto(p, "unverified", h.Id))).ToArray() ??
+        (account?.CredentialKind is "api-key" or "codex-owned" or "codex-access-snapshot"
+            ? [new("inference", "unverified"), new("quota", "unverified")] : []);
+
+    internal static void EnsureCompatibleBinding(ResourceBindingDto? expected, ResourceBindingDto? actual)
+    {
+        if (expected is null || actual is null) return;
+        if (expected.Provider != actual.Provider || Different(expected.Subject, actual.Subject) || Different(expected.Product, actual.Product) ||
+            Different(expected.Region, actual.Region) || Different(expected.ResourceType, actual.ResourceType) || Different(expected.ResourceId, actual.ResourceId))
+            throw new ArgumentException("The credential belongs to a different provider, identity, product, region or resource.");
+        static bool Different(string? a, string? b) => a is not null && b is not null && !StringComparer.Ordinal.Equals(a, b);
+    }
+    internal static void EnsureBoundResult(ResourceBindingDto? expected, ResourceBindingDto actual)
+    {
+        EnsureCompatibleBinding(expected, actual);
+        if (expected is null) return;
+        if (Missing(expected.Subject, actual.Subject) || Missing(expected.Product, actual.Product) || Missing(expected.Region, actual.Region) ||
+            Missing(expected.ResourceType, actual.ResourceType) || Missing(expected.ResourceId, actual.ResourceId))
+            throw new ArgumentException("The new credential has not established the existing account identity and resource binding.");
+        if (expected.Provenance is "verified" or "observed" && actual.Provenance is not ("verified" or "observed"))
+            throw new ArgumentException("Reconnect must verify the existing account identity before replacing its credential.");
+        static bool Missing(string? previous, string? current) => previous is not null && current is null;
+    }
+    private static ResourceBindingDto MergeBinding(ResourceBindingDto? prior, ResourceBindingDto next) => prior is null ? next :
+        next with { Subject = next.Subject ?? prior.Subject, Product = next.Product ?? prior.Product, Region = next.Region ?? prior.Region,
+            ResourceType = next.ResourceType ?? prior.ResourceType, ResourceId = next.ResourceId ?? prior.ResourceId,
+            Provenance = next.Provenance };
+
+    public AccountDto[] List() => configuration.Snapshot.Accounts.Select(a => Check(a.Id)).ToArray();
     public ConfigurationDto AddApi(long revision, AddApiAccountRequest input)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -39,7 +166,17 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         ProviderTransportPlan? plan;
         string[] permittedIds;
         ProviderRouteDescriptorDto[] selectedTemplates = [];
-        if (input.ProviderConnectionId is { } connectionId)
+        if (input.ProviderConnectionId is { } emptyConnectionId && selectedIds.Length == 0)
+        {
+            var connection = registry.FindConnection(input.Provider, emptyConnectionId)
+                ?? throw new ArgumentException("Unknown provider connection.");
+            // Credentials can be saved before choosing models or a commercial plan.
+            // A concrete model selection still runs the full transport/entitlement validator below.
+            var section = connection.Protocol switch { "anthropic-messages" => "claude-api-key", "gemini" => "gemini-api-key", _ => "openai-compatibility" };
+            plan = new(section, input.Provider, input.BaseUrl, connection.Protocol, new Dictionary<string, string>());
+            permittedIds = [];
+        }
+        else if (input.ProviderConnectionId is { } connectionId)
         {
             var connection = registry.FindConnection(input.Provider, connectionId)
                 ?? throw new ArgumentException("Unknown provider connection.");
@@ -83,11 +220,11 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         }
         else
         {
-            plan = ProviderTransportValidation.Prepare(registry, input.Provider, input.ProviderRouteId, input.BaseUrl, settings);
+            plan = input.ProviderRouteId is null ? null : ProviderTransportValidation.Prepare(registry, input.Provider, input.ProviderRouteId, input.BaseUrl, settings);
             permittedIds = input.ProviderRouteId is { } routeId ? [routeId] : [];
         }
         var provider = registry.Find(input.Provider) is not null ? input.Provider : CanonicalProvider(input.Provider, input.BaseUrl);
-        var id = CredentialId(provider, input.ApiKey);
+        var id = "acct-" + Guid.NewGuid().ToString("N");
         var sourceSection = plan?.SourceSection ?? (input.Provider is "codex" or "claude" or "gemini" or "vertex" ? input.Provider + "-api-key" : "openai-compatibility");
         var credential = JsonSerializer.Serialize(new { kind = "api-key", sourceSection, provider, coreProvider = plan?.CoreProvider ?? input.Provider,
             apiKey = input.ApiKey, baseUrl = plan?.BaseUrl ?? input.BaseUrl, providerRouteId = permittedIds.FirstOrDefault(),
@@ -102,7 +239,7 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             if (duplicate is null && (state.Accounts.Any(a => a.Id == id) || secrets.HasAccount(id)))
                 throw new ArgumentException("The derived account identity is already in use. Existing credentials were not changed.");
             var account = duplicate ?? new AccountDto(id, input.Name.Trim(), provider, true, "api-key", "unverified");
-            var privateJson = duplicate is null ? credential : MergeCredential(secrets.ReadAccount(account.Id), credential, plan, input.ProviderConnectionId is not null);
+            var privateJson = duplicate is null ? credential : permittedIds.Length == 0 ? secrets.ReadAccount(account.Id) : MergeCredential(secrets.ReadAccount(account.Id), credential, plan, input.ProviderConnectionId is not null);
             var next = state with { Accounts = duplicate is null ? [.. state.Accounts, account]
                 : state.Accounts.Select(a => a.Id == account.Id ? a with { State = "unverified" } : a).ToArray() };
             var routes = next.Routes.ToList();
@@ -123,8 +260,7 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             new ProviderCostPolicy(registry).ValidateConfiguration(next);
             // Every shape, entitlement and route check above precedes the private
             // write and executes under the same revision gate as public persistence.
-            secrets.WriteAccount(account.Id, privateJson);
-            return next;
+            return PublishStaticReference(next, account.Id, privateJson);
         });
     }
 
@@ -172,13 +308,31 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             json["apiKey"] = apiKey;
             if (json["transports"] is System.Text.Json.Nodes.JsonArray transports)
                 foreach (var transport in transports.OfType<System.Text.Json.Nodes.JsonObject>()) transport["apiKey"] = apiKey;
-            secrets.WriteAccount(id, json.ToJsonString());
-            return state with { Accounts = state.Accounts.Select(a => a.Id == id ? a with { State = "unverified" } : a).ToArray() };
+            return PublishStaticReference(state, id, json.ToJsonString());
         });
     }
+    private ConfigurationDto PublishStaticReference(ConfigurationDto state, string id, string privateJson)
+    {
+        var account = state.Accounts.Single(a => a.Id == id);
+        var binding = account.Binding ?? new ResourceBindingDto(account.Provider);
+        if (binding.Provenance is "verified" or "observed")
+            throw new InvalidOperationException("Reconnect through an identity-verifying method before replacing this confirmed credential.");
+        var currentCapabilities = EffectiveCapabilities(account);
+        var inference = currentCapabilities.SingleOrDefault(c => c.Purpose == "inference");
+        var quota = currentCapabilities.SingleOrDefault(c => c.Purpose == "quota");
+        var replaceQuota = quota is null && account.Capabilities is null || quota is not null && quota.CredentialId == inference?.CredentialId;
+        var purposes = replaceQuota ? new[] { "inference", "quota" } : ["inference"];
+        var handle = secrets.Generations.Prepare(id, new("static-key", purposes, binding, privateJson));
+        var capabilities = currentCapabilities.Where(c => !purposes.Contains(c.Purpose, StringComparer.Ordinal))
+            .Concat(purposes.Select(p => new AccountCapabilityDto(p, "unverified", handle.Id))).ToArray();
+        var handles = (account.Credentials ?? []).Append(handle).Where(h => capabilities.Any(c => c.CredentialId == h.Id)).ToArray();
+        return state with { Accounts = state.Accounts.Select(a => a.Id == id ? a with { Generation = checked(a.Generation + 1),
+            Binding = binding, Credentials = handles, Capabilities = capabilities, State = "unverified" } : a).ToArray() };
+    }
+
     private AccountDto? FindDuplicate(ConfigurationDto state, string provider, string key, string? except)
     {
-        foreach (var account in state.Accounts.Where(a => a.Id != except && a.CredentialKind == "api-key"))
+        foreach (var account in state.Accounts.Where(a => a.Id != except && a.CredentialKind == "api-key" && secrets.HasAccount(a.Id)))
         {
             using var document = JsonDocument.Parse(secrets.ReadAccount(account.Id));
             if (CanonicalProvider(account.Provider, document.RootElement.TryGetProperty("baseUrl", out var endpoint) ? endpoint.GetString() : null) == provider && document.RootElement.GetProperty("apiKey").GetString() == key) return account;
@@ -205,6 +359,25 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
     public AccountDto Check(string id)
     {
         var account = configuration.Snapshot.Accounts.SingleOrDefault(a => a.Id == id) ?? throw new KeyNotFoundException("Account not found.");
+        if (account.Credentials is { Length: > 0 })
+        {
+            var capabilities = EffectiveCapabilities(account).Select(capability =>
+            {
+                var handle = account.Credentials.SingleOrDefault(h => h.Id == capability.CredentialId && h.Purposes.Contains(capability.Purpose));
+                if (handle is null) return capability with { State = "missing-credential" };
+                try
+                {
+                    if (secrets.Generations.IsRetired(handle)) return capability with { State = "recovery-required" };
+                    secrets.Generations.Read(account.Id, handle);
+                    return capability with { State = handle.ExpiresAt <= DateTimeOffset.UtcNow ? "expired" : capability.State };
+                }
+                catch (Exception error) when (error is IOException or JsonException or InvalidDataException)
+                { return capability with { State = secrets.Generations.RestoreEpoch is not null && handle.Owner is "core" or "delegated-cli" or "session-owner"
+                    ? "recovery-required" : "missing-credential" }; }
+            }).ToArray();
+            return account with { Capabilities = capabilities, State = capabilities.Any(c => c.State is "unverified" or "available")
+                ? "unverified" : capabilities.FirstOrDefault()?.State ?? "missing-credential" };
+        }
         if (!secrets.HasAccount(id)) return account with { State = "missing-credential" };
         if (account.CredentialKind == "codex-owned")
         {
@@ -213,7 +386,8 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
                 using var own = JsonDocument.Parse(secrets.ReadAccount(id));
                 if (own.RootElement.TryGetProperty("expiresAt", out var expiry) && DateTimeOffset.TryParse(expiry.GetString(), out var expires)) account = account with { ExpiresAt = expires };
             }
-            catch (Exception error) when (error is IOException or JsonException or InvalidDataException) { return account with { State = "missing-credential" }; }
+            catch (Exception error) when (error is IOException or JsonException or InvalidDataException)
+            { return account with { State = secrets.Generations.RestoreEpoch is not null ? "recovery-required" : "missing-credential" }; }
         }
         return account with { State = account.ExpiresAt <= DateTimeOffset.UtcNow ? "expired" : "unverified" };
     }
@@ -248,73 +422,4 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
     }
     private static void RequireAccount(ConfigurationDto state, string id)
     { if (!state.Accounts.Any(a => a.Id == id)) throw new KeyNotFoundException("Account not found."); }
-}
-
-/// <summary>Adapters must be explicitly qualified; an external snapshot is never a login adapter.</summary>
-public interface IQualifiedLoginAdapter
-{
-    string Provider { get; }
-    Task<LoginDto> BeginAsync(string operationId, CancellationToken ct);
-    Task<LoginDto> StatusAsync(string operationId, CancellationToken ct);
-    Task CancelAsync(string operationId, CancellationToken ct);
-}
-
-public sealed class LoginOperationService(IEnumerable<IQualifiedLoginAdapter>? qualifiedAdapters = null)
-{
-    private readonly Dictionary<string, IQualifiedLoginAdapter> adapters = (qualifiedAdapters ?? []).ToDictionary(a => a.Provider, StringComparer.Ordinal);
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, LoginDto> operations = new();
-    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> operationGates = new();
-    public async Task<LoginDto> BeginAsync(string provider, CancellationToken ct = default)
-    {
-        var id = Guid.NewGuid().ToString("N");
-        operationGates[id] = new(1, 1);
-        if (!adapters.TryGetValue(provider, out var adapter))
-        {
-            var unsupported = new LoginDto(id, provider, "unsupported", Error: "New login is unavailable until this provider is qualified.");
-            operations[id] = unsupported;
-            return unsupported;
-        }
-        var login = await adapter.BeginAsync(id, ct);
-        Validate(login, id, provider);
-        operations[id] = login;
-        return login;
-    }
-    public async Task<LoginDto> StatusAsync(string id, CancellationToken ct = default)
-    {
-
-        if (!operationGates.TryGetValue(id, out var gate)) throw new KeyNotFoundException("Login operation not found.");
-        await gate.WaitAsync(ct);
-        try
-        {
-            if (!operations.TryGetValue(id, out var operation)) throw new KeyNotFoundException("Login operation not found.");
-            if (operation.State is "unsupported" or "cancelled" or "completed" or "failed") return operation;
-            var login = await adapters[operation.Provider].StatusAsync(id, ct);
-            Validate(login, id, operation.Provider);
-            operations[id] = login;
-            return login;
-        }
-        finally { gate.Release(); }
-    }
-    public async Task<LoginDto> CancelAsync(string id, CancellationToken ct = default)
-    {
-
-        if (!operationGates.TryGetValue(id, out var gate)) throw new KeyNotFoundException("Login operation not found.");
-        await gate.WaitAsync(ct);
-        try
-        {
-            if (!operations.TryGetValue(id, out var operation)) throw new KeyNotFoundException("Login operation not found.");
-            if (operation.State is "unsupported" or "cancelled" or "completed" or "failed") return operation;
-            await adapters[operation.Provider].CancelAsync(id, ct);
-            var cancelled = operation with { State = "cancelled", Url = null };
-            operations[id] = cancelled;
-            return cancelled;
-        }
-        finally { gate.Release(); }
-    }
-    private static void Validate(LoginDto login, string id, string provider)
-    {
-        if (login.Id != id || login.Provider != provider) throw new InvalidDataException("Invalid login operation identity.");
-        if (login.Url is { } url && (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != "https" || !string.IsNullOrEmpty(uri.UserInfo)))
-            throw new InvalidDataException("Invalid login authorization URL.");
-    }
 }

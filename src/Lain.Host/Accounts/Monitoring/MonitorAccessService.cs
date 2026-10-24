@@ -45,22 +45,47 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
     public ConfigurationDto Set(long revision, string accountId, MonitorAccessRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return configuration.Update(revision, state =>
-        {
-            var account = RequireAccount(state, accountId);
-            var resourceId = request.ResourceId?.Trim();
-            Validate(account, request.Kind, request.Secret, resourceId, request.ExpiresAt, requireFutureExpiry: true);
-            store.Write(account, new(account.Id, account.Provider, request.Kind, request.Secret, resourceId!, request.ExpiresAt?.ToUniversalTime()));
-            // This is a capability of the same account; names, routing and inference state remain stable.
-            return state;
-        });
+        var state = configuration.Snapshot;
+        if (state.Revision != revision) throw new RevisionConflictException(revision, state.Revision);
+        var account = RequireAccount(state, accountId);
+        var resourceId = request.ResourceId?.Trim();
+        Validate(account, request.Kind, request.Secret, resourceId, request.ExpiresAt, requireFutureExpiry: true);
+        var resourceType = MonitorAccessCatalog.Provider(account.Provider) == "gemini-api" ? "project" : "account";
+        var binding = (account.Binding ?? new ResourceBindingDto(account.Provider)) with { ResourceType = resourceType, ResourceId = resourceId };
+        AccountService.EnsureCompatibleBinding(account.Binding, binding);
+        var connection = new ConnectAccountRequest(account.Provider, "monitor-" + request.Kind, ["quota"], AccountId: account.Id,
+            Binding: binding, ExpectedGeneration: account.Generation);
+        var value = new StoredMonitorAccess(account.Id, account.Provider, request.Kind, request.Secret, resourceId!, request.ExpiresAt?.ToUniversalTime());
+        var json = JsonSerializer.Serialize(new { kind = "monitor-access", monitorAccess = value });
+        return new AccountService(configuration, secrets).Connect(revision, connection,
+            new(request.Kind == "access-token-snapshot" ? "external-snapshot" : "static-key", ["quota"], binding, json, request.ExpiresAt));
+    }
+
+    public ConfigurationDto Create(long revision, string name, string provider, MonitorAccessRequest request)
+    {
+        if (request.Kind == "inference-key") throw new ArgumentException("Create a monitor account with its own access token first.");
+        var accounts = new AccountService(configuration, secrets);
+        var resourceType = MonitorAccessCatalog.Provider(provider) == "gemini-api" ? "project" : "account";
+        var binding = new ResourceBindingDto(provider, ResourceType: resourceType, ResourceId: request.ResourceId?.Trim());
+        var connection = new ConnectAccountRequest(provider, "monitor-" + request.Kind, ["quota"], Name: name, Binding: binding);
+        var context = accounts.ReserveConnect(revision, connection, "monitor-" + Guid.NewGuid().ToString("N"), clock.GetUtcNow().AddMinutes(10));
+        var account = new AccountDto(context.AccountId, name, provider, true, "monitor", "unverified");
+        Validate(account, request.Kind, request.Secret, binding.ResourceId, request.ExpiresAt, requireFutureExpiry: true);
+        var value = new StoredMonitorAccess(account.Id, provider, request.Kind, request.Secret, binding.ResourceId!, request.ExpiresAt);
+        var handle = secrets.Generations.Prepare(account.Id, new(request.Kind == "access-token-snapshot" ? "external-snapshot" : "static-key",
+            ["quota"], binding, JsonSerializer.Serialize(new { kind = "monitor-access", monitorAccess = value }), request.ExpiresAt));
+        try { return accounts.CommitPrepared(context, handle); }
+        catch { secrets.Generations.DiscardStaticPreparation(handle); throw; }
     }
 
     public ConfigurationDto Remove(long revision, string accountId) => configuration.Update(revision, state =>
     {
-        RequireAccount(state, accountId);
-        store.Delete(accountId);
-        return state;
+        var account = RequireAccount(state, accountId);
+        var capabilities = AccountService.EffectiveCapabilities(account).Where(c => c.Purpose != "quota").ToArray();
+        var handles = (account.Credentials ?? []).Where(h => capabilities.Any(c => c.CredentialId == h.Id)).ToArray();
+        // Removing the public capability invalidates reads first. Private generations remain recoverable and shared inference stays referenced.
+        return state with { Accounts = state.Accounts.Select(a => a.Id == accountId ? a with {
+            Generation = checked(a.Generation + 1), Capabilities = capabilities, Credentials = handles } : a).ToArray() };
     });
 
     /// <summary>Private access projection for quota readers only. No refresh or revoke can occur here.</summary>
@@ -79,10 +104,9 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
         var provider = MonitorAccessCatalog.Provider(account.Provider);
         if (!MonitorAccessCatalog.Options(provider).Any(o => o.Kind == kind))
             throw new ArgumentException("This monitor credential kind is not supported for the selected provider.");
-        if (account.CredentialKind != "api-key")
-            throw new InvalidOperationException("Monitor access must be attached to an existing API-key account.");
         if (kind == "inference-key")
         {
+            if (!secrets.HasAccount(account.Id)) throw new ArgumentException("No inference key is available for this account.");
             if (secret is not null || expiresAt is not null)
                 throw new ArgumentException("Using the inference key requires no separate secret or expiry.");
         }
@@ -106,7 +130,7 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
             if (!Regex.IsMatch(resourceId, @"^[a-fA-F0-9]{32}$", RegexOptions.CultureInvariant))
                 throw new ArgumentException("Use the 32-character Cloudflare account ID.");
             var boundIds = InferenceResourceIds(account, provider);
-            if (boundIds.Count == 0 || boundIds.Any(id => !string.Equals(id, resourceId, StringComparison.OrdinalIgnoreCase)))
+            if (boundIds.Any(id => !string.Equals(id, resourceId, StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException("Cloudflare monitor and inference account IDs must match.");
         }
         else if (provider == "fireworks")
@@ -120,6 +144,7 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
 
     private HashSet<string> InferenceResourceIds(AccountDto account, string provider)
     {
+        if (!secrets.HasAccount(account.Id)) return [];
         try
         {
             using var document = JsonDocument.Parse(secrets.ReadAccount(account.Id));

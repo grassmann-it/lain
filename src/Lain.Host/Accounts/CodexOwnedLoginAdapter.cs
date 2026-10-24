@@ -18,11 +18,49 @@ public interface ICodexOwnedLoginBackend
 
 /// <summary>Adopts only newly issued credentials from the explicitly owned core login flow.</summary>
 public sealed class CodexOwnedLoginAdapter(ICodexOwnedLoginBackend backend, OwnStatePaths paths,
-    ConfigurationRepository configuration, SecretStore secrets, IReadOnlyList<string>? codexModelCatalog = null) : IQualifiedLoginAdapter
+    ConfigurationRepository configuration, SecretStore secrets, IReadOnlyList<string>? codexModelCatalog = null) : IQualifiedLoginAdapter, IAccountLoginAdapter
 {
     private sealed record Operation(string CoreState, LoginDto Status);
     private readonly ConcurrentDictionary<string, Operation> operations = new();
     public string Provider => "codex";
+    public string Method => "codex-owned";
+    public bool RequiresCore => true;
+    public async Task<LoginAdapterResult> BeginAsync(LoginOperationContext context, CancellationToken ct)
+    {
+        var started = await BeginAsync(context.OperationId, ct);
+        return new("waiting", started.Url);
+    }
+    public async Task<LoginAdapterResult> StatusAsync(LoginOperationContext context, CancellationToken ct)
+    {
+        if (!operations.TryGetValue(context.OperationId, out var operation)) throw new KeyNotFoundException("Login operation not found.");
+        var progress = await backend.StatusAsync(operation.CoreState, ct);
+        if (progress.State is "waiting" or "pending") return new("waiting", operation.Status.Url);
+        if (progress.State is "cancelled" or "failed") return new(progress.State);
+        if (progress.State != "completed") throw new InvalidDataException("Core returned an unknown login state.");
+        var filename = progress.OwnedAuthFile;
+        if (filename is null || Path.GetFileName(filename) != filename || !filename.EndsWith(".json", StringComparison.Ordinal))
+            throw new InvalidDataException("Core login did not return an explicitly owned credential.");
+        var path = Path.Combine(paths.OwnedAuth, filename);
+        if (!File.Exists(path) || new FileInfo(path).Length > 1024 * 1024 || (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+            throw new InvalidDataException("Owned login credential is unavailable.");
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        var auth = document.RootElement;
+        var subject = Read(auth, "account_id");
+        if (Read(auth, "type") != "codex" || string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(Read(auth, "access_token")))
+            throw new InvalidDataException("Owned login credential is invalid.");
+        DateTimeOffset? expiry = DateTimeOffset.TryParse(Read(auth, "expired"), out var parsed) ? parsed : null;
+        var binding = new ResourceBindingDto(Provider, Subject: subject, Provenance: "verified");
+        var descriptor = JsonSerializer.Serialize(new { kind = "codex-owned", provider = Provider, ownedAuthFile = filename,
+            accountId = subject, expiresAt = expiry });
+        return new("prepared", Credential: new("core", context.Request.Purposes, binding, descriptor, expiry, PreserveForRecovery: true));
+    }
+    public Task CancelAsync(LoginOperationContext context, CancellationToken ct) => CancelAsync(context.OperationId, ct);
+    public Task ReleaseAsync(LoginOperationContext context, CancellationToken ct) => ReleaseAsync(context.OperationId, ct);
+    public Task ReleaseAsync(string operationId, CancellationToken ct)
+    {
+        operations.TryRemove(operationId, out _);
+        return Task.CompletedTask;
+    }
     public async Task<LoginDto> BeginAsync(string operationId, CancellationToken ct)
     {
         var started = await backend.BeginAsync(ct);

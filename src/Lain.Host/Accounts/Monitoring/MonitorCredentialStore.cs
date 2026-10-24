@@ -25,10 +25,12 @@ public sealed class MonitorCredentialStore
 {
     private readonly string directory;
     private readonly object gate = new();
+    private readonly SecretStore secrets;
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = false };
 
     public MonitorCredentialStore(OwnStatePaths paths)
     {
+        secrets = new(paths);
         directory = Path.Combine(paths.Credentials, "monitors");
         OwnStatePaths.EnsurePrivateDirectory(directory);
     }
@@ -37,6 +39,22 @@ public sealed class MonitorCredentialStore
     {
         lock (gate)
         {
+            if (account.Capabilities is not null)
+            {
+                var capability = account.Capabilities.SingleOrDefault(c => c.Purpose == "quota");
+                if (capability is null) return null;
+                var handle = account.Credentials?.SingleOrDefault(h => h.Id == capability.CredentialId);
+                if (handle is not null)
+                {
+                    var generation = secrets.Generations.Read(account.Id, handle);
+                    using var document = JsonDocument.Parse(generation.PrivateJson);
+                    if (!document.RootElement.TryGetProperty("monitorAccess", out var monitor)) return null;
+                    var value = monitor.Deserialize<StoredMonitorAccess>(JsonOptions) ?? throw new InvalidDataException("Invalid monitor credential.");
+                    if (value.AccountId != account.Id || value.Provider != account.Provider) throw new InvalidDataException("Monitor credential identity mismatch.");
+                    ValidateShape(value);
+                    return value;
+                }
+            }
             var path = AccountPath(account.Id);
             OwnStatePaths.EnsurePrivateDirectory(directory);
             RefuseLink(path);

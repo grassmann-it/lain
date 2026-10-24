@@ -1,4 +1,5 @@
 using Lain.Core;
+using System.Text.Json;
 
 namespace Lain.Host.Quota;
 
@@ -15,6 +16,7 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
     public async Task<QuotaDto[]> GetSnapshotsAsync(CancellationToken ct = default)
     {
         var current = await accounts.GetAccountsAsync(ct);
+        await InvalidateChangedAsync(current, ct);
         lock (gate) return current.SelectMany(Project).ToArray();
     }
 
@@ -28,6 +30,8 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
             // Bound parallel calls while retaining per-account isolation.
             await Parallel.ForEachAsync(current.Where(a => a.Enabled && (accountId is null || a.Id == accountId)),
                 new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = ct }, RefreshAccountAsync);
+            current = await accounts.GetAccountsAsync(ct);
+            await InvalidateChangedAsync(current, ct);
             lock (gate)
             {
                 foreach (var removed in snapshots.Keys.Except(current.Select(a => a.Id)).ToArray()) snapshots.Remove(removed);
@@ -52,9 +56,11 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
         AccountSnapshot previous;
         lock (gate)
         {
-            previous = snapshots.GetValueOrDefault(account.Id) ?? new(null, null, [], null, false);
+            previous = snapshots.GetValueOrDefault(account.Id) ?? new(null, null, [], null, false, AccountVersion: AccountVersion(account));
             snapshots[account.Id] = previous with { Refreshing = true };
         }
+        string? bindingVersion = null;
+        var accountVersion = AccountVersion(account);
         try
         {
             var adapter = providers.FirstOrDefault(a => a.Supports(account.Provider));
@@ -62,18 +68,27 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
             // Passive sources already have authenticated account identity at capture time.
             // Reading their snapshots must never load or forward provider credentials.
             var credential = adapter.RequiresCredential ? await credentials.GetCredentialAsync(account.Id, ct) : new QuotaCredential("");
-            if (credential is null || (adapter.RequiresCredential && string.IsNullOrWhiteSpace(credential.BearerToken)))
+            bindingVersion = credential?.BindingVersion;
+            if (previous.AccountVersion != accountVersion || previous.BindingVersion != bindingVersion)
+                previous = new(null, null, [], null, true, BindingVersion: bindingVersion, AccountVersion: accountVersion);
+            if (credential is null || adapter.RequiresCredential && string.IsNullOrWhiteSpace(credential.BearerToken) && string.IsNullOrWhiteSpace(credential.MonitorBearerToken))
             { SaveFailure(account.Id, previous, "Quota credential unavailable."); return; }
+            if (adapter.RequiresCredential && credential.Purposes is { } purposes && !purposes.Contains(adapter.CredentialPurpose, StringComparer.Ordinal))
+            { SaveFailure(account.Id, previous, "Credential does not grant the required read purpose."); return; }
+            if (credential.Monitor is { Kind: not "inference-key" } monitor && monitor.ExpiresAt <= clock.GetUtcNow())
+            { SaveFailure(account.Id, previous, "Monitor access expired; reconnect monitoring."); return; }
             if (credential.ExpiresAt <= clock.GetUtcNow() && (credential.Monitor is null || credential.Monitor.Kind == "inference-key"))
             { SaveFailure(account.Id, previous, "Access snapshot expired; reconnect account."); return; }
             var result = await adapter.FetchAsync(account, credential, ct);
+            if (!await IsCurrentAsync(account, bindingVersion, adapter.RequiresCredential, ct))
+            { lock (gate) snapshots.Remove(account.Id); return; }
             var now = clock.GetUtcNow();
             var support = result.Support ?? new QuotaSupportDto(adapter.RequiresCredential ? "api" : "passive",
                 adapter.RequiresCredential ? "Provider quota source." : "Previously observed provider response.");
-            if (!result.Readings.Any(HasQuantity) && result.Error is null && IsUnavailable(support))
+            if (!result.Readings.Any(HasQuantity) && result.KiloPass is null && result.RequestyKey is null && result.Error is null && IsUnavailable(support))
             { SaveUnavailable(account.Id, previous, support); return; }
             // An unknown placeholder is not evidence of a successful quota read.
-            if (!result.Readings.Any(HasQuantity))
+            if (!result.Readings.Any(HasQuantity) && result.KiloPass is null && result.RequestyKey is null)
             { SaveFailure(account.Id, previous, result.Error ?? "Remaining budget unknown.", result.Readings, support); return; }
             var readings = result.Readings.Select(r => new CachedReading(r, r.ObservedAt ?? now,
                 HasQuantity(r) ? r.ObservedAt ?? now : null, null)).ToList();
@@ -81,17 +96,18 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
             {
                 if (HasQuantity(readings[index].Reading)) continue;
                 var old = previous.Readings.FirstOrDefault(r => Identity(r.Reading) == Identity(readings[index].Reading) && r.LastSuccessAt.HasValue);
-                if (old is not null) readings[index] = old with { ObservedAt = old.Reading.ObservedAt ?? now, Error = "Quota window unavailable; previous observation retained." };
+                if (old is not null) readings[index] = old with { Error = "Quota window unavailable; previous observation retained." };
             }
             // A partial response must not silently drop the previous successful windows.
             if (result.Error is not null)
                 readings.AddRange(previous.Readings.Where(old => !result.Readings.Any(r => Identity(r) == Identity(old.Reading)))
-                    .Select(old => old with { ObservedAt = old.Reading.ObservedAt ?? now, Error = result.Error }));
-            lock (gate) snapshots[account.Id] = new(now, now, readings, result.Error, false, support);
+                    .Select(old => old with { Error = result.Error }));
+            lock (gate) snapshots[account.Id] = new(now, now, readings, result.Error, false, support, bindingVersion,
+                accountVersion, result.KiloPass, result.RequestyKey);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            lock (gate) snapshots[account.Id] = previous;
+            lock (gate) snapshots[account.Id] = previous with { Refreshing = false };
             throw;
         }
         catch (Exception ex) when (ex is not OutOfMemoryException and not StackOverflowException)
@@ -111,7 +127,7 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
     {
         lock (gate) snapshots[id] = previous with { ObservedAt = clock.GetUtcNow(), Error = error, Refreshing = false,
             Support = support ?? previous.Support,
-            Readings = previous.Readings.Count > 0 ? previous.Readings.Select(r => r with { ObservedAt = r.Reading.ObservedAt ?? clock.GetUtcNow(), Error = error }).ToArray()
+            Readings = previous.Readings.Count > 0 ? previous.Readings.Select(r => r with { Error = error }).ToArray()
                 : (unknown ?? []).Select(r => new CachedReading(r, r.ObservedAt ?? clock.GetUtcNow(), null, error)).ToArray() };
     }
 
@@ -127,7 +143,7 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
             yield break;
         }
         var unavailable = IsUnavailable(snapshot?.Support);
-        var rows = snapshot?.Readings.Count > 0 ? snapshot.Readings : [new CachedReading(new QuotaReading(providers.FirstOrDefault(a => a.Supports(account.Provider))?.Source ?? "unavailable", "unknown"), snapshot?.ObservedAt, null, snapshot?.Error)];
+        var rows = snapshot?.Readings.Count > 0 ? snapshot.Readings : [new CachedReading(new QuotaReading(providers.FirstOrDefault(a => a.Supports(account.Provider))?.Source ?? "unavailable", "unknown"), snapshot?.ObservedAt, snapshot?.KiloPass is not null || snapshot?.RequestyKey is not null ? snapshot?.LastSuccessAt : null, snapshot?.Error)];
         foreach (var cached in rows)
         {
             var row = cached.Reading;
@@ -139,7 +155,9 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
                 cached.ObservedAt, cached.LastSuccessAt, row.ResetsAt, row.Unit, row.Used, row.Limit, row.Remaining,
                 account.SharedWithLegacy, error, row.WindowLabel, row.UsedPercent, snapshot?.Support,
                 row.WindowId, row.MeasurementKind, row.Scope, row.ScopeId, row.Model, row.SourceUrl,
-                row.DataAsOf, row.WindowStart, row.WindowEnd, row.FreshUntil, row.ProviderUpdatedAt, row.ApprovedLimit);
+                row.DataAsOf, row.WindowStart, row.WindowEnd, row.FreshUntil, row.ProviderUpdatedAt, row.ApprovedLimit,
+                row.ExactUsed, row.ExactLimit, row.ExactRemaining, row.NextRegenerationAt, row.NextRegenerationPercent,
+                row.ExactNextRegeneration, snapshot?.KiloPass, snapshot?.RequestyKey);
         }
     }
 
@@ -166,8 +184,39 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
             "https://app.kilo.ai/"),
         _ => new("unsupported", "Quota lookup is not available for this provider.")
     };
-    private static bool HasQuantity(QuotaReading row) => row.Used.HasValue || row.Limit.HasValue || row.Remaining.HasValue || (row.UsedPercent is >= 0 and <= 100);
+    private static bool HasQuantity(QuotaReading row) => row.Used.HasValue || row.Limit.HasValue || row.Remaining.HasValue ||
+        row.ExactUsed is not null || row.ExactLimit is not null || row.ExactRemaining is not null || (row.UsedPercent is >= 0 and <= 100);
+
+    private static string AccountVersion(AccountDto account) => JsonSerializer.Serialize(new { account.Id, account.Provider, account.Enabled,
+        account.Generation, account.Binding, account.Credentials, account.Capabilities });
+
+    private async Task<bool> IsCurrentAsync(AccountDto account, string? bindingVersion, bool requiresCredential, CancellationToken ct)
+    {
+        var current = (await accounts.GetAccountsAsync(ct)).SingleOrDefault(a => a.Id == account.Id);
+        if (current is null || AccountVersion(current) != AccountVersion(account)) return false;
+        return !requiresCredential || await credentials.GetBindingVersionAsync(account.Id, ct) == bindingVersion;
+    }
+
+    private async Task InvalidateChangedAsync(IReadOnlyList<AccountDto> current, CancellationToken ct)
+    {
+        foreach (var account in current)
+        {
+            AccountSnapshot? snapshot;
+            lock (gate) snapshot = snapshots.GetValueOrDefault(account.Id);
+            if (snapshot is null) continue;
+            var adapter = providers.FirstOrDefault(a => a.Supports(account.Provider));
+            string? version = null;
+            try { if (adapter?.RequiresCredential == true) version = await credentials.GetBindingVersionAsync(account.Id, ct); }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch { lock (gate) snapshots.Remove(account.Id); continue; }
+            if (snapshot.AccountVersion != AccountVersion(account) || snapshot.BindingVersion != version)
+                lock (gate) snapshots.Remove(account.Id);
+        }
+        lock (gate)
+            foreach (var removed in snapshots.Keys.Except(current.Select(a => a.Id)).ToArray()) snapshots.Remove(removed);
+    }
     private sealed record CachedReading(QuotaReading Reading, DateTimeOffset? ObservedAt, DateTimeOffset? LastSuccessAt, string? Error);
     private sealed record AccountSnapshot(DateTimeOffset? ObservedAt, DateTimeOffset? LastSuccessAt,
-        IReadOnlyList<CachedReading> Readings, string? Error, bool Refreshing, QuotaSupportDto? Support = null);
+        IReadOnlyList<CachedReading> Readings, string? Error, bool Refreshing, QuotaSupportDto? Support = null,
+        string? BindingVersion = null, string? AccountVersion = null, KiloPassState? KiloPass = null, RequestyKeyMetadata? RequestyKey = null);
 }
