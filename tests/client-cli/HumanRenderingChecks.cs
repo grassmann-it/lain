@@ -114,8 +114,8 @@ internal static class HumanRenderingChecks
         await CliApplication.WriteQuotas(quotaColour, CliPresentationFixtures.Quotas, new(80, true));
         Check(new[] { "\u001b[32m[", "\u001b[33m[", "\u001b[31m[", "\u001b[2m" }.All(quotaColour.ToString().Contains), "terminal quotas use green/yellow/red bars and subtle freshness metadata without colouring unknown values as free");
         var fixtureJson = new StringWriter(); var fixtureError = new StringWriter();
-        Check(await CliPresentationFixtures.RunAsync(["usage", "--json"], fixtureJson, fixtureError) == 0 && fixtureError.ToString() == "" &&
-            fixtureJson.ToString() == JsonSerializer.Serialize(CliPresentationFixtures.Usage, jsonOptions) + Environment.NewLine, "usage human changes leave JSON byte-for-byte unchanged");
+        Check(await CliPresentationFixtures.RunAsync(["history", "--json"], fixtureJson, fixtureError) == 0 && fixtureError.ToString() == "" &&
+            fixtureJson.ToString() == JsonSerializer.Serialize(CliPresentationFixtures.Usage, jsonOptions) + Environment.NewLine, "history retains the historical JSON byte-for-byte");
         fixtureJson = new(); fixtureError = new();
         Check(await CliPresentationFixtures.RunAsync(["status", "--json"], fixtureJson, fixtureError) == 0 && fixtureError.ToString() == "" &&
             fixtureJson.ToString() == JsonSerializer.Serialize(CliPresentationFixtures.Status, jsonOptions) + Environment.NewLine, "status human changes leave JSON byte-for-byte unchanged");

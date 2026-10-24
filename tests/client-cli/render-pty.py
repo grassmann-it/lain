@@ -24,6 +24,7 @@ if not dll.is_file():
     parser.error("Build ClientCli.Tests first; the DLL was not found.")
 args.output.mkdir(parents=True, exist_ok=True)
 ansi = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+sgr = re.compile(r"\x1b\[[0-9;]*m")
 checks = []
 
 
@@ -74,29 +75,35 @@ def capture(command, columns, no_color):
 
 
 for columns in (60, 80, 120):
-    for command in ("quotas", "status", "usage", "help", "providers"):
+    for command in ("quotas", "status", "usage", "history", "help", "providers"):
         for no_color in (False, True):
             raw = capture(command, columns, no_color)
-            plain = ansi.sub("", raw)
+            # .NET initializes a new TTY's keypad mode before application output.
+            # Strip only that known initial prefix, not arbitrary ESC commands.
+            initialized = raw.removeprefix("\x1b[?1h\x1b=")
+            plain = ansi.sub("", initialized)
             assert "\t" not in plain and "\x1b" not in plain, "Unexpected terminal controls"
             assert all(cell_width(line) <= columns for line in plain.splitlines()), (command, columns, plain)
-            assert ("\x1b[" in raw) == (not no_color and command != "help"), "TTY/NO_COLOR policy mismatch"
+            assert bool(sgr.search(initialized)) == (not no_color and command != "help"), "TTY/NO_COLOR policy mismatch"
             if command == "quotas":
                 assert "40% used" in plain and "96% used" in plain and "Last known" in plain
                 assert "Percentage unknown" in plain and "Quota lookup not supported" in plain and "Reset due" in plain
                 assert "Remaining 12 USD-Credits" in plain and "Account ID: account-codex" in plain
+            if command == "usage":
+                assert "Personal Codex" in plain and "codex" in plain and "Coding credits" in plain and "Disabled" in plain
+                assert "Missing credential" in plain and "Quota not reported" in plain and "40% used" in plain
             name = f"{command}-{columns}-{'plain' if no_color else 'color'}"
             (args.output / (name + ".txt")).write_text(plain)
             (args.output / (name + ".ansi.txt")).write_text(raw)
             checks.append(name)
 
-for command in ("quotas", "status", "usage", "help", "providers"):
+for command in ("quotas", "status", "usage", "history", "help", "providers"):
     result = subprocess.run(["dotnet", str(dll), "--render-fixture", command], capture_output=True, text=True, check=True)
     assert result.stderr == "" and "\x1b" not in result.stdout and "\t" not in result.stdout, "Pipe output must be plain"
     (args.output / f"{command}-pipe.txt").write_text(result.stdout)
     checks.append(command + "-pipe")
 
-for command in ("quotas", "status", "usage", "providers"):
+for command in ("quotas", "status", "usage", "history", "providers"):
     result = subprocess.run(["dotnet", str(dll), "--render-fixture", command, "--json"], capture_output=True, text=True, check=True)
     assert result.stderr == "" and "\x1b" not in result.stdout
     json.loads(result.stdout)

@@ -13,6 +13,7 @@ public static partial class CliApplication
     private const string Help = """
         Usage: lain <command> [options]
           status | accounts | models | profiles | quotas [--json]
+          usage [--json]  Current quotas for every configured account
           accounts login codex [--revision N] [--json]
           accounts login-status|login-cancel|check ID [--json]
           accounts enable|disable|remove ID [--revision N] [--json]
@@ -22,16 +23,17 @@ public static partial class CliApplication
           profiles apply ID [--revision N] [--json]
           profiles install-codex ID [--revision N] [--json]
           import CONFIG [--auth-dir DIR] [--revision N] [--json]
-          usage [--today] [--from ISO] [--to ISO] [--timezone IANA]
+          history [--today] [--from ISO] [--to ISO] [--timezone IANA]
                 [--account ID] [--model ID] [--status HTTP] [--json]
-          usage analysis|aggregate|performance [usage filters]
+          history analysis|aggregate|performance [history filters]
                 [--group-by DIMENSION[,DIMENSION...]] [--group-limit 1..500] [--json]
                 Default groups: modelFamily,accountId,reasoningEffort; at most 3 dimensions.
-          Usage filters: --route --model-family --manufacturer --inference-provider
+          History filters: --route --model-family --manufacturer --inference-provider
                 --gateway --billing-account --reasoning --mode --conversation
                 --effective-reasoning-effort --turn --worker --harness --profile
                 (each followed by a value; --reasoning is the requested effort)
-          attempts [usage options] [--offset N] [--limit N] [--json]
+          usage with history filters or analysis remains a history alias.
+          attempts [history options] [--offset N] [--limit N] [--json]
           inspector [snapshot] [--request ID] [--limit 1..256] [--json]
           inspector events [--source ID] [--after N] [--request ID] [--limit 1..500] [--json]
           providers [catalog] [--json]
@@ -83,7 +85,7 @@ public static partial class CliApplication
                 return 0;
             }
             // Validate the command before discovery, so misspellings work even when the host is stopped.
-            if (command is not ("status" or "accounts" or "import" or "models" or "profiles" or "usage" or "attempts" or "quotas" or "auth" or "service" or "providers" or "inspector"))
+            if (command is not ("status" or "accounts" or "import" or "models" or "profiles" or "usage" or "history" or "attempts" or "quotas" or "auth" or "service" or "providers" or "inspector"))
                 throw new ArgumentException($"Unknown command '{command}'. Run 'lain help'.");
             Validate(command, options);
             using var client = (clientFactory ?? LainApiClient.CreateLocal)();
@@ -123,6 +125,9 @@ public static partial class CliApplication
                         options.Get("auth-dir") is { } directory ? Path.GetFullPath(directory) : null), ct);
                     break;
                 case "usage":
+                    if (IsAccountUsage(options)) { result = await AccountUsage(client, ct); break; }
+                    goto case "history";
+                case "history":
                     result = options.Positionals.Count == 0 ? await client.UsageAsync(ParseQuery(options), ct) :
                         await client.UsageAnalysisAsync(ParseQuery(options), ct);
                     break;
@@ -191,7 +196,9 @@ public static partial class CliApplication
             if (options.Get("revision") is { } revision) _ = ParseLong(revision, "revision");
             return;
         }
-        if (command is "usage" or "attempts")
+        if (command == "usage" && IsAccountUsage(options))
+        { options.RequireOnly("json"); options.RequirePositionals(0); return; }
+        if (command is "usage" or "history" or "attempts")
         {
             ValidateUsage(command, options); return;
         }
@@ -297,6 +304,7 @@ public static partial class CliApplication
         if (json) { await output.WriteLineAsync(JsonSerializer.Serialize(value, value.GetType(), Json)); return; }
         switch (value)
         {
+            case AccountUsageOverview overview: await WriteAccountUsage(output, overview); break;
             case StatusDto s: await WriteStatus(output, s); break;
             case AccountDto[] accounts:
                 await WriteAccounts(output, accounts); break;
@@ -346,6 +354,7 @@ public static partial class CliApplication
         public List<string> Settings { get; } = [];
         public bool Json => Has("json");
         public bool Has(string name) => values.ContainsKey(name);
+        public bool HasAnyExcept(string name) => values.Keys.Any(key => key != name);
         public string? Get(string name) => values.GetValueOrDefault(name);
         public static Options Parse(string[] args)
         {

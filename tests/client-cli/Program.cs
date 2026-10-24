@@ -395,6 +395,7 @@ finally
 }
 assertions += await ExpansionContractChecks.RunAsync();
 assertions += await HumanRenderingChecks.RunAsync();
+assertions += await AccountUsageChecks.RunAsync();
 Console.WriteLine($"PASS: {assertions} client/CLI contract checks.");
 
 sealed class FakeHandler : HttpMessageHandler

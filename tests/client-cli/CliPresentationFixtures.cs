@@ -29,6 +29,15 @@ internal static class CliPresentationFixtures
     ];
 
     internal static readonly StatusDto Status = new(1, "fixture", "ready", true, 4, 3, Observed);
+    internal static readonly AccountDto[] Accounts =
+    [
+        new("account-codex", "Personal Codex", "codex", true, "codex-owned", "ready", SharedWithLegacy: true),
+        new("account-credits", "Coding credits", "command-code", false, "api-key", "ready"),
+        new("account-unknown", "Kimi coding", "kimi", true, "api-key", "ready"),
+        new("account-unsupported", "Provider without quota API", "mimo", true, "api-key", "ready"),
+        new("account-zero", "Unused account", "provider-fixture", true, "api-key", "ready"),
+        new("account-missing", "Missing credential", "zai", true, "api-key", "missing")
+    ];
     internal static readonly UsageTotals Totals = new(123, 128, 2, new(1200, 80, 20, null, null), 3);
     internal static readonly UsageSummaryDto Usage = new(1, Observed.AddDays(-1), Observed, "Europe/Berlin", Observed, 42, false, Totals,
         [new("2026-10-24", Totals)], [new("account-codex", Totals)], [new("vendor/model", Totals)]);
@@ -41,11 +50,11 @@ internal static class CliPresentationFixtures
         {
             ["quotas"] = Quotas, ["status"] = Status, ["usage"] = Usage,
             ["providers"] = new ProviderCatalogDto(1, Observed, [provider, provider with { Id = "prepared-fixture", Name = "Prepared fixture", AdapterState = "prepared" }]),
-            ["accounts"] = new AccountDto[] { new("account-codex", "Fixture account", "codex", true, "codex-owned", "ready") },
+            ["accounts"] = Accounts,
             ["profiles"] = new ProfileDto[] { new("profile-fixture", "Fixture profile", ["route-fixture"], "route-fixture") },
             ["models"] = new ModelCatalogDto(1, 4, [new("vendor/model", "provider-fixture", ["account-codex"])])
         };
-        if (args.Length == 0 || args[0] != "help" && !values.ContainsKey(args[0])) throw new ArgumentException("Unknown rendering fixture.");
+        if (args.Length == 0 || (args[0] is not ("help" or "history") && !values.ContainsKey(args[0]))) throw new ArgumentException("Unknown rendering fixture.");
         using var http = new HttpClient(new Handler(values)) { BaseAddress = new Uri("http://fixture.invalid/") };
         return await CliApplication.RunAsync(args, output, error, () => new LainApiClient(http, "fixture-token"));
     }

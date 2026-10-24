@@ -17,12 +17,13 @@ lain status --json
 lain accounts --json
 lain models --json
 lain profiles --json
+lain usage --json
 lain quotas --json
-lain usage --today --timezone Europe/Berlin --json
-lain usage --from 2026-10-22T00:00:00Z --to 2026-10-23T00:00:00Z --timezone UTC --json
+lain history --today --timezone Europe/Berlin --json
+lain history --from 2026-10-22T00:00:00Z --to 2026-10-23T00:00:00Z --timezone UTC --json
 lain attempts --account ACCOUNT_ID --offset 0 --limit 100 --json
-lain usage analysis --today --timezone Europe/Berlin --group-by modelFamily,accountId,reasoningEffort --group-limit 100 --json
-lain usage performance --today --inference-provider PROVIDER --json
+lain history analysis --today --timezone Europe/Berlin --group-by modelFamily,accountId,reasoningEffort --group-limit 100 --json
+lain history performance --today --inference-provider PROVIDER --json
 lain inspector snapshot --limit 100 --json
 lain inspector events --limit 100 --json
 lain inspector events --source SOURCE_ID --after CURSOR --request REQUEST_ID --limit 100 --json
@@ -32,8 +33,19 @@ lain providers routes --provider PROVIDER_ID --json
 lain providers check-free CONFIGURED_ROUTE_ID --json
 ```
 
-Usage and attempts also accept `--model ID` and `--status HTTP`; bound and paginate
-attempt lists (limit 1–500). Usage intervals are at most 366 days. Extended exact
+Bare `lain usage` shows current quota snapshots for every configured account,
+including actual account names/providers, disabled accounts and unavailable
+quotas. `lain usage --json` returns a CLI envelope with `version: 1`,
+`kind: "account-usage"` and `accounts`, each containing the full `account` DTO
+and its `quotas` array. Missing snapshots remain empty arrays. It reads accounts
+and cached quotas through the Host; it does not refresh providers.
+`lain quotas --json` remains the raw quota DTO array from a single GET.
+Use `lain history` for proxy request/token history and performance. Explicit
+historical `usage` arguments, such as `usage --today`, `usage --from ...` and
+`usage analysis`, remain supported aliases with their existing JSON contracts.
+
+History and attempts also accept `--model ID` and `--status HTTP`; bound and paginate
+attempt lists (limit 1–500). History intervals are at most 366 days. Extended exact
 filters are `--route`, `--model-family`, `--manufacturer`, `--inference-provider`,
 `--gateway`, `--billing-account`, `--reasoning`, `--mode`, `--conversation`, `--turn`,
 `--worker`, `--harness`, `--profile` and `--effective-reasoning-effort`, each
@@ -42,7 +54,7 @@ records the upstream translation only when observed. Use installed
 help to check which commands the running version supports before inspecting the
 expanded contract; development does not imply the installed service was upgraded.
 
-`usage analysis`, `usage aggregate` and `usage performance` return the same
+`history analysis`, `history aggregate` and `history performance` return the same
 server aggregate, including measured performance and grouped usage. They do not
 accept attempt pagination. `--group-by` takes 1–3 distinct comma-separated keys:
 `accountId`, `routeId`, `model`, `provider`, `modelFamily`, `manufacturer`,

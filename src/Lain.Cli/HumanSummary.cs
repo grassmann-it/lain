@@ -19,7 +19,7 @@ public static partial class CliApplication
     internal static async Task WriteUsage(TextWriter output, UsageSummaryDto usage, HumanOutputContext? context = null)
     {
         context ??= HumanOutputContext.Detect(output);
-        await HumanTable.WriteTextAsync(output, "Usage", context);
+        await HumanTable.WriteTextAsync(output, "Proxy history", context);
         await HumanTable.WriteTextAsync(output, $"From {usage.From:O}", context);
         await HumanTable.WriteTextAsync(output, $"To   {usage.To:O}", context);
         await HumanTable.WriteTextAsync(output, "Timezone " + Cell(usage.TimeZone) + " · coverage " + (usage.Complete ? "complete" : "incomplete"), context);

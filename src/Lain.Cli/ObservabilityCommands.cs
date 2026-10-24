@@ -49,7 +49,7 @@ public static partial class CliApplication
 
     private static void ValidateUsage(string command, Options options)
     {
-        var analysis = command == "usage" && options.Positionals.Count > 0;
+        var analysis = (command is "usage" or "history") && options.Positionals.Count > 0;
         options.RequirePositionals(analysis ? 1 : 0);
         if (analysis && options.Positionals[0] is not ("analysis" or "aggregate" or "performance"))
             throw new ArgumentException("Usage action must be analysis, aggregate or performance.");
