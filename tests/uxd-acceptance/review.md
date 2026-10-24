@@ -1,127 +1,134 @@
 # UXD-09 visual and interaction evidence
 
-Review started 24 October 2026 against source baseline `ec68062`. The initial
-reference review below is preserved; integrated runtime evidence follows here.
-The supplied stabilization evidence contains 26 assertion descriptions but no
-assembly hash or source commit. Its images establish the visible captured state,
-not the current checkout.
+The final targeted correction run passed **8/8 cases and 141 assertions** on
+24 October 2026. The latest broad run remains **42/45 cases passed**: its three
+Compact Profiles failures were fixed and then covered by that targeted run.
+All 45 cases were not rerun on the corrected source. This is scoped synthetic UX
+evidence, not blanket visual acceptance or release qualification.
 
-## Integrated runs and independently discovered defects
+The checked-in [evidence summary](evidence-summary.json) records exact checkout,
+desktop assembly, evidence and log hashes; historical failures; all 14 reference
+mappings; hashes of the specifically reviewed PNGs; and remaining limits.
+Immutable run evidence retains its automatic `visualReview: REQUIRED` values.
+Manual observations are separate and do not rewrite the artifacts.
 
-All execution used the runner-owned private Xvfb and in-memory fixture. No
-user display, session bus, real host, provider, browser or credential was used.
+## Executed runs
 
-| Run | Product commit / assembly SHA-256 | Executed result |
+Every run used owned private Xvfb, Xauthority and an isolated synthetic fixture.
+No user display/session bus, real host, provider, credential, external browser
+or installed application was used. Builds/runtime were serialized with the
+integrator. The final build passed in 11.84 seconds with no errors and 11 CS0649
+warnings for unused variation fields in the shared synthetic fixture.
+
+| Run / artifact directory | Source identity | Actual result |
 | --- | --- | --- |
-| `artifacts/uxd-acceptance-20261024-pass1` | `87c9b5bd29a6e2fa98052138637e4957df893533`; `99C2B52094EA9BE3B82A19204FC7374E840740DDBE59EA497F8EB7808A0FBC5E` | 45 cases, 658 passed assertions, 95 image records. Six Usage variants failed on a real Avalonia logical-parent exception; native typing and Live selection had fixture sequencing errors. |
-| `artifacts/uxd-acceptance-20261024-pass2` | `f2f1e885dd63d7f2a490022fbb7af3e1555f9edd` (same product as source plus Usage `7a38075`); `0008D5FD61AF45694212BDDBED29E4AAAFA0542168299EE91BD568B47114790A` | Focused 14 cases, 215 assertions, 31 image records passed. This does **not** mean visual acceptance: narrow Usage still had no readable result row. Harness edits were uncommitted during this diagnostic run and are recorded in `bdc4b88`. |
+| [pass1](../../artifacts/uxd-acceptance-20261024-pass1/) | `87c9b5b` | 37/45 cases passed, 658 passed assertions, 95 image records / 98 PNGs. Six real Usage construction failures; two harness sequencing failures in native typing and Live selection. |
+| [pass2](../../artifacts/uxd-acceptance-20261024-pass2/) | `f2f1e88`; dirty harness edits later committed as `bdc4b88` | 14/14 filtered cases, 215 assertions, 31 image records / 34 PNGs. Functional pass still missed unreadable narrow Usage rows; manual PNG inspection found the issue. |
+| [final broad (F)](../../artifacts/uxd-acceptance-20261024-final/) | Product base `9319397`, harness checkout `a174c77` | 42/45 cases, 736 passed assertions, 106 image records / 111 PNGs. Only `matrix-Profiles-{Barebones,Simple,Advanced}-Compact` failed at 800 px. This run remains **FAIL**. |
+| [profiles-final (P)](../../artifacts/uxd-acceptance-20261024-profiles-final/) | Product base `9319397` + `f5c0fac` (local `0c38932`), fixture `422564f`, harness checkout `5efe8da` | 8/8 cases, 141 assertions, 19 image records / 21 PNGs. Six Profiles level/density combinations at both sizes, Simple/Normal Usage at both sizes, and profile/dialog/native Back passed. |
 
-Native pointer/keyboard evidence in pass2 establishes typing the full `codex`,
-Ctrl+A/Backspace, Tab to Details, Enter to open, Escape with trigger focus return,
-and right-click/visible-menu/Shift+F10 parity. Each key now waits for actual UI
-processing. The first burst-input result was `code`; the expected text was not
-weakened. Live now explicitly returns to its narrow inventory before native
-pointer selection. Native Apply pointer → owned dialog → Escape → trigger focus
-already passed in run1, with actual X11 root images showing the dialog.
+Image records count page captures; PNG totals also include native X11 root
+captures of menus/dialogs. Each directory has verified `SHA256SUMS` for PNGs,
+`evidence.json` and `run.log`. Ignored artifacts must accompany a machine transfer.
+The final filter was `matrix-Profiles,matrix-Usage-Simple-Normal,profile-viewing`.
 
-Independent image review found defects that passing geometry checks missed:
+## Independently discovered defects and corrections
 
-| Finding | Evidence and action |
+| Finding | Correction and actual verification |
 | --- | --- |
-| Usage row construction exception | Run1 shows `AttachedToLogicalTreeCore called for Grid but control has no logical parent`; no rows. Owner fixed double attachment in `7a38075`; run2 confirms rendered rows. |
-| Usage800 has no readable first row | Run2 `usage-simple-normal-800x560.png` shows only table header and a few border pixels. The former intersection assertion was insufficient. Changed to fully visible first account-name text; source owner supplies `70a940a`. |
-| Models responsive state follows previous width | Run1 wide Simple lacks its reserved pane while `models-advanced-compact-800x560.png` retains a 320px empty inspector and squeezes names. Owner confirmed root resize callback used stale outer bounds; source correction pending retest. |
-| Profiles800 normal/compact breakpoint | Run1 still shows two columns. Source `60c9c15` handles 760px normal content; compact content is772px and needs a density-independent boundary. Both densities now have explicit one-pane assertions. |
-| Pending Connect claims success | Run1 `connect-codex-waiting-narrow.png` says `Connection saved.` while authorization is waiting. Next Kilo form retains the prior Codex success notice. Owner `ec2a618` clears/gates notices and keeps Cancel above optional guidance; retest pending. |
-| Chooser and model labels misaligned | Run1 chooser has90px fullwidth cards with tiny centered provider buttons; model names centered under left-aligned header. `ec2a618` supplies compact left-aligned rows/labels; retest pending. |
+| Usage attached the same header Grid twice: `AttachedToLogicalTreeCore called for Grid but control has no logical parent`. | Owner fix `7a38075`; rendered rows verified in pass2 and final. |
+| Usage at 800 px showed only a table header and border pixels despite a passing intersection check. | Fully visible first-account-name assertion replaced the weak check. Owner fix `70a940a`; final and P show the complete first row, P wide shows all three rows. |
+| Models used the previous width: missing wide inspector, stale narrow inspector squeezing names. | Owner fix `4d976f0` uses actual arranged width. Final assertions and reviewed 1120 / Advanced-Compact 800 PNGs confirm correct pane state. |
+| Pending Connect claimed `Connection saved.`, Kilo retained Codex success, and narrow Cancel was below the fold. Chooser/model labels were centered awkwardly. | Owner fix `ec2a618`; final assertions and chooser/waiting/Kilo/Models PNGs confirm clear notices, reachable Cancel and left-aligned compact rows. |
+| Profiles Compact at 800 px retained two panes after earlier fixes read stale outer `Window.Bounds`. | Owner fix `f5c0fac` uses the measured `root.SizeChanged` width. P passes all six variants; all three Compact 800 PNGs were directly inspected and show one inventory pane. Selected detail, owned dialog, focus return and native Back also pass. |
 
-Accounts before/after selection kept every measured rectangle and both scroll
-anchors across Settings/Back. Their initial lower-reference setup revealed only
-Z.ai's title at the fold; the next capture explicitly scrolls to inventory bottom
-and requires the entire Z.ai card before comparison. This is an evidence setup
-correction, not a product movement bug.
+Evidence setup corrections remain distinct from product defects. Native typing
+originally delivered `code` in a burst; spaced actual native keys now produce
+required `codex`. Live explicitly returns to the narrow inventory before pointer
+selection. Lower Accounts now shows the entire Z.ai card before comparison.
+Fixture `422564f` aligns Usage summary account scopes with breakdown rows;
+P Usage captures supersede the older inconsistent no-activity chips.
 
-Reviewed native product images show correct separate Viewed Daily/Applied
-Workspace2, visible distinct Export/Client setup, full wide profile rows,
-readable modal actions, three calm Settings groups and one bottom-right
-information selector. Simple/Normal wide and narrow frames plus targeted states
-were inspected at full size. Some repetitive matrix variants remain only
-automatically checked; they are not individually marked visually passed.
+## All 14 final reference mappings
 
 All 14 final UX-Pilot PNGs were opened directly from the final manifest under
-`/home/tomka/Desktop/lain/artifacts/uxpilot-20261024/`. Discarded generator
-iterations were excluded. The app is 1120×780 within the 1440×1024 export;
-black outer margins are not application whitespace.
+`/home/tomka/Desktop/lain/artifacts/uxpilot-20261024/`; discarded iterations were
+excluded. The app is 1120×780 inside the 1440×1024 export. Outer black margins
+are not application whitespace. Public PNG URLs remain in the
+[versioned reference record](../../docs/uxpilot-design-results-2026-10-24.md).
 
-## Final reference coverage
+F and P below refer to the linked final-broad and profiles-final artifact
+directories above. Every listed product image was manually inspected. Repetitive
+matrix PNGs are not all visually accepted. JSON contains exact image hashes.
 
-| Frame / final ID | Supplied product PNG | Independent result / next evidence |
+| Frame / final ID | Reviewed product captures | Observation |
 | --- | --- | --- |
-| 1 `Rf8aun5CqK1jJDDEsy1R` | `accounts-simple-1120x780.png` | Reserved adjacent inspector visible. Repetitive technical source rows and account-level empty-window badge: UXR-01. |
-| 2 `e15bU4GJVZiLJqr1AD7h` | No lower Z.ai before image | New lower-before/after captures must use identical fixture and scroll offset. |
-| 3 `ZFjD7XKb3sOKSBNNikNQ` | `account-details-1120x780.png`, `account-details-800x560.png` | Wide adjacent inspector and separate narrow task page visible; this pair does not prove lower-inventory geometry or keyboard focus. |
-| 4 `gzASp44CCY795jSZqF7i` | None | Provider-first chooser, search/cancel and native initial focus pending. |
-| 5 `VqOo9QWKoHTuPl2QFBA3` | None | Codex initial state pending; real sign-in is outside this fixture audit. |
-| 6 `k0kGywZOHwQqiJP6M9dc` | None | Waiting/reopen/cancel, late completion and focus pending. |
-| 7 `wQVdJZc3s1aOOHiSyLRP` | None | Kilo name/key without compulsory plan/model picker pending. |
-| 8 `XRRl0bWu3u4yabFGoOVB` | `connect-result-1120x780.png` | Honest unverified quota/inference, but loose full-page completion differs materially from bounded card: UXR-04. |
-| 9 `XjprbmkRcPW8vOyOPOEr` | `models-1120x780.png`, `models-800x560.png` | Tall cards show about 4½ wide/2¼ narrow rows; compact table/detail pending: UXR-02. |
-| 10 `tUQuAL5HzEst2g0t69B1` | `profiles-1120x780.png` | One-profile/one-model fixture insufficient; tiny centered model pill and hidden maintenance actions: UXR-03. |
-| 11 `qCI0uheft2XiFWKSBJmQ` | `apply-preview-800x560.png` | Unknown baseline/global restart visible. Full-page review differs from proposed owned dialog; narrow ownership/focus pending. |
-| 12 `VFZv56jHJJ2zSdBAQhNG` | None | First results, partial totals/coverage, local details and narrow layout pending. |
-| 13 `t41xl53MKsTLKcXbKOmb` | None | List/output, native selection, Pause/Clear semantics and narrow Back pending. |
-| 14 `O63jRSAvsTNvo54maqIS` | None | Three groups, native checkbox readability, tray explanation and narrow layout pending. |
+| 1 Accounts overview · `Rf8aun5CqK1jJDDEsy1R` | F `accounts-simple-normal-1120x780.png` | Multiwindow closed summaries and reserved inspector retain the original cat and dark/mint appearance. |
+| 2 Lower inventory before · `e15bU4GJVZiLJqr1AD7h` | F `accounts-lower-before.png` | Entire Z.ai card visible before selection. |
+| 3 Adjacent Z.ai · `ZFjD7XKb3sOKSBNNikNQ` | F `accounts-lower-adjacent.png` | Inspector does not cover the account; assertions preserve every card rectangle, list scroll and both scroll anchors through Settings/Back. |
+| 4 Provider chooser · `gzASp44CCY795jSZqF7i` | F `connect-provider-chooser-wide.png`, `connect-provider-chooser-narrow.png` | Compact left-aligned provider rows and reachable actions at both sizes. |
+| 5 Codex start · `VqOo9QWKoHTuPl2QFBA3` | F `connect-codex-start-wide.png` | Provider-specific browser start separated from waiting; launcher is synthetic. |
+| 6 Codex waiting · `k0kGywZOHwQqiJP6M9dc` | F `connect-codex-waiting-narrow.png` | Reopen/Cancel visible, no premature saved notice. Reopen reuses the same operation. |
+| 7 Kilo key · `wQVdJZc3s1aOOHiSyLRP` | F `connect-kilo-key-narrow.png` | Name/key without compulsory plan selector; previous success cleared. Successful synthetic handoff clears private input. |
+| 8 Connected · `XRRl0bWu3u4yabFGoOVB` | F `connect-codex-result-wide.png` | Bounded completion distinguishes connection and unverified observations; Done/model choice is separate from Apply/export. |
+| 9 Models · `XjprbmkRcPW8vOyOPOEr` | F `models-simple-normal-1120x780.png`, `models-advanced-compact-800x560.png` | Compact rows and direct Edit; wide inspector, narrow inventory without stale pane. All 45 Edit actions remain reachable in assertions. |
+| 10 Profiles · `tUQuAL5HzEst2g0t69B1` | P `profiles-selected-daily-wide.png`, `profiles-selected-daily-narrow.png` | Viewing Daily and Applied Workspace 2 distinct. Wide model context and separate Export/Client setup; narrow detail has Back. |
+| 11 Apply review · `qCI0uheft2XiFWKSBJmQ` | P `profiles-apply-dialog-narrow-x11.png` | Actual private X11 root shows owned review, global scope, delta/restart and visible actions. Native Escape restores trigger focus without applying. |
+| 12 Usage · `VFZv56jHJJ2zSdBAQhNG` | P `usage-simple-normal-1120x780.png`, `usage-simple-normal-800x560.png` | Three rows wide, full first row narrow. Totals/scopes agree: 128 requests, 132 attempts, four historical errors, 81,986 tokens. Z.ai/MiMo have no observed activity. |
+| 13 Live · `t41xl53MKsTLKcXbKOmb` | F `live-simple-normal-1120x780.png`, `live-selected-output-narrow.png` | Request/output hierarchy, local picker, narrow Back and ephemeral retention visible. Native selection shows output; Pause/Clear cause no host writes. |
+| 14 Settings · `O63jRSAvsTNvo54maqIS` | F `settings-simple-normal-1120x780.png` | Three groups, native checkboxes, local density and tray explanation; exactly one footer information selector. |
 
-The [14-frame result record](../../docs/uxpilot-design-results-2026-10-24.md)
-preserves all public image URLs. Initial product PNGs are in
-[`artifacts/desktop-connect-stabilization-20261024/`](../../artifacts/desktop-connect-stabilization-20261024/).
-Ignored local artifacts must accompany a transfer to another machine.
+Additional inspected evidence is hashed in JSON: F
+`native-account-context-menu-x11.png`, `usage-partial-known-subtotal-narrow.png`;
+P `profiles-{barebones,simple,advanced}-compact-800x560.png` and
+`profiles-narrow-return.png`. Partial Usage displays a known 65,000 subtotal,
+unknown full total and 110/132 token coverage independently from journal coverage.
 
-## Findings communicated to owners
+Native controls and responsive task pages adapt the design. The reserved wide
+Accounts inspector reduces inventory width; narrow details replace inventory
+and return to it. These observations do not accept every typography, contrast
+or uncaptured state.
 
-| ID | Visible issue | Owner / next verification |
-| --- | --- | --- |
-| UXR-01 | Simple repeats source IDs, timestamps and balances. Empty free credits produce a red account-identity badge despite remaining independent windows. | UXD-01/02: preserve all windows, disclose provenance locally, scope empty status to its window; recheck new Simple images. |
-| UXR-02 | Models uses high bordered cards plus permanent filter chrome, reducing visible rows substantially. | UXD-03/04: compact native rows, local filters, direct Edit, narrow detail and long-name evidence. |
-| UXR-03 | Model links lack context; Export/Client setup are hidden together under detail. | UXD-05: compact contextual rows, distinct visible maintenance actions and 3-profile fixture. |
-| UXR-04 | Completion uses a full-page success strip plus loose connection lines instead of one focused group. | UXD-03: bounded result with honest observed quota versus stored credential and optional Models. |
-| UXR-05 | Supplied evidence uses routed events/focus assertions without native input. | UXD-09: owned Xvfb XTEST, actual menu/dialog screenshots; no screenreader claim. |
+## Executed interaction scope
 
-Original cat, dark green/black palette, mint actions and native controls are
-visible in the reviewed product captures. This limited observation does not
-accept all typography/contrast or uncaptured states.
+The broad run executes six pages × three information levels × two densities ×
+two sizes (1120×780 and 800×560), plus nine focused cases. Assertions cover
+shell/footer navigation, every reported closed quota-window kind, 45 model Edit
+actions, account geometry/scroll restoration, Connect start/wait/key/result,
+profile selection versus Apply/export, partial/unknown Usage, narrow Live output,
+local preferences, and Monitor with/without history versus offline Gateway.
+Information level preserves window size and does not create host capabilities.
 
-## Expert-field retention checklist
+Native XTEST on the owned display establishes:
 
-| Existing family | Required reachable place / evidence |
-| --- | --- |
-| Every quota window, balance, unknown value, reset/freshness | Closed summary, with no invented denominator. |
-| Identity, generation/purposes, source/owner/provenance, precise timestamps | Account detail and local technical disclosure; exact field audit after integration. |
-| Alias/upstream/provider/account/catalog route, enabled/visible | Direct model Edit; long-name 800×560 case. |
-| Model/profile policy, paid-fallback permission, ordered fallback routes | Full policy editor and meaningful preservation round trip. |
-| Viewed versus applied profile/revision, default and model set | Profile inventory/detail; selection issues neither Apply nor export. |
-| Global delta, affected accounts/clients, unknown baseline, revision conflict/recovery | Real synthetic preview endpoint, owned review, refreshed reconfirmation. |
-| Usage attribution, token components/subtotals/coverage, time zone/exclusive end | Local filter/group/attempt disclosures; null distinct from measured zero. |
-| Live evidenced identities, linked picker, event/time/error/source/retention | Local request/event detail; unproven identities remain independent. |
-| Information level, density, runtime intent, tray/notifications | One footer mode selector; local preferences; separate explicit runtime action. |
+- Pointer focus and exact `codex` typing, Ctrl+A/Backspace, Tab reaching account
+  Details, Enter opening it and Escape restoring its trigger.
+- Right-click, visible menu and Shift+F10 exposing identical account commands;
+  actual native menu captured from the X11 root.
+- Pointer opening owned Apply review, native Escape and trigger focus return at
+  both sizes, native narrow Back restoring focused Daily inventory. Preview does
+  not apply or export.
+- Pointer selecting a narrow Live request after explicit Back, with output
+  visible in the initial viewport.
 
-## Not yet executed
+Most matrix navigation and other focused actions use routed/control events.
+The native subset does not establish complete keyboard coverage.
 
-- Six pages × three levels × two densities × two viewports, followed by
-  independent PNG review.
-- Lower account geometry, independent list/detail scroll, Settings/Back,
-  narrow focus return, stale/deleted menu targets.
-- Connect chooser/start/wait/key/result, unsupported/failure/late completion,
-  draft retention and private input clearing.
-- Full policy fields, command parity, unknown baseline, stale Apply,
-  failure/recovery and model/contextual Back links.
-- Usage partial/null/zero, draft/polling, initial rows and drillthrough/Back.
-- Live native output selection, filtered selection, polling/source/retention,
-  Pause/Clear and narrow Back.
-- Monitor with/without history; offline configured Gateway versus no setup;
-  information mode must not create capabilities or resize the window.
-- Native Tab/Enter/Escape, visible focus, pointer hit-testing, menu parity,
-  modal focus containment/return. Complete accessibility remains unqualified.
+## Explicit remaining qualifications
 
-No real provider/login, installed tray or release-ready claim is made. UXD-09
-remains open until required cases have evidence or explicit bounded limitations.
+- Full screenreader/accessibility, every editor's keyboard traversal, complete
+  modal focus containment, clipboard, compositor/window-manager and installed
+  tray behavior remain unqualified.
+- The central suite demonstrates expert-editor access, not a field-by-field
+  retention/policy round trip. Dedicated Profiles, Connect and Settings suites
+  remain separate evidence.
+- Stale/deleted command targets, complete unsupported/failure/late-completion
+  Connect flows, Apply conflict/recovery/install and backend/installer behavior
+  are not established by this central visual run.
+- Usage/Live partial, error and restart captures alone do not prove complete
+  polling, draft, filter, selection-preservation or retention semantics.
+- The older broad `tests/desktop` suite retains historical Expander-specific
+  account assumptions. Its corrected navigation contract does not mean the old
+  suite was rerun or passed.
+- No real provider/login/entitlement, inference or host mutation was tested.
+  Complete UX and release acceptance require the separate qualifications above.

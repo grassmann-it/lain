@@ -1,0 +1,547 @@
+{
+  "schemaVersion": 1,
+  "reviewDate": "2026-10-24",
+  "reviewOwner": "UXD-09 independent acceptance",
+  "artifactPathsRelativeTo": "repository root",
+  "artifactWorkspace": "/home/tomka/Desktop/lain-implementation-worktrees/20261024/ux-acceptance",
+  "functionalDisposition": "Latest broad run 42/45; all three observed Compact Profiles failures corrected and passed in targeted run 8/8. No claim of a rerun of all 45 cases on final corrected source.",
+  "visualDisposition": "All 14 final reference PNGs and the specifically listed product PNGs were manually inspected. Repetitive matrix captures are not blanket visually accepted.",
+  "accessibilityDisposition": "NOT_QUALIFIED; limited native pointer/keyboard and focus evidence only.",
+  "latestSource": {
+    "productBaseCommit": "93193972d4b851920caee113ae69baa56fc1de6f",
+    "profileFixOriginalCommit": "f5c0fac1899ebdd4f2566d127f63fe01ba6dfa7c",
+    "profileFixVerificationCommit": "0c3893280866718694fac44e5f92af0d2e5349f7",
+    "fixtureCorrectionCommit": "422564f6b04e3c255f66576f26a9a7b47e2ada67",
+    "harnessCommit": "5efe8dae9f4bbbbe7008a6098e436edbb501ef0d",
+    "productSourceChangedByReviewer": false
+  },
+  "build": {
+    "result": "PASS",
+    "errors": 0,
+    "warnings": 11,
+    "warningScope": "CS0649 unused variation fields in shared synthetic Fixture.cs",
+    "elapsedSeconds": 11.84
+  },
+  "runs": [
+    {
+      "id": "pass1",
+      "artifactDirectory": "artifacts/uxd-acceptance-20261024-pass1",
+      "checkoutCommit": "87c9b5bd29a6e2fa98052138637e4957df893533",
+      "desktopAssemblySha256": "99c2b52094ea9be3b82a19204fc7374e840740ddbe59ea497f8eb7808a0fbc5e",
+      "evidenceSha256": "13f1b108759cff041087c49a14d069f8fd407e1e5ac308d128cafbd7c4a51200",
+      "runLogSha256": "7945dceb903ff3edc9079566a86bf48958d9e05982ef63b6aabae126dfbbdfe3",
+      "checksumsSha256": "53bc50edaf2e15eec7fbf1e4fe727faf5f519d116ce23266683e87d03638cb63",
+      "functionalResult": "FAIL",
+      "requestedFilter": null,
+      "cases": 45,
+      "passedCases": 37,
+      "failedCases": [
+        {
+          "name": "matrix-Usage-Barebones-Normal",
+          "error": "System.InvalidOperationException: actual Usage breakdown begins in initial viewport"
+        },
+        {
+          "name": "matrix-Usage-Barebones-Compact",
+          "error": "System.InvalidOperationException: actual Usage breakdown begins in initial viewport"
+        },
+        {
+          "name": "matrix-Usage-Simple-Normal",
+          "error": "System.InvalidOperationException: actual Usage breakdown begins in initial viewport"
+        },
+        {
+          "name": "matrix-Usage-Simple-Compact",
+          "error": "System.InvalidOperationException: actual Usage breakdown begins in initial viewport"
+        },
+        {
+          "name": "matrix-Usage-Advanced-Normal",
+          "error": "System.InvalidOperationException: actual Usage breakdown begins in initial viewport"
+        },
+        {
+          "name": "matrix-Usage-Advanced-Compact",
+          "error": "System.InvalidOperationException: actual Usage breakdown begins in initial viewport"
+        },
+        {
+          "name": "native-pointer-keyboard-menus",
+          "error": "System.InvalidOperationException: native pointer hit-testing and native keyboard input reach Search accounts"
+        },
+        {
+          "name": "live-output-and-source-states",
+          "error": "System.InvalidOperationException: Missing reachable Button: Inspect group conversation:conversation-ui"
+        }
+      ],
+      "passedAssertions": 658,
+      "imageRecords": 95,
+      "pngFiles": 98,
+      "privateXvfb": true,
+      "visualResultFromHarness": "NOT_REVIEWED_BY_HARNESS",
+      "accessibilityResult": "NOT_QUALIFIED",
+      "notes": "Initial broad run: six real Usage construction failures and two harness input/selection sequencing failures. Native Apply dialog focus passed. No blanket visual pass."
+    },
+    {
+      "id": "pass2",
+      "artifactDirectory": "artifacts/uxd-acceptance-20261024-pass2",
+      "checkoutCommit": "f2f1e885dd63d7f2a490022fbb7af3e1555f9edd",
+      "desktopAssemblySha256": "0008d5fd61af45694212bddbed29e4aaafa0542168299ee91bd568b47114790a",
+      "evidenceSha256": "a522467b00f973dc8e05e836742c63ab53294879000e746ac99e152485344cf6",
+      "runLogSha256": "2bf4553d251959c3770a338f9688e46f013698798fc17bca02d3feba40cdc925",
+      "checksumsSha256": "209ba5830f402083b6919a469ada0189b4044e5dea9163f74875407f357c176f",
+      "functionalResult": "PASS",
+      "requestedFilter": "matrix-Usage,native-,live-",
+      "cases": 14,
+      "passedCases": 14,
+      "failedCases": [],
+      "passedAssertions": 215,
+      "imageRecords": 31,
+      "pngFiles": 34,
+      "privateXvfb": true,
+      "visualResultFromHarness": "NOT_REVIEWED_BY_HARNESS",
+      "accessibilityResult": "NOT_QUALIFIED",
+      "notes": "Diagnostic filtered run. Harness edits were uncommitted and later recorded in bdc4b88. Functional pass used the former insufficient row-intersection check; manual review still found unreadable Usage results at 800px."
+    },
+    {
+      "id": "final",
+      "artifactDirectory": "artifacts/uxd-acceptance-20261024-final",
+      "checkoutCommit": "a174c77e59549c5ab35157f5ff464afff4c17fd5",
+      "desktopAssemblySha256": "47778c703bf93da1b1ffd9685ae20b2ccd2bb4f68bd66a1c64465748c887e649",
+      "evidenceSha256": "6bdeaa945ecb686a32b7ce93d649beaa7a7dc9b01c058cfc0b26bc45912a44fc",
+      "runLogSha256": "64e1c74bc89a6761b376ac477775efea4cc92070a043d0693447cb8c7a620d06",
+      "checksumsSha256": "88ce436de142da83141d4f69e26a2795d72057d94af94861dc0db61f64382dce",
+      "functionalResult": "FAIL",
+      "requestedFilter": null,
+      "cases": 45,
+      "passedCases": 42,
+      "failedCases": [
+        {
+          "name": "matrix-Profiles-Barebones-Compact",
+          "error": "System.InvalidOperationException: initial narrow Profiles uses one inventory pane in both densities"
+        },
+        {
+          "name": "matrix-Profiles-Simple-Compact",
+          "error": "System.InvalidOperationException: initial narrow Profiles uses one inventory pane in both densities"
+        },
+        {
+          "name": "matrix-Profiles-Advanced-Compact",
+          "error": "System.InvalidOperationException: initial narrow Profiles uses one inventory pane in both densities"
+        }
+      ],
+      "passedAssertions": 736,
+      "imageRecords": 106,
+      "pngFiles": 111,
+      "privateXvfb": true,
+      "visualResultFromHarness": "NOT_REVIEWED_BY_HARNESS",
+      "accessibilityResult": "NOT_QUALIFIED",
+      "notes": "Latest broad run remains FAIL: 42 of 45 cases passed. All three failures are Compact Profiles at 800px using stale outer bounds.106 image records and 111 PNG files are not all visually accepted."
+    },
+    {
+      "id": "profiles-final",
+      "artifactDirectory": "artifacts/uxd-acceptance-20261024-profiles-final",
+      "checkoutCommit": "5efe8dae9f4bbbbe7008a6098e436edbb501ef0d",
+      "desktopAssemblySha256": "26aeb0dd97cc02ec7a50ed8d4e40db86f8fb431c68ebb595539a6f2dce34c59e",
+      "evidenceSha256": "2f4cbc1440349ed7b8dd4d80910817e28fed912162964da8b2f308cd3ae4fc45",
+      "runLogSha256": "bc1b0a248bca9b59e321172038dc7a4a387dec802c31ceb667532ab73c29e1cd",
+      "checksumsSha256": "0ad40998aa54f358e1ea311c342703c9020a205cabc0b1d73364c20920b17f43",
+      "functionalResult": "PASS",
+      "requestedFilter": "matrix-Profiles,matrix-Usage-Simple-Normal,profile-viewing",
+      "cases": 8,
+      "passedCases": 8,
+      "failedCases": [],
+      "passedAssertions": 141,
+      "imageRecords": 19,
+      "pngFiles": 21,
+      "privateXvfb": true,
+      "visualResultFromHarness": "NOT_REVIEWED_BY_HARNESS",
+      "accessibilityResult": "NOT_QUALIFIED",
+      "notes": "Targeted correction only: six Profiles mode/density cases at both sizes, Simple/Normal Usage at both sizes, and profile selection/owned dialog/native Escape/native Back. f5c0fac and fixture 422564f included; no second broad run."
+    }
+  ],
+  "referenceManifest": {
+    "document": "docs/uxpilot-design-results-2026-10-24.md",
+    "artifact": "artifacts/uxpilot-20261024/final-manifest.json",
+    "sha256": "e2cf008e3673d5e5553c62a9cbf237991a6882aa3e9bca653cf1be2586e15724",
+    "framesReviewed": 14
+  },
+  "referenceComparisons": [
+    {
+      "frame": 1,
+      "referenceId": "Rf8aun5CqK1jJDDEsy1R",
+      "referenceTitle": "Accounts · overview · verified",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/b1eadb27fd-ca6b46d1cc733d82bce6.png",
+      "referenceImageSha256": "10adbaba7df9592c83e32c388225b12f98f2ec311b08ed84ab4f8e239a2c5156",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "final",
+          "file": "accounts-simple-normal-1120x780.png",
+          "sha256": "25b134bf042890f046e69c912fafeb798575fb998918a648721cdc3edf0ce038",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "Multiwindow closed account summaries, reserved adjacent inspector, original cat and dark/mint palette retained. Technical provenance remains local; complete field audit is separate."
+    },
+    {
+      "frame": 2,
+      "referenceId": "e15bU4GJVZiLJqr1AD7h",
+      "referenceTitle": "Accounts · lower inventory · before detail",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/d601e78de7-ab94876e73999bb1eb80.png",
+      "referenceImageSha256": "8cdc0785f92a4805f24f7b1b9e5c9bf06762bab037fd96aabdb47464775c5bec",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "final",
+          "file": "accounts-lower-before.png",
+          "sha256": "b3d7b24be94d7eb402b2d3c25c72181739efe13af1906453ea6d70be02a813b8",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "Z.ai card is fully visible before selection; this replaces the earlier insufficient capture that showed only its title."
+    },
+    {
+      "frame": 3,
+      "referenceId": "ZFjD7XKb3sOKSBNNikNQ",
+      "referenceTitle": "Accounts · lower inventory · adjacent Z.ai",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/608961a4cc-e81f217127a57025db45.png",
+      "referenceImageSha256": "8646a43f16c4a94d595ed0fe396156fd5e2260b20e4f38e218976923720df47b",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "final",
+          "file": "accounts-lower-adjacent.png",
+          "sha256": "76d748d5fb891be70a6e984c69a8da22b3861124e7f2c02231107702bcb0a97f",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "Z.ai remains fully visible beside its inspector. Geometry assertions preserve all card rectangles and inventory scroll; Settings/Back preserves both scroll anchors."
+    },
+    {
+      "frame": 4,
+      "referenceId": "gzASp44CCY795jSZqF7i",
+      "referenceTitle": "Connect · provider chooser · final review",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/9a7182b71e-cee26407888921cba413.png",
+      "referenceImageSha256": "1b1a5a55923c125efd3ec085821f05aa7c8b3bfcc7f019e4897b7b0e15c4f921",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "final",
+          "file": "connect-provider-chooser-wide.png",
+          "sha256": "50d19e3543ad705212105b0959628acc0cb7914229762a80477dc115fd7d0243",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        },
+        {
+          "run": "final",
+          "file": "connect-provider-chooser-narrow.png",
+          "sha256": "a9cf709736fc8c750492c5a7e832764c521b2e9070cc071cd4826f311b469a24",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "Compact provider rows have left-aligned labels and reachable actions. Synthetic provider selection; no external login."
+    },
+    {
+      "frame": 5,
+      "referenceId": "VqOo9QWKoHTuPl2QFBA3",
+      "referenceTitle": "Connect · Codex · start",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/5e22731cb1-09b34665710fb42220ea.png",
+      "referenceImageSha256": "b5595ff99da77fe0cf7f0a35ac8ecfeadb58eb2167cab3340b47899f669fbca4",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "final",
+          "file": "connect-codex-start-wide.png",
+          "sha256": "14ab69593cf19206210891ca53d0d37b29f4724a04c4e36b96b4a59eb4c67243",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "Provider-specific browser start is separate from waiting. A fake launcher accepts only example.invalid."
+    },
+    {
+      "frame": 6,
+      "referenceId": "k0kGywZOHwQqiJP6M9dc",
+      "referenceTitle": "Connect · Codex · waiting",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/78b45ee8e0-176e6ed43c0b5167c437.png",
+      "referenceImageSha256": "ad013b00426aeac9c4561115c4bda92756a1e569d60de8d9fa79fe3b88f5dbb4",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "final",
+          "file": "connect-codex-waiting-narrow.png",
+          "sha256": "afab39ec2038355c9ed7deb73be748d2ce95ea805b63c985af18c1ba0c3d9d0c",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "Waiting no longer claims Connection saved; Reopen and Cancel are visible. Reopen reuses the same synthetic operation."
+    },
+    {
+      "frame": 7,
+      "referenceId": "wQVdJZc3s1aOOHiSyLRP",
+      "referenceTitle": "Connect · Kilo key target · final review",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/c62665a2bd-842c927fa4e4b5e4a954.png",
+      "referenceImageSha256": "8a7455672d254c31fa4fc65c5dc4ce23077ffcc395a38c1d42e5f5ac15c6b2b1",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "final",
+          "file": "connect-kilo-key-narrow.png",
+          "sha256": "8257c4c883e575e716b3e909a6ab1d5f257a6a662cebbdbdeffc6c3762dea766",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "Name and private-key form without compulsory plan selector; previous Codex success notice cleared. Successful synthetic handoff clears key input."
+    },
+    {
+      "frame": 8,
+      "referenceId": "XRRl0bWu3u4yabFGoOVB",
+      "referenceTitle": "Connect · Codex · connected",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/214f80c426-83e06454b66bd5e30aef.png",
+      "referenceImageSha256": "3ff1f963f21c2f863501476e5efe22e995b38c7662e9a5b5d004373eb9c4aed5",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "final",
+          "file": "connect-codex-result-wide.png",
+          "sha256": "8ca8cd5c060469345a89c1d3aa75bee010b346dacec7c0ad9600b52a9057ef30",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "Bounded completion distinguishes connected credential and unverified observations; Done and optional model action remain separate from Apply/export."
+    },
+    {
+      "frame": 9,
+      "referenceId": "XjprbmkRcPW8vOyOPOEr",
+      "referenceTitle": "Models · reviewed inventory",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/7728cc3fab-765948b632df61864f57.png",
+      "referenceImageSha256": "67a494981d947629d73140f3ea62c0e123387460bbebd2d4f480fde2b9646292",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "final",
+          "file": "models-simple-normal-1120x780.png",
+          "sha256": "df1b3cd154521fb4ded87e8bbccd46ec021cd00078da7416f6b88fad192e3425",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        },
+        {
+          "run": "final",
+          "file": "models-advanced-compact-800x560.png",
+          "sha256": "6559b625843063a38123fd143ff8cab28ad9d906cbd36127c39e77530c4684fe",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "Compact model rows expose direct Edit, with an adjacent wide inspector and no stale narrow inspector. All 45 synthetic entries remain reachable."
+    },
+    {
+      "frame": 10,
+      "referenceId": "tUQuAL5HzEst2g0t69B1",
+      "referenceTitle": "Profiles · reviewed Daily",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/67c8981c4f-bd5b693112b2eae72baf.png",
+      "referenceImageSha256": "72da57cb3ab598a43fe24e2f2b0327274304afcecc15a167925038c2903953cc",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "profiles-final",
+          "file": "profiles-selected-daily-wide.png",
+          "sha256": "0bc49071af5390618613238b9807495a44da94e4cb56a12d35ebd277a7d5f7b5",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        },
+        {
+          "run": "profiles-final",
+          "file": "profiles-selected-daily-narrow.png",
+          "sha256": "f85e5b772768969d635b7c2a1d7c502a8adc62c19d719328adc01524218eb445",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "Viewing Daily and applied Workspace 2 remain distinct. Wide contextual model rows plus separate Export/Client setup; narrow selection becomes a detail task with Back."
+    },
+    {
+      "frame": 11,
+      "referenceId": "qCI0uheft2XiFWKSBJmQ",
+      "referenceTitle": "Profiles · global Apply review",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/efb39161af-bab38da2d7ee53d6eeeb.png",
+      "referenceImageSha256": "4f745daf3c4b813e17b6ef6d752e4ea1410d5d19e63ec19fd138eeeb55026779",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "profiles-final",
+          "file": "profiles-apply-dialog-narrow-x11.png",
+          "sha256": "b492f3c52daf1e03869b1dbf8d4e31ba7c0cbe1f3aecd779d076a4603a31b4a7",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "Actual private-X11 root capture shows an owned review dialog with global scope, profile delta/restart and visible actions. Native Escape cancels without Apply and restores trigger focus."
+    },
+    {
+      "frame": 12,
+      "referenceId": "VFZv56jHJJ2zSdBAQhNG",
+      "referenceTitle": "Usage · reviewed results",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/e2eeeda7c7-d1e2a6bb15d2390d263a.png",
+      "referenceImageSha256": "7e81c13d99eab5c391521c559ef581e4161e86e98b4c0695369cb05ca39b5aab",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "profiles-final",
+          "file": "usage-simple-normal-1120x780.png",
+          "sha256": "5d27553ac853d36faeb6dcdad08d390c0bb1b17e41d319b67e1707e0bb24c88a",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        },
+        {
+          "run": "profiles-final",
+          "file": "usage-simple-normal-800x560.png",
+          "sha256": "df9a052ac89fbd418f2c98c4f7f7e37ab0eaaf86b950e8d286d85b11b4127748",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "All three breakdown rows are visible wide, first row fully readable at 800px. Corrected fixture scopes agree: 128 requests, 132 attempts, 4 historical errors, 81,986 tokens; Z.ai/MiMo have no observed activity."
+    },
+    {
+      "frame": 13,
+      "referenceId": "t41xl53MKsTLKcXbKOmb",
+      "referenceTitle": "Live · reviewed ephemeral output",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/1d28026e5f-0997900628577d6ce3a9.png",
+      "referenceImageSha256": "0c0ef23f64b207c13c6e7a4c57b7fcaaec584f3a736ec618617855a5f48fbd1d",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "final",
+          "file": "live-simple-normal-1120x780.png",
+          "sha256": "2d2f84557260b1813f1301b26690de79e072e9961d2c4e4a4f40be36d90843f7",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        },
+        {
+          "run": "final",
+          "file": "live-selected-output-narrow.png",
+          "sha256": "93e9b19e89491a06595a00d4693205e411856d6e327c2da4db9a87b57dc46b8a",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "Request/output hierarchy, evidenced request picker and ephemeral retention remain visible. Native request selection reveals narrow output with Back; Pause/Clear cause no host writes."
+    },
+    {
+      "frame": 14,
+      "referenceId": "O63jRSAvsTNvo54maqIS",
+      "referenceTitle": "Settings · native checkboxes · reviewed",
+      "referencePng": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/09c5d8771c-96a53bdbe1b8213eeae7.png",
+      "referenceImageSha256": "ee82ca65f0affdc005cfcf6d80762048231f3a9aa986842d9ee472391e1180e9",
+      "referenceManualReview": "REVIEWED_FINAL_PNG",
+      "productImages": [
+        {
+          "run": "final",
+          "file": "settings-simple-normal-1120x780.png",
+          "sha256": "83bea6d2d9928449e99045a565cbee33ba0c960d2c40ca062c7898753891f107",
+          "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE"
+        }
+      ],
+      "observation": "Three calm groups retain native checkbox controls, local density and tray explanation. There is exactly one information selector in the footer."
+    }
+  ],
+  "additionalReviewedImages": [
+    {
+      "run": "final",
+      "file": "native-account-context-menu-x11.png",
+      "sha256": "83860e63d07a969aa92b0eb2ca01554d6823c185cca8adbe7a297738d77613d6",
+      "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE",
+      "observation": "Actual native context menu; right-click, visible menu and Shift+F10 expose the same commands in executed assertions."
+    },
+    {
+      "run": "final",
+      "file": "usage-partial-known-subtotal-narrow.png",
+      "sha256": "c68771913867133cc4a25d6c6a2063ae7be3ca77c1fc30dbd397856b11942001",
+      "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE",
+      "observation": "Known 65,000 subtotal remains explicitly partial; full total unknown and token coverage 110/132 independent of complete journal."
+    },
+    {
+      "run": "profiles-final",
+      "file": "profiles-barebones-compact-800x560.png",
+      "sha256": "9a6b242b069012d051434d204f169a5bff0db7ec40e8468fe02f936cbd65c77a",
+      "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE",
+      "observation": "Corrected Barebones/Compact initial800px inventory uses one pane."
+    },
+    {
+      "run": "profiles-final",
+      "file": "profiles-simple-compact-800x560.png",
+      "sha256": "f81e50a4b39fb1c544f381f788ce14cf37296357e5c6f5722f2ded9172e01051",
+      "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE",
+      "observation": "Corrected Simple/Compact initial800px inventory uses one pane."
+    },
+    {
+      "run": "profiles-final",
+      "file": "profiles-advanced-compact-800x560.png",
+      "sha256": "5c61c9614d119bd8e7c0019c58529594986cfb17b135a467848c6df6830b0ee9",
+      "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE",
+      "observation": "Corrected Advanced/Compact initial800px inventory uses one pane."
+    },
+    {
+      "run": "profiles-final",
+      "file": "profiles-narrow-return.png",
+      "sha256": "6ba84ff19e106eab8a0f9f2cde84b9a61bc4e0fc1d4a9cbc5b20adb085ed4ebb",
+      "manualReview": "REVIEWED_FOR_DESCRIBED_SCOPE",
+      "observation": "Native Back restores Daily inventory action focus and one-pane inventory; screenshot follows asserted focus return."
+    }
+  ],
+  "nativeEvidence": [
+    {
+      "run": "final",
+      "case": "native-pointer-keyboard-menus",
+      "proved": [
+        "native pointer focuses account search",
+        "exact codex typed using native keys",
+        "Ctrl+A/Backspace",
+        "Tab reaches account Details, Enter opens, Escape restores trigger",
+        "right-click, visible menu and Shift+F10 command parity"
+      ]
+    },
+    {
+      "run": "profiles-final",
+      "case": "profile-viewing-applied-and-dialog",
+      "proved": [
+        "native pointer opens owned Apply review at both sizes",
+        "native Escape cancels with trigger focus return at both sizes",
+        "native narrow Back restores selected Daily inventory focus",
+        "preview read does not apply/export"
+      ]
+    },
+    {
+      "run": "final",
+      "case": "live-output-and-source-states",
+      "proved": [
+        "native pointer selects a narrow Live request after explicit Back",
+        "output appears within viewport",
+        "Pause/Clear emit no host mutation"
+      ]
+    }
+  ],
+  "resolvedObservedDefects": [
+    {
+      "defect": "Usage logical-parent exception",
+      "fix": "7a38075",
+      "verification": "pass2 and final"
+    },
+    {
+      "defect": "No readable Usage result row at 800px despite weak geometry pass",
+      "fix": "70a940a",
+      "verification": "final and profiles-final with stronger fully-visible-name assertion and manual PNG review"
+    },
+    {
+      "defect": "Models inspector uses previous resize width",
+      "fix": "4d976f0",
+      "verification": "final responsive assertions and wide/Compact 800 manual PNG review"
+    },
+    {
+      "defect": "Pending/stale Connect success and offscreen narrow Cancel; centered chooser/model labels",
+      "fix": "ec2a618",
+      "verification": "final assertions and chooser/waiting/key/model PNG review"
+    },
+    {
+      "defect": "Profiles Compact 800 keeps two panes",
+      "fix": "f5c0fac",
+      "verification": "profiles-final all six variants functionally pass; all three corrected Compact 800 PNGs manually inspected"
+    }
+  ],
+  "limitations": [
+    "All runtime was in owned private Xvfb and allowlisted in-memory HTTP. No user display/session bus, real host/provider/credential/browser or installed application was exercised.",
+    "The broad final run remains historical FAIL 42/45. Its 111 PNG files are not all marked visual PASS; the focused run supersedes only its stated cases.",
+    "Per-image visualReview remains REQUIRED in immutable run evidence. This checked-in review supplies scoped manual observations separately.",
+    "Matrix navigation and most focused actions use routed/control events; only the explicitly listed paths use native XTEST input.",
+    "No screenreader, complete keyboard/editor traversal, full focus containment, clipboard, compositor/window-manager or installed tray qualification.",
+    "No full field-by-field expert editor/policy round trip, stale/deleted-target action audit, complete Connect failure/late-completion matrix, Apply conflict/recovery/install or backend/installer qualification in this suite; dedicated suites remain separate.",
+    "Usage/live failure images were captured but do not by themselves prove complete polling/draft/filter/retention semantics.",
+    "The older broad tests/desktop harness retains historical Expander assumptions and was not rerun by this suite.",
+    "Ignored artifacts must accompany repository transfer. No release-ready or complete UX acceptance claim."
+  ]
+}

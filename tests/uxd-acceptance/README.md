@@ -40,6 +40,11 @@ runtime intent, fixture, case/action, assertions, assembly SHA-256, checkout
 commit, HTTP history, focus trace and images. Every generated image starts at
 `visualReview: REQUIRED`. Assertions never mark PNGs visually accepted.
 [review.md](review.md) maps the 14 final references and explicit remaining cases.
+[evidence-summary.json](evidence-summary.json) preserves run identities/hashes,
+historical failures, the targeted correction result and specifically reviewed
+PNG hashes. The latest broad run remains 42/45; its three Compact Profiles
+failures passed in the subsequent focused 8/8 run. This is not a blanket visual
+or accessibility pass.
 
 The older broad desktop suite retains historical Expander-specific account
 expectations. Its navigation contract now uses the capability/mode matrix, but
