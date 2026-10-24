@@ -78,3 +78,12 @@ non-RID fixture lockfiles were kept unchanged; RID qualification used temporary
 per-project lockfiles where needed. The new suite has its own checked-in lockfile.
 These results do not claim real provider calls, installed service acceptance or
 a real active stream drain; the integrated Core quiescing gate needs its own proof.
+
+The follow-up compatibility/drain review expanded the profile suite to **92 passing
+checks**; the **104 applied-profile checks** also passed again on Linux x64 in
+locked restore mode. Added proof covers preserved desired11/applied2 legacy
+startup without any file/configuration writes, explicit unknown identity,
+contradictory/invalid identity rejection, generation/marker refusal, and uncertain
+drain admission retaining a recovery marker while leaving streams/runtime files
+untouched. These remain synthetic lifecycle checks; authenticated Core admission
+confirmation is separately owned and qualified by the integrated lifecycle tests.
