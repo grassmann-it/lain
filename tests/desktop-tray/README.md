@@ -10,7 +10,9 @@ The runner first discards inherited display, Wayland and desktop D-Bus settings.
 It owns one Xvfb selected with `-displayfd`, a private Xauthority cookie, temporary
 HOME/XDG/LAIN_HOME directories, an owned Openbox window manager with readiness
 check and a private copy of packaged Clearlooks theme assets, and a fresh `dbus-run-session`. The bus uses a minimal configuration with
-no service directories, so portals and desktop services cannot autoactivate. It never connects
+no service directories, so portals and desktop services cannot autoactivate.
+XDG_DATA_DIRS is the fixed system-only /usr/share so glycin/GdkPixbuf can find
+image loader definitions; it never inherits user data paths. It never connects
 to the normal desktop bus. The harness refuses startup without these markers.
 The 120-second timeout and traps terminate only the runner's Xvfb, Openbox,
 Python fixture and private bus. Dependencies include Openbox, xprop, gdbus,

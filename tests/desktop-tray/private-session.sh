@@ -13,8 +13,8 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
-# Copy only packaged theme assets into private data; do not expose system/user
-# session data directories to the test or read a user window-manager config.
+# Copy only packaged theme assets into private data; never read a user
+# window-manager config or run session autostarts.
 theme_source=/usr/share/themes/Clearlooks/openbox-3
 [[ -f "$theme_source/themerc" ]] || { echo "Missing packaged Openbox theme: $theme_source" >&2; exit 2; }
 mkdir -p "$XDG_DATA_HOME/themes/LainPrivate"

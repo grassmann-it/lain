@@ -49,7 +49,9 @@ mkdir -p "$runtime/home/config" "$runtime/home/data" "$runtime/xdg" "$runtime/la
 # Runtime cannot discover the real user's host credentials or desktop portal.
 export HOME="$runtime/home" XDG_CONFIG_HOME="$runtime/home/config" XDG_DATA_HOME="$runtime/home/data"
 export XDG_RUNTIME_DIR="$runtime/xdg" LAIN_HOME="$runtime/lain"
-export XDG_DATA_DIRS="$runtime/home/data" XDG_CACHE_HOME="$runtime/home/cache"
+# System-only definitions are needed by glycin/GdkPixbuf to decode PNGs.
+# The private bus below has no service directories, even with /usr/share visible.
+export XDG_DATA_DIRS=/usr/share XDG_CACHE_HOME="$runtime/home/cache"
 unset SESSION_MANAGER DESKTOP_STARTUP_ID AT_SPI_BUS_ADDRESS
 # No servicedir: portals, accessibility daemons and desktop services cannot be
 # autoactivated. Only our explicitly started watcher/notification fixture exists.
