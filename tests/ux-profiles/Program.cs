@@ -108,6 +108,7 @@ internal static class Scenario
         await Click(window, "Edit selection");
         Find<TextBox>(window, "Profile name").Text = "Draft preserved";
         Find<Expander>(window, "Profile fallback policy").IsExpanded = true;
+        await Task.Delay(80);
         Find<CheckBox>(window, "Profile fallback r2").IsChecked = true;
         Find<CheckBox>(window, "Allow paid profile fallback").IsChecked = true;
         await Click(window, "Move profile fallback r2 up");
