@@ -53,9 +53,16 @@ internal static class Probe
     private static T[] Controls<T>() where T : Control => new[] { window }.Concat(window.OwnedWindows.Where(w => w.IsVisible))
         .SelectMany(w => w.GetVisualDescendants()).OfType<T>().Where(c => c.IsVisible && c.GetVisualAncestors().OfType<Control>().All(p => p.IsVisible)).ToArray();
     private static void Check(bool condition, string name) { if (!condition) throw new InvalidOperationException(name); checks.Add(name); }
-    private static Button Named(string name) => Controls<Button>().Single(b => AutomationProperties.GetName(b) == name);
+    private static Button Named(string name)
+    {
+        var buttons = Controls<Button>();
+        var matches = buttons.Where(b => AutomationProperties.GetName(b) == name).ToArray();
+        if (matches.Length == 1) return matches[0];
+        throw new InvalidOperationException($"Expected one visible button '{name}', found {matches.Length}. Visible names: "
+            + string.Join(", ", buttons.Select(AutomationProperties.GetName).Where(n => !string.IsNullOrWhiteSpace(n))));
+    }
     private static void Click(Button b) => b.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-    private static async Task Wait(Func<bool> ready) { for (var n = 0; n < 100; n++) { if (ready()) return; await Task.Delay(30); } throw new TimeoutException("UI fixture readiness"); }
+    private static async Task Wait(Func<bool> ready, string state = "UI fixture readiness") { for (var n = 0; n < 100; n++) { if (ready()) return; await Task.Delay(30); } throw new TimeoutException(state); }
     private static void Invoke(string name, params object[] args) => typeof(MainWindow).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(window, args);
     private static async Task InvokeAsync(string name, params object[] args) => await (Task)typeof(MainWindow).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(window, args)!;
     private static string[] Nav() => Controls<Button>().Where(b => b.Tag is string tag && new[] { "Accounts", "Models", "Profiles", "Usage", "Live" }.Contains(tag)).Select(b => (string)b.Tag!).ToArray();
@@ -135,6 +142,7 @@ internal static class Probe
         await Wait(() => Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Connect provider kilo"));
         Click(Named("Connect provider kilo"));
         var alternatives = Controls<Expander>().Single(e => Equals(e.Header, "Other connection methods")); alternatives.IsExpanded = true;
+        await Wait(() => Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Connection method device"), "Expanded Kilo alternatives must be realized");
         Check(!Named("Connection method device").IsEnabled, "unqualified device flow stays unavailable with guidance");
         alternatives.IsExpanded = false;
         var privateKey = Controls<TextBox>().Single(b => AutomationProperties.GetName(b) == "api-key");
@@ -148,19 +156,23 @@ internal static class Probe
         Check(fixture.LastConnect?.Connection.IdempotencyKey is { Length: > 0 }, "connect carries one stable operation identity");
         await Capture("connect-result", 1120, 780);
         Click(Controls<Button>().Single(b => Equals(b.Content, "Choose models (optional)")));
-        await Wait(() => Controls<ComboBox>().Any(b => AutomationProperties.GetName(b) == "Provider model connection"));
-        var modelConnection = Controls<ComboBox>().Single(b => AutomationProperties.GetName(b) == "Provider model connection");
+        await Wait(() => Controls<ComboBox>().Any(b => AutomationProperties.GetName(b) == "Connection"));
+        var modelConnection = Controls<ComboBox>().Single(b => AutomationProperties.GetName(b) == "Connection");
         Check(modelConnection.SelectedIndex == -1, "multiple endpoint connections require an explicit choice");
-        modelConnection.SelectedIndex = 0; await Task.Delay(40);
-        Check(!Controls<TextBox>().Any(b => b.PasswordChar != default) && !Controls<ComboBox>().Any(b => AutomationProperties.GetName(b) == "Model access plan"), "single-plan template setup reuses the private key without a tariff field");
+        modelConnection.SelectedIndex = 0;
+        await Wait(() => Controls<CheckBox>().Count(b => (AutomationProperties.GetName(b) ?? "").StartsWith("Choose provider model ")) == 2, "Selected connection model templates must be realized");
+        Check(!Controls<TextBox>().Any(b => b.PasswordChar != default) && !Controls<ComboBox>().Any(b => AutomationProperties.GetName(b) == "Existing access plan"), "single-plan template setup reuses the private key without a tariff field");
         var modelChoices = Controls<CheckBox>().Where(b => (AutomationProperties.GetName(b) ?? "").StartsWith("Choose provider model ")).ToArray();
         Check(modelChoices.Length == 2 && modelChoices.All(b => b.IsChecked != true), "picker shows only exact-connection templates with no model selected by default");
-        modelConnection.SelectedIndex = 1; await Task.Delay(40);
-        var plan = Controls<ComboBox>().Single(b => AutomationProperties.GetName(b) == "Model access plan");
+        modelConnection.SelectedIndex = 1;
+        await Wait(() => Controls<ComboBox>().Any(b => AutomationProperties.GetName(b) == "Existing access plan"), "Multi-plan connection must expose its actual access-plan field");
+        var plan = Controls<ComboBox>().Single(b => AutomationProperties.GetName(b) == "Existing access plan");
         Check(plan.SelectedIndex == -1 && !Controls<CheckBox>().Any(b => (AutomationProperties.GetName(b) ?? "").StartsWith("Choose provider model ")), "multi-plan connection requires declared access before model selection");
-        plan.SelectedIndex = 0; await Task.Delay(40);
+        plan.SelectedIndex = 0;
+        await Wait(() => Controls<CheckBox>().Any(b => AutomationProperties.GetName(b) == "Choose provider model other-free"), "Plan-filtered template must be realized");
         Check(Controls<CheckBox>().Single(b => (AutomationProperties.GetName(b) ?? "").StartsWith("Choose provider model ")) is { } other && AutomationProperties.GetName(other) == "Choose provider model other-free", "connection and plan jointly constrain templates");
-        modelConnection.SelectedIndex = 0; await Task.Delay(40);
+        modelConnection.SelectedIndex = 0;
+        await Wait(() => Controls<CheckBox>().Count(b => (AutomationProperties.GetName(b) ?? "").StartsWith("Choose provider model ")) == 2, "Returning to the original connection must replace its template controls");
         foreach (var box in Controls<CheckBox>().Where(b => (AutomationProperties.GetName(b) ?? "").StartsWith("Choose provider model "))) box.IsChecked = true;
         await Capture("account-model-picker", 1120, 780); await Capture("account-model-picker", 800, 560);
         Click(Controls<Button>().Single(b => Equals(b.Content, "Add selected models")));
@@ -169,11 +181,13 @@ internal static class Probe
         Check(fixture.AccountCount == 3 && fixture.AccountName == "My Kilo" && fixture.AppliedRevision == 1, "models preserve stable account identity and never auto-apply");
         Check(Controls<Button>().Any(b => Equals(b.Content, "Add model access")), "manual model access remains available alongside account templates");
         Click(Controls<Button>().Single(b => Equals(b.Content, "Choose provider models…")));
-        await Wait(() => Controls<ComboBox>().Any(b => AutomationProperties.GetName(b) == "Provider model connection"));
-        Controls<ComboBox>().Single(b => AutomationProperties.GetName(b) == "Provider model connection").SelectedIndex = 0; await Task.Delay(40);
+        await Wait(() => Controls<ComboBox>().Any(b => AutomationProperties.GetName(b) == "Connection"));
+        Controls<ComboBox>().Single(b => AutomationProperties.GetName(b) == "Connection").SelectedIndex = 0;
+        await Wait(() => Controls<CheckBox>().Count(b => (AutomationProperties.GetName(b) ?? "").StartsWith("Choose provider model ")) == 2, "Previously configured templates must be realized");
         var existingTemplates = Controls<CheckBox>().Where(b => (AutomationProperties.GetName(b) ?? "").StartsWith("Choose provider model ")).ToArray();
         Check(existingTemplates.Length == 2 && existingTemplates.All(b => !b.IsEnabled && b.IsChecked != true), "configured account templates cannot be selected twice");
         Click(Controls<Button>().Single(b => Equals(b.Content, "Cancel")));
+        await Wait(() => Controls<Button>().Any(b => Equals(b.Content, "Clear model context")), "Cancel must return to the Models account context");
         Click(Controls<Button>().Single(b => Equals(b.Content, "Clear model context")));
         await Task.Delay(60); await Capture("models", 1120, 780); await Capture("models", 800, 560);
         Check(Controls<Button>().Count(b => (AutomationProperties.GetName(b) ?? "").StartsWith("Edit model access ")) == 47, "45 existing and two newly attached model access entries retain direct edit actions");
@@ -185,17 +199,25 @@ internal static class Probe
         await Capture("model-details", 1120, 780); await Capture("model-details", 800, 560);
         Check(!Controls<Button>().Any(b => (AutomationProperties.GetName(b) ?? "").StartsWith("Select model access ")), "narrow model details use a separate task page");
         Click(Named("Close model details research-01")); await Task.Delay(60);
+        await Wait(() => modelOrigin.IsFocused, "Narrow model detail must restore its stable row focus");
         Check(modelOrigin.IsFocused, "closing narrow model detail restores the stable row focus");
         Click(Named("Edit model access research-01")); await Task.Delay(50);
         Controls<TextBox>().Single(b => AutomationProperties.GetName(b) == "Client name").Text = "cancelled-name";
         Click(Controls<Button>().Single(b => Equals(b.Content, "Cancel"))); await Task.Delay(60);
         Check(fixture.RouteWrites == 0, "cancelling a model editor does not persist draft fields");
-        Click(Named("Edit selected model access research-01")); await Task.Delay(40);
+        await Wait(() => Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Edit selected model access research-01"), "Cancelled model editor must return to selected detail");
+        Click(Named("Edit selected model access research-01"));
+        await Wait(() => Controls<TextBox>().Any(b => AutomationProperties.GetName(b) == "Client name"), "Reopened model editor must be realized");
         Check(Controls<TextBox>().Single(b => AutomationProperties.GetName(b) == "Client name").Text == "research-01", "reopened model editor uses the saved stable identity after cancellation");
         Controls<Expander>().Single(e => Equals(e.Header, "Spending and fallback policy")).IsExpanded = true;
         ComboBox Fallback(int position) => Controls<ComboBox>().Single(b => AutomationProperties.GetName(b) == "Fallback position " + position);
-        void ChooseFallback(int position, string id) => Fallback(position).SelectedItem = Fallback(position).Items.Cast<object>().Single(item => (string)item.GetType().GetProperty("Id")!.GetValue(item)! == id);
-        ChooseFallback(1, "r2"); ChooseFallback(2, "r3");
+        async Task ChooseFallback(int position, string id)
+        {
+            await Wait(() => Controls<ComboBox>().Any(b => AutomationProperties.GetName(b) == "Fallback position " + position), "Fallback position " + position + " must be realized");
+            var choice = Fallback(position);
+            choice.SelectedItem = choice.Items.Cast<object>().Single(item => (string)item.GetType().GetProperty("Id")!.GetValue(item)! == id);
+        }
+        await ChooseFallback(1, "r2"); await ChooseFallback(2, "r3");
         Controls<CheckBox>().Single(b => AutomationProperties.GetName(b) == "Allow paid fallback routes").IsChecked = true;
         await Capture("model-editor", 1120, 780); await Capture("model-editor", 800, 560);
         Click(Controls<Button>().Single(b => Equals(b.Content, "Save model access")));
@@ -205,15 +227,18 @@ internal static class Probe
         await Wait(() => Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Edit selected model access research-01"));
         Click(Named("Edit selected model access research-01")); await Task.Delay(40);
         Controls<Expander>().Single(e => Equals(e.Header, "Spending and fallback policy")).IsExpanded = true;
+        await Wait(() => Controls<ComboBox>().Any(b => AutomationProperties.GetName(b) == "Fallback position 1"), "Reloaded policy expander must realize saved fallback fields");
         Check((string)Fallback(1).SelectedItem!.GetType().GetProperty("Id")!.GetValue(Fallback(1).SelectedItem)! == "r2"
             && Controls<CheckBox>().Single(b => AutomationProperties.GetName(b) == "Allow paid fallback routes").IsChecked == true, "saved expert fallback fields survive reopening");
         Click(Controls<Button>().Single(b => Equals(b.Content, "Cancel")));
         fixture.UseContributorAccount();
         await InvokeAsync("RefreshAsync", true);
         await InvokeAsync("ShowAccountModelsAsync", "connected");
+        await Wait(() => Controls<CheckBox>().Any(b => AutomationProperties.GetName(b) == "Choose provider model contributor"), "Contributor template picker must be realized");
         var contributor = Controls<CheckBox>().Single(b => AutomationProperties.GetName(b) == "Choose provider model contributor");
         Check(contributor.IsChecked != true && !Controls<CheckBox>().Any(b => AutomationProperties.GetName(b) == "Allow Contributor training endpoints"), "training consent appears only when its actual route is selected");
-        contributor.IsChecked = true; await Task.Delay(40);
+        contributor.IsChecked = true;
+        await Wait(() => Controls<CheckBox>().Any(b => AutomationProperties.GetName(b) == "Allow Contributor training endpoints"), "Selected Contributor route must expose its consent control");
         var training = Controls<CheckBox>().Single(b => AutomationProperties.GetName(b) == "Allow Contributor training endpoints");
         Check(training.IsChecked == false, "Contributor training consent starts explicitly unchecked");
         Click(Controls<Button>().Single(b => Equals(b.Content, "Add selected models"))); await Task.Delay(60);
