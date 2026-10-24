@@ -11,8 +11,11 @@ public sealed class CodexQuotaAdapter(HttpClient client) : IQuotaAdapter
 
     public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
-        if (account.CredentialKind is not ("codex-access-snapshot" or "codex-owned"))
+        if (credential.CredentialKind is not ("codex-access-snapshot" or "codex-owned" or "access-token-snapshot") &&
+            account.CredentialKind is not ("codex-access-snapshot" or "codex-owned"))
             throw new QuotaFetchException("Codex quota requires a qualified access token; API-key quota is unknown.");
+        if (string.IsNullOrWhiteSpace(credential.ProviderAccountId))
+            throw new QuotaFetchException("Codex quota requires the matching ChatGPT account identity.");
         using var doc = await QuotaHttp.GetAsync(client, Endpoint, credential, ct, codex: true);
         var limits = JsonFields.Object(doc.RootElement, "rate_limit");
         var rows = new List<QuotaReading>();

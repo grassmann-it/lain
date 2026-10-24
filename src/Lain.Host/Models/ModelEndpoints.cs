@@ -24,6 +24,7 @@ public static class ModelEndpoints
         app.MapPost(Api.Prefix + "/profiles/{id}/codex/export", (string id, CodexExportRequest request, ModelsService models, ProxyConfigurationWriter compiler, ProviderCatalogRegistry registry) =>
             Execute(() =>
             {
+                if (models.Snapshot.RuntimeMode != "gateway") throw new InvalidOperationException("Codex inference export requires Gateway mode.");
                 var resolved = models.ResolveForApply(id, request.Revision);
                 var description = compiler.Describe(resolved.Configuration with { Routes = resolved.Routes });
                 var compatibility = new ModelCompatibilityCatalog(registry, description.QualifiedProviderRouteIds, description.TransportBindings);

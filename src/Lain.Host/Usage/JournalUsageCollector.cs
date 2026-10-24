@@ -6,7 +6,8 @@ using Microsoft.Extensions.Logging;
 namespace Lain.Host.Usage;
 
 /// <summary>Polls only the host's own non-destructive journal endpoint. Never consumes the legacy queue.</summary>
-public sealed class JournalUsageCollector(HttpClient client, SqliteUsageStore store, ILogger<JournalUsageCollector> logger) : BackgroundService
+public sealed class JournalUsageCollector(HttpClient client, SqliteUsageStore store, ILogger<JournalUsageCollector> logger,
+    Func<bool>? shouldCollect = null) : BackgroundService
 {
     private const int MaximumResponseBytes = 8 * 1024 * 1024;
     public string? LastError { get; private set; }
@@ -56,13 +57,17 @@ public sealed class JournalUsageCollector(HttpClient client, SqliteUsageStore st
             var caughtUp = true;
             try
             {
-                caughtUp = await PollAsync(stoppingToken);
-                LastSuccessAt = DateTimeOffset.UtcNow;
-                LastError = null;
+                if (shouldCollect?.Invoke() != false)
+                {
+                    caughtUp = await PollAsync(stoppingToken);
+                    LastSuccessAt = DateTimeOffset.UtcNow;
+                    LastError = null;
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
             catch (Exception error)
             {
+                if (shouldCollect?.Invoke() == false) continue;
                 LastError = error.GetType().Name;
                 // Do not log upstream response text; provider metadata can contain sensitive data.
                 logger.LogWarning("Usage journal collection failed ({ErrorType}); retrying from committed cursor", LastError);

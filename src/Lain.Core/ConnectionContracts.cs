@@ -24,6 +24,10 @@ public sealed record ConnectCredentialRequest(ConnectAccountRequest Connection, 
 
 public sealed record ResourceSelectionRequest(long Revision, ResourceBindingDto Binding);
 
+/// <summary>Attach documented models using an account's private existing key; no secret in this request.</summary>
+public sealed record AttachAccountModelsRequest(long ExpectedGeneration, string ConnectionId,
+    string[] ModelRouteIds, Dictionary<string, string>? Settings = null);
+
 /// <summary>Configured intent is independent of process readiness and UI information density.</summary>
 public sealed record HostCapabilitiesDto(bool QuotaMonitoring, bool Inference, bool ModelProfiles,
     bool LocalHistory, bool LiveInspector, bool CoreLogin);

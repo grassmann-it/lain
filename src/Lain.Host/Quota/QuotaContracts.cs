@@ -17,7 +17,7 @@ public interface IQuotaCredentialSource
 // Deliberately contains no refresh token, token endpoint, or ability to rotate credentials.
 public sealed class QuotaCredential(string bearerToken, string? providerAccountId = null, DateTimeOffset? expiresAt = null, string? baseUrl = null,
     IReadOnlyDictionary<string, string>? settings = null, QuotaMonitorCredential? monitor = null,
-    string? bindingVersion = null, string[]? purposes = null)
+    string? bindingVersion = null, string[]? purposes = null, string? credentialKind = null)
 {
     public string BearerToken { get; } = bearerToken;
     public string? ProviderAccountId { get; } = providerAccountId;
@@ -28,6 +28,7 @@ public sealed class QuotaCredential(string bearerToken, string? providerAccountI
     public QuotaMonitorCredential? Monitor { get; } = monitor;
     public string? BindingVersion { get; } = bindingVersion;
     public string[]? Purposes { get; } = purposes?.ToArray();
+    public string? CredentialKind { get; } = credentialKind;
     public string? MonitorBearerToken => Monitor?.Secret;
     public override string ToString() => "QuotaCredential [redacted]";
 
@@ -40,17 +41,17 @@ public sealed class QuotaCredential(string bearerToken, string? providerAccountI
         var kind = JsonFields.String(root, "kind");
         var token = kind switch
         {
-            "codex-access-snapshot" or "codex-owned" => JsonFields.String(root, "accessToken"),
+            "codex-access-snapshot" or "codex-owned" or "access-token-snapshot" => JsonFields.String(root, "accessToken"),
             "api-key" => JsonFields.String(root, "apiKey"),
             _ => null
         };
         return string.IsNullOrWhiteSpace(token) ? null : new(token,
-            kind is "codex-access-snapshot" or "codex-owned" ? JsonFields.String(root, "accountId") : null,
+            kind is "codex-access-snapshot" or "codex-owned" or "access-token-snapshot" ? JsonFields.String(root, "accountId") : null,
             JsonFields.Date(root, "expiresAt"), JsonFields.String(root, "baseUrl"),
             JsonFields.Object(root, "settings") is { ValueKind: JsonValueKind.Object } values
                 ? values.EnumerateObject().Where(p => p.Value.ValueKind == JsonValueKind.String)
                     .ToDictionary(p => p.Name, p => p.Value.GetString()!, StringComparer.Ordinal)
-                : null, monitor, bindingVersion, purposes);
+                : null, monitor, bindingVersion, purposes, kind);
     }
 }
 

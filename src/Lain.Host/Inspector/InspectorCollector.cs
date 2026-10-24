@@ -6,7 +6,8 @@ using Microsoft.Extensions.Logging;
 namespace Lain.Host.Inspector;
 
 /// <summary>One reader of the owned core's non-destructive RAM feed. Never reads legacy queues.</summary>
-public sealed class InspectorCollector(HttpClient client, InspectorStore store, ILogger<InspectorCollector> logger) : BackgroundService
+public sealed class InspectorCollector(HttpClient client, InspectorStore store, ILogger<InspectorCollector> logger,
+    Func<bool>? shouldCollect = null) : BackgroundService
 {
     private const int MaximumResponseBytes = 8 * 1024 * 1024;
     private const int BatchSize = 500;
@@ -102,7 +103,7 @@ public sealed class InspectorCollector(HttpClient client, InspectorStore store, 
         while (!stoppingToken.IsCancellationRequested)
         {
             var delay = TimeSpan.FromMilliseconds(250);
-            try { if (!await PollAsync(stoppingToken)) delay = TimeSpan.FromMilliseconds(10); }
+            try { if (shouldCollect?.Invoke() != false && !await PollAsync(stoppingToken)) delay = TimeSpan.FromMilliseconds(10); }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
             catch (Exception exception)
             {

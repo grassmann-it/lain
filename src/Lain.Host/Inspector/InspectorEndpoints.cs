@@ -12,7 +12,8 @@ namespace Lain.Host.Inspector;
 public static class InspectorEndpoints
 {
     /// <summary>Registers RAM storage and the own-core reader. Host authentication remains in Program's middleware.</summary>
-    public static IServiceCollection AddInspector(this IServiceCollection services, string managementToken, Uri? coreAddress = null)
+    public static IServiceCollection AddInspector(this IServiceCollection services, string managementToken, Uri? coreAddress = null,
+        Func<bool>? shouldCollect = null)
     {
         coreAddress ??= new Uri("http://127.0.0.1:18417/");
         if (coreAddress.Scheme != "http" || !IPAddress.TryParse(coreAddress.Host, out var ip) || !IPAddress.IsLoopback(ip) ||
@@ -24,7 +25,7 @@ public static class InspectorEndpoints
             var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false })
                 { BaseAddress = coreAddress, Timeout = TimeSpan.FromSeconds(10) };
             http.DefaultRequestHeaders.Authorization = new("Bearer", managementToken);
-            return new(http, provider.GetRequiredService<InspectorStore>(), provider.GetRequiredService<ILogger<InspectorCollector>>());
+            return new(http, provider.GetRequiredService<InspectorStore>(), provider.GetRequiredService<ILogger<InspectorCollector>>(), shouldCollect);
         });
         services.AddHostedService(provider => provider.GetRequiredService<InspectorCollector>());
         return services;

@@ -93,8 +93,38 @@ externe Voraussetzung, den konkreten betroffenen Anschluss und die nächste Akti
 benennen; keine funktionierende Methode vortäuschen oder Gesamtpakete als fertig
 markieren. Unabhängige Arbeit weiterführen.
 
+## Erweiterung um UXD-00–09
+
+Der Nutzer hat die neu hinzugekommenen Arbeitspakete ausdrücklich in den laufenden
+Implementierungsauftrag aufgenommen. [UXD-00–09](ux-design-work-packages/README.md)
+konkretisieren daher UX-01–03; vorhandene Umsetzung wird erhalten und anhand der
+14 Referenzen sowie der schmalen/Monitor-/Fehlerfälle vervollständigt. Layoutannahmen
+werden als überprüfbare Umsetzungsentscheidungen geführt, nicht als bereits
+bestandene Designabnahme. Die Zwölfergrenze und private Xvfb-Prüfung gelten weiter.
+
+UXD-00 Anschlussstand: `/connection-methods`, `/accounts/connect`, Login inklusive
+Resourcewahl, `/runtime-mode`, Profil-Preview/Apply und ST-03-Teilmessungen sind
+im gemeinsamen Host/Client angeschlossen. Erste Hostkompilation ist bestanden;
+synthetische HTTP-Gesamtabnahme steht noch aus. Modelle werden über
+`POST /accounts/{id}/models` mit Revision, Accountgeneration, exakter ConnectionId
+und mehreren Template-IDs angehängt; der private Key bleibt beim Host.
+
+Dateiaufteilung der Erweiterung: Shell+Accounts ein Owner; Connect+Models beim
+bestehenden Desktopowner; Profiles, Usage, Live und Settings jeweils eigene
+Seitenowner; zentrale visuelle Abnahme separat. Root besitzt gemeinsame DTOs,
+Hostverdrahtung und Integration. Gemeinsame Shell-/Policyhelpers nur über Owner.
+
 ## Laufende Nachweise
 
 - Ausgangsstand erneut gelesen; keine Produktänderungen seit `5dc916f` vor diesem
   Auftrag. Vorhandene Plan-/Recherchedateien werden gezielt für Worktrees übernommen.
-- In diesem Auftrag noch keine Builds, Installation oder Provideraktionen ausgeführt.
+- Integriert sind Accountgenerationen/Recovery, Reader, Browseradapter,
+  Teilmessungen, Kompatibilität, Profiltransaktionen, Corejournal und die erste
+  Desktopüberarbeitung. Isolierte Workerprüfungen sind bestanden, soweit ihre
+  Lieferberichte dies ausweisen; neue AC-05–08-Prüfungen teilweise noch ausstehend.
+- Erster integrierter Hostbuild: 0 Warnungen/Fehler. Weitere Integration seitdem
+  wird erneut geprüft. Bisher keine Installation, Änderung des vorhandenen
+  Dienstes oder echte Anbieteraktion in diesem Auftrag.
+- AC-05–08 liefern lokale Qualifikation und explizite methodische Gates; fehlende
+  eigene Clientregistrierung, stabile Identität oder Browser-/CLI-Isolation bleibt
+  an der konkreten Methode sichtbar. Ein Parser ist kein funktionierender Login.
