@@ -10,6 +10,7 @@ internal static class MiMoConnectionChecks
 {
     public static async Task RunAsync()
     {
+        await MiMoProfileCleanupChecks.RunAsync();
         var root = Path.Combine(Path.GetTempPath(), "lain-mimo-fixture-" + Guid.NewGuid().ToString("N"));
         try
         {
