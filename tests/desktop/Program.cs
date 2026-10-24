@@ -201,6 +201,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await CaptureBoth("usage");
         await CheckUsageControls();
         await CheckUsageAnalysis();
+        await CheckUsageDisclosurePreservation();
         var usageInput = Controls<UsageView>().Single().GetVisualDescendants().OfType<TextBox>().First();
         usageInput.Focus();
         Check(usageInput.IsFocused, "usage input accepts keyboard focus");
@@ -500,6 +501,33 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             "missing applied metadata remains unknown instead of being inferred from selection");
         fixture.ActiveProfileId = "p2"; fixture.ActiveProfileRevision = 1;
         await Click("Reload status");
+    }
+
+    private async Task CheckUsageDisclosurePreservation()
+    {
+        string[] headings = ["Filters & range", "More filters", "Source & freshness", "Token details",
+            "Performance · whole filtered range", "Daily totals", "Attempt history & errors"];
+        static Expander[] Find(UsageView view, string[] names) => names.Select(name => view.GetLogicalDescendants().OfType<Expander>()
+            .Single(x => Equals(x.Header, name))).ToArray();
+        var disclosures = Find(Controls<UsageView>().Single(), headings);
+        var original = disclosures.Select(x => x.IsExpanded).ToArray();
+        foreach (var disclosure in disclosures) disclosure.IsExpanded = true;
+        Named<ComboBox>("Compare by").Focus();
+        await SelectPresentation(InformationLevel.Barebones);
+        Check(disclosures.All(x => x.IsExpanded), "Barebones preserves explicitly opened Usage details with focus outside them");
+        foreach (var disclosure in disclosures) disclosure.IsExpanded = false;
+        Named<ComboBox>("Compare by").Focus();
+        await SelectPresentation(InformationLevel.Advanced);
+        Check(disclosures.All(x => !x.IsExpanded), "Advanced preserves explicitly closed Usage details with focus outside them");
+        await SelectPresentation(InformationLevel.Simple);
+        Check(disclosures.All(x => !x.IsExpanded), "Simple also preserves explicit Usage disclosure choices");
+        foreach (var (disclosure, expanded) in disclosures.Zip(original)) disclosure.IsExpanded = expanded;
+        using var isolatedHttp = new HttpClient(fixture, disposeHandler: false) { BaseAddress = new Uri("http://fixture.invalid") };
+        var untouched = new UsageView(new LainApiClient(isolatedHttp));
+        untouched.SetPresentation(new(InformationLevel.Advanced));
+        Check(Find(untouched, headings).All(x => x.IsExpanded), "untouched Usage details follow the Advanced preset defaults");
+        untouched.SetPresentation(new(InformationLevel.Barebones));
+        Check(Find(untouched, headings).All(x => !x.IsExpanded), "untouched Usage details follow the Barebones preset defaults");
     }
 
     private async Task CheckUsageControls()
