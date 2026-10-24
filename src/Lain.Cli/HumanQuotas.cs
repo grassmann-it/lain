@@ -42,7 +42,8 @@ public static partial class CliApplication
 
                 var remaining = unsupported ? "Remaining unavailable"
                     : quota.Remaining is { } amount && double.IsFinite(amount) && amount >= 0 ? "Remaining " + QuotaAmount(amount, quota.Unit)
-                    : percent is { } known ? "Remaining " + (100 - known).ToString("0.##", CultureInfo.InvariantCulture) + "% (amount unknown)"
+                    : percent is { } known ? "Remaining " + (100 - known).ToString("0.##", CultureInfo.InvariantCulture)
+                        + (quota.Unit is "percent" or "%" ? "%" : "% (amount unknown)")
                     : "Remaining unknown" + (quota.Unit is "unknown" or "" ? "" : " " + Cell(quota.Unit));
                 var resetLabel = unsupported ? "Reset unavailable" : quota.ResetsAt is { } next
                     ? (due ? "Reset due " : "Reset ") + Timestamp(next) + " UTC" : "Reset unknown";
