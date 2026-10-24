@@ -66,6 +66,8 @@ public sealed class InspectorView : UserControl, IPresentationView
     private bool _connected;
     private bool _updatingChoices;
     private bool _renderPending;
+    private bool _followScheduled;
+    private SelectableTextBlock? _lastOutput;
     private string? _contentGap;
     private string? _sourceNotice;
     private string? _navigationKey;
@@ -123,6 +125,8 @@ public sealed class InspectorView : UserControl, IPresentationView
         _identity.Content = _identityScroll;
         ToolTip.SetTip(_identity, "Request identities, measurement sources and related Account, Models and Usage views.");
         _eventScroll = new ScrollViewer { Content = _eventList, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        _eventScroll.SizeChanged += (_, _) => ScheduleFollowOutput();
+        _follow.IsCheckedChanged += (_, _) => ScheduleFollowOutput();
         _details = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*,Auto"), RowSpacing = 8 };
         _details.Children.Add(_selection);
         _requestField = Ui.Field("Request within this group", _request);
@@ -197,6 +201,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         foreach (var surface in _eventSurfaces) surface.Padding = new Thickness(compact ? 6 : 10);
         foreach (var time in _eventTimes) time.IsVisible = _presentation.Level != InformationLevel.Barebones;
         FitWorkspace();
+        ScheduleFollowOutput();
     }
 
     private void RenderNavigation(InspectorStreamDto[] streams)
@@ -262,6 +267,32 @@ public sealed class InspectorView : UserControl, IPresentationView
             - _details.RowSpacing * 4 - identityHeader - 64;
         var detailHeight = Math.Clamp(detailRoom, 0, 140);
         if (Math.Abs(_identityScroll.MaxHeight - detailHeight) > 1) _identityScroll.MaxHeight = detailHeight;
+    }
+
+    private void ScheduleFollowOutput()
+    {
+        if (_follow.IsChecked != true || _followScheduled) return;
+        _followScheduled = true;
+        // Resizing changes the output viewport after its parent is arranged.
+        // Follow the new extent only once layout has completed; preserving the
+        // old pixel offset can leave only card headers visible in a short pane.
+        Dispatcher.UIThread.Post(() =>
+        {
+            _followScheduled = false;
+            if (_follow.IsChecked != true || _lifetime is null) return;
+            var oldOffset = _eventScroll.Offset.Y;
+            var output = _lastOutput;
+            var point = output?.TranslatePoint(default, _eventScroll);
+            var viewport = _eventScroll.Viewport.Height;
+            _eventScroll.ScrollToEnd();
+            if (output is null || point is null) return;
+            if (viewport <= 0) return;
+            // Expanded event metadata can extend beyond the latest output.
+            // Keep the end of the actual text in view while following it.
+            var offset = oldOffset + point.Value.Y + output.Bounds.Height - viewport + 4;
+            _eventScroll.Offset = new Vector(_eventScroll.Offset.X,
+                Math.Clamp(offset, 0, Math.Max(0, _eventScroll.Extent.Height - viewport)));
+        }, DispatcherPriority.Loaded);
     }
 
     private async Task PollAsync(CancellationToken token)
@@ -540,6 +571,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         }
         _renderPending = false;
         _eventList.Children.Clear();
+        _lastOutput = null;
         _eventTimes.Clear(); _eventDetails.Clear(); _eventSurfaces.Clear();
         _contentStatus.Text = _contentGap ?? (_selectedRequest is null ? "Select a request to read its live events." : "Retained live events · text and tool chunks stay within this request");
         _contentStatus.Foreground = _contentGap is null ? Ui.Muted : Ui.Warning;
@@ -568,7 +600,11 @@ public sealed class InspectorView : UserControl, IPresentationView
             var time = Ui.Text(metadata[0], 10, Ui.Muted);
             _eventTimes.Add(time);
             var content = new StackPanel { Spacing = 5, Children = { Ui.Text(label, 13), time } };
-            if (!string.IsNullOrEmpty(block.Text)) content.Children.Add(Selectable(block.Text, 13));
+            if (!string.IsNullOrEmpty(block.Text))
+            {
+                _lastOutput = Selectable(block.Text, 13);
+                content.Children.Add(_lastOutput);
+            }
             else content.Children.Add(Ui.Text(entry.State ?? entry.GapReason ?? "Metadata event", 12, Ui.Muted));
             if (entry.Truncated || entry.GapReason is not null) content.Children.Add(Ui.Text("Partial event · " + (entry.GapReason ?? "content truncated"), 11, Ui.Warning));
             if (entry.RedactionState is not null and not "none") content.Children.Add(Ui.Text("Content policy: " + entry.RedactionState, 10, Ui.Muted));
@@ -584,7 +620,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         }
         if (blocks.Count == 0) _eventList.Children.Add(Ui.Text("No retained content for this request. Metadata may be available before the first output or after content expires.", 12, Ui.Muted));
         ApplyPresentation();
-        if (_follow.IsChecked == true) Dispatcher.UIThread.Post(() => _eventScroll.ScrollToEnd());
+        ScheduleFollowOutput();
     }
 
     private static string? KnownIdentity(AttemptDimensionsDto? dimensions, string field, string? value)
@@ -599,7 +635,7 @@ public sealed class InspectorView : UserControl, IPresentationView
     private void ResetDetachedState()
     {
         _snapshot = null; _sourceId = null; _selectedGroup = null; _selectedRequest = null;
-        _after = 0; _nextSnapshot = 0; _refreshOnce = false; _renderPending = false;
+        _after = 0; _nextSnapshot = 0; _refreshOnce = false; _renderPending = false; _lastOutput = null;
         ClearEvents(); _eventList.Children.Clear(); _eventTimes.Clear(); _eventDetails.Clear(); _eventSurfaces.Clear();
         _groups.Clear(); _groupButtons.Clear(); _groupList.Children.Clear();
         _updatingChoices = true;
