@@ -46,6 +46,13 @@ cancelled.Cancel();
 try { await adapter.FetchAsync(account, credential, cancelled.Token); throw new Exception("cancellation swallowed"); }
 catch (OperationCanceledException) { }
 Check(calls == before, "cancelled request never sent");
+status = HttpStatusCode.OK;
+body = fixture;
+var service = new QuotaService(new FixtureAccounts(account), new NoCredentials(), [adapter]);
+var snapshot = (await service.RefreshAsync(account.Id)).Single();
+Check(snapshot.State == "setup-required" && snapshot.Error is null && snapshot.LastSuccessAt is null
+    && snapshot.Used is null && snapshot.Limit is null && snapshot.Remaining is null && snapshot.ResetsAt is null,
+    "service exposes reporting prerequisite without reading credentials or claiming measured success");
 Console.WriteLine("NVIDIA public-reference and qualification checks passed.");
 
 sealed class FixtureHttp(Func<HttpRequestMessage, HttpResponseMessage> reply) : HttpMessageHandler
@@ -55,4 +62,15 @@ sealed class FixtureHttp(Func<HttpRequestMessage, HttpResponseMessage> reply) : 
         ct.ThrowIfCancellationRequested();
         return Task.FromResult(reply(request));
     }
+}
+
+sealed class FixtureAccounts(AccountDto account) : IQuotaAccountSource
+{
+    public Task<IReadOnlyList<AccountDto>> GetAccountsAsync(CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<AccountDto>>([account]);
+}
+sealed class NoCredentials : IQuotaCredentialSource
+{
+    public Task<QuotaCredential?> GetCredentialAsync(string accountId, CancellationToken ct = default) =>
+        throw new Exception("The anonymous product reference must not load account credentials.");
 }
