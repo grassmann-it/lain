@@ -1,18 +1,23 @@
 # Isolated core integration
 
-The executable `lain-proxy` is built from the vendored, pinned CLIProxyAPI source
-in `proxy/core`. `proxy/baseline.json` records the original per-file hashes and
-upstream commit. The import was verified against **all 1,663 source files** before
-copying the runtime, SDK, embedded model catalogues, tests and licence. Examples,
-upstream documentation and unrelated artwork were omitted. `proxy/source-manifest.json`
-records the exact retained and patched source. The original personal proxy was
-not changed, launched, stopped, or queried by this build.
+The executable `lain-proxy` links the independent module in `proxy/adapter` with
+the verified external **CLIProxyAPI v8.0.41** dependency. The complete upstream
+source is no longer vendored. `proxy/upstream.json` pins its official archive,
+commit, module checksums and explicit patch overlays; the build applies them only
+in a private temporary tree. The prepared source is modified, so this is not the
+unchanged official release binary. [The adapter boundary](../proxy/README.md)
+explains each necessary SDK extension and its tests. `proxy/baseline.json` remains
+historical evidence for the earlier v7 source, not the provenance of this build.
+The personal proxy is outside this build and upgrade.
 
 Build with `scripts/build-core.sh`, optionally passing an absolute output path.
 Exactly Go 1.27.2 is required (`proxy/toolchain.json`); set `LAIN_GO` to its executable when it is outside PATH.
-Dependencies are pinned by the retained `go.mod` and `go.sum`. Default output is
+Dependencies are pinned by the adapter's `go.mod` and `go.sum`. Default output is
 `artifacts/proxy/lain-proxy`; its adjacent manifest records the binary SHA-256,
-source manifest SHA-256 and compiler. Licence: upstream MIT (`proxy/core/LICENSE`).
+source manifest SHA-256, compiler, upstream version and patch-set hash.
+Licence: upstream MIT (`proxy/LICENSE.upstream`). Schema-2 source provenance and
+Core-only delivery are documented in [the delivery contract](core-upgrade-delivery.md).
+Upgrade acceptance is tracked separately in [the v8 report](core-v8-upgrade.md).
 
 ## Startup and configuration
 
@@ -64,6 +69,17 @@ inference endpoints are POST `/v1/chat/completions`, `/v1/responses`,
 only configured public route aliases with `visible` omitted or true. Hidden
 routes remain explicitly callable. Requests are limited to 32 MiB at this
 boundary. WebSocket and image endpoints are not exposed by this version.
+
+Native server-side `image_generation` tools and their native tool choice are
+also rejected before dispatch. This closes a previously unqualified permeable
+path: the upstream reports additional image-model usage under a separate reporter
+identity, while the established Host contract permits one primary usage fact per
+attempt. The adapter must neither invent an extra dispatch nor discard that usage.
+The official disable-image-generation option prevents automatic injection, and a
+final outbound guard prevents payload overrides from restoring native image tools.
+Ordinary function tools, including image-related names, and vision/image inputs
+remain within the existing protocol path. Native image generation needs a separate
+accounting extension before it can be enabled.
 
 OAuth import accepts only separate Codex access-token snapshots. A JSON file with
 `refresh_token`, another OAuth provider, or a symlink is rejected. All refresh and

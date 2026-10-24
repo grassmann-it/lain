@@ -1,8 +1,13 @@
 # Development and verification
 
 The pinned SDK is .NET 10.0.111. Restore uses committed NuGet lockfiles. The
-Go proxy has its own verified source snapshot and build script; it never uses
-the installed personal proxy binary.
+Go launcher links an independent adapter with the pinned external CLIProxyAPI
+v8.0.41 dependency. Its build verifies the official archive and applies the
+documented hook patches in a private temporary tree. See [proxy/README.md](../proxy/README.md)
+for source verification, Go 1.27.2, patch tests and provenance. It never uses the
+installed personal proxy binary. Full backend upgrade qualification is described
+in [the upgrade matrix](backend-upgrade-qualification.md); runtime success alone
+does not replace adapter unit gates or installed acceptance.
 
 ```sh
 dotnet restore Lain.sln --locked-mode -r linux-x64 -p:SelfContained=true -m:1

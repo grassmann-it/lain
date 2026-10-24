@@ -1,5 +1,12 @@
 # Umsetzung 23.10.2026
 
+**Folgeauftrag 24.10.2026:** Direktes Upgrade auf CLIProxyAPI v8.0.41, bevorzugt
+als externe Abhängigkeit bei Erhalt der vorhandenen Funktionen. Diese neue
+Nutzerentscheidung ersetzt die v7-Pinnung für das Upgrade. Der vollständige
+vendorte Baum wird durch Adapter, Upstreamlock und explizite Hookpatches ersetzt.
+[Aktueller Upgrade- und Prüfstand](core-v8-upgrade.md). Der folgende Abschnitt
+beschreibt die ursprüngliche A–E-Lieferung.
+
 Der Nutzer hat die Umsetzung von A–E autorisiert: .NET 10, SQLite, Avalonia und separater CLIProxyAPI-Core auf dem manifestgeprüften Snapshot 7.3.17-parent-request.3-model-compat.3-startup-readiness.1. Maximal zwölf aktive Agenten einschließlich Integrator, getrennte Worktrees. W0 Verträge/Integration; W1 Core; W2 Qualifikation; W3 Accounts/Betrieb; W4 Datenbank; W5 Modelle; W6 Quota; W7 Client/CLI; W8 Desktop; W9 Usage-UI; W10 Auslieferung; W11 Abnahme.
 
 A ist Freigabegate für produktiven Fachbetrieb. Gerüste und Vertragsfixtures dürfen parallel entstehen. Persistente Dispatchregistrierung, synchron dauerhafte Usage, Replay und transaktionale Cursorbestätigung sind Pflicht. Strikte HTTP-Accountbindung darf nicht auf andere Accounts ausweichen. Unbekannte Mengen sind JSON null.

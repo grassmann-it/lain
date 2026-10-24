@@ -6,6 +6,16 @@ Implementierung und Nachweise stehen in [README](../README.md) und
 [Abnahme](acceptance.md); historische Empfehlungen sind keine zusätzlichen
 Abnahmebehauptungen.
 
+Am 24.10.2026 hat der Nutzer zusätzlich das direkte CLIProxyAPI-Upgrade freigegeben,
+möglichst als unveränderte externe Software ohne Verlust der lain-Garantien.
+Der neue Build verwendet v8.0.41 als verifizierte externe Abhängigkeit und einen
+eigenständigen lain-Adapter. Notwendige SDK-Erweiterungen bleiben als ausdrücklich
+gehashte Patchdateien sichtbar; der bisherige vollständige Quellimport entfällt.
+Das offizielle Binary allein bietet die synchronen Journal- und Bindungshooks
+nicht. Die [Upgradeabnahme](core-v8-upgrade.md) unterscheidet Quellnachweis,
+synthetische Qualifikation und installierten Betrieb. Die C#-Hostaufteilung und
+die HTTP-/Journalverträge bleiben bestehen.
+
 Am 24.10.2026 wurde die autonome
 [Erweiterung um Inspector, Auswertungen und Anbieter](expansion-2026-10-24.md)
 beauftragt. Ihr aktueller Zuschnitt und die Abgrenzung zwischen Implementierung
