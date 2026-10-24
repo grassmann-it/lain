@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "commits": 785,
+  "branches": 65,
+  "email": "tom@grassmann-it.de",
+  "checks": [
+    "all author and committer addresses rewritten",
+    "commit trees/messages/names/dates unchanged",
+    "all parent relationships mapped exactly",
+    "all65refs updated atomically",
+    "uncommitted changes and Git index preserved",
+    "rollback bundle outside repository",
+    "historical build identities mapped to equivalent trees"
+  ]
+}
