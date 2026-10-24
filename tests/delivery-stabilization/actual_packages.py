@@ -223,12 +223,15 @@ def execute(args):
         gateway_root, gateway_home = root / 'gateway', root / 'gateway/state'
         env = install(args.previous_gateway, gateway_root, gateway_home)
         seed_configuration(gateway_home, 'gateway'); seed_history(gateway_home)
-        old_config = (gateway_home / 'configuration.json').read_bytes()
-        runtime_files = {p: (gateway_home / p).read_bytes() for p in ('active-profile.json', 'proxy/runtime.json')}
-        install(args.gateway_package, gateway_root, gateway_home)
-        require((gateway_home / 'app.previous/.lain-package').exists(), 'Baseline application rollback copy missing')
         host = Host(gateway_root, gateway_home)
         write(gateway_home, 'proxy/config.yaml', f'host: "127.0.0.1"\nport: {host.core_port}\nauth-dir: "{gateway_home / "proxy/auth"}"\napi-keys: ["synthetic-local-inference"]\n')
+        old_config = (gateway_home / 'configuration.json').read_bytes()
+        runtime_files = {p: (gateway_home / p).read_bytes() for p in
+                         ('active-profile.json', 'proxy/runtime.json', 'proxy/config.yaml', 'proxy/bindings.json')}
+        install(args.gateway_package, gateway_root, gateway_home)
+        require((gateway_home / 'app.previous/.lain-package').exists(), 'Baseline application rollback copy missing')
+        require(all((gateway_home / p).read_bytes() == data for p, data in runtime_files.items()),
+                'Package update changed legacy runtime configuration')
         with host:
             require(host.status['proxyReady'], 'Updated qualified Gateway Core did not start')
             state_assertions(host)
