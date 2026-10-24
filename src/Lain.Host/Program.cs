@@ -99,7 +99,8 @@ builder.Services.AddSingleton(sp => new LoginOperationService(configuration: rep
  accounts: sp.GetRequiredService<AccountService>(), secrets: secrets,
  accountAdapters: accountLogins, publicationGate: mutations));
 builder.Services.AddSingleton(sp => new CredentialRecoveryService(repository, sp.GetRequiredService<AccountService>(), secrets.Generations));
-builder.Services.AddSingleton(sp => new CredentialOwnerService(repository, sp.GetRequiredService<AccountService>(), secrets.Generations, cloudLogins));
+builder.Services.AddSingleton(sp => new CredentialOwnerService(repository, sp.GetRequiredService<AccountService>(), secrets.Generations, cloudLogins, mutations));
+builder.Services.AddSingleton(sp => new OwnedCredentialRefreshService(repository, sp.GetRequiredService<CredentialOwnerService>(), secrets.Generations, cloudLogins));
 builder.Services.AddSingleton(sp => new ConnectionMethodCatalog(sp.GetRequiredService<ProviderCatalogRegistry>(),
  GatewayMode, () => restoreReady && File.Exists(binary), () => poeLogin.IsAvailable,
  provider => cloudLogins.Any(login => login.Provider == provider && login.IsAvailable)));
@@ -152,7 +153,9 @@ app.Use(async (context, next) => {
  context.Response.Headers.CacheControl = "no-store";
  // Login owns its publication CAS. Never hold this lock during a provider wait:
  // polling and cancellation must be able to proceed concurrently.
- var mutation = context.Request.Method is not ("GET" or "HEAD") && !context.Request.Path.StartsWithSegments(Api.Prefix + "/accounts/login");
+ var mutation = context.Request.Method is not ("GET" or "HEAD") &&
+  !context.Request.Path.StartsWithSegments(Api.Prefix + "/accounts/login") &&
+  context.GetEndpoint()?.Metadata.GetMetadata<OwnsPublicationGate>() is null;
  if (mutation) await mutations.WaitAsync(context.RequestAborted);
  try { await next(context); }
  catch (RevisionConflictException) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError("revision_conflict", "Configuration changed; reload and retry.")); }
@@ -208,7 +211,7 @@ app.MapPost(Api.Prefix + "/accounts/recovery/{operationId}", (string operationId
 app.MapPost(Api.Prefix + "/accounts/{id}/credentials/{credentialId}/refresh", (string id, string credentialId, ApplyRequest request, CredentialOwnerService owners, CancellationToken ct) => {
  if (request.Revision != repository.Snapshot.Revision) throw new RevisionConflictException(request.Revision, repository.Snapshot.Revision);
  return owners.RefreshAsync(id, credentialId, ct);
-});
+}).WithMetadata(new OwnsPublicationGate());
 app.MapGet(Api.Prefix + "/accounts", (AccountService svc) => svc.List());
 app.MapPost(Api.Prefix + "/accounts", (RevisionRequest<AddApiAccountRequest> request, AccountService svc) => svc.AddApi(request.Revision, request.Value));
 app.MapPut(Api.Prefix + "/accounts/{id}/enabled", (string id, RevisionRequest<bool> request, AccountService svc) => svc.SetEnabled(request.Revision, id, request.Value));
@@ -290,10 +293,13 @@ if (GatewayMode() && restoreReady && File.Exists(Path.Combine(paths.Root, "activ
 }
 // Bring the owned Core up before passive quota readers connect to its local port.
 var quotaLoop = referenceWithoutQuota ? Task.CompletedTask : quota.RunAsync(shutdown.Token);
+var credentialRefreshLoop = referenceWithoutQuota ? Task.CompletedTask :
+ app.Services.GetRequiredService<OwnedCredentialRefreshService>().RunAsync(shutdown.Token);
 try { await app.RunAsync(); }
 finally
 {
- shutdown.Cancel(); try { await quotaLoop; } catch (OperationCanceledException) { }
+ shutdown.Cancel();
+ try { await Task.WhenAll(quotaLoop, credentialRefreshLoop); } catch (OperationCanceledException) { }
  await proxy.DisposeAsync();
  foreach (var login in cloudLogins) login.Dispose();
  providerHttp.Dispose();
@@ -346,3 +352,5 @@ record LoginRequest(long Revision, string Provider, string? Method = null, strin
  string? AccountId = null, ResourceBindingDto? Binding = null, long? ExpectedGeneration = null,
  string? Name = null, string? IdempotencyKey = null);
 record QuotaRefreshRequest(string? AccountId);
+// Owner operations wait on providers outside the global mutation lock and acquire it only to publish.
+sealed record OwnsPublicationGate;

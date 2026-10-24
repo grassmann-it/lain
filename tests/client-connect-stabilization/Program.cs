@@ -5,6 +5,28 @@ using Lain.Cli;
 using Lain.Core;
 
 static void Require(bool condition, string name) { if (!condition) throw new Exception(name); Console.WriteLine("PASS " + name); }
+var previousEnvironment = new[] { "LAIN_HOME", "LAIN_REFERENCE_QUALIFICATION", "LAIN_REFERENCE_HOST_PORT" }
+    .ToDictionary(name => name, Environment.GetEnvironmentVariable);
+try
+{
+    Environment.SetEnvironmentVariable("LAIN_HOME", Path.Combine(Path.GetTempPath(), "lain-client-discovery-fixture"));
+    Environment.SetEnvironmentVariable("LAIN_REFERENCE_HOST_PORT", "28418");
+    Environment.SetEnvironmentVariable("LAIN_REFERENCE_QUALIFICATION", null);
+    Require(LocalDiscovery.ApiAddress.Port == 18418, "reference API port requires explicit qualification mode");
+    Environment.SetEnvironmentVariable("LAIN_REFERENCE_QUALIFICATION", "1");
+    Require(LocalDiscovery.ApiAddress.AbsoluteUri == "http://127.0.0.1:28418/", "isolated client uses guarded loopback Host port");
+    Environment.SetEnvironmentVariable("LAIN_HOME", "/var/lib/lain-discovery-fixture");
+    Require(LocalDiscovery.ApiAddress.Port == 18418, "reference port cannot redirect non-temporary state");
+    Environment.SetEnvironmentVariable("LAIN_HOME", Path.Combine(Path.GetTempPath(), "lain-client-discovery-fixture"));
+    Environment.SetEnvironmentVariable("LAIN_REFERENCE_HOST_PORT", "invalid");
+    var invalidRejected = false;
+    try { _ = LocalDiscovery.ApiAddress; } catch (InvalidOperationException) { invalidRejected = true; }
+    Require(invalidRejected, "invalid isolated port fails before contacting an installed service");
+}
+finally
+{
+    foreach (var pair in previousEnvironment) Environment.SetEnvironmentVariable(pair.Key, pair.Value);
+}
 var handler = new Fixture();
 using var http = new HttpClient(handler) { BaseAddress = new Uri("http://fixture.invalid/api/v1/") };
 using var client = new LainApiClient(http);

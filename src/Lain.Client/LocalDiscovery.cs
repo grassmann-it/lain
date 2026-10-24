@@ -3,7 +3,21 @@ namespace Lain.Client;
 /// <summary>Reads only lain's local API credential; never opens application databases.</summary>
 public static class LocalDiscovery
 {
-    public static Uri ApiAddress { get; } = new("http://127.0.0.1:18418/");
+    public static Uri ApiAddress
+    {
+        get
+        {
+            var port = 18418;
+            if (Environment.GetEnvironmentVariable("LAIN_REFERENCE_QUALIFICATION") == "1" &&
+                StateDirectory.StartsWith(Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.Ordinal) &&
+                Environment.GetEnvironmentVariable("LAIN_REFERENCE_HOST_PORT") is { } referencePort)
+            {
+                if (!int.TryParse(referencePort, out port) || port is < 1024 or > 65535)
+                    throw new InvalidOperationException("Invalid isolated reference Host port.");
+            }
+            return new Uri($"http://127.0.0.1:{port}/");
+        }
+    }
     public static string StateDirectory => Path.GetFullPath(Environment.GetEnvironmentVariable("LAIN_HOME") ??
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "lain"));
 
