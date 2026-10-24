@@ -86,3 +86,42 @@ Temporary runtime/preferences are removed on exit. The scope does not establish
 live provider access, inference correctness, native desktop entry launch, or an
 independent installed-file manifest comparison: the integrator performs those
 separate package/update checks.
+
+## Actual native launcher and window icon
+
+After the verified installation, the separate source-only native probe launches
+the actual owned desktop entry through `gio launch`. It requires no .NET build:
+
+```sh
+python3 tests/desktop-installed/probe-native-launcher.py \
+  --desktop /home/tomka/.local/share/applications/lain.desktop \
+  --launcher /home/tomka/.local/bin/lain \
+  --icon /home/tomka/.local/share/icons/lain.png \
+  --state /home/tomka/.local/share/lain \
+  --output /absolute/new/native-launcher-evidence
+```
+
+It requires `Xvfb`, `xauth`, `gio` and `libX11.so.6`. No existing display or bus
+is inherited; HOME/XDG directories and Xauthority are temporary. Explicit
+`LAIN_HOME` permits the normal management credential reader. The GUI starts
+normally and is observed without clicking, typing, quota/provider refresh,
+inference or service operations. Existing installed preferences are read by the
+production application; the probe performs no presentation edits.
+
+Before launch it checks desktop/icon ownership hashes, exact quoted absolute
+`Exec=... ui`, exact Icon path, application name and allowed desktop-entry keys.
+The actual executable wrapper must equal the installed managed wrapper. Both the
+installed icon and the published source PNG must retain the original artwork hash.
+A Linux child subreaper and per-launch inherited nonce bind the native PID to this
+launch. ctypes `XQueryTree` inspects only the newly allocated private display;
+EWMH `_NET_WM_PID`, `_NET_WM_NAME`, normal window type, mapped geometry and
+`_NET_WM_ICON` are recorded. Native icon dimensions, ARGB hash and transparency
+range prove a meaningful native icon property; they do not independently compare
+every scaled pixel against the original PNG. No window-manager client-list
+property is assumed because the private Xvfb has no normal desktop session.
+
+Only process groups whose surviving members all carry this launch's nonce can
+be terminated. The probe never closes an existing GUI or service, captures a
+screen or writes normal HOME/XDG files. `native-launcher.json`, `gio.log` and
+`xvfb.log` remain in the private evidence directory. These native checks complement
+the exact-assembly GET-only harness and its rendered viewport matrix.
