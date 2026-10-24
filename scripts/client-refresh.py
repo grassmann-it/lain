@@ -90,6 +90,33 @@ def stage(args):
     git = lambda *parts: subprocess.check_output(['git', *parts], cwd=root)
     revision = git('rev-parse', args.source_commit + '^{commit}').decode().strip()
     source = lambda path: git('show', revision + ':' + path)
+    history_path = root / 'docs/git-history-rewrite.json'
+    history = load(history_path) if history_path.exists() else None
+    if history is not None:
+        require(isinstance(history, dict) and history.get('format') == 1 and history.get('email') == 'tom@grassmann-it.de'
+                and isinstance(history.get('commits'), dict), 'Invalid Git history rewrite mapping')
+        require(all(isinstance(value, str) and len(value) == 40 and all(character in '0123456789abcdef' for character in value)
+                    for pair in history['commits'].items() for value in pair), 'History mapping requires full lowercase commit hashes')
+        require(not git('ls-files', '--others', '--exclude-standard', 'docs/git-history-rewrite.json').strip(),
+                'Commit the Git history mapping before freezing a release')
+
+    historical_lookups = {}
+
+    def historical_lookup(pin):
+        # Installed hashes/version/sourceCommit fields remain historical. This
+        # translation is solely for reading equivalent source in rewritten clones.
+        if pin in historical_lookups:
+            return historical_lookups[pin]
+        equivalent = history['commits'].get(pin, pin) if history is not None else pin
+        resolved = git('rev-parse', '--verify', equivalent + '^{commit}').decode().strip()
+        if equivalent != pin:
+            old = subprocess.run(['git', 'rev-parse', '--verify', pin + '^{tree}'], cwd=root,
+                                 capture_output=True, text=True)
+            if old.returncode == 0:
+                require(old.stdout.strip() == git('rev-parse', resolved + '^{tree}').decode().strip(),
+                        'History mapping changes source-tree contents: ' + pin)
+        historical_lookups[pin] = resolved
+        return resolved
     base = args.base.resolve(strict=True)
     require(args.output.is_absolute(), 'Output must be absolute')
     out = args.output.resolve()
@@ -101,7 +128,7 @@ def stage(args):
     require((cli_only and args.desktop is None) or (not cli_only and args.desktop is not None), 'Use --cli-only without --desktop, or supply both client publishes')
     publishes = {name: getattr(args, name).resolve(strict=True) for name in projects}
     require(not any(out == path or path in out.parents or out in path.parents for path in [root, base, *publishes.values()]), 'Output overlaps checkout/input')
-    frozen = ['src', 'Directory.Build.props', 'global.json', 'scripts/client-refresh.py', 'scripts/collect-notices.py', 'scripts/collect-go-notices.py', 'scripts/stage-component-refresh.py', 'packaging/licenses', 'docs/tray-client-delivery.md', *CLIENT_DOCS]
+    frozen = ['src', 'Directory.Build.props', 'global.json', 'scripts/client-refresh.py', 'scripts/collect-notices.py', 'scripts/collect-go-notices.py', 'scripts/stage-component-refresh.py', 'packaging/licenses', 'docs/tray-client-delivery.md', 'docs/git-history-rewrite.json', *CLIENT_DOCS]
     subprocess.run(['git', 'diff', '--exit-code', revision, '--', *frozen], cwd=root, check=True, stdout=subprocess.DEVNULL)
     require(not git('ls-files', '--others', '--exclude-standard', 'src').strip(), 'Untracked application sources must be resolved')
     suffix = args.informational_version.partition('+')[2].split('.')
@@ -115,12 +142,12 @@ def stage(args):
     require(qualification.get('passed') is True and qualification.get('sha256') == CORE, 'Exact Core qualification is missing')
     # Shared clients may be republished locally, but cannot introduce new contracts
     # over the old running Host. RID-only lock changes are verified via graphs below.
-    changed = git('diff', '--name-only', HOST_SOURCE, revision, '--', 'src/Lain.Host', 'src/Lain.Client', 'src/Lain.Core', 'Directory.Build.props', 'global.json').decode().splitlines()
+    changed = git('diff', '--name-only', historical_lookup(HOST_SOURCE), revision, '--', 'src/Lain.Host', 'src/Lain.Client', 'src/Lain.Core', 'Directory.Build.props', 'global.json').decode().splitlines()
     require(not [name for name in changed if not name.endswith('/packages.lock.json')], 'Host/shared contract sources changed; this narrow no-restart refresh is unsuitable')
     desktop_revision = info['componentSourceCommits']['desktop']
     if cli_only:
         require(digest(base / 'desktop/Assets/Brand/lain-cat.png') == ARTWORK, 'Retained Desktop original artwork differs')
-        require(not git('diff', '--name-only', desktop_revision, revision, '--', 'src/Lain.Desktop').strip(),
+        require(not git('diff', '--name-only', historical_lookup(desktop_revision), revision, '--', 'src/Lain.Desktop').strip(),
                 'CLI-only source changes Desktop; retain its exact source tree or use full client mode')
     common = runpy.run_path(str(root / 'scripts/stage-component-refresh.py'))
     blob = common['serialized_version'](args.informational_version)
@@ -178,7 +205,8 @@ def stage(args):
             target = provenance / path
             target.parent.mkdir(parents=True, exist_ok=True)
             origin = desktop_revision if cli_only and path.startswith('src/Lain.Desktop/') else revision
-            target.write_bytes(git('show', origin + ':' + path))
+            lookup = historical_lookup(origin) if cli_only and path.startswith('src/Lain.Desktop/') else origin
+            target.write_bytes(git('show', lookup + ':' + path))
             records.append({'sourcePath': path, 'sourceCommit': origin, 'sha256': digest(target)})
     write(provenance / 'inventory.json', {'sourceCommit': revision, 'scope': 'New CLI with retained Desktop source' if cli_only else 'New CLI/Desktop and unchanged shared client source; retained Host source provenance stays in source-provenance/', 'files': records})
     write(provenance / 'baseline-build-info.json', info)
