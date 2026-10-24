@@ -102,3 +102,53 @@ App-only rollback of schema4 remains unsupported. See
 Source helper checks (synthetic SQLite and nonexecutable fake package only):
 `python3 tests/delivery-stabilization/test_legacy_rollback.py`. They never launch
 Host/Core or contact providers.
+
+
+### Current schema4 update fixture
+
+`v4_update.py` is separate from `actual_packages.py`'s historical schema3
+conversion. It accepts pinned previous793822c Monitor/Gateway packages and pinned
+new Monitor/Gateway packages. The new source commit is explicit; no particular
+new commit is embedded. Default execution is plan-only and writes `not_run`.
+Only `--execute` installs into temporary private paths and starts owned processes.
+It requires the same distinct loopback-only namespace/parent identity guard as
+`actual_packages.py`; a failed guard has no host-network fallback.
+
+```sh
+python3 tests/delivery-stabilization/v4_update.py \
+  --previous-monitor-package /absolute/previous-monitor \
+  --previous-monitor-manifest-sha256 FULL_SHA256 \
+  --previous-gateway-package /absolute/previous-gateway \
+  --previous-gateway-manifest-sha256 FULL_SHA256 \
+  --previous-core-sha256 FULL_SHA256 \
+  --new-monitor-package /absolute/new-monitor \
+  --new-monitor-manifest-sha256 FULL_SHA256 \
+  --new-gateway-package /absolute/new-gateway \
+  --new-gateway-manifest-sha256 FULL_SHA256 \
+  --new-core-sha256 FULL_SHA256 --new-source-commit FULL_COMMIT \
+  --report /absolute/new-plan.json
+```
+
+For the separately authorized runtime window, add `--execute` and
+`--parent-netns 'net:[IDENTITY_CAPTURED_BY_LAUNCHER_BEFORE_UNSHARE]'` inside the
+namespace. Both packages must carry exact-Core qualification. Reusing Core is
+allowed only when binary hash, source-manifest hash, upstream/patch identity,
+qualification source and existing qualification record match exactly.
+
+Both runtime modes use synthetic desired19/applied2 state, an unknown legacy
+profile, schema4 history with durable source/cursor/digests and token components,
+and synthetic static/owned grant sentinels. Each path starts793822c, creates a
+fresh full stopped snapshot including an occupied `app.previous` fixture,
+archives that fixture without deletion, and invokes the actual new installer.
+It then returns only application binaries to793822c and updates forward again.
+A changed synthetic grant introduced after the first update must remain current
+through both operations; snapshot credentials are never restored. Monitor stays
+without Core throughout. Snapshot fingerprints stay private and are absent from
+reports.
+
+A passing result qualifies only this bounded synthetic state with these exact
+packages. It does not establish general v4 rollback compatibility, real OAuth
+rotation, newer owner/recovery semantics, live providers, open UI draft
+preservation, or safety of restoring stale credentials. No real installation is
+accessed. At source integration, runtime remains **not_run** until separately
+executed against the final packages.
