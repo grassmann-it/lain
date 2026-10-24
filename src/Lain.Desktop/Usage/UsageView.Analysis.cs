@@ -59,11 +59,11 @@ public sealed partial class UsageView
         AutomationProperties.SetName(_performanceDetails, "Performance details");
         _dimension.SelectionChanged += async (_, _) =>
         {
-            if (_lifetime is null) return;
+            if (_restoringNavigation || _lifetime is null) return;
             _query = _query with { GroupBy = (_dimension.SelectedItem as FilterChoice)?.Key };
             await RefreshAsync(_lifetime.Token);
         };
-        _dimensionOrder.SelectionChanged += (_, _) => { if (_analysis is not null) RenderAnalysis(_analysis, _analysisError); };
+        _dimensionOrder.SelectionChanged += (_, _) => { if (!_restoringNavigation && _analysis is not null) RenderAnalysis(_analysis, _analysisError); };
         var controls = new WrapPanel { Children = { Field("Compare by", _dimension), Field("Group order", _dimensionOrder) } };
         _performanceDetails.Content = new StackPanel { Spacing = 6, Children = { _performance,
             Label("Output rate is reported output tokens ÷ full attempt duration, including response startup. P50/P95 use all matching stored measurements; each metric reports measured/eligible attempts. Missing measurements stay —. Costs are not reported by this source.", Muted) } };

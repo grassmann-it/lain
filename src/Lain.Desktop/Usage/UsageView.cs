@@ -57,6 +57,7 @@ public sealed partial class UsageView : UserControl, IPresentationView
     private readonly HashSet<string> _knownModels = new(StringComparer.Ordinal);
     private UsageSummaryDto? _summary;
     private bool _hasAppliedQuery;
+    private bool _restoringNavigation;
     private long _generation;
 
     public Action<WorkspaceNavigationRequest>? NavigateRequested { get; set; }
@@ -133,7 +134,7 @@ public sealed partial class UsageView : UserControl, IPresentationView
         _apply.Click += async (_, _) => await ApplyAsync();
         _previous.Click += async (_, _) => await MovePageAsync(-1);
         _next.Click += async (_, _) => await MovePageAsync(1);
-        _dailyMetric.SelectionChanged += (_, _) => { if (_summary is not null) RenderDaily(_summary.Daily); };
+        _dailyMetric.SelectionChanged += (_, _) => { if (!_restoringNavigation && _summary is not null) RenderDaily(_summary.Daily); };
         AttachedToVisualTree += OnAttached;
         DetachedFromVisualTree += OnDetached;
     }
@@ -180,6 +181,97 @@ public sealed partial class UsageView : UserControl, IPresentationView
         UpdateChoices(_model, "All models", _knownModels, model, x => x);
         _filterDetails.IsExpanded = true;
         await ApplyContextAsync(query => query with { Model = model, Offset = 0 });
+    }
+
+    /// <summary>Captures UI context only. History never retains usage/attempt payloads.</summary>
+    public Action CaptureNavigationState()
+    {
+        var query = _query;
+        var hasAppliedQuery = _hasAppliedQuery;
+        var from = _from.Text;
+        var to = _to.Text;
+        var zone = _zone.Text;
+        var account = (_account.SelectedItem as FilterChoice)?.Key;
+        var model = (_model.SelectedItem as FilterChoice)?.Key;
+        var status = _status.Text;
+        var dimensions = _dimensionFilters.ToDictionary(pair => pair.Key, pair => pair.Value.Text, StringComparer.Ordinal);
+        var comparison = (_dimension.SelectedItem as FilterChoice)?.Key;
+        var order = _dimensionOrder.SelectedIndex;
+        var dailyMeasure = _dailyMetric.SelectedIndex;
+        var filterError = _filterError.Text;
+        var filterErrorVisible = _filterError.IsVisible;
+        var attempts = _expandedAttempts.ToArray();
+        var groups = _expandedAnalysisGroups.ToArray();
+        var disclosures = new[] { _filterDetails, _moreFilters, _sourceDetails, _tokenDetails, _performanceDetails, _dailyDetails, _historyDetails }
+            .Select(details => details.IsExpanded).ToArray();
+        return () =>
+        {
+            _generation++;
+            _refresh?.Cancel();
+            _restoringNavigation = true;
+            try
+            {
+                _query = query;
+                _hasAppliedQuery = hasAppliedQuery;
+                _from.Text = from;
+                _to.Text = to;
+                _zone.Text = zone;
+                _status.Text = status;
+                UpdateChoices(_account, "All accounts", _knownAccounts, account, AccountName);
+                UpdateChoices(_model, "All models", _knownModels, model, value => value);
+                foreach (var (key, value) in dimensions) _dimensionFilters[key].Text = value;
+                _dimension.SelectedItem = _dimension.ItemsSource?.OfType<FilterChoice>().FirstOrDefault(choice => choice.Key == comparison);
+                _dimensionOrder.SelectedIndex = order;
+                _dailyMetric.SelectedIndex = dailyMeasure;
+                _expandedAttempts.Clear();
+                _expandedAttempts.UnionWith(attempts);
+                _expandedAnalysisGroups.Clear();
+                _expandedAnalysisGroups.UnionWith(groups);
+                var details = new[] { _filterDetails, _moreFilters, _sourceDetails, _tokenDetails, _performanceDetails, _dailyDetails, _historyDetails };
+                for (var index = 0; index < details.Length; index++) details[index].IsExpanded = disclosures[index];
+                _filterError.Text = filterError;
+                _filterError.IsVisible = filterErrorVisible;
+                ResetRestoredSnapshot();
+            }
+            finally { _restoringNavigation = false; }
+            if (_lifetime is { } lifetime)
+                _ = hasAppliedQuery ? RefreshAsync(lifetime.Token) : ApplyAsync();
+        };
+    }
+
+    private void ResetRestoredSnapshot()
+    {
+        // A prior visit's metrics must never appear beneath the restored filter scope.
+        _summary = null;
+        _analysis = null;
+        _analysisQuery = null;
+        _analysisError = null;
+        _attemptToggles.Clear();
+        _attemptLinks.Clear();
+        _analysisButtons.Clear();
+        RenderEmptyTotals();
+        _daily.Children.Clear();
+        _daily.Children.Add(Label("Waiting for the restored range", Muted));
+        _dailyDetails.Content = Label("Waiting for the restored range", Muted);
+        _attempts.Children.Clear();
+        _attempts.Children.Add(Label("Waiting for restored attempt history", Muted));
+        _dimensionGroups.Children.Clear();
+        _dimensionGroups.Children.Add(Label("Waiting for the restored breakdown", Muted));
+        _performance.Children.Clear();
+        _performance.Children.Add(Label("Waiting for restored measurements", Muted));
+        _unobservedAccounts.Children.Clear();
+        _scope.Text = _hasAppliedQuery ? AppliedScopeText(_query) : "No filters applied yet";
+        _coverage.Text = "Coverage unknown until the restored query is refreshed";
+        _coverage.Foreground = Muted;
+        _connection.Text = "Restoring usage context";
+        _connection.Foreground = Muted;
+        _freshness.Text = "Waiting for a snapshot of the restored range";
+        _analysisStatus.Text = "Waiting for restored complete-range analysis";
+        _analysisStatus.Foreground = Muted;
+        _page.Text = $"Saved page {_query.Offset / _query.Limit + 1:N0} · refreshing";
+        _previous.IsEnabled = false;
+        _next.IsEnabled = false;
+        ShowError(null);
     }
 
     private async Task ApplyContextAsync(Func<UsageQuery, UsageQuery> change)
@@ -371,8 +463,7 @@ public sealed partial class UsageView : UserControl, IPresentationView
         _connection.Foreground = Accent;
         var age = DateTimeOffset.UtcNow - summary.ObservedAt;
         _freshness.Text = $"Observed {TimeZoneInfo.ConvertTime(summary.ObservedAt, zone):yyyy-MM-dd HH:mm:ss zzz} ({Math.Max(0, age.TotalSeconds):N0}s ago) · cursor {summary.Cursor:N0} · zone {summary.TimeZone}\nApplied range: {TimeZoneInfo.ConvertTime(summary.From, zone):yyyy-MM-dd HH:mm} → {TimeZoneInfo.ConvertTime(summary.To, zone):yyyy-MM-dd HH:mm} (exclusive)";
-        _scope.Text = $"Applied range: {TimeZoneInfo.ConvertTime(summary.From, zone):yyyy-MM-dd} → {TimeZoneInfo.ConvertTime(summary.To, zone):yyyy-MM-dd} (exclusive) · {summary.TimeZone}\nApplied filters: {(query.AccountId is { } accountId ? $"{AccountName(accountId)} [{accountId}]" : "all accounts")} · {query.Model ?? "all models"} · {(query.StatusCode is { } status ? $"HTTP {status}" : "all outcomes")}";
-        _scope.Text += DimensionScope(query);
+        _scope.Text = AppliedScopeText(query with { From = summary.From, To = summary.To, TimeZone = summary.TimeZone });
         _coverage.Text = summary.Complete
             ? $"Coverage: complete for selected range · {summary.Totals.UnknownUsageAttempts:N0} attempts with unknown token usage"
             : $"Coverage: incomplete — totals may omit activity · {summary.Totals.UnknownUsageAttempts:N0} attempts with unknown token usage";
@@ -625,6 +716,14 @@ public sealed partial class UsageView : UserControl, IPresentationView
     }
 
     private string AccountName(string id) => _accountNames.GetValueOrDefault(id, id);
+    private string AppliedScopeText(UsageQuery query)
+    {
+        var zone = TimeZoneInfo.FindSystemTimeZoneById(query.TimeZone);
+        var range = query.From is { } from && query.To is { } to
+            ? $"{TimeZoneInfo.ConvertTime(from, zone):yyyy-MM-dd} → {TimeZoneInfo.ConvertTime(to, zone):yyyy-MM-dd} (exclusive)"
+            : "Host default range";
+        return $"Applied range: {range} · {query.TimeZone}\nApplied filters: {(query.AccountId is { } accountId ? $"{AccountName(accountId)} [{accountId}]" : "all accounts")} · {query.Model ?? "all models"} · {(query.StatusCode is { } status ? $"HTTP {status}" : "all outcomes")}" + DimensionScope(query);
+    }
     private static string Number(long? value) => value?.ToString("N0", CultureInfo.CurrentCulture) ?? "—";
     private static string Milliseconds(double? value)
     {
