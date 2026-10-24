@@ -28,7 +28,8 @@ public sealed class InspectorView : UserControl, IPresentationView
     private readonly ContentControl _identityFacts = new();
     private readonly ScrollViewer _identityScroll = new() { MaxHeight = 140, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private readonly List<TextBlock> _eventTimes = [];
-    private readonly List<Expander> _eventDetails = [];
+    private readonly List<(Expander Control, EventDetailKey Key)> _eventDetails = [];
+    private readonly Dictionary<EventDetailKey, bool> _eventDetailOverrides = [];
     private readonly List<Border> _eventSurfaces = [];
     private readonly TextBlock _buffer = Ui.Text("No live buffer received", 11, Ui.Muted);
     private readonly TextBlock _selection = Ui.Text("Choose a conversation or request", 14);
@@ -67,6 +68,7 @@ public sealed class InspectorView : UserControl, IPresentationView
     private bool _updatingChoices;
     private bool _renderPending;
     private bool _followScheduled;
+    private bool _applyingEventDefaults;
     private SelectableTextBlock? _lastOutput;
     private string? _contentGap;
     private string? _sourceNotice;
@@ -183,8 +185,14 @@ public sealed class InspectorView : UserControl, IPresentationView
         PruneEvents();
         if (levelChanged)
         {
-            foreach (var details in _eventDetails.Where(x => !x.IsKeyboardFocusWithin))
-                details.IsExpanded = options.Level == InformationLevel.Advanced;
+            _applyingEventDefaults = true;
+            try
+            {
+                foreach (var (control, key) in _eventDetails)
+                    if (!_eventDetailOverrides.ContainsKey(key) && !control.IsKeyboardFocusWithin)
+                        control.IsExpanded = options.Level == InformationLevel.Advanced;
+            }
+            finally { _applyingEventDefaults = false; }
         }
         ApplyPresentation();
     }
@@ -374,6 +382,7 @@ public sealed class InspectorView : UserControl, IPresentationView
                 characters -= _events[0].Text?.Length ?? 0; _eventReceived.Remove(_events[0].Cursor); _events.RemoveAt(0);
                 _contentGap = "Earlier displayed events were trimmed to keep this view bounded.";
             }
+            if (trimmed) PruneEventDetailOverrides();
             if (page.Events.Length > 0 || page.Truncated || page.GapReason is not null) RenderEvents(preserveFocusedOutput: !trimmed);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
@@ -557,6 +566,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         if (expired.Count == 0) return;
         _events.RemoveAll(entry => expired.Contains(entry.Cursor));
         foreach (var cursor in expired) _eventReceived.Remove(cursor);
+        PruneEventDetailOverrides();
         _contentGap = "Earlier content expired from the live display buffer.";
         RenderEvents();
     }
@@ -613,9 +623,18 @@ public sealed class InspectorView : UserControl, IPresentationView
                 Selectable(string.Join(" · ", metadata)),
                 Selectable($"Request {entry.RequestId} · attempt {entry.AttemptId ?? "unknown"} · event {entry.Cursor:N0}")
             } };
+            var detailKey = EventKey(entry);
             var details = new Expander { Header = "Event details", Content = technical,
-                HorizontalAlignment = HorizontalAlignment.Stretch, IsExpanded = _presentation.Level == InformationLevel.Advanced };
-            content.Children.Add(details); _eventDetails.Add(details);
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                IsExpanded = _eventDetailOverrides.GetValueOrDefault(detailKey, _presentation.Level == InformationLevel.Advanced) };
+            details.PropertyChanged += (_, args) =>
+            {
+                if (args.Property == Expander.IsExpandedProperty && !_applyingEventDefaults
+                    && detailKey.SourceId == _sourceId && detailKey.RequestId == _selectedRequest
+                    && _eventReceived.ContainsKey(detailKey.Cursor))
+                    _eventDetailOverrides[detailKey] = details.IsExpanded;
+            };
+            content.Children.Add(details); _eventDetails.Add((details, detailKey));
             var surface = Surface(content); _eventSurfaces.Add(surface); _eventList.Children.Add(surface);
         }
         if (blocks.Count == 0) _eventList.Children.Add(Ui.Text("No retained content for this request. Metadata may be available before the first output or after content expires.", 12, Ui.Muted));
@@ -631,7 +650,14 @@ public sealed class InspectorView : UserControl, IPresentationView
     }
     private static bool IsActive(InspectorStreamDto stream) => stream.State is "active" or "pending" or "streaming" or "started";
     private static bool IsTerminal(InspectorStreamDto stream) => stream.State is "success" or "completed" or "succeeded" or "failed" or "error" or "canceled" or "cancelled" or "finished";
-    private void ClearEvents() { _events.Clear(); _eventReceived.Clear(); }
+    private EventDetailKey EventKey(InspectorEventDto entry) => new(_sourceId, entry.Cursor, entry.RequestId);
+    private void PruneEventDetailOverrides()
+    {
+        var retained = _events.Select(EventKey).ToHashSet();
+        foreach (var key in _eventDetailOverrides.Keys.Where(key => !retained.Contains(key)).ToArray())
+            _eventDetailOverrides.Remove(key);
+    }
+    private void ClearEvents() { _events.Clear(); _eventReceived.Clear(); _eventDetailOverrides.Clear(); }
     private void ResetDetachedState()
     {
         _snapshot = null; _sourceId = null; _selectedGroup = null; _selectedRequest = null;
@@ -666,6 +692,7 @@ public sealed class InspectorView : UserControl, IPresentationView
     private static Border Surface(Control child) => new() { Background = Ui.Surface, BorderBrush = Ui.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(5), Padding = new Thickness(10), Child = child };
     private sealed record GroupChoice(string Key, string Name, InspectorStreamDto[] Streams) { public override string ToString() => Name; }
     private sealed record RequestChoice(string Id, string Name) { public override string ToString() => Name; }
+    private sealed record EventDetailKey(string? SourceId, long Cursor, string RequestId);
     private sealed class EventBlock(InspectorEventDto first, string channel)
     {
         public InspectorEventDto First { get; } = first;
