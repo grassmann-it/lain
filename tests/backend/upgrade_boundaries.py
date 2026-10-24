@@ -104,13 +104,16 @@ def copied_owned_credential(core):
 def unqualified_free_only(core):
     observed = []
     for name, fields in [
-        ("unknown-price", {"pricingClass": "unknown", "freeOnlyEnforcement": "openrouter-zero-cap-v1"}),
+        ("unknown-price", {"pricingClass": "unknown", "freeOnlyEnforcement": "openrouter_zero_cap_v1"}),
         ("missing-enforcement", {"pricingClass": "free"}),
         ("forged-enforcement", {"pricingClass": "free", "freeOnlyEnforcement": "claimed-model-pin"}),
     ]:
         run = Run(core)
         try:
-            run.bindings["routes"]["fixture-a"].update({"provider": "openrouter", "costPolicy": "free_only", **fields})
+            # Keep the route's model otherwise qualified so model rejection cannot
+            # conceal a lost pricing/enforcement check.
+            run.bindings["routes"]["fixture-a"].update({"provider": "openrouter", "model": "qwen/qwen3-coder:free",
+                                                       "costPolicy": "free_only", **fields})
             run.write_bindings()
             result = subprocess.run(run.command(), cwd=run.root, env=run.env, capture_output=True, timeout=10)
             expect(result.returncode != 0, f"{name}: unqualified free-only route started")
