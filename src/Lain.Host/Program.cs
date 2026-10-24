@@ -181,15 +181,16 @@ app.MapPost(Api.Prefix + "/service/{action}", async (string action, Cancellation
 });
 using var shutdown = new CancellationTokenSource();
 var referenceWithoutQuota = Environment.GetEnvironmentVariable("LAIN_REFERENCE_QUALIFICATION") == "1" && paths.Root.StartsWith(Path.GetTempPath(), StringComparison.Ordinal) && Environment.GetEnvironmentVariable("LAIN_REFERENCE_DISABLE_QUOTA") == "1";
-var quotaLoop = referenceWithoutQuota ? Task.CompletedTask : quota.RunAsync(shutdown.Token);
-if (qualified && File.Exists(Path.Combine(paths.Root, "active-profile.json")))
+if (File.Exists(Path.Combine(paths.Root, "active-profile.json")))
 {
  try {
   using var active = JsonDocument.Parse(File.ReadAllText(Path.Combine(paths.Root, "active-profile.json")));
   if (active.RootElement.GetProperty("revision").GetInt64() != repository.Snapshot.AppliedRevision) throw new InvalidOperationException();
   RequireAppliedRuntime(); await proxy.StartAsync(shutdown.Token);
- } catch (Exception) { /* API remains available for repair. */ }
+ } catch (Exception) { proxy.ReportStartupValidationFailure(); /* API remains available for repair. */ }
 }
+// Bring the owned Core up before passive quota readers connect to its local port.
+var quotaLoop = referenceWithoutQuota ? Task.CompletedTask : quota.RunAsync(shutdown.Token);
 try { await app.RunAsync(); }
 finally { shutdown.Cancel(); try { await quotaLoop; } catch (OperationCanceledException) {} await proxy.DisposeAsync(); providerHttp.Dispose(); }
 

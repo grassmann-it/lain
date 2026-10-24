@@ -261,6 +261,29 @@ try
     {
         try { await lifecycle.StartAsync(); throw new Exception("Expected qualification rejection."); } catch (InvalidOperationException) { }
         Check(lifecycle.Status.State == "stopped", "qualification rejects launch before touching any process");
+        Check(lifecycle.Status.Error == "Proxy backend qualification has not passed.", "failed startup exposes a bounded actionable diagnostic");
+        lifecycle.ReportStartupValidationFailure();
+        Check(lifecycle.Status.Error == "Proxy backend qualification has not passed.", "outer startup validation does not hide the precise failure stage");
+        await lifecycle.StopAsync();
+        Check(lifecycle.Status.Error is null, "intentional stop clears an obsolete startup failure");
+    }
+    // Explicitly opt in only inside an isolated network namespace: production
+    // lifecycle binds the fixed owned port, so normal suites never touch it.
+    if (OperatingSystem.IsLinux() && Environment.GetEnvironmentVariable("LAIN_TEST_ISOLATED_PROXY_LIFECYCLE") == "1")
+    {
+        var fakeCore = Path.Combine(testRoot, "fake-core");
+        File.WriteAllText(fakeCore, "#!/bin/sh\nprintf 'synthetic-private-stderr-do-not-forward\\n' >&2\nexit 7\n");
+        File.SetUnixFileMode(fakeCore, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        var hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(fakeCore)));
+        await using var lifecycle = new OwnedProxyLifecycle(paths, secrets, new ProxyLaunchOptions(fakeCore, hash, true));
+        try { await lifecycle.StartAsync(); throw new Exception("Expected launch rejection."); } catch (System.ComponentModel.Win32Exception) { }
+        Check(lifecycle.Status.State == "stopped" && lifecycle.Status.Error == "The proxy process could not be launched.", "unstarted process leaves a readable safe status");
+        await lifecycle.StopAsync();
+        Check(lifecycle.Status.Error is null, "failed process launch can be stopped safely");
+        File.SetUnixFileMode(fakeCore, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        try { await lifecycle.StartAsync(); throw new Exception("Expected child exit rejection."); } catch (InvalidOperationException) { }
+        Check(lifecycle.Status.State == "stopped" && lifecycle.Status.Error == "The proxy exited before becoming ready (exit code 7).", "early child exit retains exit code without forwarding output");
+        Check(!JsonSerializer.Serialize(lifecycle.Status).Contains("synthetic-private-stderr"), "child output is absent from public diagnostics");
     }
     try { secrets.ReadAccount("../legacy"); throw new Exception("Expected path rejection."); } catch (ArgumentException) { }
     if (!OperatingSystem.IsWindows())

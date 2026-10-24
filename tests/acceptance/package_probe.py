@@ -102,7 +102,7 @@ def main():
                         expect(time.monotonic() < deadline, 'installed usage did not persist exactly one synthetic attempt')
                         time.sleep(.1)
                     expect(summary['totals']['requests'] == 1 and summary['totals']['errors'] == 0 and summary['complete'], 'installed usage identity/coverage changed across restart')
-                    usage_result = run([launcher, 'usage', '--json'], environment=client_env)
+                    usage_result = run([launcher, 'history', '--json'], environment=client_env)
                     expect(usage_result.returncode == 0 and json.loads(usage_result.stdout)['totals'] == summary['totals'], 'installed CLI/API usage differ')
                     result = run([launcher, 'status', '--json'], environment=client_env)
                     expect(result.returncode == 0, 'installed CLI failed against own host from unrelated cwd')
