@@ -57,9 +57,9 @@ public sealed partial class MainWindow
             header.Children.Add(heading);
             if (AccountCredentialWarning(account) is { } credentialWarning) header.Children.Add(TileText(credentialWarning, 11, Ui.Warning));
             if (account.SharedWithLegacy || quotas.Any(quota => quota.SharedWithLegacy))
-                header.Children.Add(TileText("Shared provider budget with the imported connection · do not add these balances together.", 11, Ui.Warning));
+                header.Children.Add(TileText("Shared provider budget", 11, Ui.Warning));
             else if (account.BudgetPoolId is not null || quotas.Any(quota => quota.BudgetPoolId is not null))
-                header.Children.Add(TileText("Provider budget pool · balances can be shared across accounts.", 11, Ui.Muted));
+                header.Children.Add(TileText("Provider budget pool", 11, Ui.Muted));
             // Every reported window stays in the closed tile, including balance-only
             // windows beside percentage windows and explicitly unknown windows.
             if (quotas.Length == 0) header.Children.Add(AccountTileWindow(account, null));

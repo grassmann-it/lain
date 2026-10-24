@@ -16,6 +16,22 @@ public sealed partial class MainWindow
     private string _accountStatus = "All states";
     private bool _accountFiltersExpanded;
 
+    private Action CaptureAccountsNavigation()
+    {
+        var search = _accountSearch;
+        var provider = _accountProvider;
+        var status = _accountStatus;
+        var filtersExpanded = _accountFiltersExpanded;
+        return () =>
+        {
+            _accountSearch = search;
+            _accountProvider = provider;
+            _accountStatus = status;
+            _accountFiltersExpanded = filtersExpanded;
+            _accountNavigationId = null;
+        };
+    }
+
     private Control AccountsPage()
     {
         var options = PresentationFor("Accounts");
@@ -188,6 +204,10 @@ public sealed partial class MainWindow
         var options = PresentationFor("Accounts");
         var content = new StackPanel { Spacing = options.Density == ViewDensity.Compact ? 6 : 8 };
         var quotas = _quotas.Where(q => q.AccountId == account.Id).ToArray();
+        if (account.SharedWithLegacy || quotas.Any(quota => quota.SharedWithLegacy))
+            content.Children.Add(Ui.Text("This account shares the provider budget with the imported connection. These balances describe the same budget and must not be added together.", 12, Ui.Warning));
+        else if (account.BudgetPoolId is not null || quotas.Any(quota => quota.BudgetPoolId is not null))
+            content.Children.Add(Ui.Text("This account uses a provider budget pool. Balances can be shared across accounts using that pool; do not assume separate capacity.", 12, Ui.Muted));
         var removal = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch };
         void ConfirmAccountRemoval()
         {
@@ -287,6 +307,7 @@ public sealed partial class MainWindow
     private void ShowAddAccount()
     {
         if (_configuration is not { } cfg) { _notice.Text = "Connect to the host first."; return; }
+        RegisterEditor(ShowAddAccount, cfg.Revision);
         _editing = true;
         var name = Ui.Input(hint: "My API account");
         var provider = Ui.Input(hint: "e.g. command-code");
@@ -308,6 +329,7 @@ public sealed partial class MainWindow
     private void ShowImport()
     {
         if (_configuration is not { } cfg) { _notice.Text = "Connect to the host first."; return; }
+        RegisterEditor(ShowImport, cfg.Revision);
         _editing = true;
         var path = Ui.Input(hint: "/path/to/config.yaml"); var auth = Ui.Input(hint: "Optional auth directory");
         var form = AccountForm("Import setup", "Import supported API configuration and Codex access-token snapshots.",
