@@ -50,5 +50,8 @@ signal each other, and a later process acquires the released owner. Children
 inherit only the private display/bus/state environment and have bounded cleanup.
 Evidence includes checks, screenshots, IPC result files and the production
 assembly path/hash. `native-bus.json` records only fixture registrations/PIDs and
-the one deliberately synthetic notification; `native-bus.log` and `openbox.log`
-retain isolated session diagnostics. No credentials or provider payloads are recorded.
+the one deliberately synthetic notification. Image-data hints contain only
+dimensions/format/byte count and a SHA-256 of row-normalized pixels, compared
+with the packaged cat PNG decoded by GdkPixbuf; raw pixels are never recorded.
+The icon may travel as the exact asset path or as matching image data.
+`native-bus.log` and `openbox.log` retain isolated session diagnostics. No credentials or provider payloads are recorded.

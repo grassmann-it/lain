@@ -32,6 +32,7 @@ for ((attempt=0; attempt<100; attempt++)); do
 done
 xprop -root _NET_SUPPORTING_WM_CHECK | rg -q 'window id # 0x[1-9a-fA-F]' || { echo 'Private window manager did not become ready' >&2; exit 2; }
 export LAIN_TEST_WM_PID="$wm_pid"
+export LAIN_TEST_EXPECTED_ICON="$repo/tests/desktop-tray/bin/Debug/net10.0/Assets/Brand/lain-cat.png"
 /usr/bin/python3 "$repo/tests/desktop-tray/private-bus-stub.py" >"$LAIN_TEST_OUTPUT/native-bus.log" 2>&1 &
 stub_pid=$!
 for ((attempt=0; attempt<100; attempt++)); do

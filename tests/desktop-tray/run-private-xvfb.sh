@@ -13,7 +13,7 @@ for dependency in dotnet Xvfb xauth timeout dbus-run-session openbox xprop rg /u
   command -v "$dependency" >/dev/null || { echo "Missing dependency: $dependency" >&2; exit 2; }
 done
 
-/usr/bin/python3 -c 'import dbus, gi'
+/usr/bin/python3 -c 'import dbus, gi; gi.require_version("GdkPixbuf", "2.0"); from gi.repository import GdkPixbuf'
 
 # Building does not start a GUI. Set LAIN_DESKTOP_SKIP_BUILD=1 only after a build.
 if [[ ${LAIN_DESKTOP_SKIP_BUILD:-0} != 1 ]]; then

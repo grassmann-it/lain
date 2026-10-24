@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 """StatusNotifier/Notifications fixture. Connects only to the runner's private bus."""
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -7,7 +8,9 @@ from pathlib import Path
 import dbus
 import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
-from gi.repository import GLib
+import gi
+gi.require_version("GdkPixbuf", "2.0")
+from gi.repository import GLib, GdkPixbuf
 
 if os.environ.get("LAIN_TEST_PRIVATE_BUS") != "1" or not os.environ.get("DBUS_SESSION_BUS_ADDRESS"):
     raise SystemExit("Private bus marker and explicit address required")
@@ -21,11 +24,35 @@ NOTIFICATIONS = "org.freedesktop.Notifications"
 CONTROL = "org.lain.TrayTest"
 
 
+def image_metadata(width, height, rowstride, alpha, bits, channels, pixels):
+    width, height, rowstride, bits, channels = map(int, (width, height, rowstride, bits, channels))
+    raw = bytes(pixels)
+    row_bytes = width * channels
+    complete = (bits == 8 and width > 0 and height > 0 and rowstride >= row_bytes
+        and len(raw) >= rowstride * (height - 1) + row_bytes)
+    digest = hashlib.sha256()
+    if complete:
+        for row in range(height):
+            digest.update(raw[row * rowstride:row * rowstride + row_bytes])
+    return {"width": width, "height": height, "rowstride": rowstride, "hasAlpha": bool(alpha),
+        "bitsPerSample": bits, "channels": channels, "byteCount": len(raw), "completeRows": complete,
+        "sha256": digest.hexdigest() if complete else None}
+
+
+def expected_image():
+    # Same packaged asset supplied to production notify-send, decoded locally.
+    # Record no pixel bytes; compare normalized row content across padding layouts.
+    image = GdkPixbuf.Pixbuf.new_from_file(os.environ["LAIN_TEST_EXPECTED_ICON"])
+    return image_metadata(image.get_width(), image.get_height(), image.get_rowstride(),
+        image.get_has_alpha(), image.get_bits_per_sample(), image.get_n_channels(), image.get_pixels())
+
+
 class Fixture(dbus.service.Object):
     def __init__(self):
         self.host = True
         self.items = {}
         self.notifications = []
+        self.expected_icon = expected_image()
         self.registrations = []
         super().__init__(bus, "/StatusNotifierWatcher")
         self.save()
@@ -34,7 +61,7 @@ class Fixture(dbus.service.Object):
         temporary = output / "native-bus.json.tmp"
         temporary.write_text(json.dumps({"hostRegistered": self.host,
             "items": list(self.items.values()), "registrations": self.registrations,
-            "notifications": self.notifications}, indent=2))
+            "notifications": self.notifications, "expectedIcon": self.expected_icon}, indent=2))
         temporary.replace(output / "native-bus.json")
 
     def values(self):
@@ -113,12 +140,14 @@ class Notifications(dbus.service.Object):
     @dbus.service.method(NOTIFICATIONS, in_signature="", out_signature="ssss")
     def GetServerInformation(self): return ("lain private fixture", "lain tests", "1", "1.2")
 
-    @dbus.service.method(NOTIFICATIONS, in_signature="susssasa{sv}i", out_signature="u")
+    @dbus.service.method(NOTIFICATIONS, in_signature="susssasa{sv}i", out_signature="u", byte_arrays=True)
     def Notify(self, app, replaces, icon, summary, body, actions, hints, timeout):
         number = len(self.fixture.notifications) + 1
+        image = next((hints[key] for key in ("image-data", "image_data", "icon_data") if key in hints), None)
+        metadata = image_metadata(*image) if image is not None else None
         self.fixture.notifications.append({"app": str(app), "icon": str(icon), "summary": str(summary),
             "body": str(body), "timeout": int(timeout), "desktopEntry": str(hints.get("desktop-entry", "")),
-            "urgency": int(hints.get("urgency", 0))})
+            "urgency": int(hints.get("urgency", 0)), "imageData": metadata})
         self.fixture.save()
         return dbus.UInt32(number)
 

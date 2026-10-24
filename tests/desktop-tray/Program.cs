@@ -135,13 +135,23 @@ internal sealed class TrayScenario
             "the production notify-send adapter delivers to the private Notifications service");
         using var delivered = ReadBusEvidence();
         var notification = delivered.RootElement.GetProperty("notifications").EnumerateArray().Single();
+        var correctIcon = notification.GetProperty("icon").GetString() == Environment.GetEnvironmentVariable("LAIN_TEST_EXPECTED_ICON");
+        if (notification.TryGetProperty("imageData", out var imageData) && imageData.ValueKind == JsonValueKind.Object)
+        {
+            var expected = delivered.RootElement.GetProperty("expectedIcon");
+            correctIcon |= imageData.GetProperty("completeRows").GetBoolean()
+                && new[] { "width", "height", "bitsPerSample", "channels" }.All(property =>
+                    imageData.GetProperty(property).GetInt32() == expected.GetProperty(property).GetInt32())
+                && imageData.GetProperty("hasAlpha").GetBoolean() == expected.GetProperty("hasAlpha").GetBoolean()
+                && imageData.GetProperty("sha256").GetString() == expected.GetProperty("sha256").GetString();
+        }
         Check(notification.GetProperty("app").GetString() == "lain"
             && notification.GetProperty("summary").GetString() == "Fixture &lt;quota&gt; &amp; alert"
             && notification.GetProperty("body").GetString() == "Private &lt;body&gt; &amp; &quot;quoted&quot;"
             && notification.GetProperty("desktopEntry").GetString() == "lain"
             && notification.GetProperty("urgency").GetInt32() == 1
             && notification.GetProperty("timeout").GetInt32() == 8000
-            && notification.GetProperty("icon").GetString()!.EndsWith("lain-cat.png", StringComparison.Ordinal),
+            && correctIcon,
             "the native notification preserves the application icon, plain-text escaping, urgency and expiry");
         tray.Dispose(); window.Close();
     }
