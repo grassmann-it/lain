@@ -30,9 +30,10 @@
     },
     {
       "path": "patches/0002-native-protocol-configuration.patch",
-      "sha256": "e40f8ac71c5d3d2425e9485f961de2600c5ffb5f9a7e7bb47a463f7e15a324bb",
+      "sha256": "efd19ad31f9444ffaa5ca9be5af70241cca8f6f8e7dfba6e70ef06f3f8f7df37",
       "upstreamPaths": [
         "internal/config/config_types.go",
+        "internal/runtime/executor/embedding_chat_eof_test.go",
         "internal/runtime/executor/embedding_protocol_test.go",
         "internal/runtime/executor/openai_compat_executor.go",
         "internal/watcher/synthesizer/config.go"
