@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Input.Platform;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Lain.Client;
 using Lain.Core;
 using Lain.Desktop.Presentation;
@@ -20,6 +21,11 @@ public sealed partial class MainWindow
     private string? _routeAccountId;
     private string? _routeContextId;
     private string? _routeModel;
+    private string? _selectedModelRouteId;
+    private bool _modelNarrowDetail;
+    private bool _modelFilterExpanded;
+    private Vector _modelInventoryOffset;
+    private readonly Dictionary<string, long> _modelPendingRevisions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, bool> _modelDetails = new(StringComparer.Ordinal);
 
     private void ApplyModelsNavigation(WorkspaceNavigationRequest target)
@@ -35,7 +41,7 @@ public sealed partial class MainWindow
         _routeProvider = "All providers";
         _routeVisibility = "All visibility";
         _routeState = "All states";
-        if (target.RouteId is { } id) _modelDetails[id] = true;
+        if (target.RouteId is { } id) { _selectedModelRouteId = id; _modelNarrowDetail = true; _modelDetails[id] = true; }
     }
 
     private Action CaptureModelsNavigation()
@@ -49,12 +55,20 @@ public sealed partial class MainWindow
         var routeId = _routeContextId;
         var model = _routeModel;
         var modelDetails = new Dictionary<string, bool>(_modelDetails, StringComparer.Ordinal);
+        var selected = _selectedModelRouteId;
+        var narrowDetail = _modelNarrowDetail;
+        var listOffset = _modelInventoryOffset;
+        var filterExpanded = _modelFilterExpanded;
         var profileId = _selectedProfileId;
         var profileDetails = new Dictionary<string, bool>(_profileDetails, StringComparer.Ordinal);
         return () =>
         {
             if (section == "Models")
             {
+                _selectedModelRouteId = selected;
+                _modelNarrowDetail = narrowDetail;
+                _modelInventoryOffset = listOffset;
+                _modelFilterExpanded = filterExpanded;
                 _routeSearch = search;
                 _routeProvider = provider;
                 _routeVisibility = visibility;
@@ -76,46 +90,80 @@ public sealed partial class MainWindow
 
     private Control RoutesPage()
     {
-        var presentation = PresentationFor("Models");
-        var dense = presentation.Density == ViewDensity.Compact || presentation.Level == InformationLevel.Barebones;
-        var create = Ui.Button("Add model access", () => EditRoute(null));
-        create.Classes.Add("primary");
-        var panel = Ui.Stack(ProfileHeader("Models", presentation.Level == InformationLevel.Barebones ? "Configured model access." : "Configured model access: the name clients use, its provider model and account binding.", create));
-        if (_configuration is not { } cfg) { panel.Children.Add(Empty("Connect to the host to manage model access.")); return panel; }
-
+        if (_configuration is not { } cfg) return Empty("Connect to the host to manage model access.");
+        var dense = PresentationFor("Models").Density == ViewDensity.Compact;
+        foreach (var id in _modelPendingRevisions.Where(p => p.Value <= cfg.AppliedRevision).Select(p => p.Key).ToArray()) _modelPendingRevisions.Remove(id);
+        var root = new Grid { ColumnDefinitions = new ColumnDefinitions("*,0"), ColumnSpacing = 16 };
+        var inventory = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*"), RowSpacing = 8 };
+        var create = Ui.PrimaryButton("Add model access", () => EditRoute(null));
+        inventory.Children.Add(Ui.PageHeader("Models", null, create));
         var search = Ui.Input(_routeSearch, "Search client names, provider models or accounts");
+        AutomationProperties.SetName(search, "Search configured model access");
         var providers = new[] { "All providers" }.Concat(cfg.Routes.Select(r => r.Provider).Distinct().OrderBy(p => p, StringComparer.OrdinalIgnoreCase)).ToArray();
         if (!providers.Contains(_routeProvider)) _routeProvider = providers[0];
         var provider = new ComboBox { ItemsSource = providers, SelectedItem = _routeProvider, MinWidth = 132 };
         var visibility = new ComboBox { ItemsSource = new[] { "All visibility", "Visible", "Hidden" }, SelectedItem = _routeVisibility, MinWidth = 116 };
         var state = new ComboBox { ItemsSource = new[] { "All states", "Enabled", "Disabled" }, SelectedItem = _routeState, MinWidth = 104 };
-        AutomationProperties.SetName(search, "Search configured model access");
         AutomationProperties.SetName(provider, "Filter model access by provider");
         AutomationProperties.SetName(visibility, "Filter model visibility");
         AutomationProperties.SetName(state, "Filter model state");
-        panel.Children.Add(Ui.Stack(search, ProfileWrap(provider, visibility, state)));
-
-        var count = Ui.Text("", 12, Ui.Muted);
-        var rows = new StackPanel { Spacing = dense ? 6 : 12 };
+        var filters = new Expander { Header = "Filter", IsExpanded = _modelFilterExpanded, Content = ProfileWrap(provider, visibility, state) };
+        filters.PropertyChanged += (_, e) => { if (e.Property == Expander.IsExpandedProperty) _modelFilterExpanded = filters.IsExpanded; };
+        var controls = Ui.Stack(search, filters); controls.Spacing = 5;
+        Grid.SetRow(controls, 1); inventory.Children.Add(controls);
+        var summary = Ui.Stack(); summary.Spacing = 4;
+        var count = Ui.Text("", 11, Ui.Muted); summary.Children.Add(count);
+        if (cfg.Revision != cfg.AppliedRevision)
+            summary.Children.Add(Ui.Text("Saved configuration has changes pending global Apply. Per-model active differences are not supplied.", 11, Ui.Warning));
         var contextText = Ui.Text("", 12, Ui.Accent);
-        var context = Ui.Stack(contextText);
-        context.Children.Add(Ui.Button("Clear model context", () => {
+        var context = Ui.Stack(contextText); context.Spacing = 4;
+        var templates = CompactRouteButton("Choose provider models…", () => { if (_routeAccountId is { } id) _ = ShowAccountModelsAsync(id); });
+        context.Children.Add(ProfileWrap(templates, CompactRouteButton("Clear model context", () => {
             _routeAccountId = _routeContextId = _routeModel = null;
             Populate();
-        }));
-        panel.Children.Add(context);
-        panel.Children.Add(count);
-        panel.Children.Add(rows);
-        string AccountNames(string[] ids) => string.Join(", ", ids.Select(id => cfg.Accounts.FirstOrDefault(a => a.Id == id)?.Name ?? id));
+        })));
+        summary.Children.Add(context); Grid.SetRow(summary, 2); inventory.Children.Add(summary);
+        var rows = new StackPanel { Spacing = 0 };
+        var list = new ScrollViewer { Content = rows, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        AutomationProperties.SetName(list, "Configured model inventory");
+        list.ScrollChanged += (_, _) => { if (inventory.IsVisible) _modelInventoryOffset = list.Offset; };
+        Grid.SetRow(list, 3); inventory.Children.Add(list);
+        var detail = new Border { Background = Ui.Surface, BorderBrush = Ui.Edge, BorderThickness = new Thickness(1, 0, 0, 0), Padding = new Thickness(14) };
+        AutomationProperties.SetName(detail, "Selected model details");
+        root.Children.Add(inventory); root.Children.Add(detail);
+        var rowBorders = new Dictionary<string, Border>(StringComparer.Ordinal);
+        var rowOrigins = new Dictionary<string, Button>(StringComparer.Ordinal);
+        string AccountNames(string[] ids) => ids.Length == 0 ? "Account not supplied" : string.Join(", ", ids.Select(id => cfg.Accounts.FirstOrDefault(a => a.Id == id)?.Name ?? id));
+        Grid RowGrid() => new() { ColumnDefinitions = new ColumnDefinitions("1.1*,1.5*,82,58,92"), ColumnSpacing = 8 };
+        void UpdateLayout()
+        {
+            var wide = (Bounds.Width > 0 ? Bounds.Width : Width) >= 1000;
+            inventory.IsVisible = wide || !_modelNarrowDetail;
+            detail.IsVisible = wide || _modelNarrowDetail;
+            root.ColumnDefinitions = new ColumnDefinitions(wide ? "*,320" : "*");
+            Grid.SetColumn(detail, wide ? 1 : 0);
+        }
+        void ShowDetails(string id)
+        {
+            _selectedModelRouteId = id; _modelNarrowDetail = true;
+            foreach (var pair in rowBorders) pair.Value.Background = pair.Key == id ? Ui.AccentSurface : Brushes.Transparent;
+            detail.Child = new ScrollViewer { Content = ModelAccessDetails(cfg, id, () => {
+                _modelNarrowDetail = false; _selectedModelRouteId = null; UpdateLayout();
+                foreach (var row in rowBorders.Values) row.Background = Brushes.Transparent;
+                var offset = _modelInventoryOffset;
+                Dispatcher.UIThread.Post(() => { list.Offset = offset; if (rowOrigins.TryGetValue(id, out var origin)) origin.Focus(); }, DispatcherPriority.Loaded);
+            }), HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+            UpdateLayout();
+        }
         void Populate()
         {
-            rows.Children.Clear();
+            rows.Children.Clear(); rowBorders.Clear(); rowOrigins.Clear();
             var contexts = new List<string>();
             if (_routeAccountId is { } account) contexts.Add($"Account: {cfg.Accounts.FirstOrDefault(a => a.Id == account)?.Name ?? account}");
             if (_routeContextId is { } routeId) contexts.Add($"Model access: {cfg.Routes.FirstOrDefault(r => r.Id == routeId)?.Alias ?? routeId}");
             if (_routeModel is { } model) contexts.Add($"Model: {model}");
-            contextText.Text = string.Join(" · ", contexts);
-            context.IsVisible = contexts.Count > 0;
+            contextText.Text = string.Join(" · ", contexts); context.IsVisible = contexts.Count > 0;
+            templates.IsVisible = _routeAccountId is { } accountId && cfg.Accounts.Any(a => a.Id == accountId);
             var found = cfg.Routes.Where(r => (_routeProvider == "All providers" || r.Provider == _routeProvider)
                 && (_routeVisibility == "All visibility" || r.Visible == (_routeVisibility == "Visible"))
                 && (_routeState == "All states" || r.Enabled == (_routeState == "Enabled"))
@@ -124,94 +172,127 @@ public sealed partial class MainWindow
                 && (_routeModel is null || r.Alias == _routeModel || r.UpstreamModel == _routeModel)
                 && $"{r.Alias} {r.UpstreamModel} {r.Provider} {AccountNames(r.AccountIds)}".Contains(_routeSearch.Trim(), StringComparison.OrdinalIgnoreCase))
                 .OrderBy(r => r.Alias, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.Id, StringComparer.Ordinal).ToArray();
-            count.Text = $"{found.Length} of {cfg.Routes.Length} configured model access entries · {cfg.Routes.Count(r => r.Visible && r.Enabled)} enabled and visible to clients";
-            foreach (var route in found) rows.Children.Add(ModelAccessCard(cfg, route, presentation));
-            if (found.Length == 0)
-                rows.Children.Add(Empty(cfg.Routes.Length == 0
-                    ? "No model access yet. Add a client name, provider model and account binding. Known model suggestions are available while adding."
-                    : "No configured model access matches these filters. Clear the context or adjust the filters."));
+            count.Text = $"{found.Length} of {cfg.Routes.Length} entries · {cfg.Routes.Count(r => r.Visible && r.Enabled)} saved enabled and visible";
+            var header = RowGrid(); header.Margin = new Thickness(9, 4, 9, 6);
+            var labels = new[] { "Name in client", "Provider model / account", "Access", "Menu", "Actions" };
+            for (var i = 0; i < labels.Length; i++) { var label = Ui.Text(labels[i], 10, Ui.Muted); Grid.SetColumn(label, i); header.Children.Add(label); }
+            rows.Children.Add(header);
+            foreach (var route in found)
+            {
+                var grid = RowGrid();
+                var title = CompactRouteButton(route.Alias, () => ShowDetails(route.Id));
+                title.Background = Brushes.Transparent; title.HorizontalContentAlignment = HorizontalAlignment.Left;
+                title.Content = Ui.Text(route.Alias, 12); title.Padding = new Thickness(0, 3);
+                AutomationProperties.SetName(title, "Select model access " + route.Alias); rowOrigins[route.Id] = title;
+                grid.Children.Add(title);
+                var binding = Ui.Stack(Ui.Text($"{route.Provider} / {route.UpstreamModel}", 11), Ui.Text(AccountNames(route.AccountIds), 11, Ui.Muted)); binding.Spacing = 1;
+                Grid.SetColumn(binding, 1); grid.Children.Add(binding);
+                var access = Ui.Stack(Ui.Text(route.Enabled ? "Enabled" : "Disabled", 11, route.Enabled ? Ui.Accent : Ui.Warning)); access.Spacing = 1;
+                if (_modelPendingRevisions.ContainsKey(route.Id)) access.Children.Add(Ui.Text("Pending apply", 10, Ui.Warning));
+                ToolTip.SetTip(access, "Saved access state. Disabling takes effect at the next global profile Apply.");
+                Grid.SetColumn(access, 2); grid.Children.Add(access);
+                var menuState = Ui.Text(route.Visible ? "Visible" : "Hidden", 11, route.Visible ? Ui.Ink : Ui.Muted);
+                ToolTip.SetTip(menuState, "Hidden removes the alias from client model menus; direct requests remain possible.");
+                Grid.SetColumn(menuState, 3); grid.Children.Add(menuState);
+                var edit = CompactRouteButton("Edit", () => EditRoute(route)); AutomationProperties.SetName(edit, "Edit model access " + route.Alias);
+                var commands = ModelAccessCommands(cfg, route, () => ShowDetails(route.Id));
+                var moreMenu = ObjectCommandMenu(commands);
+                var more = CompactRouteButton("⋯", () => moreMenu.Open()); more.ContextMenu = moreMenu;
+                AutomationProperties.SetName(more, "Actions for model access " + route.Alias);
+                var actions = new WrapPanel { Orientation = Orientation.Horizontal, ItemSpacing = 3, Children = { edit, more } };
+                Grid.SetColumn(actions, 4); grid.Children.Add(actions);
+                var row = new Border { Child = grid, Padding = new Thickness(9, dense ? 4 : 7), BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Background = route.Id == _selectedModelRouteId ? Ui.AccentSurface : Brushes.Transparent };
+                AutomationProperties.SetName(row, "Model row " + route.Id);
+                row.ContextMenu = ObjectCommandMenu(commands); rowBorders[route.Id] = row; rows.Children.Add(row);
+            }
+            if (found.Length == 0) rows.Children.Add(Empty(cfg.Routes.Length == 0 ? "No model access yet. Choose provider models from an account or add model access manually." : "No model access matches these filters. Clear the context or adjust the filters."));
         }
         search.TextChanged += (_, _) => { _routeSearch = search.Text ?? ""; Populate(); };
         provider.SelectionChanged += (_, _) => { _routeProvider = provider.SelectedItem as string ?? "All providers"; Populate(); };
         visibility.SelectionChanged += (_, _) => { _routeVisibility = visibility.SelectedItem as string ?? "All visibility"; Populate(); };
         state.SelectionChanged += (_, _) => { _routeState = state.SelectedItem as string ?? "All states"; Populate(); };
+        root.SizeChanged += (_, _) => UpdateLayout();
         Populate();
-        return panel;
+        if (_selectedModelRouteId is { } selected) ShowDetails(selected);
+        else detail.Child = Ui.Stack(Ui.Text("Model configuration", 15), Ui.Text("Select a model to inspect its binding, profiles and provenance. Edit and actions are available in every row.", 12, Ui.Muted));
+        UpdateLayout();
+        var offset = _modelInventoryOffset;
+        Dispatcher.UIThread.Post(() => list.Offset = offset, DispatcherPriority.Loaded);
+        return Ui.Viewport(root);
     }
 
-    private Control ModelAccessCard(ConfigurationDto cfg, RouteDto route, PresentationOptions presentation)
+    private ObjectCommand[] ModelAccessCommands(ConfigurationDto cfg, RouteDto route, Action showDetails)
     {
-        var dense = presentation.Density == ViewDensity.Compact || presentation.Level == InformationLevel.Barebones;
-        var names = string.Join(", ", route.AccountIds.Select(id => cfg.Accounts.FirstOrDefault(a => a.Id == id)?.Name ?? id));
-        var identity = Ui.Stack(Ui.Text($"Client name: {route.Alias}", 15), Ui.Text($"Provider model: {route.Provider} / {route.UpstreamModel}", 12, Ui.Muted),
-            Ui.Text($"Account binding: {names} · {(route.Pooled ? "Explicit pool" : "Strict · one account")}", 12));
-        identity.Spacing = dense ? 2 : 5;
-        var policy = route.Policy?.CostPolicy ?? "configured";
-        var state = Ui.Text($"{(route.Enabled ? "Enabled" : "Disabled")} · {(route.Visible ? "Visible in client model menu" : "Hidden from client model menu")} · " +
-            (policy == "free_only" ? "Only free — no paid fallback" : policy == "configured" ? "Configured spending policy" : $"Spending policy: {policy}"), 12,
-            route.Enabled ? Ui.Muted : Ui.Warning);
-        var accounts = new WrapPanel { Orientation = Orientation.Horizontal };
+        void Save(RouteDto updated) => _ = RunAsync(async () => {
+            _configuration = await _client.SaveRouteAsync(cfg.Revision, updated, _lifetime.Token);
+            _modelPendingRevisions[route.Id] = _configuration.Revision;
+        }, "Model access saved. Changes take effect at the next global profile Apply.");
+        var commands = new List<ObjectCommand>
+        {
+            new("detail", "Model details", showDetails),
+            new("edit", "Edit model access", () => EditRoute(route)),
+            new("enabled", route.Enabled ? "Disable at next Apply" : "Enable at next Apply", () => Save(route with { Enabled = !route.Enabled })),
+            new("visibility", route.Visible ? "Hide from model menu" : "Show in model menu", () => Save(route with { Visible = !route.Visible })),
+            new("usage", "Recorded usage", () => NavigateTo(new("Usage", RouteId: route.Id)), HasHistory, "No recorded history source."),
+            new("profiles", "Profile uses", showDetails),
+            new("copy", "Copy client model name", () => { if (Clipboard is { } clipboard) _ = clipboard.SetTextAsync(route.Alias); }),
+            new("remove", "Remove model access…", () => ShowModelRemoval(cfg, route))
+        };
         foreach (var id in route.AccountIds)
         {
-            var link = CompactRouteButton(cfg.Accounts.FirstOrDefault(a => a.Id == id)?.Name ?? id,
-                () => NavigateTo(new WorkspaceNavigationRequest("Accounts", AccountId: id)));
-            AutomationProperties.SetName(link, $"Open account {cfg.Accounts.FirstOrDefault(a => a.Id == id)?.Name ?? id}");
-            link.Margin = new Thickness(0, 0, 6, 4);
-            accounts.Children.Add(link);
+            var name = cfg.Accounts.FirstOrDefault(a => a.Id == id)?.Name ?? id;
+            commands.Insert(commands.Count - 2, new("account-" + id, "Open account " + name, () => NavigateTo(new("Accounts", AccountId: id))));
         }
+        return commands.ToArray();
+    }
+
+    private Control ModelAccessDetails(ConfigurationDto cfg, string id, Action close)
+    {
+        if (cfg.Routes.FirstOrDefault(r => r.Id == id) is not { } route)
+            return Ui.Stack(Ui.Text("Model access no longer exists", 16), Ui.Text("The selected stable ID was removed. No other model has been selected in its place.", 12, Ui.Muted), Ui.Button("Back to inventory", close));
         var edit = CompactRouteButton("Edit", () => EditRoute(route));
-        AutomationProperties.SetName(edit, $"Edit model access {route.Alias}");
-        var usage = CompactRouteButton("Usage", () => NavigateTo(new WorkspaceNavigationRequest("Usage", RouteId: route.Id)));
-        AutomationProperties.SetName(usage, $"Usage for model access {route.Alias}");
-        var remove = CompactRouteButton("Remove…", () => ConfirmRemoval(route.Alias, async () => { _configuration = await _client.RemoveRouteAsync(cfg.Revision, route.Id, _lifetime.Token); }));
-        AutomationProperties.SetName(remove, $"Remove model access {route.Alias}");
-        var detail = Ui.Stack(Ui.Text("Bound accounts", 12, Ui.Muted), accounts,
-            Ui.Text($"Provider route provenance: {route.ProviderRouteId ?? "Not classified"}", 12, Ui.Muted),
-            Ui.Text($"Model access ID: {route.Id}", 11, Ui.Muted),
-            Ui.Text($"Used by {cfg.Profiles.Count(p => p.RouteIds.Contains(route.Id))} saved profiles", 12, Ui.Muted));
+        AutomationProperties.SetName(edit, "Edit selected model access " + route.Alias);
+        var moreMenu = ObjectCommandMenu(ModelAccessCommands(cfg, route, () => { }));
+        var more = CompactRouteButton("⋯", () => moreMenu.Open()); more.ContextMenu = moreMenu;
+        AutomationProperties.SetName(more, "Selected model actions " + route.Alias);
+        var done = CompactRouteButton("Close", close); AutomationProperties.SetName(done, "Close model details " + route.Alias);
+        var body = Ui.Stack(Ui.PageHeader(route.Alias, "Model configuration", edit, more, done),
+            Ui.Text("Identity and binding", 13, Ui.Muted), Ui.Text("Client name: " + route.Alias),
+            Ui.Text("Provider model: " + route.Provider + " / " + route.UpstreamModel),
+            Ui.Text(route.Pooled ? "Explicit account pool" : "Strict account binding", 12, Ui.Muted));
+        foreach (var accountId in route.AccountIds)
+            body.Children.Add(Ui.Button(cfg.Accounts.FirstOrDefault(a => a.Id == accountId)?.Name ?? accountId, () => NavigateTo(new("Accounts", AccountId: accountId))));
+        if (route.AccountIds.Length == 0) body.Children.Add(Ui.Text("Account not supplied", 12, Ui.Muted));
+        body.Children.Add(Ui.Text($"{(route.Enabled ? "Enabled" : "Disabled")} · {(route.Visible ? "Visible in model menus" : "Hidden from model menus")}", 12));
+        body.Children.Add(Ui.Text("Saved disable takes effect after global Apply. Hidden affects model menus and does not block direct requests.", 11, Ui.Muted));
+        var profiles = cfg.Profiles.Where(p => p.RouteIds.Contains(route.Id, StringComparer.Ordinal)).ToArray();
+        body.Children.Add(Ui.Text($"Used by {profiles.Length} profiles", 13, Ui.Muted));
+        foreach (var profile in profiles)
+            body.Children.Add(Ui.Button(profile.Name + (profile.DefaultRouteId == route.Id ? " · default" : ""), () => NavigateTo(new("Profiles", ProfileId: profile.Id))));
+        body.Children.Add(Ui.Text("Spending policy: " + (route.Policy?.CostPolicy ?? "Not supplied"), 12));
         if (route.Policy?.FallbackRouteIds is { Length: > 0 } fallbacks)
-            detail.Children.Add(Ui.Text($"Saved fallback selections: {string.Join(", ", fallbacks.Select(id => cfg.Routes.FirstOrDefault(r => r.Id == id)?.Alias ?? id))} · Paid fallback permission: {(route.Policy.AllowPaidFallback ? "allowed" : "not allowed")}", 12, Ui.Muted));
-        detail.Children.Add(ProfileWrap(usage, remove));
-        var expanded = _modelDetails.TryGetValue(route.Id, out var chosen) && chosen;
-        var details = new Expander { Header = "Details", Content = detail, IsExpanded = expanded, HorizontalAlignment = HorizontalAlignment.Stretch };
-        AutomationProperties.SetName(details, $"Details for model access {route.Alias}");
-        details.PropertyChanged += (_, e) => { if (e.Property == Expander.IsExpandedProperty) _modelDetails[route.Id] = details.IsExpanded; };
-        void RunSave(RouteDto updated) => _ = RunAsync(async () => _configuration = await _client.SaveRouteAsync(cfg.Revision, updated, _lifetime.Token), "Model access saved. Apply a profile to update the global proxy.");
-        ObjectCommand[] commands =
-        [
-            new("edit", "Edit model access", () => EditRoute(route)),
-            new("enabled", route.Enabled ? "Disable model access" : "Enable model access", () => RunSave(route with { Enabled = !route.Enabled })),
-            new("visibility", route.Visible ? "Hide from model menu" : "Show in model menu", () => RunSave(route with { Visible = !route.Visible })),
-            new("usage", "Recorded usage", () => NavigateTo(new("Usage", RouteId: route.Id)), HasHistory, "No recorded history source."),
-            new("profiles", "Profile uses and technical details", () => { details.IsVisible = true; details.IsExpanded = true; }),
-            new("copy", "Copy client model name", () => { if (Clipboard is { } clipboard) _ = clipboard.SetTextAsync(route.Alias); }),
-            new("remove", "Remove model access…", () => ConfirmRemoval(route.Alias, async () => _configuration = await _client.RemoveRouteAsync(cfg.Revision, route.Id, _lifetime.Token)))
-        ];
-        var moreMenu = ObjectCommandMenu(commands);
-        var more = CompactRouteButton("⋯", () => moreMenu.Open());
-        more.ContextMenu = moreMenu;
-        AutomationProperties.SetName(more, $"Actions for model access {route.Alias}");
-        var title = CompactRouteButton(route.Alias, () => EditRoute(route));
-        title.HorizontalAlignment = HorizontalAlignment.Left;
-        title.Background = Brushes.Transparent;
-        var summary = Ui.Stack(title, Ui.Text($"{route.Provider} / {route.UpstreamModel}", 12, Ui.Muted));
-        summary.Spacing = 2;
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("1.2*,1.2*,Auto"), ColumnSpacing = 12 };
-        row.Children.Add(summary);
-        var binding = Ui.Stack(Ui.Text(names, 12), state);
-        binding.Spacing = 3;
-        Grid.SetColumn(binding, 1); row.Children.Add(binding);
-        var buttons = ProfileWrap(edit, more);
-        Grid.SetColumn(buttons, 2); row.Children.Add(buttons);
-        details.IsVisible = expanded;
-        var body = Ui.Stack(row, details);
-        if (presentation.Level == InformationLevel.Advanced) body.Children.Insert(1, Ui.Text($"ID {route.Id} · catalog {route.ProviderRouteId ?? "custom"} · {(route.Pooled ? "explicit pool" : "strict account")}", 11, Ui.Muted));
-        body.Spacing = dense ? 3 : 5;
-        var card = Ui.Card(body);
-        card.ContextMenu = ObjectCommandMenu(commands);
-        card.Padding = new Thickness(dense ? 6 : 8);
-        if (_routeContextId == route.Id) card.BorderBrush = Ui.Accent;
-        return card;
+            body.Children.Add(Ui.Text("Saved fallback order: " + string.Join(" → ", fallbacks.Select(f => cfg.Routes.FirstOrDefault(r => r.Id == f)?.Alias ?? f)), 12));
+        body.Children.Add(new Expander { Header = "Provenance and technical", Content = Ui.Stack(
+            Ui.Text("Model access ID: " + route.Id, 11, Ui.Muted), Ui.Text("Provider route: " + (route.ProviderRouteId ?? "Not supplied"), 11, Ui.Muted),
+            Ui.Text("Unit price, quota and tool capabilities: Not supplied by configured model access.", 11, Ui.Muted)) });
+        return body;
+    }
+
+    private void ShowModelRemoval(ConfigurationDto cfg, RouteDto route)
+    {
+        _editing = true;
+        var references = cfg.Profiles.Where(p => p.RouteIds.Contains(route.Id, StringComparer.Ordinal) || p.Policy?.FallbackRouteIds?.Contains(route.Id, StringComparer.Ordinal) == true)
+            .Select(p => "Profile: " + p.Name).Concat(cfg.Routes.Where(r => r.Id != route.Id && r.Policy?.FallbackRouteIds?.Contains(route.Id, StringComparer.Ordinal) == true).Select(r => "Fallback from: " + r.Alias)).ToArray();
+        var remove = Action("Remove model access", async () => {
+            _configuration = await _client.RemoveRouteAsync(cfg.Revision, route.Id, _lifetime.Token);
+            if (_selectedModelRouteId == route.Id) { _selectedModelRouteId = null; _modelNarrowDetail = false; }
+        }, "Model access removed. Historical usage remains available.");
+        remove.Classes.Add("danger");
+        remove.IsEnabled = references.Length == 0;
+        _page.Content = Ui.Stack(Heading("Remove " + route.Alias + "?", "This changes saved model access. Historical usage remains available."),
+            Ui.Text(references.Length == 0 ? "No saved profile or fallback references." : "Saved references:\n" + string.Join("\n", references), 13, references.Length == 0 ? Ui.Muted : Ui.Warning),
+            Ui.Text("The host validates references before removal. Review the named profiles and fallbacks first.", 12, Ui.Muted),
+            OverviewActions(remove, Ui.Button("Cancel", () => { _editing = false; Render(); })));
     }
 
     private static Button CompactRouteButton(string label, Action click)
@@ -224,6 +305,7 @@ public sealed partial class MainWindow
     private void EditRoute(RouteDto? route, ModelEntryDto? catalogModel = null)
     {
         if (_configuration is not { } cfg) return;
+        if (route is not null) _selectedModelRouteId = route.Id;
         var routeId = route?.Id;
         RegisterEditor(() =>
         {
@@ -255,6 +337,10 @@ public sealed partial class MainWindow
             providerRouteId.Text = selected.Route.Id; provider.Text = selected.Provider; model.Text = selected.Route.Model;
         };
         var spending = new SpendingPolicyEditor(route?.Policy);
+        var fallback = new RouteFallbackEditor(cfg, route);
+        void UpdateFallbackPermission() => fallback.SetCostPolicy(spending.Code);
+        spending.Changed += UpdateFallbackPermission;
+        UpdateFallbackPermission();
         var policyStatus = Ui.Text("Check saved route prerequisites without contacting the provider.", 12, Ui.Muted);
         var policyCheck = SpendingPolicyCheck(spending, () => route is null ? [] : [route.Id], policyStatus);
         if (route is null) policyStatus.Text = "Save a concrete route to check its runtime prerequisites. The host validates its spending policy before saving.";
@@ -306,7 +392,8 @@ public sealed partial class MainWindow
         var binding = Ui.Stack(Ui.Text("Account binding", 14), Ui.Text("A strict route uses one account. Enable an explicit pool to allow several accounts.", 12, Ui.Muted), pooled, accountCount,
             new ScrollViewer { MaxHeight = 260, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = accounts },
             new Border { Height = 1, Background = Ui.Edge }, enabled, visible,
-            spending.Control, policyCheck, policyStatus,
+            new Expander { Header = "Spending and fallback policy", IsExpanded = presentation.Level == InformationLevel.Advanced,
+                Content = Ui.Stack(spending.Control, fallback.Control, policyCheck, policyStatus) },
             Ui.Text("Checks use the saved route. Save changes to its model or account binding before checking again. Configuration eligibility does not prove live access or a fulfilled spending cap.", 11, Ui.Muted));
         binding.Spacing = 10;
         var form = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), ColumnSpacing = 24 };
@@ -322,21 +409,79 @@ public sealed partial class MainWindow
                 Alias = alias.Text.Trim(), UpstreamModel = model.Text.Trim(), Provider = provider.Text.Trim(), AccountIds = ids,
                 Pooled = pooled.IsChecked == true, Visible = visible.IsChecked == true, Enabled = enabled.IsChecked == true,
                 ProviderRouteId = providerRouteId.Text == route?.ProviderRouteId ? route?.ProviderRouteId : string.IsNullOrWhiteSpace(providerRouteId.Text) ? null : providerRouteId.Text.Trim(),
-                Policy = spending.Resolve()
+                Policy = fallback.Resolve(spending.Resolve())
             };
             _configuration = await _client.SaveRouteAsync(cfg.Revision, saved, _lifetime.Token);
+            _selectedModelRouteId = saved.Id;
+            _modelPendingRevisions[saved.Id] = _configuration.Revision;
         }, "Model access saved.");
         save.Classes.Add("primary");
-        _page.Content = Ui.Stack(Heading(route is null ? "Add model access" : $"Edit model access {route.Alias}", "Choose the client name, provider model and account binding."),
-            new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(18), Child = form },
-            Ui.Row(save, Ui.Button("Cancel", () => { _editing = false; Render(); })));
+        var editor = Ui.Stack(Heading(route is null ? "Add model access" : $"Edit model access {route.Alias}", "Choose the client name, provider model and account binding. Saved changes take effect after global Apply."));
+        if (route is null && contextAccount is not null)
+            editor.Children.Add(Ui.Button("Use " + contextAccount.Name + " provider templates instead", () => _ = ShowAccountModelsAsync(contextAccount.Id)));
+        editor.Children.Add(new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(18), Child = form });
+        editor.Children.Add(OverviewActions(save, Ui.Button("Cancel", () => { _editing = false; Render(); })));
+        _page.Content = editor;
     }
+    private sealed record RouteFallbackChoice(string Id, string Name)
+    {
+        public override string ToString() => Name;
+    }
+
+    private sealed class RouteFallbackEditor
+    {
+        private readonly RoutingPolicyDto? _original;
+        private readonly ComboBox[] _slots;
+        private readonly CheckBox _paid;
+        public Control Control { get; }
+        public RouteFallbackEditor(ConfigurationDto cfg, RouteDto? route)
+        {
+            _original = route?.Policy;
+            var original = _original?.FallbackRouteIds ?? [];
+            var choices = new[] { new RouteFallbackChoice("", "None") }
+                .Concat(cfg.Routes.Where(r => r.Id != route?.Id).OrderBy(r => r.Alias, StringComparer.OrdinalIgnoreCase)
+                    .Select(r => new RouteFallbackChoice(r.Id, r.Alias + (r.Enabled ? "" : " · disabled"))))
+                .Concat(original.Where(id => !cfg.Routes.Any(r => r.Id == id)).Select(id => new RouteFallbackChoice(id, id + " · missing"))).ToArray();
+            _slots = Enumerable.Range(0, Math.Max(1, choices.Length - 1)).Select(i => new ComboBox {
+                ItemsSource = choices, SelectedItem = choices.FirstOrDefault(c => c.Id == (i < original.Length ? original[i] : "")) ?? choices[0],
+                HorizontalAlignment = HorizontalAlignment.Stretch }).ToArray();
+            var fields = _slots.Select((box, i) => Ui.Field("Fallback position " + (i + 1), box)).ToArray();
+            void UpdateSlots()
+            {
+                var last = Array.FindLastIndex(_slots, c => c.SelectedItem is RouteFallbackChoice { Id.Length: > 0 });
+                for (var i = 0; i < fields.Length; i++) fields[i].IsVisible = i <= last + 1;
+            }
+            foreach (var slot in _slots) slot.SelectionChanged += (_, _) => UpdateSlots();
+            UpdateSlots();
+            _paid = new CheckBox { Content = "Allow paid or unknown-price fallbacks", IsChecked = _original?.AllowPaidFallback ?? false };
+            AutomationProperties.SetName(_paid, "Allow paid fallback routes");
+            var panel = Ui.Stack(Ui.Text("Explicit fallback order", 13),
+                Ui.Text("Only selected routes are fallback candidates. The host validates missing routes, loops and spending policy. No provider cascade is inferred.", 11, Ui.Muted));
+            foreach (var field in fields) panel.Children.Add(field);
+            panel.Children.Add(_paid); Control = panel;
+        }
+        public void SetCostPolicy(string code)
+        {
+            _paid.IsEnabled = code != "free_only";
+            if (!_paid.IsEnabled) _paid.IsChecked = false;
+        }
+        public RoutingPolicyDto? Resolve(RoutingPolicyDto? policy)
+        {
+            var selected = _slots.Select(c => (c.SelectedItem as RouteFallbackChoice)?.Id).Where(id => !string.IsNullOrEmpty(id)).Cast<string>().ToArray();
+            if (selected.Distinct(StringComparer.Ordinal).Count() != selected.Length) throw new InvalidOperationException("Choose each fallback model only once.");
+            var paid = _paid.IsEnabled && _paid.IsChecked == true;
+            if (selected.SequenceEqual(_original?.FallbackRouteIds ?? []) && paid == (_original?.AllowPaidFallback ?? false)) return policy;
+            return (policy ?? new RoutingPolicyDto()) with { FallbackRouteIds = selected.Length == 0 ? null : selected, AllowPaidFallback = paid };
+        }
+    }
+
     private sealed class SpendingPolicyEditor
     {
         private readonly RoutingPolicyDto? _original;
         private readonly int _initial;
         private readonly ComboBox _choice;
         public Control Control { get; }
+        public event Action? Changed;
         public string Code => _choice.SelectedIndex switch { 0 => "configured", 1 => "free_only", _ => _original?.CostPolicy ?? "configured" };
         public SpendingPolicyEditor(RoutingPolicyDto? original)
         {
@@ -345,6 +490,7 @@ public sealed partial class MainWindow
             var labels = new List<string> { "Use configured access", "Only free — no paid fallback" };
             if (_initial == 2) labels.Add("Keep existing policy");
             _choice = new ComboBox { ItemsSource = labels, SelectedIndex = _initial, HorizontalAlignment = HorizontalAlignment.Stretch };
+            _choice.SelectionChanged += (_, _) => Changed?.Invoke();
             var panel = Ui.Stack(Ui.Field("Spending policy", _choice), Ui.Text(
                 "Only free excludes paid and unknown-price routes and fallbacks. Existing fallback selections stay saved; the host validates every selected route.", 11, Ui.Muted));
             if (original?.FallbackRouteIds is { Length: > 0 } fallbacks)

@@ -14,6 +14,7 @@ namespace Lain.Desktop;
 
 public sealed partial class MainWindow
 {
+    private Func<Uri, Task<bool>> _connectionBrowser = uri => Launcher.LaunchUriAsync(uri);
     private static bool LoginPending(LoginDto? login) => login?.State is "waiting" or "pending" or "resource-required" or "awaiting-resource";
 
     private Task StartCodexLoginAsync()
@@ -34,6 +35,15 @@ public sealed partial class MainWindow
                 var polling = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
                 _loginPolling = polling;
                 _ = PollLoginAsync(_login.Id, polling);
+                if (_login.Url is { } url)
+                {
+                    try
+                    {
+                        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http") || !await _connectionBrowser(uri))
+                            _loginError = "The browser could not be opened. Use Reopen browser or the private authorization link.";
+                    }
+                    catch (Exception) { _loginError = "The browser could not be opened. Use Reopen browser or the private authorization link."; }
+                }
             }
         }
         if (_login is { State: "completed", AccountId: { } accountId })
@@ -78,7 +88,10 @@ public sealed partial class MainWindow
             "cancelled" => ("Sign-in cancelled", "No new account was connected. You can start again from accounts."),
             "failed" => ("Sign-in failed", "Authorization could not finish. Return to accounts and try connecting again."),
             "unsupported" => ("Sign-in unavailable", "This host does not support this authorization. Return to accounts to choose another connection method."),
+            "expired" => ("Sign-in expired", "This authorization has expired. Return to this provider to start a new connection."),
             "waiting" => ("Waiting for authorization", "Open the authorization page and finish signing in. lain checks for your response automatically."),
+            "pending" => ("Waiting for authorization", "Finish signing in in the browser. lain checks this same operation automatically."),
+            "resource-required" or "awaiting-resource" => ("Choose a resource", "Select the verified resource to continue this same connection."),
             _ => ("Sign-in status", "Return to accounts to check this connection.")
         };
         var status = Ui.Text(label, 14);
@@ -103,9 +116,9 @@ public sealed partial class MainWindow
             }
             if (login.Url is { } url)
             {
-                var open = Action("Open authorization page", async () => {
+                var open = Action("Reopen browser", async () => {
                     if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http")) throw new InvalidOperationException("The host returned an invalid authorization URL.");
-                    if (!await Launcher.LaunchUriAsync(uri)) throw new InvalidOperationException("The browser could not be opened. Check your default browser and try again.");
+                    if (!await _connectionBrowser(uri)) throw new InvalidOperationException("The browser could not be opened. Check your default browser and try again.");
                 }, "Finish signing in in your browser. This page checks automatically.", stayOnPage: true);
                 open.Classes.Add("primary");
                 open.HorizontalAlignment = HorizontalAlignment.Left;
@@ -153,8 +166,14 @@ public sealed partial class MainWindow
         if (waiting)
         {
             var cancel = Action("Cancel sign-in", async () => {
-                _login = await _client.CancelLoginAsync(login.Id, _lifetime.Token);
-                _loginPolling?.Cancel(); _loginVisible = false;
+                _loginPolling?.Cancel();
+                try { _login = await _client.CancelLoginAsync(login.Id, _lifetime.Token); }
+                catch
+                {
+                    _loginError = "Cancellation could not be confirmed. Retry Cancel sign-in when the host is available.";
+                    ShowLoginPage(); throw;
+                }
+                _loginVisible = false;
                 _notice.Text = $"{providerName} login {_login.State}.";
             }, "Sign-in cancelled.");
             AutomationProperties.SetHelpText(cancel, "Stops this authorization request and returns to accounts.");
@@ -180,12 +199,14 @@ public sealed partial class MainWindow
                 try
                 {
                     var login = await _client.GetLoginAsync(id, polling.Token);
-                    if (_login?.Id != id) return;
+                    if (polling.IsCancellationRequested || !ReferenceEquals(_loginPolling, polling) || _login?.Id != id) return;
                     var feedbackChanged = _login.State != login.State || _login.Url != login.Url || _login.Resources != login.Resources || _loginError is not null;
                     _login = login; _loginError = null;
                     if (_login.State == "completed")
                     {
-                        _configuration = await _client.GetConfigurationAsync(polling.Token);
+                        var configuration = await _client.GetConfigurationAsync(polling.Token);
+                        if (polling.IsCancellationRequested || !ReferenceEquals(_loginPolling, polling) || _login?.Id != id) return;
+                        _configuration = configuration;
                         if (_loginVisible && _section == "Accounts")
                         {
                             _loginVisible = false;
@@ -197,7 +218,7 @@ public sealed partial class MainWindow
                         return;
                     }
                     if (feedbackChanged && _loginVisible && _section == "Accounts" && !_busy) ShowLoginPage();
-                    if (_login.State is "failed" or "cancelled" or "unsupported")
+                    if (_login.State is "failed" or "cancelled" or "unsupported" or "expired")
                     {
                         _notice.Text = $"{ConnectProviderName(login.Provider)} authorization {_login.State}.";
                         return;

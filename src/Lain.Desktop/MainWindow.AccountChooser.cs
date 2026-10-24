@@ -7,6 +7,7 @@ namespace Lain.Desktop;
 public sealed partial class MainWindow
 {
     private ConnectionMethodCatalogDto? _connectionMethods;
+    private readonly Dictionary<string, (string Name, Dictionary<string, string> Settings)> _connectSafeDrafts = new(StringComparer.Ordinal);
 
     private async void ShowAddAccountChooser()
     {
@@ -76,6 +77,11 @@ public sealed partial class MainWindow
     {
         _editing = true; _workspace.Offset = default;
         var methods = _connectionMethods?.Methods.Where(m => m.Provider == provider).OrderByDescending(m => m.Recommended).ToArray() ?? [];
+        if (methods.FirstOrDefault(ConnectionMethodAvailable) is { } preferred)
+        {
+            ShowConnectionMethod(preferred, reconnect);
+            return;
+        }
         var content = Ui.Stack(Heading(reconnect is null ? "Connect " + ConnectProviderName(provider) : "Reconnect " + reconnect.Name,
             "Connect only the access this method provides. No model request is sent."));
         foreach (var method in methods)
@@ -96,7 +102,9 @@ public sealed partial class MainWindow
         if (_configuration is not { } cfg) return;
         RegisterEditor(() => ShowConnectionMethod(method, reconnect), cfg.Revision);
         _editing = true; _workspace.Offset = default;
-        var name = Ui.Input(reconnect?.Name ?? Lain.Client.AccountNameSuggestions.Suggest(method.Provider, ConnectProviderName(method.Provider), cfg.Accounts.Select(a => a.Name)));
+        var draftKey = method.Provider + "|" + (reconnect?.Id ?? "new");
+        _connectSafeDrafts.TryGetValue(draftKey, out var draft);
+        var name = Ui.Input(draft.Name ?? reconnect?.Name ?? Lain.Client.AccountNameSuggestions.Suggest(method.Provider, ConnectProviderName(method.Provider), cfg.Accounts.Select(a => a.Name)));
         var secret = Ui.Input(hint: method.SecretKind ?? "Credential"); secret.PasswordChar = '●';
         var expiry = Ui.Input(hint: "2026-12-31T23:59:00Z");
         var settings = new Dictionary<string, Control>(StringComparer.Ordinal);
@@ -104,8 +112,8 @@ public sealed partial class MainWindow
         foreach (var field in method.RequiredSettings ?? [])
         {
             Control input = field.Choices is { Length: > 0 } choices
-                ? new ComboBox { ItemsSource = choices, SelectedIndex = choices.Length == 1 ? 0 : -1, PlaceholderText = "Choose " + field.Label }
-                : Ui.Input(hint: field.Required ? "Required" : "Optional");
+                ? new ComboBox { ItemsSource = choices, SelectedItem = draft.Settings?.GetValueOrDefault(field.Id) ?? (choices.Length == 1 ? choices[0] : null), PlaceholderText = "Choose " + field.Label }
+                : Ui.Input(draft.Settings?.GetValueOrDefault(field.Id) ?? (field.Id == "region" ? reconnect?.Binding?.Region : field.Id is "accountId" or "workspaceId" or "workspace_id" ? reconnect?.Binding?.ResourceId : null), field.Required ? "Required" : "Optional");
             settings.Add(field.Id, input);
             form.Children.Add(AccountFormRow(field.Label + (field.Required ? " *" : ""), input));
             if (field.Help is not null) form.Children.Add(Ui.Text(field.Help, 12, Ui.Muted));
@@ -116,7 +124,13 @@ public sealed partial class MainWindow
         if (method.DocumentationUrl is { } url && Uri.TryCreate(url, UriKind.Absolute, out var link) && link.Scheme == "https")
             form.Children.Add(Ui.Button("Official connection guidance", async () => await OpenProviderLinkAsync(link)));
         var operationKey = Guid.NewGuid().ToString("N");
-        var connect = Action(method.SecretRequired ? "Connect account" : "Continue sign-in", async () => {
+        void SaveSafeDraft()
+        {
+            _connectSafeDrafts[draftKey] = (name.Text ?? "", settings.ToDictionary(p => p.Key,
+                p => p.Value switch { TextBox box => box.Text ?? "", ComboBox box => box.SelectedItem as string ?? "", _ => "" }, StringComparer.Ordinal));
+        }
+        var connect = Action(method.SecretRequired ? "Connect account" : method.Kind == "browser" ? "Continue in browser" : "Continue sign-in", async () => {
+            SaveSafeDraft();
             if (string.IsNullOrWhiteSpace(name.Text)) throw new InvalidOperationException("Enter an account name.");
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var field in method.RequiredSettings ?? [])
@@ -142,7 +156,7 @@ public sealed partial class MainWindow
                 var metadata = new ConnectAccountRequest(method.Provider, method.Id, ConnectionPurposes(method), name.Text.Trim(), reconnect?.Id,
                     binding, reconnect?.Generation, operationKey);
                 var saved = await _client.ConnectAccountAsync(cfg.Revision, new(metadata, secret.Text, method.SecretKind ?? "api-key", ExpiresAt: expiresAt, BaseUrl: method.DefaultBaseUrl, Settings: values), _lifetime.Token);
-                secret.Text = ""; _configuration = saved;
+                secret.Text = ""; _configuration = saved; _connectSafeDrafts.Remove(draftKey);
                 var account = saved.Accounts.FirstOrDefault(a => a.Id == reconnect?.Id) ?? saved.Accounts.FirstOrDefault(a => !cfg.Accounts.Any(old => old.Id == a.Id));
                 _editing = true;
                 if (account is not null) await ShowConnectionResultAsync(account.Id);
@@ -153,7 +167,19 @@ public sealed partial class MainWindow
                     reconnect?.Generation, name.Text.Trim(), operationKey));
             }
         }, "Connection saved.", stayOnPage: true);
-        form.Children.Add(OverviewActions(connect, Ui.Button("Cancel", () => { secret.Text = ""; _editing = false; Render(); })));
+        form.Children.Add(OverviewActions(connect, Ui.Button("Back to providers", () => { SaveSafeDraft(); secret.Text = ""; ShowAddAccountChooser(); }),
+            Ui.Button("Cancel", () => { SaveSafeDraft(); secret.Text = ""; _editing = false; Render(); })));
+        var alternatives = Ui.Stack();
+        foreach (var alternative in _connectionMethods?.Methods.Where(m => m.Provider == method.Provider && m.Id != method.Id) ?? [])
+        {
+            var choose = Ui.Button(alternative.Title, () => { SaveSafeDraft(); secret.Text = ""; ShowConnectionMethod(alternative, reconnect); });
+            choose.IsEnabled = ConnectionMethodAvailable(alternative);
+            AutomationProperties.SetName(choose, "Connection method " + alternative.Id);
+            alternatives.Children.Add(choose);
+            alternatives.Children.Add(Ui.Text(choose.IsEnabled ? alternative.Description ?? string.Join(" · ", alternative.Purposes)
+                : alternative.Guidance ?? "This method is not available on the installed host. Use the current method or review its official prerequisites.", 12, choose.IsEnabled ? Ui.Muted : Ui.Warning));
+        }
+        if (alternatives.Children.Count > 0) form.Children.Add(new Expander { Header = "Other connection methods", Content = alternatives });
         form.Children.Add(Ui.Text("Connecting does not choose models, apply a profile, purchase credits or test inference.", 12, Ui.Muted));
         _page.Content = form;
     }
@@ -170,7 +196,7 @@ public sealed partial class MainWindow
         var done = Ui.PrimaryButton("Done", () => { _editing = false; Render(); });
         var actions = OverviewActions(done);
         if (!IsMonitorMode && account.Capabilities?.Any(c => c.Purpose == "inference" && c.State is "ready" or "available" or "unverified" or "connected") == true)
-            actions.Children.Add(Ui.Button("Choose models (optional)", () => { _editing = false; ShowModelsForAccount(accountId); }));
+            actions.Children.Add(Ui.Button("Choose models (optional)", () => _ = ShowAccountModelsAsync(accountId)));
         content.Children.Add(actions); _page.Content = content;
     }
 }

@@ -8,6 +8,8 @@ public sealed partial class LainApiClient
         Get<ConnectionMethodCatalogDto>("connection-methods" + (provider is null ? "" : "?provider=" + Id(provider)), ct);
     public Task<ConfigurationDto> ConnectAccountAsync(long revision, ConnectCredentialRequest request, CancellationToken ct = default) =>
         Send<ConfigurationDto>(HttpMethod.Post, "accounts/connect", new RevisionRequest<ConnectCredentialRequest>(revision, request), ct);
+    public Task<ConfigurationDto> AttachAccountModelsAsync(long revision, string accountId, AttachAccountModelsRequest request, CancellationToken ct = default) =>
+        Send<ConfigurationDto>(HttpMethod.Post, $"accounts/{Id(accountId)}/models", new RevisionRequest<AttachAccountModelsRequest>(revision, request), ct);
     public Task<LoginDto> LoginAsync(LoginRequest request, CancellationToken ct = default) =>
         Send<LoginDto>(HttpMethod.Post, "accounts/login", request, ct);
     public Task<LoginDto> SelectLoginResourceAsync(string id, ResourceSelectionRequest request, CancellationToken ct = default) =>
