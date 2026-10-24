@@ -65,3 +65,28 @@ honest about the earlier static model snapshot.
 Standalone Monitor, broad UI navigation redesign, external history imports and
 all other researched providers remain separate scopes. Account setup does change
 now because its single-model connection picker is a confirmed usability defect.
+
+## Integrated local qualification
+
+The five provider gateway manifests, connection-first setup, same-account monitor
+credentials, neutral quota capability presentation and private CLI wizards are
+integrated. Groq observations retain their upstream age; Gemini reports scoped
+usage only; Fireworks retains enforced limits separately from approved ceilings.
+Cloudflare reporting still lacks a qualified dataset/reader; NVIDIA Build has no
+qualified quota API. Neither limitation is displayed as a fetch failure.
+
+The independent review found and fixed an old-key identity collision before any
+private write, and a neutral empty-monitor display error. Partial refreshes retain
+fresh successful windows while unavailable windows keep stale values. All eight
+independent groups (57 assertions), relevant legacy and new provider/CLI suites,
+35 private-Xvfb checks and the eight Core runtime groups passed. The full journal
+was replayed ten times through the actual SQLite consumer without duplication.
+
+Evidence: [local tests](../tests/acceptance/evidence/providers-20261024/local-tests.json),
+[Core qualification](../tests/acceptance/evidence/providers-20261024/core-qualified.json).
+Package/install/live acceptance is recorded separately after these source checks.
+
+The separate Codex profile also disables native web search, keeping the normal
+configuration and selected model. [Tool compatibility](providers/codex-gateway-tools.md)
+distinguishes MiMo native search, Glyph provider-defined tools, Beam tool-count
+limits and Laguna rate limiting; no silent tool truncation or paid fallback.

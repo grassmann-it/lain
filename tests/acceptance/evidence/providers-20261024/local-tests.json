@@ -1,0 +1,87 @@
+{
+  "syntheticOnly": true,
+  "passed": true,
+  "sourceCommit": "cd7a93c3518b5275c0ecd6a683465132a68b40e5",
+  "results": [
+    {
+      "suite": "samba",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "suite": "upstage",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "suite": "cohere-kilo",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "suite": "quota-sources",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "suite": "codex-profile",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "suite": "independent",
+      "passed": true,
+      "groups": 8,
+      "assertions": 57,
+      "exitCode": 0
+    },
+    {
+      "suite": "accounts",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "suite": "models",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "suite": "transport",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "suite": "provider-policy",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "suite": "client-cli",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "suite": "quota",
+      "passed": true,
+      "exitCode": 0
+    },
+    {
+      "suite": "providers-fireworks",
+      "passed": true,
+      "exitCode": 0
+    }
+  ],
+  "hostLockedBuild": "passed linux-x64 self-contained, 0 warnings/errors",
+  "desktopPrivateXvfb": {
+    "checks": 35,
+    "screenshots": 6,
+    "passed": true
+  },
+  "workerOnlyEvidence": {
+    "monitorAuthChecks": 58,
+    "cliPtyCaptures": 55,
+    "hiddenWizardPty": "passed save/cancel/redirect with synthetic secret"
+  },
+  "installation": false,
+  "liveProviders": false
+}

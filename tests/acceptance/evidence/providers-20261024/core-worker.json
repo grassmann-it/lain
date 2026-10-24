@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "syntheticOnly": true,
+  "coreSourceCommit": "fa06aa7",
+  "probeSourceCommit": "1b8f0f5",
+  "coreSha256": "a03e0ba2f4d2723a6a26fb10c89d838de75d6b14119b6ec4be3a2f1d7af4a185",
+  "sourceManifestSha256": "9c79020da322d0e0c1ff6f0d4501c322327c4d2897c83021ffb466490d9d1627",
+  "upstreamLockSha256": "cc05a85d4e4533517a3cd6cd370887357045ac8c52df12b82065e04fd1299166",
+  "lainPatchVersion": 2,
+  "adapterTests": "passed ./...",
+  "upstreamTests": [
+    "TestEmbeddingChatEOFRequiresFinishReasonOrDone",
+    "TestEmbeddingNativeResponsesTransport"
+  ],
+  "cohereKiloChecks": 19,
+  "sambaUpstageChecks": 2,
+  "cohereSuccessfulStreamWithoutUsage": "passed: input/output/totalTokens null; usageReported false",
+  "binaryV1AndV2Identical": true,
+  "fixtureCorrections": [
+    "Cohere/Kilo exact YAML provider/model replacement and Host-style concrete private alias",
+    "Samba/Upstage assert truncated failure and restart before separate cancellation scenario"
+  ],
+  "liveProviders": false,
+  "installation": false
+}

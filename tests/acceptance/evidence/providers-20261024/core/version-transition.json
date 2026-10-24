@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "baselineCoreSha256": "e39e141daaca6c1946d93866e4d67e93651a07ff9664edf03078d4a9c49b6fe6",
+  "coreSha256": "a03e0ba2f4d2723a6a26fb10c89d838de75d6b14119b6ec4be3a2f1d7af4a185",
+  "passed": true,
+  "checks": [
+    {
+      "name": "journal-upgrade-and-rollback-read",
+      "passed": true,
+      "evidence": {
+        "sourceIdRetained": true,
+        "oldJournalBytesRetained": true,
+        "oldEventsUnchanged": true,
+        "beforeCursor": 6,
+        "afterCursor": 12,
+        "requests": 4,
+        "attempts": 4,
+        "tokens": 72,
+        "newIdentitiesDisjoint": true,
+        "mixedReplayUnchanged": true,
+        "rollbackReadTested": true,
+        "rollbackReadCompatible": true
+      }
+    },
+    {
+      "name": "mixed-version-consumer-replay-10",
+      "passed": true,
+      "evidence": {
+        "consumerDllSha256": "aa4c3307bf65438e4b78115c7bc5185de8047f98d92ede6b03301103594de571",
+        "inputJournalSha256": "400d03054eff933f59ad20277618c102ca7412a44527583c11d80ed048d562ba",
+        "replays": 10,
+        "storeReopenedEachReplay": true,
+        "result": {
+          "cursor": 12,
+          "complete": true,
+          "totals": {
+            "requests": 4,
+            "attempts": 4,
+            "errors": 0,
+            "tokens": {
+              "input": 44,
+              "output": 28,
+              "cached": null,
+              "reasoning": null,
+              "total": 72
+            },
+            "unknownUsageAttempts": 0
+          },
+          "days": 1,
+          "accounts": 2,
+          "models": 1
+        }
+      }
+    }
+  ],
+  "scope": "fresh synthetic journal only; no installed journal, database, credentials or live provider accessed"
+}

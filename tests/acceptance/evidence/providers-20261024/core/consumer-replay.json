@@ -1,0 +1,29 @@
+{
+  "syntheticOnly": true,
+  "coreSha256": "a03e0ba2f4d2723a6a26fb10c89d838de75d6b14119b6ec4be3a2f1d7af4a185",
+  "consumerDllSha256": "aa4c3307bf65438e4b78115c7bc5185de8047f98d92ede6b03301103594de571",
+  "replays": 10,
+  "storeReopenedEachReplay": true,
+  "passed": true,
+  "inputJournalSha256": "98137f03fd3e4d280ee91692101e99870994e5ac6e1e5183bdb8a5c2264a4f82",
+  "result": {
+    "cursor": 600,
+    "complete": true,
+    "totals": {
+      "requests": 200,
+      "attempts": 200,
+      "errors": 0,
+      "tokens": {
+        "input": 2200,
+        "output": 1400,
+        "cached": null,
+        "reasoning": null,
+        "total": 3600
+      },
+      "unknownUsageAttempts": 0
+    },
+    "days": 1,
+    "accounts": 2,
+    "models": 1
+  }
+}
