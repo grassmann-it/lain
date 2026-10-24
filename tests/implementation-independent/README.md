@@ -40,3 +40,11 @@ identify the tested Host assembly as SHA256
 `4d4df715d74ba413f633243be47ab4950aee8908221ed2eb0992ccfc73896bc1`.
 This records integrator execution of independently authored tests, not a separate
 reviewer execution or qualification of subsequently changed artifacts.
+
+`restored_gateway_probe.py /absolute/Lain.Host.dll` is a separate exact-Host
+regression using a local fake Core executable in a private temporary directory.
+It covers both preserved legacy and interrupted applied metadata after grant
+quarantine, bootstrap login/cancel, management-only readiness, unchanged active
+files and the interrupted-runtime service-start gate. It uses isolated Host/Core
+ports and never contacts a provider or performs real OAuth. This fixture is
+`not_run` until Root allocates its serialized slot; it does not qualify actual Core.
