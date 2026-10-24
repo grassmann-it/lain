@@ -6,7 +6,11 @@ AccountService setup, model/endpoint/protocol validation, free-only rejection,
 and actual Host writer output for two isolated synthetic accounts.
 
 ```sh
-dotnet run --project tests/providers-samba-upstage/SambaUpstage.Tests.csproj
+mkdir -p artifacts/tmp
+TMPDIR="$PWD/artifacts/tmp" dotnet restore tests/providers-samba-upstage/SambaUpstage.Tests.csproj --disable-parallel -p:BuildInParallel=false -nr:false
+TMPDIR="$PWD/artifacts/tmp" dotnet build tests/providers-samba-upstage/SambaUpstage.Tests.csproj --no-restore -m:1 -p:BuildInParallel=false -nr:false
+TMPDIR="$PWD/artifacts/tmp" dotnet run --project tests/providers-samba-upstage/SambaUpstage.Tests.csproj --no-build --no-restore
+TMPDIR="$PWD/artifacts/tmp" dotnet run --project tests/providers-samba-upstage/SambaUpstage.Tests.csproj --no-build --no-restore -- --provider upstage
 python3 tests/providers-samba-upstage/probe.py --core /absolute/path/lain-proxy \
   --exporter tests/providers-samba-upstage/bin/Debug/net10.0/SambaUpstage.Tests.dll \
   --report /tmp/lain-samba-upstage-report.json
@@ -25,3 +29,7 @@ a truncated stream without usage, bounded max_tokens=64, strict account identity
 and durable replay after restart. Truncation checks unknown usage; it does not
 claim that every EOF is classified as an upstream error. These are synthetic
 transport results, never live-provider or quota qualification.
+
+2026-10-24 local Host qualification: restore/build succeeded, zero warnings/errors;
+both fixture invocations passed 42 assertions each. Core probe was not executed
+in the worker build slot and remains an integrated qualification step.

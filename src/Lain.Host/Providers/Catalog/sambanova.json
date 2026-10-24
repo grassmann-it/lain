@@ -190,5 +190,22 @@
   ],
   "adapterState": "available",
   "liveVerification": "not_tested",
-  "quotaSupport": "unsupported"
+  "quotaSupport": "unsupported",
+  "connections": [
+    {
+      "id": "sambacloud-chat",
+      "name": "SambaCloud Chat API",
+      "baseUrl": "https://api.sambanova.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "developer"
+      ],
+      "providerRouteIds": [
+        "sambanova/Meta-Llama-3.3-70B-Instruct"
+      ]
+    }
+  ],
+  "monitorAccessOptions": [],
+  "defaultAccountName": "SambaNova"
 }

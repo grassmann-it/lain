@@ -53,6 +53,9 @@ qualified. SambaNova's documented RPM/RPD response headers are not collected by
 this package. Local usage history covers only requests lain observes, with
 unknown cost or missing upstream usage preserved as unknown.
 
-Status: **prepared**. Local fixtures await the coordinated build/runtime slot;
-installation and live checks are outstanding. No private credentials were read,
-requested or forwarded. See [fixture commands and scope](../../tests/providers-samba-upstage/README.md).
+Status: **prepared and locally checked for Host setup**. The sequential .NET
+build passed with zero warnings/errors; both the SambaNova and Upstage fixture
+runs passed 42 assertions each on 2026-10-24. Actual Core streaming/error/abort
+qualification, installation and live checks remain outstanding. No private
+credentials were read, requested or forwarded. See
+[fixture commands and scope](../../tests/providers-samba-upstage/README.md).

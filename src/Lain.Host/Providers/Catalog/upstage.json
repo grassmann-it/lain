@@ -155,5 +155,21 @@
   ],
   "adapterState": "available",
   "liveVerification": "not_tested",
-  "quotaSupport": "unsupported"
+  "quotaSupport": "unsupported",
+  "connections": [
+    {
+      "id": "global-chat",
+      "name": "Upstage global Chat API",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "providerRouteIds": [
+        "upstage/solar-mini4-260922"
+      ]
+    }
+  ],
+  "monitorAccessOptions": [],
+  "defaultAccountName": "Upstage"
 }

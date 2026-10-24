@@ -24,6 +24,9 @@ foreach (var item in cases)
 {
     var provider = catalog.Find(item.Id) ?? throw new Exception("Provider manifest missing.");
     var descriptor = provider.Routes.Single();
+    Check(provider.DefaultAccountName == provider.Name, "Short provider default account name.");
+    Check(provider.Connections is [{ Protocol: "openai-chat" }] && provider.Connections[0].BaseUrl == item.Url && provider.Connections[0].ProviderRouteIds.SequenceEqual(new[] { descriptor.Id }), "Connection metadata retains exact compatible model scope.");
+    Check(provider.MonitorAccessOptions is [], "No unqualified monitor login advertised.");
     Check(provider.AdapterState == "available" && provider.LiveVerification == "not_tested" && provider.QuotaSupport == "unsupported", "Capability and live state stay separate.");
     Check(descriptor.Model == item.Model && descriptor.BaseUrl == item.Url && descriptor.Protocol == "openai-chat", "Official model and endpoint pinned.");
     Check(descriptor.Capabilities.Tools == true && descriptor.Capabilities.Streaming == true && descriptor.Capabilities.Images == false, "Only model-specific documented capabilities advertised.");
