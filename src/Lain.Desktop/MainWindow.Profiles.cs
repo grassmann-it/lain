@@ -439,6 +439,21 @@ public sealed partial class MainWindow
             review.Stale = true;
             review.Message = "Apply rejected: saved configuration changed. The old preview remains below. Refresh preview and confirm again.";
         }
+        catch (LainApiException error) when (sent && error.StatusCode == System.Net.HttpStatusCode.Conflict && error.Code == "runtime_busy")
+        {
+            // This exact host response guarantees drain refusal restored the old
+            // runtime and its previous operation proof. No new operation is needed
+            // to establish the rejection; transport failures do not share that guarantee.
+            _status = _profileLastConfirmedStatus;
+            _profileUnconfirmedApplyId = null; _profileUnconfirmedApplyRevision = null;
+            review.Stale = true;
+            review.Message = "Apply rejected: the runtime is busy. The previous runtime was preserved. Refresh preview and confirm again when streams have finished.";
+        }
+        catch (LainApiException error) when (sent && error.StatusCode == System.Net.HttpStatusCode.Conflict && error.Code == "runtime_recovery_required")
+        {
+            review.Stale = true;
+            review.Message = "The host requires runtime recovery. " + Friendly(error) + " Check current status before preparing another explicit apply. No apply will be repeated automatically.";
+        }
         catch (Exception error)
         {
             review.Stale = true;
@@ -536,10 +551,12 @@ public sealed partial class MainWindow
             // Recheck at the action boundary too: the file or directory may have
             // disappeared since TextChanged last validated the retained inputs.
             if (_busy || !ValidInputs()) return;
+            var executablePath = executable.Text!.Trim();
+            var parentPath = folder.Text!.Trim();
             await RunAsync(async () =>
             {
-                var destination = Path.Combine(folder.Text!.Trim(), $"lain-codex-{DateTimeOffset.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..6]}");
-                var artifacts = await _client.ExportCodexProfileAsync(cfg.Revision, profile.Id, executable.Text.Trim(), Path.Combine(destination, "lain.models.json"), _lifetime.Token);
+                var destination = Path.Combine(parentPath, $"lain-codex-{DateTimeOffset.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..6]}");
+                var artifacts = await _client.ExportCodexProfileAsync(cfg.Revision, profile.Id, executablePath, Path.Combine(destination, "lain.models.json"), _lifetime.Token);
                 if (artifacts.ProfileId != profile.Id || artifacts.Revision != cfg.Revision || string.IsNullOrWhiteSpace(artifacts.GenerationId))
                     throw new InvalidOperationException("The prepared artifact does not identify this saved profile and revision. Nothing was installed; prepare again.");
                 var installationStarted = false;
