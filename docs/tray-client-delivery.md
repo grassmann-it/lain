@@ -152,3 +152,54 @@ retain unchanged Host PID/readiness and exact Host/Core hashes, verify existing
 accounts/preferences/history, and run the private client/Tray acceptance. Native
 launching must use a separate private `XDG_RUNTIME_DIR` for the new single-
 instance tray behavior; never attach an acceptance probe to the user's GUI.
+
+## CLI-only follow-up over the installed e5dbaa3 release
+
+For compact `usage` and `--full`, use `stage --cli-only` with only a fresh CLI
+publish. Desktop is already installed from
+`e5dbaa3142549d6d0d03799ef90ffa96a459907d`; its complete payload, source commit,
+version and component provenance remain unchanged. The GUI can stay running.
+The installer refuses only active installed CLI processes in this mode. Host
+and Go-Core still remain untouched and need no restart.
+
+Freeze the new CLI/skill/documentation/helper commit, then restore and publish
+**only CLI** using the locked restore and deterministic publish options above.
+No Desktop/Host restore, Desktop publish or Go notice collection is needed.
+Choose fresh paths for the new publish/package, then stage:
+
+```sh
+python3 scripts/client-refresh.py stage --cli-only \
+  --base /home/tomka/.local/share/lain/app \
+  --cli "$TRAY_PUBLISH/cli" --output "$TRAY_PACKAGE" \
+  --source-commit "$TRAY_REV" --informational-version "$TRAY_VERSION"
+```
+
+Omit `--desktop`; supplying it together with `--cli-only` is refused. The helper
+checks versions only in the new CLI and its local Client/Core assemblies. Shared
+public contracts must stay compatible with the retained Host, the entire Desktop
+source tree must match its recorded baseline source, and the CLI dependency lock
+must remain byte-identical. All published CLI files except its apphost and three
+application assemblies must also match the baseline byte-for-byte, including
+runtime/dependency manifests and runtime libraries. These tight conditions permit
+retaining the entire exact notice directory. A dependency/runtime change needs
+a separate notice update.
+
+The dynamic install allowlist excludes `desktop/`, `notices/` and
+`delivery-assets.json`; it includes only CLI, the two existing allowlisted CLI
+usage/skill documents and client provenance/helper/release metadata. The icon and
+ownership map are checked but never replaced or reformatted. The exact original
+PNG, desktop entry and ownership-map bytes must remain unchanged after install.
+Only the CLI component's source/version/assembly metadata is advanced.
+
+`client-source-provenance/` is rebuilt once from current source plus small baseline
+metadata snapshots. It never recursively includes an older provenance directory.
+Retained Desktop source files record their original source commit. The replaced
+old provenance directory is preserved whole in the normal update backup.
+Current release/client acceptance flags stay false until the new CLI checks;
+existing Desktop qualification flags retain their prior recorded scope.
+
+Use the same exact-staged-helper `install` command above with a new backup path.
+The active GUI is allowed because its directories, local libraries and integration
+are outside this CLI-only write set. Compare the installed manifest and compact/
+full/JSON CLI output afterwards, along with unchanged Desktop/Host/Core hashes,
+PIDs, original icon/ownership bytes and private history/preferences.
