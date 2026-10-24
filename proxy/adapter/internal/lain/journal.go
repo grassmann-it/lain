@@ -44,6 +44,7 @@ type Event struct {
 	Dimensions          *Dimensions   `json:"dimensions,omitempty"`
 	Measurements        *Measurements `json:"measurements,omitempty"`
 	CompletionState     *string       `json:"completionState,omitempty"`
+	ErrorCategory       *string       `json:"errorCategory,omitempty"`
 }
 type Batch struct {
 	SourceID      string  `json:"sourceId"`

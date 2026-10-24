@@ -256,6 +256,9 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 		}
 		c.Set("lain.allowed_auth_ids", allowed)
 		c.Set("lain.selection", selection{Route: route, Alias: alias, Allowed: allowed})
+		// Keep caller controls before the SDK's handler/translator can normalize
+		// tools. This memory belongs only to the active HTTP request.
+		c.Set("lain.original_request", body)
 		// Do not forward internal selection metadata to an upstream provider.
 		c.Request.Header.Del("X-Lain-Account-ID")
 		c.Request.Header.Del("X-Lain-Selection")

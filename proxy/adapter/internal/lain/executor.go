@@ -86,10 +86,23 @@ func (e *boundExecutor) begin(ctx context.Context, a *auth.Auth, req executor.Re
 	if err = validateCohereInput(a, req, opts); err != nil {
 		return ctx, err
 	}
+	if err = e.integration.Before(ctx, a, req, opts); err != nil {
+		return ctx, err
+	}
+	policy, err := compatibilityForDispatch(ctx, a, req, opts)
+	if err == nil {
+		err = policy.validate(originalCompatibilityRequest(ctx, req, opts), false)
+	}
+	if err != nil {
+		if end := e.integration.After(ctx, err); end != nil {
+			return ctx, end
+		}
+		return ctx, err
+	}
 	ctx = httptransport.WithDecorator(ctx, func(next http.RoundTripper) http.RoundTripper {
-		return &guardedTransport{next: next, auth: a, integration: e.integration, cohereValidated: true}
+		return &guardedTransport{next: next, auth: a, integration: e.integration, cohereValidated: true, compatibility: policy}
 	})
-	return ctx, e.integration.Before(ctx, a, req, opts)
+	return ctx, nil
 }
 func (e *boundExecutor) Execute(ctx context.Context, a *auth.Auth, req executor.Request, opts executor.Options) (executor.Response, error) {
 	ctx, err := e.begin(ctx, a, req, opts)
@@ -291,6 +304,7 @@ type guardedTransport struct {
 	auth            *auth.Auth
 	integration     *Integration
 	cohereValidated bool
+	compatibility   compatibilityPolicy
 }
 
 func (t *guardedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -298,6 +312,12 @@ func (t *guardedTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		return nil, err
 	}
 	if err := t.normalizeCohereRequest(req); err != nil {
+		return nil, err
+	}
+	if err := t.compatibility.validateFinal(req); err != nil {
+		if t.integration != nil {
+			t.integration.recordCompatibilityFailure(req.Context(), err)
+		}
 		return nil, err
 	}
 	if t.auth != nil && t.auth.Attributes["auth_header"] == "bearer" {

@@ -19,6 +19,7 @@ type Route struct {
 	PricingClass        string            `json:"pricingClass,omitempty"`
 	FreeOnlyEnforcement string            `json:"freeOnlyEnforcement,omitempty"`
 	Provider            string            `json:"provider,omitempty"`
+	UpstreamProtocol    string            `json:"upstreamProtocol,omitempty"`
 	Credentials         map[string]string `json:"credentials,omitempty"`
 	Visible             *bool             `json:"visible,omitempty"`
 	ID                  string            `json:"id"`
@@ -198,11 +199,14 @@ func (i *Integration) Publish(ctx context.Context, r usage.Record) error {
 	e.Kind = "usage"
 	e.ObservedAt = time.Now().UTC()
 	e.Outcome = ptr("success")
+	e.ErrorCategory = nil
 	if r.Failed {
 		e.Outcome = ptr("failed")
+		e.ErrorCategory = a.event.ErrorCategory
 	}
 	if errors.Is(ctx.Err(), context.Canceled) {
 		e.Outcome = ptr("canceled")
+		e.ErrorCategory = nil
 	}
 	if known := r.Detail.Reported; known != nil {
 		e.InputTokens = known.InputTokens
@@ -284,6 +288,9 @@ func (i *Integration) After(ctx context.Context, resultErr error) error {
 	}
 	if resultErr != nil {
 		e.Outcome = ptr("failed")
+		if category := compatibilityErrorCategory(resultErr); category != "" {
+			e.ErrorCategory = ptr(category)
+		}
 		var status interface{ StatusCode() int }
 		if errors.As(resultErr, &status) {
 			e.StatusCode = ptr(status.StatusCode())
@@ -291,6 +298,7 @@ func (i *Integration) After(ctx context.Context, resultErr error) error {
 	}
 	if errors.Is(resultErr, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) {
 		e.Outcome = ptr("canceled")
+		e.ErrorCategory = nil
 	}
 	e.CompletionState = e.Outcome
 	final := liveEvent(e, "attempt_finished")
@@ -300,7 +308,7 @@ func (i *Integration) After(ctx context.Context, resultErr error) error {
 	if a.reported {
 		// The early durable usage fact stays immutable. Completion is a separate
 		// metadata-only fact, and can report cancellation after usage arrived.
-		e.Kind, e.Outcome, e.StatusCode = "attempt_finished", nil, nil
+		e.Kind, e.Outcome, e.StatusCode, e.ErrorCategory = "attempt_finished", nil, nil, nil
 	}
 	if err := i.Journal.Append(e); err != nil {
 		final.Outcome = ptr("failed")

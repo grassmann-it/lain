@@ -1,0 +1,179 @@
+{
+  "contractVersion": 1,
+  "qualification": "synthetic_expected_controls_not_provider_certification",
+  "cases": [
+    {
+      "name": "mimo-bridge-search",
+      "model": "mimo-v2.6-pro",
+      "request": {
+        "tools": [
+          {
+            "type": "web_search"
+          }
+        ]
+      },
+      "expectedCode": "native_search_unsupported",
+      "sourceScope": "translator",
+      "provider": "xiaomi-mimo",
+      "ingressProtocol": "responses",
+      "upstreamProtocol": "openai",
+      "expectedCategory": "unsupported_tool"
+    },
+    {
+      "name": "mimo-flash-bridge-search",
+      "model": "mimo-v2.6-flash",
+      "request": {
+        "tools": [
+          {
+            "type": "web_search"
+          }
+        ]
+      },
+      "expectedCode": "native_search_unsupported",
+      "sourceScope": "translator",
+      "provider": "xiaomi-mimo",
+      "ingressProtocol": "responses",
+      "upstreamProtocol": "openai",
+      "expectedCategory": "unsupported_tool"
+    },
+    {
+      "name": "mimo-function-name",
+      "model": "mimo-v2.6-pro",
+      "request": {
+        "tools": [
+          {
+            "type": "function",
+            "name": "web_search"
+          }
+        ]
+      },
+      "expectedCode": null,
+      "provider": "xiaomi-mimo",
+      "ingressProtocol": "responses",
+      "upstreamProtocol": "openai",
+      "expectedCategory": null
+    },
+    {
+      "name": "glyph-namespace",
+      "model": "stealth/glyph-cluster:free",
+      "request": {
+        "tools": [
+          {
+            "type": "namespace",
+            "name": "agents",
+            "tools": [
+              {
+                "type": "function",
+                "name": "spawn"
+              }
+            ]
+          }
+        ]
+      },
+      "expectedCode": "namespace_tools_unsupported",
+      "provider": "commandcode",
+      "ingressProtocol": "responses",
+      "upstreamProtocol": "openai",
+      "expectedCategory": "unsupported_tool"
+    },
+    {
+      "name": "glyph-custom",
+      "model": "stealth/glyph-cluster:free",
+      "request": {
+        "tools": [
+          {
+            "type": "custom",
+            "name": "apply_patch"
+          }
+        ]
+      },
+      "expectedCode": "custom_tools_unsupported",
+      "provider": "commandcode",
+      "ingressProtocol": "responses",
+      "upstreamProtocol": "openai",
+      "expectedCategory": "unsupported_tool"
+    },
+    {
+      "name": "unknown-route",
+      "model": "unknown-model",
+      "request": {
+        "tools": [
+          {
+            "type": "namespace",
+            "name": "agents",
+            "tools": [
+              {
+                "type": "function",
+                "name": "spawn"
+              }
+            ]
+          }
+        ]
+      },
+      "expectedCode": null,
+      "provider": "commandcode",
+      "ingressProtocol": "responses",
+      "upstreamProtocol": "openai",
+      "expectedCategory": null
+    },
+    {
+      "name": "mimo-native-unknown",
+      "provider": "xiaomi-mimo",
+      "model": "mimo-v2.6-pro",
+      "ingressProtocol": "responses",
+      "upstreamProtocol": "responses",
+      "request": {
+        "tools": [
+          {
+            "type": "web_search"
+          }
+        ]
+      },
+      "expectedCode": null,
+      "expectedCategory": null
+    },
+    {
+      "name": "unrelated-provider-mimo-name",
+      "provider": "unrelated",
+      "model": "mimo-v2.6-pro",
+      "ingressProtocol": "responses",
+      "upstreamProtocol": "openai",
+      "request": {
+        "tools": [
+          {
+            "type": "web_search"
+          }
+        ]
+      },
+      "expectedCode": null,
+      "expectedCategory": null
+    },
+    {
+      "name": "noncanonical-mimo-unknown",
+      "provider": "mimo",
+      "model": "mimo-v2.6-pro",
+      "ingressProtocol": "responses",
+      "upstreamProtocol": "openai",
+      "request": {
+        "tools": [
+          {
+            "type": "web_search"
+          }
+        ]
+      },
+      "expectedCode": null,
+      "expectedCategory": null
+    }
+  ],
+  "toolLimitBoundary": {
+    "model": "reflection/beam:free",
+    "allowedTopLevelTools": 128,
+    "rejectedTopLevelTools": 129,
+    "nestedToolsAreNotAddedToTransmittedArrayCount": true,
+    "provider": "commandcode",
+    "ingressProtocol": "responses",
+    "upstreamProtocol": "openai",
+    "expectedCode": "tool_limit_exceeded",
+    "expectedCategory": "tool_limit"
+  }
+}
