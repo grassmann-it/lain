@@ -145,7 +145,35 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             Provenance = next.Provenance };
 
     public AccountDto[] List() => configuration.Snapshot.Accounts.Select(a => Check(a.Id)).ToArray();
-    public ConfigurationDto AddApi(long revision, AddApiAccountRequest input)
+    public ConfigurationDto AddApi(long revision, AddApiAccountRequest input) => AddApiCore(revision, input, null, null);
+
+    public ConfigurationDto AttachModels(long revision, string accountId, long expectedGeneration, string connectionId,
+        string[] templateIds, Dictionary<string, string>? settings = null)
+    {
+        var state = configuration.Snapshot;
+        if (state.Revision != revision) throw new RevisionConflictException(revision, state.Revision);
+        var account = state.Accounts.SingleOrDefault(a => a.Id == accountId) ?? throw new KeyNotFoundException("Account not found.");
+        if (account.Generation != expectedGeneration) throw new InvalidOperationException("Account changed before model attachment.");
+        if (templateIds.Length == 0) throw new ArgumentException("Choose at least one model template.");
+        var provider = CanonicalProviderId(account.Provider);
+        var registry = catalog ?? new ProviderCatalogRegistry();
+        var connection = registry.FindConnection(provider, connectionId) ?? throw new ArgumentException("Unknown provider connection.");
+        using var document = JsonDocument.Parse(secrets.ReadAccount(accountId));
+        if (document.RootElement.GetProperty("kind").GetString() != "api-key") throw new InvalidOperationException("This model attachment requires an API-key inference capability.");
+        var apiKey = document.RootElement.GetProperty("apiKey").GetString() ?? throw new InvalidDataException("Inference key is unavailable.");
+        var combined = document.RootElement.TryGetProperty("settings", out var saved) && saved.ValueKind == JsonValueKind.Object
+            ? saved.EnumerateObject().Where(p => p.Value.ValueKind == JsonValueKind.String).ToDictionary(p => p.Name, p => p.Value.GetString()!, StringComparer.Ordinal)
+            : new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var setting in settings ?? []) combined[setting.Key] = setting.Value;
+        var endpoint = document.RootElement.TryGetProperty("baseUrl", out var url) && url.ValueKind == JsonValueKind.String
+            ? url.GetString()! : connection.BaseUrl;
+        if (provider == "cloudflare-workers-ai" && combined.TryGetValue("accountId", out var cloudflareId))
+            endpoint = GatewayRouteValidation.CloudflareBaseUrl(cloudflareId);
+        return AddApiCore(revision, new(account.Name, provider, apiKey, endpoint, Settings: combined,
+            ProviderConnectionId: connectionId, SelectedModelRouteIds: templateIds), accountId, expectedGeneration);
+    }
+
+    private ConfigurationDto AddApiCore(long revision, AddApiAccountRequest input, string? targetAccountId, long? expectedGeneration)
     {
         ArgumentNullException.ThrowIfNull(input);
         if (string.IsNullOrWhiteSpace(input.Name) || input.Name.Length > 120 || input.Name.Any(char.IsControl))
@@ -233,7 +261,16 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             transportId = input.ProviderConnectionId ?? input.ProviderRouteId, settings });
         return configuration.Update(revision, state =>
         {
-            var duplicate = FindDuplicate(state, provider, input.ApiKey, null);
+            var duplicate = targetAccountId is null ? FindDuplicate(state, provider, input.ApiKey, null)
+                : state.Accounts.SingleOrDefault(a => a.Id == targetAccountId) ?? throw new KeyNotFoundException("Account not found.");
+            if (targetAccountId is not null)
+            {
+                if (duplicate!.Generation != expectedGeneration || CanonicalProviderId(duplicate.Provider) != CanonicalProviderId(provider))
+                    throw new InvalidOperationException("Target account changed before model attachment.");
+                using var current = JsonDocument.Parse(secrets.ReadAccount(duplicate.Id));
+                if (!current.RootElement.TryGetProperty("apiKey", out var currentKey) || currentKey.GetString() != input.ApiKey)
+                    throw new InvalidOperationException("Inference credential changed before model attachment.");
+            }
             if (duplicate is not null && input.ProviderConnectionId is null && input.ProviderRouteId is null)
                 throw new ArgumentException("This credential already belongs to an account.");
             // Key replacement preserves account IDs, so an old key's derived ID
@@ -263,7 +300,7 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             new ProviderCostPolicy(registry).ValidateConfiguration(next);
             // Every shape, entitlement and route check above precedes the private
             // write and executes under the same revision gate as public persistence.
-            return PublishStaticReference(next, account.Id, privateJson);
+            return PublishStaticReference(next, account.Id, privateJson, sameCredential: duplicate is not null);
         });
     }
 
@@ -286,6 +323,14 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         var endpointMatch = transports.OfType<JsonObject>().Where(t => t["sourceSection"]?.GetValue<string>() == plan.SourceSection &&
             t["coreProvider"]?.GetValue<string>() == plan.CoreProvider && t["baseUrl"]?.GetValue<string>() == plan.BaseUrl).ToArray();
         var compatible = endpointMatch.FirstOrDefault(t => JsonNode.DeepEquals(t["settings"], added["settings"]));
+        var unconfigured = endpointMatch.FirstOrDefault(t => Routes(t).Length == 0 && t["sourceConfig"] is null &&
+            (t["settings"] is not JsonObject previousSettings || previousSettings.All(p => JsonNode.DeepEquals(p.Value, added["settings"]?[p.Key]))));
+        if (compatible is null && unconfigured is not null)
+        {
+            // Optional model setup qualifies the generic saved endpoint in place within this new immutable generation.
+            foreach (var property in added.ToArray()) unconfigured[property.Key] = property.Value?.DeepClone();
+            compatible = unconfigured;
+        }
         if (compatible is null)
         {
             if (endpointMatch.Length > 0) throw new ArgumentException("This credential already has the endpoint with different provider settings.");
@@ -314,11 +359,11 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             return PublishStaticReference(state, id, json.ToJsonString());
         });
     }
-    private ConfigurationDto PublishStaticReference(ConfigurationDto state, string id, string privateJson)
+    private ConfigurationDto PublishStaticReference(ConfigurationDto state, string id, string privateJson, bool sameCredential = false)
     {
         var account = state.Accounts.Single(a => a.Id == id);
         var binding = account.Binding ?? new ResourceBindingDto(account.Provider);
-        if (binding.Provenance is "verified" or "observed")
+        if (!sameCredential && binding.Provenance is "verified" or "observed")
             throw new InvalidOperationException("Reconnect through an identity-verifying method before replacing this confirmed credential.");
         var currentCapabilities = EffectiveCapabilities(account);
         var inference = currentCapabilities.SingleOrDefault(c => c.Purpose == "inference");

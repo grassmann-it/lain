@@ -5,6 +5,7 @@ using Lain.Host.Accounts.Credentials;
 using Lain.Host.Accounts.Monitoring;
 using Lain.Host.Operations;
 using Lain.Host.Quota;
+using Lain.Host.Providers;
 
 var root = Path.Combine(Path.GetTempPath(), "lain-foundation-fixtures-" + Guid.NewGuid().ToString("N"));
 var assertions = 0;
@@ -15,6 +16,7 @@ try
     await RotationAndRestore();
     await ReviewRegressions();
     await LegacyPreservation();
+    await ModelAttachment();
     await QuotaGeneration();
     Console.WriteLine($"Account connect foundation: {assertions} assertions passed (offline synthetic state only).");
 }
@@ -314,6 +316,36 @@ async Task ReviewRegressions()
         "each purpose keeps its own immutable binding to shared private material");
     Check(!Directory.EnumerateFiles(Path.Combine(shared.Paths.Credentials, "generations"), "*.json", SearchOption.AllDirectories)
         .Any(path => File.ReadAllText(path).Contains("same-suitable-fixture-key")), "generation envelopes do not duplicate shared key material");
+    var cloud = New("cloud-owner");
+    var cloudBinding = new ResourceBindingDto("gemini-api", Subject: "123456", ResourceType: "project", ResourceId: "my-project", Provenance: "observed");
+    var cloudAccount = cloud.Accounts.Connect(0, new("gemini-api", "oauth", ["quota"]), new("google-oauth", ["quota"], cloudBinding,
+        "{\"kind\":\"cloud-oauth\",\"accessToken\":\"cloud-access\",\"refreshToken\":\"private-refresh\",\"clientSecret\":\"private-client\",\"settings\":{\"projectNumber\":\"123456\"}}",
+        DateTimeOffset.UtcNow.AddHours(1), PreserveForRecovery: true)).Accounts.Single();
+    var cloudQuota = await cloud.Source.GetCredentialAsync(cloudAccount.Id);
+    Check(cloudQuota?.MonitorBearerToken == "cloud-access" && cloudQuota.Monitor!.ResourceId == "my-project" && cloudQuota.Settings["projectNumber"] == "123456",
+        "provider-specific cloud owner projects scoped monitor access and safe settings");
+    var cloudLease = new CredentialResolver(cloud.Repository, cloud.Secrets).Resolve(cloudAccount.Id, "quota")!;
+    Check(!cloudLease.PrivateJson.Contains("private-refresh") && !cloudLease.PrivateJson.Contains("private-client"), "monitor lease excludes refresh and client secrets");
+    var incomplete = New("unqualified-grant");
+    var incompleteContext = incomplete.Accounts.ReserveConnect(0, new("gemini-api", "oauth", ["quota"]), "unqualified-cloud-result", DateTimeOffset.UtcNow.AddMinutes(10));
+    var incompleteHandle = incomplete.Secrets.Generations.Prepare(incompleteContext.AccountId,
+        new("google-oauth", [], new("gemini-api"), "{\"kind\":\"cloud-oauth\",\"accessToken\":\"unqualified-access\",\"refreshToken\":\"retained-refresh\"}", PreserveForRecovery: true), incompleteContext.OperationId);
+    CredentialRecoveryService.SavePrepared(incomplete.Secrets.Generations, incompleteContext, incompleteHandle, null);
+    ThrowsSync<InvalidDataException>(() => new CredentialRecoveryService(incomplete.Repository, incomplete.Accounts, incomplete.Secrets.Generations).Adopt(0, incompleteContext.OperationId),
+        "unqualified intermediate cloud checkpoint cannot publish requested quota capability");
+    Check(incomplete.Repository.Snapshot.Accounts.Length == 0, "intermediate grant remains private until resource and rights qualification");
+    foreach (var (alias, canonical) in new[] { ("command-code", "commandcode"), ("mimo", "xiaomi-mimo") })
+    {
+        var legacyAlias = New("alias-" + alias);
+        legacyAlias.Repository.Update(0, state => state with { Accounts = [new("legacy-account", "Chosen legacy name", alias, true, "monitor", "unverified", Binding: new(alias))] });
+        var connected = legacyAlias.Accounts.Connect(1, new(canonical, "key", ["quota"], AccountId: "legacy-account"), Key("alias-key", provider: canonical)).Accounts.Single();
+        Check(connected.Provider == alias && connected.Binding?.Provider == alias && connected.Name == "Chosen legacy name", "canonical reconnect preserves legacy provider and binding identity");
+    }
+    var aliasLogin = New("alias-login");
+    var aliasAdapter = new FakeLogin("commandcode") { Next = new("prepared", Credential: Key("login-alias-key", provider: "commandcode", recovery: true)) };
+    await using var aliasOperations = aliasLogin.Logins(aliasAdapter);
+    var aliasStart = await aliasOperations.BeginAsync(0, new("command-code", "fake", ["quota"]));
+    Check((await aliasOperations.StatusAsync(aliasStart.Id)).State == "completed", "legacy alias uses canonical qualified adapter lookup");
 }
 
 async Task LegacyPreservation()
@@ -378,6 +410,32 @@ async Task LegacyPreservation()
         "legacy import never copies or refreshes external refresh material");
 }
 
+async Task ModelAttachment()
+{
+    var f = New("model-attachment");
+    var catalog = new ProviderCatalogRegistry();
+    var provider = catalog.Find("kilo")!;
+    var connection = provider.Connections!.Single();
+    var key = "same-key-distinct-accounts";
+    var other = f.Accounts.ConnectCredential(0, new(new("kilo", "manual", ["inference"], Name: "Other account"), key, BaseUrl: connection.BaseUrl)).Accounts.Single();
+    var target = f.Accounts.ConnectCredential(1, new(new("kilo", "manual", ["inference"], Name: "Chosen target"), key, BaseUrl: connection.BaseUrl)).Accounts.Single(a => a.Id != other.Id);
+    f.Accounts.Connect(2, new("kilo", "separate-monitor", ["quota"], AccountId: target.Id), Key("target-monitor-key", provider: "kilo"));
+    var before = f.Repository.Snapshot.Accounts.Single(a => a.Id == target.Id);
+    var quotaId = before.Capabilities!.Single(c => c.Purpose == "quota").CredentialId;
+    var configured = f.Accounts.AttachModels(3, target.Id, before.Generation, connection.Id, [connection.ProviderRouteIds[0]]);
+    var attached = configured.Accounts.Single(a => a.Id == target.Id);
+    Check(configured.Accounts.Length == 2 && configured.Routes.Single().AccountIds.SequenceEqual(new[] { target.Id }),
+        "model attachment targets exact account even when another identity shares its key");
+    Check(attached.Name == "Chosen target" && attached.Capabilities!.Single(c => c.Purpose == "quota").CredentialId == quotaId &&
+        configured.Accounts.Single(a => a.Id == other.Id).Generation == other.Generation, "model attachment preserves names, independent monitor and other accounts");
+    Check(f.Secrets.ReadAccount(target.Id).Contains(connection.ProviderRouteIds[0]), "qualified model transport is published through immutable current inference reference");
+    Check((await f.Source.GetCredentialAsync(target.Id))?.BearerToken == "target-monitor-key", "model attachment leaves separate quota source unchanged");
+    ThrowsSync<InvalidOperationException>(() => f.Accounts.AttachModels(configured.Revision, target.Id, before.Generation, connection.Id, [connection.ProviderRouteIds[0]]),
+        "stale account generation cannot attach model routes");
+    new ProxyConfigurationWriter(f.Paths, f.Secrets).Write(configured);
+    Check(File.ReadAllText(f.Paths.ProxyConfig).Contains(provider.Routes[0].Model), "later optional model compiles using selected qualified transport");
+}
+
 sealed class Fixture
 {
     public OwnStatePaths Paths { get; }
@@ -394,9 +452,9 @@ sealed class Fixture
     public LoginOperationService Logins(IAccountLoginAdapter adapter, TimeProvider? clock = null) =>
         new(configuration: Repository, accounts: Accounts, secrets: Secrets, accountAdapters: [adapter], timeProvider: clock);
 }
-sealed class FakeLogin : IAccountLoginAdapter
+sealed class FakeLogin(string provider = "test") : IAccountLoginAdapter
 {
-    public string Provider => "test"; public string Method => "fake";
+    public string Provider => provider; public string Method => "fake";
     public int Begins, Polls, Cancels; public bool FailBegin;
     public LoginAdapterResult Next = new("waiting");
     public Func<CancellationToken, Task<LoginAdapterResult>>? Poll;

@@ -96,7 +96,7 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
         {
             var prior = current.Accounts.SingleOrDefault(a => a.Id == candidate.Account.Id);
             return prior is null || prior != candidate.Account || !preserveCredentials.Contains(candidate.Account.Id) &&
-                (!secrets.HasAccount(candidate.Account.Id) || secrets.ReadAccount(candidate.Account.Id) != candidate.Credential);
+                (!secrets.HasAccount(candidate.Account.Id) || !JsonNode.DeepEquals(JsonNode.Parse(secrets.ReadAccount(candidate.Account.Id)), JsonNode.Parse(candidate.Credential)));
         }).ToArray();
         var (importedRoutes, routeMetadata, routesChanged) = BuildImportedRoutes(current.Routes.Select(r => r with { AccountIds = r.AccountIds.Select(id => remappedAccounts.GetValueOrDefault(id, id)).Distinct().ToArray() }).ToArray(), unique, root, remappedAccounts);
         // A replay changes neither revision nor secrets. Snapshot is private and content-addressed.
