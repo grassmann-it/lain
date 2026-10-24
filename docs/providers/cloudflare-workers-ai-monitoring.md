@@ -31,8 +31,11 @@ No redirects, cookies, or arbitrary endpoints are enabled.
 requires **Account > Account Analytics > Read** for the intended account.
 An existing inference token can be used if it already has this permission; an
 optional separate analytics token can be attached through the existing monitor
-access flow. Monitor credentials take precedence, must select the same account,
+access flow. Separate monitor credentials take precedence, must select the same account,
 and are never silently replaced with an inference token when absent/expired.
+The `inference-key` monitor kind instead explicitly references the saved inference
+credential: its monitor secret is null, its bearer comes from `HostQuotaSource`,
+and the saved inference expiry remains enforced. No duplicate key entry is needed.
 HTTP 401/403 directs the user to renew/review that access. Discovery and binding
 remain in the shared cloud connection flow; this reader never guesses an account
 from a token or switches to another accessible account.

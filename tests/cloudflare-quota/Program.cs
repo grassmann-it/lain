@@ -1,6 +1,8 @@
 using System.Net;
 using System.Text.Json;
 using Lain.Core;
+using Lain.Host.Accounts.Monitoring;
+using Lain.Host.Operations;
 using Lain.Host.Quota;
 
 var checks = 0;
@@ -38,6 +40,38 @@ using (var adapter = new CloudflareQuotaAdapter(handler: handler, clock: new Clo
     Check(row.ScopeId == id && row.BudgetPoolId == "cloudflare-account:" + id && !row.InheritAccountPool, "keys in same Cloudflare account share the usage scope");
 }
 
+// Exercise the actual saved-key selection contract, not just a manually constructed projection.
+var fixtureRoot = Path.Combine(Path.GetTempPath(), "lain-cloudflare-key-reuse-" + Guid.NewGuid().ToString("N"));
+try
+{
+    var paths = new OwnStatePaths(fixtureRoot);
+    var secrets = new SecretStore(paths);
+    var repository = new ConfigurationRepository(paths);
+    repository.Update(0, state => state with { Accounts = [account] });
+    secrets.WriteAccount(account.Id, JsonSerializer.Serialize(new {
+        kind = "api-key", apiKey = "fixture-saved-inference-token",
+        baseUrl = "https://api.cloudflare.com/client/v4/accounts/" + id + "/ai/v1",
+        settings = new { accountId = id }, expiresAt = now.AddHours(1)
+    }));
+    var monitor = new MonitorAccessService(repository, secrets, new MonitorCredentialStore(paths), new Clock(now));
+    monitor.Set(repository.Snapshot.Revision, account.Id, new("inference-key", ResourceId: id));
+    var projected = await new HostQuotaSource(repository, secrets, monitor).GetCredentialAsync(account.Id);
+    Check(projected is { Monitor.Kind: "inference-key", Monitor.Secret: null }
+        && projected.BearerToken == "fixture-saved-inference-token", "HostQuotaSource resolves selected inference-key reference without a second secret");
+    using var handler = new Handler(request => {
+        Check(request.Headers.Authorization?.Parameter == "fixture-saved-inference-token", "selected existing token reaches analytics");
+        return Task.FromResult(Handler.Json(Usage(7)));
+    });
+    using var adapter = new CloudflareQuotaAdapter(handler: handler, clock: new Clock(now));
+    var read = await adapter.FetchAsync(repository.Snapshot.Accounts.Single(), projected!);
+    Check(handler.Calls == 1 && read.Readings.Single().Used == 7, "existing-key monitor succeeds through saved HostQuotaSource path");
+    Check(projected!.ExpiresAt == now.AddHours(1), "saved inference expiry survives monitor selection");
+    // A connection without a separate monitor can resolve the account from its existing binding.
+    Check((await adapter.FetchAsync(account, new("fixture-saved-inference-token"))).Readings.Single().Used == 7,
+        "saved account binding does not require account ID or key reentry");
+}
+finally { if (Directory.Exists(fixtureRoot)) Directory.Delete(fixtureRoot, true); }
+
 Check(CloudflareQuotaAdapter.Normalize(Json(Usage(0)), id, start, now).Readings.Single().Used == 0, "explicit measured zero preserved");
 foreach (var value in new object?[] { null, -1, "NaN", "Infinity", 9007199254740992d })
     Check(CloudflareQuotaAdapter.Normalize(Json(Usage(value)), id, start, now).Readings.Count == 0, "invalid/missing neurons not zero");
@@ -57,7 +91,11 @@ using (var adapter = new CloudflareQuotaAdapter(handler: handler, clock: new Clo
         new QuotaCredential("fixture", monitor: new("api-key", "fixture-monitor", otherId)),
         new QuotaCredential("fixture", monitor: new("api-key", null, id)),
         new QuotaCredential("fixture", monitor: new("access-token-snapshot", "fixture-monitor", id, now)),
-        new QuotaCredential("fixture", expiresAt: now)
+        new QuotaCredential("fixture", expiresAt: now),
+        new QuotaCredential("fixture", expiresAt: now, monitor: new("inference-key", null, id)),
+        new QuotaCredential("fixture", monitor: new("inference-key", "unexpected-second-secret", id)),
+        new QuotaCredential("fixture", monitor: new("api-token", "", id)),
+        new QuotaCredential("fixture", monitor: new("api-token", null, id))
     }) Check((await adapter.FetchAsync(account, invalid)).Support?.Kind == "setup-required", "invalid/expired/mismatched credential needs setup");
     Check(handler.Calls == 0, "invalid selection has no network side effect");
 }
@@ -68,7 +106,7 @@ using (var handler = new Handler(request =>
     return Task.FromResult(Handler.Json(Usage(1)));
 }))
 using (var adapter = new CloudflareQuotaAdapter(handler: handler, clock: new Clock(now)))
-    Check((await adapter.FetchAsync(account, new("expired-inference", expiresAt: now.AddDays(-1), monitor: new("api-key", "fixture-monitor", id)))).Readings.Count == 1, "monitor independent of inference expiry");
+    Check((await adapter.FetchAsync(account, new("expired-inference", expiresAt: now.AddDays(-1), monitor: new("api-token", "fixture-monitor", id)))).Readings.Count == 1, "monitor independent of inference expiry");
 
 foreach (var status in new[] { HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden })
 {

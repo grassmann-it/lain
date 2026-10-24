@@ -24,13 +24,16 @@ public sealed class CloudflareQuotaAdapter : IQuotaAdapter, IDisposable
     public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
         var accountId = credential.Monitor?.ResourceId ?? credential.Settings.GetValueOrDefault("accountId") ?? account.Binding?.ResourceId;
-        var access = credential.Monitor?.Secret ?? credential.BearerToken;
+        var usesInference = credential.Monitor is null || credential.Monitor.Kind == "inference-key";
+        // An inference-key monitor is a reference, not a second secret. Independent monitor
+        // credentials must never fall back to the saved inference credential.
+        var access = usesInference ? credential.BearerToken : credential.Monitor!.Secret;
         var now = clock.GetUtcNow();
         if (!CloudResourceDiscovery.CloudflareAccount(accountId) || string.IsNullOrWhiteSpace(access)
             || access.Length > 32768 || access.Any(char.IsWhiteSpace) || access.Any(char.IsControl)
-            || credential.Monitor is { Secret: null or "" }
+            || credential.Monitor is { Kind: "inference-key", Secret: not null }
             || credential.Monitor?.ExpiresAt is { } expiry && expiry <= now
-            || credential.ExpiresAt is { } bearerExpiry && credential.Monitor is null && bearerExpiry <= now
+            || credential.ExpiresAt is { } bearerExpiry && usesInference && bearerExpiry <= now
             || account.Binding?.ResourceId is { } pinned && pinned != accountId
             || credential.Settings.GetValueOrDefault("accountId") is { } configured && configured != accountId)
             return Setup("Bind an unexpired monitoring grant to the same Cloudflare account as this connection. An existing API token with " + AnalyticsPermission + " can be used; a separate read token is optional.");
