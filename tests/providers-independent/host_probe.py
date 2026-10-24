@@ -119,14 +119,14 @@ class Probe:
             require(providers[provider_id].get("monitorAccessOptions"), "supported manual monitor setup absent from catalog")
         self.checks.append("20 embedded providers, connection groups and supported monitor options")
 
-        provider = providers["sambanova"]
+        provider = providers["groq"]
         options = [(connection, plan, [route["id"] for route in provider["routes"]
                     if route["id"] in connection["providerRouteIds"] and plan in route["billingPlanIds"]])
                    for connection in provider["connections"] for plan in connection["billingPlanIds"]]
-        connection, plan, models = next(item for item in options if len(item[2]) >= 2)
-        setup = self.input(provider, self.secret("samba"), connection=connection, plan=plan)
+        connection, plan, models = next(item for item in options if item[1] == "free" and len(item[2]) >= 2)
+        setup = self.input(provider, self.secret("groq"), connection=connection, plan=plan)
         current = self.add(setup)
-        account = next(item for item in current["accounts"] if item["provider"] == "sambanova")
+        account = next(item for item in current["accounts"] if item["provider"] == "groq")
         require(current["routes"] == [] and account["state"] == "unverified", "connection-only setup activated routes or claimed validation")
         chosen = dict(setup, name="Must not overwrite custom name", selectedModelRouteIds=models[:2])
         current = self.add(chosen)
