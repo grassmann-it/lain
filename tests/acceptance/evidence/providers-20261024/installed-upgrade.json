@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "backup": "$HOME/.local/share/lain/upgrade-backups/20261024T170327Z-deee92aa",
+  "package": {
+    "manifestSha256": "836e607130f9b5f11d5a748665db3e49f335006d4af55cff60db0c48807077d5",
+    "coreSha256": "a03e0ba2f4d2723a6a26fb10c89d838de75d6b14119b6ec4be3a2f1d7af4a185",
+    "releaseQualified": false
+  },
+  "revision": 10,
+  "appliedRevision": 2,
+  "historicalUsageUnchanged": true,
+  "newSchemaExercisedByAnalysis": true,
+  "attemptCount": 12,
+  "cursor": 35,
+  "protectedFilesUnchanged": true,
+  "legacyServiceUnchanged": true,
+  "legacyLogAndTempFilesExcluded": true,
+  "ownCredentialsUnchanged": true,
+  "inferenceRequestsIssued": 0,
+  "rollbackRequiresStoppedJournalAndCredentialGuard": true
+}

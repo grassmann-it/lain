@@ -1,0 +1,256 @@
+{
+  "passed": true,
+  "privateXvfb": true,
+  "checks": 182,
+  "captures": 24,
+  "retainedImageFiles": 22,
+  "images": [
+    {
+      "page": "accounts-simple",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "accounts-simple-1120x780.png",
+      "sha256": "354e376e1fc45030dd8360dbde6c07590e9c2a104e9bb645161d50f483eacc6e"
+    },
+    {
+      "page": "accounts-simple",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "accounts-simple-800x560.png",
+      "sha256": "bc2cee32760c68474c6f0cc91782463b873a8f96c462c9677d9aac0476bd0ef9"
+    },
+    {
+      "page": "models-simple",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "models-simple-1120x780.png",
+      "sha256": "1a117242716a94bad059d032dc4e4664d34910a998575c8492b610db4358ef1c"
+    },
+    {
+      "page": "models-simple",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "models-simple-800x560.png",
+      "sha256": "5c09bbe603db6872afb9d3c85c95c62f90f440b7b652efcf94a36411903d4ece"
+    },
+    {
+      "page": "profiles-simple",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "profiles-simple-1120x780.png",
+      "sha256": "75fd887de577548297139e64df5b92832e6bbb23b5484513a57c2c9fe6d7b9e8"
+    },
+    {
+      "page": "profiles-simple",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "profiles-simple-800x560.png",
+      "sha256": "edd99774bd652f46b23f0af40b648b044f8d9182cb4c33231bbf25e21e70484b"
+    },
+    {
+      "page": "usage-simple",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "usage-simple-1120x780.png",
+      "sha256": "3bebc72f902721c00cba0e465d420ff1445b1af98f39c98311fd34f4e5ce99eb"
+    },
+    {
+      "page": "usage-simple",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "usage-simple-800x560.png",
+      "sha256": "2ad288dc02e441360ae57df84c69c10000a8cc961ab739038d0b7b0f2827af07"
+    },
+    {
+      "page": "live-simple",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "live-simple-1120x780.png",
+      "sha256": "471b9f390a0e3e06a83a6b59ff0271df8f95360e4c9c02b66830eb2897eff95c"
+    },
+    {
+      "page": "live-simple",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "live-simple-800x560.png",
+      "sha256": "256a16237a3af5bd8ad6b34a5169dea76e8ad9a645cda46f1f295b8e78745abd"
+    },
+    {
+      "page": "discover-providers",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "discover-providers-1120x780.png",
+      "sha256": "ce9e791f7c933f52eaad313d6ec97ad577e62ab9593a2829d5955000a5c0b299"
+    },
+    {
+      "page": "discover-providers",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "discover-providers-800x560.png",
+      "sha256": "522cf3ff3e23cb89338545fcbba3650057e543307015c7183511151ea3cc3aa3"
+    },
+    {
+      "page": "accounts-barebones",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "accounts-barebones-1120x780.png",
+      "sha256": "882ab94c1491cf0470a91bddd091290972a67e542af42ba4d8f434c9260b1c34"
+    },
+    {
+      "page": "accounts-barebones",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "accounts-barebones-800x560.png",
+      "sha256": "a896801849238a8de5a7bcc55b4cac11a29b05f1d297206c04b0238c7a91234f"
+    },
+    {
+      "page": "accounts-advanced",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "accounts-advanced-1120x780.png",
+      "sha256": "6731389dc732baf380d793982e933b518e087c6ec52b64208c3571fa6e85ef4d"
+    },
+    {
+      "page": "accounts-advanced",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "accounts-advanced-800x560.png",
+      "sha256": "90792274a958b7bde5e2fc8b4a8fd766e152abcbba10b04fa489adc804e714eb"
+    },
+    {
+      "page": "settings-persisted",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "settings-persisted-1120x780.png",
+      "sha256": "e0171ae29bb993dc891578c6d5a3883457690af417f4ce568218d0a6fc18102e"
+    },
+    {
+      "page": "settings-persisted",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "settings-persisted-800x560.png",
+      "sha256": "574cadbd44811f59078ab324b1d342f404b77e58e14201edcf1eaec78f16b385"
+    },
+    {
+      "page": "about-build-identity",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "about-build-identity-1120x780.png",
+      "sha256": "154db1a6919f8fe0aac85753f32c95fcb5dc953d37a3259e145052a83dc8784d"
+    },
+    {
+      "page": "about-build-identity",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "about-build-identity-800x560.png",
+      "sha256": "e45f0a68528ecf8807a510f9541dbb7e8a499b438773b6ad861824f0dacc08cd"
+    },
+    {
+      "page": "reopened-usage",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "reopened-usage-1120x780.png",
+      "sha256": "15c080804e39b56332ef2a05fa17036b618032f5a0dbc33b9562b7de9d3c8b42"
+    },
+    {
+      "page": "reopened-usage",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "reopened-usage-800x560.png",
+      "sha256": "e5043d5f30071a4452282c868d823a50997a8a4e29ae75af00a58ced41252aea"
+    }
+  ],
+  "assemblySelection": [
+    {
+      "name": "Lain.Desktop",
+      "source": "/home/tomka/.local/share/lain/app/desktop/Lain.Desktop.dll",
+      "loadedPath": "/tmp/lain-installed-probe.5fDN6L6O/target/Lain.Desktop.dll",
+      "sha256": "6e98a596121dd6b30bd6a4f38ae101ad48279573f0ceaef88df6b5a7f0f279ff",
+      "version": "1.0.0+413588c44ee5ad730573baab2cd8f6dc328f48c5"
+    },
+    {
+      "name": "Lain.Client",
+      "source": "/home/tomka/.local/share/lain/app/desktop/Lain.Client.dll",
+      "loadedPath": "/tmp/lain-installed-probe.5fDN6L6O/target/Lain.Client.dll",
+      "sha256": "39049b4d3233890e4489bcc4ccabce3ef0f9672f77014f6f1a3d55221e589b3b",
+      "version": "1.0.0+413588c44ee5ad730573baab2cd8f6dc328f48c5"
+    },
+    {
+      "name": "Lain.Core",
+      "source": "/home/tomka/.local/share/lain/app/desktop/Lain.Core.dll",
+      "loadedPath": "/tmp/lain-installed-probe.5fDN6L6O/target/Lain.Core.dll",
+      "sha256": "55b447c1c99d0dfda0941cca5f158d4f6c7654f646d22845a02fc4228541b367",
+      "version": "1.0.0+413588c44ee5ad730573baab2cd8f6dc328f48c5"
+    },
+    {
+      "name": "Avalonia.Controls",
+      "source": "/home/tomka/.local/share/lain/app/desktop/Avalonia.Controls.dll",
+      "loadedPath": "/tmp/lain-installed-probe.5fDN6L6O/target/Avalonia.Controls.dll",
+      "sha256": "24d36a48b0033e52313d1f7a2d8b69bcc18e5504d518bf56c23916558c4f1912",
+      "version": "12.1.4+2d79ba55fae1b1e71c69f93a668080c9029e6a31"
+    }
+  ],
+  "configurationRevision": 10,
+  "appliedRevision": 2,
+  "proxyReadyAfterClosingUi": true,
+  "getOnly": true,
+  "blockedRequests": 0,
+  "scope": "Exact selected Desktop/Client/Core/Avalonia.Controls assemblies and production App/MainWindow on real own host, GET-only. Routed button events and RenderTargetBitmap captures; no OS pointer hit testing, launcher/taskbar rendering, provider refresh, inference, configuration write, login or browser. Live content is observed, never fabricated. Historical range is fixed; concurrent external host activity is not disabled or attributed to this probe. Window reopen occurs in one process; preferences are a separate temporary file.",
+  "credentialsReadByHarness": "Only own Host management token; no provider credentials",
+  "verifiedFeatures": [
+    "complete configured account inventory",
+    "reported quota windows and remaining values",
+    "neutral quota access guidance",
+    "real errors remain visible",
+    "unknown values do not invent progress bars",
+    "footer is the only information-level selector",
+    "Models, Profiles, Usage, Live and discovery",
+    "Settings and About",
+    "fixed persistent history before, during and after window reopen",
+    "configuration remains unchanged"
+  ]
+}

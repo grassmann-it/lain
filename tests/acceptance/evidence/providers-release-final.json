@@ -1,0 +1,119 @@
+{
+  "passed": true,
+  "sourceCommit": "413588c",
+  "coreSha256": "a03e0ba2f4d2723a6a26fb10c89d838de75d6b14119b6ec4be3a2f1d7af4a185",
+  "sourceManifestSha256": "9c79020da322d0e0c1ff6f0d4501c322327c4d2897c83021ffb466490d9d1627",
+  "packageManifestSha256": "e7ea923310b6d02790a37a3229c3c19becfc0bddc5070cddc620c4d2b7461170",
+  "archiveSha256": "68dd05f1c4b4f0e36fea4f8254ccb55d0bdc9cbc0d4dc3b59e4664392563bcb4",
+  "files": 1038,
+  "archiveFilesVerified": 1038,
+  "applicationPayloadUnchangedDuringAcceptance": true,
+  "installedPackageMatchesArchive": true,
+  "releaseQualified": true,
+  "binaryHashes": {
+    "cli/Lain.Cli.dll": "d72497f042511f960b19ef9b1a78e3e55799259ba56bb974c6217190eff3caf3",
+    "host/Lain.Host.dll": "b118a35600fc54e63f6a6eda51b29e2a07e62b071dbe462b81b2006d661e5f08",
+    "desktop/Lain.Desktop.dll": "6e98a596121dd6b30bd6a4f38ae101ad48279573f0ceaef88df6b5a7f0f279ff",
+    "proxy/lain-proxy": "a03e0ba2f4d2723a6a26fb10c89d838de75d6b14119b6ec4be3a2f1d7af4a185"
+  },
+  "scope": "Synthetic provider/Core qualification plus actual package, installed API/CLI, private-Xvfb GUI and owned-service restart. No new real provider inference in this delivery.",
+  "liveProviderQualification": "Not implied by installation; see provider delivery documentation and capability states.",
+  "evidence": [
+    {
+      "path": "acceptance/providers-20261024/core/consumer-replay.json",
+      "sha256": "625710e445cb3b6e3a8f574dff56f975f9d24c87c3226fb14624e207bd4f1d63"
+    },
+    {
+      "path": "acceptance/providers-20261024/core/event-examples.json",
+      "sha256": "127336f72a32328457bcfb487257be36ed4e3a302d37f6c885a9528216155321"
+    },
+    {
+      "path": "acceptance/providers-20261024/core/hostwriter-transports.json",
+      "sha256": "5170dfafaae7d47825cb242f2c7cd435b77998f9a012015a040a6c94273e11a3"
+    },
+    {
+      "path": "acceptance/providers-20261024/core/independent-auth-crash.json",
+      "sha256": "fade0870384fb2194eb34342cab0f01e8163dbb34a64c6c4b822863e73250167"
+    },
+    {
+      "path": "acceptance/providers-20261024/core/inspector.json",
+      "sha256": "97455a8c0e3d978a925c582926fc7546b55814ca93db2987defbd3c2f0d59e52"
+    },
+    {
+      "path": "acceptance/providers-20261024/core/mixed-source-batch.json",
+      "sha256": "400d03054eff933f59ad20277618c102ca7412a44527583c11d80ed048d562ba"
+    },
+    {
+      "path": "acceptance/providers-20261024/core/native-tool-boundary.json",
+      "sha256": "2c153d1b817a296dc09f064b8226076df1e88e4c51e200e14a2f0c944d9828a7"
+    },
+    {
+      "path": "acceptance/providers-20261024/core/protocol-durability.json",
+      "sha256": "0e4e5ea53d1e57d1803a94da7d93f484bae49114ad4069a95e0c11be46801ce7"
+    },
+    {
+      "path": "acceptance/providers-20261024/core/qualification.json",
+      "sha256": "fef1bec1bf1b4515e598613c035b058658fdfd3676cb53069875d46e4d8e15c1"
+    },
+    {
+      "path": "acceptance/providers-20261024/core/source-batch.json",
+      "sha256": "98137f03fd3e4d280ee91692101e99870994e5ac6e1e5183bdb8a5c2264a4f82"
+    },
+    {
+      "path": "acceptance/providers-20261024/core/upgrade-boundaries.json",
+      "sha256": "52ca3fba7787a9fe6312b4d361e5d3c7143e9a74618553c4cb46fbb95dc9571c"
+    },
+    {
+      "path": "acceptance/providers-20261024/core/version-transition.json",
+      "sha256": "2c79010e28b37dd6fe8b64ff82483fd87624a8203bbaab1e6ea77486571354dc"
+    },
+    {
+      "path": "acceptance/providers-20261024/core-qualified.json",
+      "sha256": "6cadb06ef571098e2e050f9614ba2f70ec4eb6d521bd7d03b15a39d3d854467e"
+    },
+    {
+      "path": "acceptance/providers-20261024/core-worker.json",
+      "sha256": "238560ed54fb039363f1ed39c5f1c4b241d75b13bfbaf28c342b828e5a4f9547"
+    },
+    {
+      "path": "acceptance/providers-20261024/desktop-fixture.json",
+      "sha256": "af1c0f8a4d85a5d2e5431fdf3d6fa108bf02599de5ac4a0446b6f1b7e97d5f88"
+    },
+    {
+      "path": "acceptance/providers-20261024/groq-process.json",
+      "sha256": "d2fe9d222276c33d05fb285783887898b9242a809b537242a93574ff38bed648"
+    },
+    {
+      "path": "acceptance/providers-20261024/installed-cli.json",
+      "sha256": "44107f3d5adc13a805f3809bcffe0e6815e14353be40512e3e5865d97cb348d8"
+    },
+    {
+      "path": "acceptance/providers-20261024/installed-desktop.json",
+      "sha256": "5ae8458c1ce3f2879c7301970aa3dceae72413bd73bc15544bbd926d59d2cdaa"
+    },
+    {
+      "path": "acceptance/providers-20261024/installed-restart.json",
+      "sha256": "702266e98d0cd59faef3bdfd56f50d46c789455750ea37a3fcb8074453348126"
+    },
+    {
+      "path": "acceptance/providers-20261024/installed-upgrade.json",
+      "sha256": "c96a85146fc36517e51f474c7649d6d4fb1e0e506c4f549bcbc11e59900b5b5e"
+    },
+    {
+      "path": "acceptance/providers-20261024/local-tests.json",
+      "sha256": "baf9443606e6b534f0d8bcfd305fb0d777df5f1549e9d49e38cd1a519e6fc076"
+    },
+    {
+      "path": "acceptance/providers-20261024/package.json",
+      "sha256": "24699e4b53719632360d38c73d027623a187d10857a49d9f9053bf44048e8051"
+    },
+    {
+      "path": "acceptance/providers-20261024/packaged-host.json",
+      "sha256": "fea29aefda5c8d3055e983bae2dd6289365fca15165961ac1390d3db44251b27"
+    },
+    {
+      "path": "acceptance/providers-20261024/startup.json",
+      "sha256": "cf1e040e6bdf332c982a856f703d331591a4ad95884ac13b067baa44653c4314"
+    }
+  ]
+}

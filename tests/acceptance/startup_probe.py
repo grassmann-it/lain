@@ -20,8 +20,10 @@ def main():
     parser.add_argument('--host', type=Path, required=True)
     parser.add_argument('--report', type=Path, required=True)
     args = parser.parse_args()
-    if os.readlink('/proc/self/ns/net') == os.readlink('/proc/1/ns/net'):
-        raise SystemExit('A private network namespace is required.')
+    interfaces = {line.split(':', 1)[0].strip()
+                  for line in Path('/proc/net/dev').read_text().splitlines()[2:] if ':' in line}
+    if interfaces != {'lo'}:
+        raise SystemExit('A private loopback-only network namespace is required.')
     http = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     cases = [
         ('unqualified', 'Proxy backend qualification has not passed.'),

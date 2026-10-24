@@ -1,0 +1,31 @@
+{
+  "syntheticOnly": true,
+  "liveProvider": false,
+  "coreSha256": "a03e0ba2f4d2723a6a26fb10c89d838de75d6b14119b6ec4be3a2f1d7af4a185",
+  "expectedCoreSha256": "a03e0ba2f4d2723a6a26fb10c89d838de75d6b14119b6ec4be3a2f1d7af4a185",
+  "passed": true,
+  "checks": [
+    "real_sdk_credential_registration",
+    "authenticated_passive_empty_source",
+    "account_a_200_six_headers_local_request_time",
+    "account_b_same_model_separate_observation",
+    "account_a_429_replaces_only_its_latest_model",
+    "no_credentials_payloads_or_upstream_request_identity",
+    "repeated_get_no_inference_no_timestamp_refresh",
+    "process_restart_preserves_exact_private_snapshot"
+  ],
+  "evidence": {
+    "upstreamCalls": 3,
+    "accounts": 2,
+    "models": 1,
+    "observations": 2,
+    "statuses": [
+      200,
+      200,
+      429
+    ],
+    "repeatedQuotaReads": 5,
+    "restartWireEqual": true
+  },
+  "binaryUnchanged": true
+}

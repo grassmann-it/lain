@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "ownedServiceOnly": true,
+  "newHostProcess": true,
+  "secondsToReady": 1.97,
+  "proxyReady": true,
+  "revision": 10,
+  "appliedRevision": 2,
+  "configurationCredentialsRuntimeUnchanged": true,
+  "fixedHistoricalUsageUnchanged": true,
+  "inferenceRequestsIssued": 0
+}

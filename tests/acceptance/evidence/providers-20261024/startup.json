@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "syntheticOnly": true,
+  "checks": [
+    {
+      "case": "unqualified",
+      "repairApiAvailable": true,
+      "error": "Proxy backend qualification has not passed.",
+      "childOutputRedacted": true
+    },
+    {
+      "case": "launch",
+      "repairApiAvailable": true,
+      "error": "The proxy process could not be launched.",
+      "childOutputRedacted": true
+    },
+    {
+      "case": "early-exit",
+      "repairApiAvailable": true,
+      "error": "The proxy exited before becoming ready (exit code 7).",
+      "childOutputRedacted": true
+    },
+    {
+      "case": "metadata",
+      "repairApiAvailable": true,
+      "error": "Saved proxy runtime metadata is inconsistent. Review the applied profile.",
+      "childOutputRedacted": true
+    }
+  ]
+}

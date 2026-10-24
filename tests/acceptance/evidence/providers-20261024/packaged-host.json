@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "checks": [
+    "20 embedded providers, connection groups and supported monitor options",
+    "connection-only account, two model routes, stable identity/name and atomic invalid/stale rejection",
+    "monitor GET/PUT/DELETE auth, audience, revision, ownership, secret-free status and gateway preservation",
+    "manual Google access snapshot with expiry and registered unpolled quota adapters",
+    "packaged adjacent catalog creates 8 Codex routes without aliases, refresh material or OAuth calls"
+  ],
+  "qualification": "synthetic packaged Host HTTP only",
+  "provider_calls": 0,
+  "artifacts": {
+    "host_sha256": "b118a35600fc54e63f6a6eda51b29e2a07e62b071dbe462b81b2006d661e5f08",
+    "proxy_sha256": "a03e0ba2f4d2723a6a26fb10c89d838de75d6b14119b6ec4be3a2f1d7af4a185",
+    "catalog_sha256": "3c65ca9e981e1040b24886f7b54e3c235f0fa470e6c26a30d4ce5cc598e976dc",
+    "catalog_model_count": 8
+  }
+}

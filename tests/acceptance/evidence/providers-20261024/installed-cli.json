@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "workingDirectory": "/",
+  "proxyReady": true,
+  "revision": 10,
+  "appliedRevision": 2,
+  "accounts": 10,
+  "profiles": 3,
+  "catalogProviders": 20,
+  "newProviders": [
+    "cohere",
+    "fireworks",
+    "kilo",
+    "sambanova",
+    "upstage"
+  ],
+  "usageJsonFullEquivalent": true,
+  "compactLines": 51,
+  "fullLines": 133,
+  "historyWindowUtc": [
+    "2026-10-23",
+    "2026-10-24"
+  ],
+  "historyTotals": {
+    "requests": 1,
+    "attempts": 1,
+    "errors": 0,
+    "tokens": {
+      "input": 81981,
+      "output": 5,
+      "cached": 3968,
+      "reasoning": 0,
+      "total": 81986
+    },
+    "unknownUsageAttempts": 0
+  },
+  "privateWizardsInHelp": true,
+  "normalCodexSeparateProfileCatalogPreferencesUnchanged": true,
+  "providerInferenceRequestsIssued": 0,
+  "modelEntries": 46,
+  "configuredRoutes": 46
+}

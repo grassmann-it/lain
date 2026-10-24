@@ -278,11 +278,23 @@ internal sealed class Probe
             var windows = rows.Where(x => x.AccountId == account.Id).ToArray();
             foreach (var quota in windows)
             {
+                var guidanceOnly = quota.Error is null && quota.Used is null && quota.Remaining is null
+                    && quota.Limit is null && quota.UsedPercent is null && quota.Support is { Kind: not "api" };
+                if (guidanceOnly)
+                {
+                    Check(texts.Contains(quota.Support!.Message), "provider quota access guidance shown for " + account.Name);
+                    continue;
+                }
                 if (!string.IsNullOrWhiteSpace(quota.WindowLabel)) Check(texts.Contains(quota.WindowLabel), "named quota window shown for " + account.Name + ": " + quota.WindowLabel);
                 if (quota.UsedPercent is >= 0 and <= 100 && quota.State is not ("unsupported" or "not-supported"))
                     Check(texts.Contains(quota.UsedPercent.Value.ToString("#,0.##", CultureInfo.CurrentCulture) + "% used"), "reported consumed percentage shown for " + account.Name);
+                if (!string.IsNullOrWhiteSpace(quota.Error))
+                    Check(texts.Contains(quota.Error), "actual quota retrieval error remains visible for " + account.Name);
             }
-            Check(texts.Any(x => x.Contains("left") || x.Contains("Remaining") || x.Contains("not supplied")), "remaining state is explicit for " + account.Name);
+            if (windows.Any(q => q.Remaining is not null || q.UsedPercent is not null))
+                Check(texts.Any(x => x.Contains("left") || x.Contains("Remaining")), "reported remaining state is explicit for " + account.Name);
+            if (windows.All(q => q.Used is null && q.Remaining is null && q.Limit is null && q.UsedPercent is null))
+                Check(!header.GetVisualDescendants().OfType<ProgressBar>().Any(), "unknown quota does not invent a progress bar for " + account.Name);
             quotas.Add(new { accountId = account.Id, account.Provider, windowCount = windows.Length, windows, displayedHeader = texts });
         }
         Check(Controls<Expander>().Count(x => AutomationProperties.GetName(x)?.StartsWith("Account budgets for ", StringComparison.Ordinal) == true) == config.Accounts.Length, "Accounts displays the complete configured inventory");
