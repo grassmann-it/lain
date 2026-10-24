@@ -1,5 +1,25 @@
 # Desktop tray lifecycle
 
+The View panel has independent **Minimize to tray**, **Close to tray**, and
+**Usage and rate-limit alerts** options. They are stored only in desktop
+preferences; defaults are on, off, and on respectively. A failed preference
+save restores the tray toggle to the stored setting and shows the save error.
+
+The desktop monitor reads existing Host snapshots every ten seconds, including
+while hidden. It does not refresh provider credentials, consume a proxy queue,
+or replace the independent Host collector. Initial observations are silent.
+Fresh quota crossings to 20% remaining or less and newly observed HTTP 429
+attempts can produce notifications, with a five-minute per-window/per-route
+cooldown. Known shared pools deduplicate the same reported window; different
+window labels remain separate even with the same source and unit. Old or
+unknown readings never trigger a quota warning. The bounded 429 scan is an
+observation, not a complete incident history.
+
+Hover text depends on the desktop shell; the same quota summary is available
+in the tray menu. Unsupported tray hosts retain normal window behavior.
+Notifications require the desktop notification service and `notify-send`;
+availability checks require `gdbus`. Delivery failures remain visible in the menu.
+
 The UI instance owner is scoped to the current user, the absolute normalized
 `LAIN_HOME` state directory and the absolute normalized `XDG_RUNTIME_DIR` desktop
 session directory. When `XDG_RUNTIME_DIR` is unset or empty, the runtime scope is

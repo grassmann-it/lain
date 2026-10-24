@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Threading;
 using Lain.Core;
 using Lain.Desktop.Presentation;
+using Lain.Desktop.Tray;
 
 namespace Lain.Desktop;
 
@@ -25,8 +26,29 @@ public sealed partial class MainWindow
     private long? _editorRevision;
     private Action? _editorRebuild;
     private string? _displayedDraftSection;
+    private TrayWorkspaceController? _trayController;
     private sealed record PageVisit(string Section, Vector Offset, Action Restore);
     private sealed record PageDraft(Control Content, Button[] Actions, bool LoginVisible, long? Revision, Action? Rebuild);
+
+    public void AttachTrayController(TrayWorkspaceController controller)
+    {
+        _trayController = controller;
+        controller.NotificationsEnabledChanged += enabled =>
+        {
+            SavePreferences(p => p with { NotificationsEnabled = enabled }, render: false);
+            // A failed save keeps the stored choice authoritative for the tray too.
+            ConfigureTray();
+            if (_presentationPanel.IsVisible) BuildViewOptions();
+        };
+        controller.AvailabilityChanged += _ => Dispatcher.UIThread.Post(() =>
+        {
+            if (_presentationPanel.IsVisible) BuildViewOptions();
+        });
+        ConfigureTray();
+    }
+
+    private void ConfigureTray() => _trayController?.Configure(_preferences.MinimizeToTray,
+        _preferences.CloseToTray, _preferences.NotificationsEnabled);
 
     private void RegisterEditor(Action rebuild, long revision)
     {
@@ -99,6 +121,7 @@ public sealed partial class MainWindow
 
     private void ApplyPresentation(bool render)
     {
+        ConfigureTray();
         _usage.SetPresentation(PresentationFor("Usage"));
         _inspector.SetPresentation(PresentationFor("Live"));
         _providers.SetPresentation(PresentationFor("Accounts"));
@@ -135,7 +158,29 @@ public sealed partial class MainWindow
             control.VerticalAlignment = VerticalAlignment.Center;
             row.Children.Add(control);
         }
-        _presentationPanel.Child = row;
+        var background = new WrapPanel { Orientation = Orientation.Horizontal };
+        void AddBackgroundOption(string label, Func<WorkspacePreferences, bool> value,
+            Func<WorkspacePreferences, bool, WorkspacePreferences> change)
+        {
+            var toggle = new CheckBox { Content = label, IsChecked = value(_preferences), Margin = new Thickness(0, 0, 18, 4) };
+            AutomationProperties.SetName(toggle, label);
+            toggle.IsCheckedChanged += (_, _) =>
+            {
+                if (_viewOptionsUpdating) return;
+                SavePreferences(p => change(p, toggle.IsChecked == true), render: false);
+                _viewOptionsUpdating = true;
+                toggle.IsChecked = value(_preferences);
+                _viewOptionsUpdating = false;
+            };
+            background.Children.Add(toggle);
+        }
+        AddBackgroundOption("Minimize to tray", p => p.MinimizeToTray, (p, value) => p with { MinimizeToTray = value });
+        AddBackgroundOption("Close to tray", p => p.CloseToTray, (p, value) => p with { CloseToTray = value });
+        AddBackgroundOption("Usage and rate-limit alerts", p => p.NotificationsEnabled, (p, value) => p with { NotificationsEnabled = value });
+        var trayHint = Ui.Text(_trayController?.TrayAvailable == true
+            ? "Tray and alerts keep working while the window is hidden. Quit UI from the tray menu."
+            : "Without an available tray, the window uses normal minimize and close behavior.", 12, Ui.Muted);
+        _presentationPanel.Child = Ui.Stack(row, background, trayHint);
         level.SelectionChanged += (_, _) =>
         {
             if (_viewOptionsUpdating || level.SelectedIndex < 0) return;

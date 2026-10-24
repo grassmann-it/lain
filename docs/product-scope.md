@@ -95,6 +95,25 @@ unabhängige Dichte und stabile Sortierung sowie lokal aufklappbare Details.
 Der Auftrag „baue bis fertig“ umfasst Implementierung, Prüfung und Installation;
 der verbindliche Zuschnitt steht in [UI-Umsetzung](ui-structure-implementation.md).
 
+### Tray, CLI und Anbieterübersicht
+
+Zusätzlich bestätigt am 24.10.2026: **Minimize to tray und Close to tray sind
+getrennt konfigurierbar.** Das Tray soll vorhandene Kontingente beim Hover bzw.
+im Menü zeigen. Optionale Desktopmeldungen informieren über beobachtete HTTP 429
+und knappe Anbieterlimits mit bekanntem Reset. Die UI darf ohne erreichbares
+Tray kein unsichtbares Fenster hinterlassen; der eigenständige Host läuft beim
+Beenden der UI weiter. GUI-Prüfungen bleiben auf privatem Xvfb.
+
+Die CLI soll verständlich und übersichtlich werden, mit zur Terminalbreite
+passenden Tabellen und Kontingentbalken. Die JSON-Schnittstelle bleibt stabil.
+`lain usage` zeigt nach ausdrücklicher Präzisierung den aktuellen Stand aller
+Accounts samt Kontingenten; der aufgezeichnete Proxy-Verbrauch erhält den
+eigenen Befehl `lain history`. Explizit gefilterte bisherige Aufrufe wie
+`lain usage --today --json` bleiben als Verlaufsalias kompatibel.
+Eine eigenständig im Browser nutzbare HTML-Datei sammelt belegte
+Referralprogramme, Bedingungen und offizielle Quellen; weitere relevante
+Anbieter werden separat recherchiert, ohne sie damit bereits zu integrieren.
+
 ### Optionaler Betrieb ohne lokalen Proxy
 
 Am 24.10.2026 wünscht der Nutzer zusätzlich eine Möglichkeit für Menschen, die
