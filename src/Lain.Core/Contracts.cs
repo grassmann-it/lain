@@ -34,7 +34,9 @@ public record QuotaDto(string AccountId, string? BudgetPoolId, string Source, st
     DateTimeOffset? FreshUntil = null, DateTimeOffset? ProviderUpdatedAt = null, double? ApprovedLimit = null,
     string? ExactUsed = null, string? ExactLimit = null, string? ExactRemaining = null,
     DateTimeOffset? NextRegenerationAt = null, double? NextRegenerationPercent = null, string? ExactNextRegeneration = null,
-    KiloPassState? KiloPass = null, RequestyKeyMetadata? RequestyKey = null);
+    KiloPassState? KiloPass = null, RequestyKeyMetadata? RequestyKey = null,
+    QuotaMetadataObservationDto? KiloPassObservation = null,
+    QuotaMetadataObservationDto? RequestyKeyObservation = null);
 public record LoginDto(string Id, string Provider, string State, string? Url = null, string? Error = null,
     string? Method = null, string[]? Purposes = null, string? AccountId = null, DateTimeOffset? ExpiresAt = null,
     string? NextAction = null, ResourceBindingDto[]? Resources = null);

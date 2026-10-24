@@ -160,6 +160,33 @@ using (var adapter = new CloudOAuthAdapter(Client(false), handler, clock))
 {
     Check((await adapter.BeginAsync(Context([]), default)).State == "failed" && handler.Calls == 0, "maintainer prerequisite gate");
 }
+foreach (var providerOnlyBinding in new[] { false, true })
+{
+    var saved = new List<PreparedLoginCredential>();
+    var singleton = Context(saved, providerOnlyBinding ? "singleton-provider" : "singleton-unbound");
+    if (providerOnlyBinding) singleton = singleton with { Request = singleton.Request with { Binding = new("gemini-api") } };
+    using var handler = new Handler((request, _) => request.RequestUri!.Host == "oauth2.googleapis.com"
+        ? Handler.Response(new { access_token = "fixture-access", refresh_token = "fixture-refresh", token_type = "Bearer", expires_in = 3600 })
+        : Handler.Response(new { projects = new[] { new { name = "projects/123456", projectId = "project-one", state = "ACTIVE" } } }));
+    using var adapter = new CloudOAuthAdapter(Client(), handler, clock);
+    await Authorize(adapter, singleton);
+    var prepared = await Poll(adapter, singleton);
+    Check(prepared.State == "prepared" && prepared.Credential!.Binding.ResourceId == "project-one" &&
+        prepared.Credential.Binding.Subject == "123456" && saved.Count == 1,
+        "single verified resource auto-selects with " + (providerOnlyBinding ? "provider-only binding" : "no binding"));
+}
+using (var handler = new Handler((request, _) => request.RequestUri!.Host == "oauth2.googleapis.com"
+    ? Handler.Response(new { access_token = "fixture-access", refresh_token = "fixture-refresh", token_type = "Bearer", expires_in = 3600 })
+    : Handler.Response(projectRows)))
+using (var adapter = new CloudOAuthAdapter(Client(), handler, clock))
+{
+    var multiple = Context([], "multiple-provider");
+    multiple = multiple with { Request = multiple.Request with { Binding = new("gemini-api") } };
+    await Authorize(adapter, multiple);
+    var selection = await Poll(adapter, multiple);
+    Check(selection.State == "resource-required" && selection.Resources!.Length == 2 && selection.Credential is null,
+        "provider-only binding cannot implicitly select among multiple authorized projects");
+}
 using (var handler = new Handler((r, i) => throw new Exception("canceled client exchanged code")))
 using (var adapter = new CloudOAuthAdapter(Client(), handler, clock))
 {
