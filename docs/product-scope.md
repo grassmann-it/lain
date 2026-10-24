@@ -105,7 +105,8 @@ Tray kein unsichtbares Fenster hinterlassen; der eigenständige Host läuft beim
 Beenden der UI weiter. GUI-Prüfungen bleiben auf privatem Xvfb.
 
 Die CLI soll verständlich und übersichtlich werden, mit zur Terminalbreite
-passenden Tabellen und Kontingentbalken. Die JSON-Schnittstelle bleibt stabil.
+passenden Tabellen und Kontingentbalken. Historische Abfragen mit expliziten
+Zeitraum-/Filterargumenten behalten ihre JSON-Schnittstelle.
 `lain usage` zeigt nach ausdrücklicher Präzisierung den aktuellen Stand aller
 Accounts samt Kontingenten; der aufgezeichnete Proxy-Verbrauch erhält den
 eigenen Befehl `lain history`. Explizit gefilterte bisherige Aufrufe wie

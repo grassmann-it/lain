@@ -73,7 +73,8 @@ python3 scripts/client-refresh.py stage \
 ```
 
 The new full package inherits the entire unchanged baseline and replaces only
-CLI/Desktop, recollected notices and client provenance/metadata. Host's original
+CLI/Desktop, recollected notices, the CLI usage guide and usage skill, and client
+provenance/metadata. Host's original
 source provenance and Go notice directory remain intact. `client-refresh.json`
 binds the exact complete installed baseline file inventory. The helper checks
 inputs before/after, generates the new manifest and normalized archive, and refuses
@@ -110,7 +111,9 @@ Installation verifies exact baseline parity and refuses running installed CLI/GU
 processes. It prepares copied payloads and uses Linux `renameat2(RENAME_EXCHANGE)`
 for each existing client/metadata item; new metadata paths use rename. The Host,
 Go-Core and all other baseline files must remain identical. Integration assets and
-private data are outside the write set. No service command is issued. The only new
+private data are outside the write set. The two explicitly allowlisted client
+documentation files are `docs/cli-usage.md` and `skills/lain-usage/SKILL.md`.
+No service command is issued. The only new
 files outside `app/` are the private update lock and explicitly chosen backup.
 
 Ordinary exceptions trigger reverse exchanges and a verified restoration to the

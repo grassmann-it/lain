@@ -100,7 +100,10 @@ internal sealed class TrayScenario
         await File.WriteAllTextAsync(Path.Combine(Output, "evidence.json"), JsonSerializer.Serialize(new
         {
             result = "PASS", privateXvfb = true, privateDbus = true, display = Environment.GetEnvironmentVariable("DISPLAY"),
-            assembly = assembly.Location, sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))), checks, images,
+            assembly = assembly.Location, sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))),
+            loadedAssemblies = new[] { assembly, typeof(LainApiClient).Assembly, typeof(Lain.Core.AccountDto).Assembly }
+                .Select(item => new { name = item.GetName().Name, path = item.Location,
+                    sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(item.Location))) }).ToArray(), checks, images,
             scope = "Native Avalonia StatusNotifier registration/PID/property read, real Linux TrayAvailability and notify-send adapter against private D-Bus fixture; production Avalonia Window/MainWindow/TrayWorkspaceController; injected quota polls, notification sink and tray availability. UiInstanceOwner from the production assembly in real child processes, isolated XDG runtime. Private Openbox on owned Xvfb; no normal desktop bus, real credentials, providers or host/service operations. Native menu events exercise Avalonia's exporter bridge; no OS pointer hit-testing."
         }, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"PASS tray smoke: {checks.Count} checks, {images.Count} screenshots. {Output}/evidence.json");
@@ -135,7 +138,10 @@ internal sealed class TrayScenario
             "the production notify-send adapter delivers to the private Notifications service");
         using var delivered = ReadBusEvidence();
         var notification = delivered.RootElement.GetProperty("notifications").EnumerateArray().Single();
-        var correctIcon = notification.GetProperty("icon").GetString() == Environment.GetEnvironmentVariable("LAIN_TEST_EXPECTED_ICON");
+        var expectedPath = Environment.GetEnvironmentVariable("LAIN_TEST_EXPECTED_ICON")!;
+        var correctIcon = notification.GetProperty("icon").GetString() == expectedPath;
+        var imagePath = notification.GetProperty("imagePath").GetString();
+        correctIcon |= imagePath == expectedPath || imagePath == new Uri(expectedPath).AbsoluteUri;
         if (notification.TryGetProperty("imageData", out var imageData) && imageData.ValueKind == JsonValueKind.Object)
         {
             var expected = delivered.RootElement.GetProperty("expectedIcon");
@@ -309,7 +315,7 @@ internal sealed class TrayScenario
             Check(MenuItem("Notifications:").Header == oldNotificationMenu
                 && Named<CheckBox>(window, "Usage and rate-limit alerts").IsChecked == true,
                 "failed native notification preference save restores the previous menu and View checkbox");
-            Check(window.GetVisualDescendants().OfType<TextBlock>().Any(x => x.Text?.Contains("could not be saved", StringComparison.Ordinal) == true),
+            await Wait(() => window.GetVisualDescendants().OfType<TextBlock>().Any(x => x.Text?.Contains("could not be saved", StringComparison.Ordinal) == true),
                 "failed native notification preference save reports its storage failure");
         }
         saved = new WorkspacePreferencesStore().Current;

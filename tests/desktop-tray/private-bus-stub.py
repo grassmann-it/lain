@@ -147,7 +147,9 @@ class Notifications(dbus.service.Object):
         metadata = image_metadata(*image) if image is not None else None
         self.fixture.notifications.append({"app": str(app), "icon": str(icon), "summary": str(summary),
             "body": str(body), "timeout": int(timeout), "desktopEntry": str(hints.get("desktop-entry", "")),
-            "urgency": int(hints.get("urgency", 0)), "imageData": metadata})
+            "urgency": int(hints.get("urgency", 0)), "imageData": metadata,
+            "imagePath": str(hints.get("image-path", hints.get("image_path", ""))),
+            "hintKeys": sorted(str(key) for key in hints)})
         self.fixture.save()
         return dbus.UInt32(number)
 

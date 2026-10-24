@@ -21,7 +21,8 @@ CORE = 'bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87'
 HOST_SOURCE = 'a66cb2a19774d897702724f9f40755b74c82b2a6'
 HOST_DLL = '06fe63b0c845348a7949d95afe8ba0f8eb65bc06063d0ad473c55f88f5b57cb9'
 ARTWORK = 'd36cb05911456a363b275631ad7a3b1176770f0f052d2e9747593e33f947a6fd'
-ITEMS = ['cli', 'desktop', 'notices', 'client-source-provenance', 'client-refresh.py', 'client-refresh.json', 'build-info.json', 'gate-status.json', 'SHA256SUMS']
+CLIENT_DOCS = ['docs/cli-usage.md', 'skills/lain-usage/SKILL.md']
+ITEMS = ['cli', 'desktop', 'notices', 'client-source-provenance', 'client-refresh.py', 'client-refresh.json', 'build-info.json', 'gate-status.json', 'SHA256SUMS', *CLIENT_DOCS]
 PROJECTS = {'cli': 'Lain.Cli', 'desktop': 'Lain.Desktop'}
 
 
@@ -92,7 +93,7 @@ def stage(args):
     require(not any(path.exists() or path.is_symlink() for path in (out, archive, checksum)), 'Output/archive/checksum must not exist')
     publishes = {name: getattr(args, name).resolve(strict=True) for name in PROJECTS}
     require(not any(out == path or path in out.parents or out in path.parents for path in [root, base, *publishes.values()]), 'Output overlaps checkout/input')
-    frozen = ['src', 'Directory.Build.props', 'global.json', 'scripts/client-refresh.py', 'scripts/collect-notices.py', 'scripts/collect-go-notices.py', 'scripts/stage-component-refresh.py', 'packaging/licenses', 'docs/tray-client-delivery.md']
+    frozen = ['src', 'Directory.Build.props', 'global.json', 'scripts/client-refresh.py', 'scripts/collect-notices.py', 'scripts/collect-go-notices.py', 'scripts/stage-component-refresh.py', 'packaging/licenses', 'docs/tray-client-delivery.md', *CLIENT_DOCS]
     subprocess.run(['git', 'diff', '--exit-code', revision, '--', *frozen], cwd=root, check=True, stdout=subprocess.DEVNULL)
     require(not git('ls-files', '--others', '--exclude-standard', 'src').strip(), 'Untracked application sources must be resolved')
     suffix = args.informational_version.partition('+')[2].split('.')
@@ -139,12 +140,16 @@ def stage(args):
     for name, publish in publishes.items():
         shutil.rmtree(out / name)
         shutil.copytree(publish, out / name)
+    for path in CLIENT_DOCS:
+        target = out / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(source(path))
     provenance = out / 'client-source-provenance'
     require(not provenance.exists(), 'Baseline already contains this client-refresh provenance; use a dedicated next-release procedure')
     records = []
     for path in git('ls-tree', '-r', '--name-only', revision).decode().splitlines():
         if (path.startswith(('src/Lain.Cli/', 'src/Lain.Desktop/', 'src/Lain.Client/', 'src/Lain.Core/')) and path.endswith(('.cs', '.csproj', 'packages.lock.json', 'OFL.txt', 'Assets/Brand/README.md'))
-                or path in ['scripts/client-refresh.py', 'docs/tray-client-delivery.md', 'Directory.Build.props', 'global.json']):
+                or path in ['scripts/client-refresh.py', 'docs/tray-client-delivery.md', 'Directory.Build.props', 'global.json', *CLIENT_DOCS]):
             target = provenance / path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(source(path))
@@ -250,6 +255,7 @@ def install(args):
         prepared.mkdir(mode=0o700)
         for name in ITEMS:
             source, destination = package / name, prepared / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
             if source.is_dir():
                 shutil.copytree(source, destination)
             else:
