@@ -165,6 +165,12 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             ? saved.EnumerateObject().Where(p => p.Value.ValueKind == JsonValueKind.String).ToDictionary(p => p.Name, p => p.Value.GetString()!, StringComparer.Ordinal)
             : new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var setting in settings ?? []) combined[setting.Key] = setting.Value;
+        if (settings?.ContainsKey("billingPlan") != true)
+        {
+            if (connection.BillingPlanIds.Length == 1) combined["billingPlan"] = connection.BillingPlanIds[0];
+            else if (combined.TryGetValue("billingPlan", out var previousPlan) && !connection.BillingPlanIds.Contains(previousPlan, StringComparer.Ordinal))
+                combined.Remove("billingPlan");
+        }
         var endpoint = document.RootElement.TryGetProperty("baseUrl", out var url) && url.ValueKind == JsonValueKind.String
             ? url.GetString()! : connection.BaseUrl;
         if (provider == "cloudflare-workers-ai" && combined.TryGetValue("accountId", out var cloudflareId))
@@ -324,7 +330,7 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             t["coreProvider"]?.GetValue<string>() == plan.CoreProvider && t["baseUrl"]?.GetValue<string>() == plan.BaseUrl).ToArray();
         var compatible = endpointMatch.FirstOrDefault(t => JsonNode.DeepEquals(t["settings"], added["settings"]));
         var unconfigured = endpointMatch.FirstOrDefault(t => Routes(t).Length == 0 && t["sourceConfig"] is null &&
-            (t["settings"] is not JsonObject previousSettings || previousSettings.All(p => JsonNode.DeepEquals(p.Value, added["settings"]?[p.Key]))));
+            (t["settings"] is not JsonObject previousSettings || previousSettings.All(p => p.Key == "billingPlan" || JsonNode.DeepEquals(p.Value, added["settings"]?[p.Key]))));
         if (compatible is null && unconfigured is not null)
         {
             // Optional model setup qualifies the generic saved endpoint in place within this new immutable generation.

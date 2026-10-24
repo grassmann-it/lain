@@ -419,7 +419,8 @@ async Task ModelAttachment()
     var connection = provider.Connections!.Single();
     var key = "same-key-distinct-accounts";
     var other = f.Accounts.ConnectCredential(0, new(new("kilo", "manual", ["inference"], Name: "Other account"), key, BaseUrl: connection.BaseUrl)).Accounts.Single();
-    var target = f.Accounts.ConnectCredential(1, new(new("kilo", "manual", ["inference"], Name: "Chosen target"), key, BaseUrl: connection.BaseUrl)).Accounts.Single(a => a.Id != other.Id);
+    var target = f.Accounts.ConnectCredential(1, new(new("kilo", "manual", ["inference"], Name: "Chosen target"), key,
+        BaseUrl: connection.BaseUrl, Settings: new() { ["billingPlan"] = "older-connection-plan" })).Accounts.Single(a => a.Id != other.Id);
     f.Accounts.Connect(2, new("kilo", "separate-monitor", ["quota"], AccountId: target.Id), Key("target-monitor-key", provider: "kilo"));
     var before = f.Repository.Snapshot.Accounts.Single(a => a.Id == target.Id);
     var quotaId = before.Capabilities!.Single(c => c.Purpose == "quota").CredentialId;
