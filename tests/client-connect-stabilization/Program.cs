@@ -38,6 +38,13 @@ code = await CliApplication.RunAsync(["quotas"], output, error, () => client);
 Require(code == 0 && output.ToString().Contains("0.000034") && output.ToString().Contains("0.0000340000000000000001"), "small balances and provider exact precision survive human rendering");
 Require(output.ToString().Contains("Partial regeneration") && output.ToString().Contains("Next billing") && output.ToString().Contains("Pass renewal"), "partial regeneration and Pass dates retain distinct meanings");
 Require(!output.ToString().Contains("% used"), "unbounded money does not get a fabricated percentage");
+Require(output.ToString().Contains("Kilo Pass details · stale · last success 2026-10-01 12:00 UTC"),
+    "fresh wallet cannot imply stale Pass details were refreshed");
+var keyFacts = QuotaDisplayFacts.Describe(new("requesty", null, "fixture", "ok", DateTimeOffset.UtcNow,
+    DateTimeOffset.UtcNow, null, "USD", 1, 10, 9, false,
+    RequestyKeyObservation: new("error", DateTimeOffset.UtcNow, null, null, "Key details unavailable."))).ToArray();
+Require(keyFacts.Single().Contains("Requesty key details · error · no successful reading"),
+    "missing Requesty metadata reports its own failed reading independently of balance");
 output = new(); error = new();
 code = await CliApplication.RunAsync(["history", "--today"], output, error, () => client);
 Require(code == 0 && output.ToString().Contains("known reported 72,000") && output.ToString().Contains("measured 1/2 attempts"), "CLI reports known partial token totals with component measurement coverage");
@@ -60,7 +67,8 @@ sealed class Fixture : HttpMessageHandler
             "/api/v1/status" => new StatusDto(1, "fixture", "ready", false, 1, 1, now, RuntimeMode: "monitor", Capabilities: new(true, false, false, false, false, false)),
             "/api/v1/quotas" => new[] { new QuotaDto("kilo", null, "fixture#wallet", "ok", now, now, null, "USD", null, null, 0.000034, false,
                 WindowLabel: "Wallet", MeasurementKind: "balance", ExactRemaining: "0.0000340000000000000001", NextRegenerationAt: now.AddHours(1), NextRegenerationPercent: 5,
-                KiloPass: new("active", "fixture", 10, 2, 1, now.AddDays(1), now.AddDays(2), true)) },
+                KiloPass: new("active", "fixture", 10, 2, 1, now.AddDays(1), now.AddDays(2), true),
+                KiloPassObservation: new("stale", now, DateTimeOffset.Parse("2026-10-01T12:00:00Z"), DateTimeOffset.Parse("2026-10-01T12:05:00Z"), "Pass details unavailable.")) },
             "/api/v1/usage" => new UsageSummaryDto(1, now.AddDays(-1), now, "UTC", now, 1, true, totals, [], [], []),
             _ => throw new InvalidOperationException("Unlisted fixture request " + request.RequestUri.AbsolutePath)
         };
