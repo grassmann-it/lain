@@ -76,3 +76,16 @@ both Chat and native Responses outgoing endpoints. It invokes only the synthetic
 exporter and local fake provider. The fake provider now accepts native Responses
 SSE/tool continuations as well as Chat and Messages; observed endpoint paths
 allow a silently dropped `upstream-protocol` to fail qualification.
+
+`--baseline-core /absolute/old-lain-proxy` adds a synthetic version-transition
+gate: the old binary creates a private journal, the new binary preserves its
+source/cursor/old bytes and appends fresh identities, then the old binary reads
+the combined journal. The actual SQLite consumer replays the mixed source ten
+times without double counting. This uses no existing journal or database.
+Standalone invocation:
+
+```sh
+python3 tests/backend/version_transition_probe.py --baseline-core /absolute/v7 \
+  --core /absolute/v8 --consumer /absolute/Lain.Usage.Tests.dll \
+  --report /tmp/lain-version-transition.json
+```

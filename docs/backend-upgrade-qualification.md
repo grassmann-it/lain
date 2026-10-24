@@ -26,6 +26,7 @@ Those reports remain historical evidence and do not qualify v8.0.41.
 | Usage commit before successful completion | `terminal-write-failure`, `responses-terminal-write-failure`; usage sink unit tests | On terminal journal failure, successful Chat/Responses completion markers are suppressed, pending start remains observable and later dispatch fails 503. No RAM-queue event after a failed synchronous durable write. |
 | Unknown is different from measured zero | `unknown-token-components`; parser component-presence unit tests | Explicit zero stays zero; absent total/cache/reasoning stays null. Cache/reasoning subsets are not added to total again. |
 | Immutable replay and transaction cursor | `same-alias-200-replay-restart`; `tests/usage` `--ingest-journal` | Complete batch is ingested by the actual SQLite store, reopened and replayed ten times: exactly 200 requests/attempts, 3,600 tokens, two accounts, no errors; null cache/reasoning. Cursor is 600 with additive finalization metadata. |
+| Journal continuation across versions | `tests/backend/version_transition_probe.py` | v7 creates a fresh synthetic journal; v8 retains source UUID, old bytes/events and cursor, then appends disjoint identities and contiguous sequences. v7 rollback reads that same mixed source; the actual consumer replays it ten times: four requests/attempts, 72 tokens, two accounts. |
 | Separate management / inference authority | `tests/acceptance/core_probe.py`: `management-and-inference-auth` | Inference token cannot read journal; management token cannot call inference. |
 | External snapshots never become refresh credentials | `tests/backend/upgrade_boundaries.py`; adapter snapshot/login/refresh unit tests | Reject any `refresh_token` member (including null/empty), other OAuth providers and symlinks. Copied owned-file plus route reference grants no ownership. Blackbox rejection is not a proof of every auto/request/explicit refresh hook. |
 | Owned OAuth lifecycle | Former `internal/lain/login_test.go` and refresh-gate unit tests | Keep successful atomic persistence, selected-and-owned refresh gate and cancellation during late exchange. No live OAuth probe is authorized by this synthetic run. |
@@ -51,6 +52,7 @@ python3 -m unittest discover -s tests/backend -p 'test_*.py' -v
 python3 tests/backend/upgrade_gate.py --core /absolute/lain-proxy \
   --consumer /absolute/Lain.Usage.Tests.dll \
   --host-exporter /absolute/HostCoreContract.Tests.dll \
+  --baseline-core /absolute/old-lain-proxy \
   --output /tmp/lain-v8-qualification
 ```
 

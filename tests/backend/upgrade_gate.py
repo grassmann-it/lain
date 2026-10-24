@@ -37,6 +37,7 @@ def main():
     parser.add_argument("--consumer", required=True, help="already built Lain.Usage.Tests.dll (adjacent deps/runtimeconfig required)")
     parser.add_argument("--dotnet", default="dotnet")
     parser.add_argument("--host-exporter", help="optional already built HostCoreContract.Tests.dll")
+    parser.add_argument("--baseline-core", help="optional old binary for synthetic journal upgrade/rollback continuation")
     parser.add_argument("--output", required=True, help="new or empty report directory")
     args = parser.parse_args()
     core = Path(args.core).resolve(strict=True)
@@ -66,6 +67,11 @@ def main():
         if args.host_exporter:
             steps.append(("hostwriter-transports", "backend/host_contract_probe.py",
                           ["--exporter", str(Path(args.host_exporter).resolve(strict=True)), "--dotnet", args.dotnet]))
+        if args.baseline_core:
+            steps.append(("version-transition", "backend/version_transition_probe.py",
+                          ["--baseline-core", str(Path(args.baseline_core).resolve(strict=True)),
+                           "--consumer", str(consumer), "--dotnet", args.dotnet,
+                           "--batch-fixture", str(output / "mixed-source-batch.json")]))
         for name, script, extra in steps:
             path = output / (name + ".json")
             log = output / (name + ".log")
