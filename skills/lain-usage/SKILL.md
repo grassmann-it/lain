@@ -48,6 +48,12 @@ and cached quotas through the Host; it does not refresh providers.
 `--full --json` returns the same envelope and bytes; `--full` cannot be combined
 with historical arguments or the `history` command.
 `lain quotas --json` remains the raw quota DTO array from a single GET.
+Quota `support` describes a capability separately from `error`. Missing quota
+support, required monitor setup, or a passive source awaiting its first ordinary
+request is neutral guidance, not a failed provider request. Preserve `windowId`,
+measurement kind, model/scope and source timestamps. A usage reading without a
+limit is not remaining budget; an approved ceiling is not the enforced limit.
+Passive Groq polling never sends inference and never renews the observation age.
 Use `lain history` for proxy request/token history and performance. Explicit
 historical `usage` arguments, such as `usage --today`, `usage --from ...` and
 `usage analysis`, remain supported aliases with their existing JSON contracts.
@@ -116,6 +122,8 @@ it. Start/stop/restart the service only when requested via
 For an explicitly requested account action, use the CLI mutation path:
 
 ```sh
+lain accounts add
+lain accounts monitor ACCOUNT_ID
 lain accounts login codex --revision N --json
 lain accounts login-status LOGIN_ID --json
 lain accounts login-cancel LOGIN_ID --json
@@ -125,6 +133,13 @@ lain accounts disable ACCOUNT_ID --revision N --json
 lain accounts remove ACCOUNT_ID --revision N --json
 lain accounts add-api --name NAME --provider PROVIDER --base-url URL --key-env ENVNAME --revision N --json
 ```
+
+`accounts add` and `accounts monitor` are interactive private TTY wizards for the
+user. Do not ask for tokens in chat, read them from their store, or run an unseen
+prompt. Account setup selects a connection independently from optional model
+templates; an empty model selection saves only the account. Monitoring access
+belongs to the same account and is never sent to inference. External monitoring
+snapshots are not refreshed or revoked. Saving a token is not a live access test.
 
 `add-api` also accepts `--key-stdin` for a single input line. Never place API keys
 on argv, in generated command text, or reports. Prefer an already populated

@@ -5,7 +5,9 @@ Avalonia Desktop. Der Build verwendet das `global.json`, explizite NuGet-Version
 und eingecheckte `packages.lock.json`; Locked Restore verweigert Änderungen am
 Abhängigkeitsgraph. Die Desktop-Laufzeit benötigt ein X11-/Wayland-Desktop-System
 mit den für Avalonia üblichen nativen Bibliotheken (insbesondere fontconfig/X11).
-Der gebündelte Proxy ist der verifizierte eigene Build aus `proxy/core`, kein
+Der gebündelte Proxy ist der verifizierte eigene Build aus dem externen, in
+`proxy/upstream.json` gepinnten CLIProxyAPI-Quellarchiv, dem Anschluss in
+`proxy/adapter` und den expliziten Hooks in `proxy/patches`, kein
 installierter Bestandsproxy. Seine Herkunft und Hashes liegen im Paket.
 
 ## Paket bauen
