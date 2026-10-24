@@ -15,5 +15,3 @@ public sealed record MonitorAccessRequest(string Kind, string? Secret = null,
 public sealed record MonitorAccessDto(string AccountId, string Provider, string State,
     string? Kind = null, string? ResourceId = null, DateTimeOffset? ExpiresAt = null,
     string? Guidance = null, string? DocumentationUrl = null);
-
-public sealed record MonitorLoginRequest(string ClientId, string ResourceId);

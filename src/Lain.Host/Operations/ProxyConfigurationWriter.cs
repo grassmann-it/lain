@@ -17,7 +17,7 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
     {
         QualifiedProviderRouteIds = new HashSet<string>();
         (costPolicy ?? ProviderCostPolicy.Embedded()).ValidateRuntime(state);
-        var catalog = new ProviderCatalogRegistry();
+        var catalog = costPolicy?.Catalog ?? new ProviderCatalogRegistry();
         var qualifiedProviderRouteIds = new HashSet<string>(StringComparer.Ordinal);
         var config = new YamlMappingNode
         {

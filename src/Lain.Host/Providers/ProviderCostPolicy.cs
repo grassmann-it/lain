@@ -5,6 +5,7 @@ namespace Lain.Host.Providers;
 /// <summary>Policy validation is independent of provider marketing and never infers safety from a remaining balance.</summary>
 public sealed class ProviderCostPolicy(ProviderCatalogRegistry catalog)
 {
+    internal ProviderCatalogRegistry Catalog => catalog;
     public const string OpenRouterZeroCapEnforcement = "openrouter_zero_cap_v1";
     public static ProviderCostPolicy Embedded() => new(new ProviderCatalogRegistry());
 

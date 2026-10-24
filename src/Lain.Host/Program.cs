@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using Lain.Core;
 using Lain.Host.Accounts;
+using Lain.Host.Accounts.Monitoring;
 using Lain.Host.Inspector;
 using Lain.Host.Models;
 using Lain.Host.Operations;
@@ -43,6 +44,10 @@ builder.Services.AddSingleton(proxy);
 builder.Services.AddSingleton(_ => new ProviderCatalogRegistry());
 builder.Services.AddSingleton<ProviderCostPolicy>();
 builder.Services.AddSingleton<AccountService>();
+var monitorStore = new MonitorCredentialStore(paths);
+var monitorAccess = new MonitorAccessService(repository, secrets, monitorStore);
+builder.Services.AddSingleton(monitorStore);
+builder.Services.AddSingleton(monitorAccess);
 var catalogPath = Path.Combine(Path.GetDirectoryName(binary)!, "codex-model-catalog.json");
 string[] codexModels = [];
 if (File.Exists(catalogPath))
@@ -68,12 +73,17 @@ builder.Services.AddSingleton<JournalUsageCollector>(sp => {
 builder.Services.AddHostedService(sp => sp.GetRequiredService<JournalUsageCollector>());
 builder.Services.AddInspector(managementToken);
 var providerHttp = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(20) };
-var quotaSource = new HostQuotaSource(repository, secrets);
+using var quotaCoreHttp = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false })
+ { BaseAddress = new Uri("http://127.0.0.1:18417/"), Timeout = TimeSpan.FromSeconds(10) };
+quotaCoreHttp.DefaultRequestHeaders.Authorization = new("Bearer", managementToken);
+var quotaSource = new HostQuotaSource(repository, secrets, monitorAccess);
 var quota = new QuotaService(quotaSource, quotaSource,
  [new CodexQuotaAdapter(providerHttp), new CommandCodeQuotaAdapter(providerHttp),
   new KimiQuotaAdapter(providerHttp), new ZaiQuotaAdapter(providerHttp),
   new StepFunQuotaAdapter(providerHttp), new PoeQuotaAdapter(providerHttp),
-  new OpenRouterQuotaAdapter(providerHttp), new SyntheticQuotaAdapter(providerHttp)]);
+  new OpenRouterQuotaAdapter(providerHttp), new SyntheticQuotaAdapter(providerHttp),
+  new FireworksQuotaAdapter(providerHttp), new GeminiMonitoringQuotaAdapter(providerHttp),
+  new GroqQuotaAdapter(quotaCoreHttp)]);
 builder.Services.AddSingleton(quota);
 var app = builder.Build();
 using var mutations = new SemaphoreSlim(1, 1);
@@ -119,6 +129,9 @@ app.MapPost(Api.Prefix + "/accounts", (RevisionRequest<AddApiAccountRequest> req
 app.MapPut(Api.Prefix + "/accounts/{id}/enabled", (string id, RevisionRequest<bool> request, AccountService svc) => svc.SetEnabled(request.Revision, id, request.Value));
 app.MapDelete(Api.Prefix + "/accounts/{id}", (string id, long revision, AccountService svc) => svc.Remove(revision, id));
 app.MapPost(Api.Prefix + "/accounts/{id}/check", (string id, AccountService svc) => svc.Check(id));
+app.MapGet(Api.Prefix + "/accounts/{id}/monitor", (string id, MonitorAccessService svc) => svc.Get(id));
+app.MapPut(Api.Prefix + "/accounts/{id}/monitor", (string id, RevisionRequest<MonitorAccessRequest> request, MonitorAccessService svc) => svc.Set(request.Revision, id, request.Value));
+app.MapDelete(Api.Prefix + "/accounts/{id}/monitor", (string id, long revision, MonitorAccessService svc) => svc.Remove(revision, id));
 app.MapPost(Api.Prefix + "/import", (ImportRequest request, LegacyImportService svc) => svc.Import(request));
 app.MapPost(Api.Prefix + "/accounts/login", async (LoginRequest request, LoginOperationService svc, ProxyConfigurationWriter writer, CancellationToken ct) => {
  if (request.Revision != repository.Snapshot.Revision) throw new RevisionConflictException(request.Revision, repository.Snapshot.Revision);
@@ -225,8 +238,8 @@ static UsageQuery ParseQuery(HttpRequest request)
 record ApplyRequest(long Revision);
 record LoginRequest(long Revision, string Provider);
 record QuotaRefreshRequest(string? AccountId);
-sealed class HostQuotaSource(ConfigurationRepository repository, SecretStore secrets) : IQuotaAccountSource, IQuotaCredentialSource
+sealed class HostQuotaSource(ConfigurationRepository repository, SecretStore secrets, MonitorAccessService monitorAccess) : IQuotaAccountSource, IQuotaCredentialSource
 {
  public Task<IReadOnlyList<AccountDto>> GetAccountsAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<AccountDto>>(repository.Snapshot.Accounts);
- public Task<QuotaCredential?> GetCredentialAsync(string accountId, CancellationToken ct = default) => Task.FromResult(secrets.HasAccount(accountId) ? QuotaCredential.FromSecretJson(secrets.ReadAccount(accountId)) : null);
+ public Task<QuotaCredential?> GetCredentialAsync(string accountId, CancellationToken ct = default) => Task.FromResult(secrets.HasAccount(accountId) ? QuotaCredential.FromSecretJson(secrets.ReadAccount(accountId), monitorAccess.GetCredential(accountId)) : null);
 }
