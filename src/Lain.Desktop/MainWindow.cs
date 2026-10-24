@@ -125,15 +125,24 @@ public sealed partial class MainWindow : Window
         _workspace = new ScrollViewer { Content = _page, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, Margin = new Thickness(20, 18, 20, 18) };
         _page.HorizontalContentAlignment = HorizontalAlignment.Stretch;
         _page.VerticalContentAlignment = VerticalAlignment.Stretch;
-        _page.PropertyChanged += (_, args) => { if (args.Property == ContentControl.ContentProperty) UpdateAccountInspectorLayout(); };
+        _page.PropertyChanged += (_, args) =>
+        {
+            if (args.Property != ContentControl.ContentProperty) return;
+            UpdateWorkspaceScrolling();
+            UpdateAccountInspectorLayout();
+        };
         _page.GotFocus += (_, args) => { if (args.Source is Control control) _lastEditorFocus = control; };
         _workspaceRegion.Children.Add(_workspace);
         Grid.SetColumn(_accountInspector, 1); _workspaceRegion.Children.Add(_accountInspector);
         Grid.SetRow(_workspaceRegion, 2); shell.Children.Add(_workspaceRegion);
         KeyDown += (_, args) =>
         {
-            if (args.Key == Avalonia.Input.Key.Escape && _inspectedAccountId is not null)
-            { CloseAccountInspector(); args.Handled = true; }
+            if (!args.Handled && _openObjectMenus == 0 && args.Key == Avalonia.Input.Key.Escape && _inspectedAccountId is not null)
+            {
+                if (_accountRemovalVisible) ShowAccountInspector(_inspectedAccountId);
+                else CloseAccountInspector();
+                args.Handled = true;
+            }
         };
 
         _connection.TextWrapping = TextWrapping.NoWrap;
@@ -299,7 +308,13 @@ public sealed partial class MainWindow : Window
 
     private void RefreshPage(bool explicitRefresh)
     {
-        if (_editing || _inspectedAccountId is not null || _section is "Usage" or "Live" or "Providers" or "Settings" or "About") return;
+        if (_inspectedAccountId is { } id && _configuration?.Accounts.Any(a => a.Id == id) != true)
+        {
+            CloseAccountInspector();
+            _notice.Text = "The selected account is no longer configured. Historical usage remains available.";
+        }
+        if (_editing || _openObjectMenus > 0 || _section is "Usage" or "Live" or "Providers" or "Settings" or "About") return;
+        if (_inspectedAccountId is not null && !explicitRefresh && _accountInspector.IsKeyboardFocusWithin) return;
         // Polling updates the shell immediately, but must not remove the control being
         // used with the keyboard. A changed snapshot remains pending until focus leaves
         // the page, navigation occurs, or the user explicitly refreshes.
@@ -323,21 +338,14 @@ public sealed partial class MainWindow : Window
     private void Render()
     {
         _actions.Clear();
-        foreach (var control in _navigation.Children.OfType<Button>())
-        {
-            var selected = Equals(control.Tag, PrimarySection(_section));
-            control.Background = selected ? Ui.Raised : Brushes.Transparent;
-            control.Foreground = selected ? Ui.Ink : Ui.Muted;
-            if (control.Content is StackPanel row)
-                foreach (var text in row.Children.OfType<TextBlock>()) text.Foreground = selected ? Ui.Ink : Ui.Muted;
-            AutomationProperties.SetHelpText(control, selected ? "Current page" : $"Open {control.Tag}");
-        }
+        UpdateNavigationSelection();
         if (!_editing && _displayedDraftSection == _section)
         {
             _drafts.Remove(_section); _editorRevision = null; _editorRebuild = null; _displayedDraftSection = null;
         }
         UpdateDraftStatus();
         var offset = _workspace.Offset;
+        if (_section == "Accounts" && !_editing) PrepareAccountsRender();
         _page.Content = _section switch
         {
             "Accounts" => AccountsPage(), "Models" => RoutesPage(), "Profiles" => ProfilesPage(),
@@ -345,10 +353,20 @@ public sealed partial class MainWindow : Window
             "Usage" => _usage, "Setup" => SetupPage(), "Service" => ServicePage(),
             "Settings" => SettingsPage(), "About" => AboutPage(), _ => AccountsPage()
         };
+        UpdateWorkspaceScrolling();
         UpdateAccountInspectorLayout();
         _renderedPageState = PageState();
         _backButton.IsEnabled = _history.Count > 0;
         Dispatcher.UIThread.Post(() => _workspace.Offset = offset, DispatcherPriority.Loaded);
+    }
+
+    private void UpdateWorkspaceScrolling()
+    {
+        if (_workspace is null) return;
+        var bounded = _page.Content is WorkspacePage || ReferenceEquals(_page.Content, _usage) || ReferenceEquals(_page.Content, _inspector);
+        _workspace.VerticalScrollBarVisibility = bounded
+            ? Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled
+            : Avalonia.Controls.Primitives.ScrollBarVisibility.Auto;
     }
 
     private StackPanel Heading(string title, string description) => new() { Spacing = 5, Children = { Ui.Title(title), Ui.Text(description, 13, Ui.Muted) } };

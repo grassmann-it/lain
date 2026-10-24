@@ -13,7 +13,14 @@ internal static class ObjectCommands
         foreach (var command in commands)
         {
             var item = new MenuItem { Header = command.Label, IsEnabled = command.Available };
-            if (!command.Available) ToolTip.SetTip(item, command.Reason ?? "Unavailable in this host mode.");
+            if (!command.Available)
+            {
+                var reason = command.Reason ?? "Unavailable in this host mode.";
+                ToolTip.SetTip(item, reason);
+                Avalonia.Automation.AutomationProperties.SetHelpText(item, reason);
+                item.Header = new StackPanel { Spacing = 2, Children = {
+                    Ui.Text(command.Label, 13), Ui.Text(reason, 11, Ui.Muted) } };
+            }
             item.Click += (_, _) => command.Execute();
             menu.Items.Add(item);
         }

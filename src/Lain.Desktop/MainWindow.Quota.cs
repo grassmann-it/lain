@@ -36,6 +36,7 @@ public sealed partial class MainWindow
             panel.Children.Add(QuotaTechnicalField("Exact amounts", $"Used: {quota.ExactUsed ?? "Not supplied"} · limit: {quota.ExactLimit ?? "Not supplied"} · remaining: {quota.ExactRemaining ?? "Not supplied"} {quota.Unit}"));
         if (quota.RequestyKey is { } key)
             panel.Children.Add(QuotaTechnicalField("Key scope", $"{key.KeyId} · group {key.GroupId} · manage {key.ManagePermission} · completions {key.CompletionsPermission} · uncapped {key.IsUncapped} · expires {Ui.When(key.ExpiresAt)}"));
+        foreach (var fact in QuotaPresentationFacts(quota)) panel.Children.Add(Ui.Text(fact, 11, Ui.Muted));
         if (quota.SharedWithLegacy) panel.Children.Add(Ui.Text("Shared with the imported connection; this is the same provider budget.", 11, Ui.Muted));
         if (!string.IsNullOrWhiteSpace(quota.Error)) panel.Children.Add(Ui.Text(quota.Error, 11, QuotaUnavailable(quota) ? Ui.Muted : Ui.Warning));
         return new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(0, 8, 0, 0), Child = panel };

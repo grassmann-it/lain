@@ -35,10 +35,14 @@ public sealed partial class MainWindow
                 "Live" => !IsMonitorMode && (_status?.Capabilities?.LiveInspector ?? true),
                 _ => true
             };
-            button.IsVisible = allowed && direct.Contains(target);
-            if (allowed && !button.IsVisible)
+            var present = target switch { "Models" or "Profiles" or "Live" => !IsMonitorMode, "Usage" => HasHistory, _ => true };
+            button.IsVisible = present && direct.Contains(target);
+            button.IsEnabled = allowed && !_busy;
+            if (!allowed) ToolTip.SetTip(button, "This host does not currently provide this capability.");
+            if (present && !button.IsVisible)
             {
-                var item = new MenuItem { Header = target };
+                var item = new MenuItem { Header = target, IsEnabled = allowed };
+                if (!allowed) ToolTip.SetTip(item, "This host does not currently provide this capability.");
                 item.Click += (_, _) => Navigate(target);
                 menu.Items.Add(item);
             }
@@ -49,6 +53,7 @@ public sealed partial class MainWindow
         _moreNavigation.ContextMenu = menu;
         _moreNavigation.IsVisible = true;
         _navigation.Columns = _navigation.Children.Count(child => child.IsVisible);
+        UpdateNavigationSelection();
         // Permit a compact monitor without forcing the user's window geometry.
         MinWidth = IsMonitorMode ? 640 : 800;
         MinHeight = IsMonitorMode ? 420 : 560;

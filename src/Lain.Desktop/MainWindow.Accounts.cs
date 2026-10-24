@@ -24,6 +24,9 @@ public sealed partial class MainWindow
         var provider = _accountProvider;
         var status = _accountStatus;
         var filtersExpanded = _accountFiltersExpanded;
+        var selected = _inspectedAccountId;
+        var listOffset = _accountListScroll?.Offset ?? _accountInventoryOffset;
+        var detailOffset = _accountInspectorScroll?.Offset ?? _accountInspectorOffset;
         return () =>
         {
             _accountSearch = search;
@@ -31,6 +34,10 @@ public sealed partial class MainWindow
             _accountStatus = status;
             _accountFiltersExpanded = filtersExpanded;
             _accountNavigationId = null;
+            _pendingAccountInspection = selected;
+            _restoringAccountNavigation = true;
+            _accountInventoryOffset = listOffset;
+            _accountInspectorOffset = detailOffset;
         };
     }
 
@@ -46,12 +53,12 @@ public sealed partial class MainWindow
         if (_configuration is not { } cfg)
         {
             panel.Children.Add(Empty("Connect to the local host to load or add accounts. You can discover providers without an account."));
-            return panel;
+            return AccountInventoryViewport(panel);
         }
         if (cfg.Accounts.Length == 0)
         {
             panel.Children.Add(Empty("Connect your first account to choose models and create a client profile. Add account offers browser sign-in, an API key or an existing setup import."));
-            return panel;
+            return AccountInventoryViewport(panel);
         }
 
         if (!_hostAvailable || _quotaError is not null) panel.Children.Add(Ui.Text(BudgetSnapshotNote(), 12, Ui.Warning));
@@ -113,6 +120,13 @@ public sealed partial class MainWindow
                 (_accountProvider == "All providers" || ProviderName(account).Equals(_accountProvider, StringComparison.OrdinalIgnoreCase))
                 && AccountMatchesStatus(account)
                 && $"{account.Name} {account.Provider} {ProviderName(account)} {account.Id}".Contains(_accountSearch.Trim(), StringComparison.OrdinalIgnoreCase)).ToArray();
+            _visibleAccountIds = found.Select(a => a.Id).ToHashSet(StringComparer.Ordinal);
+            if (_inspectedAccountId is { } selected && !_visibleAccountIds.Contains(selected))
+            {
+                CloseAccountInspector(false);
+                _notice.Text = "The selected account is outside these filters. Clear filters to show it again.";
+                search.Focus();
+            }
             activeFilters.Children.Clear();
             void AddFilterChip(string label, string action, Action remove)
             {
@@ -163,7 +177,7 @@ public sealed partial class MainWindow
         };
         group.IsCheckedChanged += (_, _) => { SavePreferences(current => current with { GroupAccountsByProvider = group.IsChecked == true }, render: false); Populate(); };
         Populate();
-        return panel;
+        return AccountInventoryViewport(panel);
     }
 
     private IEnumerable<AccountDto> OrderedAccounts(IEnumerable<AccountDto> accounts)
@@ -298,7 +312,7 @@ public sealed partial class MainWindow
     private Control AccountPinControls(AccountDto account, Action? inventoryChanged)
     {
         var pinned = IsAccountPinned(account);
-        void Changed() { if (inventoryChanged is null) Render(); else inventoryChanged(); }
+        void Changed() { if (inventoryChanged is null) Render(); else { inventoryChanged(); ShowAccountInspector(account.Id, focus: false); } }
         var pin = Ui.Button(pinned ? "Unpin account" : "Pin account", () =>
         {
             SavePreferences(current => current with { PinnedAccountIds = pinned

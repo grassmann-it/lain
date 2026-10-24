@@ -185,9 +185,8 @@ public sealed partial class MainWindow
             if (section is not ("Accounts" or "Models" or "Profiles" or "Usage" or "Live" or "Providers" or "Setup" or "Service" or "Settings" or "About")) return;
             if (section == "Settings" && _section is not ("Settings" or "About"))
                 _settingsDensitySection = PrimarySection(_section);
-            CloseAccountInspector(restoreFocus: false);
             SaveCurrentPage();
-            if (remember && (section != _section || target.AccountId is not null || target.RouteId is not null || target.Model is not null))
+            if (remember && (section != _section || target.AccountId is not null || target.RouteId is not null || target.Model is not null || target.ProfileId is not null))
             {
                 var restore = _section switch
                 {
@@ -203,14 +202,16 @@ public sealed partial class MainWindow
                     _history.Clear(); foreach (var visit in retained) _history.Push(visit);
                 }
             }
+            CloseAccountInspector(restoreFocus: false);
             _section = section;
             _notice.Text = "";
             _editing = false; _loginVisible = false;
             _editorRevision = null; _editorRebuild = null; _displayedDraftSection = null;
             if (section == "Accounts") ApplyAccountNavigation(target);
             if (section == "Models") ApplyModelsNavigation(target);
+            if (section == "Profiles" && target.ProfileId is { } profileId) _selectedProfileId = profileId;
             Control? restoreFocus = null;
-            if (target.AccountId is null && target.RouteId is null && target.Model is null && _drafts.TryGetValue(section, out var draft))
+            if (target.AccountId is null && target.RouteId is null && target.Model is null && target.ProfileId is null && _drafts.TryGetValue(section, out var draft))
             {
                 _editing = true; _loginVisible = draft.LoginVisible;
                 _editorRevision = draft.Revision; _editorRebuild = draft.Rebuild; _displayedDraftSection = section;
@@ -259,7 +260,10 @@ public sealed partial class MainWindow
     {
         foreach (var button in _navigation.Children.OfType<Button>())
         {
-            var selected = Equals(button.Tag, PrimarySection(_section));
+            var primary = PrimarySection(_section);
+            var selected = Equals(button.Tag, primary) || ReferenceEquals(button, _moreNavigation)
+                && primary is "Models" or "Profiles" or "Usage" or "Live" or "Service"
+                && !_navigation.Children.OfType<Button>().Any(item => item.IsVisible && Equals(item.Tag, primary));
             button.Background = selected ? Ui.Raised : Avalonia.Media.Brushes.Transparent;
             button.Foreground = selected ? Ui.Ink : Ui.Muted;
             if (button.Content is StackPanel row)

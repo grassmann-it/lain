@@ -22,7 +22,7 @@ public sealed record WorkspacePreferences
 
 /// <summary>Typed targets preserve identity through contextual navigation.</summary>
 public sealed record WorkspaceNavigationRequest(string Section, string? AccountId = null,
-    string? RouteId = null, string? Model = null);
+    string? RouteId = null, string? Model = null, string? ProfileId = null);
 
 public interface IPresentationView
 {

@@ -14,6 +14,17 @@ public sealed partial class MainWindow
     private readonly Grid _workspaceRegion = new() { ColumnDefinitions = new ColumnDefinitions("*,0") };
     private Control? _accountInventoryPage;
     private Control? _accountInspectorDetails;
+    private ScrollViewer? _accountListScroll;
+    private ScrollViewer? _accountInspectorScroll;
+    private Vector _accountInspectorOffset;
+    private string? _pendingAccountInspection;
+    private bool _restoringAccountNavigation;
+    private HashSet<string> _visibleAccountIds = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Button> _accountDetailTriggers = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Border> _accountCards = new(StringComparer.Ordinal);
+    private int _openObjectMenus;
+    private Button? _accountInspectorClose;
+    private bool _accountRemovalVisible;
     private Vector _accountInventoryOffset;
     private bool _accountDetailPage;
     private bool _updatingAccountInspectorLayout;
@@ -27,16 +38,86 @@ public sealed partial class MainWindow
     private Control? _accountInspectorOrigin;
     private string? _inspectedAccountId;
 
-    private static ContextMenu ObjectCommandMenu(IEnumerable<ObjectCommand> commands) => ObjectCommands.Menu(commands);
+    private ContextMenu ObjectCommandMenu(IEnumerable<ObjectCommand> commands)
+    {
+        var menu = ObjectCommands.Menu(commands);
+        menu.Opened += (_, _) => _openObjectMenus++;
+        menu.Closed += (_, _) => _openObjectMenus = Math.Max(0, _openObjectMenus - 1);
+        return menu;
+    }
+
+    private Control AccountInventoryViewport(Control content)
+    {
+        var scroll = new ScrollViewer { HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        Control viewport = scroll;
+        if (content is StackPanel panel && panel.Children.LastOrDefault() is ContentControl inventory)
+        {
+            panel.Children.Remove(inventory);
+            scroll.Content = inventory;
+            var layout = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 10 };
+            layout.Children.Add(panel);
+            Grid.SetRow(scroll, 1); layout.Children.Add(scroll);
+            viewport = layout;
+        }
+        else scroll.Content = content;
+        AutomationProperties.SetName(scroll, "Account inventory");
+        _accountListScroll = scroll;
+        scroll.ScrollChanged += (_, _) => { if (!_accountDetailPage) _accountInventoryOffset = scroll.Offset; };
+        var offset = _accountInventoryOffset;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (!ReferenceEquals(_accountListScroll, scroll) || _section != "Accounts" || _editing) return;
+            scroll.Offset = offset;
+            if (_pendingAccountInspection is not { } id) { _restoringAccountNavigation = false; return; }
+            _pendingAccountInspection = null;
+            if (!_visibleAccountIds.Contains(id))
+            {
+                _notice.Text = "The previous account is no longer visible. Clear filters or select another account.";
+                _restoringAccountNavigation = false;
+                return;
+            }
+            var detailOffset = _accountInspectorOffset;
+            var focus = _restoringAccountNavigation;
+            _restoringAccountNavigation = false;
+            ShowAccountInspector(id, _accountDetailTriggers.GetValueOrDefault(id), focus: focus, restoreOffset: detailOffset);
+        }, DispatcherPriority.Loaded);
+        return Ui.Viewport(viewport);
+    }
+
+    private void PrepareAccountsRender()
+    {
+        if (!_restoringAccountNavigation && _accountListScroll is { } list) _accountInventoryOffset = list.Offset;
+        if (_inspectedAccountId is { } id)
+        {
+            _pendingAccountInspection = id;
+            _accountInspectorOffset = _accountInspectorScroll?.Offset ?? default;
+            CloseAccountInspector(false);
+        }
+        _accountCards.Clear();
+        _accountDetailTriggers.Clear();
+    }
+
+    private void UpdateAccountSelection()
+    {
+        foreach (var (id, card) in _accountCards)
+        {
+            var selected = id == _inspectedAccountId;
+            card.BorderBrush = selected ? Ui.Accent : Ui.Edge;
+            card.Background = selected ? Ui.AccentSurface : Ui.Surface;
+            AutomationProperties.SetHelpText(card, selected
+                ? "Selected account. Details are open; all reported windows remain in the inventory."
+                : "All reported windows. An empty window does not prove that the whole account is exhausted.");
+        }
+    }
 
     // The two menus and visible buttons use the same commands, frozen to an ID
     // and revision. Polling cannot redirect a pending click to a different row.
     private ObjectCommand[] AccountCommands(AccountDto account, long revision, System.Action? inventoryChanged)
     {
         void Run(Func<Task> action, string success, bool stay = false)
-        { CloseAccountInspector(false); _ = RunAsync(action, success, stay); }
+        { _ = RunAsync(action, success, stay); }
         var canModel = !IsMonitorMode && (_status?.Capabilities?.Inference ?? true);
-        return
+        ObjectCommand[] commands =
         [
             new("detail", "Account details", () => ShowAccountInspector(account.Id)),
             new("refresh", "Refresh quota", () => Run(async () => _quotas = await _client.RefreshQuotasAsync(account.Id, _lifetime.Token), "Quota refresh complete.")),
@@ -48,36 +129,68 @@ public sealed partial class MainWindow
             new("monitor", "Monitoring access", () => Run(() => OpenMonitorSetupAsync(account), "Review monitoring access.", true)),
             new("pin", IsAccountPinned(account) ? "Unpin account" : "Pin account", () => {
                 SavePreferences(p => p with { PinnedAccountIds = IsAccountPinned(account) ? p.PinnedAccountIds.Where(id => id != account.Id).ToArray() : p.PinnedAccountIds.Append(account.Id).ToArray() }, false);
-                CloseAccountInspector(false);
-                if (inventoryChanged is null) Render(); else inventoryChanged();
+                if (inventoryChanged is null) Render();
+                else { inventoryChanged(); ShowAccountInspector(account.Id, focus: false); }
             }),
             new("remove", "Remove account…", () => ShowAccountRemoval(account.Id, revision))
         ];
+        return commands.Select(command => command with { Execute = () =>
+        {
+            if (_busy) return;
+            if (_configuration?.Accounts.Any(a => a.Id == account.Id) != true)
+            {
+                CloseAccountInspector();
+                _notice.Text = "This account is no longer configured. Reload the inventory before choosing another action.";
+                return;
+            }
+            if (command.Key is "enabled" or "remove" or "reconnect" or "monitor" && _configuration.Revision != revision)
+            {
+                _notice.Text = "Configuration changed while these actions were open. Reopen account details to review the current account before changing it.";
+                return;
+            }
+            if (command.Key is "refresh" or "enabled" or "credential" or "reconnect" or "monitor" or "remove" && !_hostAvailable)
+            { _notice.Text = "The host is offline. The last known account remains visible; reload status before changing it."; return; }
+            if (command.Key == "models" && IsMonitorMode) { _notice.Text = "Choose Gateway to configure model access."; return; }
+            if (command.Available) command.Execute();
+        }, Available = command.Available && (_hostAvailable || command.Key is "detail" or "usage" or "models" or "pin"),
+            Reason = !_hostAvailable && command.Key is "refresh" or "enabled" or "credential" or "reconnect" or "monitor" or "remove"
+                ? "The local host is offline." : command.Reason }).ToArray();
     }
 
-    private void ShowAccountInspector(string accountId, Control? origin = null)
+    private void ShowAccountInspector(string accountId, Control? origin = null, bool focus = true, Vector? restoreOffset = null)
     {
         if (_configuration is not { } cfg || cfg.Accounts.FirstOrDefault(a => a.Id == accountId) is not { } account) return;
-        if (_accountDetailPage)
-        {
-            _page.Content = _accountInventoryPage;
-            _accountInventoryPage = null;
-            _accountDetailPage = false;
-            _workspace.Offset = _accountInventoryOffset;
-        }
+        var previousId = _inspectedAccountId;
+        var offset = restoreOffset ?? (previousId == accountId ? _accountInspectorScroll?.Offset ?? _accountInspectorOffset : default);
         DetachInspectorContent();
         _inspectedAccountId = accountId;
-        _accountInspectorOrigin = origin ?? _accountInspectorOrigin;
+        _accountRemovalVisible = false;
+        _accountInspectorOrigin = origin ?? _accountDetailTriggers.GetValueOrDefault(accountId);
         var close = Ui.Button("Close", () => CloseAccountInspector());
+        _accountInspectorClose = close;
         AutomationProperties.SetName(close, $"Close account details for {account.Name}");
-        var heading = Ui.PageHeader(AccountDisplayName(account), ProviderName(account), close);
-        var content = Ui.Stack(heading);
+        var menu = ObjectCommandMenu(AccountCommands(account, cfg.Revision, null));
+        var more = Ui.Button("⋯", () => menu.Open()); more.ContextMenu = menu;
+        AutomationProperties.SetName(more, $"Inspector actions for account {account.Name}");
+        var heading = Ui.PageHeader(AccountDisplayName(account), ProviderName(account), more, close);
+        var content = new StackPanel { Spacing = 12 };
         foreach (var quota in _quotas.Where(q => q.AccountId == accountId)) content.Children.Add(AccountTileWindow(account, quota));
         content.Children.Add(AccountDetail(account, cfg.Revision));
-        _accountInspectorDetails = content;
+        _accountInspectorScroll = new ScrollViewer { Content = content, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        AutomationProperties.SetName(_accountInspectorScroll, $"Account detail content for {account.Name}");
+        var layout = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 12 };
+        layout.Children.Add(heading);
+        Grid.SetRow(_accountInspectorScroll, 1); layout.Children.Add(_accountInspectorScroll);
+        _accountInspectorDetails = Ui.Viewport(layout);
         UpdateAccountInspectorLayout();
+        UpdateAccountSelection();
         AutomationProperties.SetName(_accountInspector, $"Account inspector for {account.Name}");
-        Dispatcher.UIThread.Post(() => close.Focus(), DispatcherPriority.Loaded);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_inspectedAccountId != accountId) return;
+            if (_accountInspectorScroll is { } scroll) scroll.Offset = offset;
+            if (focus) close.Focus();
+        }, DispatcherPriority.Loaded);
     }
 
     private void UpdateAccountInspectorLayout()
@@ -86,80 +199,93 @@ public sealed partial class MainWindow
         _updatingAccountInspectorLayout = true;
         try
         {
-        var adjacent = (Bounds.Width > 0 ? Bounds.Width : Width) >= 1000 && _section == "Accounts" && !_editing;
-        _workspaceRegion.ColumnDefinitions = new ColumnDefinitions(adjacent ? "*,400" : "*,0");
-        if (adjacent)
-        {
-            if (_accountDetailPage)
+            var accountPage = _section == "Accounts" && !_editing;
+            var adjacent = (Bounds.Width > 0 ? Bounds.Width : Width) >= 1000 && accountPage;
+            _workspaceRegion.ColumnDefinitions = new ColumnDefinitions(adjacent ? "*,400" : "*,0");
+            if (_accountInspectorClose is { } close) close.Content = adjacent ? "Close" : "← Back";
+            if (adjacent)
             {
-                _page.Content = null;
-                _page.Content = _accountInventoryPage;
-                _accountInventoryPage = null;
-                _accountDetailPage = false;
-                _workspace.Offset = _accountInventoryOffset;
+                if (_accountDetailPage)
+                {
+                    _page.Content = null;
+                    _accountDetailPage = false;
+                    _page.Content = _accountInventoryPage;
+                    _accountInventoryPage = null;
+                }
+                if (!ReferenceEquals(_accountInspector.Child, _accountInspectorDetails) || _accountInspector.Child is null)
+                {
+                    DetachInspectorContent();
+                    _accountInspector.Child = _accountInspectorDetails ?? Ui.Stack(Ui.Text("Account details", 15),
+                        Ui.Text("Select an account to inspect its windows and actions. The inventory stays in place.", 13, Ui.Muted));
+                }
+                _accountInspector.IsVisible = true;
             }
-            DetachInspectorContent();
-            _accountInspector.Child = new ScrollViewer { HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-                Content = _accountInspectorDetails ?? Ui.Stack(Ui.Text("Account details", 15),
-                    Ui.Text("Choose Details on an account. All reported windows remain visible in the inventory.", 12, Ui.Muted)) };
-            _accountInspector.IsVisible = true;
-        }
-        else
-        {
-            DetachInspectorContent();
-            _accountInspector.IsVisible = false;
-            if (_inspectedAccountId is not null && _accountInspectorDetails is not null && !_accountDetailPage)
+            else
             {
-                _accountInventoryPage = _page.Content as Control;
-                _accountInventoryOffset = _workspace.Offset;
-                _page.Content = _accountInspectorDetails;
-                _accountDetailPage = true;
-                _workspace.Offset = default;
+                DetachInspectorContent();
+                _accountInspector.IsVisible = false;
+                if (accountPage && _inspectedAccountId is not null && _accountInspectorDetails is not null)
+                {
+                    if (!_accountDetailPage)
+                    {
+                        _accountInventoryPage = _page.Content as Control;
+                        _accountInventoryOffset = _accountListScroll?.Offset ?? _accountInventoryOffset;
+                        _accountDetailPage = true;
+                    }
+                    _page.Content = _accountInspectorDetails;
+                }
             }
-        }
         }
         finally { _updatingAccountInspectorLayout = false; }
     }
 
-    private void DetachInspectorContent()
-    {
-        if (_accountInspector.Child is ScrollViewer scroll) scroll.Content = null;
-        _accountInspector.Child = null;
-    }
+    private void DetachInspectorContent() => _accountInspector.Child = null;
 
     private void CloseAccountInspector(bool restoreFocus = true)
     {
         if (_inspectedAccountId is null) return;
+        var id = _inspectedAccountId;
+        var origin = _accountDetailTriggers.GetValueOrDefault(id) ?? _accountInspectorOrigin;
+        _accountInspectorOffset = _accountInspectorScroll?.Offset ?? _accountInspectorOffset;
         DetachInspectorContent();
         _accountInspectorDetails = null;
+        _accountInspectorScroll = null;
+        _accountInspectorClose = null;
         _inspectedAccountId = null;
+        _accountRemovalVisible = false;
         if (_accountDetailPage)
         {
+            _accountDetailPage = false;
             _page.Content = _accountInventoryPage;
             _accountInventoryPage = null;
-            _accountDetailPage = false;
-            var offset = _accountInventoryOffset;
-            Dispatcher.UIThread.Post(() => _workspace.Offset = offset, DispatcherPriority.Loaded);
+            if (_accountListScroll is { } list) list.Offset = _accountInventoryOffset;
         }
         UpdateAccountInspectorLayout();
-        if (restoreFocus) _accountInspectorOrigin?.Focus();
+        UpdateAccountSelection();
+        if (restoreFocus) Dispatcher.UIThread.Post(() => origin?.Focus(), DispatcherPriority.Loaded);
     }
 
     private void ShowAccountRemoval(string id, long revision)
     {
         if (_configuration?.Accounts.FirstOrDefault(a => a.Id == id) is not { } account) return;
         ShowAccountInspector(id);
+        _accountRemovalVisible = true;
         var references = _configuration.Routes.Where(r => r.AccountIds.Contains(id, StringComparer.Ordinal)).Select(r => r.Alias).ToArray();
         var remove = Action("Remove account", async () => {
+            if (_configuration?.Revision != revision) throw new InvalidOperationException("Configuration changed. Reopen the removal review before removing this account.");
             _configuration = await _client.RemoveAccountAsync(revision, id, _lifetime.Token);
             CloseAccountInspector(false);
         }, "Account removed. Historical usage remains available.");
-        remove.IsEnabled = references.Length == 0;
-        _accountInspectorDetails = Ui.Stack(Ui.Title($"Remove {account.Name}?"),
-            Ui.Text("Historical usage remains available. Remove model bindings before removing this account.", 13, Ui.Muted),
-            Ui.Text(references.Length == 0 ? "No model bindings." : "Used by: " + string.Join(", ", references), 13, Ui.Warning),
-            OverviewActions(remove, Ui.Button("Cancel", () => ShowAccountInspector(id))));
-        if (_accountDetailPage) _page.Content = _accountInspectorDetails;
-        else { DetachInspectorContent(); _accountInspector.Child = new ScrollViewer { Content = _accountInspectorDetails, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }; }
+        remove.IsEnabled = references.Length == 0 && _hostAvailable;
+        var cancel = Ui.Button("Cancel", () => ShowAccountInspector(id));
+        if (_accountInspectorScroll is { } scroll)
+        {
+            scroll.Content = Ui.Stack(Ui.Title($"Remove {account.Name}?"),
+                Ui.Text("Historical usage remains available. Remove model bindings before removing this account.", 13, Ui.Muted),
+                Ui.Text(references.Length == 0 ? "No model bindings." : "Used by: " + string.Join(", ", references), 13, Ui.Warning),
+                OverviewActions(remove, cancel));
+            scroll.Offset = default;
+        }
+        Dispatcher.UIThread.Post(() => cancel.Focus(), DispatcherPriority.Loaded);
     }
 }

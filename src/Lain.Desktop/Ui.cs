@@ -37,6 +37,9 @@ internal static class Ui
         }
     };
 
+    /// <summary>Opt into bounded viewport measurement; the supplied page owns its local scroll surfaces.</summary>
+    public static Control Viewport(Control content) => new Presentation.WorkspacePage(content);
+
     public static TextBlock Text(string text, double size = 13, IBrush? color = null) => new() { Text = text, FontSize = size, Foreground = color ?? Ink, TextWrapping = TextWrapping.Wrap };
     public static TextBlock Title(string text) => new() { Text = text, FontFamily = HeadingFont, FontSize = 22, FontWeight = FontWeight.SemiBold, Foreground = Ink, TextWrapping = TextWrapping.Wrap };
     public static StackPanel Stack(params Control[] controls) { var panel = new StackPanel { Spacing = 12 }; foreach (var child in controls) panel.Children.Add(child); return panel; }
