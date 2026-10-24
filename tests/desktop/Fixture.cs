@@ -348,8 +348,13 @@ internal sealed class Fixture : HttpMessageHandler
             .Select(pair => pair.Split('=', 2)).ToDictionary(pair => Uri.UnescapeDataString(pair[0]), pair => pair.Length == 2 ? Uri.UnescapeDataString(pair[1]) : "");
         UsageQueries.Add(query);
         var totals = UsageFixtureTotals();
+        UsageGroup[] accounts = UxdScenario && !NullTokens && !PartialTokens
+            ? [new("a1", new(70, 72, 2, new(null, null, null, null, 43200), 0)),
+               new("a2", new(30, 32, 1, new(null, null, null, null, 21000), 0)),
+               new("a4", new(28, 28, 1, new(null, null, null, null, 17786), 0))]
+            : [new("a1", totals)];
         return new(1, DateTimeOffset.Parse(query["from"]), DateTimeOffset.Parse(query["to"]), query.GetValueOrDefault("timeZone", "UTC"), DateTimeOffset.UtcNow, 10, !IncompleteCoverage, totals,
-            [new(DateTime.UtcNow.ToString("yyyy-MM-dd"), totals)], [new("a1", totals)], [new("gpt-model", totals)]);
+            [new(DateTime.UtcNow.ToString("yyyy-MM-dd"), totals)], accounts, [new("gpt-model", totals)]);
     }
     private UsageAnalysisDto Analysis(Uri uri)
     {
