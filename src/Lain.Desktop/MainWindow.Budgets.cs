@@ -41,7 +41,7 @@ public sealed partial class MainWindow
     private static double? ValidAmount(double? value) => value is { } number && double.IsFinite(number) && number >= 0 ? number : null;
 
     private static double? ReportedRemaining(QuotaDto? quota) => quota?.Remaining is { } remaining && double.IsFinite(remaining)
-        && quota.MeasurementKind is not ("usage" or "limit") ? remaining : null;
+        && quota.MeasurementKind is not ("usage" or "limit" or "rate") ? remaining : null;
 
     private static bool QuotaExhausted(QuotaDto? quota) => quota is not null && !QuotaUnavailable(quota)
         && (QuotaUsedPercent(quota) >= 100 || ReportedRemaining(quota) <= 0);
@@ -50,7 +50,7 @@ public sealed partial class MainWindow
     // an invalid percentage, or combine separate windows into an account balance.
     private static double? QuotaUsedPercent(QuotaDto? quota)
     {
-        if (quota is null || QuotaUnavailable(quota) || quota.MeasurementKind is "balance" or "usage" or "limit") return null;
+        if (quota is null || QuotaUnavailable(quota) || quota.MeasurementKind is "balance" or "usage" or "limit" or "rate") return null;
         if (quota.UsedPercent is { } supplied)
             return double.IsFinite(supplied) && supplied is >= 0 and <= 100 ? supplied : null;
         if (ValidAmount(quota.Limit) is not { } limit || limit <= 0) return null;
@@ -196,6 +196,12 @@ public sealed partial class MainWindow
         else if (context is not null) label.Children.Add(Ui.Text(context, 11, Ui.Muted));
 
         var consumption = new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
+        if (quota?.MeasurementKind == "rate")
+        {
+            consumption.Children.Add(Ui.Text(quota.Used is { } rate && double.IsFinite(rate)
+                ? BudgetAmount(rate, quota.Unit) + " observed" : "Rate not supplied", 12));
+            return BudgetWindowCells(label, consumption, Ui.Text("Sample " + Ui.When(quota.DataAsOf ?? quota.ObservedAt), 11, Ui.Muted));
+        }
         var percent = unavailable ? null : QuotaUsedPercent(quota);
         if (percent is { } usedPercent && quota is not null)
         {
@@ -239,7 +245,7 @@ public sealed partial class MainWindow
         else
         {
             consumption.Children.Add(Ui.Text(unavailable ? QuotaSupportMessage(quota) : quota?.State is "error" or "unavailable" ? "Could not load budget" : "Usage not supplied", 12, Ui.Muted));
-
+            consumption.Children.Add(QuotaAccessActions(account, quota));
         }
 
         var reset = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };

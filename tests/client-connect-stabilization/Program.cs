@@ -98,11 +98,22 @@ using (var raw = JsonDocument.Parse(output.ToString()))
         && quota.GetProperty("remaining").GetDouble() == 81.519887875
         && quota.GetProperty("exactRemaining").GetString() == "81.519887875", "machine JSON retains full numeric data and exact provider strings");
 }
+handler.Rate = true;
+output = new(); error = new();
+code = await CliApplication.RunAsync(["quotas"], output, error, () => client);
+Require(code == 0 && output.ToString().Contains("Observed 0.04 requests/second") && output.ToString().Contains("5-minute average")
+    && !output.ToString().Contains("Remaining") && !output.ToString().Contains("limit unknown") && !output.ToString().Contains("% used"),
+    "observed Enterprise usage rates are distinct from remaining budgets and quota percentages");
+output = new(); error = new();
+code = await CliApplication.RunAsync(["usage"], output, error, () => client);
+Require(code == 0 && output.ToString().Contains("Observed 0.04 requests/second") && output.ToString().Contains("Sample ")
+    && !output.ToString().Contains("Remaining") && !output.ToString().Contains("% used"), "compact rates retain the source sample without invented quota state");
 Require(handler.Requests.All(r => r.StartsWith("GET ")), "all fixtures are read-only without external credentials or provider calls");
 
 sealed class Fixture : HttpMessageHandler
 {
     public bool Fractional;
+    public bool Rate;
     public static readonly QuotaDto FractionalQuota = new("commandcode", null, "fixture#monthlyCredits", "ok",
         DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, null, "USD-Credits", 68.480112125, 150, 81.519887875, false,
         WindowLabel: "Monthly credits", MeasurementKind: "quota", ExactRemaining: "81.519887875");
@@ -121,6 +132,8 @@ sealed class Fixture : HttpMessageHandler
             "/api/v1/status" => new StatusDto(1, "fixture", "ready", false, 1, 1, now, RuntimeMode: "monitor", Capabilities: new(true, false, false, false, false, false)),
             "/api/v1/accounts" => new[] { new AccountDto("commandcode", "Command Code", "commandcode", true, "api-key", "ready"),
                 new AccountDto("count", "Token counter", "fixture", true, "api-key", "ready") },
+            "/api/v1/quotas" when Rate => new[] { new QuotaDto("commandcode", null, "fixture#rate", "ok", now, now, null,
+                "requests/second", 0.04, null, null, false, WindowLabel: "model · request rate · 5-minute average", MeasurementKind: "rate", DataAsOf: now.AddMinutes(-1)) },
             "/api/v1/quotas" when Fractional => new[] { FractionalQuota,
                 new QuotaDto("count", null, "fixture#tokens", "ok", now, now, null, "tokens", 1234567.891, null, null, false, MeasurementKind: "usage") },
             "/api/v1/quotas" => new[] { new QuotaDto("kilo", null, "fixture#wallet", "ok", now, now, null, "USD", null, null, 0.000034, false,

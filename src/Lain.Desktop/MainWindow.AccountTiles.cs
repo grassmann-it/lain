@@ -143,12 +143,25 @@ public sealed partial class MainWindow
         var compact = options.Density == ViewDensity.Compact || options.Level == InformationLevel.Barebones;
         var panel = new StackPanel { Spacing = compact ? 3 : 4, HorizontalAlignment = HorizontalAlignment.Stretch };
         var unavailable = QuotaUnavailable(quota);
+        if (quota?.MeasurementKind == "rate")
+        {
+            panel.Children.Add(TileText(QuotaWindowLabel(quota), 12));
+            panel.Children.Add(TileText(quota.Used is { } rate && double.IsFinite(rate)
+                ? BudgetAmount(rate, quota.Unit) + " observed" : "Rate not supplied", 12));
+            panel.Children.Add(TileText("Sample " + Ui.When(quota.DataAsOf ?? quota.ObservedAt), 11, Ui.Muted));
+            if (!string.IsNullOrWhiteSpace(quota.Error)) panel.Children.Add(TileText(quota.Error, 11, Ui.Warning));
+            if (LastKnownQuota(quota))
+            {
+                panel.Children.Add(TileText("Last known", 11, Ui.Warning));
+                panel.Children.Add(QuotaAccessActions(account, quota));
+            }
+            return panel;
+        }
         if (unavailable)
         {
             panel.Children.Add(TileText(QuotaWindowLabel(quota), 12));
             panel.Children.Add(TileText(QuotaSupportMessage(quota), 12, Ui.Muted));
-            if (Uri.TryCreate(quota?.Support?.ActionUrl, UriKind.Absolute, out var actionUri) && actionUri.Scheme == Uri.UriSchemeHttps)
-                panel.Children.Add(Ui.Button("View quota access guidance", async () => await OpenProviderLinkAsync(actionUri)));
+            panel.Children.Add(QuotaAccessActions(account, quota));
             return panel;
         }
         var percent = QuotaUsedPercent(quota);
@@ -213,6 +226,7 @@ public sealed partial class MainWindow
         if (quota is not null && !string.IsNullOrWhiteSpace(quota.Error))
             panel.Children.Add(TileText(quota.Error, 11, unavailable ? Ui.Muted : Ui.Warning));
         if (quota is null) panel.Children.Add(TileText("Quota has not been loaded. Refresh quota from account details.", 11, Ui.Muted));
+        if (quota is null || lastKnown || quota.State is "error" or "unavailable") panel.Children.Add(QuotaAccessActions(account, quota));
         return panel;
     }
 

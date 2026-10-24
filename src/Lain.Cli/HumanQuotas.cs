@@ -35,7 +35,7 @@ public static partial class CliApplication
             if (unsupported)
             {
                 await HumanTable.WriteTextAsync(output, QuotaSupportMessage(quota), context, "  ");
-                if (quota.Support?.ActionUrl is { Length: > 0 } actionUrl) await HumanTable.WriteTextAsync(output, "Next step: " + Cell(actionUrl), context, "  ", subtle: true);
+                foreach (var action in QuotaAccessHints(quota)) await HumanTable.WriteTextAsync(output, action, context, "  ");
                 continue;
             }
             var due = quota.ResetsAt is { } reset && reset <= DateTimeOffset.UtcNow;
@@ -61,14 +61,14 @@ public static partial class CliApplication
                 : "Remaining unknown" + (quota.Unit is "unknown" or "" ? "" : " " + Cell(quota.Unit));
             var resetLabel = unsupported ? "Reset unavailable" : quota.ResetsAt is { } next
                 ? (due ? "Reset due " : "Reset ") + Timestamp(next) + " UTC" : "Reset unknown";
-            if (quota.MeasurementKind is not ("usage" or "limit") && quota.ResetsAt is not null) await WriteQuotaPair(output, remaining, resetLabel, context);
-            else if (quota.MeasurementKind is not ("usage" or "limit") && (quota.Remaining is not null || percent is not null)) await HumanTable.WriteTextAsync(output, remaining, context, "  ");
+            if (quota.MeasurementKind is not ("usage" or "limit" or "rate") && quota.ResetsAt is not null) await WriteQuotaPair(output, remaining, resetLabel, context);
+            else if (quota.MeasurementKind is not ("usage" or "limit" or "rate") && (quota.Remaining is not null || percent is not null)) await HumanTable.WriteTextAsync(output, remaining, context, "  ");
             if (due && !unsupported) await HumanTable.WriteTextAsync(output, "Reset due · refresh to check the next window.", context, "  ");
             if (!unsupported && quota.Unit is not ("percent" or "%"))
             {
                 if (quota.Used is { } amountUsed && double.IsFinite(amountUsed) && amountUsed >= 0)
-                    await HumanTable.WriteTextAsync(output, "Used " + QuotaAmount(amountUsed, quota.Unit)
-                        + (quota.Limit is { } suppliedLimit && double.IsFinite(suppliedLimit) && suppliedLimit >= 0 ? " / " + QuotaAmount(suppliedLimit, quota.Unit) : quota.MeasurementKind == "usage" ? "" : " · limit unknown"), context, "  ");
+                    await HumanTable.WriteTextAsync(output, (quota.MeasurementKind == "rate" ? "Observed " : "Used ") + QuotaAmount(amountUsed, quota.Unit)
+                        + (quota.Limit is { } suppliedLimit && double.IsFinite(suppliedLimit) && suppliedLimit >= 0 ? " / " + QuotaAmount(suppliedLimit, quota.Unit) : quota.MeasurementKind is "usage" or "rate" ? "" : " · limit unknown"), context, "  ");
                 else if (quota.Limit is { } limit && double.IsFinite(limit) && limit >= 0)
                     await HumanTable.WriteTextAsync(output, "Limit " + QuotaAmount(limit, quota.Unit) + (quota.MeasurementKind == "limit" ? "" : " · usage unknown"), context, "  ");
             }
@@ -76,6 +76,8 @@ public static partial class CliApplication
             if (quota.ExactUsed is not null || quota.ExactLimit is not null || quota.ExactRemaining is not null)
                 await HumanTable.WriteTextAsync(output, $"Exact amounts · used {quota.ExactUsed ?? "unknown"} · limit {quota.ExactLimit ?? "unknown"} · remaining {quota.ExactRemaining ?? "unknown"} {Cell(quota.Unit)}", context, "  ");
             if (!string.IsNullOrWhiteSpace(quota.Error)) await HumanTable.WriteTextAsync(output, "Note: " + Cell(quota.Error), context, "  ");
+            if (stale || quota.Error is not null)
+                foreach (var action in QuotaAccessHints(quota)) await HumanTable.WriteTextAsync(output, action, context, "  ");
             if (quota.MeasurementKind is { Length: > 0 } || quota.Scope is { Length: > 0 })
                 await HumanTable.WriteTextAsync(output, string.Join(" · ", new[] { quota.MeasurementKind, quota.Scope, quota.ScopeId, quota.Model }.Where(value => !string.IsNullOrWhiteSpace(value)).Select(Cell)), context, "  ", subtle: true);
             if (quota.DataAsOf is { } dataAsOf) await HumanTable.WriteTextAsync(output, "Data as of " + Timestamp(dataAsOf) + " UTC", context, "  ", subtle: true);
@@ -96,6 +98,13 @@ public static partial class CliApplication
 
     private static string QuotaSupportMessage(QuotaDto quota) => string.IsNullOrWhiteSpace(quota.Support?.Message)
         ? "No separate quota lookup is configured. See provider setup for available access." : Cell(quota.Support.Message);
+
+    private static IEnumerable<string> QuotaAccessHints(QuotaDto quota)
+    {
+        if (quota.Support?.Kind == "setup-required" || quota.State is "stale" or "error" || quota.Error is not null)
+            yield return "Set up or reconnect this account: lain accounts monitor '" + Cell(quota.AccountId).Replace("'", "'\\''") + "'";
+        if (quota.Support?.ActionUrl is { Length: > 0 } actionUrl) yield return "Provider console: " + Cell(actionUrl);
+    }
 
     private static async Task WriteQuotaPair(TextWriter output, string left, string right, HumanOutputContext context)
     {

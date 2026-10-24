@@ -127,7 +127,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(!HasText("Credential state: unverified", true) && !HasText("Check credential details", true), "unverified credential presence is neutral and does not warn on each usable account");
         Check(!HasText("Remaining not available") && !HasText("Reset not available") && !HasText("Quota warning"), "unsupported accounts do not repeat missing measurements or warnings");
         await CaptureBoth("provider-five-account-quotas");
-        Check(HasText(noSeriesMessage) && Controls<Button>().Any(button => Equals(button.Content, "View quota access guidance"))
+        Check(HasText(noSeriesMessage) && Controls<Button>().Any(button => Equals(button.Content, "Open Gemini API usage console"))
             && !HasText("Could not load budget") && !HasText("Unavailable"), "HTTP200 no-series monitoring preserves neutral guidance and its next-step link");
         await OpenAccountOptions();
         Named<ComboBox>("Filter accounts by state").SelectedIndex = 3;
@@ -191,6 +191,35 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Wait(() => fixture.LastMonitorAccess is not null, "monitor request reached the synthetic Host");
         Check(fixture.LastMonitorAccount == "a-new" && fixture.LastMonitorAccess is { Kind: "api-token", ResourceId: "fixture-reporting-account", Secret: "SYNTHETIC-UI-MONITOR" }
             && fixture.Config.Accounts.Length == 6, "monitor token attaches to the saved account without creating a second inference account");
+        fixture.ConnectionMethodsOverride = new(1,
+        [
+            new("nvidia-build", "browser", "Connect synthetic quota in browser", "browser", ["quota"], "available", false, false),
+            new("nvidia-build", "blocked-browser", "Unqualified synthetic OAuth", "browser", ["quota"], "setup-required", false, false,
+                Guidance: "Synthetic client registration is unavailable.")
+        ]);
+        fixture.QuotaOverride = fixture.QuotaOverride!.Append(new("a-new", null, "fixture#monitor", "unsupported", now, null, null, "unknown", null, null, null, false,
+            Support: new("setup-required", "Connect synthetic read access on this account."))).ToArray();
+        await Click("Reload status");
+        await Wait(() => Controls<Button>().Any(button => AutomationProperties.GetName(button) == "Set up quota access for My custom NVIDIA"), "setup state exposes a same-account action directly on the quota tile");
+        await Click("Set up quota access for My custom NVIDIA");
+        await Wait(() => HasText("Monitoring access for My custom NVIDIA"), "quota action opens the real monitor editor");
+        Check(Controls<Button>().Any(button => AutomationProperties.GetName(button) == "Connect quota access browser for My custom NVIDIA")
+            && !Controls<Button>().Any(button => Equals(button.Content, "Unqualified synthetic OAuth") && button.IsEnabled),
+            "only the available quota browser method becomes a connection action");
+        await Click("Connect quota access browser for My custom NVIDIA");
+        await Wait(() => Controls<TextBox>().Any(box => AutomationProperties.GetName(box) == "Account name"), "quota connection uses the production reconnect form");
+        Check(Named<TextBox>("Account name").Text == "My custom NVIDIA" && fixture.LoginBegins == 0,
+            "reviewing the same-account browser form preserves its custom name and starts no login");
+        await Click("Cancel");
+        await Click("Set up quota access for My custom NVIDIA");
+        await Wait(() => HasText("Monitoring access for My custom NVIDIA"), "monitor editor reopened after cancelling the browser draft");
+        Named<TextBox>("Monitoring token").Text = "SYNTHETIC-UI-MONITOR";
+        Named<TextBox>("Account ID").Text = "fixture-reporting-account";
+        await Click("Save and refresh quota");
+        await Wait(() => fixture.LastQuotaRefreshAccount == "a-new", "save and refresh performs the same-account quota read");
+        await Wait(() => HasText("8 of 10 USD left", true), "refreshed monitor values return to the saved account tile");
+        Check(fixture.Config.Accounts.Length == 6 && fixture.LastMonitorAccount == "a-new" && HasText("8 of 10 USD left", true),
+            "saving and refreshing reports real fixture amounts without adding another account");
         Check(fixture.Unexpected.Count == 0 && fixture.LoginBegins == 0, "focused setup has no external login or unexpected request");
         window.Close(); foreach (var transport in transports) transport.Dispose();
         await File.WriteAllTextAsync(Path.Combine(Output, "evidence.json"), JsonSerializer.Serialize(new {

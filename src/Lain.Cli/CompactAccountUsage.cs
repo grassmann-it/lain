@@ -29,7 +29,7 @@ public static partial class CliApplication
                 var unsupported = QuotaHasSupportOnly(quota);
                 if (unsupported)
                 {
-                    await WriteCompactQuotaFields(output, new[] { QuotaSupportMessage(quota), quota.Support?.ActionUrl is { Length: > 0 } url ? "Next step: " + Cell(url) : "" }.Where(value => value.Length > 0), context);
+                    await WriteCompactQuotaFields(output, new[] { QuotaSupportMessage(quota) }.Concat(QuotaAccessHints(quota)), context);
                     continue;
                 }
                 var due = quota.ResetsAt is { } reset && reset <= now;
@@ -45,14 +45,14 @@ public static partial class CliApplication
                         + Lain.Client.QuotaDisplayFacts.Percent(used) + "% used");
                 }
                 else if (quota.Remaining is null && quota.Used is null && quota.Limit is null) fields.Add("Quota values not reported");
-                if (quota.MeasurementKind is not ("usage" or "limit"))
+                if (quota.MeasurementKind is not ("usage" or "limit" or "rate"))
                     fields.Add(CompactRemaining(quota, percent, unsupported));
                 if (quota.MeasurementKind == "limit" && quota.Limit is { } reportedLimit && double.IsFinite(reportedLimit)) fields.Add("Limit " + QuotaAmount(reportedLimit, quota.Unit));
                 if (percent is null && quota.Used is { } amountUsed && double.IsFinite(amountUsed) && amountUsed >= 0)
-                    fields.Add("Used " + QuotaAmount(amountUsed, quota.Unit));
+                    fields.Add((quota.MeasurementKind == "rate" ? "Observed " : "Used ") + QuotaAmount(amountUsed, quota.Unit));
                 if (quota.ResetsAt is { } next)
                     fields.Add(due ? "Reset due" : "Reset " + next.UtcDateTime.ToString(next.Year == now.Year ? "MM-dd HH:mm'Z'" : "yyyy-MM-dd HH:mm'Z'", CultureInfo.InvariantCulture));
-                if (quota.MeasurementKind is not ("usage" or "limit") && quota.Remaining is { } left && double.IsFinite(left) && left <= 0)
+                if (quota.MeasurementKind is not ("usage" or "limit" or "rate") && quota.Remaining is { } left && double.IsFinite(left) && left <= 0)
                     fields.Add(stale ? "Last known exhausted" : "Exhausted");
                 else if (stale && hasNumber) fields.Add("Last known");
                 if (!unsupported && quota.State is not ("ok" or "available") && !(quota.State == "stale" && hasNumber))
@@ -60,6 +60,9 @@ public static partial class CliApplication
                 fields.AddRange(Lain.Client.QuotaDisplayFacts.Describe(quota));
                 if (quota.ExactRemaining is not null) fields.Add("Exact remaining " + quota.ExactRemaining + " " + Cell(quota.Unit));
                 if (!string.IsNullOrWhiteSpace(quota.Error)) fields.Add("Note: " + Cell(quota.Error));
+                if (stale || quota.Error is not null) fields.AddRange(QuotaAccessHints(quota));
+                if (quota.MeasurementKind == "rate" && (quota.DataAsOf ?? quota.ObservedAt) is { } sample)
+                    fields.Add("Sample " + Timestamp(sample) + " UTC");
                 if (!string.IsNullOrWhiteSpace(quota.Source)) fields.Add("Source " + QuotaSource(quota.Source, 80));
                 if (quota.LastSuccessAt is { } success) fields.Add("Checked " + Timestamp(success) + " UTC");
                 var color = !percent.HasValue ? null : !account.Enabled || quota.State == "disabled" ? "2"

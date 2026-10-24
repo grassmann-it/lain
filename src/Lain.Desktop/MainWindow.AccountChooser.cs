@@ -128,14 +128,14 @@ public sealed partial class MainWindow
         _page.Content = content;
     }
 
-    private void ShowConnectionMethod(ProviderConnectionMethodDto method, AccountDto? reconnect)
+    private void ShowConnectionMethod(ProviderConnectionMethodDto method, AccountDto? reconnect, bool quotaOnly = false)
     {
         _notice.Text = "";
         _loginVisible = false;
         if (_configuration is not { } cfg) return;
-        RegisterEditor(() => ShowConnectionMethod(method, reconnect), cfg.Revision);
+        RegisterEditor(() => ShowConnectionMethod(method, reconnect, quotaOnly), cfg.Revision);
         _editing = true; _workspace.Offset = default;
-        var draftKey = method.Provider + "|" + (reconnect?.Id ?? "new");
+        var draftKey = method.Provider + "|" + (reconnect?.Id ?? "new") + (quotaOnly ? "|quota" : "");
         _connectSafeDrafts.TryGetValue(draftKey, out var draft);
         var name = Ui.Input(draft.Name ?? reconnect?.Name ?? Lain.Client.AccountNameSuggestions.Suggest(method.Provider, ConnectProviderName(method.Provider), cfg.Accounts.Select(a => a.Name)));
         var secret = Ui.Input(hint: method.SecretKind ?? "Credential"); secret.PasswordChar = '●';
@@ -151,7 +151,8 @@ public sealed partial class MainWindow
             form.Children.Add(AccountFormRow(field.Label + (field.Required ? " *" : ""), input));
             if (field.Help is not null) form.Children.Add(Ui.Text(field.Help, 12, Ui.Muted));
         }
-        form.Children.Add(Ui.Text("Available purposes: " + string.Join(" · ", method.Purposes), 12, Ui.Muted));
+        var purposes = quotaOnly ? method.Purposes.Where(purpose => purpose is "quota" or "cost").ToArray() : ConnectionPurposes(method);
+        form.Children.Add(Ui.Text("Available purposes: " + string.Join(" · ", purposes), 12, Ui.Muted));
         if (method.SecretRequired) form.Children.Add(AccountFormRow(method.SecretKind ?? "Credential", secret));
         if (method.SecretKind == "access-token-snapshot") form.Children.Add(AccountFormRow("Snapshot expires at", expiry));
         if (method.DocumentationUrl is { } url && Uri.TryCreate(url, UriKind.Absolute, out var link) && link.Scheme == "https")
@@ -186,7 +187,7 @@ public sealed partial class MainWindow
                     if (!DateTimeOffset.TryParse(expiry.Text, out var suppliedExpiry) || suppliedExpiry <= DateTimeOffset.UtcNow) throw new InvalidOperationException("Enter the snapshot's future expiry with a time zone.");
                     expiresAt = suppliedExpiry;
                 }
-                var metadata = new ConnectAccountRequest(method.Provider, method.Id, ConnectionPurposes(method), name.Text.Trim(), reconnect?.Id,
+                var metadata = new ConnectAccountRequest(method.Provider, method.Id, purposes, name.Text.Trim(), reconnect?.Id,
                     binding, reconnect?.Generation, operationKey);
                 var saved = await _client.ConnectAccountAsync(cfg.Revision, new(metadata, secret.Text, method.SecretKind ?? "api-key", ExpiresAt: expiresAt, BaseUrl: method.DefaultBaseUrl, Settings: values), _lifetime.Token);
                 secret.Text = ""; _configuration = saved; _connectSafeDrafts.Remove(draftKey);
@@ -196,16 +197,22 @@ public sealed partial class MainWindow
             }
             else
             {
-                await StartConnectionLoginAsync(new(cfg.Revision, method.Provider, method.Id, ConnectionPurposes(method), reconnect?.Id, binding,
+                await StartConnectionLoginAsync(new(cfg.Revision, method.Provider, method.Id, purposes, reconnect?.Id, binding,
                     reconnect?.Generation, name.Text.Trim(), operationKey));
             }
         }, method.SecretRequired ? "Credential connected." : "Authorization started. Waiting for completion.", stayOnPage: true);
-        form.Children.Add(OverviewActions(connect, Ui.Button("Back to providers", () => { SaveSafeDraft(); secret.Text = ""; ShowAddAccountChooser(); }),
+        form.Children.Add(OverviewActions(connect, Ui.Button(quotaOnly ? "Back to quota access" : "Back to providers", () =>
+        {
+            SaveSafeDraft(); secret.Text = "";
+            if (quotaOnly && reconnect is not null) _ = RunAsync(() => OpenMonitorSetupAsync(reconnect), "Review quota access.", stayOnPage: true);
+            else ShowAddAccountChooser();
+        }),
             Ui.Button("Cancel", () => { SaveSafeDraft(); secret.Text = ""; _editing = false; Render(); })));
         var alternatives = Ui.Stack();
-        foreach (var alternative in _connectionMethods?.Methods.Where(m => m.Provider == method.Provider && m.Id != method.Id) ?? [])
+        foreach (var alternative in _connectionMethods?.Methods.Where(m => m.Provider == method.Provider && m.Id != method.Id
+            && (!quotaOnly || m.Purposes.Any(purpose => purpose is "quota" or "cost"))) ?? [])
         {
-            var choose = Ui.Button(alternative.Title, () => { SaveSafeDraft(); secret.Text = ""; ShowConnectionMethod(alternative, reconnect); });
+            var choose = Ui.Button(alternative.Title, () => { SaveSafeDraft(); secret.Text = ""; ShowConnectionMethod(alternative, reconnect, quotaOnly); });
             choose.IsEnabled = ConnectionMethodAvailable(alternative);
             AutomationProperties.SetName(choose, "Connection method " + alternative.Id);
             alternatives.Children.Add(choose);

@@ -5,19 +5,24 @@ namespace Lain.Cli;
 
 public static partial class CliApplication
 {
-    private static async Task<bool> AddAccountWizard(LainApiClient client, TextWriter output, IAccountWizardTerminal terminal, CancellationToken ct)
+    private static async Task<bool> AddAccountWizard(LainApiClient client, TextWriter output, IAccountWizardTerminal terminal, CancellationToken ct,
+        AccountDto? reconnect = null)
     {
         string? activeLogin = null;
         try
         {
             await output.WriteLineAsync("Private account setup. Esc/Ctrl-C cancels. Credentials stay with your local host.");
-            var catalog = await client.ConnectionMethodsAsync(ct: ct);
+            var catalog = await client.ConnectionMethodsAsync(reconnect?.Provider, ct);
             var cfg = await client.GetConfigurationAsync(ct);
+            if (reconnect is not null) reconnect = cfg.Accounts.FirstOrDefault(account => account.Id == reconnect.Id)
+                ?? throw new ArgumentException("This account is no longer configured.");
             var monitor = cfg.RuntimeMode == "monitor";
             bool Available(ProviderConnectionMethodDto method) => method.Availability == "available"
-                && (!monitor || !method.RequiresCore && method.Purposes.Any(p => p is "quota" or "cost"));
+                && (!monitor || !method.RequiresCore)
+                && (!(monitor || reconnect is not null) || method.Purposes.Any(p => p is "quota" or "cost"));
             var providers = catalog.Methods.Select(m => m.Provider).Distinct(StringComparer.Ordinal).Order(StringComparer.OrdinalIgnoreCase).ToArray();
-            var provider = await WizardChoice(output, terminal, "Provider", providers, ProviderDisplayNames.Get, ct);
+            var provider = reconnect is null ? await WizardChoice(output, terminal, "Provider", providers, ProviderDisplayNames.Get, ct)
+                : providers.FirstOrDefault() ?? reconnect.Provider;
             var methods = catalog.Methods.Where(m => m.Provider == provider).OrderByDescending(m => m.Recommended).ToArray();
             foreach (var blocked in methods.Where(m => !Available(m)))
                 await output.WriteLineAsync(Cell(blocked.Title + ": " + (blocked.Guidance ?? "Unavailable for this host mode. Choose another method.")));
@@ -31,12 +36,16 @@ public static partial class CliApplication
                 if (field.Help is { } help) await output.WriteLineAsync(Cell(help));
                 var value = field.Choices is { Length: > 0 } choices
                     ? choices.Length == 1 ? choices[0] : await WizardChoice(output, terminal, field.Label, choices, choice => choice, ct)
-                    : await WizardValue(terminal, field.Label, false, ct, required: field.Required);
+                    : await WizardValue(terminal, field.Label, false, ct, field.Id switch
+                    {
+                        "projectId" or "accountId" or "workspaceId" or "resourceId" => reconnect?.Binding?.ResourceId,
+                        "region" => reconnect?.Binding?.Region, "product" => reconnect?.Binding?.Product, _ => null
+                    }, required: field.Required);
                 if (value.Length > 0) settings[field.Id] = value;
             }
             var suggested = AccountNameSuggestions.Suggest(provider, ProviderDisplayNames.Get(provider), cfg.Accounts.Select(a => a.Name));
-            var name = await WizardValue(terminal, "Account name", false, ct, suggested);
-            var purposes = monitor ? method.Purposes.Where(p => p is "quota" or "cost").ToArray() : method.Purposes;
+            var name = reconnect?.Name ?? await WizardValue(terminal, "Account name", false, ct, suggested);
+            var purposes = monitor || reconnect is not null ? method.Purposes.Where(p => p is "quota" or "cost").ToArray() : method.Purposes;
             var key = method.SecretRequired ? await WizardValue(terminal, (method.SecretKind ?? "Credential") + " (hidden)", true, ct) : "";
             DateTimeOffset? expiresAt = null;
             if (method.SecretKind == "access-token-snapshot")
@@ -49,19 +58,21 @@ public static partial class CliApplication
             var confirm = await WizardValue(terminal, "Connect? Type yes", false, ct, required: false);
             if (!confirm.Equals("yes", StringComparison.OrdinalIgnoreCase)) return false;
             var resourceKey = settings.ContainsKey("projectId") ? "projectId" : settings.ContainsKey("accountId") ? "accountId" : settings.ContainsKey("workspaceId") ? "workspaceId" : "resourceId";
-            var binding = settings.Count == 0 ? null : new ResourceBindingDto(provider, settings.GetValueOrDefault("subject"), settings.GetValueOrDefault("product"), settings.GetValueOrDefault("region"),
-                resourceKey == "projectId" ? "project" : resourceKey == "accountId" ? "account" : resourceKey == "workspaceId" ? "workspace" : null, settings.GetValueOrDefault(resourceKey));
+            var binding = reconnect?.Binding ?? (settings.Count == 0 ? null : new ResourceBindingDto(provider, settings.GetValueOrDefault("subject"), settings.GetValueOrDefault("product"), settings.GetValueOrDefault("region"),
+                resourceKey == "projectId" ? "project" : resourceKey == "accountId" ? "account" : resourceKey == "workspaceId" ? "workspace" : null, settings.GetValueOrDefault(resourceKey)));
             var operationKey = Guid.NewGuid().ToString("N");
             ConfigurationDto saved;
             if (method.SecretRequired)
             {
-                saved = await client.ConnectAccountAsync(cfg.Revision, new(new(provider, method.Id, purposes, name, Binding: binding, IdempotencyKey: operationKey), key,
+                saved = await client.ConnectAccountAsync(cfg.Revision, new(new(provider, method.Id, purposes, name, AccountId: reconnect?.Id, Binding: binding,
+                    ExpectedGeneration: reconnect?.Generation, IdempotencyKey: operationKey), key,
                     method.SecretKind ?? "api-key", ExpiresAt: expiresAt, BaseUrl: method.DefaultBaseUrl, Settings: settings), ct);
                 key = "";
             }
             else
             {
-                var login = await client.LoginAsync(new LoginRequest(cfg.Revision, provider, method.Id, purposes, Binding: binding, Name: name, IdempotencyKey: operationKey), ct);
+                var login = await client.LoginAsync(new LoginRequest(cfg.Revision, provider, method.Id, purposes, AccountId: reconnect?.Id, Binding: binding,
+                    ExpectedGeneration: reconnect?.Generation, Name: name, IdempotencyKey: operationKey), ct);
                 activeLogin = login.Id;
                 while (login.State is "waiting" or "pending" or "resource-required" or "awaiting-resource")
                 {
@@ -82,7 +93,8 @@ public static partial class CliApplication
                 if (login.State != "completed") throw new InvalidOperationException("Connection " + Cell(login.State) + ". " + Cell(login.NextAction ?? login.Error));
                 saved = await client.GetConfigurationAsync(ct);
             }
-            var account = saved.Accounts.FirstOrDefault(a => !cfg.Accounts.Any(previous => previous.Id == a.Id));
+            var account = reconnect is not null ? saved.Accounts.FirstOrDefault(a => a.Id == reconnect.Id)
+                : saved.Accounts.FirstOrDefault(a => !cfg.Accounts.Any(previous => previous.Id == a.Id));
             await output.WriteLineAsync("Credential connected locally. Provider access, quota observations and inference are separate facts.");
             if (account is not null)
             {

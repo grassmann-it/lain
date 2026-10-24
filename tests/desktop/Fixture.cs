@@ -38,10 +38,12 @@ internal sealed class Fixture : HttpMessageHandler
     private readonly DateTimeOffset inspectorStarted = DateTimeOffset.UtcNow;
     public static readonly ProviderCatalogDto ProviderCatalog = LoadProviders();
     public ProviderCatalogDto? CatalogOverride;
+    public ConnectionMethodCatalogDto? ConnectionMethodsOverride;
     public QuotaDto[]? QuotaOverride;
     public AddApiAccountRequest? LastAddedAccount;
     public MonitorAccessRequest? LastMonitorAccess;
     public string? LastMonitorAccount;
+    public string? LastQuotaRefreshAccount;
     public readonly List<string> Requests = [];
     public readonly List<long> InspectorEventAfters = [];
     public readonly List<string> Unexpected = [];
@@ -150,6 +152,14 @@ internal sealed class Fixture : HttpMessageHandler
             LastAddedAccount = body.Value;
             Config = Config with { Revision = Config.Revision + 1, Accounts = Config.Accounts.Append(new AccountDto("a-new", body.Value.Name, body.Value.Provider, true, "api-key", "ready")).ToArray() }; value = Config;
         }
+        else if (request.Method == HttpMethod.Post && path == "/api/v1/quotas/refresh")
+        {
+            var body = await request.Content!.ReadFromJsonAsync<QuotaRefreshRequest>(cancellationToken: ct);
+            LastQuotaRefreshAccount = body!.AccountId;
+            if (QuotaOverride is not null) QuotaOverride = QuotaOverride.Select(quota => quota.AccountId == body.AccountId
+                ? quota with { State = "ok", Unit = "USD", Used = 2, Limit = 10, Remaining = 8, Support = null, LastSuccessAt = DateTimeOffset.UtcNow } : quota).ToArray();
+            value = Quotas();
+        }
         else if (request.Method == HttpMethod.Put && path.EndsWith("/monitor"))
         {
             var body = await request.Content!.ReadFromJsonAsync<RevisionRequest<MonitorAccessRequest>>(cancellationToken: ct);
@@ -182,7 +192,7 @@ internal sealed class Fixture : HttpMessageHandler
             strict ? ["upstream_cost_controls_unavailable"] : []);
     }
     private ProviderCatalogDto Providers() { ProviderCalls++; return CatalogOverride ?? ProviderCatalog; }
-    private ConnectionMethodCatalogDto ConnectionMethods() => new(Api.Version,
+    private ConnectionMethodCatalogDto ConnectionMethods() => ConnectionMethodsOverride ?? new(Api.Version,
     [
         new("codex", "browser", "Continue in browser", "browser", ["quota", "inference"],
             MethodsUnavailable ? "unavailable" : "available", true, false, Recommended: true,
