@@ -70,6 +70,8 @@ def main():
     if source("proxy/source-manifest.json") != manifest_bytes or (root / "proxy/source-manifest.json").read_bytes() != manifest_bytes:
         parser.error("Core/final/working source manifests must be byte-identical")
     manifest = json.loads(manifest_bytes)
+    if manifest.get("schemaVersion") == 2:
+        parser.error("Historical patch-2 expansion helper requires vendored schema 1; use publish-linux.sh for fresh schema-2 packages or core-refresh.py for an exact Core-only replacement")
     if manifest.get("lainPatchVersion") != 2:
         parser.error("expansion Core requires regenerated lainPatchVersion=2 source manifest")
     actual_core_files = files(root / "proxy/core")

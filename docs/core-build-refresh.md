@@ -1,5 +1,9 @@
 # Refreshing the instrumented Core build boundary
 
+Historical schema-1/patch-2 procedure below. For the external v8.0.41 dependency,
+explicit patches and schema-2 delivery use [core-upgrade-delivery.md](core-upgrade-delivery.md)
+and `proxy/README.md`. Do not run this vendored-source regeneration against schema 2.
+
 This is a root/integrator procedure for the next owned Core. It does not authorize
 replacement of the installed binary. Source workers do not regenerate the shared
 manifest while other Core changes are still being integrated.

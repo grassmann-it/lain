@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Collect exact restored NuGet metadata and available notices without networking."""
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -8,8 +9,12 @@ import sys
 import subprocess
 import xml.etree.ElementTree as ET
 
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("output", type=Path)
+parser.add_argument("--prepared-adapter", type=Path, help="verified schema-2 prepared adapter for Go notices")
+args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
-output = Path(sys.argv[1]).resolve()
+output = args.output.resolve()
 output.mkdir(parents=True, exist_ok=True)
 packages = {}
 folders = set()
@@ -97,8 +102,13 @@ with (output / "README.txt").open("a") as handle:
     handle.write("\nFonts: inventory.json bundledFonts lists embedded application font sources and hashes; "
                  "fonts/ preserves their original family-specific OFL texts and copyright notices. "
                  "The desktop publish also carries Assets/Fonts/<family>/OFL.txt.\n")
-subprocess.run([sys.executable, str(root / "scripts/collect-go-notices.py"),
-                str(output.parent / "proxy/lain-proxy"), str(output / "go")], check=True)
+go_command = [sys.executable, str(root / "scripts/collect-go-notices.py"),
+              str(output.parent / "proxy/lain-proxy"), str(output / "go")]
+if args.prepared_adapter:
+    go_command.extend(["--prepared-adapter", str(args.prepared_adapter),
+                       "--source-manifest", str(output.parent / "proxy/source-manifest.json"),
+                       "--build-manifest", str(output.parent / "proxy/build-manifest.json")])
+subprocess.run(go_command, check=True)
 with (output / "README.txt").open("a") as handle:
     handle.write("\nGo: go/inventory.json lists the actual binary's linked module versions/checksums, "
                  "source URLs, cached root LICENSE/COPYING/NOTICE files and the matching Go toolchain LICENSE. "

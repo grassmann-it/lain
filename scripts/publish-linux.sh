@@ -6,6 +6,7 @@ root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 out=${1:-"$root/artifacts/lain-linux-x64"}
 [[ "$out" == /* && ! -e "$out" ]] || { echo 'Output must be an absolute, nonexistent directory' >&2; exit 2; }
 cd "$root"
+[[ "$(python3 -c 'import json; print(json.load(open("proxy/source-manifest.json"))["schemaVersion"])')" == 2 ]] || { echo 'Fresh publish requires external Core schema 2' >&2; exit 2; }
 expected=$(python3 -c 'import json; print(json.load(open("global.json"))["sdk"]["version"])')
 [[ "$(dotnet --version)" == "$expected" ]] || { echo "Requires .NET SDK $expected" >&2; exit 2; }
 [[ -x scripts/build-core.sh && -f proxy/source-manifest.json ]] || { echo 'Qualified proxy source and build script required' >&2; exit 2; }
@@ -21,14 +22,38 @@ for spec in 'Lain.Cli cli' 'Lain.Host host' 'Lain.Desktop desktop'; do
         -p:ContinuousIntegrationBuild=true -p:Deterministic=true -p:DebugType=None -p:DebugSymbols=false -p:PathMap="$root=/_/lain"
 done
 scripts/build-core.sh "$out/proxy/lain-proxy"
-cp proxy/core/LICENSE "$out/proxy/LICENSE"
-cp proxy/baseline.json proxy/source-manifest.json proxy/codex-model-catalog.json proxy/toolchain.json "$out/proxy/"
+cp proxy/LICENSE.upstream "$out/proxy/LICENSE"
+cp proxy/upstream.json proxy/source-manifest.json proxy/toolchain.json "$out/proxy/"
+cp "$out/proxy/lain-proxy.manifest.json" "$out/proxy/build-manifest.json"
+notice_parent=$(mktemp -d "${TMPDIR:-/tmp}/lain-publish-notices.XXXXXXXX")
+trap 'rm -rf -- "$notice_parent"' EXIT
+python3 scripts/prepare-core.py --destination "$notice_parent/prepared" > "$notice_parent/paths.json"
+# Ship own adapter, explicit patchset and archive pin as bounded source evidence.
+python3 - "$out/core-source-provenance" <<'PYSOURCE'
+import json, pathlib, shutil, sys
+root = pathlib.Path.cwd()
+out = pathlib.Path(sys.argv[1])
+manifest = json.loads((root / 'proxy/source-manifest.json').read_text())
+paths = sorted(set([*manifest['buildInputs'], 'proxy/source-manifest.json']))
+for name in paths:
+    relative = pathlib.Path(name)
+    if relative.is_absolute() or '..' in relative.parts:
+        raise SystemExit('Unsafe Core provenance path')
+    target = out / name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(root / name, target)
+PYSOURCE
 python3 - "$out/proxy" <<'PYMANIFEST'
 import hashlib, json, pathlib, sys
 root = pathlib.Path(sys.argv[1])
-json.dump({'format': 1, 'binary': 'lain-proxy',
- 'sha256': hashlib.sha256((root / 'lain-proxy').read_bytes()).hexdigest(),
- 'sourceManifestSha256': hashlib.sha256((root / 'source-manifest.json').read_bytes()).hexdigest()},
+build = json.loads((root / 'build-manifest.json').read_text())
+source = json.loads((root / 'source-manifest.json').read_text())
+if build['binarySha256'] != hashlib.sha256((root / 'lain-proxy').read_bytes()).hexdigest() or build['sourceManifestSha256'] != hashlib.sha256((root / 'source-manifest.json').read_bytes()).hexdigest():
+    raise SystemExit('Core build sidecar must bind the exact binary and source')
+json.dump({'format': 2, 'binary': 'lain-proxy',
+ 'sha256': build['binarySha256'], 'sourceManifestSha256': build['sourceManifestSha256'],
+ 'upstreamVersion': build['upstreamVersion'], 'upstreamCommit': build['upstreamCommit'],
+ 'upstreamSourceModified': build['upstreamSourceModified'], 'patchSetSha256': build['patchSetSha256']},
  (root / 'binary-manifest.json').open('w'), indent=2)
 PYMANIFEST
 # Final acceptance is separate from source/binary integrity. Never synthesize it.
@@ -39,8 +64,9 @@ qualified = False
 if approved:
     report = json.loads(pathlib.Path(approved).read_text())
     actual = hashlib.sha256((root / 'proxy/lain-proxy').read_bytes()).hexdigest()
-    if report.get('passed') is not True or report.get('sha256') != actual:
-        raise SystemExit('Qualification must be passed=true for the exact built proxy SHA-256')
+    source_hash = hashlib.sha256((root / 'proxy/source-manifest.json').read_bytes()).hexdigest()
+    if report.get('passed') is not True or report.get('sha256') != actual or report.get('sourceManifestSha256') != source_hash:
+        raise SystemExit('Qualification must pass for the exact built proxy and source manifest SHA-256')
     shutil.copyfile(approved, root / 'proxy/qualification.json')
     qualified = True
 (root / 'gate-status.json').write_text(json.dumps({'backendQualified': qualified, 'releaseQualified': False,
@@ -48,7 +74,12 @@ if approved:
 PYGATE
 cp packaging/lain packaging/lain.service.in packaging/lain.desktop.in "$out/packaging/"
 cp scripts/install-linux.sh "$out/install-linux.sh"
-python3 scripts/collect-notices.py "$out/notices"
+python3 scripts/collect-notices.py "$out/notices" --prepared-adapter "$notice_parent/prepared/adapter"
+python3 - "$out/notices/go/inventory.json" <<'PYNOTICES'
+import json, pathlib, sys
+if json.loads(pathlib.Path(sys.argv[1]).read_text())['missingEvidence']:
+    raise SystemExit('Go notice evidence is incomplete; review before packaging')
+PYNOTICES
 cp -a skills/lain-usage "$out/skills/"
 python3 - "$out/build-info.json" "$expected" <<'PY'
 import json, subprocess, sys
