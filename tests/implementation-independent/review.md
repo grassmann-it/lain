@@ -2,8 +2,9 @@
 
 Baseline: `7a58b01`; reviewed evolving implementation worktrees, not merely
 worker reports. The integrator owns final source freeze and binary qualification.
-No independent build or runtime check has yet been allocated. Source conclusions
-below do not establish AC-10 completion.
+Root executed the independently authored checks in its serialized integration
+slot; the reviewer independently inspected their outputs. Source conclusions and
+the bounded checks below do not establish AC-10 completion.
 
 | Finding and trigger | Impact | Follow-up |
 | --- | --- | --- |
@@ -26,9 +27,33 @@ Main integration follow-up additionally caught new Codex credential kind versus
 legacy quota-adapter guards, malformed optional Poe constructor validation outside
 the boot catch, Monitor inference-export gating, provider-wide Step Plan quota
 claims, and cloud discovery provenance not recognized by the central verified
-identity guard. Root addressed the first four in evolving source; an independent
-cloud-discovery-to-manual-reconnect scenario protects the last invariant. Exact
-Host Monitor probe and all C# scenarios remain not_run until the allocated slot.
+identity guard. Root addressed all five in evolving source; an independent
+cloud-discovery-to-manual-reconnect scenario protects the last invariant.
+
+Integrated evidence inspected on 24 October: `followup-results.json` records exit
+code zero for all six suites. `implementation-independent.log` reports 12/12 and
+`monitor-host.log` reports the isolated restored Monitor probe passed with zero
+provider requests. Both identify exact Host SHA256
+`4d4df715d74ba413f633243be47ab4950aee8908221ed2eb0992ccfc73896bc1`.
+The other inspected outputs report 117 foundation assertions, 63 provider
+transport assertions, 56 public-login checks and the models checks passed.
+Root ran these tests; the reviewer authored the independent cases and inspected
+the output. No result applies automatically to a later Host artifact.
+
+The integrated cases now exercise pending-versus-durable retry, contradictory
+legacy identity rejection, Codex quota projection, cloud-discovered identity
+protection and literal historical journal replay as well as the earlier identity
+and credential invariants. Drain recovery handling was source reviewed; that
+source review is not an independently executed crash/interleaving test.
+
+An additional recovery blocker remains: after restore quarantines owned grants,
+saved Gateway runtime files still reference the removed grants. Codex reconnect
+requires Core management, but starting that saved runtime fails before login.
+Root is implementing a separate empty login runtime. Acceptance requires separate
+config/bindings/journal files, explicit management-only readiness, unchanged active
+profile/application proof, no replacement of a live draining child, and normal
+transactional Apply before inference readiness. A synthetic exact-artifact restored
+Gateway check is still outstanding; no live OAuth is authorized for it.
 
 Additional source checks found no concrete blocker in bounded loopback callback
 parsing/state validation, profile transaction marker checks, partial token SQL

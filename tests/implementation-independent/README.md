@@ -30,5 +30,13 @@ against an in-memory HTTP quota response, including account identity header.
 
 Each scenario reports only its name and exception type. A passing source test
 does not qualify exact packaged binaries, real providers, Core startup on restored
-state, operation crash barriers, or complete AC-10 delivery. Tests are `not_run`
-until an integrator slot is explicitly assigned.
+state, operation crash barriers, or complete AC-10 delivery.
+
+On 24 October 2026 Root executed the suite in its serialized integration slot:
+12/12 scenarios passed, and the separate restored Monitor process probe passed
+with zero provider requests. The independent reviewer inspected both output logs
+and `followup-results.json` under `/tmp/lain-integrated-20261024/`. Both checks
+identify the tested Host assembly as SHA256
+`4d4df715d74ba413f633243be47ab4950aee8908221ed2eb0992ccfc73896bc1`.
+This records integrator execution of independently authored tests, not a separate
+reviewer execution or qualification of subsequently changed artifacts.
