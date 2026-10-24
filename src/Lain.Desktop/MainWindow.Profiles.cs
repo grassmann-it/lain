@@ -27,6 +27,7 @@ public sealed partial class MainWindow
     private bool _profileNarrowDetail;
     private Button? _profileApplyFocus;
     private ProfileReview? _profileReview;
+    private Action? _refreshProfileStatusUi;
     private string? _profileUnconfirmedApplyId;
     private long? _profileUnconfirmedApplyRevision;
     private StatusDto? _profileLastConfirmedStatus;
@@ -43,6 +44,7 @@ public sealed partial class MainWindow
         public bool Working;
         public bool Committing;
         public bool Stale;
+        public bool AwaitingOutcome;
         public string Message = "Loading current saved configuration…";
         public Action? RefreshUi;
         public Button? CancelButton;
@@ -58,14 +60,22 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(status, "Applied proxy profile status");
         var summary = Ui.Stack(status);
         summary.Spacing = 3;
-        if (cfg.Revision != cfg.AppliedRevision)
-            summary.Children.Add(Ui.Text("Saved changes pending · Viewing and saving do not change the proxy.", 12, Ui.Warning));
-        if (_status?.Application is { State: "recovery-required" } recovery)
-            summary.Children.Add(Ui.Text("Apply needs recovery. " + recovery.RecoveryAction, 12, Ui.Warning));
-        else if (_status?.Application is { State: "draining" or "publishing" } operation)
-            summary.Children.Add(Ui.Text("Apply in progress: " + operation.State + ". All clients share this runtime.", 12, Ui.Warning));
-        else if (_status?.Application is { State: "legacy-preserved" })
-            summary.Children.Add(Ui.Text("Existing runtime preserved. Its profile identity may be unknown.", 12, Ui.Muted));
+        void UpdateSummary()
+        {
+            var current = _configuration ?? cfg;
+            status.Text = AppliedProfileDescription(current);
+            while (summary.Children.Count > 1) summary.Children.RemoveAt(summary.Children.Count - 1);
+            if (current.Revision != current.AppliedRevision)
+                summary.Children.Add(Ui.Text("Saved changes pending · Viewing and saving do not change the proxy.", 12, Ui.Warning));
+            if (_status?.Application is { State: "recovery-required" } recovery)
+                summary.Children.Add(Ui.Text("Apply needs recovery. " + recovery.RecoveryAction, 12, Ui.Warning));
+            else if (_status?.Application is { State: "draining" or "publishing" } operation)
+                summary.Children.Add(Ui.Text("Apply in progress: " + operation.State + ". All clients share this runtime.", 12, Ui.Warning));
+            else if (_status?.Application is { State: "legacy-preserved" })
+                summary.Children.Add(Ui.Text("Existing runtime preserved. Its profile identity may be unknown.", 12, Ui.Muted));
+        }
+        _refreshProfileStatusUi = UpdateSummary;
+        UpdateSummary();
         if (cfg.Profiles.Length == 0)
             return Ui.Stack(ProfileHeader("Profiles", "Saved model menus.", create), summary,
                 Empty("No saved profiles yet. Create a profile to select its models and default."));
@@ -83,6 +93,7 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(detailScroll, "Profile details");
         detailScroll.ScrollChanged += (_, _) => { if (detailScroll.IsEffectivelyVisible && detailScroll.Bounds.Height > 0 && _selectedProfileId is { } id) _profileDetailOffsets[id] = detailScroll.Offset; };
         var selectors = new Dictionary<string, Button>();
+        var profileLabels = new Dictionary<string, StackPanel>();
         var detailActions = new List<Button>();
         var reviewHost = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch };
         var back = Ui.Button("Back to profiles", () => { });
@@ -148,9 +159,7 @@ public sealed partial class MainWindow
         {
             var button = Ui.Button("", () => SelectProfile(profile));
             var label = new StackPanel { Spacing = 3, Children = { Ui.Text(profile.Name, 14), Ui.Text($"{profile.RouteIds.Length} models", 12, Ui.Muted) } };
-            if (ProfileConfirmedStatus?.ActiveProfileId == profile.Id) label.Children.Add(Ui.Text((ProfileApplyOutcomeUnknown ? "Last confirmed · revision " : "Applied · revision ") + (ProfileConfirmedStatus.ActiveProfileRevision?.ToString() ?? "unknown"), 11, Ui.Accent));
-            if (ProfileApplyOutcomeUnknown && _profileUnconfirmedApplyId == profile.Id)
-                label.Children.Add(Ui.Text("Apply outcome unknown · requested " + _profileUnconfirmedApplyRevision, 11, Ui.Warning));
+            profileLabels.Add(profile.Id, label);
             button.Content = label;
             AutomationProperties.SetName(button, $"Select profile {profile.Name}");
             button.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -158,6 +167,23 @@ public sealed partial class MainWindow
             button.Padding = new Thickness(10, 8);
             selectors.Add(profile.Id, button); list.Children.Add(button);
         }
+        // Status replies can outlive their review (Cancel or another selection).
+        // Update these mounted text surfaces directly; do not replace a focused
+        // page or restore an obsolete review just to publish the global outcome.
+        _refreshProfileStatusUi = () =>
+        {
+            UpdateSummary();
+            foreach (var (id, label) in profileLabels)
+            {
+                while (label.Children.Count > 2) label.Children.RemoveAt(label.Children.Count - 1);
+                if (ProfileConfirmedStatus?.ActiveProfileId == id)
+                    label.Children.Add(Ui.Text((ProfileApplyOutcomeUnknown ? "Last confirmed · revision " : "Applied · revision ") +
+                        (ProfileConfirmedStatus.ActiveProfileRevision?.ToString() ?? "unknown"), 11, Ui.Accent));
+                if (ProfileApplyOutcomeUnknown && _profileUnconfirmedApplyId == id)
+                    label.Children.Add(Ui.Text("Apply outcome unknown · requested " + _profileUnconfirmedApplyRevision, 11, Ui.Warning));
+            }
+        };
+        _refreshProfileStatusUi();
         var noMatches = Ui.Text("No matching profiles.", 12, Ui.Muted);
         list.Children.Add(noMatches);
         void Filter()
@@ -221,7 +247,7 @@ public sealed partial class MainWindow
             new("edit", "Edit profile", () => EditProfile(selected)),
             new("export", "Export profile…", () => _ = RunAsync(() => ExportProfileAsync(selected), "Profile exported without credentials.")),
             new("codex", "Set up Codex client…", () => ShowCodexExport(selected)),
-            new("remove", "Remove profile…", () => ConfirmRemoval(selected.Name, async () => _configuration = await _client.RemoveProfileAsync(cfg.Revision, selected.Id, _lifetime.Token)))
+            new("remove", "Remove profile…", () => ConfirmProfileRemoval(selected.Id))
         ];
         var menu = ObjectCommandMenu(commands);
         var moreButton = Ui.Button("⋯", () => menu.Open());
@@ -276,7 +302,7 @@ public sealed partial class MainWindow
     private void ConfirmProfileApplication(ProfileDto profile)
     {
         if (_configuration is null || _busy) return;
-        var review = new ProfileReview(profile.Id, profile.Name);
+        var review = new ProfileReview(profile.Id, profile.Name) { AwaitingOutcome = ProfileApplyOutcomeUnknown };
         if (ProfileApplyOutcomeUnknown) review.Message = "A previous apply outcome is unknown. Check current status before preparing another apply.";
         _profileReview = review;
         _profileNarrowDetail = true;
@@ -289,7 +315,13 @@ public sealed partial class MainWindow
     // without replacing the mounted controls or removing its readable old diff.
     private void RefreshProfileReviewState()
     {
+        _refreshProfileStatusUi?.Invoke();
         if (_profileReview is not { } review) return;
+        if (review.AwaitingOutcome && !ProfileApplyOutcomeUnknown)
+        {
+            review.AwaitingOutcome = false;
+            review.Message = "Current host status checked. " + (_status?.Application?.RecoveryAction ?? "Refresh preview before a new explicit apply.");
+        }
         if (review.Preview is { } preview && (_configuration?.Revision != preview.Revision ||
             _configuration.Profiles.All(profile => profile.Id != preview.ProfileId)))
         {
@@ -484,6 +516,7 @@ public sealed partial class MainWindow
                 && application.Revision == _profileUnconfirmedApplyRevision;
             if (fresh && (completed || recovery))
             {
+                review.AwaitingOutcome = false;
                 _profileUnconfirmedApplyId = null; _profileUnconfirmedApplyRevision = null;
                 review.Stale = true;
                 review.Message = recovery ? "Host reports recovery required. " + application?.RecoveryAction + " Refresh preview before a new explicit apply."
@@ -505,7 +538,14 @@ public sealed partial class MainWindow
 
     private void ShowCodexExport(ProfileDto profile)
     {
+        if (!CanOpenSectionEditor()) return;
         if (_configuration is not { } cfg) return;
+        if (cfg.Profiles.FirstOrDefault(item => item.Id == profile.Id) is not { } current)
+        {
+            _notice.Text = "This profile no longer exists. Return to Profiles and select an existing profile.";
+            return;
+        }
+        profile = current;
         RegisterEditor(() =>
         {
             var latest = _configuration?.Profiles.FirstOrDefault(item => item.Id == profile.Id)
@@ -654,9 +694,47 @@ public sealed partial class MainWindow
         await JsonSerializer.SerializeAsync(stream, export, new JsonSerializerOptions { WriteIndented = true }, _lifetime.Token);
     }
 
+    private void ConfirmProfileRemoval(string profileId)
+    {
+        if (!CanOpenSectionEditor()) return;
+        if (_configuration is not { } cfg) return;
+        if (cfg.Profiles.FirstOrDefault(profile => profile.Id == profileId) is not { } selected)
+        {
+            _notice.Text = "This profile no longer exists. Return to Profiles and select an existing profile.";
+            return;
+        }
+        RegisterEditor(() => ConfirmProfileRemoval(profileId), cfg.Revision, selected.Name + " · removal");
+        ConfirmRemoval(selected.Name, async () =>
+        {
+            RequireCurrentProfileDraft(cfg.Revision, profileId);
+            _configuration = await _client.RemoveProfileAsync(cfg.Revision, profileId, _lifetime.Token);
+        });
+    }
+
+    private void RequireCurrentProfileDraft(long revision, string? profileId)
+    {
+        if (_configuration is not { } current)
+            throw new InvalidOperationException("Saved configuration is unavailable. Your profile draft is kept; reload status before saving.");
+        if (profileId is not null && current.Profiles.All(profile => profile.Id != profileId))
+            throw new InvalidOperationException("This profile was removed. Your draft is kept; it cannot recreate the removed profile. Cancel this draft and review Profiles.");
+        if (current.Revision != revision)
+            throw new InvalidOperationException("The saved configuration changed. Your profile draft is kept. Review the latest configuration before saving again.");
+    }
+
     private void EditProfile(ProfileDto? profile)
     {
+        if (!CanOpenSectionEditor()) return;
         if (_configuration is not { } cfg) return;
+        if (profile is not null)
+        {
+            if (cfg.Profiles.FirstOrDefault(item => item.Id == profile.Id) is not { } current)
+            {
+                _notice.Text = "This profile no longer exists. Return to Profiles and select an existing profile.";
+                return;
+            }
+            profile = current;
+            _selectedProfileId = current.Id;
+        }
         var profileId = profile?.Id;
         RegisterEditor(() =>
         {
@@ -764,6 +842,7 @@ public sealed partial class MainWindow
         routeList.Children.Add(empty);
         UpdateSelection();
         var save = Action("Save profile", async () => {
+            RequireCurrentProfileDraft(cfg.Revision, profileId);
             if (string.IsNullOrWhiteSpace(name.Text)) throw new InvalidOperationException("Enter a profile name.");
             var ids = choices.Where(x => x.Box.IsChecked == true).Select(x => x.Route.Id).ToArray();
             var defaultId = defaults.SelectedIndex > 0 ? cfg.Routes[defaults.SelectedIndex - 1].Id : null;
