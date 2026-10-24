@@ -161,6 +161,8 @@ app.Use(async (context, next) => {
  catch (RevisionConflictException) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError("revision_conflict", "Configuration changed; reload and retry.")); }
  catch (KeyNotFoundException) { context.Response.StatusCode = 404; await context.Response.WriteAsJsonAsync(new ApiError("not_found", "The requested item does not exist.")); }
  catch (Exception ex) when (ex is ArgumentException or FormatException or OverflowException) { context.Response.StatusCode = 400; await context.Response.WriteAsJsonAsync(new ApiError("validation", "Invalid request values; check dates, identities and selected accounts.")); }
+ catch (ProfileDrainTimedOutException ex) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError("runtime_busy", ex.Message)); }
+ catch (ProfileDrainRecoveryRequiredException ex) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError("runtime_recovery_required", ex.Message)); }
  catch (InvalidOperationException) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError("operation_unavailable", "Operation unavailable; check backend qualification, configuration and port availability.")); }
  catch (Exception) { context.Response.StatusCode = 500; await context.Response.WriteAsJsonAsync(new ApiError("operation_failed", "The operation failed. Check lain paths, credentials and service readiness.")); }
  finally { if (mutation) mutations.Release(); }

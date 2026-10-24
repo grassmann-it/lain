@@ -165,10 +165,10 @@ public sealed class OwnedProxyLifecycle(OwnStatePaths paths, SecretStore secrets
             { BaseAddress = new Uri($"http://127.0.0.1:{paths.GatewayPort}/"), Timeout = TimeSpan.FromSeconds(3) };
             http.DefaultRequestHeaders.Authorization = new("Bearer", secrets.GetOrCreateToken(paths.ManagementToken));
             var admissionMayBeClosed = false;
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            deadline.CancelAfter(TimeSpan.FromSeconds(20));
             try
             {
-                using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                deadline.CancelAfter(TimeSpan.FromSeconds(20));
                 admissionMayBeClosed = true; // A lost POST response can still mean Core accepted the drain.
                 using var begin = await http.PostAsync("lain/drain", null, deadline.Token);
                 begin.EnsureSuccessStatusCode();
@@ -188,6 +188,11 @@ public sealed class OwnedProxyLifecycle(OwnStatePaths paths, SecretStore secrets
                 }
                 await StopOwnedProcessAsync();
                 admissionMayBeClosed = false;
+            }
+            catch (OperationCanceledException) when (deadline.IsCancellationRequested && !ct.IsCancellationRequested)
+            {
+                // The finally block must confirm reopening; otherwise its recovery error supersedes this refusal.
+                throw new Lain.Host.Models.ProfileDrainTimedOutException();
             }
             finally
             {

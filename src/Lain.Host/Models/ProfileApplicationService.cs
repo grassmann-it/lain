@@ -8,6 +8,9 @@ namespace Lain.Host.Models;
 public sealed class ProfileDrainRecoveryRequiredException() : InvalidOperationException(
     "The previous runtime's request admission could not be confirmed. Retry profile application to recover.");
 
+public sealed class ProfileDrainTimedOutException() : InvalidOperationException(
+    "Active requests are still running. The previous runtime remains available; retry Apply after they finish.");
+
 /// <summary>
 /// Applies a single global runtime. The durable marker is written before touching the Core;
 /// an interrupted publication must be repaired by an explicit apply, never by starting partial files.

@@ -285,7 +285,7 @@ class HostRun:
                     expect((self.state / name).read_bytes() == data, "Apply replaced active proof before stream drain: " + name)
             if timeout:
                 code, result = future.result(timeout=30)
-                expect(code >= 400, "deadline did not refuse Apply")
+                expect(code == 409 and result.get("code") == "runtime_busy", "deadline did not explain active requests with a retryable conflict")
                 expect(self.core_children()[0][0] == old_pid, "deadline killed the old Core")
                 expect(self.request("/lain/activity", core=True)[1] == {"draining": False, "activeRequests": 1}, "deadline did not confirm admission reopening")
                 for name, data in protected.items():
