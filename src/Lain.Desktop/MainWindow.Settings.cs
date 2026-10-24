@@ -13,6 +13,7 @@ public sealed partial class MainWindow
     private string _settingsDensitySection = "Accounts";
     private ComboBox? _settingsDensity;
     private TextBlock? _settingsTrayHint;
+    private TextBlock? _settingsDensityLabel;
     private readonly Dictionary<CheckBox, Func<WorkspacePreferences, bool>> _settingsToggles = new();
 
     private Control SettingsPage()
@@ -20,15 +21,18 @@ public sealed partial class MainWindow
         var section = new ComboBox
         {
             ItemsSource = DensitySections, SelectedItem = _settingsDensitySection,
-            MinWidth = 160, HorizontalAlignment = HorizontalAlignment.Stretch
+            HorizontalAlignment = HorizontalAlignment.Stretch
         };
-        var density = new ComboBox { ItemsSource = Enum.GetNames<ViewDensity>(), MinWidth = 125 };
+        AutomationProperties.SetName(section, "Density section");
+        var density = new ComboBox { ItemsSource = Enum.GetNames<ViewDensity>(), HorizontalAlignment = HorizontalAlignment.Stretch };
         _settingsDensity = density;
-        var densityRow = new WrapPanel { Orientation = Orientation.Horizontal };
-        var sectionField = Ui.Field("Density section", section);
-        sectionField.Margin = new Avalonia.Thickness(0, 0, 18, 8);
+        _settingsDensityLabel = Ui.Text("Density for " + _settingsDensitySection, 12, Ui.Muted);
+        var densityRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), ColumnSpacing = 16 };
+        var sectionField = new StackPanel { Spacing = 4, Children = { _settingsDensityLabel, section } };
         densityRow.Children.Add(sectionField);
-        densityRow.Children.Add(Ui.Field("View density", density));
+        var densityField = Ui.Field("Density", density);
+        Grid.SetColumn(densityField, 1);
+        densityRow.Children.Add(densityField);
         section.SelectionChanged += (_, _) =>
         {
             if (_viewOptionsUpdating || section.SelectedItem is not string selected) return;
@@ -47,10 +51,12 @@ public sealed partial class MainWindow
         };
 
         _settingsToggles.Clear();
-        CheckBox BackgroundOption(string label, Func<WorkspacePreferences, bool> value,
+        CheckBox BackgroundOption(string label, string description, Func<WorkspacePreferences, bool> value,
             Func<WorkspacePreferences, bool, WorkspacePreferences> change)
         {
-            var toggle = new CheckBox { Content = label };
+            var labelContent = new StackPanel { Spacing = 1, Children = { Ui.Text(label), Ui.Text(description, 12, Ui.Muted) } };
+            var toggle = new CheckBox { Content = labelContent, HorizontalAlignment = HorizontalAlignment.Stretch, MinHeight = 36 };
+            AutomationProperties.SetHelpText(toggle, description);
             AutomationProperties.SetName(toggle, label);
             _settingsToggles.Add(toggle, value);
             toggle.IsCheckedChanged += (_, _) =>
@@ -60,50 +66,73 @@ public sealed partial class MainWindow
             };
             return toggle;
         }
-        var minimize = BackgroundOption("Minimize to tray", p => p.MinimizeToTray, (p, value) => p with { MinimizeToTray = value });
-        var close = BackgroundOption("Close to tray", p => p.CloseToTray, (p, value) => p with { CloseToTray = value });
-        var alerts = BackgroundOption("Usage and rate-limit alerts", p => p.NotificationsEnabled, (p, value) => p with { NotificationsEnabled = value });
+        var minimize = BackgroundOption("Minimize to tray", "Hide this window when minimized, when a tray is available.", p => p.MinimizeToTray, (p, value) => p with { MinimizeToTray = value });
+        var close = BackgroundOption("Close to tray", "Keep the UI in the tray when its window is closed.", p => p.CloseToTray, (p, value) => p with { CloseToTray = value });
+        var alerts = BackgroundOption("Usage and rate-limit alerts", "Show local usage and rate-limit notifications.", p => p.NotificationsEnabled, (p, value) => p with { NotificationsEnabled = value });
         _settingsTrayHint = Ui.Text("", 12, Ui.Muted);
         AutomationProperties.SetName(_settingsTrayHint, "Tray availability");
 
-        var about = Ui.Button("About lain", () => Navigate("About"));
-        AutomationProperties.SetName(about, "About lain");
-        var page = Ui.Stack(
-            Heading("Settings", "Window preferences and explicit host operation."),
-            RuntimeModeSettings(),
-            Ui.Card(Ui.Stack(Ui.Text("Density", 15), densityRow,
-                Ui.Text("Choose Normal or Compact independently for each main area. The information level remains available in the bottom navigation.", 12, Ui.Muted))),
-            Ui.Card(Ui.Stack(Ui.Text("Background and notifications", 15), minimize, close, alerts, _settingsTrayHint,
-                Ui.Text("These window options do not stop the independently running lain host.", 12, Ui.Muted))),
-            Ui.Card(Ui.Stack(Ui.Text("Help and application", 15),
-                Ui.Row(Ui.Button("Getting started", () => Navigate("Setup")), about))));
-        page.MaxWidth = 820;
-        page.HorizontalAlignment = HorizontalAlignment.Left;
+        var help = new WrapPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Stretch };
+        foreach (var button in new[] {
+            Ui.Button("Getting started", () => Navigate("Setup")),
+            Ui.Button("About lain", () => Navigate("About")),
+            Ui.Button("Host operating mode…", ShowRuntimeModeSettings) })
+        {
+            button.Margin = new Avalonia.Thickness(0, 0, 8, 0);
+            AutomationProperties.SetName(button, button.Content?.ToString());
+            help.Children.Add(button);
+        }
+        var densityGroup = Ui.Section("View density", new StackPanel { Spacing = 5, Children = {
+            densityRow, Ui.Text("Saved locally for each page; also available in that page's View menu.", 12, Ui.Muted) } });
+        var windowGroup = Ui.Section("Window and notifications", new StackPanel { Spacing = 4,
+            Children = { minimize, close, alerts, _settingsTrayHint } });
+        var helpGroup = Ui.Section("Help and application", new StackPanel { Spacing = 5, Children = {
+            help, Ui.Text("Host mode changes are reviewed separately and saved to the host configuration.", 12, Ui.Muted) } });
+        AutomationProperties.SetName(densityGroup, "View density settings");
+        AutomationProperties.SetName(windowGroup, "Window and notification settings");
+        AutomationProperties.SetName(helpGroup, "Help and application settings");
+        var page = new StackPanel { Spacing = 18, Children = {
+            Heading("Settings", "Local window preferences. Changes are saved as you choose them."),
+            densityGroup, windowGroup, helpGroup } };
+        page.MaxWidth = 760;
+        page.HorizontalAlignment = HorizontalAlignment.Stretch;
         AutomationProperties.SetName(page, "Settings page");
         SynchronizeSettings();
         return page;
     }
 
-    private Control RuntimeModeSettings()
+    private void ShowRuntimeModeSettings()
     {
-        var mode = new ComboBox { ItemsSource = new[] { "Monitor", "Gateway" }, SelectedIndex = IsMonitorMode ? 0 : 1, MinWidth = 160 };
-        AutomationProperties.SetName(mode, "Host operating mode");
-        return Ui.Card(Ui.Stack(Ui.Text("Host operating mode", 15), mode,
-            Ui.Text("Monitor reads account quotas and available saved history. Gateway adds model access, profiles and the optional proxy Core. This choice is separate from the information level.", 12, Ui.Muted),
-            Ui.Button("Review mode change…", () => {
-                if (_configuration is not { } cfg) return;
-                var selected = mode.SelectedIndex == 0 ? "monitor" : "gateway";
-                if (selected == cfg.RuntimeMode) { _notice.Text = "This operating mode is already configured."; return; }
-                _editing = true;
-                var apply = Action("Change host mode", async () => {
-                    _status = await _client.SetRuntimeModeAsync(new Lain.Core.RuntimeModeRequest(cfg.Revision, selected), _lifetime.Token);
-                    _configuration = await _client.GetConfigurationAsync(_lifetime.Token);
-                    UpdateNavigationDestinations();
-                }, "Host operating mode changed.");
-                _page.Content = Ui.Stack(Heading("Change host to " + selected + "?", "This changes the host's configured operation, independently of window density."),
-                    Ui.Text("The proxy Core may stop or start. Active requests can be interrupted. Existing accounts, profiles and recorded history are preserved.", 13, Ui.Warning),
-                    OverviewActions(apply, Ui.Button("Cancel", () => { _editing = false; Render(); })));
-            })));
+        var cfg = _configuration;
+        var knownMode = cfg?.RuntimeMode is "monitor" or "gateway";
+        var current = knownMode ? cfg!.RuntimeMode : "unknown";
+        var target = current == "monitor" ? "gateway" : current == "gateway" ? "monitor" : "";
+        var review = Ui.Button(knownMode ? "Review switch to " + target : "Host mode unavailable", () => {
+            if (cfg is null || !_hostAvailable || !knownMode) return;
+            _editing = true;
+            var apply = Action("Change host mode", async () => {
+                // A stale review never retries with a newer revision automatically.
+                if (!_hostAvailable || _configuration?.Revision != cfg.Revision)
+                    throw new InvalidOperationException("Host configuration changed or is unavailable. Reload status, then review the mode change again.");
+                _status = await _client.SetRuntimeModeAsync(new Lain.Core.RuntimeModeRequest(cfg.Revision, target), _lifetime.Token);
+                _configuration = await _client.GetConfigurationAsync(_lifetime.Token);
+                UpdateNavigationDestinations();
+            }, "Host operating mode changed.");
+            _page.Content = Ui.Stack(Heading("Change host to " + target + "?", "This saves a change to host configuration revision " + cfg.Revision + "."),
+                Ui.Text("The proxy Core may stop or start. Active requests can be interrupted. Existing accounts, profiles and recorded history are preserved.", 13, Ui.Warning),
+                OverviewActions(apply, Ui.Button("Cancel", () => { _editing = false; Render(); })));
+        });
+        review.IsEnabled = _hostAvailable && knownMode;
+        AutomationProperties.SetName(review, "Review host mode change");
+        var hostPage = Ui.Stack(Heading("Host operating mode", !knownMode ? "Configured mode unavailable" : (_hostAvailable ? "Configured mode: " : "Last known configured mode: ") + current),
+            Ui.Text("Monitor reads account quotas and available saved history. Gateway adds model access, profiles and the optional proxy Core.", 13),
+            Ui.Text("This changes the independently running host. Window density, information level and tray preferences stay local.", 12, Ui.Muted),
+            Ui.Text(_hostAvailable && knownMode ? "Review the effects before confirming a switch." : "Host configuration is unavailable. Reload status before reviewing a mode change.", 12, Ui.Muted),
+            review, Ui.Button("Back to Settings", () => { _editing = false; Render(); }));
+        hostPage.MaxWidth = 760;
+        hostPage.HorizontalAlignment = HorizontalAlignment.Stretch;
+        AutomationProperties.SetName(hostPage, "Host operating mode settings");
+        _page.Content = hostPage;
     }
 
     private void SynchronizeSettings()
@@ -115,12 +144,13 @@ public sealed partial class MainWindow
         {
             var preferences = _preferences;
             AutomationProperties.SetName(_settingsDensity, "Density for " + _settingsDensitySection);
+            if (_settingsDensityLabel is not null) _settingsDensityLabel.Text = "Density for " + _settingsDensitySection;
             _settingsDensity.SelectedIndex = (int)preferences.Densities.GetValueOrDefault(_settingsDensitySection, ViewDensity.Normal);
             foreach (var (toggle, value) in _settingsToggles) toggle.IsChecked = value(preferences);
             if (_settingsTrayHint is not null)
                 _settingsTrayHint.Text = _trayController?.TrayAvailable == true
-                    ? "Tray available. Alerts keep working while the window is hidden. Choose Quit UI from the tray menu to exit."
-                    : "Tray unavailable. The window uses normal minimize and close behavior until a tray is available.";
+                    ? "Tray available. Minimize and close use your independent choices. Hiding or closing the UI does not stop the host."
+                    : "Tray unavailable — normal minimize and close behavior is used. Your tray preferences are kept. Closing the UI does not stop the host.";
         }
         finally { _viewOptionsUpdating = wasUpdating; }
     }
@@ -136,6 +166,8 @@ public sealed partial class MainWindow
         var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
             ?? assembly.GetName().Version?.ToString() ?? "Unknown";
         var versionText = Ui.Text(version, 13);
+        var hostVersion = Ui.Text(_hostAvailable && _status is not null ? _status.Version : "Unavailable · host offline", 13);
+        AutomationProperties.SetName(hostVersion, "Reported host version");
         AutomationProperties.SetName(versionText, "Application version");
         const string repository = "https://github.com/grassmann-it/lain";
         var projectText = Ui.Text(repository, 13);
@@ -150,12 +182,13 @@ public sealed partial class MainWindow
             "The cat artwork is a contrast-adjusted variant of the user-supplied photo; its provenance records no separate license statement.", 12, Ui.Muted);
         AutomationProperties.SetName(licenses, "License information");
         var page = Ui.Stack(
-            Heading("About lain", "Local AI Gateway"),
-            Ui.Card(Ui.Stack(Ui.Row(logo, brand), Ui.Text("Application version", 12, Ui.Muted), versionText)),
+            Heading("About lain", "Account monitoring and local AI gateway"),
+            Ui.Card(Ui.Stack(Ui.Row(logo, brand), Ui.Text("Desktop build", 12, Ui.Muted), versionText,
+                Ui.Text("Host version · reported by the connected host", 12, Ui.Muted), hostVersion)),
             Ui.Card(Ui.Stack(Ui.Text("Project", 15), projectText, project)),
             Ui.Card(Ui.Stack(Ui.Text("Licenses and credits", 15), licenses)));
         page.MaxWidth = 820;
-        page.HorizontalAlignment = HorizontalAlignment.Left;
+        page.HorizontalAlignment = HorizontalAlignment.Stretch;
         AutomationProperties.SetName(page, "About page");
         return page;
     }
