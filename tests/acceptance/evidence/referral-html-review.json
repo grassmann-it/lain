@@ -1,0 +1,61 @@
+{
+  "checkedAt": "2026-10-24T11:43:46.374Z",
+  "file": "docs/provider-referrals.html",
+  "sha256": "a789c376c265ab3d859e7fe1970128a03caa2fc9d67f0ad96db9cd32391b7296",
+  "browser": "Chromium 153.0.8010.36",
+  "mode": "Headless, offline, all HTTP(S) intercepted and aborted; no provider pages loaded",
+  "providers": 20,
+  "states": {
+    "confirmed": 6,
+    "notConfirmed": 13,
+    "ended": 1
+  },
+  "checks": [
+    "20 providers, 6 confirmed / 13 unconfirmed / 1 ended; offline initial load",
+    "Embedded fonts/logo and no external runtime assets",
+    "All status/own-link filters, provider search, German ß search and no-result state",
+    "Official source link opens a separate tab with expected HTTPS target; intercepted before network",
+    "Invalid schemes/credentials rejected; valid own link saved and restored",
+    "Own-link opening uses entered URL; intercepted before network",
+    "JSON export exact, self-contained HTML export/reopen in clean context, filters reset, script-ending text safely round-trips",
+    "Deleting an embedded own link persists across reopen",
+    "Corrupted local storage safely falls back to embedded links",
+    "Storage failure is accurately labelled; HTML export still preserves session links",
+    "Desktop/tablet/mobile layouts at 1440, 800, 390 and 320 pixels: cards and expanded details stay within viewport",
+    "No JavaScript errors; only two deliberate link-test requests, both blocked"
+  ],
+  "layouts": [
+    {
+      "width": 1440,
+      "height": 1000,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 800,
+      "height": 800,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 320,
+      "height": 720,
+      "noHorizontalOverflow": true
+    }
+  ],
+  "expectedBlockedLinks": [
+    "https://www.alibabacloud.com/en/referral",
+    "https://example.invalid/ref?code=offline-review"
+  ],
+  "consoleErrors": [],
+  "screenshots": [
+    "/tmp/lain-referral-html-review/desktop-1440x1000.png",
+    "/tmp/lain-referral-html-review/mobile-390x844.png"
+  ],
+  "generator": "scripts/build-referral-overview.py",
+  "generatorDeterministic": true,
+  "screenshotsNote": "Local visual review artifacts; not required runtime resources or committed repository files."
+}
