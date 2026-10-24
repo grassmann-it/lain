@@ -366,10 +366,10 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
                 foreach (var (label, percent) in windows)
                 {
                     var name = account == "Personal Codex" ? "Personal Codex updated" : account;
-                    if (level != InformationLevel.Barebones) CheckQuotaBar(name, label, percent);
-                    else Check(((Control)QuotaTile(name).Header!).GetVisualDescendants().OfType<TextBlock>()
+                    CheckQuotaBar(name, label, percent);
+                    Check(((Control)QuotaTile(name).Header!).GetVisualDescendants().OfType<TextBlock>()
                         .Any(t => t.Text == percent.ToString("0.#", System.Globalization.CultureInfo.CurrentCulture) + "% used"),
-                        $"Barebones preserves {name} {label} consumed percentage text");
+                        $"{level} preserves {name} {label} consumed percentage text");
                 }
         }
         Check(JsonSerializer.Serialize(fixture.Config) == config && MutatingRequestCount() == mutations,
