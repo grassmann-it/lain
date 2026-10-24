@@ -104,7 +104,35 @@ copying archived credentials or the staged rebased YAML into the original home.
 Existing service/launcher paths therefore remain valid. This is a reviewed
 fixture/procedure, not evidence that an actual user installation was changed.
 
-Source review does not establish the pending exact-artifact process result.
-Without the guarded conversion and passing old/new process evidence, historical
-rollback remains unqualified. A current-package backup/restore test and retained
-`app.previous` do not establish it.
+## Exact-package evidence inspected
+
+Root executed the final package probe and supplied
+`/home/tomka/.cache/lain-qualification-20261024/final-actual-packages.json` and
+`final-packages-r1.log`. The independent reviewer inspected both, the launch
+wrapper/arguments and the tested fixture source; it did not repeat execution.
+The report is `passed`, `planOnly:false`, with six passing checks including staged
+old→new→old→new, original-home app/database-only return and app-only re-upgrade,
+changed CURRENT grant retention, fresh Monitor/restart/CLI, update intent and
+stopped snapshot/restore quarantine. The wrapper uses `unshare -Urn` with loopback
+only. The fixture source hash at inspection was
+`e71646539c38bf2729ec4d0408461b61cf6d58d078753894f27fff71450ef73a`;
+it contained Root's tested, then-uncommitted original-home/current-grant additions.
+
+The frozen product source is `793822c17a9bfa6a950bf82c8d2cdb6afa648d7c`.
+Independent file hashing confirmed the report's Monitor manifest
+`357f8c9951d892e651944e1b1894c54ba846de73408c543f69bc387032ae9801`,
+Gateway manifest
+`f60ffb6e3be089fcceeca64b3cd6a6bbfb116a00500bb042a9722df818a1a418`,
+and common Host DLL
+`3ab78ee50613ce4d96b7e67f878383a31e005cf1e62424a8588bebcea771881e`.
+The shipped rollback helper matches reviewed source at
+`8e426b0fd6d4eda1f436da44f88a04cb5a8dffcd8ca1aa51fd29b74cfd0115ed`.
+The report identifies previous source `413588c44ee5ad730573baab2cd8f6dc328f48c5`
+and the already reviewed Core `39c09202ca7c38c636cfb949abec3b71c6c9843dd2651cbc8bf44944c13c0629`.
+
+This closes the bounded synthetic package/rollback process-evidence gate for
+these artifacts and the unchanged legacy verification window. It does not
+qualify arbitrary new-version activity, app-only schema4 rollback, real OAuth,
+the user installation or final UI acceptance. The report still records the new
+Gateway package's overall `releaseQualified:false`; overall release qualification
+remains Root's separate integration decision.
