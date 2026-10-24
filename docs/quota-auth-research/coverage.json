@@ -1,0 +1,380 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-24",
+  "baseCommit": "5dc916fcea702f2a196520903937570745e26dac",
+  "status": "research-only; new integrations not implemented or live-qualified",
+  "scope": "All 20 catalog providers plus imported Xiaomi MiMo; existing Codex, Command Code, Kimi and Z.ai are references.",
+  "workerCount": 8,
+  "catalogProviderCount": 20,
+  "additionalProviderCount": 1,
+  "productVariantCount": 28,
+  "providers": [
+    {
+      "providerId": "alibaba-model-studio",
+      "variants": [
+        {
+          "productId": "alibaba-model-studio",
+          "product": "Alibaba Cloud Model Studio / DashScope ordinary regional API; API-key trial and PAYG",
+          "report": "alibaba-nebius-inception.md",
+          "data": "alibaba-nebius-inception.json",
+          "jsonPointer": "/providers/0"
+        },
+        {
+          "productId": "alibaba-coding-plan",
+          "product": "Alibaba Coding Plan subscription; separate from ordinary Model Studio trial/API",
+          "report": "alibaba-nebius-inception.md",
+          "data": "alibaba-nebius-inception.json",
+          "jsonPointer": "/providers/1"
+        }
+      ]
+    },
+    {
+      "providerId": "cloudflare-workers-ai",
+      "variants": [
+        {
+          "productId": "cloudflare",
+          "product": "Cloudflare Workers AI",
+          "report": "google-cloudflare.md",
+          "data": "google-cloudflare.json",
+          "jsonPointer": "/providers/1"
+        }
+      ]
+    },
+    {
+      "providerId": "cohere",
+      "variants": [
+        {
+          "productId": "cohere-evaluation",
+          "product": "Cohere Evaluation / Trial",
+          "report": "samba-upstage-cohere.md",
+          "data": "samba-upstage-cohere.json",
+          "jsonPointer": "/providers/2"
+        },
+        {
+          "productId": "cohere-production",
+          "product": "Cohere Production / paid",
+          "report": "samba-upstage-cohere.md",
+          "data": "samba-upstage-cohere.json",
+          "jsonPointer": "/providers/3"
+        }
+      ]
+    },
+    {
+      "providerId": "fireworks",
+      "variants": [
+        {
+          "productId": "fireworks",
+          "product": "Fireworks account/serverless; FirePass and dedicated deployment limits remain separate",
+          "report": "auth-review.md",
+          "data": "auth-review.json",
+          "jsonPointer": "/providers/1"
+        }
+      ]
+    },
+    {
+      "providerId": "gemini-api",
+      "variants": [
+        {
+          "productId": "gemini",
+          "product": "Google Gemini Developer API",
+          "report": "google-cloudflare.md",
+          "data": "google-cloudflare.json",
+          "jsonPointer": "/providers/0"
+        }
+      ]
+    },
+    {
+      "providerId": "groq",
+      "variants": [
+        {
+          "productId": "groq",
+          "product": "GroqCloud direct inference: Free, Developer PAYG, Enterprise",
+          "report": "groq-mistral.md",
+          "data": "groq-mistral.json",
+          "jsonPointer": "/providers/0"
+        }
+      ]
+    },
+    {
+      "providerId": "inception",
+      "variants": [
+        {
+          "productId": "inception",
+          "product": "Inception Mercury API",
+          "report": "alibaba-nebius-inception.md",
+          "data": "alibaba-nebius-inception.json",
+          "jsonPointer": "/providers/3"
+        }
+      ]
+    },
+    {
+      "providerId": "kilo",
+      "variants": [
+        {
+          "productId": "kilo",
+          "product": "Kilo Gateway (personal balance; organizations separately scoped)",
+          "report": "kilo-opencode-requesty.md",
+          "data": "kilo-opencode-requesty.json",
+          "jsonPointer": "/providers/0"
+        }
+      ]
+    },
+    {
+      "providerId": "mistral",
+      "variants": [
+        {
+          "productId": "mistral",
+          "product": "Mistral Studio/API/Vibe Code global plans; Enterprise Admin API Preview",
+          "report": "groq-mistral.md",
+          "data": "groq-mistral.json",
+          "jsonPointer": "/providers/1"
+        }
+      ]
+    },
+    {
+      "providerId": "nebius",
+      "variants": [
+        {
+          "productId": "nebius",
+          "product": "Nebius Token Factory public/serverless inference; Dedicated and GPU Cloud reporting considered separately",
+          "report": "alibaba-nebius-inception.md",
+          "data": "alibaba-nebius-inception.json",
+          "jsonPointer": "/providers/2"
+        }
+      ]
+    },
+    {
+      "providerId": "nvidia-build",
+      "variants": [
+        {
+          "productId": "nvidia-build",
+          "product": "NVIDIA Build hosted public NIM API prototyping, not NGC registry/Enterprise/self-hosted NIM",
+          "report": "mimo-nvidia.md",
+          "data": "mimo-nvidia.json",
+          "jsonPointer": "/providers/2"
+        }
+      ]
+    },
+    {
+      "providerId": "opencode-go",
+      "variants": [
+        {
+          "productId": "opencode-go",
+          "product": "OpenCode Go",
+          "report": "kilo-opencode-requesty.md",
+          "data": "kilo-opencode-requesty.json",
+          "jsonPointer": "/providers/1"
+        },
+        {
+          "productId": "opencode-go-plus",
+          "product": "OpenCode Go Plus",
+          "report": "kilo-opencode-requesty.md",
+          "data": "kilo-opencode-requesty.json",
+          "jsonPointer": "/providers/2"
+        },
+        {
+          "productId": "opencode-zen",
+          "product": "OpenCode Zen / current Console pay-as-you-go",
+          "report": "kilo-opencode-requesty.md",
+          "data": "kilo-opencode-requesty.json",
+          "jsonPointer": "/providers/3"
+        }
+      ]
+    },
+    {
+      "providerId": "openrouter",
+      "variants": [
+        {
+          "productId": "openrouter",
+          "product": "User/workspace inference API; key-level and overlapping spend limits",
+          "report": "auth-review.md",
+          "data": "auth-review.json",
+          "jsonPointer": "/providers/0"
+        }
+      ]
+    },
+    {
+      "providerId": "poe",
+      "variants": [
+        {
+          "productId": "poe",
+          "product": "User API points (subscription plan + add-on points combined)",
+          "report": "xai-stepfun-poe-synthetic.md",
+          "data": "xai-stepfun-poe-synthetic.json",
+          "jsonPointer": "/providers/3"
+        }
+      ]
+    },
+    {
+      "providerId": "requesty",
+      "variants": [
+        {
+          "productId": "requesty",
+          "product": "Requesty Gateway; self-key monitor and optional organization monitor",
+          "report": "kilo-opencode-requesty.md",
+          "data": "kilo-opencode-requesty.json",
+          "jsonPointer": "/providers/4"
+        }
+      ]
+    },
+    {
+      "providerId": "sambanova",
+      "variants": [
+        {
+          "productId": "sambanova",
+          "product": "SambaCloud Free and Developer (separate plan states; not SambaStack/Studio)",
+          "report": "samba-upstage-cohere.md",
+          "data": "samba-upstage-cohere.json",
+          "jsonPointer": "/providers/0"
+        }
+      ]
+    },
+    {
+      "providerId": "stepfun",
+      "variants": [
+        {
+          "productId": "stepfun",
+          "product": "Direct PAYG / personal platform API (organization Credit distinct)",
+          "report": "xai-stepfun-poe-synthetic.md",
+          "data": "xai-stepfun-poe-synthetic.json",
+          "jsonPointer": "/providers/1"
+        },
+        {
+          "productId": "stepfun",
+          "product": "Personal Step Plan subscription (CN / Global)",
+          "report": "xai-stepfun-poe-synthetic.md",
+          "data": "xai-stepfun-poe-synthetic.json",
+          "jsonPointer": "/providers/2"
+        }
+      ]
+    },
+    {
+      "providerId": "synthetic",
+      "variants": [
+        {
+          "productId": "synthetic",
+          "product": "Subscription quota (weekly regenerating weighted credits)",
+          "report": "xai-stepfun-poe-synthetic.md",
+          "data": "xai-stepfun-poe-synthetic.json",
+          "jsonPointer": "/providers/4"
+        },
+        {
+          "productId": "synthetic",
+          "product": "Usage-priced API / paid extra usage",
+          "report": "xai-stepfun-poe-synthetic.md",
+          "data": "xai-stepfun-poe-synthetic.json",
+          "jsonPointer": "/providers/5"
+        }
+      ]
+    },
+    {
+      "providerId": "upstage",
+      "variants": [
+        {
+          "productId": "upstage",
+          "product": "Upstage direct Solar API: signup grant, prepaid credits and PAYG separately; Studio subscription excluded",
+          "report": "samba-upstage-cohere.md",
+          "data": "samba-upstage-cohere.json",
+          "jsonPointer": "/providers/1"
+        }
+      ]
+    },
+    {
+      "providerId": "xai",
+      "variants": [
+        {
+          "productId": "xai",
+          "product": "Developer API / API-team billing (PAYG)",
+          "report": "xai-stepfun-poe-synthetic.md",
+          "data": "xai-stepfun-poe-synthetic.json",
+          "jsonPointer": "/providers/0"
+        }
+      ]
+    },
+    {
+      "providerId": "xiaomi-mimo",
+      "variants": [
+        {
+          "productId": "xiaomi-mimo-token-plan",
+          "product": "Xiaomi MiMo Individual and Team Token Plan (separate from PAYG)",
+          "report": "mimo-nvidia.md",
+          "data": "mimo-nvidia.json",
+          "jsonPointer": "/providers/0"
+        },
+        {
+          "productId": "xiaomi-mimo-payg",
+          "product": "Xiaomi MiMo pay-as-you-go API (separate from Token Plan)",
+          "report": "mimo-nvidia.md",
+          "data": "mimo-nvidia.json",
+          "jsonPointer": "/providers/1"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "mimo-nvidia.md",
+      "sha256": "5f9a86f41ade32d47861d7fbdfdef27191c6e74036582ff9f63cf2582dceb19f"
+    },
+    {
+      "path": "mimo-nvidia.json",
+      "sha256": "54bcfb49362490aff68d7469c4304741c919ab5d1662c86438f77f8214a1f104"
+    },
+    {
+      "path": "groq-mistral.md",
+      "sha256": "2a107d7f48f77bec769f092fdffd31faa7a5f93849333376fd6f389c4bb969a1"
+    },
+    {
+      "path": "groq-mistral.json",
+      "sha256": "8e32bb1cc4d20f0c686cec35601adb5a8e506fd3a776c92a411448321f9ec302"
+    },
+    {
+      "path": "samba-upstage-cohere.md",
+      "sha256": "b2a243f6a25c0c8f26606542a1b50d0f7ffc9a4b19fdbf91889329297b82c7a1"
+    },
+    {
+      "path": "samba-upstage-cohere.json",
+      "sha256": "782d56504f9abaeb29a22ac7749b5c8fd0ab2b8e7f0aeec7b2e783825b6f3820"
+    },
+    {
+      "path": "kilo-opencode-requesty.md",
+      "sha256": "7e39c675a3901ff60891110f53fe6cf0d3f19d7758a1379d5beb09dbbea68c5f"
+    },
+    {
+      "path": "kilo-opencode-requesty.json",
+      "sha256": "27b6c40c6b02d2ca97223db463bd4735622f5a9ac94c1fcca83e4c275c41baf5"
+    },
+    {
+      "path": "alibaba-nebius-inception.md",
+      "sha256": "c009bbb563e1ed5972f8e21d30e80a38eb6546c2343a0777ed30f915edd8b31a"
+    },
+    {
+      "path": "alibaba-nebius-inception.json",
+      "sha256": "dd6bdb5ec90094e0865ccf5edaa39c89535b8cfc318f2200fa2cb58069161ff3"
+    },
+    {
+      "path": "xai-stepfun-poe-synthetic.md",
+      "sha256": "d8f0c137988bbfda3d39950d8e4c567e7dd6edd2e11547588d14e622735d24ba"
+    },
+    {
+      "path": "xai-stepfun-poe-synthetic.json",
+      "sha256": "9c0359273ffcca52e125a5d18c5f61cd8002ff467d8479f3403e3cb61f6b9711"
+    },
+    {
+      "path": "google-cloudflare.md",
+      "sha256": "c3097f0fd07f056f64dcc474601f0574a745d8049baddb1ff7667795a58c7593"
+    },
+    {
+      "path": "google-cloudflare.json",
+      "sha256": "4880ad347946d18d448320da6e032f30facb185f4410134e7700445c94d00037"
+    },
+    {
+      "path": "auth-review.md",
+      "sha256": "e60172837533f2ab05a95a56dea01539e294fa0e7814c4325f41e32ff216d98b"
+    },
+    {
+      "path": "auth-review.json",
+      "sha256": "e8783e23a87bc133d0aa7c20636da63c97000052e0aed1f272aaa56b56a9f57a"
+    }
+  ]
+}

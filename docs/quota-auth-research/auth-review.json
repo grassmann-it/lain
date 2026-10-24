@@ -1,0 +1,778 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-24",
+  "baseCommit": "5dc916f",
+  "status": "research-proposal-not-product-decision",
+  "scope": "OpenRouter, Fireworks, independent auth/account/monitor architecture review",
+  "constraints": [
+    "Public official documentation and project code only",
+    "No credentials, private provider calls, browser accounts, login, registration, purchase, services, builds or product code changes",
+    "No subagents"
+  ],
+  "providers": [
+    {
+      "id": "openrouter",
+      "product": "User/workspace inference API; key-level and overlapping spend limits",
+      "currentLain": {
+        "inference": "Existing API-key account and OpenAI-compatible route",
+        "monitor": "OpenRouterQuotaAdapter reads GET /api/v1/key using same inference key",
+        "login": "No OpenRouter-owned login adapter registered at reviewed base",
+        "code": [
+          "src/Lain.Host/Accounts/AccountService.cs",
+          "src/Lain.Host/Quota/OpenRouterQuotaAdapter.cs",
+          "src/Lain.Host/Program.cs"
+        ]
+      },
+      "authOptions": [
+        {
+          "id": "public-pkce-key-bootstrap",
+          "classification": "Public provider-supported PKCE authorization resulting in API key; not conventional access/refresh OAuth session",
+          "status": "officially-documented-unimplemented-not-live-qualified",
+          "authorize": "https://openrouter.ai/auth",
+          "parameters": [
+            "callback_url",
+            "code_challenge",
+            "code_challenge_method=S256",
+            "state",
+            "key_label",
+            "workspace_id",
+            "required_workspace_id"
+          ],
+          "callback": "Localhost supported on any port; API reference also names 127.0.0.1. State echoed on success, not on denial/headless.",
+          "headless": "Omit callback_url; PKCE required; user pastes one-time authorization code valid 10 minutes, not API key",
+          "exchange": "POST https://openrouter.ai/api/v1/auth/keys with code, code_verifier, code_challenge_method",
+          "result": [
+            "key"
+          ],
+          "clientRegistration": "Official OpenRouterTeam README explicitly says no client registration required",
+          "inference": true,
+          "monitor": "Same resulting key can use current-key endpoint; account credits require separate Management key",
+          "refresh": "No refresh grant/token documented; reconnect at expiry/revocation",
+          "evidence": [
+            "OR1",
+            "OR2",
+            "OR3",
+            "OR4",
+            "OR5"
+          ]
+        },
+        {
+          "id": "manual-inference-key",
+          "classification": "User-supplied API key",
+          "status": "existing-supported-fallback",
+          "inference": true,
+          "monitor": "GET /key",
+          "ownership": "User-supplied; do not revoke as a side effect of monitor unlink",
+          "evidence": [
+            "OR4"
+          ]
+        },
+        {
+          "id": "management-key-reporting",
+          "classification": "Separately privileged management key",
+          "status": "official-documentation; optional future monitor capability",
+          "monitor": "GET /credits requires Management key explicitly in current reference",
+          "bootstrap": "Do not claim ordinary PKCE login produces this privilege; POST /auth/keys/code is not an unauthenticated bootstrap shortcut",
+          "evidence": [
+            "OR3",
+            "OR5",
+            "OR6"
+          ]
+        }
+      ],
+      "reporting": [
+        {
+          "endpoint": "GET https://openrouter.ai/api/v1/key",
+          "auth": "Same inference API key",
+          "data": [
+            "key spend cap",
+            "free_model_daily_requests",
+            "overlapping scoped budgets",
+            "key expiry"
+          ],
+          "identity": [
+            "creator_user_id",
+            "workspace_id",
+            "organization_id"
+          ],
+          "caution": "Key cap, workspace/member budget and free request allowance are separate constraints; effective_budget duplicates a constraint; no account credit balance inferred",
+          "monitorMode": "Independent direct read; no core/inference needed",
+          "evidence": [
+            "OR4"
+          ]
+        },
+        {
+          "endpoint": "GET https://openrouter.ai/api/v1/credits",
+          "auth": "Management key required",
+          "data": [
+            "total_credits",
+            "total_usage"
+          ],
+          "caution": "Current reference contradicts old inventory assumption of ordinary-key access; do not auto-attempt as part of normal PKCE onboarding",
+          "evidence": [
+            "OR5"
+          ]
+        }
+      ],
+      "recommendation": {
+        "priority": "First public no-key-copy login candidate",
+        "steps": [
+          "Add concrete OpenRouterLoginAdapter to existing LoginOperationService",
+          "Bind operation to stable target account, revision and expected workspace; use S256 and random state with bounded loopback listener",
+          "Exchange privately; read /key to verify identity/expiry/scope without inference",
+          "Store returned key as api-key plus acquisition metadata; reconnect by replacing key on same account",
+          "Reuse existing /key quota adapter; do not duplicate a monitor secret",
+          "Use documented per-key settings link for cleanup guidance; never claim local removal revokes server key"
+        ],
+        "sameAccount": "PKCE returned key is shared by inference and current-key monitor; no second account required",
+        "narrowContractExtension": "Login start targetAccountId/purpose/methodId/resourceId/revision; result accountId; private provenance and credential generation"
+      },
+      "unresolved": [
+        "Actual account/workspace read and callback behavior not live qualified",
+        "Exact account-identity availability when optional fields are absent",
+        "Remote-headless code submission UI and cleanup after key was minted but local adoption fails",
+        "Ordinary issued key cannot be assumed to delete itself or read Management endpoints",
+        "Parent reports a historical local ordinary-key /credits 200; current documentation requires Management key. Do not universalize documentation into a claim every standard key must fail. Any legacy behavior needs explicit source/account/version qualification."
+      ],
+      "evidence": [
+        "OR1",
+        "OR2",
+        "OR3",
+        "OR4",
+        "OR5",
+        "OR6"
+      ],
+      "sources": [
+        {
+          "id": "OR1",
+          "url": "https://openrouter.ai/docs/guides/overview/auth/oauth",
+          "kind": "official-documentation",
+          "claim": "Public PKCE-to-key browser flow, localhost arbitrary port, state/workspace parameters, headless code and expiry",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "OR2",
+          "url": "https://github.com/OpenRouterTeam/skills/blob/main/skills/openrouter-oauth/README.md",
+          "kind": "official-source-readme",
+          "claim": "No SDK/client registration required; user gets API key",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "OR3",
+          "url": "https://openrouter.ai/docs/api/api-reference/oauth/create-authorization-code",
+          "kind": "official-api-reference",
+          "claim": "Authenticated programmatic code creation; localhost/127.0.0.1 callbacks; not replacement for uncredentialed browser onboarding",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "OR4",
+          "url": "https://openrouter.ai/docs/api/api-reference/api-keys/get-current-api-key",
+          "kind": "official-api-reference",
+          "claim": "Current key identity, expiry, budgets and free request fields",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "OR5",
+          "url": "https://openrouter.ai/docs/api/api-reference/credits/get-remaining-credits",
+          "kind": "official-api-reference",
+          "claim": "GET credits explicitly requires Management key",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "OR6",
+          "url": "https://openrouter.ai/docs/guides/overview/auth/management-api-keys",
+          "kind": "official-documentation",
+          "claim": "Management credential is separate capability from ordinary inference key",
+          "checkedAt": "2026-10-24"
+        }
+      ],
+      "missingImplementation": [
+        "Concrete OpenRouter IQualifiedLoginAdapter and host browser/callback/code-exchange wiring",
+        "Stable target-account/revision/workspace binding and reconnect; private generated-key persistence",
+        "Bounded callback cancellation/replay/state tests and headless code submission if remote host supported",
+        "Optional Management-key monitor for account credits; ordinary PKCE key does not document that privilege"
+      ]
+    },
+    {
+      "id": "fireworks",
+      "product": "Fireworks account/serverless; FirePass and dedicated deployment limits remain separate",
+      "currentLain": {
+        "inference": "Existing API-key serverless route",
+        "monitor": "FireworksQuotaAdapter reads /v1/accounts/{account}/quotas with existing key or optional separate monitor key",
+        "identity": "Explicit resource account ID; existing recorded inference account ID must match; user-supplied ID otherwise unverified",
+        "login": "No owned Fireworks login/bootstrap adapter",
+        "code": [
+          "src/Lain.Host/Quota/FireworksQuotaAdapter.cs",
+          "src/Lain.Host/Accounts/Monitoring/MonitorAccessService.cs",
+          "docs/providers/fireworks.md"
+        ]
+      },
+      "authOptions": [
+        {
+          "id": "official-cli-key-bootstrap",
+          "classification": "Official CLI sign-in delegation followed by API-key creation, not evidenced public third-party OAuth",
+          "status": "officially-documented-concrete-candidate; CLI output/isolation qualification remains",
+          "entry": "firectl signin (Google SSO); firectl signin <account> for custom SSO",
+          "identity": "firectl account list -o json; explicit --account-id and --profile for subsequent commands",
+          "bootstrap": "firectl api-key create --key-name lain -o json --account-id <selected>; service account not required",
+          "result": "API create reference returns one-time key, keyId, optional expireTime; CLI command advertises JSON output, exact CLI response shape untested",
+          "inference": true,
+          "monitor": "Reuse resulting API key for documented account quota/reporting reads, subject to role and account binding",
+          "ownership": "CLI owns its login session; lain owns only explicitly provisioned key copy and metadata; no refresh token import",
+          "clientRegistration": "No public third-party native OAuth client-registration contract qualified in reviewed documentation",
+          "evidence": [
+            "FW1",
+            "FW2",
+            "FW3",
+            "FW4",
+            "FW5"
+          ]
+        },
+        {
+          "id": "existing-api-key",
+          "classification": "Existing inference key or optional separate authorized monitor key",
+          "status": "implemented-for-quotas-not-live-qualified",
+          "inference": true,
+          "monitor": "Bearer API-key documented for account/quotas/billing APIs; permission per endpoint remains independent",
+          "evidence": [
+            "FW6",
+            "FW7",
+            "FW8",
+            "FW9"
+          ]
+        },
+        {
+          "id": "delegated-cli-reporting",
+          "classification": "CLI session remains external; execute documented bounded JSON reads",
+          "status": "official-command-candidate",
+          "commands": [
+            "firectl quota list -o json --account-id <selected> --profile <explicit>",
+            "firectl billing get-usage --start-time <date> --end-time <date> -o json"
+          ],
+          "monitor": "Independent of local inference proxy",
+          "caution": "Do not scrape global auth.ini, refresh external session or globally sign out; qualify profile support and stable JSON",
+          "evidence": [
+            "FW10",
+            "FW11"
+          ]
+        }
+      ],
+      "reporting": [
+        {
+          "endpoint": "GET /v1/accounts/{account_id}/quotas",
+          "auth": "Bearer API key; minimum role not explicitly assigned in reviewed role matrix",
+          "data": [
+            "value",
+            "maxValue",
+            "usage",
+            "updateTime"
+          ],
+          "semantics": "monthly-spend-usd is spend constraint, not prepaid balance. updateTime is not usage data-as-of or reset. Unknown quota units remain unknown.",
+          "monitorMode": "Independent direct read",
+          "evidence": [
+            "FW6",
+            "FW12"
+          ]
+        },
+        {
+          "endpoint": "GET /v1/accounts/{account_id}/billingUsage",
+          "auth": "Bearer API key; account resource explicit",
+          "semantics": "Primarily metered quantities; serverless model/key dimensions documented for all accounts, annotations Enterprise. Current schema additionally has costNanoUsd, authoritative only for huggingface per schema, with zero also meaning absent. Do not present that field as complete account cost or infer free usage. Use rated-cost endpoints for general cost reporting.",
+          "evidence": [
+            "FW7",
+            "FW13"
+          ]
+        },
+        {
+          "endpoint": "GET /v1/accounts/{account_id}/billing/summary",
+          "auth": "Bearer API key",
+          "semantics": "Rated line-item costs with currency, units and nanos; daily aggregation, end date exclusive; not credit balance or final invoice",
+          "evidence": [
+            "FW8"
+          ]
+        },
+        {
+          "endpoint": "POST /v1/accounts/{account_id}/usageCosts:query",
+          "readOnlySemantics": true,
+          "auth": "Bearer API key; ACCOUNT requires account administrator, SELF authenticated principal only",
+          "data": [
+            "rows",
+            "nextPageToken",
+            "subtotal",
+            "evaluationTime",
+            "attributionCompleteness"
+          ],
+          "semantics": "Rated costs excluding fixed fees/invoice-level discounts/minimums/credits/taxes. Up to two grouping dimensions. Subtotal is for whole query, not per page. SELF may omit unattributed history; no fallback that labels SELF as account total.",
+          "freshness": "evaluationTime is evaluation, not complete-through consumption watermark",
+          "evidence": [
+            "FW9",
+            "FW14"
+          ]
+        }
+      ],
+      "recommendation": {
+        "priority": "Concrete no-copy onboarding through official CLI plus existing direct quota reader",
+        "steps": [
+          "Use existing key first for an already connected account",
+          "Otherwise delegate supported official CLI sign-in with explicit profile; show key creation as part of Connect",
+          "Discover/select exact Fireworks account; create named personal key privately, without serviceaccount",
+          "Persist key plus keyId/expiry/account binding; use same stable local account for inference and monitoring",
+          "Qualify CLI profile isolation/JSON/error lifecycle before implementation release",
+          "Add optional cost sources independently of login; scope-limited SELF is useful without requesting Admin merely for setup"
+        ],
+        "sameAccount": "Exact selected Fireworks account shared; separate monitor key permitted but must be bound to same resource",
+        "fallback": "Documented CLI quota JSON reader; manual API-key setup remains available"
+      },
+      "unresolved": [
+        "Sign-in session/profile behavior and precise CLI JSON key output",
+        "signin vs billing guides' login alias discrepancy",
+        "Minimum List/Get Quotas role; account-specific authorization untested",
+        "No current prepaid available-balance field qualified in these billing endpoints",
+        "Reporting delay, account completeness and live permission not established",
+        "Public third-party native OAuth registration/refresh/revocation contract not established"
+      ],
+      "evidence": [
+        "FW1",
+        "FW2",
+        "FW3",
+        "FW4",
+        "FW5",
+        "FW6",
+        "FW7",
+        "FW8",
+        "FW9",
+        "FW10",
+        "FW11",
+        "FW12",
+        "FW13",
+        "FW14"
+      ],
+      "sources": [
+        {
+          "id": "FW1",
+          "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/authentication",
+          "kind": "official-documentation",
+          "claim": "Official signin for Google/custom SSO; existing key alternative",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "FW2",
+          "url": "https://docs.fireworks.ai/tools-sdks/firectl/firectl",
+          "kind": "official-documentation",
+          "claim": "Official CLI distribution and signin/whoami/version commands",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "FW3",
+          "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/account-list",
+          "kind": "official-documentation",
+          "claim": "Signed-in account discovery with JSON and profile/account flags",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "FW4",
+          "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/api-key-create",
+          "kind": "official-documentation",
+          "claim": "Creates personal key for signed-in user, JSON output, key name, expiry; serviceaccount optional",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "FW5",
+          "url": "https://docs.fireworks.ai/api-reference/create-api-key",
+          "kind": "official-api-reference",
+          "claim": "Create response key/keyId/expiry; plaintext only available upon creation",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "FW6",
+          "url": "https://docs.fireworks.ai/api-reference/list-quotas",
+          "kind": "official-api-reference",
+          "claim": "API-key-authenticated account quota reader",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "FW7",
+          "url": "https://docs.fireworks.ai/api-reference/get-billing-usage",
+          "kind": "official-api-reference",
+          "claim": "Direct schema opened: metered quantities, daily aggregation and maximum 31 days; costNanoUsd limited attribution and zero-means-absent caveat",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "FW8",
+          "url": "https://docs.fireworks.ai/api-reference/get-billing-summary",
+          "kind": "official-api-reference",
+          "claim": "Daily rated costs, money schema, exclusive end date",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "FW9",
+          "url": "https://docs.fireworks.ai/api-reference/query-usage-costs",
+          "kind": "official-api-reference",
+          "claim": "ACCOUNT Admin versus SELF, grouped costs, whole-query subtotal, evaluation time and completeness",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "FW10",
+          "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/quota-list",
+          "kind": "official-documentation",
+          "claim": "CLI quota read with JSON output and account/profile flags",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "FW11",
+          "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/billing-get-usage",
+          "kind": "official-documentation",
+          "claim": "CLI bounded usage/cost reader, JSON output and UTC-default timezone",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "FW12",
+          "url": "https://docs.fireworks.ai/guides/quotas_usage/account-quotas",
+          "kind": "official-documentation",
+          "claim": "Direct quota guide opened: monthly-spend-usd, distinct Enterprise informational alerts, account-wide limits",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "FW13",
+          "url": "https://docs.fireworks.ai/accounts/exporting-usage-and-costs",
+          "kind": "official-documentation",
+          "claim": "Quantities/cost endpoint distinction, general access guide, per-key-cost textual inconsistency, CLI version 1.7.21",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "id": "FW14",
+          "url": "https://docs.fireworks.ai/accounts/exporting-usage-costs",
+          "kind": "official-documentation",
+          "claim": "Serverless rated costs, admin CSV vs SELF API, maximum 31-day query and 100-day historical start",
+          "checkedAt": "2026-10-24"
+        }
+      ],
+      "missingImplementation": [
+        "Official firectl delegation adapter; qualified CLI version, JSON response, profile isolation and process cancellation",
+        "Account discovery/selection and named personal-key bootstrap with private one-time key/keyId/expiry persistence",
+        "Stable reconnect/resource identity binding without replacing external CLI session ownership",
+        "Optional billingUsage/billing summary/usageCosts readers with explicit ACCOUNT versus SELF rights, attribution and bounded pagination"
+      ]
+    }
+  ],
+  "architectureRecommendations": [
+    {
+      "id": "auth-axes",
+      "status": "proposal",
+      "recommendation": "Record acquisition, ownership, capability, resource scope and qualification separately. vendor-device and pkce-key-bootstrap are not assumed conventional public OAuth."
+    },
+    {
+      "id": "same-account",
+      "status": "proposal-based-on-existing-contract",
+      "recommendation": "Stable local AccountId owns inference and optional monitor capabilities. Reconnect replaces credential on same account, checks upstream identity again, never creates implicit extra budget."
+    },
+    {
+      "id": "narrow-login-modules",
+      "status": "proposal",
+      "recommendation": "Reuse IQualifiedLoginAdapter/LoginOperationService with small provider modules and additive operation target/purpose/method/resource/revision binding; no plugin engine."
+    },
+    {
+      "id": "monitor-only-account",
+      "status": "required-for-confirmed-monitor-goal",
+      "recommendation": "Allow account with monitor capability but no inference credential/route. Remove artificial api-key-only and SecretStore-inference-file prerequisite through a narrow capability projection, not dummy API key."
+    },
+    {
+      "id": "external-snapshot-owner",
+      "status": "preserve-existing-invariant",
+      "recommendation": "Never refresh/revoke external snapshots or upgrade imported refresh material to owned session. Owned OAuth has separate private lifecycle store and private access projection."
+    },
+    {
+      "id": "refresh-races",
+      "status": "proposal",
+      "recommendation": "Single-flight refresh per credential; atomic rotation; preserve omitted refresh token; generation check prevents callback/refresh resurrection after disconnect; invalid_grant reauth, not infinite retry."
+    },
+    {
+      "id": "logout-semantics",
+      "status": "required-clarification",
+      "recommendation": "Monitor unlink, local account removal, credential cleanup, CLI global logout and provider revoke are distinct. Existing AccountService.Remove retains secrets for in-flight work, so do not label it secure credential deletion."
+    },
+    {
+      "id": "private-storage",
+      "status": "preserve-and-extend",
+      "recommendation": "Retain atomic private 0700/0600 storage, secret-free DTOs, no credentials in args/logs/status. File permissions are not encryption. Delegated CLI secrets remain private and are never echoed."
+    },
+    {
+      "id": "monitor-mode",
+      "status": "confirmed-goal-alignment",
+      "recommendation": "Independent monitor must not start Core or issue inference. Passive headers require genuine traffic and otherwise stay awaiting-observation/stale. Auth success never implies fresh quota."
+    },
+    {
+      "id": "typed-measurements",
+      "status": "preserve-existing-contract",
+      "recommendation": "Keep rate remaining, spend cap, prepaid funds, subscription allowance and measured usage separate; permissions errors and missing data are not zero. Record scope and freshness per source."
+    }
+  ],
+  "findings": [
+    {
+      "severity": "important",
+      "id": "openrouter-credits-management",
+      "finding": "Current official /credits reference requires Management key; old inventory ordinary-key assumption cannot be generalized. Parent reports historical local ordinary-key 200, so documentation does not prove all standard keys always fail. Qualify legacy behavior separately.",
+      "evidence": [
+        "OR5",
+        "docs/codexbar-provider-inventory.md"
+      ]
+    },
+    {
+      "severity": "important",
+      "id": "monitor-only-coupling",
+      "finding": "MonitorAccessService requires api-key AccountDto, HostQuotaSource requires account secret before yielding monitor credential. Standalone monitor OAuth/session accounts currently cannot exist honestly.",
+      "evidence": [
+        "src/Lain.Host/Accounts/Monitoring/MonitorAccessService.cs",
+        "src/Lain.Host/Program.cs",
+        "docs/monitor-mode.md"
+      ]
+    },
+    {
+      "severity": "important",
+      "id": "fireworks-rights",
+      "finding": "Guide says any key while specific usageCosts ACCOUNT explicitly requires Admin; specific endpoint rights must win. SELF remains useful and separately labeled.",
+      "evidence": [
+        "FW9",
+        "FW13"
+      ]
+    },
+    {
+      "severity": "medium",
+      "id": "fireworks-doc-drift",
+      "finding": "Usage guide overview says no per-key costs but same guide and specific usageCosts reference document them. signin vs login differs too; prefer specific command/reference and qualify version.",
+      "evidence": [
+        "FW1",
+        "FW9",
+        "FW13"
+      ]
+    },
+    {
+      "severity": "important",
+      "id": "first-party-not-third-party",
+      "finding": "Kilo vendor-device, OpenCode fixed CLI client_id, MiMo/Vibe custom keybootstrap and xAI Grok Build credentials do not by themselves authorize a distributed lain client or the desired billing product.",
+      "evidence": [
+        "worker:kilo-opencode-requesty",
+        "worker:mimo-nvidia",
+        "worker:groq-mistral",
+        "worker:xai-stepfun-poe-synthetic"
+      ]
+    },
+    {
+      "severity": "important",
+      "id": "header-priority-monitor",
+      "finding": "Samba passive-header-first and Cohere local-call-first are Gateway enhancements, not standalone Monitor implementation. Console/CLI reader still needs qualification.",
+      "evidence": [
+        "worker:samba-upstage-cohere",
+        "docs/monitor-mode.md"
+      ]
+    },
+    {
+      "severity": "medium",
+      "id": "source-versus-deployment",
+      "finding": "Step Plan usage implementation is source evidence with backend rollout open; Cloudflare mirror neuron field is schema candidate. Do not collapse source, implementation, entitlement and live read into supported=yes.",
+      "evidence": [
+        "worker:xai-stepfun-poe-synthetic",
+        "root:google-cloudflare-early-findings"
+      ]
+    },
+    {
+      "severity": "important",
+      "id": "nebius-service-account-boundary",
+      "finding": "AI_STUDIO StaticKeySpec currently supports service accounts only; PKCE primitives and Token Factory SSO CLI do not establish a complete personal no-copy login or financial read. Additional serviceaccount/provisioning is neither implicit nor authorized in this research.",
+      "evidence": [
+        "NE1",
+        "NE2",
+        "worker:alibaba-nebius-inception"
+      ]
+    },
+    {
+      "severity": "positive",
+      "id": "poe-public-key-bootstrap",
+      "finding": "Public third-party client registration, mandatory S256 and state, apikey:create produce key accepted for current_balance. Highest-value login completion alongside OpenRouter. Production loopback exception must not be inferred from local-development wording.",
+      "evidence": [
+        "PO1",
+        "PO2",
+        "worker:xai-stepfun-poe-synthetic"
+      ]
+    },
+    {
+      "severity": "medium",
+      "id": "fireworks-costnanousd",
+      "finding": "billingUsage current schema includes costNanoUsd although guide calls endpoint quantities-only. Schema says only huggingface stamps authoritative cost; zero can mean absent, not free. Prefer dedicated rated-cost endpoints.",
+      "evidence": [
+        "FW7",
+        "FW13"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "OR1",
+      "url": "https://openrouter.ai/docs/guides/overview/auth/oauth",
+      "kind": "official-documentation",
+      "claim": "Public PKCE-to-key browser flow, localhost arbitrary port, state/workspace parameters, headless code and expiry",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "OR2",
+      "url": "https://github.com/OpenRouterTeam/skills/blob/main/skills/openrouter-oauth/README.md",
+      "kind": "official-source-readme",
+      "claim": "No SDK/client registration required; user gets API key",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "OR3",
+      "url": "https://openrouter.ai/docs/api/api-reference/oauth/create-authorization-code",
+      "kind": "official-api-reference",
+      "claim": "Authenticated programmatic code creation; localhost/127.0.0.1 callbacks; not replacement for uncredentialed browser onboarding",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "OR4",
+      "url": "https://openrouter.ai/docs/api/api-reference/api-keys/get-current-api-key",
+      "kind": "official-api-reference",
+      "claim": "Current key identity, expiry, budgets and free request fields",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "OR5",
+      "url": "https://openrouter.ai/docs/api/api-reference/credits/get-remaining-credits",
+      "kind": "official-api-reference",
+      "claim": "GET credits explicitly requires Management key",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "OR6",
+      "url": "https://openrouter.ai/docs/guides/overview/auth/management-api-keys",
+      "kind": "official-documentation",
+      "claim": "Management credential is separate capability from ordinary inference key",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW1",
+      "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/authentication",
+      "kind": "official-documentation",
+      "claim": "Official signin for Google/custom SSO; existing key alternative",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW2",
+      "url": "https://docs.fireworks.ai/tools-sdks/firectl/firectl",
+      "kind": "official-documentation",
+      "claim": "Official CLI distribution and signin/whoami/version commands",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW3",
+      "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/account-list",
+      "kind": "official-documentation",
+      "claim": "Signed-in account discovery with JSON and profile/account flags",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW4",
+      "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/api-key-create",
+      "kind": "official-documentation",
+      "claim": "Creates personal key for signed-in user, JSON output, key name, expiry; serviceaccount optional",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW5",
+      "url": "https://docs.fireworks.ai/api-reference/create-api-key",
+      "kind": "official-api-reference",
+      "claim": "Create response key/keyId/expiry; plaintext only available upon creation",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW6",
+      "url": "https://docs.fireworks.ai/api-reference/list-quotas",
+      "kind": "official-api-reference",
+      "claim": "API-key-authenticated account quota reader",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW7",
+      "url": "https://docs.fireworks.ai/api-reference/get-billing-usage",
+      "kind": "official-api-reference",
+      "claim": "Direct schema opened: metered quantities, daily aggregation and maximum 31 days; costNanoUsd limited attribution and zero-means-absent caveat",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW8",
+      "url": "https://docs.fireworks.ai/api-reference/get-billing-summary",
+      "kind": "official-api-reference",
+      "claim": "Daily rated costs, money schema, exclusive end date",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW9",
+      "url": "https://docs.fireworks.ai/api-reference/query-usage-costs",
+      "kind": "official-api-reference",
+      "claim": "ACCOUNT Admin versus SELF, grouped costs, whole-query subtotal, evaluation time and completeness",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW10",
+      "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/quota-list",
+      "kind": "official-documentation",
+      "claim": "CLI quota read with JSON output and account/profile flags",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW11",
+      "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/billing-get-usage",
+      "kind": "official-documentation",
+      "claim": "CLI bounded usage/cost reader, JSON output and UTC-default timezone",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW12",
+      "url": "https://docs.fireworks.ai/guides/quotas_usage/account-quotas",
+      "kind": "official-documentation",
+      "claim": "Direct quota guide opened: monthly-spend-usd, distinct Enterprise informational alerts, account-wide limits",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW13",
+      "url": "https://docs.fireworks.ai/accounts/exporting-usage-and-costs",
+      "kind": "official-documentation",
+      "claim": "Quantities/cost endpoint distinction, general access guide, per-key-cost textual inconsistency, CLI version 1.7.21",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "FW14",
+      "url": "https://docs.fireworks.ai/accounts/exporting-usage-costs",
+      "kind": "official-documentation",
+      "claim": "Serverless rated costs, admin CSV vs SELF API, maximum 31-day query and 100-day historical start",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "NE1",
+      "url": "https://github.com/nebius/api/blob/e855cccf88420a80741b04075674528d75f3e238/nebius/iam/v1/static_key.proto",
+      "kind": "official-source",
+      "claim": "Only service accounts supported for StaticKeySpec; AI_STUDIO distinct from OBSERVABILITY",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "NE2",
+      "url": "https://docs.tokenfactory.nebius.com/team-access/sso",
+      "kind": "official-documentation",
+      "claim": "CLI profile with auth.tokenfactory.nebius.com and aitenant in federation administration; no complete personal inference-key bootstrap",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "PO1",
+      "url": "https://creator.poe.com/docs/external-applications/sign-in-with-poe",
+      "kind": "official-documentation",
+      "claim": "Public client registration, mandatory PKCE, state and key bootstrap; localhost exception for local development",
+      "checkedAt": "2026-10-24"
+    },
+    {
+      "id": "PO2",
+      "url": "https://creator.poe.com/api-reference/getCurrentBalance",
+      "kind": "official-api-reference",
+      "claim": "API-key bearer returns combined current plan/addon point balance",
+      "checkedAt": "2026-10-24"
+    }
+  ]
+}

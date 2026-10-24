@@ -1,0 +1,365 @@
+{
+  "version": 1,
+  "checkedAt": "2026-10-24",
+  "baseCommit": "5dc916f",
+  "qualification": "Public official source qualification only; no account, product API query, login, registration, inference, purchase, service, build or product code change.",
+  "providers": [
+    {
+      "id": "alibaba-model-studio",
+      "product": "Alibaba Cloud Model Studio / DashScope ordinary regional API; API-key trial and PAYG",
+      "currentLain": {
+        "catalog": "src/Lain.Host/Providers/Catalog/alibaba-model-studio.json",
+        "auth": ["regional ordinary api_key", "region", "workspace_id", "service_deployment_scope"],
+        "quotaSupport": "unsupported",
+        "liveVerification": "not_tested",
+        "excluded": "Coding Plan; its subscription key and endpoints are not accepted by the existing autonomous-backend adapter."
+      },
+      "sources": [
+        {
+          "kind": "official-cli-console-read",
+          "status": "source-qualified-not-live-qualified",
+          "url": "https://www.alibabacloud.com/help/en/model-studio/cli/usage-quota",
+          "auth": "Console access_token with exact region/site, separate from model API key",
+          "operations": [
+            {
+              "api": "zeldaEasy.bailian-commerce.freeTrial.queryFreeTierQuota",
+              "request": {"queryFreeTierQuotaRequest": {"models": ["<exact-model-id>"]}},
+              "responsePath": "data.data.freeTierQuotas or data.DataV2.data.data.freeTierQuotas",
+              "fields": {"model": "concrete model/snapshot", "quotaInitTotal": "initial allocation", "quotaTotal": "remaining allocation", "quotaValidityPeriod": "expiry epoch milliseconds", "quotaStatus": "grant status"},
+              "unit": "Text-model grant: combined input/output tokens; other modalities require their actual units",
+              "scope": "Alibaba Cloud account and concrete model; RAM users share; not interchangeable across snapshots",
+              "window": "one-time grant; no recurring reset",
+              "freshness": "Console is updated at minute granularity; exact source DataAsOf/SLA not established"
+            },
+            {
+              "api": "zeldaEasy.bailian-commerce.freeTrial.queryFreeTierOnlyStatus",
+              "request": {"queryFreeTierOnlyStatusRequest": {"models": ["<exact-model-id>"]}},
+              "fields": ["model", "freeTierOnly"],
+              "meaning": "Read provider configuration; propagation delays mean it is not proof of instantaneous charging cutoff"
+            },
+            {
+              "api": "zeldaEasy.bailian-telemetry.model.getModelUsageStatistic",
+              "alternateApi": "zeldaEasy.bailian-telemetry.model.listModelUsageStatisticData",
+              "requestFields": ["reqDTO.startTime", "reqDTO.endTime", "reqDTO.filterWorkspaceId", "reqDTO.modelCallSource=Online", "optional model and obsModelType"],
+              "units": ["requests", "tokens", "images", "seconds", "characters; preserve returned unit"],
+              "scope": "explicit workspace and optional model; Online does not establish Batch coverage",
+              "window": "requested epoch-ms interval, CLI defaults last seven days; not a quota reset",
+              "limitations": "Exact latency not specified. Web usage guide still describes console free quota only; qualify regional availability on first authorized read. CLI formatted JSON truncates period and expiry timestamps to local dates."
+            }
+          ],
+          "gateway": {
+            "supportedConsoleRegions": ["cn-beijing", "ap-southeast-1"],
+            "sites": ["domestic", "international"],
+            "singaporeInternational": "https://bailian-singapore-cs.alibabacloud.com/cli/api.json?action=IntlBroadScopeAspnGateway&product=sfm_bailian&api=<operation>",
+            "method": "POST",
+            "contentType": "application/x-www-form-urlencoded",
+            "body": "params={Api,V:1.0,Data:{...request,cornerstoneParam:...}}; region=<region>",
+            "warning": "Official CLI falls back to Beijing for unknown regions; lain must reject unsupported regions. Frankfurt/Tokyo/Hong Kong/Virginia inference availability does not establish this reporting flow."
+          }
+        },
+        {
+          "kind": "model-api-limit-configuration",
+          "status": "source-qualified-not-live-qualified",
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/quota/list.ts",
+          "method": "GET",
+          "path": "/api/v1/models/limits",
+          "auth": "ordinary regional inference API key, matching API host",
+          "pagination": ["page_no", "page_size", "output.total"],
+          "response": "output.quotas[] with model, optional workspace_id, model_limit, workspace_limit",
+          "fields": ["request_limit", "request_limit_period (seconds)", "usage_limit", "usage_limit_field", "usage_limit_period (seconds)", "async_user_queue_limit", "async_user_concurrency_limit"],
+          "meaning": "Configured model/account and workspace rate/concurrency limits, not observed remaining headroom or trial balance"
+        },
+        {
+          "kind": "cloud-finance-openapi",
+          "status": "API-qualified; Model-Studio-specific mapping and endpoint selection pending",
+          "url": "https://www.alibabacloud.com/help/en/user-center/developer-reference/api-overview-1",
+          "operations": ["BSSOpenAPI 2017-12-14 QueryAccountBalance", "QueryBill"],
+          "auth": "Alibaba Cloud AccessKey signature or temporary STS; separate financial RAM rights",
+          "permissions": ["AliyunBSSReadOnlyAccess", "or bssapi:QueryAccountBalance and bssapi:QueryBill with Resource *"],
+          "fields": ["AvailableAmount", "AvailableCashAmount", "CreditAmount", "Currency", "bill PretaxAmount and related payment/coupon fields"],
+          "scope": "Cloud financial account, and settlement bills with explicit AccountID/OwnerID/ProductCode/ProductType; not model-trial rest tokens",
+          "window": "balance snapshot; bills use YYYY-MM BillingCycle and row UsageStartTime/UsageEndTime",
+          "freshness": "No exact completeness latency qualified",
+          "limitations": ["Find international BSS endpoint and exact Model Studio product codes before implementation", "Bill listing pagination up to 300 rows/page", "Never label credit line or entire Cloud cash as free Model Studio quota"]
+        },
+        {
+          "kind": "separate-oauth-inference-pool",
+          "status": "exists in official FAQ; unsupported client/reporting contract",
+          "url": "https://www.alibabacloud.com/help/en/model-studio/new-free-quota",
+          "meaning": "Independent 2000 model calls/day OAuth allowance; ordinary API-key free quota page excludes its records and usage",
+          "unresolved": ["allowed clients", "own client registration", "inference endpoint", "monitoring schema", "day timezone/reset", "relationship to Qwen clients"],
+          "recommendation": "Keep as separate future product; never present ordinary CLI key-bootstrap or API-key token grant as this OAuth pool"
+        }
+      ],
+      "authOptions": [
+        {
+          "type": "official-cli-browser-oauth-and-key-bootstrap",
+          "status": "documented and source-confirmed",
+          "command": "bl auth login --console --console-site international",
+          "details": "Provider /console-login page, state-protected loopback callback, optional needapikey=true. Callback can return separate console token, ordinary api_key, base_url, workspace_id, region and site. 15-minute timeout. Existing keys can mean session-only callback.",
+          "oneLoginInferenceAndMonitoring": "Yes conditionally: ordinary key plus Console token for allowed Beijing/Singapore workspace/account; both credential domains and rights must be validated separately.",
+          "registration": "CLI-mediated provider flow is documented; no public own-client registration/device grant/PKCE delegation contract established",
+          "refresh": "No OAuth refresh_token path qualified; official refresh requires stored AK/SK (optional STS) to GenerateCLIAccessToken, otherwise interactive re-login",
+          "permissions": ["API-Key page or administrator privilege to create ordinary key", "workspace/model permissions for inference", "ModelObservation-FullAccess for monitoring; Cloud account one-time monitoring activation"],
+          "distribution": "Prefer explicit named official CLI connector rather than reusing an undocumented third-party client registration"
+        },
+        {
+          "type": "ordinary-model-api-key",
+          "status": "already used by lain",
+          "capabilities": "Inference and configured model/workspace limits; no automatic Console telemetry or BSS financial rights",
+          "refresh": "Manual provider key lifecycle; key deletion/user/workspace changes can revoke access"
+        },
+        {
+          "type": "read-only-ram-ak-or-sts",
+          "status": "documented alternative for finance and optional CLI token generation",
+          "capabilities": "BSS read operations with separate permissions; GenerateCLIAccessToken only when permitted",
+          "refresh": "STS expiry must be handled by its own credential chain; not unlimited offline refresh",
+          "unresolved": "Minimum RAM action for GenerateCLIAccessToken and precise token lifetime"
+        }
+      ],
+      "recommendation": {
+        "priority": "Implementable connector proposal after authorized account qualification",
+        "path": "Official CLI browser login in explicitly selected profile; key-bootstrap for inference, allowlisted raw console reads for exact grant expiry/usage, ordinary key GET limits",
+        "normalization": "Keep account+region+workspace+model+product scopes separate; preserve epoch-ms timestamps/status; missing is unknown and explicit zero is zero. Record ObservedAt, unknown DataAsOf, short freshness with lag note. Never auto-refill expired grants.",
+        "finance": "Optional separate AK/STS financial connector after product/endpoint mapping",
+        "doNotUse": ["arbitrary console mutation", "usage freetier", "quota update/delete", "Coding/Token Plan endpoints under ordinary trial", "OAuth daily-call pool as API-key tokens"]
+      },
+      "missingImplementation": ["Explicit official CLI/profile connector and owned credential attachment", "Region/site/workspace/API-host match validation", "Raw console envelope parsing preserving grant status and epoch values", "Usage interval/unit/pagination/task polling semantics", "Configured limits adapter", "Staleness and error handling", "Account live qualification", "Optional separate BSS connector and product mapping"],
+      "unresolved": ["Own-client registration/redirect/scopes/refresh contract", "Exact Console token TTL and GenerateCLIAccessToken minimum permission", "Reporting for inference regions beyond Beijing/Singapore", "Telemetry export availability versus webdoc mismatch", "Exact last-data time and latency", "International BSS endpoint and Model Studio ProductCode/ProductType"],
+      "evidence": [
+        {"url": "https://www.alibabacloud.com/help/en/model-studio/cli/installation", "statement": "Console login opens browser, authorizes console features and automatically configures model API-key credentials.", "date": "2026-10-24"},
+        {"url": "https://www.alibabacloud.com/help/en/model-studio/cli/config", "statement": "International-site selection, ordinary key creation, and separate AK/SK credentials are documented.", "date": "2026-10-24"},
+        {"url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/auth/login-console.ts", "statement": "Loopback/state login, needapikey flag, separate credentials and region/workspace metadata; 15-minute timeout.", "date": "2026-10-24"},
+        {"url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/core/src/auth/refresh-token.ts", "statement": "Console token renewal needs stored AK/SK, optional STS; supported token-generation regions Beijing and Singapore only.", "date": "2026-10-24"},
+        {"url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/core/src/console/gateway.ts", "statement": "Region/site-specific Bearer console gateway, POST envelope, unsupported-region Beijing fallback.", "date": "2026-10-24"},
+        {"url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/usage/shared.ts", "statement": "Trial and telemetry API names/response fields; dates are locally formatted as YYYY-MM-DD, losing epoch precision.", "date": "2026-10-24"},
+        {"url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/usage/stats.ts", "statement": "Explicit workspace, Online call source, epoch-ms query interval and typed usage counts; CLI defaults last seven days.", "date": "2026-10-24"},
+        {"url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/console/call.ts", "statement": "Official raw console command preserves the response; restrict to a fixed read allowlist in any lain connector.", "date": "2026-10-24"},
+        {"url": "https://www.alibabacloud.com/help/en/model-studio/regions", "statement": "Keys/models/hosts are regional; execution scope differs from access/storage region; workspace domain is recommended.", "date": "2026-10-24"},
+        {"url": "https://www.alibabacloud.com/help/en/model-studio/application-permission-management-overview", "statement": "Console page, workspace and API permissions differ; ModelObservation-FullAccess and account activation are needed for monitoring.", "date": "2026-10-24"},
+        {"url": "https://www.alibabacloud.com/help/en/model-studio/new-free-quota", "statement": "Singapore International model trial, shared input/output tokens, minute-level update, one-time expiry; separate OAuth calls/day are excluded from API-key quota page.", "date": "2026-10-24"},
+        {"url": "https://www.alibabacloud.com/help/en/model-studio/model-usage-statistics", "statement": "Webdoc limits usage console to free quota and points to bill export; this differs from current official CLI telemetry functionality.", "date": "2026-10-24"},
+        {"url": "https://www.alibabacloud.com/help/en/user-center/developer-reference/api-bssopenapi-2017-12-14-queryaccountbalance", "statement": "Financial available/cash/credit balances and currency, not model trial rest tokens.", "date": "2026-10-24"},
+        {"url": "https://www.alibabacloud.com/help/en/user-center/developer-reference/api-bssopenapi-2017-12-14-querybill", "statement": "Monthly settlement bill API with owner/product fields and bounded pagination.", "date": "2026-10-24"},
+        {"url": "https://www.alibabacloud.com/help/en/user-center/developer-reference/api-calling-authorization", "statement": "BSS read-only policy or narrow bssapi actions; compatibility actions and product conditions.", "date": "2026-10-24"}
+      ]
+    },
+    {
+      "id": "alibaba-coding-plan",
+      "product": "Alibaba Coding Plan subscription; separate from ordinary Model Studio trial/API",
+      "currentLain": {"catalog": "No separate provider; explicitly excluded by alibaba-model-studio catalogue and backend adapter", "quotaSupport": "not_implemented", "inference": "prohibited by existing product boundary"},
+      "sources": [
+        {
+          "kind": "official-cli-subscription-console-read",
+          "status": "source-qualified-not-live-qualified",
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/usage/coding-plan.ts",
+          "api": "zeldaEasy.broadscope-bailian.codingPlan.queryCodingPlanInstanceInfoV2",
+          "request": {"queryCodingPlanInstanceInfoRequest": {"commodityCode": "sfm_codingplan_public_intl", "onlyLatestOne": true}},
+          "auth": "Console token; separate from sk-sp subscription inference key",
+          "response": "codingPlanInstanceInfos[].status and codingPlanQuotaInfo; per5Hour/perWeek/perBillMonth UsedQuota, TotalQuota, QuotaNextRefreshTime",
+          "unit": "model calls",
+          "scope": "active subscription instance; official CLI picks first VALID instance only",
+          "windows": {"fiveHour": "rolling; usage from five hours earlier released minute by minute", "week": "Monday 00:00 UTC+08", "billMonth": "subscription renewal date 00:00 UTC+08"},
+          "freshness": "Exact source update latency not qualified; next refresh is not a full reset of the rolling five-hour pool"
+        }
+      ],
+      "authOptions": [
+        {"type": "official-cli-console", "status": "same supported console login can read subscription usage", "oneLoginInferenceAndMonitoring": "No ordinary-key bootstrap replacement for the subscription inference key. Subscription key still obtained separately; monitoring alone may use same console login.", "registration": "No independent third-party desktop client contract qualified", "refresh": "Same Console token/AK/STS renewal boundary as ordinary Model Studio"}
+      ],
+      "recommendation": {"path": "Optional isolated read-only subscription tile via official CLI console connector; keep existing inference exclusion", "excluded": ["Do not mix counters with ordinary free tokens", "GetSubscriptionStats reports Token Plan seat credits, not this Coding Plan", "Do not purchase or activate subscription"]},
+      "missingImplementation": ["Separate product identity/tile", "Exact subscription instance scope", "Three-window parser and rolling semantics", "Refresh/staleness", "Authorized account read"],
+      "unresolved": ["Exact freshness and multi-instance semantics", "Permission minimum for subscription read", "Separate product decision if user later requests Coding Plan integration"],
+      "evidence": [
+        {"url": "https://www.alibabacloud.com/help/en/model-studio/coding-plan", "statement": "Distinct sk-sp key/host, simultaneous call-count windows and rolling/weekly/subscription-month replenishment.", "date": "2026-10-24"},
+        {"url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/usage/coding-plan.ts", "statement": "Console-auth query and per-window fields; first VALID subscription selected.", "date": "2026-10-24"},
+        {"url": "https://www.alibabacloud.com/help/en/model-studio/get-subscription-stats", "statement": "Token Plan seat/credit statistics API uses signed OpenAPI AccessKey; it is not ordinary trial or Coding Plan usage.", "date": "2026-10-24"}
+      ]
+    },
+    {
+      "id": "nebius",
+      "product": "Nebius Token Factory public/serverless inference; Dedicated and GPU Cloud reporting considered separately",
+      "currentLain": {"catalog": "src/Lain.Host/Providers/Catalog/nebius.json", "auth": "Token Factory api_key", "baseUrl": "https://api.tokenfactory.nebius.com/v1", "quotaSupport": "unsupported", "liveVerification": "not_tested"},
+      "sources": [
+        {
+          "kind": "passive-inference-response-headers",
+          "status": "documented-implementable; no live account observation",
+          "url": "https://docs.tokenfactory.nebius.com/ai-models-inference/rate-limits.md",
+          "auth": "Existing Token Factory inference API key; no second monitoring secret",
+          "headers": {
+            "x-ratelimit-limit-requests": "requests/minute capacity",
+            "x-ratelimit-remaining-requests": "remaining requests",
+            "x-ratelimit-limit-tokens": "tokens/minute capacity",
+            "x-ratelimit-remaining-tokens": "remaining tokens; continuously replenished",
+            "x-ratelimit-reset-requests": "relative seconds until request reset",
+            "x-ratelimit-reset-tokens": "relative seconds until token reset",
+            "x-ratelimit-dynamic-scale-requests": "dynamic request multiplier",
+            "x-ratelimit-dynamic-scale-tokens": "dynamic token multiplier",
+            "x-ratelimit-dynamic-period-remaining": "relative seconds to dynamic adjustment",
+            "x-ratelimit-dynamic-period-usage-requests": "adjustment-period average request utilization percent",
+            "x-ratelimit-dynamic-period-usage-tokens": "adjustment-period average token utilization percent",
+            "x-ratelimit-over-limit": "yes means spare-capacity processing above nominal cap",
+            "Retry-After": "retry delay in seconds; not a budget"
+          },
+          "window": "RPM/TPM observation; separate dynamic adjustment over rolling 15-minute evaluation windows",
+          "scope": "Store credential account/project reference and requested model. Shared-pool ownership/model groups are not precisely qualified by documentation.",
+          "freshness": "Response observation instant. Proposed local cap=min(observation+60s, supplied reset); never renew timestamp or refill by local clock.",
+          "meaning": "Observed rate headroom, not USD, trial balance or billing spend"
+        },
+        {
+          "kind": "dedicated-only-prometheus-monitoring",
+          "status": "official endpoint/auth source; exact metric names and labels pending",
+          "url": "https://docs.tokenfactory.nebius.com/ai-models-inference/observability-api-integrations.md",
+          "endpoint": "https://read.monitoring.api.nebius.cloud/projects/<project_ID>/service-provider/prometheus/federate",
+          "parameters": ["match[]"],
+          "auth": "Static API key issued in Token Factory project API Keys UI",
+          "scope": "Project and dedicated endpoints ONLY; Org Admin/Project Admin/Member can view; Org Billing Manager cannot",
+          "units": ["requests/minute", "input tokens/minute", "output tokens/minute", "latency", "capacity; exact series schema pending"],
+          "freshness": "Usually tens of seconds; recommended scrape interval >=15s; dynamic aggregation windows",
+          "meaning": "Operational monitoring, explicitly not billing reconciliation; no serverless-balance inference"
+        },
+        {
+          "kind": "manual-finance-ui",
+          "status": "documented; API contract not qualified",
+          "url": "https://docs.tokenfactory.nebius.com/other-capabilities/billing-new.md",
+          "scope": "Organization Usage with project/region/service/product filters; balance and transactions are financial data",
+          "unit": "currency; actual account currency and balances unobserved",
+          "freshness": "Balance debited in real time according to guide; API DataAsOf/response schema not established",
+          "limitations": "Signup trial, builder grants and card thresholds are not observed balance values"
+        },
+        {
+          "kind": "cloud-billing-export-candidate",
+          "status": "not qualified for Token Factory",
+          "url": "https://github.com/nebius/api/blob/e855cccf88420a80741b04075674528d75f3e238/nebius/billing/v1alpha1/one_time_export_service.proto",
+          "operation": "nebius.billing.v1alpha1.OneTimeExportService Create/Get/List",
+          "scope": "Contract parent; monthly FOCUS CSV export",
+          "limitation": "No proven Token Factory contract/SKU coverage, balance semantics or account permission mapping; Create is a mutation and was not invoked"
+        },
+        {
+          "kind": "bounded-logged-out-ui-source",
+          "status": "inspected public shell only",
+          "url": "https://static.nebius.com/app/ai-studio-ui/main.cb5233174a4943f4.js",
+          "observation": "Organization usage/payments/transactions and project API-key/rate-limit routes; no balance request/response/auth contract established. No child chunks or private session accessed."
+        }
+      ],
+      "authOptions": [
+        {
+          "type": "token-factory-api-key",
+          "status": "documented",
+          "capabilities": "Inference; passive header monitoring; documented dedicated metrics endpoint with exact project",
+          "oneLoginInferenceAndMonitoring": "Same key suffices for passive headers; serverless financial reporting remains unqualified",
+          "refresh": "Static key, shown once; lifecycle/expiry determined by actual key; no silent refresh assumed"
+        },
+        {
+          "type": "google-github-or-saml-web-login",
+          "status": "documented account authentication",
+          "capabilities": "Webconsole after group assignment; does not itself establish delegated inference or financial API access",
+          "registration": "SAML federation needs organization configuration; new SSO users start without access groups",
+          "scope": "Org Admin/Billing Manager versus Project Admin/Member are different rights"
+        },
+        {
+          "type": "cloud-cli-sdk-oauth-pkce-to-ai-studio-static-key-candidate",
+          "status": "concrete official primitives, end-to-end product authorization not qualified",
+          "oauth": "Official Python SDK implements authorization-code S256 PKCE with loopback, openid scope, /oauth2/authorize and /oauth2/token; explicit client_id parameter",
+          "tokenFactoryEvidence": "Token Factory SSO docs configure Nebius CLI federation endpoint auth.tokenfactory.nebius.com and aitenant organization parent",
+          "bootstrap": "Official cpl.iam StaticKeyService/Issue returns a token; StaticKeySpec accepts service account only, ClientService AI_STUDIO=3 and expiresAt. OBSERVABILITY=1 is a distinct enum.",
+          "registration": "Own desktop client registration/redirect acceptance not established",
+          "refresh": "SDK federation renewal may require interactive browser authorization; no guaranteed offline refresh",
+          "blockingEvidence": ["Token Factory service-account and project/aitenant mapping", "Minimum Issue and inference groups", "Acceptance of issued AI_STUDIO key at serverless API", "Separate billing API authorization and contract coverage"],
+          "oneLoginInferenceAndMonitoring": "Potential OAuth-to-key bootstrap, not yet established as a supported user-level flow. Do not send Cloud IAM token directly as Token Factory key."
+        }
+      ],
+      "recommendation": {
+        "path": "Implement passive response-header quota adapter first using existing inference key and durable observation store; refresh reads local observations only",
+        "normalization": "Keep RPM and TPM plus dynamic 15-minute period separate; relative-second resets; explicit zero valid, missing unknown; do not invent pool-sharing or local refill",
+        "balance": "Keep manual Organization Usage/Balance route until supported endpoint/permissions/schema is proven",
+        "nextProof": "Official confirmation of AI_STUDIO static-key bootstrap rights and Token Factory acceptance, or bounded explicitly authorized read-only finance trace. No inference/purchase needed to investigate auth."
+      },
+      "missingImplementation": ["Response-header allowlist and core observation capture", "Nebius quota parser/adapter", "Scope/freshness and missing/zero/error handling", "Tests for resets/dynamic windows/continuous replenishment", "Optional dedicated-metric exact schema", "Qualified finance contract", "Qualified OAuth-to-key bootstrap"],
+      "unresolved": ["Exact shared rate-pool ownership", "Token Factory balance/reporting API and read scope", "AI_STUDIO bootstrap permission and service-account setup", "Own OAuth client distribution", "Token Factory inclusion in Cloud Contract billing exports", "Dedicated metric names/labels"],
+      "evidence": [
+        {"url": "https://docs.tokenfactory.nebius.com/ai-models-inference/rate-limits.md", "statement": "RPM/TPM remaining, seconds resets, continuous replenishment and separate dynamic 15-minute scaling headers.", "date": "2026-10-24"},
+        {"url": "https://docs.tokenfactory.nebius.com/api-reference/introduction.md", "statement": "Bearer Token Factory API key issued in project UI and shown once.", "date": "2026-10-24"},
+        {"url": "https://docs.tokenfactory.nebius.com/quickstart.md", "statement": "Google/GitHub web login followed by API-key authentication; no delegated OAuth inference contract.", "date": "2026-10-24"},
+        {"url": "https://docs.tokenfactory.nebius.com/team-access/org-projects.md", "statement": "Organization/projects/resources hierarchy and project API keys, projects may span regions.", "date": "2026-10-24"},
+        {"url": "https://docs.tokenfactory.nebius.com/team-access/groups.md", "statement": "Billing Manager sees org usage but no project resources; Project Member can create own API keys; membership alone grants no resource rights.", "date": "2026-10-24"},
+        {"url": "https://docs.tokenfactory.nebius.com/team-access/sso.md", "statement": "Token Factory SAML federation and CLI profile at auth.tokenfactory.nebius.com; SSO users need explicit group assignment.", "date": "2026-10-24"},
+        {"url": "https://github.com/nebius/pysdk/blob/main/src/nebius/aio/token/federation_bearer/auth.py", "statement": "Official authorization-code PKCE flow with openid scope, supplied client ID and loopback redirect.", "date": "2026-10-24"},
+        {"url": "https://github.com/nebius/pysdk/blob/main/src/nebius/aio/token/federation_account.py", "statement": "Federation token cache renewal can restart interactive browser authorization.", "date": "2026-10-24"},
+        {"url": "https://github.com/nebius/api/blob/e855cccf88420a80741b04075674528d75f3e238/nebius/iam/v1/static_key_service.proto", "statement": "StaticKeyService Issue returns token and operation through cpl.iam; not invoked.", "date": "2026-10-24"},
+        {"url": "https://github.com/nebius/api/blob/e855cccf88420a80741b04075674528d75f3e238/nebius/iam/v1/static_key.proto", "statement": "Only service accounts currently supported; separate AI_STUDIO and OBSERVABILITY service enums; expiresAt.", "date": "2026-10-24"},
+        {"url": "https://github.com/nebius/nebius-physical-ai/blob/main/docs/workbench/token-factory.md", "statement": "Official Nebius CLI integration explicitly says Token Factory key is separate from Cloud IAM token; model-list success does not verify inference or billing.", "date": "2026-10-24"},
+        {"url": "https://docs.tokenfactory.nebius.com/ai-models-inference/observability.md", "statement": "Observability only dedicated endpoints, project rights, near-real-time and explicitly not billing reconciliation.", "date": "2026-10-24"},
+        {"url": "https://docs.tokenfactory.nebius.com/ai-models-inference/observability-api-integrations.md", "statement": "Project federate endpoint and static key from Token Factory UI; recommended scrape no faster than 15s.", "date": "2026-10-24"},
+        {"url": "https://docs.tokenfactory.nebius.com/other-capabilities/billing-new.md", "statement": "Current onboarding billing/card requirement, real-time balance debit and org usage filters; no documented read API schema.", "date": "2026-10-24"}
+      ]
+    },
+    {
+      "id": "inception",
+      "product": "Inception Mercury API",
+      "currentLain": {"catalog": "src/Lain.Host/Providers/Catalog/inception.json", "auth": "api_key", "baseUrl": "https://api.inceptionlabs.ai/v1", "quotaSupport": "unsupported", "liveVerification": "not_tested"},
+      "sources": [
+        {
+          "kind": "request-local-usage",
+          "status": "officially documented; not account balance",
+          "url": "https://docs.inceptionlabs.ai/resources/faq",
+          "auth": "Existing inference API key",
+          "fields": ["usage.prompt_tokens", "usage.prompt_tokens_details.cached_tokens (already included in prompt_tokens)", "usage.completion_tokens", "usage.completion_tokens_details.reasoning_tokens (already included in completion_tokens)", "usage.total_tokens"],
+          "stream": "stream_options.include_usage=true requests a final usage chunk",
+          "scope": "Observed requests only, excluding other clients; per request/model/account reference",
+          "unit": "tokens; no dollar cost field",
+          "window": "request instant or explicitly chosen local aggregation period; no provider quota reset inferred",
+          "freshness": "Original response observation time; never relabel local totals as provider account usage or remaining grant"
+        },
+        {
+          "kind": "official-docs-and-sdk-review",
+          "status": "No account-reporting endpoint/auth contract qualified",
+          "url": "https://docs.inceptionlabs.ai/llms.txt",
+          "reviewed": ["Authentication", "SDKs", "FAQ", "public documentation index", "official PyPI inceptionai 0.3.0 source distribution"],
+          "sdkSource": "https://files.pythonhosted.org/packages/17/f9/e6ffe30d4af923a4f1c7d9b3e719c08884e7ac1e34900e15ec618b6439e7/inceptionai-0.3.0.tar.gz",
+          "sha256": "143b38d230fcfdb2ab42d834ba66ebac9d4bc50f79f0c440575975ebc3bf9047",
+          "sdkResources": ["chat", "fim", "edit", "decisions", "models"],
+          "limitations": "No billing/balance/quota/OAuth resource found in reviewed SDK. Linked source repository returned 404 publicly. Rate-limit page accessible only as skeleton, so no response-header/reset contract claimed."
+        },
+        {
+          "kind": "manual-billing",
+          "status": "Documented dashboard route; session/API schema not qualified",
+          "url": "https://platform.inceptionlabs.ai",
+          "meaning": "Account-wide one-time 100M-token offer shared across models is not an observed remaining balance; no expiry or recurring reset established",
+          "webSession": "Logged-out /auth/login returned HTTP 429; no retries, private session or cookies used"
+        }
+      ],
+      "authOptions": [
+        {
+          "type": "api-key",
+          "status": "documented",
+          "capabilities": "Inference and request-local usage; all API requests require key",
+          "source": "https://docs.inceptionlabs.ai/get-started/authentication",
+          "refresh": "No OAuth refresh or automatic key lifecycle contract qualified"
+        },
+        {
+          "type": "oauth-device-cli-or-key-bootstrap",
+          "status": "not qualified from public official documentation or SDK",
+          "oneLoginInferenceAndMonitoring": "Not established; dashboard/social authentication cannot be treated as delegated API/reporting authorization",
+          "registration": "No supported own-client registration/redirect/scopes found",
+          "readToken": "No documented restricted read-only or org-reporting token found"
+        }
+      ],
+      "recommendation": {
+        "path": "Keep existing API-key integration; optionally expose separately labelled locally observed token usage from ordinary responses and link platform Billing",
+        "balance": "Unknown until a supported account reading is qualified; do not subtract local usage from advertised signup tokens",
+        "nextProof": "Ask provider for supported read-only account grant/remaining/financial usage API, org scope, source timestamp, expiry and desktop OAuth/key-bootstrap registration. If only websession exists, qualify one explicitly authorized read-only Billing trace with minimal request/response schema and renewal behavior."
+      },
+      "missingImplementation": ["Optional request-local usage parser/storage with no double counting", "Qualified account report/balance schema", "Supported reporting auth and own-client registration if offered", "Account scope/freshness/expiry qualification", "Authorized live read"],
+      "unresolved": ["Actual remaining token grant and expiry", "Official billing/usage/balance endpoint", "Org/project and shared-limit identity", "Read-only scope/token", "OAuth/device/CLI/key-bootstrap availability", "Response rate headers and reset semantics", "Account websession read contract"],
+      "evidence": [
+        {"url": "https://docs.inceptionlabs.ai/get-started/authentication", "statement": "All API requests authenticate by API key created in platform dashboard.", "date": "2026-10-24"},
+        {"url": "https://docs.inceptionlabs.ai/get-started/sdks", "statement": "Official Python and TypeScript SDKs read INCEPTION_API_KEY; OpenAI-compatible API.", "date": "2026-10-24"},
+        {"url": "https://docs.inceptionlabs.ai/resources/faq", "statement": "Per-response token usage, cache/reasoning subsets, final streaming usage and one-time account-wide shared free-token offer; no dollar cost response.", "date": "2026-10-24"},
+        {"url": "https://docs.inceptionlabs.ai/llms.txt", "statement": "Official page/API index reviewed; no account reporting or OAuth operations indexed.", "date": "2026-10-24"},
+        {"url": "https://pypi.org/project/inceptionai/0.3.0/", "statement": "Official docs-linked SDK source distribution reviewed in memory only; resource classes and API-key auth, no account reporting/OAuth helper found.", "date": "2026-10-24"},
+        {"url": "https://docs.inceptionlabs.ai/get-started/rate-limits", "statement": "Opened page returned only skeleton; no table/header/reset semantics qualified from it.", "date": "2026-10-24"},
+        {"url": "https://platform.inceptionlabs.ai/auth/login", "statement": "Single logged-out request returned 429; no account or session inspection performed.", "date": "2026-10-24"}
+      ]
+    }
+  ]
+}

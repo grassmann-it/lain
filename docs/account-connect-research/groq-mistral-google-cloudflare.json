@@ -1,0 +1,1232 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-24",
+  "status": "architecture-proposal-no-implementation",
+  "baseCommit": "5dc916fcea702f2a196520903937570745e26dac",
+  "inputReports": [
+    {
+      "path": "/home/tomka/Desktop/lain/docs/quota-auth-research/groq-mistral.md",
+      "sha256": "2a107d7f48f77bec769f092fdffd31faa7a5f93849333376fd6f389c4bb969a1"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain/docs/quota-auth-research/groq-mistral.json",
+      "sha256": "8e32bb1cc4d20f0c686cec35601adb5a8e506fd3a776c92a411448321f9ec302"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain/docs/quota-auth-research/google-cloudflare.md",
+      "sha256": "c3097f0fd07f056f64dcc474601f0574a745d8049baddb1ff7667795a58c7593"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain/docs/quota-auth-research/google-cloudflare.json",
+      "sha256": "4880ad347946d18d448320da6e032f30facb185f4410134e7700445c94d00037"
+    }
+  ],
+  "constraints": [
+    "Public documents/code only. No login, private credentials/account reads, runtime, registrations, purchases, builds or provisioning.",
+    "Own Public-App registration is Maintainer work; normal user never enters OAuth client ID/secret.",
+    "Prefer existing projects/accounts/workspaces; no automatic billing/API-enable/serviceaccount provisioning.",
+    "No product code or commits; old research reports unchanged."
+  ],
+  "sharedContract": {
+    "statuses": [
+      "credential-configured",
+      "inference-route-qualified",
+      "monitoring-source-qualified"
+    ],
+    "separation": "Successful browser authentication or model listing alone is not inference/allowance proof. Optional reporting failure does not disable qualified inference.",
+    "reconnect": "Keep stable local account identity, confirm resource change, refresh only grants owned by Lain.",
+    "sameCredential": "A shared login may carry multiple capabilities only if actual granted scopes, resource permissions and provider data paths permit it.",
+    "userClientIdInput": false,
+    "monitorOnly": "Qualified provider reporting can have a standalone monitor account without inference route/key. Passive response-only sources such as Groq headers remain different."
+  },
+  "providers": [
+    {
+      "id": "groq-api",
+      "providerId": "groq",
+      "product": "GroqCloud direct API",
+      "current": {
+        "inference": "Manual project API key; model metadata reader.",
+        "monitoring": "Real Core→Host→QuotaService/UI passive six-header source, original timestamps. No independent Free/Developer usage reader.",
+        "liveQualification": "No real user header event qualified; existing synthetic process evidence only."
+      },
+      "preferredFlow": {
+        "kind": "existing-key-connect",
+        "readiness": "Available architecture using current credential/source; UX reduction still implementation work.",
+        "summary": "Reuse selected existing key or open provider key page; passive monitoring automatic.",
+        "whyNoOAuth": "No qualified official native third-party OAuth/device/CLI bootstrap in reviewed docs; do not fabricate login.",
+        "resourceSelection": "Existing project in provider console; bind org/project only from verified or expressly supplied metadata, never infer from key.",
+        "standaloneMonitoring": false,
+        "optional": [
+          "Enterprise Prometheus reads using existing Groq key if already entitled."
+        ],
+        "standaloneEnterpriseMetrics": "Separate optional monitor-only connection with existing entitled key; no inference route required. Passive headers themselves remain not standalone."
+      },
+      "userSteps": [
+        "Choose Groq; reuse existing credential when present.",
+        "Otherwise open https://console.groq.com/keys, choose existing project, copy key once into local connect.",
+        "Save connection; optional model-list read, inference qualification shown separately.",
+        "RPD/TPM appear after next ordinary Groq request; no monitor key or monitoring inference required."
+      ],
+      "credentials": {
+        "inference": "Existing Groq API key, kept local.",
+        "monitoring": "No additional credential for passive headers; same API-key type for entitled Enterprise Prometheus.",
+        "refresh": "No automatic key refresh contract qualified.",
+        "reconnect": "Replace revoked/expired key on same local account; confirm changed project. Keep prior observations stale with original timestamps.",
+        "clientIdInput": false
+      },
+      "inference": {
+        "resource": "Project key under shared organization ceiling.",
+        "rights": "Actual route/model acceptance still separate; model metadata alone not inference proof.",
+        "provisioning": "No automatic new project, organization or billing."
+      },
+      "monitoring": {
+        "default": "Passive RPD and TPM response windows only, no standalone poll of provider account.",
+        "enterprise": "Optional rate5m request/token/performance metrics by project/model; not money balance or exact cumulative usage.",
+        "money": "Dashboard paid spend cap, 10–15min delay; no public read contract qualified.",
+        "failureIsolation": "Enterprise denial affects enterprise metrics only."
+      },
+      "maintainerPrerequisites": [
+        "No OAuth registration warranted by current source evidence.",
+        "One-step key UX, existing-account reuse, scoped console links.",
+        "Optional Enterprise entitlement/capability reader if selected for implementation."
+      ],
+      "unresolved": [
+        "Actual user header event, organization/project identity and which overlapping limit header represents.",
+        "Enterprise metrics minimum key role, delay and retention.",
+        "No public general OAuth/key-provisioning/spend-read contract qualified."
+      ],
+      "fallback": {
+        "kind": "provider-console",
+        "url": "https://console.groq.com/settings/limits",
+        "details": "Manual usage/spend dashboard; no fake 0 or monitor credential requirement."
+      },
+      "codeImplications": [
+        "Keep real header bridge; do not regress to parser-only source or standalone claim.",
+        "Preserve stable account identity and original observation age.",
+        "Separate connection/inference/monitoring statuses and optional Enterprise capability.",
+        "Enable standalone Enterprise Metrics monitor identity/credential resolution independently of inference secret if that source is implemented."
+      ],
+      "sources": [
+        {
+          "id": "groq:G1",
+          "url": "https://console.groq.com/docs/rate-limits.md",
+          "claim": "Sechs Header dokumentieren RPD und TPM; Resetwerte als Dauer, retry-after in Sekunden nur bei 429. Orgweite Limits; keine Geldbudgetaussage.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "groq:G2",
+          "url": "https://console.groq.com/docs/projects.md",
+          "claim": "Projektkeys, projektbezogene Usage und engere Modelllimits; Organisation als gemeinsame Obergrenze; ITPM/OTPM nur Org; Owner/Developer/Reader-Rollen.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "groq:G3",
+          "url": "https://console.groq.com/docs/prometheus-metrics.md",
+          "claim": "Enterprise-only. Bearer Groq API key an https://api.groq.com/v1/metrics/prometheus; Prometheus-Pfade, modell-/projektbezogene rate5m-Requests/Tokens/Performance.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "groq:G4",
+          "url": "https://console.groq.com/docs/spend-limits.md",
+          "claim": "Paid + Owner; USD-Orgspendcap über alle Keys, 10–15 Minuten Aktualisierungsverzug, Reset am Ersten (Zeitzone offen), HTTP 400 blocked_api_access. Nur Consolebedienung beschrieben.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "groq:G6",
+          "url": "https://console.groq.com/docs/quickstart.md",
+          "claim": "Offizieller Keybootstrap über Console /keys; GROQ_API_KEY.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "groq:G7",
+          "url": "https://github.com/groq/groq-python/blob/55066d94acca028c3cb74e050f2711b80ade6298/api.md",
+          "claim": "Gelesene offizielle SDK-Oberfläche enthält Inferenz/Modelle/Batches/Dateien, keinen qualifizierten Org-/Usage-/Spend-/Keymanagement-/OAuthvertrag. Begrenzte Nichtfund-Aussage.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-sdk",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "groq:G8",
+          "url": "https://console.groq.com/llms.txt",
+          "claim": "Öffentlicher Dokumentationsindex zur Eingrenzung der Recherche; kein qualifizierter nativer Account-OAuth-/Deviceflow gefunden.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        }
+      ]
+    },
+    {
+      "id": "mistral-api",
+      "providerId": "mistral",
+      "product": "Mistral Studio/API",
+      "current": {
+        "inference": "Manual Studio workspace API key and model metadata.",
+        "monitoring": "quotaSupport unsupported; no Mistral adapter/catalog monitor option."
+      },
+      "preferredFlow": {
+        "kind": "existing-studio-key-now-browser-bootstrap-target",
+        "readiness": "Manual path implementable now; owned Vibe browser reuse for Studio/API conditional on external support and key product scope.",
+        "summary": "Use existing workspace key in one step. Promote browser→API-key flow only when exact Studio route/model permission is verified.",
+        "resourceSelection": "Existing Studio workspace; standard-key automatic org/workspace discovery not qualified.",
+        "optional": [
+          "Existing Enterprise account may add dedicated admin monitor separately."
+        ]
+      },
+      "userSteps": [
+        "Choose Mistral API; reuse existing key if already attached.",
+        "Otherwise open Studio API-key profile, choose existing workspace and enter one key locally.",
+        "Save and optionally read models; inferencing verification remains separate.",
+        "Show API connection and provider dashboard usage link; no ordinary-user Admin-key demand."
+      ],
+      "credentials": {
+        "inference": "Studio product/workspace API key.",
+        "monitoring": "Standard key explicitly never authorizes Enterprise Admin endpoints, regardless of human role.",
+        "browserTarget": "Vibe PKCE/polling→api_key candidate; do not assume universal Studio-key product/model rights.",
+        "refresh": "API-key expiry/revoke requires replacement or future qualified browser re-bootstrap.",
+        "reconnect": "Keep local account; verify changed workspace; do not replace optional Admin credential.",
+        "clientIdInput": false
+      },
+      "inference": {
+        "resource": "Workspace under organization plan/caps.",
+        "rights": "Existing key actual model/API route, quota and region conditions; model-list success not inference test.",
+        "provisioning": "No automatic workspace/key/PAYG provisioning from standard key. Browserbootstrap intentionally creates key only if later qualified and user chooses that connect."
+      },
+      "monitoring": {
+        "ordinaryPlans": "Provider dashboard, no qualified public Admin read available to these plans.",
+        "enterprise": "Separate opt-in Admin credential; not same login/key.",
+        "limits": "Included plan usage, prepaid credits, PAYG setting and overlapping org/workspace caps remain separate.",
+        "localUsage": "Only local observed subset; no organization remaining inference."
+      },
+      "maintainerPrerequisites": [
+        "Simplify existing key form and direct Studio link.",
+        "Before browser default confirm external support of Vibe flow and key product/model capabilities for exact Lain route.",
+        "No generic OAuth client/scopes may be invented for custom API-key bootstrap."
+      ],
+      "unresolved": [
+        "Vibe-created key use on arbitrary Studio API route/model and support for third-party flow.",
+        "Standard-key resource discovery not qualified.",
+        "Ordinary-plan public programmatic allowance/credit source absent from reviewed contracts."
+      ],
+      "fallback": {
+        "kind": "existing-manual-studio-key",
+        "url": "https://console.mistral.ai/home?profile_dialog=api-keys",
+        "details": "Useful primary fallback even if browserkey remains Vibe-only; dashboard for usage."
+      },
+      "codeImplications": [
+        "Credential capabilities must include product/workspace and bootstrap provenance.",
+        "Do not infer Admin support from paid plan/user role.",
+        "Keep inference and Admin monitor credential lifecycles independent."
+      ],
+      "sources": [
+        {
+          "id": "mistral:M1",
+          "url": "https://docs.mistral.ai/admin/billing-usage/subscriptions.md",
+          "claim": "Free/Pro/Education/Team/Enterprise global für API/Studio/Vibe Code; enthaltene Monatsusage geteilt; PAYG optional vorausbezahlt, nächster Billingperiodenreset.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M2",
+          "url": "https://docs.mistral.ai/admin/billing-usage/usage-limits.md",
+          "claim": "Org-/Workspacecaps und API-Modellraten; programmatische Usage ausdrücklich nur Enterprise Admin API, andere Pläne Dashboard.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M3",
+          "url": "https://docs.mistral.ai/admin/billing-usage/billing.md",
+          "claim": "Creditbalance getrennt vom Spendcap; Credits inklusive Steuer, Caps vor Steuer; Verarbeitung verzögert; 402 bei erschöpften Credits über inkludierte Usage hinaus; Panel Admin/Billing-Rolle.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M4",
+          "url": "https://docs.mistral.ai/admin/identity-access/api-keys.md",
+          "claim": "Studio-/Vibe-/Legacykeys workspacegebunden; keine plangebundenen Keys; Workspace/Connectorzugriff/Ablauf bei Erstellung gebunden.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M7",
+          "url": "https://docs.mistral.ai/admin/admin-api/authentication.md",
+          "claim": "Enterprise-Account-Admin erstellt optional ablaufenden Org-Admin-Key; Basis /v1/admin, Header x-api-key. Standardkey gewährt nie Adminzugriff unabhängig von Userrolle.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M11",
+          "url": "https://docs.mistral.ai/vibe/code/cli/api-keys-profiles.md",
+          "claim": "Browser-Sign-in standardmäßig für Mistral-Provider; provisioniert Credentials; vibe --setup und Keyring/.env; kein Adminzugang daraus.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M12",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/setup/auth/browser_sign_in.py",
+          "claim": "Offizieller CLI-Code: zufälliger PKCE-Verifier, S256, Browser/Polling mit Timeout/Ablehnung, standardmäßig 3s Intervall, Ergebnis API-Key.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M13",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/setup/auth/http_browser_sign_in_gateway.py",
+          "claim": "POST Console-API /vibe/sign-in; validierte Browser-/Poll-URLs; POST /vibe/sign-in/{process_id}/exchange mit exchange_token und code_verifier -> api_key; Workspace-Keyerstellungsrecht erforderlich.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M14",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/core/config/_defaults.py",
+          "claim": "Standardbrowser https://console.mistral.ai, Auth-API https://console.mistral.ai/api.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M15",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/setup/auth/api_key_persistence.py",
+          "claim": "API-Keypersistenz im OS-Keyring, privater .env-Fallback; kein qualifizierter OAuthrefreshzyklus.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M16",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/setup/auth/whoami.py",
+          "claim": "GET Console /api/vibe/whoami mit Bearer-Inferenzkey: Plan-/Customer-/Tenant-/primitive_access_scope-Identität, keine Allowance; 6h Identitätscache ist kein Reporting-SLA.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M18",
+          "url": "https://docs.mistral.ai/vibe/code/vs-code-extension/install-authenticate.md",
+          "claim": "Browserflow im gebündelten Agenten noch im Rollout beschrieben; bisheriger Terminal-Keysetup verfügbar.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        }
+      ]
+    },
+    {
+      "id": "mistral-vibe",
+      "providerId": "mistral",
+      "product": "Mistral Vibe Code browser credential bootstrap",
+      "current": {
+        "inference": "Official CLI browser flow publicly evidenced, not integrated in Lain.",
+        "monitoring": "Vibe whoami identity/plan, no remaining allowance; not Admin access."
+      },
+      "preferredFlow": {
+        "kind": "browser-pkce-polling-to-api-key",
+        "readiness": "First-party flow demonstrated in official source; external-client support/stability and exact route product scope still qualification gates.",
+        "summary": "Sign in in system browser, choose eligible existing workspace, key provisioned and stored without copy/paste.",
+        "apiBase": "https://console.mistral.ai/api",
+        "protocol": "Custom S256 PKCE + polling, not evidenced RFC8628 device grant or access/refresh OAuth.",
+        "operations": [
+          "POST /vibe/sign-in with S256 challenge",
+          "Open validated sign_in_url; poll returned validated poll_url until completion/expiry",
+          "POST /vibe/sign-in/{process_id}/exchange with exchange_token and code_verifier -> api_key"
+        ],
+        "resourceSelection": "Existing workspace selected in browser; key-creation permission required.",
+        "optional": [
+          "Explicit import of already configured official CLI credential; no mandatory CLI install."
+        ]
+      },
+      "userSteps": [
+        "Choose browser connection once it is supported for this product in Lain.",
+        "Sign in to existing Mistral account in system browser.",
+        "Choose an eligible existing workspace and approve key provisioning.",
+        "Wait for completion; key stored locally, no client ID or key entry."
+      ],
+      "credentials": {
+        "result": "API key, not Admin API key and not OAuth refresh token.",
+        "refresh": "No observed access/refresh cycle; re-bootstrap on expiry/revoke.",
+        "storage": "Lain private credential service; official CLI demonstrates OS keyring/.env fallback. No silent import of private files.",
+        "reconnect": "Repeat new PKCE attempt on same local account, verify workspace before replacing credential.",
+        "clientIdInput": false
+      },
+      "inference": {
+        "rights": "Vibe product/workspace eligibility and actual model route must be verified; no universal Studio inference promise.",
+        "provisioning": "Flow intentionally creates API key; does not create org/workspace, billing or Admin key."
+      },
+      "monitoring": {
+        "available": "Official Vibe whoami can identify plan/customer/primitive access scope; not usage balance.",
+        "admin": "Requires separate Enterprise Admin credential; never automatic from browser key.",
+        "standaloneAllowance": "Not publicly qualified in reviewed ordinary-key flow."
+      },
+      "maintainerPrerequisites": [
+        "Confirm supported external use, endpoint stability, product/model scope and key lifecycle.",
+        "Implement bounded PKCE/polling attempt with origin/path validation, cancellation, expiry and safe local storage.",
+        "Do not label custom bootstrap OAuthrefresh or use borrowed client IDs."
+      ],
+      "unresolved": [
+        "External-client support/stability contract.",
+        "Workspace role/keycreation eligibility and exact product/model scope.",
+        "CLI/extension rollout mismatch; do not infer all surfaces have same login."
+      ],
+      "fallback": {
+        "kind": "manual-key-or-explicit-cli-import",
+        "details": "User chooses existing appropriate product key or authorized import; no automatic keyring/.env reading."
+      },
+      "codeImplications": [
+        "Separate custom bootstrap state machine from standard OAuth lifecycle.",
+        "Store provenance, product and workspace binding; key replacement only after successful completion.",
+        "Expose waiting/expired/denied as attempt states rather than disabling existing account."
+      ],
+      "sources": [
+        {
+          "id": "mistral:M1",
+          "url": "https://docs.mistral.ai/admin/billing-usage/subscriptions.md",
+          "claim": "Free/Pro/Education/Team/Enterprise global für API/Studio/Vibe Code; enthaltene Monatsusage geteilt; PAYG optional vorausbezahlt, nächster Billingperiodenreset.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M2",
+          "url": "https://docs.mistral.ai/admin/billing-usage/usage-limits.md",
+          "claim": "Org-/Workspacecaps und API-Modellraten; programmatische Usage ausdrücklich nur Enterprise Admin API, andere Pläne Dashboard.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M3",
+          "url": "https://docs.mistral.ai/admin/billing-usage/billing.md",
+          "claim": "Creditbalance getrennt vom Spendcap; Credits inklusive Steuer, Caps vor Steuer; Verarbeitung verzögert; 402 bei erschöpften Credits über inkludierte Usage hinaus; Panel Admin/Billing-Rolle.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M4",
+          "url": "https://docs.mistral.ai/admin/identity-access/api-keys.md",
+          "claim": "Studio-/Vibe-/Legacykeys workspacegebunden; keine plangebundenen Keys; Workspace/Connectorzugriff/Ablauf bei Erstellung gebunden.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M7",
+          "url": "https://docs.mistral.ai/admin/admin-api/authentication.md",
+          "claim": "Enterprise-Account-Admin erstellt optional ablaufenden Org-Admin-Key; Basis /v1/admin, Header x-api-key. Standardkey gewährt nie Adminzugriff unabhängig von Userrolle.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M11",
+          "url": "https://docs.mistral.ai/vibe/code/cli/api-keys-profiles.md",
+          "claim": "Browser-Sign-in standardmäßig für Mistral-Provider; provisioniert Credentials; vibe --setup und Keyring/.env; kein Adminzugang daraus.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M12",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/setup/auth/browser_sign_in.py",
+          "claim": "Offizieller CLI-Code: zufälliger PKCE-Verifier, S256, Browser/Polling mit Timeout/Ablehnung, standardmäßig 3s Intervall, Ergebnis API-Key.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M13",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/setup/auth/http_browser_sign_in_gateway.py",
+          "claim": "POST Console-API /vibe/sign-in; validierte Browser-/Poll-URLs; POST /vibe/sign-in/{process_id}/exchange mit exchange_token und code_verifier -> api_key; Workspace-Keyerstellungsrecht erforderlich.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M14",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/core/config/_defaults.py",
+          "claim": "Standardbrowser https://console.mistral.ai, Auth-API https://console.mistral.ai/api.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M15",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/setup/auth/api_key_persistence.py",
+          "claim": "API-Keypersistenz im OS-Keyring, privater .env-Fallback; kein qualifizierter OAuthrefreshzyklus.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M16",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/setup/auth/whoami.py",
+          "claim": "GET Console /api/vibe/whoami mit Bearer-Inferenzkey: Plan-/Customer-/Tenant-/primitive_access_scope-Identität, keine Allowance; 6h Identitätscache ist kein Reporting-SLA.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M18",
+          "url": "https://docs.mistral.ai/vibe/code/vs-code-extension/install-authenticate.md",
+          "claim": "Browserflow im gebündelten Agenten noch im Rollout beschrieben; bisheriger Terminal-Keysetup verfügbar.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        }
+      ]
+    },
+    {
+      "id": "mistral-enterprise-admin",
+      "providerId": "mistral",
+      "product": "Mistral Enterprise Admin reporting",
+      "current": {
+        "monitoring": "No Admin credential option, adapter or Host registration.",
+        "inference": "Separate existing API/Vibe account.",
+        "coupling": "Current HostQuotaSource only returns credentials when an inference account secret exists; standalone monitor target requires decoupling."
+      },
+      "preferredFlow": {
+        "kind": "standalone-admin-monitor-or-attach-to-inference",
+        "readiness": "Official Preview read APIs evidenced; header/scope/schema qualification required before activation.",
+        "summary": "Connect dedicated Org Admin key as independent monitor-only account without inference key, or optionally attach to an existing API/Vibe account.",
+        "resourceSelection": "Explicit expected organization, optional existing workspace filter.",
+        "optional": "Optional relative to inference connections; independent first-class monitor-only entrypoint also supported in target.",
+        "entrypoints": [
+          "Standalone organization-usage connection, no inference route/key prerequisite.",
+          "Optional reporting capability on existing API/Vibe connection."
+        ]
+      },
+      "userSteps": [
+        "Choose Mistral organization usage as standalone monitor, or add it to an existing API/Vibe connection; no inference connection/key required.",
+        "If already Enterprise-enabled, choose optional organization usage.",
+        "Enterprise Account admin opens Admin Panel and creates/reuses dedicated organization Admin key.",
+        "Enter key once, confirm expected organization and optional workspace; run read-only capability checks after maintainer resolves auth contract."
+      ],
+      "credentials": {
+        "type": "Dedicated single-organization Admin API key; optional expiration.",
+        "creationRight": "Enterprise Account admin; non-self-serve Enterprise enablement. Panel Billing role alone is not this creation right.",
+        "minimumReadScope": "No documented narrow read-only Admin scope.",
+        "authConflict": "Guide x-api-key vs generated HTTP Bearer; maintainer resolves before user sees option. Never require user to choose headers.",
+        "reconnect": "Replace expired/revoked Admin key, verify same organization and preserve stable local monitor identity; any optional inference key remains untouched.",
+        "clientIdInput": false
+      },
+      "inference": {
+        "use": "Not qualified as inference credential; never export to proxy inference.",
+        "keyCreation": "Admin API can create user workspace inference keys but this is unnecessary privileged mutation, not reporting bootstrap.",
+        "prerequisite": false
+      },
+      "monitoring": {
+        "operations": [
+          "GET /v1/admin/spend-limit",
+          "GET /v1/admin/rate-limit",
+          "GET /v1/admin/usage",
+          "POST /v1/admin/usage/query (read-only semantics)"
+        ],
+        "meaning": "Spend cap plus current counted usage/currency; configured rates; monthly usage/prices or detailed quantities.",
+        "notProvided": [
+          "qualified prepaid credit balance",
+          "included plan allowance",
+          "instant remaining rate capacity"
+        ],
+        "failureIsolation": "Optional reporting failure does not disable API/Vibe inference.",
+        "standalone": true,
+        "standaloneMeaning": "Provider-side reads require Admin credential/Org only, no Lain inference traffic or inference API key."
+      },
+      "maintainerPrerequisites": [
+        "Resolve x-api-key/Bearer conflict with current supported contract.",
+        "Qualify single-org key scope versus customer/org filters and expected org/workspace identity.",
+        "Qualify raw/null/zero currency, period, cap consumption field and data delay before percentages.",
+        "Implement optional private monitor credential storage separate from inference.",
+        "Provide standalone monitor account/resource identity and credential path, independent of inference secret and routing."
+      ],
+      "unresolved": [
+        "Actual entitlement and minimum read-only key authority.",
+        "Header contradiction, scope attribution, reporting delay and reset timezone.",
+        "Legacy vibe_usage conflicts with generated example."
+      ],
+      "fallback": {
+        "kind": "admin-dashboard",
+        "url": "https://admin.mistral.ai/organization/usage",
+        "details": "No automatic Sales signup, upgrade, key provisioning or billing change."
+      },
+      "codeImplications": [
+        "Dedicated monitor credential, capability and adapters; avoid replacing inference secret.",
+        "Credential fields secret-free in UI/status; do not send to inference.",
+        "Spend cap, configured rate and usage are distinct measurements; no fabricated creditbalance.",
+        "Decouple monitor account/credential resolution from inference-secret presence in HostQuotaSource; standalone Admin monitor must refresh without SecretStore.HasAccount inference key."
+      ],
+      "sources": [
+        {
+          "id": "mistral:M1",
+          "url": "https://docs.mistral.ai/admin/billing-usage/subscriptions.md",
+          "claim": "Free/Pro/Education/Team/Enterprise global für API/Studio/Vibe Code; enthaltene Monatsusage geteilt; PAYG optional vorausbezahlt, nächster Billingperiodenreset.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M2",
+          "url": "https://docs.mistral.ai/admin/billing-usage/usage-limits.md",
+          "claim": "Org-/Workspacecaps und API-Modellraten; programmatische Usage ausdrücklich nur Enterprise Admin API, andere Pläne Dashboard.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M3",
+          "url": "https://docs.mistral.ai/admin/billing-usage/billing.md",
+          "claim": "Creditbalance getrennt vom Spendcap; Credits inklusive Steuer, Caps vor Steuer; Verarbeitung verzögert; 402 bei erschöpften Credits über inkludierte Usage hinaus; Panel Admin/Billing-Rolle.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M5",
+          "url": "https://docs.mistral.ai/admin/workspaces/usage-limits.md",
+          "claim": "Workspaceraten von Keys geteilt; TPM und Tokens/Monat; Monatscap unter Orgobergrenze; kein exakter Resetzeitpunkt.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M6",
+          "url": "https://docs.mistral.ai/admin/admin-api/overview.md",
+          "claim": "Admin API Preview, Enterprise-only, nicht self-service, dedizierter Admin-Key.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M7",
+          "url": "https://docs.mistral.ai/admin/admin-api/authentication.md",
+          "claim": "Enterprise-Account-Admin erstellt optional ablaufenden Org-Admin-Key; Basis /v1/admin, Header x-api-key. Standardkey gewährt nie Adminzugriff unabhängig von Userrolle.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M8",
+          "url": "https://docs.mistral.ai/admin/admin-api/usage-metrics.md",
+          "claim": "GET /usage, /spend-limit, /rate-limit als Lesen dokumentiert. Produktanalytics separat; Quelle enthält TODO zum Analytics-Basishost.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M9",
+          "url": "https://docs.mistral.ai/api/endpoint/beta/admin/billing",
+          "claim": "Gerenderte Referenz samt servergeladener expandierbarer Schemata gelesen: POST /usage/query liefert Mengen ohne Preise/Kosten; GET /usage Monatsreport mit Preis/Währung; Spendcap aktuelle Usage; konfigurierte Raten. AdminApiKey hier HTTP Bearer statt Authguide x-api-key.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "mistral:M10",
+          "url": "https://docs.mistral.ai/api/endpoint/beta/admin/api-keys",
+          "claim": "Admin-Key-CRUD: GET/POST /v1/admin/api-keys und DELETE /{key_id}; Erstellen braucht user_id/workspace_uuid; Plaintext nur bei Erstellung.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs",
+          "basis": "reused-from-input-report"
+        }
+      ]
+    },
+    {
+      "id": "gemini-api",
+      "providerId": "gemini",
+      "product": "Gemini Developer API",
+      "current": {
+        "inference": "API-key OpenAI compatibility route/model metadata.",
+        "monitoring": "Separate expiring Google access-token snapshot plus explicit project ID; current reader service API request_count UTC usage, no owned refresh or new model quota joins."
+      },
+      "preferredFlow": {
+        "kind": "owned-google-desktop-oauth-direct",
+        "readiness": "Official OAuth capability established; exact inference transport/minimum scopes and quotas join need qualification. Maintainer client not yet registered/implemented.",
+        "summary": "System-browser OAuth, choose existing enabled project, same renewable usergrant for inference and optional usage/limits. No new API key or service account.",
+        "resourceSelection": "projects.search of accessible existing projects; persist textual ID and number; x-goog-user-project binds inference/quota project.",
+        "scopeSelection": "Choose desired optional usage/limits before first installed-app grant; do not assume incremental authorization.",
+        "alternatives": {
+          "existingKeyPlusOAuth": "Preferred compatible migration: keep current key and add renewable project monitor.",
+          "oauthToKey": "Not default; current new auth keys need service-account creation/binding and privileged lifecycle beyond simple create-key."
+        },
+        "monitorOnly": "Independent project monitor with appropriate read scopes/IAM and selected existing project; no inference route/API key required."
+      },
+      "userSteps": [
+        "Choose Connect with Google for inference plus optional usage, or standalone usage/limits only; select capability set before grant.",
+        "Choose existing Google account and grant consent in system browser; no client ID/secret or gcloud required.",
+        "Choose existing active Gemini project from picker; maintain project-ID/number identity.",
+        "Lain checks supported read capabilities and saves renewable grant; no API enable, project creation, billing or serviceaccount changes.",
+        "Show connection, exact inference qualification and monitoring status separately; fix missing IAM without forcing a new project."
+      ],
+      "credentials": {
+        "preferred": "User OAuth access token plus owned refresh authority, private local lifecycle.",
+        "clientMetadata": "Public registered Desktop client ID bundled/configured by Maintainer, never user input; no protected client secret assumed.",
+        "documentedScopes": {
+          "monitorTimeseries": "https://www.googleapis.com/auth/monitoring.read or cloud-platform",
+          "cloudQuotas": "https://www.googleapis.com/auth/cloud-platform",
+          "oauthQuickstartExample": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/generative-language.retriever"
+          ]
+        },
+        "scopeCaveat": "Exact minimal scope set for concrete inference route unresolved; quickstart Python and gcloud examples differ. cloud-platform is broad, not read-only.",
+        "reconnect": "Refresh normally; invalid_grant/revoke -> browser reconnect same local account/project, confirm identity changes. Imported external token snapshots never gain refresh/revoke authority."
+      },
+      "inference": {
+        "transport": "Official Gemini native OAuth exists. Current OpenAI compatibility docs show bearer API-key only; acceptance of OAuth there must be proven or native transport added.",
+        "rights": [
+          "Existing Generative Language API enabled and product terms/region/age/security eligibility.",
+          "serviceusage.services.use for explicit x-goog-user-project (e.g. Service Usage Consumer).",
+          "resourcemanager.projects.get for project picker/identity."
+        ],
+        "noInventedRole": "Current Generative Language IAM reference lists no IAM permissions for service; serviceAgent role not for users. No invented generativelanguage inference role.",
+        "provisioning": "No automatic billing/API activation/serviceaccount/key creation."
+      },
+      "monitoring": {
+        "rights": [
+          "monitoring.timeSeries.list",
+          "cloudquotas.quotas.get for effective limits",
+          "resourcemanager.projects.get for selected resource"
+        ],
+        "sameGrant": "Possible with actual granted scopes and project IAM; same human login alone insufficient.",
+        "source": "Official model/limit_name quota usage+limit metrics and Cloud Quotas configuration; independent of Lain traffic.",
+        "qualify": [
+          "Actual project exports, model mapping and limit_name/quotaId join",
+          "Correct window dimensions, Pacific RPD and coverage",
+          "Up to 150s lag; not real-time next-request authorization"
+        ],
+        "money": "Not automatically provider money balance; no billing-read authority added to minimal grant."
+      },
+      "maintainerPrerequisites": [
+        "Own public Desktop OAuth client, production consent/brand/domain and applicable scope verification.",
+        "Client ID and redirects shipped; no user app setup.",
+        "S256/state/loopback, expiry/cancellation, secure single-flight refresh and reconnect; testing 7-day refresh restriction not production behavior to impose on users.",
+        "Qualify exact inference endpoint/scopes/x-goog-user-project and project picker.",
+        "Capability IAM validation, optional monitors and model quota join; no automatic IAM edits."
+      ],
+      "unresolved": [
+        "Minimal exact inference scopes; OAuth acceptance of existing OpenAI chat route or native transport requirement.",
+        "Actual user project capabilities and enabled services not queried.",
+        "Quotas model/limit join, freshness/window completeness not live-qualified.",
+        "Production client registration and review not performed."
+      ],
+      "fallback": {
+        "preferred": "Existing valid restricted standard/Auth API key plus owned monitor OAuth; same selected project.",
+        "manual": "AI Studio prepare/access existing project, import existing valid key; no default new project. Token snapshot only expert fallback, not primary UX.",
+        "notRecommended": "User creates Desktop client or enters client ID; automatic OAuth→new serviceaccount-bound key."
+      },
+      "codeImplications": [
+        "Introduce owned renewable OAuth credential type and resource binding, not token snapshot pretending to refresh.",
+        "Project picker/ID-number resolution, direct bearer inference with quota project only after route qualification.",
+        "Separate registered-client Maintainer config from per-user account configuration.",
+        "Optional read checks and model quota reader; explicit unknown/no-right/stale states.",
+        "Do not auto provision service accounts, enable APIs, link billing or replace functioning keys.",
+        "Standalone project-monitor credential/resource resolution must not require an inference secret. Monitor-only grant does not automatically request inference rights."
+      ],
+      "sources": [
+        {
+          "id": "gemini:G1",
+          "url": "https://docs.cloud.google.com/monitoring/api/metrics_gcp_d_h?hl=en",
+          "claim": "Official metric descriptors include generativelanguage.googleapis.com/quota/{generate_content_free_tier_requests,generate_content_free_tier_input_token_count,generate_requests_per_model,generate_content_paid_tier_input_token_count}/usage and /limit, plus tier 2/3 variants. Request/token usage is DELTA, limit GAUGE; labels include model and limit_name, usage also method; up to 150 seconds visibility delay.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G2",
+          "url": "https://docs.cloud.google.com/monitoring/api/resources#tag_generativelanguage.googleapis.com/Location",
+          "claim": "The generativelanguage.googleapis.com/Location monitored resource exposes resource_container and location, rather than consumed_api.project_id.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G3",
+          "url": "https://ai.google.dev/gemini-api/docs/troubleshoot-ai-studio",
+          "claim": "AI Studio usage requires monitoring.timeSeries.list; rate-limit dashboard additionally requires cloudquotas.quotas.get; project lookup requires resourcemanager.projects.get.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G4",
+          "url": "https://docs.cloud.google.com/docs/quotas/reference/rest/v1/projects.locations.services.quotaInfos/list",
+          "claim": "QuotaInfo list is a documented read endpoint with cloud-platform OAuth scope and cloudquotas.quotas.get IAM permission.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G5",
+          "url": "https://docs.cloud.google.com/docs/quotas/reference/rest/v1/projects.locations.services.quotaInfos",
+          "claim": "QuotaInfo exposes quotaId, metric, dimensions, refreshInterval, isPrecise, isConcurrent and dimension-specific configurations.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G6",
+          "url": "https://docs.cloud.google.com/docs/quotas/reference/rest/v1/folders.locations.services.quotaInfos#QuotaInfo.DimensionsInfo",
+          "claim": "DimensionsInfo.details.value is the currently enforced value; dimension-specific entries override general entries, and applicableLocations retains location coverage.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G7",
+          "url": "https://ai.google.dev/gemini-api/docs/rate-limits",
+          "claim": "Gemini quotas are project-wide and model-dependent; RPD resets at Pacific midnight; RPM/TPM and additional spend/priority limits can also apply.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G8",
+          "url": "https://docs.cloud.google.com/service-usage/docs/reference/rest/v1beta1/services.consumerQuotaMetrics/list",
+          "claim": "Service Usage consumerQuotaMetrics.list is an alternative quota-configuration read with effective/default limits, unit and overrides; it requires serviceusage.quotas.get.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G9",
+          "url": "https://developers.google.com/identity/protocols/oauth2/native-app",
+          "claim": "Google supports registered public Desktop OAuth, system browser, PKCE, loopback callback and token refresh; installed apps lack incremental authorization.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G10",
+          "url": "https://developers.google.com/identity/protocols/oauth2",
+          "claim": "Google OAuth refresh tokens can expire or be revoked; external Testing projects with non-basic scopes can issue refresh tokens expiring after seven days.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G11",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/policy-compliance",
+          "claim": "Production apps require relevant identity, domain, minimum-scope and verification compliance; protocol support does not establish a registered or approved lain client.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G12",
+          "url": "https://docs.cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.timeSeries/list",
+          "claim": "Monitoring timeSeries.list accepts monitoring.read, monitoring or cloud-platform; a filter must identify the requested metric type.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G13",
+          "url": "https://ai.google.dev/gemini-api/docs/oauth",
+          "claim": "Gemini documents OAuth instead of an API key, desktop credential setup, Bearer requests and x-goog-user-project; quickstart scope example is cloud-platform plus generative-language.retriever.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G14",
+          "url": "https://docs.cloud.google.com/api-keys/docs/reference/rest/v2/projects.locations.keys/create",
+          "claim": "Generic API-key creation is a cloud-platform-authorized write requiring apikeys.keys.create and returns an operation.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G15",
+          "url": "https://docs.cloud.google.com/resource-manager/reference/rest/v3/projects/search",
+          "claim": "Resource Manager projects.search lists accessible projects with resourcemanager.projects.get; explicit project selection remains necessary.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G16",
+          "url": "https://docs.cloud.google.com/service-usage/docs/reference/rest/v1/services/enable",
+          "claim": "Enabling a Google API is a separate serviceusage.services.enable write operation.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "gemini:G17",
+          "url": "https://ai.google.dev/gemini-api/docs/api-key",
+          "claim": "Since May 28, 2026 new AI Studio keys are service-account-bound authorization keys. Creation needs service-account and binding permissions beyond ordinary API-key creation; unrestricted standard keys are rejected.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "google:AC1",
+          "url": "https://docs.cloud.google.com/docs/authentication/rest",
+          "claim": "Setting x-goog-user-project requires serviceusage.services.use, included in Service Usage Consumer; no automatic billing-link operation implied.",
+          "date": "2026-10-24",
+          "basis": "targeted-public-fetch-this-task"
+        },
+        {
+          "id": "google:AC2",
+          "url": "https://docs.cloud.google.com/iam/docs/roles-permissions/generativelanguage",
+          "claim": "Current IAM reference lists no IAM permissions for this service; only service-agent role, explicitly not for ordinary principals.",
+          "date": "2026-10-24",
+          "basis": "targeted-public-fetch-this-task"
+        },
+        {
+          "id": "google:AC3",
+          "url": "https://ai.google.dev/gemini-api/docs/openai",
+          "claim": "OpenAI compatibility examples use Authorization Bearer API key. They do not prove OAuth token acceptance for this exact route.",
+          "date": "2026-10-24",
+          "basis": "targeted-public-fetch-this-task"
+        },
+        {
+          "id": "google:AC4",
+          "url": "https://ai.google.dev/gemini-api/docs/oauth",
+          "claim": "Re-read public OAuth quickstart: OAuth instead of key, native models list Bearer plus x-goog-user-project; scope examples differ between gcloud and Python. Minimal exact inference scope still unqualified.",
+          "date": "2026-10-24",
+          "basis": "targeted-public-fetch-this-task"
+        },
+        {
+          "id": "google:AC5",
+          "url": "https://ai.google.dev/gemini-api/docs/api-key",
+          "claim": "Re-read current service-account-bound authorization keys, required create/binding/enable permissions, existing projects and restricted-standard-key behavior.",
+          "date": "2026-10-24",
+          "basis": "targeted-public-fetch-this-task"
+        },
+        {
+          "id": "google:AC6",
+          "url": "https://ai.google.dev/gemini-api/docs/troubleshoot-ai-studio",
+          "claim": "Re-read IAM table: project get; monitoring timeSeries list; Cloud Quotas get; Terms, region and age checks independent of OAuth.",
+          "date": "2026-10-24",
+          "basis": "targeted-public-fetch-this-task"
+        }
+      ]
+    },
+    {
+      "id": "cloudflare-workers-ai",
+      "providerId": "cloudflare",
+      "product": "Cloudflare Workers AI REST",
+      "current": {
+        "inference": "API token + account ID.",
+        "monitoring": "Existing inference token or separate monitor token option; no registered neuron reader or owned OAuth."
+      },
+      "preferredFlow": {
+        "kind": "owned-public-cloudflare-oauth-direct",
+        "readiness": "Official all-plan desktop OAuth exists; exact scopes, account discovery and endpoint acceptance are Maintainer qualification gates.",
+        "summary": "System-browser consent chooses existing accounts; local selection binds inference and optional analytics to one account; use OAuth access token directly.",
+        "resourceSelection": "Consent selects authorized accounts; local account ID/name discovery contract still needs confirmation. Never assume account IDs returned in callback or infer from opaque token.",
+        "protocol": "Authorization Code + S256 PKCE, token_endpoint_auth_method none; refresh_token grant/offline_access. Third-party Device Authorization explicitly unsupported.",
+        "alternatives": {
+          "existingToken": "Good fallback, reuse current account ID and permissioned token.",
+          "oauthToToken": "Not default: needs broader account/user token-creation authority and unnecessary extra credential lifecycle."
+        },
+        "monitorOnly": "Independent account analytics monitor with qualified read scopes; no inference route/token or inference-capable Workers AI permission required unless dataset access demonstrably requires it."
+      },
+      "userSteps": [
+        "Choose Connect with Cloudflare for inference plus optional usage, or independent usage-only monitoring with read capabilities.",
+        "Sign in in system browser, choose existing accounts and authorize required inference plus optional reporting rights.",
+        "Choose one actually authorized existing account in Lain picker after supported discovery is qualified; do not type client ID.",
+        "Save renewable grant/account binding; qualify inference and analytics separately.",
+        "Show account connection and optional usage capability; no account/worker/billing/plan provisioning."
+      ],
+      "credentials": {
+        "preferred": "OAuth access token plus refresh authority using owned public client.",
+        "clientMetadata": "Maintainer-owned public client ID; no client secret in desktop, no user Client-ID entry.",
+        "scopeIds": "Obtain exact dot-delimited IDs from official authenticated /oauth/scopes catalog during Maintainer preparation; no guessed strings or Wrangler colon scopes.",
+        "optionalScopes": "Analytics optional in client registration and user consent. offline_access not optional protocol scope.",
+        "reconnect": "Automatic refresh; revoked/invalid grant -> same local account browser reauthorization; confirm resource changes. Exact lifetime/rotation still qualification work.",
+        "fallback": "Account-bound API token; no Global API key."
+      },
+      "inference": {
+        "rights": "Quickstart requires Workers AI Read and Edit; Run reference accepts at least one Read or Write. Confirm smallest accepted permission and OAuth mapping for exact Lain route. Read-named right may execute billable inference.",
+        "endpointAcceptance": "General OAuth capability does not alone prove Run/OpenAI route bearer-token acceptance.",
+        "resource": "Same selected account ID in /accounts/{id}/ai path.",
+        "provisioning": "No new API token, account, worker or paid plan in standard Connect."
+      },
+      "monitoring": {
+        "rights": "Official GraphQL guide Account Analytics Read; Workers AI Read-only dataset access is unproven minimal-right hypothesis.",
+        "source": "aiInferenceAdaptiveGroups.sum.totalNeurons candidate; current official schema/settings and billing coverage still unqualified.",
+        "meaning": "Provider account usage independent of proxy once qualified; sampling/lag explicit; 10000/day UTC is tariff allowance not observed balance.",
+        "notRequestedByDefault": "Billing Usage v2 Alpha Restricted authority, without known exact Workers-AI scope/metric/entitlement.",
+        "failureIsolation": "Optional permission denial/dataset absence does not disable inference."
+      },
+      "maintainerPrerequisites": [
+        "Create Public client in Maintainer account with Super Administrator, Administrator or OAuth Client Write; verify publisher-domain TXT and required branding. Public promotion permanent.",
+        "Request exact required and optional scopes; catalog needs authentication but no role requirement.",
+        "Ship public client ID/callbacks; no user registration or secrets.",
+        "Confirm desktop loopback, refresh lifecycle, authorized-account discovery and endpoint acceptance.",
+        "Qualify current neuron schema/settings, sampling confidence, complete UTC totals and billing-path attribution."
+      ],
+      "unresolved": [
+        "Account-ID/name discovery for own OAuth grant: consent selection confirmed but callback/resource-list contract not. /accounts reference only legacy security; do not ask Global key to repair.",
+        "Exact OAuth scope IDs and minimal Run/GraphQL scopes not fetched with credentials.",
+        "OAuth endpoint acceptance, loopback and refresh rotation/lifetime.",
+        "Neuron current schema, account availability, sampling/freshness and REST/binding/Gateway coverage.",
+        "User-account administrator may block new public app grants."
+      ],
+      "fallback": {
+        "kind": "existing-account-api-token",
+        "steps": [
+          "Reuse current account ID when available.",
+          "Import existing limited token; if absent use Workers-AI token template and manually copy account ID only while discovery unsupported.",
+          "Existing token with both inference and analytics permission needs no second key. Optional separate monitor read token only if chosen/required."
+        ],
+        "url": "https://dash.cloudflare.com/?to=/:account/ai/workers-ai",
+        "explanation": "Dashboard for unqualified data; no borrowed Wrangler client or broad token-provisioning bootstrap."
+      },
+      "codeImplications": [
+        "Own OAuth lifecycle and scope/capability model with optional reporting.",
+        "Bind actual authorized account resource to inference/monitoring; implement picker only on qualified discovery.",
+        "Use renewable OAuth directly rather than creating long-lived token if endpoints accept it.",
+        "Existing API-token path remains migration fallback; monitor-failure independent from inference.",
+        "No claimed exact neuron remaining before source/billing qualification.",
+        "Standalone analytics account and credential resolution independent of inference secret; do not silently grant inference-capable Read-named permission to monitor-only users."
+      ],
+      "sources": [
+        {
+          "id": "cloudflare:C1",
+          "url": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+          "claim": "Workers AI bills in Neurons, provides 10000 free per UTC day and supports separate Workers Paid versus AI Gateway credit billing paths.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C2",
+          "url": "https://raw.githubusercontent.com/cloudflare/skills/00eec280fa5c788000cd32f27a58b39dba15edfc/skills/cloudflare/references/graphql-api/patterns.md",
+          "claim": "Historical official Cloudflare reference shows account-scoped aiInferenceAdaptiveGroups as Workers AI analytics, with modelId and token sums; it does not document totalNeurons.",
+          "date": "2026-10-24",
+          "strength": "official-historical",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C3",
+          "url": "https://github.com/cloudflare/skills/commit/16b44fd80a852a02a53fbd79695ceeb5867b757e",
+          "claim": "Cloudflare removed the GraphQL references on October 14, 2026 because they duplicated/drifted from platform docs; the stale main-path search hit is not a current contract.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C4",
+          "url": "https://pages.johnspurlock.com/graphql-schema-docs/cloudflare.html",
+          "claim": "Public third-party schema mirror exposes AccountAiInferenceAdaptiveGroupsSum.totalNeurons as float64!, confidence support and model/time/request-source dimensions. Full content read using urllib because browser fetch exceeded size limit.",
+          "date": "2026-10-24",
+          "strength": "third-party-schema-lead",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C5",
+          "url": "https://raw.githubusercontent.com/michaloo/flareclerk/main/src/commands/ai.js",
+          "claim": "flareclerk source queries aiInferenceAdaptiveGroups.sum.totalNeurons grouped by modelId and date. It is an implementation lead, not official support or live qualification.",
+          "date": "2026-10-24",
+          "strength": "third-party-implementation-lead",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C6",
+          "url": "https://raw.githubusercontent.com/michaloo/flareclerk/main/src/commands/auth.js",
+          "claim": "flareclerk auth asks for Workers AI Read rather than Account Analytics Read; this is a narrow minimal-permission test hypothesis, not sufficient authority to change the official auth contract.",
+          "date": "2026-10-24",
+          "strength": "third-party-implementation-lead",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C7",
+          "url": "https://developers.cloudflare.com/analytics/graphql-api/features/discovery/introspection/",
+          "claim": "Cloudflare officially supports GraphQL introspection and notes that schema presence is distinct from account availability; settings-node qualification is necessary.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C8",
+          "url": "https://developers.cloudflare.com/analytics/graphql-api/sampling/",
+          "claim": "Adaptive GraphQL datasets may report estimates from sampling; aggregate neuron telemetry must not be represented as guaranteed exact billing.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C9",
+          "url": "https://developers.cloudflare.com/api/resources/billing/subresources/usage/methods/get_account_usage_v2/",
+          "claim": "Official Billing Usage v2 GET /accounts/{id}/billable/usage is Alpha Restricted, gives daily usage including free-tier metered consumption, fields for quantities/units/metric IDs, and a 31-day maximum range. Specific Workers-AI coverage is not established.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C10",
+          "url": "https://developers.cloudflare.com/api/resources/billing/subresources/usage/methods/get_account_usage_v1/",
+          "claim": "Billing Usage v1 depends on including the subscription billing-cycle anchor; it is not an established near-real-time daily allowance source.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C11",
+          "url": "https://developers.cloudflare.com/fundamentals/oauth/create-an-oauth-client/",
+          "claim": "Cloudflare supports third-party desktop/CLI Authorization Code with S256 PKCE and token auth none; public distribution requires client registration and verified client-URL domain.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C12",
+          "url": "https://developers.cloudflare.com/api/resources/iam/subresources/oauth_clients/methods/create/",
+          "claim": "Client registration supports refresh_token grant and automatic offline_access. Dot-delimited OAuth API scopes are validated; colon scopes are not accepted.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C13",
+          "url": "https://developers.cloudflare.com/fundamentals/oauth/integrate-with-cloudflare/",
+          "claim": "Official third-party OAuth endpoints are dash.cloudflare.com/oauth2/auth, token and revoke, with public metadata endpoints documented.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C14",
+          "url": "https://developers.cloudflare.com/fundamentals/oauth/authorizing-an-application/",
+          "claim": "Consent selects account resources and optional scopes; administrators can prevent new public OAuth authorizations.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C15",
+          "url": "https://developers.cloudflare.com/workers-ai/get-started/rest-api/",
+          "claim": "Workers AI REST quickstart uses Bearer token plus account ID, and says custom tokens require Workers AI Read and Edit.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C16",
+          "url": "https://developers.cloudflare.com/analytics/graphql-api/getting-started/authentication/api-token-auth/",
+          "claim": "Official GraphQL Analytics token guide requests Account Analytics Read.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C17",
+          "url": "https://developers.cloudflare.com/fundamentals/api/how-to/create-via-api/",
+          "claim": "API-token provisioning requires separate permission to create additional tokens; a normal inference/monitor grant does not imply that power.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:C18",
+          "url": "https://developers.cloudflare.com/analytics/graphql-api/tutorials/capture-graphql-queries-from-dashboard/",
+          "claim": "Cloudflare documents capturing dashboard GraphQL requests for investigation; this can support source qualification without making cookie scraping the product interface.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true,
+          "basis": "reused-from-input-report"
+        },
+        {
+          "id": "cloudflare:AC1",
+          "url": "https://developers.cloudflare.com/fundamentals/oauth/",
+          "claim": "Third-party OAuth availability explicitly Free, Pro, Business and Enterprise.",
+          "date": "2026-10-24",
+          "basis": "targeted-public-fetch-this-task"
+        },
+        {
+          "id": "cloudflare:AC2",
+          "url": "https://developers.cloudflare.com/fundamentals/oauth/create-an-oauth-client/",
+          "claim": "Desktop/CLI Auth Code S256 PKCE/none; no third-party Device Authorization. Maintainer registration roles and public-domain requirements; exact scope IDs from authenticated catalog.",
+          "date": "2026-10-24",
+          "basis": "targeted-public-fetch-this-task"
+        },
+        {
+          "id": "cloudflare:AC3",
+          "url": "https://developers.cloudflare.com/api/resources/iam/subresources/oauth_scopes/methods/list/",
+          "claim": "Scope catalog GET /oauth/scopes requires authentication but no authorization role; response id is client scope string. Maintainer-time operation, not user setup.",
+          "date": "2026-10-24",
+          "basis": "targeted-public-fetch-this-task"
+        },
+        {
+          "id": "cloudflare:AC4",
+          "url": "https://developers.cloudflare.com/api/resources/accounts/methods/list/",
+          "claim": "Accounts list returns id/name but current method reference only declares legacy email/global-key security; OAuth discovery and required permission are not established by this page.",
+          "date": "2026-10-24",
+          "basis": "targeted-public-fetch-this-task"
+        },
+        {
+          "id": "cloudflare:AC5",
+          "url": "https://developers.cloudflare.com/api/resources/ai/methods/run/",
+          "claim": "Run endpoint accepted permissions at least one Workers AI Read or Write. Quickstart asks Read and Edit; exact route/minimum OAuth mapping needs qualification.",
+          "date": "2026-10-24",
+          "basis": "targeted-public-fetch-this-task"
+        },
+        {
+          "id": "cloudflare:AC6",
+          "url": "https://developers.cloudflare.com/fundamentals/api/how-to/create-via-api/",
+          "claim": "Creating user tokens needs special Create additional tokens authority; account tokens need Account API Tokens Edit. Normal OAuth inference/analytics does not imply token creation rights.",
+          "date": "2026-10-24",
+          "basis": "targeted-public-fetch-this-task"
+        },
+        {
+          "id": "cloudflare:AC7",
+          "url": "https://developers.cloudflare.com/fundamentals/oauth/authorizing-an-application/",
+          "claim": "Consent selects allowed accounts and optional scopes; account admin may block new Public OAuth App access.",
+          "date": "2026-10-24",
+          "basis": "targeted-public-fetch-this-task"
+        }
+      ]
+    }
+  ]
+}

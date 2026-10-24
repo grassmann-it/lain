@@ -1,0 +1,651 @@
+{
+  "basis": "5dc916f",
+  "date": "2026-10-24",
+  "status": "architecture proposal, no implementation/commit/runtime",
+  "boundary": "Reused previous research and inspected only targeted public official source files. No logins, registrations, private credentials, provider product reads, inference, purchases or runtime. Previous reports unchanged.",
+  "providers": [
+    {
+      "id": "alibaba-model-studio",
+      "product": "Alibaba Cloud Model Studio ordinary regional API / DashScope; excludes Coding Plan and independent OAuth-inference allowance",
+      "current": {
+        "localFiles": [
+          "src/Lain.Desktop/MainWindow.AccountChooser.cs",
+          "src/Lain.Desktop/MainWindow.Providers.cs",
+          "src/Lain.Cli/AccountWizard.cs",
+          "src/Lain.Host/Accounts/AccountService.cs",
+          "src/Lain.Host/Accounts/Monitoring/MonitorAccessCatalog.cs",
+          "src/Lain.Host/Providers/Catalog/alibaba-model-studio.json"
+        ],
+        "behavior": "API-key form currently requires billing plan, api_key, region, workspace_id and service_deployment_scope. Host AddApiAccountRequest requires one key. No Alibaba browser connector/monitor access option; catalogue quotaSupport unsupported.",
+        "problem": "Users must manually copy credentials and choose trial versus PAYG despite ordinary key handling both through provider deduction rules; present form cannot model console session plus inference key."
+      },
+      "preferredFlow": {
+        "label": "Mit Alibaba anmelden",
+        "kind": "official-cli-browser-login-with-ordinary-key-bootstrap",
+        "availability": "Official documented CLI capability; proposed lain connector not implemented or account-tested",
+        "entry": "Use qualified official bl auth login --console --console-site international in a per-connection private BAILIAN_CONFIG_DIR and explicit named profile.",
+        "credentialAdoption": "Host reads only freshly created own config.json profile block, imports ordinary api_key with matching base_url/scope into private inference transport, and binds Console access_token via same owned connector. config show masks secrets and is not a credential export.",
+        "scopeSelection": "Prefer provider-returned region/workspace/host. No pre-login region/workspace form. Ask only when scope absent or truly ambiguous, with provider-derived options and a key-binding check. Region/workspace choice alone must not widen key permissions.",
+        "oneLogin": "Can bootstrap ordinary inference key and separate Console session for qualified Beijing/Singapore scope. Partial callback/session-only or missing rights must remain visible.",
+        "noHiddenCloudCredentials": "No AK/SK/STS requested or inherited in default path. Session expiry prompts browser reauthorization for usage only.",
+        "ownOAuthRegistration": "Use provider-operated official CLI flow; independent client ID, PKCE, Device Grant and refresh contracts for own lain implementation are not established."
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Select Alibaba Model Studio and Mit Alibaba anmelden.",
+          "input": "None beyond provider choice; normal international catalogue uses international site."
+        },
+        {
+          "step": 2,
+          "action": "Sign in and authorize on Alibaba provider page.",
+          "input": "Provider authentication/authorization. Missing account activation or privileges are handled by provider, not fabricated by lain."
+        },
+        {
+          "step": 3,
+          "action": "Accept returned account scope; choose only a missing/ambiguous provider-derived workspace or region.",
+          "input": "Only necessary scope selection. A different target requires matching key/host; no typing routine IDs."
+        },
+        {
+          "step": 4,
+          "action": "Complete connection with distinct inference and monitoring status.",
+          "input": "No copied key, no billing-plan selection, no mandatory model/display-name choice. A later readonly model-list check is distinct from inference."
+        }
+      ],
+      "credentials": [
+        {
+          "type": "ordinary-regional-api-key",
+          "rights": "Model and workspace/IP scope granted by Alibaba; key creation needs administrator or API-Key page privilege. Not a financial read token.",
+          "storage": "Fresh own CLI profile plus lain private inference credential; same connection identity on rotation.",
+          "lifecycle": "Static key; server revocation and local disconnect distinct. A Console expiry does not itself invalidate key."
+        },
+        {
+          "type": "console-access-token",
+          "rights": "Console read operations on exact site/region; model monitoring needs account activation and ModelObservation-FullAccess. Login alone proves neither.",
+          "storage": "Own isolated official CLI config profile; never scan user default cache.",
+          "lifecycle": "No exact TTL or refresh_token contract qualified. Official automatic renewal requires stored AK/SK, optional STS. Without those, renew by browser in same owned profile."
+        },
+        {
+          "type": "AK-SK-STS",
+          "defaultRequired": false,
+          "purpose": "Optional future separate BSS finance connector or expressly chosen unattended CLI token renewal.",
+          "lifecycle": "Not silently requested after browser login, not inherited from process environment; STS has separate expiry and chain."
+        }
+      ],
+      "inference": {
+        "status": "Ordinary-key transport prepared in lain; new connect proposal not implemented/live-tested.",
+        "host": "Provider-returned regional API Host, preferably workspace-dedicated.",
+        "qualifiedRegions": "Inference catalogue has multiple regions; Console reporting table qualified only cn-beijing/ap-southeast-1. Do not route unknown regions through official CLI Beijing fallback.",
+        "verification": "Future readonly model list can validate that read capability without consuming inference quota; do not call it a successful inference test.",
+        "billing": "Regular API may use free quota and continue through other billing paths. Grant availability and tariff remain observed/unknown; removing plan selection requires coordinated cost-policy/schema change."
+      },
+      "monitoring": {
+        "default": "Use same owned Console connector and fixed read allowlist for model trial remaining/status/expiry and workspace usage; model API key can read configured limits.",
+        "operations": [
+          "zeldaEasy.bailian-commerce.freeTrial.queryFreeTierQuota",
+          "zeldaEasy.bailian-commerce.freeTrial.queryFreeTierOnlyStatus",
+          "zeldaEasy.bailian-telemetry.model.getModelUsageStatistic",
+          "zeldaEasy.bailian-telemetry.model.listModelUsageStatisticData",
+          "GET /api/v1/models/limits"
+        ],
+        "rawTimestamps": "Prefer official generic console call/raw response, since formatted usage free/stats lose precise expiry/interval timestamps.",
+        "scope": "Keep Cloud account+region+concrete model grant separate from requested workspace Online usage. Preserve actual units, source status, unknown DataAsOf and lag. No global aggregate across model grants.",
+        "sessionFailure": "Usage needs reauthorization/stale; keep independent inference key state. One reconnect action reopens provider browser without demanding Cloud AK.",
+        "finance": "BSS cloud money/bills remain optional separate AK/STS-finance connection after product mapping, not default Connect requirement.",
+        "independentOAuthPool": "FAQ OAuth calls/day allowance is separate; neither ordinary API-key trial nor this CLI key-bootstrap establishes that inference/reporting contract."
+      },
+      "maintainerPrerequisites": [
+        "Version-qualified official CLI dependency, isolated per-connection config root and explicit profile; no global user profile activation changes.",
+        "Source commit package declares 2.5.1 whereas some docs reference 2.2.1; qualify actual distributed release/binary/Node requirement and callback/profile shape before shipping.",
+        "If bundling, retain Apache-2.0 license and applicable notices; no package installation performed by research.",
+        "Only allow provider-owned origins/known API hosts and qualified region mappings; preserve workspace binding.",
+        "Own profile adoption adapter needed: config show masks secrets; direct file format is a pinned source integration dependency, not generic official secret-export API.",
+        "Sanitize inherited provider key/base URL/workspace/Cloud credential overrides; no default AK/SK/STS in owned profile.",
+        "Host-owned login lifecycle and partial-success credential adoption; separate scopes/expiry/status for inference and usage.",
+        "Redesign billing-selection contract together with route/cost policy; no assumed free access from browser login."
+      ],
+      "unresolved": [
+        "Actual international callback completeness (ordinary key, API host, workspace, region/site) for intended user role.",
+        "Minimal Console trial-read rights and actual regional telemetry export versus older webdoc limitations.",
+        "Exact Console session lifetime and full behavior on expiry with no AK/SK.",
+        "Reporting for Frankfurt/Tokyo/Hong Kong/Virginia.",
+        "Own-client registration/redirect/scopes/refresh if replacing official CLI connector later.",
+        "Provider-supported raw credential export would reduce dependency on pinned own config.json format."
+      ],
+      "fallback": {
+        "kind": "one-time-ordinary-key-entry",
+        "userSteps": [
+          "Open regional provider API-key page.",
+          "Paste ordinary key once; choose only essential regional scope if not returned/discoverable.",
+          "Optionally add Console usage authorization to same account later."
+        ],
+        "monitoringOnly": "If Console login succeeds without ordinary key, show usage-only partial connection and explicit way to complete inference, not silent full success.",
+        "otherRegions": "Manual regional ordinary key with independently qualified inference transport; do not claim unsupported Console reporting.",
+        "advancedImport": "Explicit user-selected existing CLI profile import may be separate advanced flow; no cache scanning or active-profile assumption."
+      },
+      "codeImplications": [
+        "Introduce provider/product ConnectMethod descriptors and Host login operations beyond single-key AddApiAccountRequest.",
+        "Add owned CLI connector with cancellation/timeout, bounded adoption, separate inference/Console credential references and reconnect action.",
+        "Do not force manual key, trial/PAYG, region and workspace fields on provider-browser default path.",
+        "Credential presence, model-list authorization, inference live check and monitoring completeness need different states.",
+        "Integrate typed scope and billing-policy migration; models and name remain optional after account authorization.",
+        "Add raw quota/usage readers and explicit freshness; no mutation commands exposed by allowlist.",
+        "Disconnect stops own connector and private transports; local cleanup is not advertised as provider key revocation."
+      ],
+      "sources": [
+        {
+          "url": "https://www.alibabacloud.com/help/en/model-studio/cli/config",
+          "checkedAt": "2026-10-24",
+          "supports": "International-site selection, ordinary key creation, and separate AK/SK credentials are documented.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/auth/login-console.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "Loopback/state login, needapikey flag, separate credentials and region/workspace metadata; 15-minute timeout.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/core/src/auth/refresh-token.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "Console token renewal needs stored AK/SK, optional STS; supported token-generation regions Beijing and Singapore only.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/core/src/console/gateway.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "Region/site-specific Bearer console gateway, POST envelope, unsupported-region Beijing fallback.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/usage/shared.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "Trial and telemetry API names/response fields; dates are locally formatted as YYYY-MM-DD, losing epoch precision.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/usage/stats.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "Explicit workspace, Online call source, epoch-ms query interval and typed usage counts; CLI defaults last seven days.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/console/call.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "Official raw console command preserves the response; restrict to a fixed read allowlist in any lain connector.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://www.alibabacloud.com/help/en/model-studio/regions",
+          "checkedAt": "2026-10-24",
+          "supports": "Keys/models/hosts are regional; execution scope differs from access/storage region; workspace domain is recommended.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://www.alibabacloud.com/help/en/model-studio/application-permission-management-overview",
+          "checkedAt": "2026-10-24",
+          "supports": "Console page, workspace and API permissions differ; ModelObservation-FullAccess and account activation are needed for monitoring.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://www.alibabacloud.com/help/en/model-studio/new-free-quota",
+          "checkedAt": "2026-10-24",
+          "supports": "Singapore International model trial, shared input/output tokens, minute-level update, one-time expiry; separate OAuth calls/day are excluded from API-key quota page.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/core/src/config/paths.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "BAILIAN_CONFIG_DIR override and private own storage root.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/core/src/config/loader.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "Named profiles live inside same config.json; explicit login activation and atomic private-file writes.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/core/src/auth/store.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "Login persists only specific credential/scope fields and affects selected profile.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/config/show.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "config show masks secret fields; not usable for unmasked key export.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/core/src/auth/resolver.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "Environment overrides can replace model API key/host and OpenAPI credentials; scrub in owned connector.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/core/src/client/client.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "Console auth failure attempts AK-based refresh independently of inference key.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/workspace/list.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "Provider-derived workspace IDs/names/default marker available by Console auth; no proof of arbitrary key binding.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/cli/package.json",
+          "checkedAt": "2026-10-24",
+          "supports": "Pinned source package version 2.5.1, Node >=18.17.0, official bl/bailian executable and Apache-2.0 license.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/LICENSE",
+          "checkedAt": "2026-10-24",
+          "supports": "Apache-2.0 distribution/license conditions.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://www.alibabacloud.com/help/en/model-studio/get-api-key",
+          "checkedAt": "2026-10-24",
+          "supports": "Ordinary regional key creation, permission, workspace/API-host and model/IP restrictions.",
+          "qualification": "public official source; not live account qualified"
+        }
+      ]
+    },
+    {
+      "id": "alibaba-coding-plan",
+      "product": "Alibaba Coding Plan subscription usage; separate from ordinary API and Token Plan",
+      "current": {
+        "behavior": "No own provider; existing ordinary Alibaba backend rejects Coding Plan inference. No subscription-only account connection."
+      },
+      "preferredFlow": {
+        "label": "Coding Plan-Nutzung verbinden",
+        "kind": "monitoring-only-official-console-connector",
+        "oneLogin": "Reuse existing own Alibaba Console connector only after account/site/region equality is proven; otherwise official CLI browser login. No copied subscription inference key needed for usage-only read.",
+        "defaultScope": "No plan purchase, activation, or inference-account creation."
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Choose Coding Plan usage connection, separately from ordinary Model Studio."
+        },
+        {
+          "step": 2,
+          "action": "Reuse matching authorized Console connection, or sign in with official provider browser flow."
+        },
+        {
+          "step": 3,
+          "action": "Display actual active subscription and its three call counters; ask only if multiple actual instances need selection. No active subscription means no active plan, not a signup action."
+        }
+      ],
+      "credentials": [
+        {
+          "type": "console-access-token",
+          "rights": "Coding Plan Console read entitlement; exact minimal role pending. No inference subscription key required for reader.",
+          "lifecycle": "Same owned profile and browser reauthorization on expiry; AK/SK not standard requirement."
+        }
+      ],
+      "inference": {
+        "status": "Remains excluded from current lain backend. Subscription sk-sp key and coding host not produced by ordinary-key bootstrap.",
+        "future": "Separate user/product decision and permission qualification required before adding inference; usage integration alone does not authorize it."
+      },
+      "monitoring": {
+        "api": "zeldaEasy.broadscope-bailian.codingPlan.queryCodingPlanInstanceInfoV2",
+        "request": {
+          "queryCodingPlanInstanceInfoRequest": {
+            "commodityCode": "sfm_codingplan_public_intl",
+            "onlyLatestOne": true
+          }
+        },
+        "unit": "model calls",
+        "windows": {
+          "fiveHour": "rolling replenishment, not full reset at next refresh",
+          "week": "Monday 00:00 UTC+08",
+          "billingMonth": "subscription renewal date 00:00 UTC+08"
+        },
+        "instance": "Do not blindly adopt official CLI first VALID instance when multiple instances matter.",
+        "separation": "No addition to ordinary model tokens, separate OAuth calls/day, or Token Plan seat credits."
+      },
+      "maintainerPrerequisites": [
+        "Same qualified private official CLI connector as Alibaba.",
+        "Connection can represent monitoring-only credential without AddApiAccountRequest.ApiKey.",
+        "Exact subscription identity/permissions and source freshness qualification."
+      ],
+      "unresolved": [
+        "Exact minimum subscription read permission",
+        "Multi-instance identity and read semantics",
+        "Exact freshness and Console token lifetime"
+      ],
+      "fallback": {
+        "kind": "manual-coding-plan-usage-page",
+        "behavior": "Link provider plan page; no key demanded for unavailable monitor, no inference route created."
+      },
+      "codeImplications": [
+        "Distinct product and subscription-only connection/tile.",
+        "Reuse Console credential only for proven same account/site/region.",
+        "Three-window call parser; preserve rolling/reset semantics and unknown data.",
+        "Do not relax existing Coding Plan inference restrictions."
+      ],
+      "sources": [
+        {
+          "url": "https://www.alibabacloud.com/help/en/model-studio/coding-plan",
+          "checkedAt": "2026-10-24",
+          "supports": "Distinct sk-sp key/host, simultaneous call-count windows and rolling/weekly/subscription-month replenishment.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/commands/src/commands/usage/coding-plan.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "Console-auth query and per-window fields; first VALID subscription selected.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://www.alibabacloud.com/help/en/model-studio/cli/config",
+          "checkedAt": "2026-10-24",
+          "supports": "International-site selection, ordinary key creation, and separate AK/SK credentials are documented.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/modelstudioai/cli/blob/3c8031f4d994c30820eb4d145d9404ba4a0acd39/packages/core/src/auth/refresh-token.ts",
+          "checkedAt": "2026-10-24",
+          "supports": "Console token renewal needs stored AK/SK, optional STS; supported token-generation regions Beijing and Singapore only.",
+          "qualification": "public official source; not live account qualified"
+        }
+      ]
+    },
+    {
+      "id": "nebius",
+      "product": "Nebius Token Factory public/serverless inference; Dedicated and GPU Cloud are separate scopes",
+      "current": {
+        "behavior": "Token Factory API-key form, catalogue quotaSupport unsupported; no OAuth/owned CLI login. Current generic wizard asks trial/PAYG selection and model choices.",
+        "files": [
+          "src/Lain.Host/Providers/Catalog/nebius.json",
+          "src/Lain.Desktop/MainWindow.Providers.cs",
+          "src/Lain.Cli/AccountWizard.cs"
+        ]
+      },
+      "preferredFlow": {
+        "label": "Mit API-Schlüssel verbinden",
+        "kind": "one-project-key-entry-plus-passive-monitoring",
+        "reason": "Best proven current user path. No ordinary person OAuth-to-key contract qualified; SA-only bootstrap must not become standard setup.",
+        "scope": "Provider UI chooses org/project while creating key; routine lain serverless Connect asks no org/project ID or region.",
+        "oneCredential": "Same inference key yields response rate headers; no separate monitor login for this scope."
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Select Nebius Token Factory and open official Project API Keys page."
+        },
+        {
+          "step": 2,
+          "action": "If needed, sign in at Nebius with Google/GitHub or configured SSO; choose desired provider project and create named key.",
+          "conditional": "New-account provider onboarding may require billing account/card; existing users do not repeat it in lain."
+        },
+        {
+          "step": 3,
+          "action": "Paste key once into hidden field and connect.",
+          "input": "Only key; default known host, optional name/models later, no mandatory plan/org/project/region fields."
+        },
+        {
+          "step": 4,
+          "action": "Show saved/authorized access status and awaiting first normal response for rate observations.",
+          "input": "No quota testprompt, no second monitoring credential."
+        }
+      ],
+      "credentials": [
+        {
+          "type": "token-factory-project-api-key",
+          "rights": "Project Admin/Member key rights and inference resource permissions. Key is separate from Nebius Cloud IAM token.",
+          "lifecycle": "Static secret shown once; no silent OAuth refresh established. Replace key on same connection; local disconnect not provider revocation."
+        },
+        {
+          "type": "org-finance-role",
+          "defaultRequired": false,
+          "rights": "Org Billing Manager/Admin sees org usage; Project Member/inference access does not establish finance rights.",
+          "purpose": "Future separate balance/reporting connection only after endpoint qualification."
+        },
+        {
+          "type": "cloud-oauth-and-ai-studio-serviceaccount-key",
+          "defaultRequired": false,
+          "status": "Research candidate only. StaticKeySpec supports service accounts, not standard person key bootstrap.",
+          "rights": "Serviceaccount/group/Issue permissions and TF aitenant-project mapping still unqualified. Do not create SA as ordinary Connect prerequisite."
+        }
+      ],
+      "inference": {
+        "host": "https://api.tokenfactory.nebius.com/v1",
+        "auth": "Token Factory Bearer API key",
+        "verification": "Readonly model-list access can be verified later without inference; does not prove billing or model-call success.",
+        "scope": "Use current qualified host; additional regions/hosts need explicit provider qualification instead of exposing freeform endpoint input to everyone."
+      },
+      "monitoring": {
+        "default": "Passive x-ratelimit limit/remaining requests and tokens with relative-second resets; dynamic 15-minute scaling separate from RPM/TPM. Await first normal inference response.",
+        "noExtraCredential": true,
+        "notBalance": "Header token headroom is not trial dollars or account remaining balance.",
+        "poolScope": "Store local connection/key reference/model; do not infer unseen shared pool or org ID.",
+        "finance": "Manual org usage/balance until supported API/read permissions proven.",
+        "dedicated": "Only on explicit Dedicated product choice: project ID and suitable static TF key for documented project-scoped monitoring. Not serverless balance; no GPU Cloud billing surrogate."
+      },
+      "maintainerPrerequisites": [
+        "Use existing key form simplified to one secret and known host; coordinated regular-access/cost-policy change removes mandatory trial/PAYG claim.",
+        "Header capture/store/parser with reset, freshness, missing-versus-zero handling.",
+        "No own OAuth client registration needed for today key path.",
+        "Any advanced OAuth bootstrap needs supported person-vs-SA contract, own client/redirect registration and permissions before showing login button."
+      ],
+      "unresolved": [
+        "Supported person-key CLI/API creation route versus SA-only StaticKeyService/Issue.",
+        "AI_STUDIO key acceptance at current serverless endpoint and minimal serviceaccount/Issue roles, aitenant/project mapping, expiry.",
+        "Own OAuth client registration/redirects and offline renewal.",
+        "Financial read API/schema and org authorization; Cloud export contract coverage.",
+        "Exact shared rate-pool ownership/model grouping."
+      ],
+      "fallback": {
+        "kind": "official-key-page-and-one-hidden-paste",
+        "url": "https://tokenfactory.nebius.com/project/api-keys",
+        "monitoringFallback": "No headers yet means awaiting observation; balance links to official Org Usage/Billing.",
+        "targetedProof": "First obtain provider documentation for person key bootstrap, required roles and TF acceptance. Only then separately authorize a bounded model-list read with produced key; no SA creation or inference required for normal connection."
+      },
+      "codeImplications": [
+        "Key-only fast path, no org/project/region/plan mandatory inputs for current serverless host.",
+        "Attach passive monitoring to same connection automatically; no separate monitor-secret wizard.",
+        "Separate header observation status from finance availability.",
+        "Preserve static-key replacement identity.",
+        "Dedicated monitoring project selector only after explicit Dedicated-product selection.",
+        "Do not route Cloud IAM token as API key or make SA provisioning default."
+      ],
+      "sources": [
+        {
+          "url": "https://docs.tokenfactory.nebius.com/ai-models-inference/rate-limits.md",
+          "checkedAt": "2026-10-24",
+          "supports": "RPM/TPM remaining, seconds resets, continuous replenishment and separate dynamic 15-minute scaling headers.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://docs.tokenfactory.nebius.com/api-reference/introduction.md",
+          "checkedAt": "2026-10-24",
+          "supports": "Bearer Token Factory API key issued in project UI and shown once.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://docs.tokenfactory.nebius.com/quickstart.md",
+          "checkedAt": "2026-10-24",
+          "supports": "Google/GitHub web login followed by API-key authentication; no delegated OAuth inference contract.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://docs.tokenfactory.nebius.com/team-access/groups.md",
+          "checkedAt": "2026-10-24",
+          "supports": "Billing Manager sees org usage but no project resources; Project Member can create own API keys; membership alone grants no resource rights.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://docs.tokenfactory.nebius.com/team-access/sso.md",
+          "checkedAt": "2026-10-24",
+          "supports": "Token Factory SAML federation and CLI profile at auth.tokenfactory.nebius.com; SSO users need explicit group assignment.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/nebius/pysdk/blob/main/src/nebius/aio/token/federation_bearer/auth.py",
+          "checkedAt": "2026-10-24",
+          "supports": "Official authorization-code PKCE flow with openid scope, supplied client ID and loopback redirect.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/nebius/pysdk/blob/main/src/nebius/aio/token/federation_account.py",
+          "checkedAt": "2026-10-24",
+          "supports": "Federation token cache renewal can restart interactive browser authorization.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/nebius/api/blob/e855cccf88420a80741b04075674528d75f3e238/nebius/iam/v1/static_key_service.proto",
+          "checkedAt": "2026-10-24",
+          "supports": "StaticKeyService Issue returns token and operation through cpl.iam; not invoked.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/nebius/api/blob/e855cccf88420a80741b04075674528d75f3e238/nebius/iam/v1/static_key.proto",
+          "checkedAt": "2026-10-24",
+          "supports": "Only service accounts currently supported; separate AI_STUDIO and OBSERVABILITY service enums; expiresAt.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://github.com/nebius/nebius-physical-ai/blob/main/docs/workbench/token-factory.md",
+          "checkedAt": "2026-10-24",
+          "supports": "Official Nebius CLI integration explicitly says Token Factory key is separate from Cloud IAM token; model-list success does not verify inference or billing.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://docs.tokenfactory.nebius.com/ai-models-inference/observability.md",
+          "checkedAt": "2026-10-24",
+          "supports": "Observability only dedicated endpoints, project rights, near-real-time and explicitly not billing reconciliation.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://docs.tokenfactory.nebius.com/other-capabilities/billing-new.md",
+          "checkedAt": "2026-10-24",
+          "supports": "Current onboarding billing/card requirement, real-time balance debit and org usage filters; no documented read API schema.",
+          "qualification": "public official source; not live account qualified"
+        }
+      ]
+    },
+    {
+      "id": "inception",
+      "product": "Inception Mercury API",
+      "current": {
+        "behavior": "API-key form with explicit trial/PAYG selection; no supported delegated login, account reporting reader or monitor credential option. Catalogue quotaSupport unsupported.",
+        "files": [
+          "src/Lain.Host/Providers/Catalog/inception.json",
+          "src/Lain.Desktop/MainWindow.Providers.cs",
+          "src/Lain.Cli/AccountWizard.cs"
+        ]
+      },
+      "preferredFlow": {
+        "label": "Mit API-Schlüssel verbinden",
+        "kind": "honest-one-key-fallback",
+        "reason": "Official auth and SDK use API key; no supported OAuth/Device/CLI key bootstrap or balance scope established.",
+        "scope": "Known APIhost, no routine region/org/project/plan inputs. Optional display name and models later.",
+        "oneCredential": "Inference and optionally local token observations use same key; no extra monitoring token requested without a proven reader."
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Select Inception Mercury and open official platform API Keys page."
+        },
+        {
+          "step": 2,
+          "action": "Sign in or create named API key at provider if necessary.",
+          "input": "Provider account operation; not a delegated lain OAuth flow."
+        },
+        {
+          "step": 3,
+          "action": "Paste key once in hidden field and connect.",
+          "input": "No mandatory plan, org, project, region or model selection."
+        },
+        {
+          "step": 4,
+          "action": "Show key saved or explicit readonly model-list authorization result; local usage starts from normal observed responses.",
+          "input": "No automatic inference or fabricated free-token balance."
+        }
+      ],
+      "credentials": [
+        {
+          "type": "inception-api-key",
+          "rights": "API calls as documented; read-only reporting/org role not qualified.",
+          "lifecycle": "Static credential; explicit replacement, no silent OAuth refresh claim. Local disconnect does not establish server revocation."
+        }
+      ],
+      "inference": {
+        "host": "https://api.inceptionlabs.ai/v1",
+        "auth": "Bearer API key",
+        "verification": "Future GET /v1/models is a documented readonly capability check, not inference or billing verification. Otherwise status is locally saved/unverified."
+      },
+      "monitoring": {
+        "localOnly": "Optional response usage includes prompt tokens with cached subset and completion tokens with reasoning subset; do not double count. Streaming final usage requires include_usage option.",
+        "label": "Lokal beobachteter Verbrauch",
+        "noExtraCredential": true,
+        "accountBalance": "Unavailable from qualified public source; link official Platform Billing. Never subtract local observations from advertised 100M signup grant.",
+        "scope": "Observed request/model/connection and explicit local aggregation period, not all clients or global grant.",
+        "expiry": "Actual grant expiry/remaining unknown; one-time account-wide offer not a monthly reset."
+      },
+      "maintainerPrerequisites": [
+        "Keep known key transport; no OAuth client registration available to configure from qualified docs.",
+        "Remove forced trial/PAYG selection only with coordinated cost-policy/catalog contract change.",
+        "If local usage shown, keep separate from quota/account balance and preserve stream/parent-subset semantics.",
+        "Do not offer browser-login UI ending with unexpected key request."
+      ],
+      "unresolved": [
+        "Supported read-only account balance/grant/usage API and source timestamps",
+        "Org/project/permission scoping",
+        "OAuth/device/CLI key-bootstrap registration and lifecycle if provider offers it",
+        "Websession read/renewal contract; not qualified by public SDK"
+      ],
+      "fallback": {
+        "kind": "official-platform-key-page",
+        "url": "https://platform.inceptionlabs.ai/dashboard/api-keys",
+        "behavior": "One hidden paste; manual Billing link; clear unknown account balance.",
+        "targetedProof": "Provider contract for reporting endpoint/read scopes/expiry and desktop OAuth registration; if only session exists, a separately authorized bounded Billing trace, no cookie import as default."
+      },
+      "codeImplications": [
+        "One-secret fast path using fixed official host; name/models optional.",
+        "No unnecessary scope fields or separate monitor credential request.",
+        "Keep provider-read validation and inference testing separate.",
+        "Optional local usage adapter with precise label; balance remains unsupported.",
+        "Preserve account identity during key replacement and support simple disconnect."
+      ],
+      "sources": [
+        {
+          "url": "https://docs.inceptionlabs.ai/get-started/authentication",
+          "checkedAt": "2026-10-24",
+          "supports": "All API requests authenticate by API key created in platform dashboard.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://docs.inceptionlabs.ai/get-started/sdks",
+          "checkedAt": "2026-10-24",
+          "supports": "Official Python and TypeScript SDKs read INCEPTION_API_KEY; OpenAI-compatible API.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://docs.inceptionlabs.ai/resources/faq",
+          "checkedAt": "2026-10-24",
+          "supports": "Per-response token usage, cache/reasoning subsets, final streaming usage and one-time account-wide shared free-token offer; no dollar cost response.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://docs.inceptionlabs.ai/llms.txt",
+          "checkedAt": "2026-10-24",
+          "supports": "Official page/API index reviewed; no account reporting or OAuth operations indexed.",
+          "qualification": "public official source; not live account qualified"
+        },
+        {
+          "url": "https://pypi.org/project/inceptionai/0.3.0/",
+          "checkedAt": "2026-10-24",
+          "supports": "Official docs-linked SDK source distribution reviewed in memory only; resource classes and API-key auth, no account reporting/OAuth helper found.",
+          "qualification": "public official source; not live account qualified"
+        }
+      ]
+    }
+  ]
+}

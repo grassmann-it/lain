@@ -1,0 +1,527 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-24",
+  "baseCommit": "5dc916fcea702f2a196520903937570745e26dac",
+  "scope": "xAI API, StepFun PAYG/Step Plan, Poe, Synthetic subscription/API",
+  "constraints": "Public documentation and official source only; no private credentials, provider API calls, login, registration, purchases, services, builds, code implementation or subagents. Recommendations are proposals.",
+  "providers": [
+    {
+      "id": "xai",
+      "product": "Developer API / API-team billing (PAYG)",
+      "currentLain": {
+        "inference": "API-key route prepared; no live verification",
+        "quota": "No xAI quota adapter registered. General QuotaMonitorCredential + ResourceId already exist; old provider doc claiming no separate-secret contract is now too broad. No xAI-specific credential option, validation or reader.",
+        "code": [
+          "src/Lain.Host/Providers/Catalog/xai.json",
+          "src/Lain.Host/Quota/QuotaContracts.cs",
+          "src/Lain.Core/MonitorContracts.cs",
+          "src/Lain.Host/Program.cs"
+        ]
+      },
+      "sources": [
+        "https://docs.x.ai/developers/management-api-guide",
+        "https://docs.x.ai/developers/rest-api-reference/management/auth",
+        "https://docs.x.ai/developers/rest-api-reference/management/billing",
+        "https://github.com/xai-org/xai-proto/blob/6499fba5e5081a25a9504c96d01dc396adf35d2b/proto/xai/management_api/v1/billing.proto",
+        "https://docs.x.ai/developers/cost-tracking",
+        "https://docs.x.ai/build/cli/reference",
+        "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-login/src/config.rs",
+        "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-shell/src/extensions/billing.rs"
+      ],
+      "authOptions": [
+        {
+          "kind": "inference-api-key",
+          "inference": true,
+          "monitor": "Per-request usage/cost only; not team balance",
+          "provisioning": "Manual Console or separate management credential creates inference key"
+        },
+        {
+          "kind": "management-key",
+          "inference": false,
+          "monitor": true,
+          "resource": "scope + scopeId; SCOPE_TEAM or SCOPE_ORGANIZATION, deprecated teamId fallback must be explicit",
+          "permissions": "User must have Management Keys Read + Write to create management key; actual key acls returned by validation. Exact minimum billing-read ACL strings not verified.",
+          "provisioning": "POST /auth/teams/{teamId}/api-keys returns apiKey once; model/endpoint ACLs and qps/qpm/tpm supported. Needs create-key privilege beyond read-only monitoring.",
+          "oauthClientRegistration": "No public delegated API-team Management OAuth client registration verified"
+        },
+        {
+          "kind": "Grok Build OAuth/device (separate product alternative)",
+          "inference": "Official Grok Build first-party proxy, not proven api.x.ai developer billing credential",
+          "monitor": "Official CLI x.ai/billing exposes its subscription pool via CLI proxy billing?format=credits",
+          "oauthClientRegistration": "Issuer https://auth.x.ai, first-party CLI client ID in config; no third-party registration/distribution approval verified; do not copy client ID as assumed authorization.",
+          "separation": "Consumer/seat plan creditUsagePercent/currentPeriod/prepaidBalance must never fill API-team prepaid/postpaid rows"
+        }
+      ],
+      "recommendation": "Add optional xAI management-key monitor bound to verified API-team identity. Read prepaid balance, postpaid invoice preview and enforced spending limit separately; add bounded historical USD usage. Keep inference key separate. Optional key provisioning is a distinct write-capability setup step, not required for monitoring.",
+      "missingImplementation": [
+        "xAI-specific monitor setup and management-key validation GET /auth/management-keys/validation",
+        "GET /v1/billing/teams/{team_id}/prepaid/balance with signed int64 USD-cent parsing; cannot reuse nonnegative JsonFields.Number",
+        "GET postpaid/invoice/preview and postpaid/spending-limits, separate month/cycle and prepaid scope",
+        "POST /v1/billing/teams/{team_id}/usage with explicit timeRange/timezone, USD aggregation, limitReached partial marker",
+        "Passive exact per-request cost_in_usd_ticks capture (1 USD = 10^10 ticks), if backend exposes it; no current reference found",
+        "Optional management API key creation, one-time secret persistence and propagation check"
+      ],
+      "quotaSemantics": {
+        "scope": "API team; multiple inference keys may share only after identity proof",
+        "unit": "prepaid/postpaid USD cents; analytics usd dollars; inference cost integer ticks",
+        "windows": "Prepaid cash ledger has no weekly reset. Postpaid billingCycle year/month. Historical query interval endTime exclusive.",
+        "reset": "No fabricated token reset; billing-cycle timezone/boundaries need qualification.",
+        "freshness": "No billing freshness SLA found. Record observedAt separately from requested interval/data timestamps.",
+        "sign": "Official REST example total.val=-1000 after PURCHASE; proto says PURCHASE negative and SPEND positive. Preserve signed ledger; available-credit negation must be qualified against billing view before publishing spendable amount. No abs()."
+      },
+      "nextBoundedProbe": "Offline fixtures from REST examples for signed cents, zero, unknown scope and limitReached. Later, only with separately authorized management read key: validate identity + one prepaid balance + one invoice preview; compare signs/scope to Console; no topup, limits update or key creation.",
+      "unresolved": [
+        "Exact least-privilege billing management ACL names",
+        "Confirmed prepaid availability sign presentation and invoice corrections",
+        "Third-party OAuth registration for API-team management; Grok Build OAuth scope api:access does not establish billing management access"
+      ],
+      "evidence": [
+        {
+          "url": "https://docs.x.ai/developers/rest-api-reference/management",
+          "statement": "Separate management key and Management Keys user permission required.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://docs.x.ai/developers/rest-api-reference/management/auth",
+          "statement": "Validation returns scope/scopeId/acls; creation returns API key only once.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://docs.x.ai/developers/rest-api-reference/management/billing",
+          "statement": "Documented prepaid GET, postpaid preview/limits GET and historical usage POST; example ledger total is negative after purchase; limitReached means partial.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://github.com/xai-org/xai-proto/blob/6499fba5e5081a25a9504c96d01dc396adf35d2b/proto/xai/management_api/v1/billing.proto",
+          "statement": "Cent int64; purchase negative/spend positive; postpaid limit applies after prepaid exhausted.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-source"
+        },
+        {
+          "url": "https://docs.x.ai/developers/cost-tracking",
+          "statement": "Response reports exact per-request cost_in_usd_ticks, including server tools; stream final usage rules documented.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-login/src/config.rs",
+          "statement": "Official CLI OAuth first-party client, auth.x.ai and grok-cli:access/api:access scopes exist.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-source"
+        },
+        {
+          "url": "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-shell/src/extensions/billing.rs",
+          "statement": "Grok Build billing handler requires grok.com auth and reads a different CLI proxy credit configuration.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-source"
+        },
+        {
+          "url": "https://docs.x.ai/x-subscription/usage-limits",
+          "statement": "The X Subscription has seat-level weekly pools; self-serve Teams seats do not share weekly allowances.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        }
+      ]
+    },
+    {
+      "id": "stepfun",
+      "product": "Direct PAYG / personal platform API (organization Credit distinct)",
+      "currentLain": {
+        "quota": "StepFunQuotaAdapter already GETs official /v1/accounts, checks exact .com PAYG base + api-key kind, and displays balance CNY. It intentionally does not derive limits from cash/voucher totals. Zero works.",
+        "gaps": "Only .com supported; no explicit prepaid/postpaid scope in reading; negative balance rejected by shared numeric helper; no project/member Credit monitor."
+      },
+      "sources": [
+        "https://platform.stepfun.com/docs/zh/api-reference/accounts/get.md",
+        "https://platform.stepfun.com/docs/zh/guides/organization/api-keys.md",
+        "https://platform.stepfun.com/docs/zh/guides/organization/credits.md",
+        "https://platform.stepfun.com/docs/zh/step-code/configuration/models.md"
+      ],
+      "authOptions": [
+        {
+          "kind": "API key",
+          "inference": true,
+          "monitor": "Same key reads personal account available balance per official example",
+          "provisioning": "Console key creation. No public key-creation/admin API or PAYG OAuth verified."
+        },
+        {
+          "kind": "official Step Code platform profile",
+          "inference": true,
+          "monitor": "API-key profile, not subscription browser OAuth",
+          "distribution": "Import only explicitly selected credential, with provenance and region; no browser/session scraping needed"
+        }
+      ],
+      "recommendation": "Retain working personal PAYG balance adapter. Qualify .ai separately, preserve account type, and distinguish personal cash balance from organization Credit/account/project/member constraints. Do not reuse Step Plan login or route for PAYG.",
+      "missingImplementation": [
+        "Region-aware .ai PAYG qualification against corresponding official docs before extending allowlist",
+        "Explicit prepaid/postpaid account type in scope; signed-balance semantics qualification",
+        "Organization Credit scope/cap UI via Console until a supported reader is evidenced"
+      ],
+      "quotaSemantics": {
+        "scope": "Personal account for current /accounts contract; project keys bill organization Credit and cannot be assumed personal balance keys.",
+        "unit": "balance money, CNY from pricing context; total_cash_balance cumulative recharges and total_voucher_balance cumulative gifts, not caps",
+        "windows": "No API balance reset. Organization project/member Credit caps are calendar-month constraints, reset day 1 00:00; timezone not explicitly established in inspected rule.",
+        "freshness": "GET observation timestamp; no source updatedAt or SLA in schema"
+      },
+      "nextBoundedProbe": "Offline fixture preserving object=account/type with zero and postpaid variants. Later one authorized personal /accounts read and currency/type comparison; organization/project keys require a separate qualification and must not be silently classified as personal.",
+      "unresolved": [
+        "Whether /accounts is applicable and what schema it returns for organization/project keys",
+        "Signed postpaid balance behavior",
+        "Official organization Credit query API and least-privilege key unavailable in inspected index",
+        "PAYG delegated client registration not evidenced"
+      ],
+      "evidence": [
+        {
+          "url": "https://platform.stepfun.com/docs/zh/api-reference/accounts/get.md",
+          "statement": "Same bearer API key GET /v1/accounts returns object/type/balance plus cumulative recharge/gift totals.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://platform.stepfun.com/docs/zh/guides/organization/api-keys.md",
+          "statement": "Project key uses organization Credit, no org header required, cannot be used on Step Plan route; Console shows member caps.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://platform.stepfun.com/docs/zh/guides/organization/credits.md",
+          "statement": "Effective organization usage constrained by pool, project cap and member-project cap; monthly day-1 reset.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://platform.stepfun.com/docs/zh/step-code/configuration/models.md",
+          "statement": "CN/overseas PAYG and Step Plan are distinct billing endpoints and login choices.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        }
+      ]
+    },
+    {
+      "id": "stepfun",
+      "product": "Personal Step Plan subscription (CN / Global)",
+      "currentLain": {
+        "quota": "Current StepFunQuotaAdapter correctly refuses Plan base, catalog says unsupported; no Plan reader/login exists. This status can be refined to source-backed, deployment-unverified integration opportunity.",
+        "inference": "Existing API-key Plan routes; OAuth handoff not implemented"
+      },
+      "sources": [
+        "https://platform.stepfun.com/docs/zh/step-plan/pricing.md",
+        "https://platform.stepfun.com/docs/zh/step-code/configuration/models.md",
+        "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/providers/src/step-provider/login-client.ts",
+        "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/providers/src/step-provider/index.ts",
+        "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/coding-agent/src/step/usage/account.ts",
+        "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/coding-agent/docs/account-usage.md",
+        "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/providers/src/step-provider/login-refresh.ts"
+      ],
+      "authOptions": [
+        {
+          "kind": "Manual Plan key",
+          "inference": true,
+          "monitor": "Official source excludes explicit STEP_API_KEY/--api-key/gateway credentials from personal usage, even when model inference works."
+        },
+        {
+          "kind": "Official Step Code cloud-polled browser login",
+          "inference": true,
+          "monitor": "Same login-delivered personal Plan API-key credential is bearer for GET /step_plan/v1/usage; uid/profile retained",
+          "flow": "POST {platform origin}/api/stdhttp/v1/cli-login/init using random poll_token in Authorization and JSON profile/origin/client; browser /cli-login-remote?flow_id=...; GET /api/stdhttp/v1/cli-login/poll/{flow_id} returns credential.api_key and optional uid/login session. No localhost listener.",
+          "registration": "Source uses name/version/platform audit metadata, explicitly not authentication; no OAuth client_id or public application-registration flow in this protocol. Acceptance/distribution for lain remains unverified. Do not impersonate stepcode.",
+          "refresh": "Model credential is existing nonexpiring API key in official wrapper (step-static-credential), optional account session has access/refresh/device/app state, Passport refresh is a separate capability, not required for bearer quota GET."
+        }
+      ],
+      "recommendation": "Highest-value source-led investigation after Poe: separate personal Plan login credential origin from arbitrary Plan API keys. Implement strict schema-1 usage normalization behind deployment qualification and explicit profile/uid. Prefer provider-supported lain client registration/confirmation or official CLI handoff; do not conflate source visibility with public delegated OAuth support.",
+      "missingImplementation": [
+        "Source-backed Plan usage normalizer and credential-provenance/profile identity",
+        "GET https://api.stepfun.com/step_plan/v1/usage (and separately Global .ai) only for qualified personal Plan login",
+        "Cloud-polled login and secure one-shot returned-key storage, if provider permits lain distribution",
+        "Plan windows versus subscription/topup credit buckets, reason/allowed/partial/unsupported states",
+        "Provider observed_at_ms, reset/expiry and stale lifetime; no assumed periodic full reset"
+      ],
+      "quotaSemantics": {
+        "scope": "schema_version=1; scope=personal_account; account.id exact decimal string; compare login uid",
+        "unit": "coding: five_hour and weekly used_percent/limited/reset; token: exact decimal-string total/remaining credits with used_percent and reset/expiry per subscription or topup bucket",
+        "windows": "Coding windows separate and nonadditive; token monthly allocation with distinct add-on expiry. Current pricing Token Plan does not prove account family.",
+        "reset": "resets_at_ms and expires_at_ms explicit milliseconds; missing/null unknown, no locally invented reset. Unknown bucket types unsupported.",
+        "freshness": "observed_at_ms; official controller caches 30s, marks stale >=30s or crossed boundary, removes display snapshot >5min, timeout12s, single-flight, Retry-After, clears snapshot on401/403. These are CLI policies, not provider SLA.",
+        "deployment": "Official account-usage.md explicitly says backend must provide schema 1 before Account is available; 404 means not deployed. No live API check performed."
+      },
+      "nextBoundedProbe": "First offline contract fixtures against pinned source (coding, token, partial buckets, unknown types, identity mismatch, 404). Next provider-supported own-client/CLI test, separately authorized: one login and one usage GET only, no inference/purchase; stop if404 and report unrolled backend. No session scraping necessary for this candidate.",
+      "unresolved": [
+        "Public availability/deployment of schema-1 endpoint in CN/Global",
+        "Whether external distributed client named lain is accepted/supported; no third-party OAuth registration contract evidenced",
+        "Identity and key lifecycle differences between manually created Plan keys and login-returned Plan keys",
+        "Existing subscription terms compatibility with concrete lain personal-use routing must be retained from provider doc"
+      ],
+      "evidence": [
+        {
+          "url": "https://platform.stepfun.com/docs/zh/step-code/configuration/models.md",
+          "statement": "Official Step Code docs describe Plan browser login, auto-refresh and separate CN/Global profiles; PAYG uses API key.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/providers/src/step-provider/login-client.ts",
+          "statement": "Official source implements init/poll bearer poll_token flow; ready returns existing API key plus optional account session; client metadata is audit-only.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-source"
+        },
+        {
+          "url": "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/providers/src/step-provider/index.ts",
+          "statement": "loginStepOAuth uses returned API key as access, static refresh marker and no local expiry; model requests use API key.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-source"
+        },
+        {
+          "url": "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/coding-agent/src/step/usage/account.ts",
+          "statement": "Official controller derives Plan /v1/usage endpoint, excludes explicit API/gateway keys, validates schema/identity/windows/buckets.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-source"
+        },
+        {
+          "url": "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/coding-agent/docs/account-usage.md",
+          "statement": "Backend schema 1 availability is a prerequisite;404 means deployment absent. Caching/freshness/error policy documented.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-source"
+        },
+        {
+          "url": "https://platform.stepfun.com/docs/zh/step-plan/pricing.md",
+          "statement": "Monthly Token Plan credits expire, add-ons last30days and earliest-expiring bucket spent first; credits are not tokens.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/providers/src/step-provider/login-refresh.ts",
+          "statement": "Optional session refresh uses Passport/Oasis cookie material separately from model API key.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-source"
+        }
+      ]
+    },
+    {
+      "id": "poe",
+      "product": "User API points (subscription plan + add-on points combined)",
+      "currentLain": {
+        "quota": "PoeQuotaAdapter already reads remaining combined points. PoeUsageHistory already validates one bounded page, microsecond timestamps, API/Chat/Canvas App labels and pagination. Both are real implemented primitives, not missing adapters.",
+        "oauth": "PoeOAuthAttempt already prepares PKCE/state, code exchange request and issued-key expiry. No host callback/browser/token transmission/SecretStore wiring or OAuth route found. History helper not exposed by host route found."
+      },
+      "sources": [
+        "https://creator.poe.com/docs/external-applications/sign-in-with-poe",
+        "https://creator.poe.com/api-reference/getCurrentBalance",
+        "https://creator.poe.com/api-reference/getPointsHistory",
+        "https://creator.poe.com/docs/external-applications/external-application-guide",
+        "https://github.com/poe-platform/fastapi_poe/blob/main/README.md"
+      ],
+      "authOptions": [
+        {
+          "kind": "Pasted user API key",
+          "inference": true,
+          "monitor": true,
+          "scope": "Entire user point balance accessible through key; no documented read-only quota key"
+        },
+        {
+          "kind": "Sign in with Poe",
+          "inference": true,
+          "monitor": true,
+          "registration": "Maintainer creates client at https://poe.com/api/clients, display name and redirect URIs; obtains nonsecret client ID. Docs say localhost URIs work automatically without registration for local development; confirm packaged native/loopback details before release.",
+          "flow": "Authorization code + mandatory S256 PKCE, https://poe.com/oauth/authorize scope apikey:create, POST https://api.poe.com/token; code single use, response api_key + api_key_expires_in seconds/null. No refresh grant documented.",
+          "distribution": "One registered application client ID can configure shipped lain; no per-user registration necessary according to documented app flow. Public desktop localhost-production guarantee and arbitrary loopback IP equivalence not established.",
+          "keyLifecycle": "User selects optional expiry, can view issued key at poe.com/api/keys; reconnect at expiry, never invent refresh token."
+        }
+      ],
+      "recommendation": "Complete existing Poe OAuth host integration first. One consent provisions inference and monitoring API key; automatically attach supported balance reader and optional history, while naming its broad user point scope. This is a concrete match to requested one-login setup.",
+      "missingImplementation": [
+        "Host-owned browser launch/callback lifetime, cancellation/error paths, exchange transmission, private credential persistence and reconnect",
+        "Application client ID registration/configuration and release-specific callback qualification",
+        "Wire existing history primitive into bounded host/UI access with explicit 30-day and incomplete coverage",
+        "No source exists in inspected contract for plan allocation/reset/topup split; these should remain unavailable, not guessed"
+      ],
+      "quotaSemantics": {
+        "scope": "User account, points shared across API/Chat/Canvas App, not one API-key budget or lain-only history",
+        "unit": "integer points; no conversion to tokens/USD",
+        "windows": "balance instantaneous combined plan/add-on. History descending last30days, pages max100; API/Chat/Canvas App usage types.",
+        "reset": "API does not expose plan allocation, plan/addon split, renewal or expiry. Subscription reset cannot be derived from current balance/history.",
+        "freshness": "No updatedAt/SLA in balance; local observedAt and stale state. No webhooks documented."
+      },
+      "nextBoundedProbe": "Offline host callback harness with existing PoeOAuthAttempt: state mismatch/replay/denied/cancelled/expired key, localhost callback qualification and balance attachment. Later separately authorized maintainer client registration + one consent, one balance and optional one history page; no model request needed.",
+      "unresolved": [
+        "Production support for distributed desktop localhost callback, exact loopback address/port rules",
+        "Plan/monthly allocation and point expiry split have no documented read endpoint",
+        "Whether dedicated monitor-only/read-only API key will become available"
+      ],
+      "evidence": [
+        {
+          "url": "https://creator.poe.com/docs/external-applications/sign-in-with-poe",
+          "statement": "Client registration, mandatory PKCE and apikey:create produce API key; localhost development exception and optional expiry; no refresh grant documented.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://creator.poe.com/api-reference/getCurrentBalance",
+          "statement": "One integer current_point_balance includes plan and add-on points with same bearer key.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://creator.poe.com/api-reference/getPointsHistory",
+          "statement": "Last30days, max100 rows/page, microseconds, usage type, query_id pagination; no callbacks/webhooks.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://creator.poe.com/docs/external-applications/external-application-guide",
+          "statement": "External distributed applications can use per-user OAuth keys; paid bots need subscription or add-ons; entire point balance exposed to queried bots.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        }
+      ]
+    },
+    {
+      "id": "synthetic",
+      "product": "Subscription quota (weekly regenerating weighted credits)",
+      "currentLain": {
+        "quota": "SyntheticQuotaAdapter already reads official GET /v2/quotas same bearer key, but only legacy documented subscription.limit/requests/renewsAt. Existing fields must remain supported. Newer official Octofriend parser structures and response-header path absent in lain search.",
+        "auth": "API key onboarding prepared; no Synthetic delegated OAuth or automatic key provisioning found"
+      },
+      "sources": [
+        "https://dev.synthetic.new/docs/synthetic/quotas",
+        "https://dev.synthetic.new/docs/api/getting-started",
+        "https://synthetic.new/pricing",
+        "https://synthetic.new/rate-limits",
+        "https://github.com/synthetic-lab/octofriend/blob/87d7fa9ced654e61cc2b22b61e5211c958376165/source/utils/quota.ts",
+        "https://github.com/synthetic-lab/octofriend/blob/87d7fa9ced654e61cc2b22b61e5211c958376165/source/components/menu-quota-indicator.tsx",
+        "https://github.com/synthetic-lab/octofriend/blob/87d7fa9ced654e61cc2b22b61e5211c958376165/source/state.ts"
+      ],
+      "authOptions": [
+        {
+          "kind": "API key",
+          "inference": true,
+          "monitor": true,
+          "provisioning": "User logs in to developer Getting Started page to obtain API key; no documented public OAuth/client registration or create-key API found.",
+          "passive": "Official client parses x-synthetic-quotas response header using same quota parser; fresh updates without a polling credential change."
+        },
+        {
+          "kind": "Website session",
+          "inference": "No supported inference-key handoff contract verified",
+          "monitor": "Public pricing links /usage and /billing; session scraping is not needed for known quota API and is not recommended"
+        }
+      ],
+      "recommendation": "Extend existing normalizer using pinned official Octofriend structures. Prefer current planWeeklyLimit, preserve older weeklyTokenLimit/rollingFiveHourLimit and documented subscription legacy separately without double counting. Capture qualified x-synthetic-quotas passively with same parser. One pasted API key then covers inference+subscription monitor; OAuth promise currently unsupported.",
+      "missingImplementation": [
+        "planWeeklyLimit percentRemaining,nextRegenAt,nextRegenPercent recognition",
+        "Older weeklyTokenLimit decimal-string maxCredits/remainingCredits/nextRegenCredits plus rollingFiveHourLimit remaining/max/nextTickAt/tickPercent, only when observed",
+        "Passive origin-qualified x-synthetic-quotas reader",
+        "Explicit next-regeneration fields; do not store nextRegenAt as full quota reset",
+        "Reconcile documentation sample and current official client schema with bounded fixture/live read"
+      ],
+      "quotaSemantics": {
+        "scope": "Subscription-wide weighted credit pool, not model-specific additive balances; provider account identity unavailable in quota schema",
+        "unit": "Current planWeeklyLimit percentage; legacy weekly credit quantities exact strings; old request weights provider units, not literal tokens/ordinary requests",
+        "windows": "Current official /rate-limits says only weekly; no additional5h/monthly limits. 2% of weekly allowance regenerated every202minutes. Old5h may be shown only when actually observed and marked legacy contract.",
+        "reset": "nextRegenAt is incremental refill, nextRegenPercent reports amount; never render as full reset. Existing subscription.renewsAt field should retain provider naming until qualified.",
+        "freshness": "No server updatedAt documented. Observe response/header arrival; malformed new block must not imply unlimited. /quotas requests do not consume subscription quota."
+      },
+      "nextBoundedProbe": "Offline parser fixtures matching official source for current and older contracts, percent boundaries, timezone timestamps, absent fields and coexisting blocks with no additive double count. Later separately authorized one GET /v2/quotas and compare current usage UI; do not spend inference to test header initially.",
+      "unresolved": [
+        "Live schema/version/account migration coverage; official quota docs show only older subscription example",
+        "Whether current quota response returns provider account identity",
+        "No public Synthetic OAuth application registration or delegated key creation verified",
+        "Legacy field numeric precision and rolling5h applicability require account evidence"
+      ],
+      "evidence": [
+        {
+          "url": "https://dev.synthetic.new/docs/synthetic/quotas",
+          "statement": "Official same-key GET /v2/quotas, free against subscription; older subscription example.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://github.com/synthetic-lab/octofriend/blob/87d7fa9ced654e61cc2b22b61e5211c958376165/source/utils/quota.ts",
+          "statement": "Official Octofriend recognizes planWeeklyLimit and older weeklyTokenLimit/rollingFiveHourLimit; current planWeeklyLimit takes precedence.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-source"
+        },
+        {
+          "url": "https://github.com/synthetic-lab/octofriend/blob/87d7fa9ced654e61cc2b22b61e5211c958376165/source/components/menu-quota-indicator.tsx",
+          "statement": "Official Octofriend GETs identical quota endpoint and labels remaining percentages/next regeneration.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-source"
+        },
+        {
+          "url": "https://github.com/synthetic-lab/octofriend/blob/87d7fa9ced654e61cc2b22b61e5211c958376165/source/state.ts",
+          "statement": "Official Octofriend state reads x-synthetic-quotas from inference response headers.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-source"
+        },
+        {
+          "url": "https://synthetic.new/rate-limits",
+          "statement": "Current weekly-only limits, incremental2% refill every202minutes; no fixed5h/monthly quota.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/api/getting-started",
+          "statement": "User login reveals API key; same OpenAI-compatible bearer used for inference.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        }
+      ]
+    },
+    {
+      "id": "synthetic",
+      "product": "Usage-priced API / paid extra usage",
+      "currentLain": {
+        "quota": "Existing subscription adapter cannot represent PAYG credit balance/billing history. This is an actual unsupported billing dimension, not absence of all Synthetic monitoring."
+      },
+      "sources": [
+        "https://synthetic.new/pricing",
+        "https://dev.synthetic.new/docs/api/getting-started",
+        "https://dev.synthetic.new/docs/synthetic/quotas"
+      ],
+      "authOptions": [
+        {
+          "kind": "API key",
+          "inference": true,
+          "monitor": "Known quota endpoint only evidences subscription structures; cash balance/charge API not verified",
+          "provisioning": "Manual developer-page key; no public OAuth/admin read key evidenced"
+        }
+      ],
+      "recommendation": "Present PAYG/extra-usage billing as separate unknown/Console data. Keep automatic extra usage opt-in. Do not relabel subscription percentages as spendable USD or infer cash from plan price.",
+      "missingImplementation": [
+        "No verified official PAYG balance/cost/history reader; provider clarification needed before coding endpoint",
+        "Separate product and monitor-support status from working subscription quota"
+      ],
+      "quotaSemantics": {
+        "scope": "Paid API usage/extra usage; separate from regenerating subscription allowance",
+        "unit": "Monetary billing not established by /quotas; do not invent balance",
+        "windows": "No verified PAYG billing API interval/reset/freshness"
+      },
+      "nextBoundedProbe": "Read-only provider documentation/support clarification request prepared by maintainer (not sent here): ask official PAYG balance/history API, read-only permission, account IDs and freshness. No guessed endpoint/provider request.",
+      "unresolved": [
+        "Machine-readable PAYG credits/balance/history endpoint",
+        "Same-key versus separate billing credential requirements",
+        "Whether subscription and PAYG share an API key versus account-specific setup"
+      ],
+      "evidence": [
+        {
+          "url": "https://synthetic.new/pricing",
+          "statement": "Subscription offers extra usage at API pricing; that does not expose remaining paid balance.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/api/getting-started",
+          "statement": "Monitor Usage directs to Billing page.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/synthetic/quotas",
+          "statement": "Documented quota example contains only subscription allowance; no PAYG money balance contract.",
+          "checkedAt": "2026-10-24",
+          "kind": "official-documentation"
+        }
+      ]
+    }
+  ]
+}

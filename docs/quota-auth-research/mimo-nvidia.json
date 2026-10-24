@@ -1,0 +1,824 @@
+{
+  "researchDate": "2026-10-24",
+  "baseCommit": "5dc916f",
+  "worktree": "/home/tomka/Desktop/lain-quota-auth-worktrees/mimo-nvidia",
+  "scope": "Architecture research only; no product implementation, login, credentials, inference or client registration",
+  "providers": [
+    {
+      "id": "xiaomi-mimo-token-plan",
+      "product": "Xiaomi MiMo Individual and Team Token Plan (separate from PAYG)",
+      "currentLain": {
+        "baseCommit": "5dc916f",
+        "inference": "Direct MiMo account routes exist; not a dedicated quota reader",
+        "monitoring": "QuotaService console guidance, no direct adapter",
+        "relevantFiles": [
+          "src/Lain.Host/Quota/QuotaService.cs:157",
+          "docs/quota-acceptance.md",
+          "docs/codexbar-provider-inventory.md"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/integration/mimo-code.md",
+          "kind": "official-doc",
+          "claim": "mimo auth login supports browser authorization without manual API key configuration; separate PAYG and Token Plan selection; balance/valid-plan prerequisite.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/plugin/mimo.ts",
+          "kind": "official-source",
+          "claim": "Custom X25519/AES-GCM browser API-key bootstrap, encrypted {sk,uid,url}; no OAuth access/refresh token.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/provider/auth.ts",
+          "kind": "official-source",
+          "claim": "Successful callback with key stored as type api, key and metadata; OAuth refresh path is separate.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/auth/index.ts",
+          "kind": "official-source",
+          "claim": "auth.json in Global.Path.data; private 0600 writes and API metadata schema.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/shared/src/global.ts",
+          "kind": "official-source",
+          "claim": "MIMOCODE_HOME/data or XDG mimocode data directory.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/main.569e3e15e1d2bea2.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Individual/team read routes; session credentials; five-minute UI freshness wording; logincookie policy 24 hours.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/279.17edd5ab4b3a18cd.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Current individual schema usage.items; team usedPercent/nextResetTime; seat credits/history/reset.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/690.a73865333011cc6e.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Authorizer reads app/pk/redirect_uri/key_name, creates or reads inference key, marks codeCli and returns encrypted data; no monitor credential.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/Token%20Plan/quick-access.md",
+          "kind": "official-doc",
+          "claim": "Separate tp/ttp vs sk keys and regional Token Plan endpoint bases.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/Token%20Plan/subscription.md",
+          "kind": "official-doc",
+          "claim": "Weighted Credits, monthly or annual fixed quota, coding-tool restriction and no fallback to PAYG on exhaustion.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/quick-start/faq/token-plan/Validity&Expiry.md",
+          "kind": "official-doc",
+          "claim": "Calendar month/year validity in UTC, no carryover; team seat monthly quota exhaustion/reset.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/quick-start/faq/account.md",
+          "kind": "official-doc",
+          "claim": "Xiaomi-account login, mainland/overseas registration/payment and separated regional usage.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/price/pay-as-you-go.md",
+          "kind": "official-doc",
+          "claim": "PAYG account monetary balance independent of Token Plan quota.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/steipete/CodexBar/blob/d34fbb47afe73f81dd591bae28a60f72c39a9fe4/Sources/CodexBarCore/Providers/MiMo/MiMoUsageFetcher.swift",
+          "kind": "third-party-source",
+          "claim": "Cookie GET balance/tokenPlan detail/usage implementation; old monthUsage.items.first schema and error-to-zero fallback are unsuitable to copy unchanged.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/steipete/CodexBar/blob/d34fbb47afe73f81dd591bae28a60f72c39a9fe4/Sources/CodexBarCore/Providers/MiMo/MiMoCookieImporter.swift",
+          "kind": "third-party-source",
+          "claim": "Required api-platform_serviceToken/userId, optional api-platform_ph/api-platform_slh.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/LICENSE",
+          "kind": "official-source-license",
+          "claim": "MIT permits source redistribution subject to notice; not a grant of provider service rights.",
+          "retrievedAt": "2026-10-24"
+        }
+      ],
+      "authOptions": [
+        {
+          "id": "official-cli-delegation",
+          "status": "official-flow-source-verified-not-live-tested",
+          "login": "mimo auth login, Xiaomi provider; explicit PAYG or Token Plan choice",
+          "credentialResult": {
+            "type": "api",
+            "fields": [
+              "key",
+              "metadata.uid",
+              "metadata.base_url"
+            ]
+          },
+          "standardOAuth": false,
+          "inference": true,
+          "monitoring": "not-established; returned key is not a demonstrated console read credential",
+          "copyingRequired": "No manual API-key copying in official login; later private import of explicitly selected CLI entry remains implementation work",
+          "registration": "Official CLI itself has no client-id/client-secret registration in read source; sufficient balance or valid plan required",
+          "refresh": "No OAuth refresh credential in this flow; key lifecycle follows account/plan and provider revocation."
+        },
+        {
+          "id": "native-lain-key-bootstrap",
+          "status": "concrete-protocol-found-third-party-contract-unqualified",
+          "authorizeEndpoint": "https://platform.xiaomimimo.com/authorize",
+          "parameters": [
+            "pk (X25519 SPKI DER base64url)",
+            "redirect_uri (loopback)",
+            "key_name",
+            "app (current website label; default MiMo Code)"
+          ],
+          "officialCliAdditionalParameter": "kn=mimocode; current public authorizer does not read it",
+          "callback": "u base64url encrypted payload {sk,uid,url}; current website calls http://localhost:<port>/auth",
+          "encryption": "X25519; SHA256(shared secret); AES-256-GCM; ephemeral public key 32B + nonce 12B + ciphertext + tag 16B",
+          "scopes": "No standard OAuth scopes; UI displays key-generation/account/files permission descriptions",
+          "clientRegistration": "No requirement observed in current frontend, but public third-client support/usage agreement remains unresolved",
+          "inference": true,
+          "monitoring": "No session cookie/monitor token returned",
+          "nextProof": "Qualify own app/key name and allowed third-client use; do not impersonate mimocode-cli."
+        },
+        {
+          "id": "console-browser-monitor",
+          "status": "official-web-routes-plus-third-party-monitor-reference-not-live-tested",
+          "auth": "Dedicated explicit Xiaomi platform browser login/session; CodexBar requires api-platform_serviceToken and userId cookies",
+          "scope": "Full platform session, not a separate read-only token; use explicit GET allowlist and selected account/project",
+          "inference": "Console session can administer keys but monitor-only login is not itself a configured inference credential",
+          "monitoring": true,
+          "sameLoginForBoth": "The same Xiaomi web account session can view console and administer inference keys; the official CLI flow only returns the inference key, not that web session. One CLI login therefore does not configure both lain capabilities.",
+          "expiry": "Official public cookiepolicy says 24 hours; no durable refresh guarantee",
+          "nativeOAuthOrDeviceFlow": "Not qualified for quota reads; Xiaomi consumer social login only identifies account."
+        },
+        {
+          "id": "manual-inference-key",
+          "status": "official-supported",
+          "auth": "tp/ttp for Token Plan, sk for PAYG",
+          "inference": true,
+          "monitoring": "No public inferencekey quota-read contract qualified",
+          "tradeoff": "Works as current fallback, manual key copying."
+        }
+      ],
+      "monitorReads": [
+        {
+          "method": "GET",
+          "url": "https://platform.xiaomimimo.com/api/v1/tokenPlan/detail",
+          "auth": "platform browser session",
+          "fields": [
+            "planCode",
+            "planName",
+            "expired",
+            "currentPeriodEnd"
+          ],
+          "semantics": "UTC plan validity end, not unconditional refill"
+        },
+        {
+          "method": "GET",
+          "url": "https://platform.xiaomimimo.com/api/v1/tokenPlan/usage",
+          "auth": "platform browser session",
+          "fields": [
+            "data.usage.items[].name",
+            "data.usage.items[].used",
+            "data.usage.items[].limit",
+            "data.usage.items[].percent"
+          ],
+          "semantics": "Current official UI reads usage, not old monthUsage; percent fraction 0..1; preserve all pools including compensation_total_token"
+        },
+        {
+          "method": "GET",
+          "url": "https://platform.xiaomimimo.com/api/v1/projects",
+          "auth": "platform browser session",
+          "semantics": "Explicit project and role discovery; not independent quotas per local credential"
+        },
+        {
+          "method": "GET",
+          "url": "https://platform.xiaomimimo.com/api/v1/project/{projectId}/teamTokenPlan/detail",
+          "auth": "platform browser session plus project membership"
+        },
+        {
+          "method": "GET",
+          "url": "https://platform.xiaomimimo.com/api/v1/project/{projectId}/teamTokenPlan/usage",
+          "auth": "platform browser session plus project membership",
+          "fields": [
+            "usedPercent",
+            "nextResetTime"
+          ],
+          "semantics": "Team aggregate; percent 0..100"
+        },
+        {
+          "method": "GET",
+          "url": "https://platform.xiaomimimo.com/api/v1/project/{projectId}/teamTokenPlan/my/seat",
+          "auth": "platform browser session plus project membership",
+          "fields": [
+            "seat.creditsUsed",
+            "seat.creditsTotal",
+            "seat.usedPercent",
+            "seat.historyCreditsUsed",
+            "seat.historyUsedPercent",
+            "seat.nextResetTime",
+            "seat.seatStatus"
+          ],
+          "semantics": "Seat allocation and inherited history differ from current member usage"
+        }
+      ],
+      "quotaSemantics": {
+        "unit": "weighted Credits, not raw tokens/currency",
+        "scope": "Individual shared across tools/models; team/seat explicitly separate; mainland/overseas separate",
+        "window": "Individual calendar month OR year per purchased plan; team seats monthly; use observed returned end/reset",
+        "freshness": "Official web copy says up to five minutes delay; daily finalized 07:00 UTC next day; no per-response data timestamp established",
+        "exhaustion": "Stop; no automatic consumption from PAYG; no local refill assumed"
+      },
+      "recommendation": "First official CLI login delegation/private explicit credential import for inference. For monitoring, qualify a separate dedicated-browser GET connector; native own-name browser key bootstrap is a viable next candidate, not yet a documented third-client OAuth contract.",
+      "missingImplementation": [
+        "Cancellable official CLI-delegation orchestration and private selected-entry import",
+        "Explicit product/region/account metadata binding; endpoint host validation",
+        "Separate browser-session monitor lifecycle, selected project/seat, GET allowlist",
+        "Parser for current usage.items with separate unknown/errors/pools and truthful timestamps",
+        "No copied third-party error-to-zero or first-item-only behavior"
+      ],
+      "unresolved": [
+        "Whether own app/key-name authorizations are officially supported for distributed lain",
+        "No documented third-party quota OAuth/read-only token or inferencekey read permission",
+        "Real response schemas including optional pools and authoritative data timestamps",
+        "Live expiry/relogin and third-client callback behavior",
+        "Specific permitted lain interactive coding usage and account seat rights"
+      ],
+      "evidence": [
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/integration/mimo-code.md",
+          "statement": "mimo auth login supports browser authorization without manual API key configuration; separate PAYG and Token Plan selection; balance/valid-plan prerequisite.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-doc"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/plugin/mimo.ts",
+          "statement": "Custom X25519/AES-GCM browser API-key bootstrap, encrypted {sk,uid,url}; no OAuth access/refresh token.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-source"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/provider/auth.ts",
+          "statement": "Successful callback with key stored as type api, key and metadata; OAuth refresh path is separate.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-source"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/auth/index.ts",
+          "statement": "auth.json in Global.Path.data; private 0600 writes and API metadata schema.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-source"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/shared/src/global.ts",
+          "statement": "MIMOCODE_HOME/data or XDG mimocode data directory.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-source"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/main.569e3e15e1d2bea2.chunk.js",
+          "statement": "Individual/team read routes; session credentials; five-minute UI freshness wording; logincookie policy 24 hours.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-public-web-source"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/279.17edd5ab4b3a18cd.chunk.js",
+          "statement": "Current individual schema usage.items; team usedPercent/nextResetTime; seat credits/history/reset.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-public-web-source"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/690.a73865333011cc6e.chunk.js",
+          "statement": "Authorizer reads app/pk/redirect_uri/key_name, creates or reads inference key, marks codeCli and returns encrypted data; no monitor credential.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-public-web-source"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/Token%20Plan/quick-access.md",
+          "statement": "Separate tp/ttp vs sk keys and regional Token Plan endpoint bases.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-doc"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/Token%20Plan/subscription.md",
+          "statement": "Weighted Credits, monthly or annual fixed quota, coding-tool restriction and no fallback to PAYG on exhaustion.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-doc"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/quick-start/faq/token-plan/Validity&Expiry.md",
+          "statement": "Calendar month/year validity in UTC, no carryover; team seat monthly quota exhaustion/reset.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-doc"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/quick-start/faq/account.md",
+          "statement": "Xiaomi-account login, mainland/overseas registration/payment and separated regional usage.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-doc"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/price/pay-as-you-go.md",
+          "statement": "PAYG account monetary balance independent of Token Plan quota.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-doc"
+        },
+        {
+          "url": "https://github.com/steipete/CodexBar/blob/d34fbb47afe73f81dd591bae28a60f72c39a9fe4/Sources/CodexBarCore/Providers/MiMo/MiMoUsageFetcher.swift",
+          "statement": "Cookie GET balance/tokenPlan detail/usage implementation; old monthUsage.items.first schema and error-to-zero fallback are unsuitable to copy unchanged.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "third-party-source"
+        },
+        {
+          "url": "https://github.com/steipete/CodexBar/blob/d34fbb47afe73f81dd591bae28a60f72c39a9fe4/Sources/CodexBarCore/Providers/MiMo/MiMoCookieImporter.swift",
+          "statement": "Required api-platform_serviceToken/userId, optional api-platform_ph/api-platform_slh.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "third-party-source"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/LICENSE",
+          "statement": "MIT permits source redistribution subject to notice; not a grant of provider service rights.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-source-license"
+        }
+      ]
+    },
+    {
+      "id": "xiaomi-mimo-payg",
+      "product": "Xiaomi MiMo pay-as-you-go API (separate from Token Plan)",
+      "currentLain": {
+        "baseCommit": "5dc916f",
+        "inference": "Direct MiMo account routes exist; not a dedicated quota reader",
+        "monitoring": "QuotaService console guidance, no direct adapter",
+        "relevantFiles": [
+          "src/Lain.Host/Quota/QuotaService.cs:157",
+          "docs/quota-acceptance.md",
+          "docs/codexbar-provider-inventory.md"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/integration/mimo-code.md",
+          "kind": "official-doc",
+          "claim": "mimo auth login supports browser authorization without manual API key configuration; separate PAYG and Token Plan selection; balance/valid-plan prerequisite.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/plugin/mimo.ts",
+          "kind": "official-source",
+          "claim": "Custom X25519/AES-GCM browser API-key bootstrap, encrypted {sk,uid,url}; no OAuth access/refresh token.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/provider/auth.ts",
+          "kind": "official-source",
+          "claim": "Successful callback with key stored as type api, key and metadata; OAuth refresh path is separate.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/auth/index.ts",
+          "kind": "official-source",
+          "claim": "auth.json in Global.Path.data; private 0600 writes and API metadata schema.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/shared/src/global.ts",
+          "kind": "official-source",
+          "claim": "MIMOCODE_HOME/data or XDG mimocode data directory.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/main.569e3e15e1d2bea2.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Individual/team read routes; session credentials; five-minute UI freshness wording; logincookie policy 24 hours.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/279.17edd5ab4b3a18cd.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Current individual schema usage.items; team usedPercent/nextResetTime; seat credits/history/reset.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/690.a73865333011cc6e.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Authorizer reads app/pk/redirect_uri/key_name, creates or reads inference key, marks codeCli and returns encrypted data; no monitor credential.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/Token%20Plan/quick-access.md",
+          "kind": "official-doc",
+          "claim": "Separate tp/ttp vs sk keys and regional Token Plan endpoint bases.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/Token%20Plan/subscription.md",
+          "kind": "official-doc",
+          "claim": "Weighted Credits, monthly or annual fixed quota, coding-tool restriction and no fallback to PAYG on exhaustion.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/quick-start/faq/token-plan/Validity&Expiry.md",
+          "kind": "official-doc",
+          "claim": "Calendar month/year validity in UTC, no carryover; team seat monthly quota exhaustion/reset.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/quick-start/faq/account.md",
+          "kind": "official-doc",
+          "claim": "Xiaomi-account login, mainland/overseas registration/payment and separated regional usage.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/price/pay-as-you-go.md",
+          "kind": "official-doc",
+          "claim": "PAYG account monetary balance independent of Token Plan quota.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/steipete/CodexBar/blob/d34fbb47afe73f81dd591bae28a60f72c39a9fe4/Sources/CodexBarCore/Providers/MiMo/MiMoUsageFetcher.swift",
+          "kind": "third-party-source",
+          "claim": "Cookie GET balance/tokenPlan detail/usage implementation; old monthUsage.items.first schema and error-to-zero fallback are unsuitable to copy unchanged.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/steipete/CodexBar/blob/d34fbb47afe73f81dd591bae28a60f72c39a9fe4/Sources/CodexBarCore/Providers/MiMo/MiMoCookieImporter.swift",
+          "kind": "third-party-source",
+          "claim": "Required api-platform_serviceToken/userId, optional api-platform_ph/api-platform_slh.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/LICENSE",
+          "kind": "official-source-license",
+          "claim": "MIT permits source redistribution subject to notice; not a grant of provider service rights.",
+          "retrievedAt": "2026-10-24"
+        }
+      ],
+      "authOptions": [
+        {
+          "id": "official-cli-delegation",
+          "status": "official-flow-source-verified-not-live-tested",
+          "login": "mimo auth login, Xiaomi provider; explicit PAYG or Token Plan choice",
+          "credentialResult": {
+            "type": "api",
+            "fields": [
+              "key",
+              "metadata.uid",
+              "metadata.base_url"
+            ]
+          },
+          "standardOAuth": false,
+          "inference": true,
+          "monitoring": "not-established; returned key is not a demonstrated console read credential",
+          "copyingRequired": "No manual API-key copying in official login; later private import of explicitly selected CLI entry remains implementation work",
+          "registration": "Official CLI itself has no client-id/client-secret registration in read source; sufficient balance or valid plan required",
+          "refresh": "No OAuth refresh credential in this flow; key lifecycle follows account/plan and provider revocation."
+        },
+        {
+          "id": "native-lain-key-bootstrap",
+          "status": "concrete-protocol-found-third-party-contract-unqualified",
+          "authorizeEndpoint": "https://platform.xiaomimimo.com/authorize",
+          "parameters": [
+            "pk (X25519 SPKI DER base64url)",
+            "redirect_uri (loopback)",
+            "key_name",
+            "app (current website label; default MiMo Code)"
+          ],
+          "officialCliAdditionalParameter": "kn=mimocode; current public authorizer does not read it",
+          "callback": "u base64url encrypted payload {sk,uid,url}; current website calls http://localhost:<port>/auth",
+          "encryption": "X25519; SHA256(shared secret); AES-256-GCM; ephemeral public key 32B + nonce 12B + ciphertext + tag 16B",
+          "scopes": "No standard OAuth scopes; UI displays key-generation/account/files permission descriptions",
+          "clientRegistration": "No requirement observed in current frontend, but public third-client support/usage agreement remains unresolved",
+          "inference": true,
+          "monitoring": "No session cookie/monitor token returned",
+          "nextProof": "Qualify own app/key name and allowed third-client use; do not impersonate mimocode-cli."
+        },
+        {
+          "id": "console-browser-monitor",
+          "status": "official-web-routes-plus-third-party-monitor-reference-not-live-tested",
+          "auth": "Dedicated explicit Xiaomi platform browser login/session; CodexBar requires api-platform_serviceToken and userId cookies",
+          "scope": "Full platform session, not a separate read-only token; use explicit GET allowlist and selected account/project",
+          "inference": "Console session can administer keys but monitor-only login is not itself a configured inference credential",
+          "monitoring": true,
+          "sameLoginForBoth": "The same Xiaomi web account session can view console and administer inference keys; the official CLI flow only returns the inference key, not that web session. One CLI login therefore does not configure both lain capabilities.",
+          "expiry": "Official public cookiepolicy says 24 hours; no durable refresh guarantee",
+          "nativeOAuthOrDeviceFlow": "Not qualified for quota reads; Xiaomi consumer social login only identifies account."
+        },
+        {
+          "id": "manual-inference-key",
+          "status": "official-supported",
+          "auth": "tp/ttp for Token Plan, sk for PAYG",
+          "inference": true,
+          "monitoring": "No public inferencekey quota-read contract qualified",
+          "tradeoff": "Works as current fallback, manual key copying."
+        }
+      ],
+      "monitorReads": [
+        {
+          "method": "GET",
+          "url": "https://platform.xiaomimimo.com/api/v1/balance",
+          "auth": "platform browser session; ordinary inferencekey read not qualified",
+          "fields": [
+            "code",
+            "data.balance (string)",
+            "data.currency",
+            "data.cashBalance (optional string)",
+            "data.giftBalance (optional string)"
+          ],
+          "semantics": "Account monetary balance; UI also distinguishes frozen/credit/gift expiry context; no subscription quota denominator"
+        }
+      ],
+      "quotaSemantics": {
+        "unit": "response currency (CNY/USD), never assume USD",
+        "scope": "Monetary account balance and paid/granted components; regions separate",
+        "window": "Balance snapshot; gift expiry independent; no invented monthly reset",
+        "freshness": "Official UI says up to five minutes delay, daily finalized 07:00 UTC next day"
+      },
+      "recommendation": "Same official CLI-delegation candidate, choosing PAYG deliberately; monitor balance via separately qualified console session. Do not consume PAYG automatically when a plan is exhausted.",
+      "missingImplementation": [
+        "PAYG vs Token Plan selection and metadata binding",
+        "Separate monetary balance session reader with frozen/gift/credit semantics verified",
+        "Currency/decimal parsing, optional components and missing/error handling"
+      ],
+      "unresolved": [
+        "Read permission of emitted sk key not established",
+        "Full current balance response and spendable vs frozen semantics",
+        "Direct own-name authorization support and console-session renewal"
+      ],
+      "evidence": [
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/integration/mimo-code.md",
+          "statement": "mimo auth login supports browser authorization without manual API key configuration; separate PAYG and Token Plan selection; balance/valid-plan prerequisite.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-doc"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/plugin/mimo.ts",
+          "statement": "Custom X25519/AES-GCM browser API-key bootstrap, encrypted {sk,uid,url}; no OAuth access/refresh token.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-source"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/main.569e3e15e1d2bea2.chunk.js",
+          "statement": "Individual/team read routes; session credentials; five-minute UI freshness wording; logincookie policy 24 hours.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-public-web-source"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/690.a73865333011cc6e.chunk.js",
+          "statement": "Authorizer reads app/pk/redirect_uri/key_name, creates or reads inference key, marks codeCli and returns encrypted data; no monitor credential.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-public-web-source"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/quick-start/faq/account.md",
+          "statement": "Xiaomi-account login, mainland/overseas registration/payment and separated regional usage.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-doc"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/price/pay-as-you-go.md",
+          "statement": "PAYG account monetary balance independent of Token Plan quota.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-doc"
+        },
+        {
+          "url": "https://github.com/steipete/CodexBar/blob/d34fbb47afe73f81dd591bae28a60f72c39a9fe4/Sources/CodexBarCore/Providers/MiMo/MiMoUsageFetcher.swift",
+          "statement": "Cookie GET balance/tokenPlan detail/usage implementation; old monthUsage.items.first schema and error-to-zero fallback are unsuitable to copy unchanged.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "third-party-source"
+        }
+      ]
+    },
+    {
+      "id": "nvidia-build",
+      "product": "NVIDIA Build hosted public NIM API prototyping, not NGC registry/Enterprise/self-hosted NIM",
+      "currentLain": {
+        "baseCommit": "5dc916f",
+        "inference": "Catalog nvidia-build, OpenAI-compatible Bearer key, https://integrate.api.nvidia.com/v1",
+        "monitoring": "No quota adapter; console/manual guidance",
+        "relevantFiles": [
+          "src/Lain.Host/Providers/Catalog/nvidia-build.json",
+          "docs/providers/nvidia-step.md",
+          "docs/providers/quota-sources.md"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://docs.api.nvidia.com/nim/docs/api-quickstart.md",
+          "kind": "official-doc",
+          "claim": "Hosted NVIDIA Build inference, developer login and key creation/copy workflow.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://docs.api.nvidia.com/nim/docs/product",
+          "kind": "official-doc",
+          "claim": "Free hosted prototyping for Developer Program; production license/self-hosted evaluation are separate.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://build.nvidia.com/api/runtime/content/copy.yaml",
+          "kind": "official-public-config",
+          "claim": "Up to 40 rpm and 10,000 requests per day; model/traffic variation; no usage/remaining/reset/account fields.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://build.nvidia.com/_next/static/chunks/1ezdm36-wvhki.js",
+          "kind": "official-public-web-source",
+          "claim": "Runtime limit display and api.ngc.nvidia.com/login with email, app=api-catalog, redirect_uri.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://build.nvidia.com/_next/static/chunks/2xv_0hdneb8vt.js",
+          "kind": "official-public-web-source",
+          "claim": "Session key list/create /v3/orgs/{org}/keys/type/AI_PLAYGROUNDS_KEY; invoke_function policy; no quota read scope.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://build.nvidia.com/_next/static/chunks/2a1ymhcs400-z.js",
+          "kind": "official-public-web-source",
+          "claim": "Browser credential fetch, per-path routing to api.ngc.nvidia.com or buildapi.ngc.nvidia.com.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://docs.nvidia.com/ngc/latest/ngc-catalog-user-guide.html",
+          "kind": "official-doc",
+          "claim": "Personal keys can explicitly include NVIDIA Public API Endpoints; arbitrary registry or cloud function permission insufficient; $oauthtoken is API-key auth.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://docs.nvidia.com/ngc/latest/ngc-user-guide.html",
+          "kind": "official-doc",
+          "claim": "NCA or SSO membership does not grant NGC roles/service access; Public API Endpoints role separately assigned.",
+          "retrievedAt": "2026-10-24"
+        },
+        {
+          "url": "https://docs.ngc.nvidia.com/cli/cmd.html",
+          "kind": "official-cli-doc",
+          "claim": "NGC CLI setup uses ngc config set and an existing API key; no qualified browser/device login in this workflow.",
+          "retrievedAt": "2026-10-24"
+        }
+      ],
+      "authOptions": [
+        {
+          "id": "build-web-login-key",
+          "status": "official-supported",
+          "inference": "Key plus Public API Endpoints entitlement; consumer login alone insufficient",
+          "monitoring": "No matching Build usage/balance read qualified",
+          "sameLoginForBoth": "Website login can provision the inference key; a matching Build monitoring read is not established. Do not infer both capabilities from the login.",
+          "registration": "NVIDIA developer account/program and effective org/service role; no purchase necessary for documented prototyping access"
+        },
+        {
+          "id": "ngc-personal-key",
+          "status": "official-service-qualified-for-inference",
+          "inference": "Yes if key includes NVIDIA Public API Endpoints and account has service rights",
+          "monitoring": "No Build account quota permission established",
+          "scope": "Choose explicit service; invoke_function policy in Build web source is inference-only evidence",
+          "distribution": "Standard developer accountkey route; not a third-party OAuth client registration"
+        },
+        {
+          "id": "ngc-cli-existing-key",
+          "status": "official-cli-key-auth",
+          "login": "ngc config set; existing API key needed",
+          "inference": "Potential key reuse only after Public API Endpoints service verification",
+          "monitoring": "No Build remainingquota command found; org/registry/NVCF commands are distinct products",
+          "copyingRequired": "CLI does not eliminate initial key copying in documented setup"
+        },
+        {
+          "id": "native-oauth-device",
+          "status": "not-qualified-in-reviewed-public-sources",
+          "inference": "No delegated external client/token contract established",
+          "monitoring": "No quota OAuth scope/endpoint established",
+          "registration": "External client onboarding, allowed redirect, scope and distribution terms remain questions; do not reuse app=api-catalog as own identity"
+        },
+        {
+          "id": "dedicated-build-browser",
+          "status": "concrete-web-key-provisioning-alternative-unqualified",
+          "loginEndpoint": "https://api.ngc.nvidia.com/login",
+          "loginParameters": [
+            "email",
+            "app=api-catalog (official website identity)",
+            "redirect_uri"
+          ],
+          "keyMutationRoute": "POST /v3/orgs/{orgName}/keys/type/AI_PLAYGROUNDS_KEY",
+          "keyFields": [
+            "apiKey.value",
+            "apiKey.expiryDate"
+          ],
+          "defaultKeyPolicy": {
+            "product": "nv-cloud-functions",
+            "scopes": [
+              "invoke_function"
+            ],
+            "resources": [
+              {
+                "id": "*",
+                "type": "account-functions"
+              }
+            ]
+          },
+          "inference": "Website can provision inference key, not an issued monitor token",
+          "monitoring": "Static limit config exists; authenticated account usage route unproven",
+          "tradeoff": "Own session and allowed third-party use require qualification; no broad cookie harvesting"
+        }
+      ],
+      "quotaSemantics": {
+        "publishedLimits": {
+          "requestsPerMinute": "Up to 40 rpm",
+          "requestsPerDay": "10,000 requests per day",
+          "source": "https://build.nvidia.com/api/runtime/content/copy.yaml"
+        },
+        "observedUsage": null,
+        "remaining": null,
+        "reset": null,
+        "scope": "Account/user/key/org/model sharing not established by public runtime copy",
+        "freshness": "Public config retrieved 2026-10-24; not an account observation",
+        "variation": "Model-dependent; traffic from other users may cause throttling"
+      },
+      "recommendation": "Retain official Build/Public API Endpoint key inference setup. Show static limits only as dated provider information. Before a monitor adapter, get a bounded authorized console trace of actual Build usage/limits or a provider statement of read/OAuth contract; do not substitute NGC Enterprise or self-hosted metrics.",
+      "missingImplementation": [
+        "No justified Build remainingquota reader yet",
+        "Owned/delegated auth only after external-client support qualified",
+        "Optional private explicit NGC key import with service/account metadata, if desired",
+        "If concrete reads are found: parse scope/window/reset/data freshness separately from static config"
+      ],
+      "unresolved": [
+        "Is there a supported third-party browser OAuth/device/key-provisioning integration for lain?",
+        "Does Build expose per-account usage/remaining/rate headers, with which auth and minimal read permissions?",
+        "What is exact daily window/reset timezone and shared limit scope?",
+        "Are there model-specific traffic limits and data lag for any exposed usage source?",
+        "Does proposed distributed app flow have separate client registration/commercial restrictions?"
+      ],
+      "evidence": [
+        {
+          "url": "https://docs.api.nvidia.com/nim/docs/api-quickstart.md",
+          "statement": "Hosted NVIDIA Build inference, developer login and key creation/copy workflow.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-doc"
+        },
+        {
+          "url": "https://docs.api.nvidia.com/nim/docs/product",
+          "statement": "Free hosted prototyping for Developer Program; production license/self-hosted evaluation are separate.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-doc"
+        },
+        {
+          "url": "https://build.nvidia.com/api/runtime/content/copy.yaml",
+          "statement": "Up to 40 rpm and 10,000 requests per day; model/traffic variation; no usage/remaining/reset/account fields.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-public-config"
+        },
+        {
+          "url": "https://build.nvidia.com/_next/static/chunks/1ezdm36-wvhki.js",
+          "statement": "Runtime limit display and api.ngc.nvidia.com/login with email, app=api-catalog, redirect_uri.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-public-web-source"
+        },
+        {
+          "url": "https://build.nvidia.com/_next/static/chunks/2xv_0hdneb8vt.js",
+          "statement": "Session key list/create /v3/orgs/{org}/keys/type/AI_PLAYGROUNDS_KEY; invoke_function policy; no quota read scope.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-public-web-source"
+        },
+        {
+          "url": "https://build.nvidia.com/_next/static/chunks/2a1ymhcs400-z.js",
+          "statement": "Browser credential fetch, per-path routing to api.ngc.nvidia.com or buildapi.ngc.nvidia.com.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-public-web-source"
+        },
+        {
+          "url": "https://docs.nvidia.com/ngc/latest/ngc-catalog-user-guide.html",
+          "statement": "Personal keys can explicitly include NVIDIA Public API Endpoints; arbitrary registry or cloud function permission insufficient; $oauthtoken is API-key auth.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-doc"
+        },
+        {
+          "url": "https://docs.nvidia.com/ngc/latest/ngc-user-guide.html",
+          "statement": "NCA or SSO membership does not grant NGC roles/service access; Public API Endpoints role separately assigned.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-doc"
+        },
+        {
+          "url": "https://docs.ngc.nvidia.com/cli/cmd.html",
+          "statement": "NGC CLI setup uses ngc config set and an existing API key; no qualified browser/device login in this workflow.",
+          "retrievedAt": "2026-10-24",
+          "provenance": "official-cli-doc"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,386 @@
+{
+  "checkedAt": "2026-10-24",
+  "sourceCommit": "5dc916f",
+  "status": "architecture_proposal_not_implemented",
+  "scope": "Two existing provider references for all-provider Account Connect. Public documentation/source GET only; no account API calls, login, runtime, private files, key creation, purchases or code changes.",
+  "providers": [
+    {
+      "id": "kimi",
+      "product": "Kimi Code / Kimi Coding; Moonshot Open Platform remains separate",
+      "current": {
+        "sourceCommit": "5dc916f",
+        "credential": "Owned api-key or read-only legacy API-key snapshot import; no qualified Kimi OAuth login/refresh adapter",
+        "monitoring": "KimiQuotaAdapter supports only own official https://api.kimi.com/coding/v1 or https://api.kimi.ai/coding/v1 credential base URL; GET matching /usages with Bearer same key. Custom gateway keys never sent to official host.",
+        "nativeWindows": [
+          "limit_5h",
+          "limit_7d",
+          "limit_month_total/month_total",
+          "limit_month_code/month_code"
+        ],
+        "identity": "Existing account/route IDs and private API-key material remain intact; do not force key-to-OAuth migration. AccountService canonicalizes kimi.ai but does not currently canonicalize kimi.com by host."
+      },
+      "preferredFlow": {
+        "visibleAction": "Kimi verbinden",
+        "purposeOptions": [
+          "Modelle und Nutzung",
+          "Nur Nutzung"
+        ],
+        "existingAccount": "Reuse existing matching Coding key, read quota; no extra login or key creation.",
+        "newAccount": "Offer official device-code account login as concrete candidate; direct public OAuth toolkit owner or official CLI-owned local integration require focused qualification. No key creation is needed for evidenced official OAuth inference.",
+        "status": "Research proposal; official native device login and same OAuth-token use evidenced, lain gateway qualification not implemented",
+        "oneVisibleConnect": true,
+        "oneCredential": "Existing key serves both; OAuth access token serves both in official client, refresh stays with one owner."
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Select Kimi Code and purpose. Existing configured Coding account connects immediately without another login."
+        },
+        {
+          "step": 2,
+          "action": "For new account choose Mit Kimi anmelden, open device verification URI (complete URL when supplied), sign in/approve; lain polls at provider interval, displays expiry/cancel."
+        },
+        {
+          "step": 3,
+          "action": "Auth owner stores OAuth material, or references official CLI-owned local server. Read quota and show connected identity plus timestamp; do not infer successful models from login/models_ready."
+        },
+        {
+          "step": 4,
+          "action": "Expose models only after transport/admission qualification; otherwise retain successful usage connection and offer existing Coding key. Nur Nutzung creates no model route/key and does not run inference."
+        }
+      ],
+      "credentials": [
+        {
+          "kind": "api-key",
+          "owner": "Existing lain SecretStore",
+          "use": "Inference and official Coding quota",
+          "refresh": "Replacement only on conscious user action"
+        },
+        {
+          "kind": "OAuth access + refresh",
+          "owner": "Either qualified lain OAuth owner OR official Kimi CLI, never competing refresh owners",
+          "use": "Official client resolves access token as inference API credential and /usages Bearer",
+          "storage": "Owned protected credential store; monitor receives access projection, not refresh material"
+        },
+        {
+          "kind": "local-server bearer",
+          "owner": "Official kimi-code server; lain holds protected connector reference",
+          "use": "Experimental localhost auth/usage API, broad agent server authority",
+          "lifetime": "Token rotation invalidates all running local instances; local connector detach must not rotate/logout globally"
+        }
+      ],
+      "inference": {
+        "existing": "Preserve configured harness/transport and Coding endpoint, do not route Moonshot API key to Coding endpoint.",
+        "oauthEvidence": "Python official CLI sets managed Kimi provider with empty static key + OAuth ref; OAuthManager resolves access token into chat client key. New official kimi-code also supports managed auth, ACP and agent-session API.",
+        "keyBootstrap": "Not required for evidenced Coding OAuth path; do not invent key mint/reveal step.",
+        "qualification": "Documented local server is an agent/session runtime with tools, not an evidenced drop-in OpenAI-compatible HTTP proxy. Direct access-token gateway and allowed harness/version semantics must be qualified before claiming lain model access.",
+        "entitlement": "No purchases, Booster enablement or paid/API fallback implied by Connect."
+      },
+      "monitoring": {
+        "existingSameKey": true,
+        "operation": "GET {own qualified Coding base}/usages, Authorization: Bearer <key/access token>",
+        "native": "Ratios remain percentages; use reset timestamps, show only present windows. Current adapter handles legacy exactly-one-limit fallback conservatively.",
+        "oauthDelegated": "GET /api/v1/oauth/usage via authenticated official local server -> code=0 AND data.kind=ok, quota.usages limit5h/limit7d/monthTotal/monthCode, nullable extraUsage booster wallet. kind=error can occur inside successful envelope.",
+        "monitorOnly": "Reuse existing key/OAuth session without key creation/reveal. Starting official login can change CLI configuration/default model, so isolate owner config or disclose/use already-running owner; never silently run CLI login as a read-only operation.",
+        "scope": "Current lain adapter does not expose Booster wallet. Moonshot CN/international PAYG balance is a different product and not established by successful Coding /usages.",
+        "disconnect": "Local detach leaves official CLI logged in. Explicit official logout removes managed provider and may tear down machine Remote Control."
+      },
+      "maintainerPrerequisites": [
+        "Qualify one direct OAuth owner using published toolkit, or a version-pinned official local server connector and its startup bearer handoff. No manual cookie/refresh file copying.",
+        "Check applicable provider client-use/admission terms for own distributed integration. No public own-client enrollment procedure established; do not invent blanket registration requirement or copy client identity as automatically authorized.",
+        "Add owned/delegated Kimi credential kind, refresh serialization, cancellation and account identity binding before OAuth quota projection; existing api-key path remains unchanged.",
+        "Treat regional .com/.ai, auth host, Coding vs Open Platform explicitly; fix host canonicalization in a separately approved implementation without changing existing account IDs."
+      ],
+      "unresolved": [
+        "Direct lain OAuth distribution/client admission and harness compatibility; public source exports device toolkit, which is stronger evidence than an undocumented copied endpoint.",
+        "Official Python kimi-cli and newer TypeScript kimi-code have different homes/versions; never assume interchangeability or scan either real credential directory.",
+        "Direct monitor-only OAuth login must avoid official login side effects on shared model/default config; local bearer has broader authority than quota-only."
+      ],
+      "fallback": {
+        "existing": "Keep existing Coding API key flow; same-key quota, no forced login.",
+        "new": "Offer Coding key entry as fallback if OAuth transport not yet qualified; Platform API-key variant separately labelled and does not inherit Coding quota.",
+        "partial": "Retain successful monitoring if model transport remains unqualified; unknown quota is not zero."
+      },
+      "codeImplications": [
+        "Do not replace KimiQuotaAdapter or external snapshots with unowned refresh. Add qualified account connect/owner and pass limited credential projection.",
+        "Preserve .com/.ai endpoint checks, native stable window identities, last-success/stale semantics.",
+        "Model-configured, login-valid, quota-read and inference-tested are separate states; connecting does not launch chargeable test."
+      ],
+      "sources": [
+        {
+          "url": "https://raw.githubusercontent.com/MoonshotAI/kimi-code/main/docs/en/guides/getting-started.md",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "203c26fbd4d97a4232c5fbb0f5858e120b46ac8a83a9b7e17d6107d1c2e81a89",
+          "claim": "Kimi Code OAuth device login and Platform API key are distinct login choices."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/MoonshotAI/kimi-code/main/docs/en/reference/server-api.md",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "6d419cb2dcfb8e56b480823b75f8fd7671a0837e998fa64700e472ba68b922bc",
+          "claim": "Experimental authenticated local server: device login lifecycle, native plan windows/booster, agent sessions; models_ready does not verify credentials."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/MoonshotAI/kimi-code/main/docs/en/guides/web.md",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "e06878ec251b952d66a633c276f8abacc11363d94517d2f58364b05963491ebb",
+          "claim": "Official CLI owns login/config; local bearer startup and rotation, documented third-party API integration."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/MoonshotAI/kimi-code/main/packages/oauth/src/device.ts",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "774482abc2a71f712547266421c8959d5459f5fcd90436bfd63da6f4a1071c01",
+          "claim": "Public browser-safe device module explicitly exports request, poll and refresh; consumers store token themselves."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/MoonshotAI/kimi-code/main/packages/oauth/src/constants.ts",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "030d2b874ba94b77a9b068ba502b6706addb7b90279122c8f91f5796d6205444",
+          "claim": "Official OAuth host and official Kimi client flow configuration; public identifier is evidence, not automatic authorization to impersonate this client."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/MoonshotAI/kimi-code/main/packages/oauth/src/managed-usage.ts",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "130afd97e8c8e9d3b53f8ccaaa7bb1181af1f878a2e5d5c72f53bfab4e46ece9",
+          "claim": "Official .com/.ai Coding endpoints, /usages Bearer access token, native ratio windows and booster schema."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/MoonshotAI/kimi-cli/main/src/kimi_cli/auth/oauth.py",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "d08b21cef1e9ef5a0da28efaecbf9bda4bad51e64b92004045c848bad03a4f89",
+          "claim": "Python CLI device authorization, token grant/refresh, OAuth access token injected into inference provider; login changes CLI config/default model."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/MoonshotAI/kimi-cli/main/src/kimi_cli/auth/platforms.py",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "27ee8d81b82f0884f787c00a52ae8fededf69feea1505acd6009d2ddda028afb",
+          "claim": "Distinct Coding API and Moonshot CN/international Open Platform endpoints; models fetched with resolved OAuth access token."
+        }
+      ]
+    },
+    {
+      "id": "zai",
+      "product": "International Z.ai GLM Coding Plan (personal/team separated); standard API and CN BigModel are distinct",
+      "current": {
+        "sourceCommit": "5dc916f",
+        "credential": "Owned api-key and read-only legacy snapshot import; no qualified ZCode OAuth/PAT owner",
+        "monitoring": "ZaiQuotaAdapter GET https://api.z.ai/api/monitor/usage/quota/limit using raw same API key in Authorization; accepts only exact official international credential base URL paths.",
+        "acceptedBasePaths": [
+          "/api/v1",
+          "/v1",
+          "/api/paas/v4",
+          "/api/coding/paas/v4",
+          "/api/anthropic"
+        ],
+        "native": "CREDIT_LIMIT credits, TOKENS_LIMIT tokens, TIME_LIMIT requests; units/window identities preserved.",
+        "limits": "CN open.bigmodel.cn/dev.bigmodel.cn and team project headers/type=2 are not currently qualified; standard-key endpoint acceptance does not prove Coding entitlement."
+      },
+      "preferredFlow": {
+        "visibleAction": "Z.ai verbinden",
+        "purposeOptions": [
+          "Modelle und Nutzung",
+          "Nur Nutzung"
+        ],
+        "existingAccount": "Reuse matching key and same-key quota; no extra browser login.",
+        "newAccount": "Concrete official ZCode-style browser init/poll -> OAuth -> business JWT -> org/project Key ID -> short-lived Project Access Token candidate. Does not require user copy a long-lived raw API key.",
+        "status": "Official implementation evidenced; lain/client admission and distribution qualification remain. Coding Tool Helper itself only configures user-supplied key.",
+        "preConnectDisclosure": "Modelle und Nutzung may create a dedicated project Key record if no eligible record exists and issue short-lived tokens; disclose before conscious Connect.",
+        "oneVisibleConnect": true,
+        "oneCredential": false
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Choose international personal/team Coding product and purpose; existing matching key gets quota without new login."
+        },
+        {
+          "step": 2,
+          "action": "For new OAuth candidate create ephemeral polling secret, start CLI pairing, open returned HTTPS authorize_url, sign in/approve, poll until ready/failed/expiry/cancel."
+        },
+        {
+          "step": 3,
+          "action": "Owner binds ready.user.user_id, exchanges OAuth for business JWT and discovers eligible org/project. Auto-select only unique/confirmed intended scope; multiple team/projects need chooser."
+        },
+        {
+          "step": 4,
+          "action": "For models-and-usage reuse dedicated Key ID or consciously create lain record after client-use qualification, issue short-lived project token; pass same live token to qualified model and quota clients."
+        },
+        {
+          "step": 5,
+          "action": "For usage-only reuse existing eligible request material without creation; when no such material/read-only path qualified, keep account-login success separate and offer existing key or Console. Show quota-read/model-configured independently."
+        }
+      ],
+      "credentials": [
+        {
+          "kind": "api-key",
+          "owner": "Existing lain SecretStore",
+          "use": "Inference + raw Authorization quota",
+          "identity": "Preserve existing key account IDs/routes"
+        },
+        {
+          "kind": "OAuth access token",
+          "owner": "Single qualified auth owner or official delegated ZCode integration",
+          "use": "Exchange for business login; not directly substitute for inference API key"
+        },
+        {
+          "kind": "ZCode JWT",
+          "owner": "Official ZCode product session",
+          "use": "Separate product session token returned alongside provider OAuth; not inference key"
+        },
+        {
+          "kind": "business JWT",
+          "owner": "Auth owner cache",
+          "use": "Org/project metadata and PAT issuance; raw vs Bearer is operation-specific"
+        },
+        {
+          "kind": "Project Access Token",
+          "owner": "Auth owner cache bound to account/family/origin/org/project/Key-ID/login-generation",
+          "use": "Short-lived model and quota request credential",
+          "lifetime": "Validate accessToken, tokenType Bearer, positive expiresIn/expiresAt, enable; earliest expiry, single-flight renewal and explicit rejected generation handling"
+        }
+      ],
+      "inference": {
+        "existing": "Keep existing configured API-key transport. Coding vs standard API and user entitlement remain distinct.",
+        "loginBootstrap": {
+          "init": "POST https://zcode.z.ai/api/v1/oauth/cli/init; body {provider:zai}; Authorization Bearer <random 32-byte ephemeral polling token>",
+          "poll": "GET https://zcode.z.ai/api/v1/oauth/cli/poll/{flow_id}; same poll token; init response authorize_url, expires_at, flow_id, poll_interval_sec; ready token + user + zai.access_token (+ optional refresh_token)",
+          "businessLogin": "POST https://api.z.ai/api/auth/z/login body {token: OAuth access token} -> data.access_token/accessToken with expiry metadata",
+          "scopeRead": "GET /api/biz/customer/getCustomerInfo, raw business JWT -> organizations/projects",
+          "keyRecord": "GET /api/biz/v1/organization/{org}/projects/{project}/api_keys; only if needed models-and-usage POST same path {name, usageScene:1}; official personal name zcode-api-key/team zcode-team-api-key and keyType:2 for team",
+          "importantField": "apiKey returned by Key lookup/create is non-secret Key ID, not usable long-lived inference secret",
+          "issuance": "POST /api/biz/v1/organization/{org}/projects/{project}/api_keys/{id}/access_tokens with Bearer business JWT and official clientType/clientVersion -> data.accessToken, tokenType, expiresIn, expiresAt, optional enable",
+          "status": "Request/response corroborated in official source; no endpoint called in this research. Official clientType=zcode is not evidence lain may impersonate it."
+        },
+        "entitlement": "PAT remains subject to official version/request admission. No hidden plan reset/upgrade, purchase, wallet spend/fallback or standard API promotion."
+      },
+      "monitoring": {
+        "existingSameKey": true,
+        "reader": "GET /api/monitor/usage/quota/limit; raw request credential in Authorization, without added Bearer prefix",
+        "oauthEvidence": "Official current quota provider resolves accountRequestAuthService for usage, then sends auth.apiKey raw. Correlated PAT migration source says issued token serves former API-key business interfaces; same token capability is evidenced within official client.",
+        "team": "Official code adds bigmodel-organization/bigmodel-project and type=2 to quota path for team; separate scope and not current lain coverage.",
+        "monitorOnly": "Never call generic resolveMaterial blindly: key-location lookup falls through to Key creation. Separate noncreating lookup/issuance path or existing user key. Issuing an allowed short-lived token may be required by read-only auth, but must not create/reveal/rotate a long-lived Key or mutate model config.",
+        "native": "Render only returned windows, keep type/unit/number identity, ratio/reset timestamps and last-success freshness. No synthesized monthly remaining from local usage.",
+        "excludedWrites": "Do not expose reset, purchase, off-peak settlement or other writes merely because official quota service includes them."
+      },
+      "maintainerPrerequisites": [
+        "Qualify either own integration against real provider client-use/admission rules or supported delegation to official auth owner. Public source is concrete feasibility evidence; no blanket separate registration requirement proven.",
+        "Define separate login, business-token, project-token owners and limited quota projection; do not save PAT as static api-key and lose renewal/expiry.",
+        "Own client name/usageScene/project selection and team role rights must be verified. Never send clientType=zcode or reuse official app callback/client identity without establishing supported use.",
+        "Keep monitor-only code path noncreating; normal official login invokes material resolution and changes standalone config/default model, unsuitable as opaque read-only command.",
+        "Keep region/product, own endpoint, Org/Project/Key-ID and login generation in cache identity; old in-flight token failures must not delete newer sessions."
+      ],
+      "unresolved": [
+        "Supported own-client admission/distribution or bounded CLI delegation interface; source implementation alone is not a published third-party auth contract.",
+        "Pure monitor-only first connect without existing Key-ID may need a different read-only business-token quota route; not evidenced here. Do not implement implicit key creation or call it impossible.",
+        "Independent refresh lifetime of Z.ai OAuth vs business JWT vs PAT, cancellation/logout contract and team role rights need focused qualification.",
+        "CN BigModel source shares machinery but different hosts/auth/region; does not extend current international adapter by inference."
+      ],
+      "fallback": {
+        "existing": "Use existing key for both model and quota, no forced new login.",
+        "new": "Fallback to explicitly labelled Personal/Team Coding key input and documented Console links; Helper remains optional, not required installation.",
+        "partial": "Preserve login success if quota material unavailable; do not mark inference ready merely because OAuth succeeded."
+      },
+      "codeImplications": [
+        "Add qualified login owner and typed short-lived credential projection rather than putting refresh in ZaiQuotaAdapter.",
+        "Split Key discovery/create/PAT issuance so usage-only cannot create through shared resolver. Account Connect purposes must be operation policy, not labels only.",
+        "Add explicit team qualification before team headers/type=2, preserve existing raw-auth same-key flow and exact official origin checks.",
+        "Existing snapshot import remains read-only; never scan actual ZCode credential files or assume imported key proves ownership of browser identity."
+      ],
+      "sources": [
+        {
+          "url": "https://docs.z.ai/devpack/tool/claude.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "sha256": "e1cc0551623276a436aa2f230c9d11719bcee08099e84a0c352c8ccc3ef9b0a5",
+          "claim": "Personal vs Team Coding Plan key locations, Anthropic endpoint and same configured key."
+        },
+        {
+          "url": "https://docs.z.ai/devpack/extension/coding-tool-helper.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "sha256": "6a8948385fbcc925e5451fbd2523f1dd7be8e770cfa4019bcf8d5dec0c85822c",
+          "claim": "Helper asks user to supply API key; wizard automation does not itself establish OAuth/key creation."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zai-org/zai-coding-plugins/main/plugins/glm-plan-usage/skills/usage-query-skill/scripts/query-usage.mjs",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "9708b71af925fcf32bc9f611842e37f543ce38de4bebf09544bdf161cfdf8bae",
+          "claim": "Official quota GET uses raw configured inference key; international and CN hosts are separate."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zai-org/ZCode/main/apps/zcode-cli/packages/adapters/src/auth/cli-oauth.ts",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "c3f09aabf53bc24dcf6923f9e7318676bd3ca39a53632f294394bfb44700cb08",
+          "claim": "CLI init/poll native browser pairing, ephemeral poll secret and ready OAuth token/user material."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zai-org/ZCode/main/apps/zcode-cli/packages/bootstrap/src/auth-login.ts",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "060f5e992f9d3d77dcf81fef1bb6938bb82c78fb9640b67214069fe2a3181b02",
+          "claim": "Login resolves Coding material, persists OAuth identity, runtime exchanges; not long-lived derived API key storage. Also changes CLI config/default model."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zai-org/ZCode/main/apps/zcode-cli/packages/adapters/src/auth/coding-plan-api-key.ts",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "0b5bcf1d755a4415f3ffee4d1ffec8e842072a5d5d0ccba77dd271aa79505425",
+          "claim": "OAuth -> /api/auth/z/login business JWT -> project access token resolver; single owner, cached business token, no model replay."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zai-org/ZCode/main/packages/shared/src/project-access-token-client.ts",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "a4dad9ecb2902ccdf8ff6d4f821b101e3a860b0e2472ae4a0e69b700eb4f5850",
+          "claim": "Org/project discovery, dedicated Key ID lookup/create, short-lived access_tokens issuance. apiKey field is ID, not inference secret."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zai-org/ZCode/main/packages/shared/src/project-access-token.ts",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "c8b2e868b008e275e7b1dc121d78caab24ffd7c6bf39e9ee2fb4eb78331f5e83",
+          "claim": "Strict enable/accessToken/tokenType/expiresIn/expiresAt response; expiry, cache, rejection/refresh rules."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zai-org/ZCode/main/packages/services/src/usage-stats/providers/bigmodelUsageQuotaProvider.ts",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "9655efa9cae1608c8d2cd7aa281a8811c9d10904e5f3e8509cfa751f419402e9",
+          "claim": "Actual quota reader resolves account request auth, raw Authorization, team org/project headers and type=2 query; includes write actions that lain read-only monitor must not expose."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zai-org/ZCode/main/packages/services/src/oauth/providers/zaiProviderConfig.ts",
+          "kind": "official_source",
+          "openedAt": "2026-10-24",
+          "sha256": "d0f490f62c64da334cec0e1b890f241d496ede8420597b774f819fb7483e8cda",
+          "claim": "Desktop authorization-code routes and ZCode callback/client identity; not a generic third-party registration contract."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zai-org/ZCode/main/docs/model-provider-project-access-token.md",
+          "kind": "official_repository_design_note_correlated_with_code",
+          "openedAt": "2026-10-24",
+          "sha256": "6fdee85684d75c30f197c7ae0378121c6b92c41503b04b62a9bc1da1e4607c16",
+          "claim": "Official repository explains implemented migration: same issued token for model and former API-key business interfaces; official-version safety admission still applies."
+        }
+      ]
+    }
+  ],
+  "sharedFlowRules": {
+    "oneVisibleConnectDoesNotRequireOneSecret": true,
+    "existingSameKeyAccessPreserved": true,
+    "monitorOnlyCreatesOrRevealsLongLivedKeys": false,
+    "loginDoesNotVerifyInference": true,
+    "noForcedReloginOrMigration": true,
+    "noUniversalOwnClientRegistrationClaim": true,
+    "oldArtifactsRemainByteIdentical": true
+  }
+}

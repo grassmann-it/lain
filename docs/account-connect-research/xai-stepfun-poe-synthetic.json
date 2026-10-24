@@ -1,0 +1,397 @@
+{
+  "schemaVersion": 1,
+  "status": "proposal-not-implementation",
+  "checkedAt": "2026-10-24",
+  "baseCommit": "5dc916fcea702f2a196520903937570745e26dac",
+  "scope": "Account Connect redesign, six product views across four providers",
+  "constraints": "Only assigned docs written. Prior quota reports unchanged. No accounts/login/provider calls/provisioning/runtime/builds/subagents/commit. Reused completed research; one targeted public docs check added xAI API-key metadata.",
+  "providers": [
+    {
+      "id": "poe",
+      "product": "User points / subscription + add-ons",
+      "current": "PoeQuotaAdapter reads combined remaining points; PoeUsageHistory handles bounded pages; PoeOAuthAttempt already prepares PKCE/state and key-expiry parsing. Current generic account wizard still expects one manually pasted key, plan choice and optional model selection. Host OAuth callback/exchange/persistence absent. Current empty SelectedModelRouteIds skips actual route creation, but ProviderCatalogRegistry.cs:44–71 still derives/validates nonempty model-template and billing-plan membership, and AccountService.cs:42–81 requires a billing plan plus at least one permitted inference template. This does not support a genuine catalog/plan/template-independent monitor-only connection.",
+      "preferredFlow": {
+        "label": "Mit Poe verbinden",
+        "mode": "browser-consent-to-user-api-key",
+        "result": "One account connection automatically gains inference capability and point monitoring; monitor-only intent simply creates no routing/model use.",
+        "reconnect": "Reconnect at api_key_expires_in expiry or401 using same app client and fresh PKCE attempt. No refresh grant documented. Preserve logical account identity/routes only after provider identity or explicit safe rebind; do not deduplicate by replacement-key hash alone."
+      },
+      "userSteps": [
+        "Poe auswählen und „Mit Poe verbinden“ drücken. Optional „Nur Kontingente anzeigen“ wählen; Standard kann Inferenz und Monitoring verbinden.",
+        "Im Poe-Browserdialog anmelden und Verbindung bestätigen; optional dort Keyablauf wählen.",
+        "lain zeigt verfügbare Punkte und „Verbunden“; Modelle bei Bedarf anschließend auswählen."
+      ],
+      "credentials": [
+        {
+          "kind": "oauth-issued-api-key",
+          "permissions": "Scope apikey:create creates broad spending-capable user key; same key for Poe API, balance and history. Monitor-only UI intent does not reduce provider permissions.",
+          "owner": "lain credential owner stores issued key + optional expiry; OAuth attempt state/verifier short-lived only.",
+          "userInput": "No client ID, client secret, redirect URL, expiry-number form or separate quota key."
+        }
+      ],
+      "inference": {
+        "joint": true,
+        "monitorOnly": "Target proposal, not existing template-independent Account Connect: Allowed without model routes; issued credential remains inference-capable.",
+        "validation": "OAuth success plus balance success proves granted connection/balance access, not every model entitlement. No paid test completion required."
+      },
+      "monitoring": {
+        "automatic": "Attach existing balance adapter immediately; optional bounded history fetch without asking for another key.",
+        "scope": "User points shared across plan/add-ons and Chat/API/Canvas App. API has no allocation/reset/split.",
+        "resourceChoice": "None documented; do not ask organization/project/team.",
+        "only": "Same connection can be saved for balance/history without inference routes."
+      },
+      "maintainerPrerequisites": [
+        "Register lain app once at poe.com/api/clients; bundle public client ID. This is maintainer work, never a user setup field.",
+        "Qualify shipped desktop callback: docs waive localhost registration for local development, production desktop/IP/port rules remain open.",
+        "Wire existing PoeOAuthAttempt to host-managed browser/callback, cancellation, exchange and secure persistence."
+      ],
+      "unresolved": [
+        "No documented refresh grant or read-only quota scope.",
+        "No documented stable user identifier in opened OAuth/balance response; reconnect identity must be designed, not fabricated.",
+        "Exact release callback support."
+      ],
+      "fallback": "API-Key einfügen opens official poe.com/api/keys; same key automatically supplies quota/history. No second monitor wizard. If OAuth unavailable due to application configuration, name application setup failure clearly.",
+      "codeImplications": [
+        "Decouple genuine monitor-only account/capability connections from required catalog model templates and billing plans. Optional actual route creation already exists and is not sufficient: retain later optional model selection without requiring an inference template at account creation.",
+        "Add explicit login flow descriptor and host operation instead of manufacturing credentials through catalog fields.",
+        "Reuse PoeOAuthAttempt and PoeQuotaAdapter; expose PoeUsageHistory with bounded incomplete-history state.",
+        "Remove forced plan selection and account naming from critical path; generated name editable later.",
+        "Route selection optional after connect; key renewal must update credential on same logical account rather than create duplicate."
+      ],
+      "sources": [
+        "https://creator.poe.com/docs/external-applications/sign-in-with-poe",
+        "https://creator.poe.com/api-reference/getCurrentBalance",
+        "https://creator.poe.com/api-reference/getPointsHistory",
+        "https://creator.poe.com/docs/external-applications/external-application-guide",
+        "https://github.com/poe-platform/fastapi_poe/blob/main/README.md"
+      ]
+    },
+    {
+      "id": "synthetic",
+      "product": "Subscription / weekly regenerating credits",
+      "current": "Existing SyntheticQuotaAdapter uses same inference API key and GET /v2/quotas, only legacy subscription block. Official Octofriend now handles planWeeklyLimit and older quota variants plus x-synthetic-quotas header. No new monitoring credential is needed today. Current empty SelectedModelRouteIds skips actual route creation, but ProviderCatalogRegistry.cs:44–71 still derives/validates nonempty model-template and billing-plan membership, and AccountService.cs:42–81 requires a billing plan plus at least one permitted inference template. This does not support a genuine catalog/plan/template-independent monitor-only connection.",
+      "preferredFlow": {
+        "label": "Synthetic verbinden",
+        "mode": "single-api-key",
+        "result": "Paste one key; lain configures official connection and automatically reads subscription quota. No extra monitoring setup or selected-plan assertion.",
+        "reconnect": "On401 or revoked key, replace key locally using official developer page; re-read quota. No public OAuth refresh contract. Preserve same logical account only after safe identity/rebind; quota response has no verified account ID."
+      },
+      "userSteps": [
+        "Synthetic auswählen.",
+        "Eigenen API-Key einfügen; bei Bedarf „Key öffnen“ führt zur offiziellen Entwicklerseite.",
+        "lain verbindet und zeigt gemeldete Wochenkredite samt nächster Teilregeneration; Modelle sind anschließend optional."
+      ],
+      "credentials": [
+        {
+          "kind": "api-key",
+          "permissions": "Same broad inference credential for /v2/quotas; no documented separate read-only token.",
+          "owner": "Private lain account secret.",
+          "userInput": "One key only; no plan dropdown, client ID, project, monitor key or reset-time form."
+        }
+      ],
+      "inference": {
+        "joint": true,
+        "monitorOnly": "Target proposal, not existing template-independent Account Connect: Save account without routes; key still spend-capable.",
+        "validation": "Successful quota read establishes quota access, not every model route. Avoid paid validation prompts."
+      },
+      "monitoring": {
+        "automatic": "Same-key GET then origin/account-qualified passive x-synthetic-quotas updates using one shared parser.",
+        "scope": "Subscription weekly weighted credit quota; nextRegenAt is incremental refill, not full reset. Current page says only weekly limits.",
+        "resourceChoice": "None verified.",
+        "only": "Same-key monitor connection supported without generating inference routes.",
+        "semantics": "Prefer observed current planWeeklyLimit; preserve legacy subscription/weeklyTokenLimit/rollingFiveHourLimit without double counting; absent/malformed is unknown."
+      },
+      "maintainerPrerequisites": [
+        "Extend existing quota parser from pinned official Octofriend source; no client registration.",
+        "Model next regeneration explicitly and preserve exact older credit strings."
+      ],
+      "unresolved": [
+        "No public Synthetic OAuth/device/app-registration or delegated key-provisioning flow verified.",
+        "Official quota documentation sample and current manufacturer client differ; actual account schemas still untested.",
+        "No account identity proof in opened quota schema."
+      ],
+      "fallback": "Manual API key is already the supported preferred path. If quota payload is unrecognized, keep connected inference and report unavailable quota with official Usage link; never request another key as speculative repair.",
+      "codeImplications": [
+        "Decouple genuine monitor-only account/capability connections from required catalog model templates and billing plans. Optional actual route creation already exists and is not sufficient: retain later optional model selection without requiring an inference template at account creation.",
+        "Auto-attach current same-key quota capability to account connection; bypass generic separate monitor setup.",
+        "Use Connect intent separately from provider permissions; monitor-only does not imply a read-only credential.",
+        "Do not force Go/Standard/Big selection to establish account or compute quota.",
+        "Reconnect safely replaces secret and invalidates old snapshots; backend connection identity must survive key rotation."
+      ],
+      "sources": [
+        "https://dev.synthetic.new/docs/synthetic/quotas",
+        "https://dev.synthetic.new/docs/api/getting-started",
+        "https://synthetic.new/pricing",
+        "https://synthetic.new/rate-limits",
+        "https://github.com/synthetic-lab/octofriend/blob/87d7fa9ced654e61cc2b22b61e5211c958376165/source/utils/quota.ts",
+        "https://github.com/synthetic-lab/octofriend/blob/87d7fa9ced654e61cc2b22b61e5211c958376165/source/components/menu-quota-indicator.tsx",
+        "https://github.com/synthetic-lab/octofriend/blob/87d7fa9ced654e61cc2b22b61e5211c958376165/source/state.ts"
+      ]
+    },
+    {
+      "id": "synthetic",
+      "product": "Usage-priced API / extra usage",
+      "current": "API-key connection exists, but existing quota reader evidences subscription only; no verified money-balance or PAYG history reader. Current empty SelectedModelRouteIds skips actual route creation, but ProviderCatalogRegistry.cs:44–71 still derives/validates nonempty model-template and billing-plan membership, and AccountService.cs:42–81 requires a billing plan plus at least one permitted inference template. This does not support a genuine catalog/plan/template-independent monitor-only connection.",
+      "preferredFlow": {
+        "label": "Synthetic verbinden (same connection as subscription)",
+        "mode": "reuse-one-api-key-connection",
+        "result": "One provider account can have both subscription quota capability and paid API capability. Do not make two artificial account records merely because billing dimensions differ.",
+        "reconnect": "Same key replacement as subscription connection; no separate PAYG reconnect."
+      },
+      "userSteps": [
+        "Vorhandenes Synthetic-Konto verwenden oder einen API-Key einfügen.",
+        "Falls gewünscht bezahlte Nutzung bewusst in den Anbieter-/Routingeinstellungen aktivieren.",
+        "lain zeigt die verfügbare Aboquote und verlinkt für PAYG-Rechnungen zur offiziellen Billingansicht."
+      ],
+      "credentials": [
+        {
+          "kind": "same-api-key",
+          "permissions": "Inference/extra usage as enabled by provider account. No extra monitor credential contract verified.",
+          "userInput": "Never ask another key just for unimplemented PAYG billing."
+        }
+      ],
+      "inference": {
+        "joint": "Same credential can be used for configured paid API use; automatic subscription→PAYG spending fallback remains explicit opt-in.",
+        "monitorOnly": "Target proposal, not existing template-independent Account Connect: No verified cash-balance reader; subscription-only monitor still useful if provider reports it.",
+        "validation": "Do not buy/topup/enable overflow during Connect."
+      },
+      "monitoring": {
+        "automatic": "Show supported subscription quota independently; PAYG monetary balance explicitly unavailable/Console.",
+        "scope": "Paid billing separate from weekly regenerated allowance.",
+        "resourceChoice": "None evidenced.",
+        "only": "PAYG-only automatic billing monitoring unsupported; official Billing link is fallback."
+      },
+      "maintainerPrerequisites": [
+        "Provider documentation/clarification for public PAYG balance/history reader and permissions before implementation."
+      ],
+      "unresolved": [
+        "Public PAYG money/credits endpoint, freshness and identity.",
+        "Same-key billing-read rights not evidenced."
+      ],
+      "fallback": "Official Billing page link attached to same Synthetic account; no browser-cookie/session import in normal Connect.",
+      "codeImplications": [
+        "Decouple genuine monitor-only account/capability connections from required catalog model templates and billing plans. Optional actual route creation already exists and is not sufficient: retain later optional model selection without requiring an inference template at account creation.",
+        "Model multiple budget capabilities under one provider connection.",
+        "Separate account connection, measured quota and spend policy; subscription unknown never means free or paid overflow enabled.",
+        "No fabricated PAYG credential field or unsupported login button."
+      ],
+      "sources": [
+        "https://synthetic.new/pricing",
+        "https://dev.synthetic.new/docs/api/getting-started",
+        "https://dev.synthetic.new/docs/synthetic/quotas"
+      ]
+    },
+    {
+      "id": "stepfun",
+      "product": "Personal Step Plan CN / Global",
+      "current": "Prepared API-key Plan inference routes; current PAYG quota reader correctly refuses Plan base. Official Step Code source has cloud-polled login returning personal API key and optional session, plus schema1 GET /step_plan/v1/usage. Deployment unverified, not known absent. Current empty SelectedModelRouteIds skips actual route creation, but ProviderCatalogRegistry.cs:44–71 still derives/validates nonempty model-template and billing-plan membership, and AccountService.cs:42–81 requires a billing plan plus at least one permitted inference template. This does not support a genuine catalog/plan/template-independent monitor-only connection.",
+      "preferredFlow": {
+        "label": "Mit Step Plan anmelden",
+        "mode": "source-backed-cloud-polled-browser-login; release qualification required",
+        "result": "A qualified personal login-delivered key can serve inference and personal usage read. No separate Oasis session/token entry for the documented usage path.",
+        "reconnect": "Login-delivered model key is locally treated static by official wrapper; revocation/401 requires a new user-approved login. Optional separate account session can refresh via Passport, but minimal Connect should not capture it unless a required capability needs it. Keep profile, region and UID binding."
+      },
+      "userSteps": [
+        "Step Plan auswählen; Region nur falls nicht aus bestehender Verbindung/gewähltem Anbieterprofil klar: China oder Global.",
+        "Im offiziellen Browserflow anmelden und Verbindung bestätigen.",
+        "lain übernimmt Key und persönliche Identität, liest verfügbare Kontingente und bietet Modelle danach optional an. Bei nicht verfügbarem Usagebackend bleibt der Account verbunden mit klarer Kontingentmeldung."
+      ],
+      "credentials": [
+        {
+          "kind": "personal-plan-login-api-key",
+          "permissions": "Existing personal API key returned by CLI handoff, used for model requests and usage bearer. Provenance login-delivered, profile step_plan or step_plan_oversea, optional uid required for verified identity binding.",
+          "owner": "Private credential owner, not quota adapter.",
+          "userInput": "No generic client ID, Oasis-Token, refresh token, callback, endpoint or manual resource ID.",
+          "auxiliarySession": "Optional login.access_token/refresh_token/device_id/app_id is a separate secret with broader account-session behavior. Not necessary for evidenced /usage GET; do not persist by default merely because returned."
+        }
+      ],
+      "inference": {
+        "joint": "Supported by official source; external lain distribution/usage and deployment must be qualified first.",
+        "monitorOnly": "Target proposal, not existing template-independent Account Connect: Same qualified login credential, no routes. Not a monitor-only permission.",
+        "validation": "Login completion and read-only models/usage checks; no paid completion required. A manual Plan key cannot be assumed usage-qualified."
+      },
+      "monitoring": {
+        "automatic": "GET matched regional /step_plan/v1/usage with login-delivered key, only if provenance/profile qualifies.",
+        "scope": "schema_version1 personal_account with exact account.id/observed_at_ms; coding five_hour+weekly or token subscription/topup buckets.",
+        "resourceChoice": "Region is product scope; personal account identity from login and response, not a project form.",
+        "only": "Yes in source contract; production deployment remains to be established.",
+        "failure": "404 = usage unavailable for this deployment; do not assert all deployments absent.401/403 clear snapshot; preserve inference capability status independently.",
+        "freshness": "Official reference uses30s cache/5min display lifetime and reset/expiry boundary invalidation; no backend SLA assumed."
+      },
+      "maintainerPrerequisites": [
+        "Confirm provider-supported distributed lain client or sanctioned official CLI handoff. Source uses audit client metadata and no client_id, but this does not establish unrestricted third-party client permission.",
+        "Offline pinned schema1 normalization/provenance tests; then separately authorized controlled login+one usage read for CN/Global deployment.",
+        "Truthful lain name/version/platform; never impersonate stepcode.",
+        "Review concrete personal lain routing under current Plan terms; no sharing/limit evasion."
+      ],
+      "unresolved": [
+        "Schema1 backend availability/rollout per region/account.",
+        "Third-party application registration/distribution contract; no public portal verified.",
+        "Stable key-rotation/reconnect account identity when login omits uid.",
+        "Distinction between manual Plan keys and login-returned keys."
+      ],
+      "fallback": "Until own-client qualification, offer API-Key einfügen for Plan inference with quota unavailable and official Console link. An explicitly chosen official Step Code login/import path can be evaluated; never scrape browser or silently import personal session. No PAYG fallback when Plan quota ends.",
+      "codeImplications": [
+        "Decouple genuine monitor-only account/capability connections from required catalog model templates and billing plans. Optional actual route creation already exists and is not sufficient: retain later optional model selection without requiring an inference template at account creation.",
+        "Separate Step Plan and PAYG connection products while retaining one provider family; region-specific allowlists.",
+        "Host-owned init/poll operation based on official source, poll secret never in URL; strict deadline/cancel/denied handling.",
+        "Persist credential origin/profile/uid; account.CredentialKind api-key alone is insufficient to qualify Plan monitoring.",
+        "Normalize coding percentages versus token exact credit buckets separately; preserve partial/unknown and next expiry.",
+        "Avoid optional session ownership unless needed; if adopted, refresh lifecycle outside quota adapter."
+      ],
+      "sources": [
+        "https://platform.stepfun.com/docs/zh/step-plan/pricing.md",
+        "https://platform.stepfun.com/docs/zh/step-code/configuration/models.md",
+        "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/providers/src/step-provider/login-client.ts",
+        "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/providers/src/step-provider/index.ts",
+        "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/coding-agent/src/step/usage/account.ts",
+        "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/coding-agent/docs/account-usage.md",
+        "https://github.com/stepfun-ai/Step-Code/blob/81e79bc4b699148d6823fedde9b5e70d9a80255f/packages/providers/src/step-provider/login-refresh.ts"
+      ]
+    },
+    {
+      "id": "stepfun",
+      "product": "Direct PAYG / personal platform; organization Credit distinct",
+      "current": "Existing StepFunQuotaAdapter reads personal .com /v1/accounts with inference key and displays CNY balance; cumulative cash/voucher totals not limits. PAYG .ai and organization Credit reader not qualified. Current empty SelectedModelRouteIds skips actual route creation, but ProviderCatalogRegistry.cs:44–71 still derives/validates nonempty model-template and billing-plan membership, and AccountService.cs:42–81 requires a billing plan plus at least one permitted inference template. This does not support a genuine catalog/plan/template-independent monitor-only connection.",
+      "preferredFlow": {
+        "label": "StepFun API verbinden",
+        "mode": "single-api-key-regional-connection",
+        "result": "One key establishes inference connection and attempts the already supported personal balance read. No subscription tier selection.",
+        "reconnect": "Replace revoked API key using official Console, retain regional/product binding. No PAYG OAuth/refresh contract verified."
+      },
+      "userSteps": [
+        "StepFun API auswählen; bei Bedarf Region beziehungsweise vorhandene regionale Verbindung wählen.",
+        "Eigenen Plattform-API-Key einfügen.",
+        "lain verbindet, liest geeigneten Kontostand automatisch und zeigt Modelle optional. Bei Organisationskey zeigt lain organisatorischen Scope beziehungsweise ungeklärte Balance ausdrücklich."
+      ],
+      "credentials": [
+        {
+          "kind": "api-key",
+          "permissions": "Same personal API key for inference and /v1/accounts example; no dedicated read key verified. Project keys instead spend organization Credit.",
+          "userInput": "One API key; no second monitor token or fabricated project ID input."
+        }
+      ],
+      "inference": {
+        "joint": true,
+        "monitorOnly": "Target proposal, not existing template-independent Account Connect: Same personal key balance read without routes; spending-capable provider credential.",
+        "organization": "Project key needs no extra org/project header for inference; returned quota assumptions must not be borrowed from personal balance."
+      },
+      "monitoring": {
+        "automatic": "Current .com personal balance reader attaches automatically.",
+        "scope": "Personal prepaid/postpaid money account; organizational Credit/project/member monthly caps separate.",
+        "resourceChoice": "Region when needed; no supported public org-resource discovery reader verified. Do not demand project/member fields without a reader.",
+        "only": "Personal balance can work alone. Org caps remain Console until documented reader."
+      },
+      "maintainerPrerequisites": [
+        "Qualify regional .ai account contract before additional-host quota reads.",
+        "Distinguish account type and personal/org credential provenance; never label organization key result personal without evidence."
+      ],
+      "unresolved": [
+        "/accounts shape/rights for organization project keys.",
+        "Negative postpaid balance meaning.",
+        "Public organization Credit/cap reader and resource discovery.",
+        "No delegated PAYG OAuth/key-provisioning API verified."
+      ],
+      "fallback": "Keep inference connection and official balance/usage Console link when unavailable; no automatic conversion to Step Plan or organization key creation.",
+      "codeImplications": [
+        "Decouple genuine monitor-only account/capability connections from required catalog model templates and billing plans. Optional actual route creation already exists and is not sufficient: retain later optional model selection without requiring an inference template at account creation.",
+        "Reuse StepFunQuotaAdapter; add explicit product/account-type state rather than replacing adapter.",
+        "Do not force monthly plan input or infer caps from recharge totals.",
+        "Mark credential and balance validation separately; region mismatch before any forwarding.",
+        "Rotate key in logical connection; drop old snapshots on identity mismatch."
+      ],
+      "sources": [
+        "https://platform.stepfun.com/docs/zh/api-reference/accounts/get.md",
+        "https://platform.stepfun.com/docs/zh/guides/organization/api-keys.md",
+        "https://platform.stepfun.com/docs/zh/guides/organization/credits.md",
+        "https://platform.stepfun.com/docs/zh/step-code/configuration/models.md"
+      ]
+    },
+    {
+      "id": "xai",
+      "product": "Developer API team / PAYG billing",
+      "current": "Prepared inference key connection, no xAI quota adapter. Generic separate MonitorCredentialStore, QuotaMonitorCredential and same-account monitor UI contracts exist, but MonitorAccessCatalog has no xAI option and service currently requires an existing API-key account for monitor access. Current empty SelectedModelRouteIds skips actual route creation, but ProviderCatalogRegistry.cs:44–71 still derives/validates nonempty model-template and billing-plan membership, and AccountService.cs:42–81 requires a billing plan plus at least one permitted inference template. This does not support a genuine catalog/plan/template-independent monitor-only connection.",
+      "preferredFlow": {
+        "label": "xAI API verbinden",
+        "mode": "inference-api-key with optional same-account management read credential",
+        "result": "One account connects API inference. Optional „Abrechnung anzeigen“ adds separately scoped management key to same verified API team. Consumer/Grok Build OAuth cannot substitute for developer billing login.",
+        "reconnect": "Inference key and management key are independent capabilities; update only failed/revoked credential. Validate team binding again; monitoring expiry/failure must not erase valid inference. No public API-team OAuth refresh found."
+      },
+      "userSteps": [
+        "xAI API auswählen und eigenen API-Key einfügen; lain ermittelt Team/Keystatus automatisch über offiziellen GET /v1/api-key.",
+        "Optional am selben Konto „Abrechnung anzeigen“ aktivieren und passenden Management-Key einfügen; lain prüft dessen Scope/Team automatisch. Teamwahl nur bei mehreren autorisierten Ressourcen oder Organisationsscope, sofern belegte Discovery vorhanden.",
+        "lain zeigt verbundenes API-Team mit separaten Zuständen für Modelle und Abrechnung; Modelle können anschließend ausgewählt werden."
+      ],
+      "credentials": [
+        {
+          "kind": "inference-api-key",
+          "permissions": "Model/endpoint ACLs; GET /v1/api-key supplies team_id/api_key_id/status/acls. No management billing authority implied.",
+          "owner": "Private account inference credential."
+        },
+        {
+          "kind": "optional-management-key",
+          "permissions": "Provider management ACLs, preferably required billing reads only; exact minimal ACL strings unresolved. Key creation at Console requires user Management Keys Read+Write. That user permission is not a proven minimal monitoring ACL.",
+          "owner": "Separate monitor secret on same logical account, scope validated with GET /auth/management-keys/validation.",
+          "resourceBinding": "Compare inference team_id with SCOPE_TEAM/scopeId; SCOPE_ORGANIZATION requires explicit evidence of selected team authorization, no substitution organizationID→teamID."
+        }
+      ],
+      "inference": {
+        "joint": "Inference key + optional management read key under same account; no single consumer OAuth proof.",
+        "monitorOnly": "Target proposal, not existing template-independent Account Connect: Useful with management read key + verified team scope only, no inference key or models required by provider billing path. Current lain monitor service forbids this and needs capability-based account creation.",
+        "alternativeProvisioning": "Advanced optional management bootstrap: sufficiently privileged management key can create named least-scope inference key and attach read monitor. This is a separate explicit capability/write operation, not normal monitor setup, and does not require buying credits."
+      },
+      "monitoring": {
+        "automatic": "Once management access present and identity matches, read prepaid signed-cent ledger, separate current postpaid preview/limits, optionally bounded historical USD usage.",
+        "scope": "API team, not consumer seat/week pool. No fabricated overall remaining%.",
+        "resourceChoice": "Normal team key: auto-detect via validation. With inference key, /v1/api-key supplies target. Management-only SCOPE_TEAM auto-target. Organization/multiple teams: select only from provider-backed authorized resource list; if not available, optional advanced teamID input with pending verification, never claim discovered.",
+        "only": "Management-only flow has no paid inference probe.",
+        "fallbackMeasuredCost": "Without management key, exact cost_in_usd_ticks can report only lain-observed request costs, never total team remaining budget."
+      },
+      "maintainerPrerequisites": [
+        "Implement xAI monitor option/validation/reader using existing monitor-secret substrate.",
+        "New primary source check2026-10-24: GET /v1/api-key officially exposes team_id; use for automatic resource binding instead of a default team-ID form.",
+        "Qualify minimum management billing ACLs, signed ledger display and org-scope team authorization.",
+        "No public API-team delegated OAuth application registration verified; do not ship fixed Grok first-party OAuth client."
+      ],
+      "unresolved": [
+        "Exact least-privilege billing ACL strings.",
+        "Organization management-key resource-discovery/membership reader not established in inspected sources.",
+        "Signed prepaid ledger to positive spendable amount qualification.",
+        "Public delegated OAuth→API-team billing/key provision contract not found."
+      ],
+      "fallback": "Inference-only connection works immediately; show „Abrechnung noch nicht verbunden“ plus official Console. Monitor-only can use management team key after implementation. Grok Build official OAuth/CLI/ACP is a separately named product alternative; never silently reuse consumer credits for API-team billing.",
+      "codeImplications": [
+        "Decouple genuine monitor-only account/capability connections from required catalog model templates and billing plans. Optional actual route creation already exists and is not sufficient: retain later optional model selection without requiring an inference template at account creation.",
+        "Add capability-based Connect result: inference connected, monitor optional/connected/setup-required independently.",
+        "GET /v1/api-key non-inference metadata read auto-discovers team_id and key status; no user team form in normal path.",
+        "Extend monitor storage/catalog for xAI; retain general existing foundation.",
+        "Allow monitor-only logical account without prerequisite inference key; do not forge dummy api-key account.",
+        "Optional provisioner handles one-time API-key secret and team binding outside monitoring reader.",
+        "Use stable logical account identity, not hash(provider+key) as sole reconnect identity; rotation currently risks duplicates."
+      ],
+      "sources": [
+        "https://docs.x.ai/developers/management-api-guide",
+        "https://docs.x.ai/developers/rest-api-reference/management/auth",
+        "https://docs.x.ai/developers/rest-api-reference/management/billing",
+        "https://github.com/xai-org/xai-proto/blob/6499fba5e5081a25a9504c96d01dc396adf35d2b/proto/xai/management_api/v1/billing.proto",
+        "https://docs.x.ai/developers/cost-tracking",
+        "https://docs.x.ai/build/cli/reference",
+        "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-login/src/config.rs",
+        "https://github.com/xai-org/grok-build/blob/2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8/crates/codegen/xai-grok-shell/src/extensions/billing.rs",
+        "https://docs.x.ai/developers/rest-api-reference/inference/other"
+      ]
+    }
+  ],
+  "architectureEvidence": [
+    {
+      "path": "src/Lain.Host/Providers/ProviderCatalogRegistry.cs",
+      "line": 44,
+      "statement": "Connections derived from routes; nonempty template/plan arrays and exact membership required."
+    },
+    {
+      "path": "src/Lain.Host/Accounts/AccountService.cs",
+      "line": 42,
+      "statement": "Even empty actual model selection requires matching billing plan and at least one allowed model template."
+    }
+  ]
+}

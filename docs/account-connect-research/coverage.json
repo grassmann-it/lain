@@ -1,0 +1,449 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-24",
+  "baseCommit": "5dc916fcea702f2a196520903937570745e26dac",
+  "status": "architecture proposal; not implemented or live-qualified",
+  "workerCount": 6,
+  "workerModel": "gpt-6.1-sol",
+  "workerReasoning": "high",
+  "providerCount": 25,
+  "productVariantCount": 35,
+  "providers": [
+    {
+      "providerId": "alibaba-model-studio",
+      "variants": [
+        {
+          "productId": "alibaba-model-studio",
+          "product": "Alibaba Cloud Model Studio ordinary regional API / DashScope; excludes Coding Plan and independent OAuth-inference allowance",
+          "report": "alibaba-nebius-inception.md",
+          "data": "alibaba-nebius-inception.json",
+          "jsonPointer": "/providers/0"
+        },
+        {
+          "productId": "alibaba-coding-plan",
+          "product": "Alibaba Coding Plan subscription usage; separate from ordinary API and Token Plan",
+          "report": "alibaba-nebius-inception.md",
+          "data": "alibaba-nebius-inception.json",
+          "jsonPointer": "/providers/1"
+        }
+      ]
+    },
+    {
+      "providerId": "cloudflare-workers-ai",
+      "variants": [
+        {
+          "productId": "cloudflare-workers-ai",
+          "product": "Cloudflare Workers AI REST",
+          "report": "groq-mistral-google-cloudflare.md",
+          "data": "groq-mistral-google-cloudflare.json",
+          "jsonPointer": "/providers/5"
+        }
+      ]
+    },
+    {
+      "providerId": "codex",
+      "variants": [
+        {
+          "productId": "codex",
+          "product": "Codex / ChatGPT subscription reference",
+          "report": "reference-codex-commandcode.md",
+          "data": "reference-codex-commandcode.json",
+          "jsonPointer": "/providers/0"
+        }
+      ]
+    },
+    {
+      "providerId": "cohere",
+      "variants": [
+        {
+          "productId": "cohere-evaluation",
+          "product": "Cohere Evaluation",
+          "report": "samba-upstage-cohere.md",
+          "data": "samba-upstage-cohere.json",
+          "jsonPointer": "/providers/2"
+        },
+        {
+          "productId": "cohere-production",
+          "product": "Cohere Production",
+          "report": "samba-upstage-cohere.md",
+          "data": "samba-upstage-cohere.json",
+          "jsonPointer": "/providers/3"
+        }
+      ]
+    },
+    {
+      "providerId": "commandcode",
+      "variants": [
+        {
+          "productId": "commandcode",
+          "product": "Command Code CLI bootstrap + Provider API reference",
+          "report": "reference-codex-commandcode.md",
+          "data": "reference-codex-commandcode.json",
+          "jsonPointer": "/providers/1"
+        }
+      ]
+    },
+    {
+      "providerId": "fireworks",
+      "variants": [
+        {
+          "productId": "fireworks-serverless",
+          "product": "Fireworks Serverless API (not Fire Pass)",
+          "report": "mimo-nvidia-fireworks.md",
+          "data": "mimo-nvidia-fireworks.json",
+          "jsonPointer": "/providers/4"
+        }
+      ]
+    },
+    {
+      "providerId": "gemini-api",
+      "variants": [
+        {
+          "productId": "gemini-api",
+          "product": "Gemini Developer API",
+          "report": "groq-mistral-google-cloudflare.md",
+          "data": "groq-mistral-google-cloudflare.json",
+          "jsonPointer": "/providers/4"
+        }
+      ]
+    },
+    {
+      "providerId": "groq",
+      "variants": [
+        {
+          "productId": "groq-api",
+          "product": "GroqCloud direct API",
+          "report": "groq-mistral-google-cloudflare.md",
+          "data": "groq-mistral-google-cloudflare.json",
+          "jsonPointer": "/providers/0"
+        }
+      ]
+    },
+    {
+      "providerId": "inception",
+      "variants": [
+        {
+          "productId": "inception",
+          "product": "Inception Mercury API",
+          "report": "alibaba-nebius-inception.md",
+          "data": "alibaba-nebius-inception.json",
+          "jsonPointer": "/providers/3"
+        }
+      ]
+    },
+    {
+      "providerId": "kilo",
+      "variants": [
+        {
+          "productId": "kilo",
+          "product": "Kilo Gateway (Wallet und optional persönlicher Pass)",
+          "report": "kilo-opencode-requesty-openrouter.md",
+          "data": "kilo-opencode-requesty-openrouter.json",
+          "jsonPointer": "/providers/0"
+        }
+      ]
+    },
+    {
+      "providerId": "kimi",
+      "variants": [
+        {
+          "productId": "kimi",
+          "product": "Kimi Code / Kimi Coding; Moonshot Open Platform remains separate",
+          "report": "reference-kimi-zai.md",
+          "data": "reference-kimi-zai.json",
+          "jsonPointer": "/providers/0"
+        }
+      ]
+    },
+    {
+      "providerId": "mistral",
+      "variants": [
+        {
+          "productId": "mistral-api",
+          "product": "Mistral Studio/API",
+          "report": "groq-mistral-google-cloudflare.md",
+          "data": "groq-mistral-google-cloudflare.json",
+          "jsonPointer": "/providers/1"
+        },
+        {
+          "productId": "mistral-vibe",
+          "product": "Mistral Vibe Code browser credential bootstrap",
+          "report": "groq-mistral-google-cloudflare.md",
+          "data": "groq-mistral-google-cloudflare.json",
+          "jsonPointer": "/providers/2"
+        },
+        {
+          "productId": "mistral-enterprise-admin",
+          "product": "Mistral Enterprise Admin reporting",
+          "report": "groq-mistral-google-cloudflare.md",
+          "data": "groq-mistral-google-cloudflare.json",
+          "jsonPointer": "/providers/3"
+        }
+      ]
+    },
+    {
+      "providerId": "nebius",
+      "variants": [
+        {
+          "productId": "nebius",
+          "product": "Nebius Token Factory public/serverless inference; Dedicated and GPU Cloud are separate scopes",
+          "report": "alibaba-nebius-inception.md",
+          "data": "alibaba-nebius-inception.json",
+          "jsonPointer": "/providers/2"
+        }
+      ]
+    },
+    {
+      "providerId": "nvidia-build",
+      "variants": [
+        {
+          "productId": "nvidia-build",
+          "product": "NVIDIA Build hosted Public API Endpoints",
+          "report": "mimo-nvidia-fireworks.md",
+          "data": "mimo-nvidia-fireworks.json",
+          "jsonPointer": "/providers/3"
+        }
+      ]
+    },
+    {
+      "providerId": "opencode-go",
+      "variants": [
+        {
+          "productId": "opencode-go",
+          "product": "OpenCode Go",
+          "report": "kilo-opencode-requesty-openrouter.md",
+          "data": "kilo-opencode-requesty-openrouter.json",
+          "jsonPointer": "/providers/1"
+        },
+        {
+          "productId": "opencode-go-plus",
+          "product": "OpenCode Go Plus",
+          "report": "kilo-opencode-requesty-openrouter.md",
+          "data": "kilo-opencode-requesty-openrouter.json",
+          "jsonPointer": "/providers/2"
+        },
+        {
+          "productId": "opencode-zen",
+          "product": "OpenCode Zen / aktuelle Console PAYG",
+          "report": "kilo-opencode-requesty-openrouter.md",
+          "data": "kilo-opencode-requesty-openrouter.json",
+          "jsonPointer": "/providers/3"
+        }
+      ]
+    },
+    {
+      "providerId": "openrouter",
+      "variants": [
+        {
+          "productId": "openrouter",
+          "product": "OpenRouter API + Keylimits, optional Accountcredits",
+          "report": "kilo-opencode-requesty-openrouter.md",
+          "data": "kilo-opencode-requesty-openrouter.json",
+          "jsonPointer": "/providers/5"
+        }
+      ]
+    },
+    {
+      "providerId": "poe",
+      "variants": [
+        {
+          "productId": "poe",
+          "product": "User points / subscription + add-ons",
+          "report": "xai-stepfun-poe-synthetic.md",
+          "data": "xai-stepfun-poe-synthetic.json",
+          "jsonPointer": "/providers/0"
+        }
+      ]
+    },
+    {
+      "providerId": "requesty",
+      "variants": [
+        {
+          "productId": "requesty",
+          "product": "Requesty Gateway + Selfmonitor, optional Organisationsmonitor",
+          "report": "kilo-opencode-requesty-openrouter.md",
+          "data": "kilo-opencode-requesty-openrouter.json",
+          "jsonPointer": "/providers/4"
+        }
+      ]
+    },
+    {
+      "providerId": "sambanova",
+      "variants": [
+        {
+          "productId": "sambanova",
+          "product": "SambaCloud Free and Developer, not SambaStudio/SambaStack",
+          "report": "samba-upstage-cohere.md",
+          "data": "samba-upstage-cohere.json",
+          "jsonPointer": "/providers/0"
+        }
+      ]
+    },
+    {
+      "providerId": "stepfun",
+      "variants": [
+        {
+          "productId": "stepfun",
+          "product": "Personal Step Plan CN / Global",
+          "report": "xai-stepfun-poe-synthetic.md",
+          "data": "xai-stepfun-poe-synthetic.json",
+          "jsonPointer": "/providers/3"
+        },
+        {
+          "productId": "stepfun",
+          "product": "Direct PAYG / personal platform; organization Credit distinct",
+          "report": "xai-stepfun-poe-synthetic.md",
+          "data": "xai-stepfun-poe-synthetic.json",
+          "jsonPointer": "/providers/4"
+        }
+      ]
+    },
+    {
+      "providerId": "synthetic",
+      "variants": [
+        {
+          "productId": "synthetic",
+          "product": "Subscription / weekly regenerating credits",
+          "report": "xai-stepfun-poe-synthetic.md",
+          "data": "xai-stepfun-poe-synthetic.json",
+          "jsonPointer": "/providers/1"
+        },
+        {
+          "productId": "synthetic",
+          "product": "Usage-priced API / extra usage",
+          "report": "xai-stepfun-poe-synthetic.md",
+          "data": "xai-stepfun-poe-synthetic.json",
+          "jsonPointer": "/providers/2"
+        }
+      ]
+    },
+    {
+      "providerId": "upstage",
+      "variants": [
+        {
+          "productId": "upstage",
+          "product": "Upstage direct Solar API; signup credit, prepaid and PAYG separate, Studio subscription excluded",
+          "report": "samba-upstage-cohere.md",
+          "data": "samba-upstage-cohere.json",
+          "jsonPointer": "/providers/1"
+        }
+      ]
+    },
+    {
+      "providerId": "xai",
+      "variants": [
+        {
+          "productId": "xai",
+          "product": "Developer API team / PAYG billing",
+          "report": "xai-stepfun-poe-synthetic.md",
+          "data": "xai-stepfun-poe-synthetic.json",
+          "jsonPointer": "/providers/5"
+        }
+      ]
+    },
+    {
+      "providerId": "xiaomi-mimo",
+      "variants": [
+        {
+          "productId": "xiaomi-mimo-individual-token-plan",
+          "product": "MiMo Individual Token Plan",
+          "report": "mimo-nvidia-fireworks.md",
+          "data": "mimo-nvidia-fireworks.json",
+          "jsonPointer": "/providers/0"
+        },
+        {
+          "productId": "xiaomi-mimo-team-token-plan",
+          "product": "MiMo Team Token Plan",
+          "report": "mimo-nvidia-fireworks.md",
+          "data": "mimo-nvidia-fireworks.json",
+          "jsonPointer": "/providers/1"
+        },
+        {
+          "productId": "xiaomi-mimo-payg",
+          "product": "MiMo PAYG",
+          "report": "mimo-nvidia-fireworks.md",
+          "data": "mimo-nvidia-fireworks.json",
+          "jsonPointer": "/providers/2"
+        }
+      ]
+    },
+    {
+      "providerId": "zai",
+      "variants": [
+        {
+          "productId": "zai",
+          "product": "International Z.ai GLM Coding Plan (personal/team separated); standard API and CN BigModel are distinct",
+          "report": "reference-kimi-zai.md",
+          "data": "reference-kimi-zai.json",
+          "jsonPointer": "/providers/1"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "mimo-nvidia-fireworks.md",
+      "sha256": "c3af39c824300178aef2bf61857877f1fd676ae8ede707e32a97049380a606a9"
+    },
+    {
+      "path": "mimo-nvidia-fireworks.json",
+      "sha256": "3036d055043607dffdde53a3f2d2ebe2250c6718b97fa19f5482693b23117d81"
+    },
+    {
+      "path": "groq-mistral-google-cloudflare.md",
+      "sha256": "b1cccd8cbdcf1fa742525826daba171d2a4a4a5a8f045482b7e1112aff6f6305"
+    },
+    {
+      "path": "groq-mistral-google-cloudflare.json",
+      "sha256": "2f6b941cf2f6b1b5d53e65b54cf6333d5d39a32627ceb4ffbe9c21c9108341d1"
+    },
+    {
+      "path": "samba-upstage-cohere.md",
+      "sha256": "f7feb46768c1e40896cd205534cbbd9d8dc3060b4a2ca36b12fdbed83921463d"
+    },
+    {
+      "path": "samba-upstage-cohere.json",
+      "sha256": "20152a584ddd468517decabe12559c22a1524aac53921486798fe53e0d55222a"
+    },
+    {
+      "path": "kilo-opencode-requesty-openrouter.md",
+      "sha256": "fbf2ac9cd8c99b8cad067c7c0a77be6597ab0dd1d93e28295cadb6d92793b2a4"
+    },
+    {
+      "path": "kilo-opencode-requesty-openrouter.json",
+      "sha256": "e681c6cb93fd9f03a1cfde85b8270f9195b885bb43a7cff8289481bceef11197"
+    },
+    {
+      "path": "alibaba-nebius-inception.md",
+      "sha256": "dc3b2615f872078b2c12d7192957b3203a3c6227fedc49a85ecf44a9b58de10c"
+    },
+    {
+      "path": "alibaba-nebius-inception.json",
+      "sha256": "c60fe8ef49779b357d7743161ec13139a47ad12831afda4200459c542448e4b6"
+    },
+    {
+      "path": "xai-stepfun-poe-synthetic.md",
+      "sha256": "d2d31d9f37c524665981ea80e2bacab285ebbd7d8262a1b50e22e1ef230d2c66"
+    },
+    {
+      "path": "xai-stepfun-poe-synthetic.json",
+      "sha256": "21d9afb026a3a856f62c2136d8351a6f0539a018ed0c77b5fbb54ebaf7ce9c47"
+    },
+    {
+      "path": "reference-codex-commandcode.md",
+      "sha256": "0240fb8709a718a8a6ea5c9b23a618c9d1da73bfa726ae21ea312f06690dcaf6"
+    },
+    {
+      "path": "reference-codex-commandcode.json",
+      "sha256": "57f37ab545d865009772009637f5d70d1c417fe556482e39a48bbfa5713bd5a8"
+    },
+    {
+      "path": "reference-kimi-zai.md",
+      "sha256": "b9a58f434e9e21d181049ca5a6e8ade2ccad0326e532c087671e5ad81bf8c636"
+    },
+    {
+      "path": "reference-kimi-zai.json",
+      "sha256": "c6adc9d69afc5b54602526239fdbe5ead61616959c96a7e8c78387f193bfe22a"
+    }
+  ]
+}

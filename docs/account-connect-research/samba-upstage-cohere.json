@@ -1,0 +1,971 @@
+{
+  "checkedAt": "2026-10-24",
+  "sourceCommit": "5dc916f",
+  "status": "architecture_proposal_not_implemented",
+  "scope": "Account Connect, continuing previous finished research; no accounts/logins/provider account APIs/Secrets/runtime",
+  "oldReportsSha256": {
+    "samba-upstage-cohere.md": "b2a243f6a25c0c8f26606542a1b50d0f7ffc9a4b19fdbf91889329297b82c7a1",
+    "samba-upstage-cohere.json": "782d56504f9abaeb29a22ac7749b5c8fd0ab2b8e7f0aeec7b2e783825b6f3820"
+  },
+  "providers": [
+    {
+      "id": "sambanova",
+      "product": "SambaCloud Free and Developer, not SambaStudio/SambaStack",
+      "current": {
+        "sourceCommit": "5dc916f",
+        "gateway": "Installed per assignment, API-key openai-chat",
+        "inference": "Private key form",
+        "monitoring": "Console fallback; no Samba quota adapter",
+        "identity": "Account derived from API key; monitor-only login cannot be represented as ordinary account yet"
+      },
+      "preferredFlow": {
+        "visibleAction": "SambaNova verbinden",
+        "mechanism": "personal-browser-session-plus-key-bootstrap candidate",
+        "status": "Concrete First-Party client request/response; session, CSRF and third-party distribution not qualified",
+        "purposeOptions": [
+          "Modelle und Nutzung",
+          "Nur Nutzung"
+        ],
+        "preConnectDisclosure": "Verbindet dein Konto für Modelle und Nutzung. Dabei wird ein persönlicher lain-API-Key eingerichtet.",
+        "oneVisibleConnect": true,
+        "oneCredential": false,
+        "automaticKeyCreation": "Only in consciously chosen models-and-usage; reuse existing local matching key. New raw-key response is evidenced, but public delegated-login contract absent."
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Choose models-and-usage or monitor-only; start Connect with key consequence disclosed when applicable"
+        },
+        {
+          "step": 2,
+          "action": "Sign in within qualified Connector browser/session, confirm intended Cloud user; show Org picker only when actual eligible memberships/switch contract are established"
+        },
+        {
+          "step": 3,
+          "action": "Bind /api/auth:me user. For model purpose only, reuse local key or create one named lain key and store apiKey directly"
+        },
+        {
+          "step": 4,
+          "action": "Read usage/credits; show separate model-configured and monitoring-read results, account name and data timestamp"
+        }
+      ],
+      "credentials": [
+        {
+          "kind": "browser-session-reference",
+          "purpose": "Auth and Console read operations",
+          "storage": "Owned protected browser/sessionconnector store; no manual cookie export",
+          "lifetime": "Session/renewal unqualified"
+        },
+        {
+          "kind": "api-key",
+          "purpose": "Inference",
+          "storage": "Private SecretStore directly from apiKey response, never clipboard",
+          "binding": "Cloud user, provider connection, key metadata if available",
+          "lifetime": "Optional expiresAt; server semantics qualify separately"
+        }
+      ],
+      "inference": {
+        "transport": "https://api.sambanova.ai/v1, existing openai-chat",
+        "keyBootstrap": {
+          "status": "client_request_and_response_evidenced_not_public_api",
+          "operation": "POST https://cloud.sambanova.ai/api/keys",
+          "requestFields": [
+            "userName",
+            "apiKeyName",
+            "expiresAt optional"
+          ],
+          "responseFields": [
+            "apiKey",
+            "apiKeyInfo.name"
+          ],
+          "policy": "Only models-and-usage Connect; never monitor-only/refresh; do not rotate or modify plan"
+        },
+        "entitlement": "Connect does not verify inference or free/paid entitlement",
+        "productSafety": "Free/Developer remain distinct; no payment method, upgrade or paid fallback"
+      },
+      "monitoring": {
+        "access": "Console session, with passive inference RPM/RPD only if model requests occur",
+        "readerOperations": [
+          "GET /api/auth:me",
+          "GET /api/usage?user_name=&start_date=&end_date=",
+          "GET /api/credits?user_name=",
+          "GET /resources/credits/balance"
+        ],
+        "nativeData": "Historical input/output tokens and separate price fields; credits amount/readAt, grant expiry; passive request minute/day windows, not TPD remaining",
+        "monitorOnly": "No key listing/create/reveal/rotate",
+        "freshness": "Preserve readAt and fetchedAt, unknown settlement; do not treat session login as successful data read"
+      },
+      "maintainerPrerequisites": [
+        "Qualify own third-party client/sessionconnector use and distribution rather than reusing official CLI/IdP client identity",
+        "Keep auth lifecycle, inference key and read-only monitor projection separate; no refresh secrets in quota adapter",
+        "Define explicit operation whitelist and stable account/org binding",
+        "Browser/provider/session restrictions must be respected; normal external browser login cannot magically return session cookies to lain",
+        "Persist partial outcomes and key-creation journal; no automatic create retry after ambiguous response",
+        "Implement personal authorized browser context or qualified bridge; standard system browser has no proven callback delivering Cloud session",
+        "Complete session/CSRF and key response/metadata validation; up to 25 keys/user and one-time reveal make recovery important",
+        "Validate amount currency and credit settlement lag"
+      ],
+      "unresolved": [
+        "Supported browser login/IdP handoff without cookie copying",
+        "Public delegated OAuth/device/CLI registration not found in opened sources",
+        "Cloud Org selection/switch API not established; current user scope only",
+        "Create response key identity/recovery beyond apiKeyInfo.name",
+        "Third-party read-only credential or limited monitor IAM unknown",
+        "Session refresh/logout and connector distribution contract"
+      ],
+      "fallback": {
+        "inference": "Existing API-key private input with official key page",
+        "monitoring": "Passive RPM/RPD via ordinary inference; Console/manual credits until reader qualified",
+        "partialFailure": "Retain successful monitor-only connection when key setup fails, and retain existing inference key when monitor login expires"
+      },
+      "codeImplications": [
+        "Add Connect coordinator with purpose models-and-usage versus monitor-only and independent capability outcomes",
+        "AccountService.AddApi currently requires API key and derives account ID from it; introduce stable provider account capable of monitor-only without dummy key",
+        "MonitorAccessService currently attaches to existing API-key account; allow independently connected monitor access through appropriate account model",
+        "Preserve local existing key on auth reconnect; monitor refresh cannot create, reveal or rotate inference keys",
+        "Expose configured versus provider-read-verified versus inference-tested states separately; no automatic paid probe",
+        "Use local pending-operation journal for external key create followed by local save; preserve eventual remote key uncertainty",
+        "Reconnect/Disconnect actions should distinguish local credential deletion from explicit qualified remote revocation",
+        "Add Samba passive header adapter independently of browser connector",
+        "Use same-origin operation bridge rather than copying cookies into QuotaCredential",
+        "Handle ambiguous key-creation completion without duplicate create"
+      ],
+      "sources": [
+        {
+          "url": "https://docs.sambanova.ai/docs/en/models/rate-limits",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Six per-response RPM/RPD headers; Free without payment method and Developer with payment method. Llama 3.3 70B Free: 20 RPM, 20 RPD, 200000 TPD; Developer: 240 RPM, 48000 RPD, plus 20M tokens/day across models. Reset is time until reset; format/unit not specified.",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/get-started/api-keys-urls",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Cloud key generation in portal; up to 25 keys/user, new keys visible only once. SambaStack uses separate local credentials.",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json",
+          "kind": "official_openapi",
+          "openedAt": "2026-10-24",
+          "claim": "Inference/model paths and Bearer API key; no account billing or quota reader among the inspected paths.",
+          "sha256": "4e97ad109859609087738956d5ae04efd02246683bd6348f30c2b3a2d4874921",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://raw.githubusercontent.com/sambanova/sambanova-python/main/src/sambanova/_client.py",
+          "kind": "official_sdk",
+          "openedAt": "2026-10-24",
+          "claim": "SDK uses API key authentication; inspected client does not establish a browser/device OAuth login.",
+          "sha256": "1dc412f6d781954b008a7c476cd4286271953c0712739cf67612e6b94b61ffcf",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/35360-10acd791f887f198.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "Same-origin GET /api/usage?user_name=&start_date=&end_date= with optional model_id and api_key_hash; /api/credits?user_name= and /api/auth:me. No account request made.",
+          "sha256": "8e333b9cfaef6eafd3768e982b1cdd6feacd82beab3541e83f0721f65de645dc",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/app/plans/usage/page-e51f0f756261f20d.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "UTC month selection and model_wise_usage with input_token, output_token and separate pricing fields.",
+          "sha256": "d005e347661057c416d091e908d98c700521bd0a2dc6ce8dac5f8337edf76d05",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/59468-13418f0de96abfb8.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "GET /resources/credits/balance has amount and readAt; UI settling notice, 300s client cache and 5s refresh cooldown are not backend freshness guarantees.",
+          "sha256": "289beb62a47680b10fa2c186c958b1ed5b51273753f76ab5cb61e73686d0c0c8",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/app/plans/billing/page-99d49997704cb773.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "credits[] consumed with credit_value, balance_credit_value, end_date, credit_type; client divides credit values by 100.",
+          "sha256": "4322745a54b3a2f1fbab09ecf37a30aad343c4a8060219a46078a52d4c0235ce",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/app/layout-df257fd00f1eac70.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "POST /api/keys accepts userName, apiKeyName, optional expiresAt; response/session contract not qualified and operation not called.",
+          "sha256": "07f77076ff18932cf5d0bdc08bdfa8430f4457589c9d70257a6a85d057b828dc",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/app/apis/page-26d3c835cd944ec2.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "sha256": "3f3415e04fcedd822663980cc689f2aa91f3c3f04def9908d87661dfefb03c02",
+          "claim": "Create UI submits userName, apiKeyName, optional expiresAt; response apiKey and apiKeyInfo.name are passed to success callback. Supplies prior missing raw-key response evidence; no account call made.",
+          "newOrTargetedCheck": true
+        }
+      ]
+    },
+    {
+      "id": "upstage",
+      "product": "Upstage direct Solar API; signup credit, prepaid and PAYG separate, Studio subscription excluded",
+      "current": {
+        "sourceCommit": "5dc916f",
+        "gateway": "Installed per assignment, API-key openai-chat",
+        "inference": "Private key input",
+        "monitoring": "Console fallback; no direct adapter",
+        "identity": "API-key-based account; no independent monitor-first Connect"
+      },
+      "preferredFlow": {
+        "visibleAction": "Upstage verbinden",
+        "mechanism": "personal Console browser session, Org choice and key bootstrap candidate",
+        "status": "BFF plus exact key create/reveal client implementations evidenced; own browser/session/distribution qualifications still needed",
+        "purposeOptions": [
+          "Modelle und Nutzung",
+          "Nur Nutzung"
+        ],
+        "preConnectDisclosure": "Verbindet die gewählte Organisation für Modelle und Nutzung und richtet dafür einen persönlichen lain-API-Key ein.",
+        "oneVisibleConnect": true,
+        "oneCredential": false,
+        "automaticKeyCreation": "Concrete request/response allows design of named key creation in deliberate models-and-usage Connect; not in monitor-only"
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Start direct API Connect with purpose and key consequence clear"
+        },
+        {
+          "step": 2,
+          "action": "Login in qualified Connector session; choose existing Org only when multiple, otherwise confirm name"
+        },
+        {
+          "step": 3,
+          "action": "Bind Org/user/role; reuse matching local key or deliberately create one named lain key. No default newest/foreign key reveal"
+        },
+        {
+          "step": 4,
+          "action": "Read Org spend/credits/limits and role-covered usage; show Org name, coverage and independent capability results"
+        }
+      ],
+      "credentials": [
+        {
+          "kind": "console-session-reference",
+          "purpose": "Org metadata and read-only monitoring through same-origin BFF",
+          "storage": "Protected owned Connector browser context/bridge",
+          "binding": [
+            "user ID",
+            "Org ID",
+            "role"
+          ],
+          "lifetime": "Session/CSRF renewal unqualified"
+        },
+        {
+          "kind": "api-key",
+          "purpose": "Inference",
+          "storage": "Private SecretStore from key response",
+          "binding": [
+            "Org ID",
+            "key ID",
+            "local account ID"
+          ],
+          "lifetime": "No lifetime invented"
+        }
+      ],
+      "inference": {
+        "transport": "https://api.upstage.ai/v1, openai-chat",
+        "keyBootstrap": {
+          "status": "exact_first_party_client_candidate",
+          "operation": "POST /api/console/v3/organizations/{organizationId}/api-keys",
+          "requestFields": [
+            "name",
+            "note"
+          ],
+          "responseFields": [
+            "key",
+            "api_key.key_id"
+          ],
+          "optionalExistingKeyImport": "Explicit user-selected GET /api/console/v3/organizations/{organizationId}/api-keys/{keyId}/reveal returns key. Do not auto-reveal arbitrary existing keys.",
+          "monitorOnly": "Neither create nor reveal"
+        },
+        "entitlement": "No inference automatically executed; Org prices/limits/credit do not prove model entitlement",
+        "productSafety": "No Studio subscription transfer, payment registration, credit buy, budget or auto-recharge mutation"
+      },
+      "monitoring": {
+        "access": "Authenticated same-origin BFF /api/console/v3, credentials same-origin and x-console-request: 1; not Solar Bearer key",
+        "readerOperations": [
+          "GET /organizations",
+          "GET /organizations/{organizationId}/members/me",
+          "GET /organizations/{organizationId}/spend",
+          "GET /organizations/{organizationId}/promotions",
+          "GET /organizations/{organizationId}/usage-limit",
+          "GET /organizations/{organizationId}/rate-limit",
+          "GET /organizations/{organizationId}/usage"
+        ],
+        "coverage": "Member: Org balance/spend/limit reads, per-key usage own keys; Owner all keys. No monitor-only IAM established.",
+        "nativeData": "Separate money balance, paid/free/expiry coupons, MTD spend, UTC monthly budget, tier and historical token/unit usage; paginate",
+        "freshness": "Provider booking time not implied by fetch or session login; preserve missing as-of"
+      },
+      "maintainerPrerequisites": [
+        "Qualify own third-party client/sessionconnector use and distribution rather than reusing official CLI/IdP client identity",
+        "Keep auth lifecycle, inference key and read-only monitor projection separate; no refresh secrets in quota adapter",
+        "Define explicit operation whitelist and stable account/org binding",
+        "Browser/provider/session restrictions must be respected; normal external browser login cannot magically return session cookies to lain",
+        "Persist partial outcomes and key-creation journal; no automatic create retry after ambiguous response",
+        "Implement own supported login session/BFF transport, cookies/CSRF and reconnect; do not expose IdP/Cognito fields to users",
+        "Confirm BFF session restrictions and deployment support for authorized personal connector",
+        "Bind API-key Org to monitor Org, handle read-only membership coverage and partial success",
+        "Avoid UI zero defaults when money parsing/fields unknown"
+      ],
+      "unresolved": [
+        "Qualifiable browser bridge with permitted IdP handoff and callback/session ownership",
+        "Session expiry/refresh and CSRF boundary",
+        "Third-party client distribution conditions; no public delegated OAuth registration found",
+        "Create idempotency and recovery after partial local save",
+        "Runtime key rights, live coverage and settlement delays not tested"
+      ],
+      "fallback": {
+        "inference": "Existing private API key field",
+        "monitoring": "Console view or manually imported UTC/paginated/CSV data preserving interval; CSV not live credit",
+        "partialFailure": "Monitor-only connection can survive failed key setup; expired session does not destroy existing inference key"
+      },
+      "codeImplications": [
+        "Add Connect coordinator with purpose models-and-usage versus monitor-only and independent capability outcomes",
+        "AccountService.AddApi currently requires API key and derives account ID from it; introduce stable provider account capable of monitor-only without dummy key",
+        "MonitorAccessService currently attaches to existing API-key account; allow independently connected monitor access through appropriate account model",
+        "Preserve local existing key on auth reconnect; monitor refresh cannot create, reveal or rotate inference keys",
+        "Expose configured versus provider-read-verified versus inference-tested states separately; no automatic paid probe",
+        "Use local pending-operation journal for external key create followed by local save; preserve eventual remote key uncertainty",
+        "Reconnect/Disconnect actions should distinguish local credential deletion from explicit qualified remote revocation",
+        "Add Org-aware session reader and decimal/Coupon normalization",
+        "Separate monitor-only read allowlist from models-only create/reveal allowlist",
+        "Show Org credit coverage separately from own-key usage coverage"
+      ],
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/llms.txt",
+          "kind": "official_documentation_index",
+          "openedAt": "2026-10-24",
+          "claim": "Inspected index contains inference/agent/storage APIs and rate guides; no documented general billing/quota API or OAuth/device login entry.",
+          "sha256": "87471b55a2fb350d4bbcf88e3cda1e16858313994a6c4998f9c06ba834253626",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Request usage contains prompt_tokens, completion_tokens, total_tokens and completion_tokens_details.reasoning_tokens.",
+          "sha256": "14c8176001662e1600c152706a337902c190a23a440daeca369e0fc484c84275",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://console.upstage.ai/docs/guides/rate-limits.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "RPM/TPM/RPS/PPM differentiated by capability and commitment/legacy tier. Solar Mini 4 Tier 0: 100 RPM and 50000 TPM, published limits rather than observed remaining.",
+          "sha256": "5085f057dde53da0346a626f20f7685e88c251e564ea8b8d8dbca6a163c2347f",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://console.upstage.ai/docs/getting-started",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Advertises $10 signup credit, paid PAYG and prepaid; does not establish individual credit grant or expiry.",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://console.upstage.ai/docs/resources/faq.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Organization owns keys, billing and limits. Member can read Org balance/spend/limits but per-key usage only own keys; Owner all keys. Usage UTC filters up to 92 days/CSV. Monthly budget UTC with up to 1s enforcement delay; exhausted credit can charge payment method.",
+          "sha256": "a0a0acb3637ea118c82621b0c8ab34d9ee09ca2fbc359eddd5540808a57ed64b",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://console.upstage.ai/_next/static/chunks/7157-768d821a4d850f5c.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "Same-origin /api/console/v3 BFF, credentials same-origin, x-console-request: 1. Org GET spend, promotions, usage-limit, rate-limit, usage/export. Spend month_to_date/period; money amount_decimal.value*10**exp; promotions credit_balance/total_credit/credit_coupons with paid/expiry. Org API key create/reveal path constants also exist. No private endpoint requested.",
+          "sha256": "8e8f3d0975885d27dfde5d5d5c489b8e4f7a04c94ea73ee7df1f682f97428ae0",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://raw.githubusercontent.com/UpstageAI/cookbook/main/README.md",
+          "kind": "official_sdk_examples",
+          "openedAt": "2026-10-24",
+          "claim": "Official cookbook is an integration/example source; it does not establish a general third-party OAuth login or billing-reader contract.",
+          "sha256": "419b205d556c60c3fc00e46cbf9c54c968e98df8eb2699a1ec892983669f155b",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://console.upstage.ai/_next/static/chunks/850-7e74bc122f3ff630.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "sha256": "7b00f28c4b753fa014b69f384986bf34328a3004bcdae3677e8e2292387b54da",
+          "claim": "POST Organization /api-keys with name/note returns key and api_key.key_id; GET /reveal returns key. Actual create/reveal implementations, not just path constants.",
+          "newOrTargetedCheck": true
+        }
+      ]
+    },
+    {
+      "id": "cohere-evaluation",
+      "product": "Cohere Evaluation",
+      "current": {
+        "sourceCommit": "5dc916f",
+        "providerId": "cohere",
+        "gateway": "Installed per assignment, command-a-plus-05-2026 on OpenAI compatibility endpoint",
+        "inference": "Own private API key; current catalog plan evaluation",
+        "monitoring": "Console fallback, no reader",
+        "productState": "Do not equate EVALUATION with legacy TRIAL or approved Production"
+      },
+      "preferredFlow": {
+        "visibleAction": "Cohere Evaluation verbinden",
+        "mechanism": "Qualify proprietary CLI Begin/Confirm/Check browser pairing first; personal Dashboard sessionconnector alternative",
+        "status": "Pairing and key/read stubs evidenced; pairing-token rights for these actions unqualified",
+        "purposeOptions": [
+          "Modelle und Nutzung",
+          "Nur Nutzung"
+        ],
+        "preConnectDisclosure": "Verbindet Cohere Evaluation und übernimmt den von dir gewählten vorhandenen Evaluationkey privat.",
+        "oneVisibleConnect": true,
+        "oneCredential": false,
+        "automaticKeyCreation": "No new EVALUATION creation inferred. Existing matching local key or consciously selected existing EVALUATION reveal only."
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Choose Evaluation and models-and-usage or monitor-only; disclose key reveal/create consequence when applicable"
+        },
+        {
+          "step": 2,
+          "action": "After pairing contract qualification, host Begin, open returned browserURL, user login/Allow, poll Check under same local attempt. Do not invent polling timings."
+        },
+        {
+          "step": 3,
+          "action": "Confirm actual existing session Org; use a selector only for qualified membership switch contract, no JoinVerifiedOrg/onboarding."
+        },
+        {
+          "step": 4,
+          "action": "Reuse local matching Evaluation key; otherwise user selects existing EVALUATION metadata and qualified reader returns rawKey privately. If missing, leave models incomplete."
+        },
+        {
+          "step": 5,
+          "action": "Use qualified user/monitor access for Usage/Billing reads. Show account/product and independent results; do not probe inference automatically."
+        }
+      ],
+      "credentials": [
+        {
+          "kind": "pairing-attempt-secret",
+          "purpose": "Bind Begin, provider browser consent and Check",
+          "storage": "Ephemeral host attempt only; not user copy input",
+          "lifetime": "Provider interval/expiry unknown; contract qualification required"
+        },
+        {
+          "kind": "user-token or Dashboard-session-reference",
+          "purpose": "Monitor RPCs and optional bootstrap operations after rights qualification",
+          "storage": "Protected auth owner/sessionconnector; bounded access projection to readers",
+          "binding": "Actual user/Org, product and capability; rights unknown until proved",
+          "lifetime": "Refresh/expiry/revoke contract unknown"
+        },
+        {
+          "kind": "Cohere Evaluation API key",
+          "purpose": "Inference",
+          "storage": "Private SecretStore from matching key reveal or create response; no clipboard",
+          "binding": "Key type, Org ID, key ID/metadata, source connector",
+          "lifetime": "Metadata if present, never fabricated"
+        }
+      ],
+      "inference": {
+        "transport": "https://api.cohere.ai/compatibility/v1",
+        "pairingTokenDirectInference": "Unproven; do not treat user token as API key",
+        "keyBootstrap": {
+          "operation": "ViewRawAPIKey with explicitly selected existing EVALUATION key",
+          "response": "rawKey",
+          "base": "https://production.api.os.cohere.com/rpc/BlobheartAPI/",
+          "status": "Client implementation exists, actual Pairing token authorization not tested",
+          "constraints": "Evaluation creation UI onCreate empty; generic TRIAL Create not substituted"
+        },
+        "entitlement": "1000 calls/month and A+ 20 RPM published; current remaining unknown"
+      },
+      "monitoring": {
+        "access": "Qualified user bearer/session, with CLI token authorization unresolved",
+        "readerOperations": [
+          "GetAPIUsage",
+          "GetAPIUsageV2",
+          "GetBillingActivity",
+          "GetBillingHistory"
+        ],
+        "transport": "POST RPC may be read-only semantically; explicit operation allowlist required",
+        "monitorOnlyExcludes": [
+          "CreateAPIKey",
+          "ViewRawAPIKey",
+          "GetOrCreateDefaultAPIKey",
+          "JoinVerifiedOrg",
+          "setOrgAPIKeysKeyType",
+          "payment or Go Live methods"
+        ],
+        "nativeData": "Calls/month reference, historical usage, raw/billed input/output tokens, budget and Credits only where supplied; datasets/usage is bytes not call quota",
+        "coverage": "Owner/User rights differ; provider-wide trial remainder and freshness unproved"
+      },
+      "maintainerPrerequisites": [
+        "Qualify own third-party client/sessionconnector use and distribution rather than reusing official CLI/IdP client identity",
+        "Keep auth lifecycle, inference key and read-only monitor projection separate; no refresh secrets in quota adapter",
+        "Define explicit operation whitelist and stable account/org binding",
+        "Browser/provider/session restrictions must be respected; normal external browser login cannot magically return session cookies to lain",
+        "Persist partial outcomes and key-creation journal; no automatic create retry after ambiguous response",
+        "Establish own allowed CLI pairing client use, browserURL origin/binding, Begin/Check interval/expiry and denial handling",
+        "Prove returned token rights for read-only Org/Usage/Billing before assuming bootstrap rights",
+        "Qualify session Org identity and legitimate existing-Org selection; public select-organization source is membership onboarding",
+        "Qualify user token refresh/revoke; never borrow official CLI identity or fake Request-Source playground",
+        "Account key-type classifier must preserve EVALUATION, legacy TRIAL and PRODUCTION separately"
+      ],
+      "unresolved": [
+        "Does CLIAuthCheck token authorize Usage/Billing, key list, explicitly selected reveal or Create, and/or direct inference?",
+        "Official current pairing third-party contract, scopes/clientregistration/distribution terms",
+        "Token lifetime/refresh/revoke and exact Org binding",
+        "Normal multi-Org switch contract not proved; JoinVerifiedOrg changes membership",
+        "Automatic EVALUATION key issuance not proved",
+        "Trial monthly timezone/reset/remaining and billing data freshness"
+      ],
+      "fallback": {
+        "inference": "Existing private Evaluation API key form; no manual user-sessiontoken copy",
+        "monitoring": "Qualified personal Dashboard sessionconnector alternative or Console/manual view; do not block API-key transport",
+        "partialFailure": "Keep monitor-only account when correct key absent; preserve local key if pairing session expires"
+      },
+      "codeImplications": [
+        "Add Connect coordinator with purpose models-and-usage versus monitor-only and independent capability outcomes",
+        "AccountService.AddApi currently requires API key and derives account ID from it; introduce stable provider account capable of monitor-only without dummy key",
+        "MonitorAccessService currently attaches to existing API-key account; allow independently connected monitor access through appropriate account model",
+        "Preserve local existing key on auth reconnect; monitor refresh cannot create, reveal or rotate inference keys",
+        "Expose configured versus provider-read-verified versus inference-tested states separately; no automatic paid probe",
+        "Use local pending-operation journal for external key create followed by local save; preserve eventual remote key uncertainty",
+        "Reconnect/Disconnect actions should distinguish local credential deletion from explicit qualified remote revocation",
+        "Implement proprietary pairing separately from OAuth Device Grant; mechanism descriptor must be honest",
+        "Never call GetOrCreateDefaultAPIKey(canReturnProductionKey:true) in monitor or generic Connect",
+        "Split Evaluation, legacy Trial and Production key types/entitlements in connection state",
+        "Use existing Org confirmation instead of autojoining verified organization",
+        "Console RPC wrapper must expose only qualified read methods to monitor"
+      ],
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/v2/docs/rate-limits",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Evaluation free/limited, 1000 calls/month; Command A+ trial 20 RPM and Production contact sales. Newer model variants may remain trial-limited even on Production key; A/R/R+/R7B Production table 500 RPM.",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/docs/going-live",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Production requires legal/usage acknowledgments and possibly use-case approval; signing in or having a key does not prove approved production entitlement.",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/docs/how-does-cohere-pricing-work.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Native Chat raw input/output tokens differ from billed_units; Rerank search units and Embed tokens retain native units. Trial usage is free/limited.",
+          "sha256": "cea1e077f141784ea2203b9dafa1b76399d3c3fdfbcfd214d5122448ecaa7454",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/reference/chat.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Native Chat usage is a separate response contract from installed OpenAI-compatible route.",
+          "sha256": "1a64afb5caf6cbdc95a28466c1cebe805ebe6b9a5e7ac03ee92e034ee80ef894",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Installed compatibility API is a subset and cannot be assumed to expose every native billed_units field.",
+          "sha256": "765f7b2202d1dba112a7bac9d115e845cca44e1e3d4d284e7e3e0c9674da79e4",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://raw.githubusercontent.com/cohere-ai/cohere-developer-experience/main/cohere-openapi.yaml",
+          "kind": "official_openapi",
+          "openedAt": "2026-10-24",
+          "claim": "Bearer API key and inference/storage/model endpoints; inspected general public schema has no billing/callquota reader. Connector OAuth belongs to connectors.",
+          "sha256": "25184037512d4149d2e2ded604bcf00d748a8fe23f979534020a9f0036fd2e71",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://raw.githubusercontent.com/cohere-ai/cohere-python/main/src/cohere/base_client.py",
+          "kind": "official_sdk",
+          "openedAt": "2026-10-24",
+          "claim": "Public Python client accepts token/API key; inspected source does not qualify a delegated login for billing and inference.",
+          "sha256": "0c19b07af3d3a96d1d672b66712670eb393c98b55ee9333a2d9220df3e92bcd0",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/reference/get-dataset-usage",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "GET /v1/datasets/usage returns organization_usage bytes for dataset storage, not inference quota.",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/reference/check-api-key",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "POST /v1/check-api-key validates key, optionally organization_id/owner_id, without balance or key-plan type; currently under Deprecated navigation.",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/v2/reference/teams-and-roles",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "User sees usage history and manages trial keys; Owner has additional billing/payment privileges. Does not establish a monitor-only IAM key.",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/_app-93016fb49a1d0e50.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "POST https://production.api.os.cohere.com/rpc/BlobheartAPI/{method}: CLIAuthBegin returns browserURL/secret, CLIAuthConfirm and CLIAuthCheck token; GetAPIUsage/V2 usages and GetBillingActivity/History activity/history. Bearer transport and API key bootstrap methods exist, not called.",
+          "sha256": "8661839af83916085e5b1a7700ad4e791ad9beadb8ae5b28edb6f977ff9c4921",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/welcome/auth-cli-bd07116a0aa4d76a.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "/welcome/auth-cli requires session, reads cliSession query and displays Allow/Deny before CLIAuthConfirm(secret). Actual proprietary pairing candidate; no standard OAuth Device Grant established.",
+          "sha256": "778dc681a07ef459da771c6f9201ad2c594f910a5af559c77e90394a2c87b0e2",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/billing-4a7f7fc5f062303e.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "Org/date/pagination usage and quantity/productUnit/total; activity.balanceForMonthlyLimit and organization.balance_limit(_enabled) for budget display, not remaining trial calls.",
+          "sha256": "2b2cf43469ab010c7a9fe624d9b299e977b3eb7329cc41b9ef9248cb8f1b9a48",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/2287-f24b553c0a1e8c1a.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "sha256": "2c333cde07bcddf8a773f46be5384f5ee2a5ce82ebe5251d9798b1120d80b96a",
+          "claim": "CreateAPIKey(name,keyType) returns key.raw_key; displayed create flow chooses TRIAL or PRODUCTION. ViewRawAPIKey is a separate query. A default helper GetOrCreateDefaultAPIKey(canReturnProductionKey:true) is unsafe as monitor-only helper.",
+          "newOrTargetedCheck": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/api-keys-f99a742f3c68c279.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "sha256": "c82d68e35072d3611becb78e0135b7663bf3878c6680494789fc657fe1989cb8",
+          "claim": "Evaluation table creation handler empty; existing EVALUATION/TRIAL can reveal, PRODUCTION cannot reveal again. Do not invent automatic EVALUATION creation from generic key-type enum.",
+          "newOrTargetedCheck": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/welcome/select-organization-49cf6466f8a4918d.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "sha256": "bcb5be1d70d11b415e4070327d00314f1945b7f25423a3fdb1b81743de478e04",
+          "claim": "GetUserVerifiedOrgs and JoinVerifiedOrg(orgID) implement onboarding membership, not proven general Org switching. Connect must not autojoin.",
+          "newOrTargetedCheck": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/3492-d9f261e6066eb450.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "sha256": "7d5c5561a3aa88e6857d8486f75af69d17148ed65bc248d7f98243f916f75cf5",
+          "claim": "Additional static shared chunk opened during targeted key-UI dependency inspection; no extra capability inferred from this chunk.",
+          "newOrTargetedCheck": true
+        }
+      ]
+    },
+    {
+      "id": "cohere-production",
+      "product": "Cohere Production",
+      "current": {
+        "sourceCommit": "5dc916f",
+        "providerId": "cohere",
+        "gateway": "Installed per assignment, command-a-plus-05-2026 on OpenAI compatibility endpoint",
+        "inference": "Own private API key; current catalog plan evaluation",
+        "monitoring": "Console fallback, no reader",
+        "productState": "Do not equate EVALUATION with legacy TRIAL or approved Production"
+      },
+      "preferredFlow": {
+        "visibleAction": "Cohere Production verbinden",
+        "mechanism": "Qualify proprietary CLI Begin/Confirm/Check browser pairing first; personal Dashboard sessionconnector alternative",
+        "status": "Pairing and key/read stubs evidenced; pairing-token rights for these actions unqualified",
+        "purposeOptions": [
+          "Modelle und Nutzung",
+          "Nur Nutzung"
+        ],
+        "preConnectDisclosure": "Verbindet den bestehenden kostenpflichtigen Productionzugang und richtet einen persönlichen lain-Key ein. Keine Freischaltung oder Vertragsannahme.",
+        "oneVisibleConnect": true,
+        "oneCredential": false,
+        "automaticKeyCreation": "CreateAPIKey({name,keyType:PRODUCTION}) and key.raw_key evidenced; only deliberate model Connect with existing approved Production rights and adequate role"
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Choose Production and models-and-usage or monitor-only; disclose key reveal/create consequence when applicable"
+        },
+        {
+          "step": 2,
+          "action": "After pairing contract qualification, host Begin, open returned browserURL, user login/Allow, poll Check under same local attempt. Do not invent polling timings."
+        },
+        {
+          "step": 3,
+          "action": "Confirm actual existing session Org; use a selector only for qualified membership switch contract, no JoinVerifiedOrg/onboarding."
+        },
+        {
+          "step": 4,
+          "action": "Reuse matching local Production key; otherwise consciously create one named Production key and capture key.raw_key once. Never upgrade or rotate arbitrary existing key."
+        },
+        {
+          "step": 5,
+          "action": "Use qualified user/monitor access for Usage/Billing reads. Show account/product and independent results; do not probe inference automatically."
+        }
+      ],
+      "credentials": [
+        {
+          "kind": "pairing-attempt-secret",
+          "purpose": "Bind Begin, provider browser consent and Check",
+          "storage": "Ephemeral host attempt only; not user copy input",
+          "lifetime": "Provider interval/expiry unknown; contract qualification required"
+        },
+        {
+          "kind": "user-token or Dashboard-session-reference",
+          "purpose": "Monitor RPCs and optional bootstrap operations after rights qualification",
+          "storage": "Protected auth owner/sessionconnector; bounded access projection to readers",
+          "binding": "Actual user/Org, product and capability; rights unknown until proved",
+          "lifetime": "Refresh/expiry/revoke contract unknown"
+        },
+        {
+          "kind": "Cohere Production API key",
+          "purpose": "Inference",
+          "storage": "Private SecretStore from matching key reveal or create response; no clipboard",
+          "binding": "Key type, Org ID, key ID/metadata, source connector",
+          "lifetime": "Metadata if present, never fabricated"
+        }
+      ],
+      "inference": {
+        "transport": "https://api.cohere.ai/compatibility/v1",
+        "pairingTokenDirectInference": "Unproven; do not treat user token as API key",
+        "keyBootstrap": {
+          "operation": "CreateAPIKey({name,keyType:\"PRODUCTION\"})",
+          "response": "key.raw_key",
+          "base": "https://production.api.os.cohere.com/rpc/BlobheartAPI/",
+          "status": "Client implementation exists, actual Pairing token authorization not tested",
+          "constraints": "Existing Production cannot reveal again; no automatic rotation, no Go-Live/contract acceptance"
+        },
+        "entitlement": "Paid key is not approved A+ production entitlement; newer variants can retain trial limits"
+      },
+      "monitoring": {
+        "access": "Qualified user bearer/session, with CLI token authorization unresolved",
+        "readerOperations": [
+          "GetAPIUsage",
+          "GetAPIUsageV2",
+          "GetBillingActivity",
+          "GetBillingHistory"
+        ],
+        "transport": "POST RPC may be read-only semantically; explicit operation allowlist required",
+        "monitorOnlyExcludes": [
+          "CreateAPIKey",
+          "ViewRawAPIKey",
+          "GetOrCreateDefaultAPIKey",
+          "JoinVerifiedOrg",
+          "setOrgAPIKeysKeyType",
+          "payment or Go Live methods"
+        ],
+        "nativeData": "Calls/month reference, historical usage, raw/billed input/output tokens, budget and Credits only where supplied; datasets/usage is bytes not call quota",
+        "coverage": "Owner/User rights differ; provider-wide trial remainder and freshness unproved"
+      },
+      "maintainerPrerequisites": [
+        "Qualify own third-party client/sessionconnector use and distribution rather than reusing official CLI/IdP client identity",
+        "Keep auth lifecycle, inference key and read-only monitor projection separate; no refresh secrets in quota adapter",
+        "Define explicit operation whitelist and stable account/org binding",
+        "Browser/provider/session restrictions must be respected; normal external browser login cannot magically return session cookies to lain",
+        "Persist partial outcomes and key-creation journal; no automatic create retry after ambiguous response",
+        "Establish own allowed CLI pairing client use, browserURL origin/binding, Begin/Check interval/expiry and denial handling",
+        "Prove returned token rights for read-only Org/Usage/Billing before assuming bootstrap rights",
+        "Qualify session Org identity and legitimate existing-Org selection; public select-organization source is membership onboarding",
+        "Qualify user token refresh/revoke; never borrow official CLI identity or fake Request-Source playground",
+        "Account key-type classifier must preserve EVALUATION, legacy TRIAL and PRODUCTION separately"
+      ],
+      "unresolved": [
+        "Does CLIAuthCheck token authorize Usage/Billing, key list, explicitly selected reveal or Create, and/or direct inference?",
+        "Official current pairing third-party contract, scopes/clientregistration/distribution terms",
+        "Token lifetime/refresh/revoke and exact Org binding",
+        "Normal multi-Org switch contract not proved; JoinVerifiedOrg changes membership",
+        "Existing Organization Production approval, Create role and A+ entitlement independent",
+        "Trial monthly timezone/reset/remaining and billing data freshness"
+      ],
+      "fallback": {
+        "inference": "Existing private Production API key form; no manual user-sessiontoken copy",
+        "monitoring": "Qualified personal Dashboard sessionconnector alternative or Console/manual view; do not block API-key transport",
+        "partialFailure": "Keep monitor-only account when correct key absent; preserve local key if pairing session expires"
+      },
+      "codeImplications": [
+        "Add Connect coordinator with purpose models-and-usage versus monitor-only and independent capability outcomes",
+        "AccountService.AddApi currently requires API key and derives account ID from it; introduce stable provider account capable of monitor-only without dummy key",
+        "MonitorAccessService currently attaches to existing API-key account; allow independently connected monitor access through appropriate account model",
+        "Preserve local existing key on auth reconnect; monitor refresh cannot create, reveal or rotate inference keys",
+        "Expose configured versus provider-read-verified versus inference-tested states separately; no automatic paid probe",
+        "Use local pending-operation journal for external key create followed by local save; preserve eventual remote key uncertainty",
+        "Reconnect/Disconnect actions should distinguish local credential deletion from explicit qualified remote revocation",
+        "Implement proprietary pairing separately from OAuth Device Grant; mechanism descriptor must be honest",
+        "Never call GetOrCreateDefaultAPIKey(canReturnProductionKey:true) in monitor or generic Connect",
+        "Split Evaluation, legacy Trial and Production key types/entitlements in connection state",
+        "Use existing Org confirmation instead of autojoining verified organization",
+        "Console RPC wrapper must expose only qualified read methods to monitor"
+      ],
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/v2/docs/rate-limits",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Evaluation free/limited, 1000 calls/month; Command A+ trial 20 RPM and Production contact sales. Newer model variants may remain trial-limited even on Production key; A/R/R+/R7B Production table 500 RPM.",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/docs/going-live",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Production requires legal/usage acknowledgments and possibly use-case approval; signing in or having a key does not prove approved production entitlement.",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/docs/how-does-cohere-pricing-work.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Native Chat raw input/output tokens differ from billed_units; Rerank search units and Embed tokens retain native units. Trial usage is free/limited.",
+          "sha256": "cea1e077f141784ea2203b9dafa1b76399d3c3fdfbcfd214d5122448ecaa7454",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/reference/chat.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Native Chat usage is a separate response contract from installed OpenAI-compatible route.",
+          "sha256": "1a64afb5caf6cbdc95a28466c1cebe805ebe6b9a5e7ac03ee92e034ee80ef894",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Installed compatibility API is a subset and cannot be assumed to expose every native billed_units field.",
+          "sha256": "765f7b2202d1dba112a7bac9d115e845cca44e1e3d4d284e7e3e0c9674da79e4",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://raw.githubusercontent.com/cohere-ai/cohere-developer-experience/main/cohere-openapi.yaml",
+          "kind": "official_openapi",
+          "openedAt": "2026-10-24",
+          "claim": "Bearer API key and inference/storage/model endpoints; inspected general public schema has no billing/callquota reader. Connector OAuth belongs to connectors.",
+          "sha256": "25184037512d4149d2e2ded604bcf00d748a8fe23f979534020a9f0036fd2e71",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://raw.githubusercontent.com/cohere-ai/cohere-python/main/src/cohere/base_client.py",
+          "kind": "official_sdk",
+          "openedAt": "2026-10-24",
+          "claim": "Public Python client accepts token/API key; inspected source does not qualify a delegated login for billing and inference.",
+          "sha256": "0c19b07af3d3a96d1d672b66712670eb393c98b55ee9333a2d9220df3e92bcd0",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/reference/get-dataset-usage",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "GET /v1/datasets/usage returns organization_usage bytes for dataset storage, not inference quota.",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/reference/check-api-key",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "POST /v1/check-api-key validates key, optionally organization_id/owner_id, without balance or key-plan type; currently under Deprecated navigation.",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://docs.cohere.com/v2/reference/teams-and-roles",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "User sees usage history and manages trial keys; Owner has additional billing/payment privileges. Does not establish a monitor-only IAM key.",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/_app-93016fb49a1d0e50.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "POST https://production.api.os.cohere.com/rpc/BlobheartAPI/{method}: CLIAuthBegin returns browserURL/secret, CLIAuthConfirm and CLIAuthCheck token; GetAPIUsage/V2 usages and GetBillingActivity/History activity/history. Bearer transport and API key bootstrap methods exist, not called.",
+          "sha256": "8661839af83916085e5b1a7700ad4e791ad9beadb8ae5b28edb6f977ff9c4921",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/welcome/auth-cli-bd07116a0aa4d76a.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "/welcome/auth-cli requires session, reads cliSession query and displays Allow/Deny before CLIAuthConfirm(secret). Actual proprietary pairing candidate; no standard OAuth Device Grant established.",
+          "sha256": "778dc681a07ef459da771c6f9201ad2c594f910a5af559c77e90394a2c87b0e2",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/billing-4a7f7fc5f062303e.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "Org/date/pagination usage and quantity/productUnit/total; activity.balanceForMonthlyLimit and organization.balance_limit(_enabled) for budget display, not remaining trial calls.",
+          "sha256": "2b2cf43469ab010c7a9fe624d9b299e977b3eb7329cc41b9ef9248cb8f1b9a48",
+          "reusedFromPriorResearch": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/2287-f24b553c0a1e8c1a.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "sha256": "2c333cde07bcddf8a773f46be5384f5ee2a5ce82ebe5251d9798b1120d80b96a",
+          "claim": "CreateAPIKey(name,keyType) returns key.raw_key; displayed create flow chooses TRIAL or PRODUCTION. ViewRawAPIKey is a separate query. A default helper GetOrCreateDefaultAPIKey(canReturnProductionKey:true) is unsafe as monitor-only helper.",
+          "newOrTargetedCheck": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/api-keys-f99a742f3c68c279.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "sha256": "c82d68e35072d3611becb78e0135b7663bf3878c6680494789fc657fe1989cb8",
+          "claim": "Evaluation table creation handler empty; existing EVALUATION/TRIAL can reveal, PRODUCTION cannot reveal again. Do not invent automatic EVALUATION creation from generic key-type enum.",
+          "newOrTargetedCheck": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/welcome/select-organization-49cf6466f8a4918d.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "sha256": "bcb5be1d70d11b415e4070327d00314f1945b7f25423a3fdb1b81743de478e04",
+          "claim": "GetUserVerifiedOrgs and JoinVerifiedOrg(orgID) implement onboarding membership, not proven general Org switching. Connect must not autojoin.",
+          "newOrTargetedCheck": true
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/3492-d9f261e6066eb450.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "sha256": "7d5c5561a3aa88e6857d8486f75af69d17148ed65bc248d7f98243f916f75cf5",
+          "claim": "Additional static shared chunk opened during targeted key-UI dependency inspection; no extra capability inferred from this chunk.",
+          "newOrTargetedCheck": true
+        }
+      ]
+    }
+  ],
+  "sharedFlowRules": {
+    "oneVisibleConnectDoesNotMeanOneSecret": true,
+    "monitorOnlyCreatesOrRevealsKeys": false,
+    "connectDoesNotTestInferenceAutomatically": true,
+    "pureOAuthUniversalSupportClaim": false,
+    "useCurrentAuthorizations": "Future intentional models-and-usage Connect can include explicitly disclosed qualified keybootstrap; research itself creates no keys",
+    "partialSuccess": "Independent monitoring/inference outcomes; retain successful capability and original account identity",
+    "noHiddenMembershipMutation": true,
+    "noImplicitPaidPlanChange": true
+  }
+}

@@ -1,0 +1,574 @@
+{
+  "schemaVersion": 1,
+  "researchDate": "2026-10-24",
+  "baseCommit": "5dc916f",
+  "status": "research-proposal",
+  "scope": [
+    "Gemini Developer API",
+    "Cloudflare Workers AI"
+  ],
+  "constraints": {
+    "privateCredentialsUsed": false,
+    "accountSessionsUsed": false,
+    "authenticatedProviderQueries": false,
+    "clientRegistrations": false,
+    "logins": false,
+    "purchasesOrProvisioning": false,
+    "productCodeChanges": false,
+    "builds": false
+  },
+  "providers": [
+    {
+      "id": "gemini",
+      "product": "Google Gemini Developer API",
+      "currentLain": {
+        "base": "5dc916f",
+        "inference": "Existing API-key account",
+        "monitor": "Manual expiring Google access-token snapshot plus explicit textual project ID; GeminiMonitoringQuotaAdapter reads only consumed_api serviceruntime request_count for the UTC day",
+        "gaps": [
+          "No owned Desktop OAuth client/login/refresh",
+          "No direct model-quota metric reader",
+          "No Cloud Quotas join",
+          "No qualified OAuth Bearer inference path"
+        ]
+      },
+      "sources": [
+        {
+          "kind": "official-model-telemetry",
+          "endpoint": "GET https://monitoring.googleapis.com/v3/projects/{project}/timeSeries",
+          "metricPrefix": "generativelanguage.googleapis.com/quota/",
+          "resource": "generativelanguage.googleapis.com/Location",
+          "metricFamilies": [
+            "generate_content_free_tier_requests",
+            "generate_content_free_tier_input_token_count",
+            "generate_requests_per_model",
+            "generate_content_paid_tier_input_token_count",
+            "generate_content_paid_tier_2_requests",
+            "generate_content_paid_tier_3_requests",
+            "generate_content_paid_tier_2_input_token_count",
+            "generate_content_paid_tier_3_input_token_count"
+          ],
+          "usageKind": "DELTA",
+          "limitKind": "GAUGE",
+          "dimensions": [
+            "resource_container",
+            "location",
+            "model",
+            "limit_name",
+            "method (usage only)"
+          ],
+          "visibilityDelaySeconds": 150,
+          "qualified": "Official public contract; project export and exact join unqualified"
+        },
+        {
+          "kind": "effective-quota-configuration",
+          "endpoint": "GET https://cloudquotas.googleapis.com/v1/projects/{projectNumber}/locations/global/services/generativelanguage.googleapis.com/quotaInfos",
+          "fields": [
+            "metric",
+            "quotaId",
+            "refreshInterval",
+            "dimensions",
+            "dimensionsInfos.details.value",
+            "isPrecise",
+            "isConcurrent"
+          ],
+          "qualified": "Official API plus explicit AI Studio IAM linkage; project rows unobserved"
+        },
+        {
+          "kind": "configuration-fallback",
+          "endpoint": "GET https://serviceusage.googleapis.com/v1beta1/projects/{projectNumber}/services/generativelanguage.googleapis.com/consumerQuotaMetrics?view=FULL",
+          "qualified": "Official; configuration only, no consumed usage"
+        }
+      ],
+      "authOptions": [
+        {
+          "priority": 1,
+          "kind": "owned-desktop-oauth",
+          "flow": "Authorization Code + S256 PKCE + state + system browser + loopback + refresh",
+          "clientRegistration": "Owned Google Desktop OAuth client and production consent/verification preparation",
+          "scopes": {
+            "monitorOnly": "https://www.googleapis.com/auth/monitoring.read",
+            "cloudQuotaConfiguration": "https://www.googleapis.com/auth/cloud-platform",
+            "inferenceQuickstart": [
+              "https://www.googleapis.com/auth/cloud-platform",
+              "https://www.googleapis.com/auth/generative-language.retriever"
+            ]
+          },
+          "scopeCaveat": "cloud-platform is broad; do not claim retriever is the minimum generateContent scope. IAM remains independent. Installed apps lack incremental authorization.",
+          "resource": "Explicit chosen project; resolve textual ID and number; x-goog-user-project for documented OAuth path",
+          "inference": "Official Gemini OAuth capability; exact lain endpoints/IAM/minimum scope still require qualification"
+        },
+        {
+          "priority": 2,
+          "kind": "existing-api-key-plus-monitor-oauth",
+          "purpose": "Upgrade current account with refreshable monitoring, keeping existing inference credential"
+        },
+        {
+          "priority": 3,
+          "kind": "oauth-plus-provisioned-auth-key",
+          "purpose": "Possible future convenience bootstrap",
+          "cost": "Current auth keys are service-account-bound; key-create alone is insufficient, additional service-account/binding/enable permissions and lifecycle needed"
+        },
+        {
+          "priority": 4,
+          "kind": "user-owned-desktop-client",
+          "purpose": "Private prototype; higher manual setup; not production distribution solution"
+        },
+        {
+          "priority": 5,
+          "kind": "manual-dashboard",
+          "purpose": "AI Studio comparison/fallback; session scraping not needed for documented APIs"
+        }
+      ],
+      "recommendation": {
+        "priority": "High",
+        "decisionStatus": "proposal",
+        "path": "Implement owned OAuth and direct model metrics first. Prefer existing project plus direct OAuth inference qualification over automatic new auth-key provisioning.",
+        "displayContract": "Delayed project/model/limit/window observations; reported daily remaining only when join and interval coverage are qualified. RPM/TPM are delayed telemetry, not a guaranteed current availability gate.",
+        "join": [
+          "Resolve same project ID/number",
+          "Match QuotaInfo.metric to monitored quota family",
+          "Verify quotaId versus limit_name rather than assuming equivalence",
+          "Preserve model/location/all quota dimensions",
+          "Sum only disjoint usage methods in confirmed window; never sum limit gauges or independent quota families",
+          "Use Pacific day boundary with DST for RPD"
+        ],
+        "proxyIndependent": true,
+        "proxyIndependentNote": "Provider-side account/project reads include existing usage outside lain; no inference through lain is required. Source export/access still needs qualification."
+      },
+      "missingImplementation": [
+        "Owned OAuth registration and refresh lifecycle",
+        "Project picker and project-number/ID resolution",
+        "Metric descriptor/series acquisition and model quota parser",
+        "Cloud Quotas dimension and limit join",
+        "Window/freshness/completeness handling",
+        "OAuth Bearer inference credential projection and explicit quota-project header"
+      ],
+      "unresolved": [
+        "Which metric families and limit_name values the selected project exports",
+        "Actual quotaId/limit_name equality and model alias mapping",
+        "Which published family represents current ordinary daily generate quota; do not fabricate generate_requests_per_model_per_day/{usage,limit}",
+        "OAuth minimal scopes/IAM for actual inference methods",
+        "Public production client registration/verification",
+        "Project API enablement/terms and missing permissions",
+        "Delayed source cannot prove capacity; additional spend/priority constraints remain"
+      ],
+      "nextQualification": [
+        "Read only existing selected project QuotaInfos and exact metric descriptors/time series",
+        "Compare a completed Pacific day and recent minute samples with AI Studio",
+        "Confirm resource_container value, dimension mapping, tier family and data delay",
+        "Use existing traffic, no inference solely to seed monitor data",
+        "Treat empty rows as unknown and explicit zero points as zero"
+      ],
+      "evidence": [
+        {
+          "id": "G1",
+          "url": "https://docs.cloud.google.com/monitoring/api/metrics_gcp_d_h?hl=en",
+          "claim": "Official metric descriptors include generativelanguage.googleapis.com/quota/{generate_content_free_tier_requests,generate_content_free_tier_input_token_count,generate_requests_per_model,generate_content_paid_tier_input_token_count}/usage and /limit, plus tier 2/3 variants. Request/token usage is DELTA, limit GAUGE; labels include model and limit_name, usage also method; up to 150 seconds visibility delay.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G2",
+          "url": "https://docs.cloud.google.com/monitoring/api/resources#tag_generativelanguage.googleapis.com/Location",
+          "claim": "The generativelanguage.googleapis.com/Location monitored resource exposes resource_container and location, rather than consumed_api.project_id.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G3",
+          "url": "https://ai.google.dev/gemini-api/docs/troubleshoot-ai-studio",
+          "claim": "AI Studio usage requires monitoring.timeSeries.list; rate-limit dashboard additionally requires cloudquotas.quotas.get; project lookup requires resourcemanager.projects.get.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G4",
+          "url": "https://docs.cloud.google.com/docs/quotas/reference/rest/v1/projects.locations.services.quotaInfos/list",
+          "claim": "QuotaInfo list is a documented read endpoint with cloud-platform OAuth scope and cloudquotas.quotas.get IAM permission.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G5",
+          "url": "https://docs.cloud.google.com/docs/quotas/reference/rest/v1/projects.locations.services.quotaInfos",
+          "claim": "QuotaInfo exposes quotaId, metric, dimensions, refreshInterval, isPrecise, isConcurrent and dimension-specific configurations.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G6",
+          "url": "https://docs.cloud.google.com/docs/quotas/reference/rest/v1/folders.locations.services.quotaInfos#QuotaInfo.DimensionsInfo",
+          "claim": "DimensionsInfo.details.value is the currently enforced value; dimension-specific entries override general entries, and applicableLocations retains location coverage.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G7",
+          "url": "https://ai.google.dev/gemini-api/docs/rate-limits",
+          "claim": "Gemini quotas are project-wide and model-dependent; RPD resets at Pacific midnight; RPM/TPM and additional spend/priority limits can also apply.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G8",
+          "url": "https://docs.cloud.google.com/service-usage/docs/reference/rest/v1beta1/services.consumerQuotaMetrics/list",
+          "claim": "Service Usage consumerQuotaMetrics.list is an alternative quota-configuration read with effective/default limits, unit and overrides; it requires serviceusage.quotas.get.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G9",
+          "url": "https://developers.google.com/identity/protocols/oauth2/native-app",
+          "claim": "Google supports registered public Desktop OAuth, system browser, PKCE, loopback callback and token refresh; installed apps lack incremental authorization.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G10",
+          "url": "https://developers.google.com/identity/protocols/oauth2",
+          "claim": "Google OAuth refresh tokens can expire or be revoked; external Testing projects with non-basic scopes can issue refresh tokens expiring after seven days.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G11",
+          "url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/policy-compliance",
+          "claim": "Production apps require relevant identity, domain, minimum-scope and verification compliance; protocol support does not establish a registered or approved lain client.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G12",
+          "url": "https://docs.cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.timeSeries/list",
+          "claim": "Monitoring timeSeries.list accepts monitoring.read, monitoring or cloud-platform; a filter must identify the requested metric type.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G13",
+          "url": "https://ai.google.dev/gemini-api/docs/oauth",
+          "claim": "Gemini documents OAuth instead of an API key, desktop credential setup, Bearer requests and x-goog-user-project; quickstart scope example is cloud-platform plus generative-language.retriever.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G14",
+          "url": "https://docs.cloud.google.com/api-keys/docs/reference/rest/v2/projects.locations.keys/create",
+          "claim": "Generic API-key creation is a cloud-platform-authorized write requiring apikeys.keys.create and returns an operation.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G15",
+          "url": "https://docs.cloud.google.com/resource-manager/reference/rest/v3/projects/search",
+          "claim": "Resource Manager projects.search lists accessible projects with resourcemanager.projects.get; explicit project selection remains necessary.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G16",
+          "url": "https://docs.cloud.google.com/service-usage/docs/reference/rest/v1/services/enable",
+          "claim": "Enabling a Google API is a separate serviceusage.services.enable write operation.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "G17",
+          "url": "https://ai.google.dev/gemini-api/docs/api-key",
+          "claim": "Since May 28, 2026 new AI Studio keys are service-account-bound authorization keys. Creation needs service-account and binding permissions beyond ordinary API-key creation; unrestricted standard keys are rejected.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        }
+      ]
+    },
+    {
+      "id": "cloudflare",
+      "product": "Cloudflare Workers AI",
+      "currentLain": {
+        "base": "5dc916f",
+        "inference": "Existing API-token account plus account ID",
+        "monitor": "Existing inference-token selection or separate monitor token; no registered neuron usage adapter",
+        "gaps": [
+          "No owned OAuth integration",
+          "No currently qualified neuron schema and billing coverage"
+        ]
+      },
+      "sources": [
+        {
+          "kind": "neuron-analytics-candidate",
+          "endpoint": "POST https://api.cloudflare.com/client/v4/graphql (query operation only)",
+          "dataset": "viewer.accounts.aiInferenceAdaptiveGroups",
+          "field": "sum.totalNeurons",
+          "fieldType": "float64! (public schema mirror)",
+          "dimensions": [
+            "modelId",
+            "date/datetime variants",
+            "requestSource"
+          ],
+          "qualified": "Historical official dataset reference plus opened third-party schema/implementation; current official introspection not yet performed",
+          "precision": "Adaptive-sampling estimate may apply; confidence support seen in mirror",
+          "freshness": "No Workers-AI-specific SLA qualified"
+        },
+        {
+          "kind": "billing-reconciliation-candidate",
+          "endpoint": "GET https://api.cloudflare.com/client/v4/accounts/{accountId}/billable/usage",
+          "method": "get_account_usage_v2",
+          "status": "Alpha Restricted",
+          "fields": [
+            "ConsumedQuantity",
+            "ConsumedUnit",
+            "ChargePeriodStart",
+            "ChargePeriodEnd",
+            "x_BillableMetricId",
+            "x_ProductFamilyId",
+            "x_ProductFamilyName"
+          ],
+          "maximumDays": 31,
+          "qualified": "Official generic daily metered usage contract including free-tier usage; specific Workers-AI metric/unit, scope, availability and delay unqualified"
+        },
+        {
+          "kind": "manual-reference",
+          "url": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+          "qualified": "10000 Neurons/day UTC allowance and dashboard, separate Workers Paid and Gateway credit routes"
+        }
+      ],
+      "authOptions": [
+        {
+          "priority": 1,
+          "kind": "owned-public-client-oauth",
+          "flow": "Authorization Code + S256 PKCE + state + token_endpoint_auth_method=none",
+          "clientRegistration": "Own client; public visibility plus verified client-URL domain for general distribution; private clients only parent-account members",
+          "refresh": "refresh_token grant and offline_access supported; lifetime/rotation require qualification",
+          "scopes": "Obtain exact current IDs from official /client/v4/oauth/scopes; do not guess or use Wrangler colon scopes",
+          "resource": "Account selection in consent; persist same account as inference",
+          "capabilities": [
+            "Inferred intended inference permissions correspond to Workers AI Read/Edit",
+            "Reporting corresponds to Account Analytics Read; Workers AI Read-only alternative is an unproven lead",
+            "Optional reporting scope may be declined without claiming inference failure"
+          ],
+          "unresolved": [
+            "Desktop loopback registration behavior",
+            "Actual inference/GraphQL acceptance with selected OAuth scopes",
+            "Token lifetimes and refresh rotation"
+          ]
+        },
+        {
+          "priority": 2,
+          "kind": "existing-api-token",
+          "purpose": "Available qualification path if current token has needed account-scoped reporting permission"
+        },
+        {
+          "priority": 3,
+          "kind": "separate-monitor-token",
+          "purpose": "Optional least-privilege fallback; official Account Analytics Read guide, same account"
+        },
+        {
+          "priority": 4,
+          "kind": "oauth-then-token-provisioning",
+          "purpose": "Not preferred; provisioning requires separate API-token creation authority and is not implied by login"
+        },
+        {
+          "priority": 5,
+          "kind": "dashboard-session",
+          "purpose": "Manual fallback or one-time documented GraphQL capture; no durable cookie-scraper recommendation"
+        }
+      ],
+      "recommendation": {
+        "priority": "High for narrow source qualification; OAuth product work after capability confirmation",
+        "decisionStatus": "proposal",
+        "path": "Qualify totalNeurons via official introspection/settings and existing-account daily read. Retain token fallback while preparing owned public PKCE client. Use Billing Usage v2 as possible reconciliation source.",
+        "displayContract": "Reported/estimated account Neurons with data timestamp, sampling and billing path. Derived free allowance remaining only after coverage is confirmed. No Workers-invocation, AI Gateway dollar-cost or locally priced-token surrogate.",
+        "notEvidenceOfImpossibility": true,
+        "proxyIndependent": true,
+        "proxyIndependentNote": "Provider-side account/project reads include existing usage outside lain; no inference through lain is required. Source export/access still needs qualification."
+      },
+      "missingImplementation": [
+        "Owned Cloudflare OAuth registration, scope mapping, refresh and account selection",
+        "GraphQL type/availability qualification",
+        "Neuron reader with completeness, sampling confidence and freshness handling",
+        "Workers Paid/free versus Gateway unified-billing attribution",
+        "Optional billing-v2 reconciliation after entitlement/metric qualification"
+      ],
+      "unresolved": [
+        "Current official totalNeurons field and account availability",
+        "Smallest reporting permission: Account Analytics Read versus product-specific Workers AI Read",
+        "Adaptive estimate precision and Workers-AI-specific freshness",
+        "Coverage of REST, binding and Gateway unified billing without double counting",
+        "Billing v2 Workers-AI metric IDs/units and Restricted entitlement",
+        "OAuth exact dot scopes, loopback, refresh rotation/lifetime and endpoint acceptance"
+      ],
+      "nextQualification": [
+        "Officially introspect AiInferenceAdaptiveGroups sum, dimensions, filters, confidence and account settings",
+        "Read a completed UTC day from existing traffic; compare to Workers AI dashboard",
+        "Use an account-total aggregate or complete partitioning instead of truncated model top-N",
+        "Check standard Workers billing separately from Gateway credit route",
+        "If Billing v2 available, compare same days using verified Workers-AI metric IDs and quantity units",
+        "After own-client registration, qualify scopes/account binding/refresh separately; no real login was performed in research"
+      ],
+      "evidence": [
+        {
+          "id": "C1",
+          "url": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+          "claim": "Workers AI bills in Neurons, provides 10000 free per UTC day and supports separate Workers Paid versus AI Gateway credit billing paths.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "C2",
+          "url": "https://raw.githubusercontent.com/cloudflare/skills/00eec280fa5c788000cd32f27a58b39dba15edfc/skills/cloudflare/references/graphql-api/patterns.md",
+          "claim": "Historical official Cloudflare reference shows account-scoped aiInferenceAdaptiveGroups as Workers AI analytics, with modelId and token sums; it does not document totalNeurons.",
+          "date": "2026-10-24",
+          "strength": "official-historical",
+          "opened": true
+        },
+        {
+          "id": "C3",
+          "url": "https://github.com/cloudflare/skills/commit/16b44fd80a852a02a53fbd79695ceeb5867b757e",
+          "claim": "Cloudflare removed the GraphQL references on October 14, 2026 because they duplicated/drifted from platform docs; the stale main-path search hit is not a current contract.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "C4",
+          "url": "https://pages.johnspurlock.com/graphql-schema-docs/cloudflare.html",
+          "claim": "Public third-party schema mirror exposes AccountAiInferenceAdaptiveGroupsSum.totalNeurons as float64!, confidence support and model/time/request-source dimensions. Full content read using urllib because browser fetch exceeded size limit.",
+          "date": "2026-10-24",
+          "strength": "third-party-schema-lead",
+          "opened": true
+        },
+        {
+          "id": "C5",
+          "url": "https://raw.githubusercontent.com/michaloo/flareclerk/main/src/commands/ai.js",
+          "claim": "flareclerk source queries aiInferenceAdaptiveGroups.sum.totalNeurons grouped by modelId and date. It is an implementation lead, not official support or live qualification.",
+          "date": "2026-10-24",
+          "strength": "third-party-implementation-lead",
+          "opened": true
+        },
+        {
+          "id": "C6",
+          "url": "https://raw.githubusercontent.com/michaloo/flareclerk/main/src/commands/auth.js",
+          "claim": "flareclerk auth asks for Workers AI Read rather than Account Analytics Read; this is a narrow minimal-permission test hypothesis, not sufficient authority to change the official auth contract.",
+          "date": "2026-10-24",
+          "strength": "third-party-implementation-lead",
+          "opened": true
+        },
+        {
+          "id": "C7",
+          "url": "https://developers.cloudflare.com/analytics/graphql-api/features/discovery/introspection/",
+          "claim": "Cloudflare officially supports GraphQL introspection and notes that schema presence is distinct from account availability; settings-node qualification is necessary.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "C8",
+          "url": "https://developers.cloudflare.com/analytics/graphql-api/sampling/",
+          "claim": "Adaptive GraphQL datasets may report estimates from sampling; aggregate neuron telemetry must not be represented as guaranteed exact billing.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "C9",
+          "url": "https://developers.cloudflare.com/api/resources/billing/subresources/usage/methods/get_account_usage_v2/",
+          "claim": "Official Billing Usage v2 GET /accounts/{id}/billable/usage is Alpha Restricted, gives daily usage including free-tier metered consumption, fields for quantities/units/metric IDs, and a 31-day maximum range. Specific Workers-AI coverage is not established.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "C10",
+          "url": "https://developers.cloudflare.com/api/resources/billing/subresources/usage/methods/get_account_usage_v1/",
+          "claim": "Billing Usage v1 depends on including the subscription billing-cycle anchor; it is not an established near-real-time daily allowance source.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "C11",
+          "url": "https://developers.cloudflare.com/fundamentals/oauth/create-an-oauth-client/",
+          "claim": "Cloudflare supports third-party desktop/CLI Authorization Code with S256 PKCE and token auth none; public distribution requires client registration and verified client-URL domain.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "C12",
+          "url": "https://developers.cloudflare.com/api/resources/iam/subresources/oauth_clients/methods/create/",
+          "claim": "Client registration supports refresh_token grant and automatic offline_access. Dot-delimited OAuth API scopes are validated; colon scopes are not accepted.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "C13",
+          "url": "https://developers.cloudflare.com/fundamentals/oauth/integrate-with-cloudflare/",
+          "claim": "Official third-party OAuth endpoints are dash.cloudflare.com/oauth2/auth, token and revoke, with public metadata endpoints documented.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "C14",
+          "url": "https://developers.cloudflare.com/fundamentals/oauth/authorizing-an-application/",
+          "claim": "Consent selects account resources and optional scopes; administrators can prevent new public OAuth authorizations.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "C15",
+          "url": "https://developers.cloudflare.com/workers-ai/get-started/rest-api/",
+          "claim": "Workers AI REST quickstart uses Bearer token plus account ID, and says custom tokens require Workers AI Read and Edit.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "C16",
+          "url": "https://developers.cloudflare.com/analytics/graphql-api/getting-started/authentication/api-token-auth/",
+          "claim": "Official GraphQL Analytics token guide requests Account Analytics Read.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "C17",
+          "url": "https://developers.cloudflare.com/fundamentals/api/how-to/create-via-api/",
+          "claim": "API-token provisioning requires separate permission to create additional tokens; a normal inference/monitor grant does not imply that power.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        },
+        {
+          "id": "C18",
+          "url": "https://developers.cloudflare.com/analytics/graphql-api/tutorials/capture-graphql-queries-from-dashboard/",
+          "claim": "Cloudflare documents capturing dashboard GraphQL requests for investigation; this can support source qualification without making cookie scraping the product interface.",
+          "date": "2026-10-24",
+          "strength": "official-current",
+          "opened": true
+        }
+      ]
+    }
+  ]
+}

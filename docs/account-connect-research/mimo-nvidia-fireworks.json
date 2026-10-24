@@ -1,0 +1,1114 @@
+{
+  "researchDate": "2026-10-24",
+  "baseCommit": "5dc916f",
+  "status": "architecture-proposal-not-implementation",
+  "scope": {
+    "providers": [
+      "MiMo",
+      "NVIDIA Build",
+      "Fireworks Serverless"
+    ],
+    "writeBoundary": [
+      "docs/account-connect-research/mimo-nvidia-fireworks.md",
+      "docs/account-connect-research/mimo-nvidia-fireworks.json"
+    ],
+    "method": "Reuse finished quota/auth research plus targeted public Fireworks documentation checks; no credentials, logins, provider authenticated API reads, provisioning, CLI execution or runtime changes",
+    "priorReports": [
+      "docs/quota-auth-research/mimo-nvidia.md",
+      "docs/quota-auth-research/mimo-nvidia.json",
+      "docs/quota-auth-research/auth-review.md",
+      "docs/quota-auth-research/auth-review.json"
+    ]
+  },
+  "providers": [
+    {
+      "provider": "xiaomi-mimo",
+      "current": {
+        "lain": "Manual API-key connection; no owned console-session connector or qualified MiMo login adapter",
+        "official": "Official MiMo Code browser flow exchanges encrypted {sk,uid,url}; actual result is an API key, not OAuth access/refresh tokens",
+        "usage": "Console session is independent of the inference key; standard CLI callback does not hand cookies to lain"
+      },
+      "preferredFlow": {
+        "kind": "owned-console-session-plus-provider-key-bootstrap",
+        "status": "proposal-needs-maintainer-qualification",
+        "publicOwnOAuth": "No documented standard OAuth/device client, scopes or refresh contract established",
+        "officialCliDelegation": "Qualified inference fallback only; MIMOCODE_HOME gives a documented separate credential root",
+        "ownedSession": "User deliberately starts a private isolated MiMo console session owned by lain; same context visits genuine provider authorizer then approved read routes",
+        "assumptions": [
+          "Third-client key bootstrap can use own app/key identity and a supported contract",
+          "Owned session can be retained privately and used for provider-permitted reads; public frontend routes are not stable API promises"
+        ],
+        "oneLoginMeaning": "One user login may yield an inference key plus a separate broad console-session credential; never claim CLI callback supplied monitoring auth"
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Choose MiMo and desired capability: inference plus usage, or usage only",
+          "conditional": "Choose product only if not fixed by existing account; usage-only skips key issuance"
+        },
+        {
+          "step": 2,
+          "action": "Sign in in the deliberately opened dedicated MiMo session and accept provider key authorization if inference requested",
+          "disclosure": "Provider may create a named key; lain retains a console session for usage"
+        },
+        {
+          "step": 3,
+          "action": "Choose region/project/seat only when provider result is ambiguous or multiple eligible targets exist",
+          "hostWork": "Match UID, product, provider-allowed base URL and resource identity before binding"
+        },
+        {
+          "step": 4,
+          "action": "Read independent capability results",
+          "hostWork": "Only read usage routes; no inference probe and no error-to-zero fallback"
+        }
+      ],
+      "credentials": [
+        {
+          "kind": "api-key",
+          "acquiredBy": "Custom X25519/SHA256/AES-GCM encrypted provider callback; not OAuth",
+          "rights": "Inference for selected product; no demonstrated console-usage right",
+          "privateOwner": "Host private credential store",
+          "metadata": [
+            "uid",
+            "product",
+            "region",
+            "baseUrl",
+            "keyName if returned/known"
+          ],
+          "lifecycle": "Key revocation or expiration affects inference separately from session"
+        },
+        {
+          "kind": "owned-console-session",
+          "acquiredBy": "Explicit login in own isolated provider browser context; no external-profile scrape/import",
+          "rights": "Broad session; no read-only scope contract established",
+          "privateOwner": "Host-owned isolated session container; frontend sees status only",
+          "cookiesObserved": [
+            "api-platform_serviceToken",
+            "userId",
+            "optional api-platform_ph",
+            "optional api-platform_slh"
+          ],
+          "lifecycle": "Published cookie policy says 24h; no guaranteed refresh mechanism. Expiry asks only usage reconnect"
+        }
+      ],
+      "inference": {
+        "status": "Key bootstrap technically evidenced; own-client channel not qualified",
+        "keyKind": "api-key",
+        "validation": "Validate callback state/operation, UID, product and allowlisted provider base URL; key issuance is not proof of a successful inference request",
+        "regionBinding": "CN, SGP or AMS returned provider endpoint; never silently substitute another region",
+        "paidFallback": "Never switch an exhausted Token Plan to PAYG automatically",
+        "keyPrefix": "tp-",
+        "baseUrls": [
+          "https://token-plan-cn.xiaomimimo.com/v1",
+          "https://token-plan-sgp.xiaomimimo.com/v1",
+          "https://token-plan-ams.xiaomimimo.com/v1"
+        ],
+        "alternateProtocol": "Provider-documented /anthropic variant where selected"
+      },
+      "monitoring": {
+        "auth": "Owned console session, same-origin provider context",
+        "status": "Public frontend reads evidenced, owned session connector not implemented/qualified",
+        "headers": {
+          "x-timeZone": "IANA timezone as console expects"
+        },
+        "binding": [
+          "uid",
+          "product",
+          "region"
+        ],
+        "rights": "Actual session permissions; no promise of least-privilege monitoring token",
+        "reconnect": "Preserve valid inference key on session expiry. Different UID/region/resource needs explicit new binding; do not reassign old budget/history",
+        "reads": [
+          "GET /api/v1/tokenPlan/detail",
+          "GET /api/v1/tokenPlan/usage"
+        ],
+        "schema": "data.usage.items[]: name, used, limit, percent (0..1), including compensation_total_token; do not reuse old monthUsage.items.first schema",
+        "semantics": "Weighted Credits with fixed monthly OR annual total; currentPeriodEnd/expiry not a universal monthly refill; absent/failed source is unknown, not zero"
+      },
+      "maintainerPrerequisites": [
+        "Establish supported third-client authorizer use with own app/key identity; do not impersonate MiMo Code, kn=mimocode or X-Mimo-Source:mimocode-cli",
+        "Qualify private owned browser-session storage, provider-domain navigation, allowed reads, logout, expiry and bounded callbacks",
+        "Bind encrypted callback UID/base URL/product to session identity and resource; validate returned hosts before any inference use",
+        "Separate credential/capability lifecycle and allow monitor-only accounts without dummy inference keys"
+      ],
+      "unresolved": [
+        "No public standard OAuth or monitor read-only scope/refresh contract",
+        "Own-client authorizer support is not established by public source availability or MIT source license",
+        "Console read schema/service contract can change; no authenticated schema/permission test performed"
+      ],
+      "fallback": {
+        "inference": "Official MiMo Code login in purpose-created MIMOCODE_HOME, then import only explicitly selected private API-key entry; otherwise manual product key",
+        "usage": "Separate explicit own console login if a session connector is qualified; otherwise clearly unavailable",
+        "guardrails": [
+          "Never read/overwrite existing global CLI profile",
+          "No invented BROWSER override; current CLI invokes system browser directly",
+          "No assumption that CLI callback returned browser cookies"
+        ]
+      },
+      "codeImplications": [
+        "QualifiedLogin begin/status need product, capabilities, account/resource and revision context; report api-key-bootstrap rather than owned-oauth",
+        "Add host-private session reference and reader, with separate inference/usage states and reconnect paths",
+        "MonitorAccessService currently requires an api-key account; support a real monitor-only session account without placeholder key",
+        "Maintain revision checks, private host ownership, no silent credential fallback, and no paid inference during connect"
+      ],
+      "sources": [
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/integration/mimo-code.md",
+          "kind": "official-doc",
+          "claim": "mimo auth login supports browser authorization without manual API key configuration; separate PAYG and Token Plan selection; balance/valid-plan prerequisite.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/plugin/mimo.ts",
+          "kind": "official-source",
+          "claim": "Custom X25519/AES-GCM browser API-key bootstrap, encrypted {sk,uid,url}; no OAuth access/refresh token.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/provider/auth.ts",
+          "kind": "official-source",
+          "claim": "Successful callback with key stored as type api, key and metadata; OAuth refresh path is separate.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/auth/index.ts",
+          "kind": "official-source",
+          "claim": "auth.json in Global.Path.data; private 0600 writes and API metadata schema.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/shared/src/global.ts",
+          "kind": "official-source",
+          "claim": "MIMOCODE_HOME/data or XDG mimocode data directory.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/main.569e3e15e1d2bea2.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Individual/team read routes; session credentials; five-minute UI freshness wording; logincookie policy 24 hours.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/279.17edd5ab4b3a18cd.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Current individual schema usage.items; team usedPercent/nextResetTime; seat credits/history/reset.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/690.a73865333011cc6e.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Authorizer reads app/pk/redirect_uri/key_name, creates or reads inference key, marks codeCli and returns encrypted data; no monitor credential.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/Token%20Plan/quick-access.md",
+          "kind": "official-doc",
+          "claim": "Separate tp/ttp vs sk keys and regional Token Plan endpoint bases.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/Token%20Plan/subscription.md",
+          "kind": "official-doc",
+          "claim": "Weighted Credits, monthly or annual fixed quota, coding-tool restriction and no fallback to PAYG on exhaustion.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/quick-start/faq/token-plan/Validity&Expiry.md",
+          "kind": "official-doc",
+          "claim": "Calendar month/year validity in UTC, no carryover; team seat monthly quota exhaustion/reset.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/quick-start/faq/account.md",
+          "kind": "official-doc",
+          "claim": "Xiaomi-account login, mainland/overseas registration/payment and separated regional usage.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/price/pay-as-you-go.md",
+          "kind": "official-doc",
+          "claim": "PAYG account monetary balance independent of Token Plan quota.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/steipete/CodexBar/blob/d34fbb47afe73f81dd591bae28a60f72c39a9fe4/Sources/CodexBarCore/Providers/MiMo/MiMoUsageFetcher.swift",
+          "kind": "third-party-source",
+          "claim": "Cookie GET balance/tokenPlan detail/usage implementation; old monthUsage.items.first schema and error-to-zero fallback are unsuitable to copy unchanged.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/steipete/CodexBar/blob/d34fbb47afe73f81dd591bae28a60f72c39a9fe4/Sources/CodexBarCore/Providers/MiMo/MiMoCookieImporter.swift",
+          "kind": "third-party-source",
+          "claim": "Required api-platform_serviceToken/userId, optional api-platform_ph/api-platform_slh.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/LICENSE",
+          "kind": "official-source-license",
+          "claim": "MIT permits source redistribution subject to notice; not a grant of provider service rights.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        }
+      ],
+      "id": "xiaomi-mimo-individual-token-plan",
+      "product": "MiMo Individual Token Plan"
+    },
+    {
+      "provider": "xiaomi-mimo",
+      "current": {
+        "lain": "Manual API-key connection; no owned console-session connector or qualified MiMo login adapter",
+        "official": "Official MiMo Code browser flow exchanges encrypted {sk,uid,url}; actual result is an API key, not OAuth access/refresh tokens",
+        "usage": "Console session is independent of the inference key; standard CLI callback does not hand cookies to lain"
+      },
+      "preferredFlow": {
+        "kind": "owned-console-session-plus-separate-qualified-team-key-path",
+        "status": "usage-session proposal; automated team key bootstrap unproven",
+        "publicOwnOAuth": "No documented standard OAuth/device client, scopes or refresh contract established",
+        "officialCliDelegation": "Qualified inference fallback only; MIMOCODE_HOME gives a documented separate credential root",
+        "ownedSession": "User deliberately starts a private isolated MiMo console session owned by lain; same context visits genuine provider authorizer then approved read routes",
+        "assumptions": [
+          "Third-client key bootstrap can use own app/key identity and a supported contract",
+          "Owned session can be retained privately and used for provider-permitted reads; public frontend routes are not stable API promises"
+        ],
+        "oneLoginMeaning": "One user login may yield an inference key plus a separate broad console-session credential; never claim CLI callback supplied monitoring auth",
+        "teamDifference": "Use session to discover project/seat; only issue/import a team key through an explicitly proven provider path. Do not assume individual authorizer supports ttp keys"
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Choose MiMo and desired capability: inference plus usage, or usage only",
+          "conditional": "Choose product only if not fixed by existing account; usage-only skips key issuance"
+        },
+        {
+          "step": 2,
+          "action": "Sign in in the deliberately opened dedicated MiMo session and accept provider key authorization if inference requested",
+          "disclosure": "Provider may create a named key; lain retains a console session for usage"
+        },
+        {
+          "step": 3,
+          "action": "Choose region/project/seat only when provider result is ambiguous or multiple eligible targets exist",
+          "hostWork": "Match UID, product, provider-allowed base URL and resource identity before binding"
+        },
+        {
+          "step": 4,
+          "action": "Read independent capability results",
+          "hostWork": "Only read usage routes; no inference probe and no error-to-zero fallback"
+        }
+      ],
+      "credentials": [
+        {
+          "kind": "api-key",
+          "acquiredBy": "Custom X25519/SHA256/AES-GCM encrypted provider callback; not OAuth",
+          "rights": "Inference for selected product; no demonstrated console-usage right",
+          "privateOwner": "Host private credential store",
+          "metadata": [
+            "uid",
+            "product",
+            "region",
+            "baseUrl",
+            "keyName if returned/known"
+          ],
+          "lifecycle": "Key revocation or expiration affects inference separately from session"
+        },
+        {
+          "kind": "owned-console-session",
+          "acquiredBy": "Explicit login in own isolated provider browser context; no external-profile scrape/import",
+          "rights": "Broad session; no read-only scope contract established",
+          "privateOwner": "Host-owned isolated session container; frontend sees status only",
+          "cookiesObserved": [
+            "api-platform_serviceToken",
+            "userId",
+            "optional api-platform_ph",
+            "optional api-platform_slh"
+          ],
+          "lifecycle": "Published cookie policy says 24h; no guaranteed refresh mechanism. Expiry asks only usage reconnect"
+        }
+      ],
+      "inference": {
+        "status": "Manual documented team key is fallback; official CLI/authorizer team issuance not demonstrated",
+        "keyKind": "api-key",
+        "validation": "Validate callback state/operation, UID, product and allowlisted provider base URL; key issuance is not proof of a successful inference request",
+        "regionBinding": "CN, SGP or AMS returned provider endpoint; never silently substitute another region",
+        "paidFallback": "Never switch an exhausted Token Plan to PAYG automatically",
+        "keyPrefix": "ttp-",
+        "binding": [
+          "uid",
+          "region",
+          "projectId",
+          "seat or member identity"
+        ],
+        "baseUrl": "Selected provider Token Plan regional endpoint; same allowlist discipline as Individual"
+      },
+      "monitoring": {
+        "auth": "Owned console session, same-origin provider context",
+        "status": "Public frontend reads evidenced, owned session connector not implemented/qualified",
+        "headers": {
+          "x-timeZone": "IANA timezone as console expects"
+        },
+        "binding": [
+          "uid",
+          "region",
+          "projectId",
+          "seat or member identity"
+        ],
+        "rights": "Actual session permissions; no promise of least-privilege monitoring token",
+        "reconnect": "Preserve valid inference key on session expiry. Different UID/region/resource needs explicit new binding; do not reassign old budget/history",
+        "reads": [
+          "GET /api/v1/projects",
+          "GET /api/v1/project/{projectId}/teamTokenPlan/detail",
+          "GET /api/v1/project/{projectId}/teamTokenPlan/usage",
+          "GET /api/v1/project/{projectId}/teamTokenPlan/my/seat"
+        ],
+        "schema": "Team usedPercent is 0..100 and nextResetTime; seat creditsUsed/creditsTotal/usedPercent, historyCreditsUsed/historyUsedPercent, seatStatus and nextResetTime",
+        "semantics": "Monthly seat credits; historical seat values can be inherited, not exclusively the current user. Account member/admin permissions may expose different views"
+      },
+      "maintainerPrerequisites": [
+        "Establish supported third-client authorizer use with own app/key identity; do not impersonate MiMo Code, kn=mimocode or X-Mimo-Source:mimocode-cli",
+        "Qualify private owned browser-session storage, provider-domain navigation, allowed reads, logout, expiry and bounded callbacks",
+        "Bind encrypted callback UID/base URL/product to session identity and resource; validate returned hosts before any inference use",
+        "Separate credential/capability lifecycle and allow monitor-only accounts without dummy inference keys",
+        "Prove ttp team-key bootstrap and correct project/seat mapping independently; if absent, keep manual team key as first inference path"
+      ],
+      "unresolved": [
+        "No public standard OAuth or monitor read-only scope/refresh contract",
+        "Own-client authorizer support is not established by public source availability or MIT source license",
+        "Console read schema/service contract can change; no authenticated schema/permission test performed",
+        "Official CLI docs mention Token Plan generally; current public authorizer does not establish team-key bootstrap"
+      ],
+      "fallback": {
+        "inference": "Manual provider-issued ttp team key bound to explicit project/region; no substitution with tp Individual key",
+        "usage": "Separate explicit own console login if a session connector is qualified; otherwise clearly unavailable",
+        "guardrails": [
+          "Never read/overwrite existing global CLI profile",
+          "No invented BROWSER override; current CLI invokes system browser directly",
+          "No assumption that CLI callback returned browser cookies"
+        ]
+      },
+      "codeImplications": [
+        "QualifiedLogin begin/status need product, capabilities, account/resource and revision context; report api-key-bootstrap rather than owned-oauth",
+        "Add host-private session reference and reader, with separate inference/usage states and reconnect paths",
+        "MonitorAccessService currently requires an api-key account; support a real monitor-only session account without placeholder key",
+        "Maintain revision checks, private host ownership, no silent credential fallback, and no paid inference during connect"
+      ],
+      "sources": [
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/integration/mimo-code.md",
+          "kind": "official-doc",
+          "claim": "mimo auth login supports browser authorization without manual API key configuration; separate PAYG and Token Plan selection; balance/valid-plan prerequisite.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/plugin/mimo.ts",
+          "kind": "official-source",
+          "claim": "Custom X25519/AES-GCM browser API-key bootstrap, encrypted {sk,uid,url}; no OAuth access/refresh token.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/provider/auth.ts",
+          "kind": "official-source",
+          "claim": "Successful callback with key stored as type api, key and metadata; OAuth refresh path is separate.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/auth/index.ts",
+          "kind": "official-source",
+          "claim": "auth.json in Global.Path.data; private 0600 writes and API metadata schema.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/shared/src/global.ts",
+          "kind": "official-source",
+          "claim": "MIMOCODE_HOME/data or XDG mimocode data directory.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/main.569e3e15e1d2bea2.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Individual/team read routes; session credentials; five-minute UI freshness wording; logincookie policy 24 hours.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/279.17edd5ab4b3a18cd.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Current individual schema usage.items; team usedPercent/nextResetTime; seat credits/history/reset.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/690.a73865333011cc6e.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Authorizer reads app/pk/redirect_uri/key_name, creates or reads inference key, marks codeCli and returns encrypted data; no monitor credential.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/Token%20Plan/quick-access.md",
+          "kind": "official-doc",
+          "claim": "Separate tp/ttp vs sk keys and regional Token Plan endpoint bases.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/Token%20Plan/subscription.md",
+          "kind": "official-doc",
+          "claim": "Weighted Credits, monthly or annual fixed quota, coding-tool restriction and no fallback to PAYG on exhaustion.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/quick-start/faq/token-plan/Validity&Expiry.md",
+          "kind": "official-doc",
+          "claim": "Calendar month/year validity in UTC, no carryover; team seat monthly quota exhaustion/reset.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/quick-start/faq/account.md",
+          "kind": "official-doc",
+          "claim": "Xiaomi-account login, mainland/overseas registration/payment and separated regional usage.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/price/pay-as-you-go.md",
+          "kind": "official-doc",
+          "claim": "PAYG account monetary balance independent of Token Plan quota.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/steipete/CodexBar/blob/d34fbb47afe73f81dd591bae28a60f72c39a9fe4/Sources/CodexBarCore/Providers/MiMo/MiMoUsageFetcher.swift",
+          "kind": "third-party-source",
+          "claim": "Cookie GET balance/tokenPlan detail/usage implementation; old monthUsage.items.first schema and error-to-zero fallback are unsuitable to copy unchanged.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/steipete/CodexBar/blob/d34fbb47afe73f81dd591bae28a60f72c39a9fe4/Sources/CodexBarCore/Providers/MiMo/MiMoCookieImporter.swift",
+          "kind": "third-party-source",
+          "claim": "Required api-platform_serviceToken/userId, optional api-platform_ph/api-platform_slh.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/LICENSE",
+          "kind": "official-source-license",
+          "claim": "MIT permits source redistribution subject to notice; not a grant of provider service rights.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        }
+      ],
+      "id": "xiaomi-mimo-team-token-plan",
+      "product": "MiMo Team Token Plan"
+    },
+    {
+      "provider": "xiaomi-mimo",
+      "current": {
+        "lain": "Manual API-key connection; no owned console-session connector or qualified MiMo login adapter",
+        "official": "Official MiMo Code browser flow exchanges encrypted {sk,uid,url}; actual result is an API key, not OAuth access/refresh tokens",
+        "usage": "Console session is independent of the inference key; standard CLI callback does not hand cookies to lain"
+      },
+      "preferredFlow": {
+        "kind": "owned-console-session-plus-provider-key-bootstrap",
+        "status": "proposal-needs-maintainer-qualification",
+        "publicOwnOAuth": "No documented standard OAuth/device client, scopes or refresh contract established",
+        "officialCliDelegation": "Qualified inference fallback only; MIMOCODE_HOME gives a documented separate credential root",
+        "ownedSession": "User deliberately starts a private isolated MiMo console session owned by lain; same context visits genuine provider authorizer then approved read routes",
+        "assumptions": [
+          "Third-client key bootstrap can use own app/key identity and a supported contract",
+          "Owned session can be retained privately and used for provider-permitted reads; public frontend routes are not stable API promises"
+        ],
+        "oneLoginMeaning": "One user login may yield an inference key plus a separate broad console-session credential; never claim CLI callback supplied monitoring auth"
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Choose MiMo and desired capability: inference plus usage, or usage only",
+          "conditional": "Choose product only if not fixed by existing account; usage-only skips key issuance"
+        },
+        {
+          "step": 2,
+          "action": "Sign in in the deliberately opened dedicated MiMo session and accept provider key authorization if inference requested",
+          "disclosure": "Provider may create a named key; lain retains a console session for usage"
+        },
+        {
+          "step": 3,
+          "action": "Choose region/project/seat only when provider result is ambiguous or multiple eligible targets exist",
+          "hostWork": "Match UID, product, provider-allowed base URL and resource identity before binding"
+        },
+        {
+          "step": 4,
+          "action": "Read independent capability results",
+          "hostWork": "Only read usage routes; no inference probe and no error-to-zero fallback"
+        }
+      ],
+      "credentials": [
+        {
+          "kind": "api-key",
+          "acquiredBy": "Custom X25519/SHA256/AES-GCM encrypted provider callback; not OAuth",
+          "rights": "Inference for selected product; no demonstrated console-usage right",
+          "privateOwner": "Host private credential store",
+          "metadata": [
+            "uid",
+            "product",
+            "region",
+            "baseUrl",
+            "keyName if returned/known"
+          ],
+          "lifecycle": "Key revocation or expiration affects inference separately from session"
+        },
+        {
+          "kind": "owned-console-session",
+          "acquiredBy": "Explicit login in own isolated provider browser context; no external-profile scrape/import",
+          "rights": "Broad session; no read-only scope contract established",
+          "privateOwner": "Host-owned isolated session container; frontend sees status only",
+          "cookiesObserved": [
+            "api-platform_serviceToken",
+            "userId",
+            "optional api-platform_ph",
+            "optional api-platform_slh"
+          ],
+          "lifecycle": "Published cookie policy says 24h; no guaranteed refresh mechanism. Expiry asks only usage reconnect"
+        }
+      ],
+      "inference": {
+        "status": "Key bootstrap technically evidenced; own-client channel not qualified",
+        "keyKind": "api-key",
+        "validation": "Validate callback state/operation, UID, product and allowlisted provider base URL; key issuance is not proof of a successful inference request",
+        "regionBinding": "CN, SGP or AMS returned provider endpoint; never silently substitute another region",
+        "paidFallback": "Never switch an exhausted Token Plan to PAYG automatically",
+        "keyPrefix": "sk-",
+        "baseUrl": "Current authorizer returns https://api.xiaomimimo.com/v1 for PAYG; validate selected account/region and provider-supported base, not arbitrary callback URL"
+      },
+      "monitoring": {
+        "auth": "Owned console session, same-origin provider context",
+        "status": "Public frontend reads evidenced, owned session connector not implemented/qualified",
+        "headers": {
+          "x-timeZone": "IANA timezone as console expects"
+        },
+        "binding": [
+          "uid",
+          "product",
+          "region"
+        ],
+        "rights": "Actual session permissions; no promise of least-privilege monitoring token",
+        "reconnect": "Preserve valid inference key on session expiry. Different UID/region/resource needs explicit new binding; do not reassign old budget/history",
+        "reads": [
+          "GET /api/v1/balance"
+        ],
+        "schema": "data.balance, currency, cashBalance, giftBalance; additional frozen/gift-expiry details need qualified schema",
+        "semantics": "Monetary account balance, not Token Plan Credits or a refillable token quota; never combine plan and balance meters"
+      },
+      "maintainerPrerequisites": [
+        "Establish supported third-client authorizer use with own app/key identity; do not impersonate MiMo Code, kn=mimocode or X-Mimo-Source:mimocode-cli",
+        "Qualify private owned browser-session storage, provider-domain navigation, allowed reads, logout, expiry and bounded callbacks",
+        "Bind encrypted callback UID/base URL/product to session identity and resource; validate returned hosts before any inference use",
+        "Separate credential/capability lifecycle and allow monitor-only accounts without dummy inference keys"
+      ],
+      "unresolved": [
+        "No public standard OAuth or monitor read-only scope/refresh contract",
+        "Own-client authorizer support is not established by public source availability or MIT source license",
+        "Console read schema/service contract can change; no authenticated schema/permission test performed",
+        "Regional account separation must remain explicit even if current authorizer shows one PAYG URL"
+      ],
+      "fallback": {
+        "inference": "Official MiMo Code login in purpose-created MIMOCODE_HOME, then import only explicitly selected private API-key entry; otherwise manual product key",
+        "usage": "Separate explicit own console login if a session connector is qualified; otherwise clearly unavailable",
+        "guardrails": [
+          "Never read/overwrite existing global CLI profile",
+          "No invented BROWSER override; current CLI invokes system browser directly",
+          "No assumption that CLI callback returned browser cookies"
+        ]
+      },
+      "codeImplications": [
+        "QualifiedLogin begin/status need product, capabilities, account/resource and revision context; report api-key-bootstrap rather than owned-oauth",
+        "Add host-private session reference and reader, with separate inference/usage states and reconnect paths",
+        "MonitorAccessService currently requires an api-key account; support a real monitor-only session account without placeholder key",
+        "Maintain revision checks, private host ownership, no silent credential fallback, and no paid inference during connect"
+      ],
+      "sources": [
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/integration/mimo-code.md",
+          "kind": "official-doc",
+          "claim": "mimo auth login supports browser authorization without manual API key configuration; separate PAYG and Token Plan selection; balance/valid-plan prerequisite.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/plugin/mimo.ts",
+          "kind": "official-source",
+          "claim": "Custom X25519/AES-GCM browser API-key bootstrap, encrypted {sk,uid,url}; no OAuth access/refresh token.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/provider/auth.ts",
+          "kind": "official-source",
+          "claim": "Successful callback with key stored as type api, key and metadata; OAuth refresh path is separate.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/cli/src/auth/index.ts",
+          "kind": "official-source",
+          "claim": "auth.json in Global.Path.data; private 0600 writes and API metadata schema.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/packages/shared/src/global.ts",
+          "kind": "official-source",
+          "claim": "MIMOCODE_HOME/data or XDG mimocode data directory.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/main.569e3e15e1d2bea2.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Individual/team read routes; session credentials; five-minute UI freshness wording; logincookie policy 24 hours.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/279.17edd5ab4b3a18cd.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Current individual schema usage.items; team usedPercent/nextResetTime; seat credits/history/reset.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://platform.xiaomimimo.com/static/690.a73865333011cc6e.chunk.js",
+          "kind": "official-public-web-source",
+          "claim": "Authorizer reads app/pk/redirect_uri/key_name, creates or reads inference key, marks codeCli and returns encrypted data; no monitor credential.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/Token%20Plan/quick-access.md",
+          "kind": "official-doc",
+          "claim": "Separate tp/ttp vs sk keys and regional Token Plan endpoint bases.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/tokenplan/Token%20Plan/subscription.md",
+          "kind": "official-doc",
+          "claim": "Weighted Credits, monthly or annual fixed quota, coding-tool restriction and no fallback to PAYG on exhaustion.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/quick-start/faq/token-plan/Validity&Expiry.md",
+          "kind": "official-doc",
+          "claim": "Calendar month/year validity in UTC, no carryover; team seat monthly quota exhaustion/reset.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/quick-start/faq/account.md",
+          "kind": "official-doc",
+          "claim": "Xiaomi-account login, mainland/overseas registration/payment and separated regional usage.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://mimo.mi.com/static/docs/price/pay-as-you-go.md",
+          "kind": "official-doc",
+          "claim": "PAYG account monetary balance independent of Token Plan quota.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/steipete/CodexBar/blob/d34fbb47afe73f81dd591bae28a60f72c39a9fe4/Sources/CodexBarCore/Providers/MiMo/MiMoUsageFetcher.swift",
+          "kind": "third-party-source",
+          "claim": "Cookie GET balance/tokenPlan detail/usage implementation; old monthUsage.items.first schema and error-to-zero fallback are unsuitable to copy unchanged.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/steipete/CodexBar/blob/d34fbb47afe73f81dd591bae28a60f72c39a9fe4/Sources/CodexBarCore/Providers/MiMo/MiMoCookieImporter.swift",
+          "kind": "third-party-source",
+          "claim": "Required api-platform_serviceToken/userId, optional api-platform_ph/api-platform_slh.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://github.com/XiaomiMiMo/MiMo-Code/blob/e37f2c2d01460df19b31d67b8116d6c66fe33db8/LICENSE",
+          "kind": "official-source-license",
+          "claim": "MIT permits source redistribution subject to notice; not a grant of provider service rights.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        }
+      ],
+      "id": "xiaomi-mimo-payg",
+      "product": "MiMo PAYG"
+    },
+    {
+      "id": "nvidia-build",
+      "provider": "nvidia-build",
+      "product": "NVIDIA Build hosted Public API Endpoints",
+      "current": {
+        "lain": "Manual NVIDIA Build API-key connection, no qualified account quota adapter",
+        "official": "Developer login then key creation/copy; NGC CLI configuration expects an existing key",
+        "usage": "Public generic limits exist, no established independent account-specific usage/remaining/reset source"
+      },
+      "preferredFlow": {
+        "kind": "manual-provider-key-import",
+        "status": "best evidenced current path",
+        "publicOwnOAuth": "No supported public own-client OAuth/device contract found for Build; do not reuse app=api-catalog identity",
+        "officialCliDelegation": "NGC CLI ngc config set needs an existing key; does not simplify first login",
+        "ownedSession": "Possible future key-provisioning qualification candidate only; no usage-source gain established"
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Open official NVIDIA Build key page from Connect",
+          "disclosure": "Requires a key with Public API Endpoints service access"
+        },
+        {
+          "step": 2,
+          "action": "Sign in at NVIDIA, create/select suitable key, paste once into lain",
+          "conditional": "Only select org/account if genuinely relevant and independently identifiable"
+        },
+        {
+          "step": 3,
+          "action": "See inference credential stored and usage unavailable",
+          "hostWork": "Private key save and only supportable metadata validation; no paid inference test or claim that format proves entitlement"
+        }
+      ],
+      "credentials": [
+        {
+          "kind": "api-key",
+          "rights": "NVIDIA Public API Endpoints / hosted Build inference; arbitrary registry/NVCF permission not enough",
+          "privateOwner": "Host",
+          "metadata": [
+            "provider",
+            "selected account/org when qualified",
+            "expiry when known"
+          ],
+          "lifecycle": "Replace/revoke key independently; changed account/org requires deliberate rebinding"
+        }
+      ],
+      "inference": {
+        "baseUrl": "https://integrate.api.nvidia.com/v1",
+        "auth": "Bearer API key",
+        "qualification": "Actual Public API Endpoints entitlement needed; generic NVIDIA SSO success is insufficient",
+        "noProbe": "No inference request during connect"
+      },
+      "monitoring": {
+        "status": "unsupported-no-qualified-account-source",
+        "availableInformation": "Public config says up to 40 rpm and 10,000 requests per day; model/traffic variability",
+        "notAvailable": [
+          "account used",
+          "account remaining",
+          "exact reset"
+        ],
+        "notSubstitutes": [
+          "NGC registry quotas",
+          "enterprise NIM metrics",
+          "NVCF quotas",
+          "self-hosted metrics"
+        ]
+      },
+      "maintainerPrerequisites": [
+        "For future automated key acquisition: establish own client/session contract, own identity, org binding, provider-supported credential provisioning and key lifecycle",
+        "For usage: find and qualify a genuine Build account read source with rights and semantics; session key provisioning alone does not meet this",
+        "Optional explicit NGC-profile import must validate Public API Endpoints service access and never scan/copy arbitrary global credentials"
+      ],
+      "unresolved": [
+        "No public own-client delegation contract established",
+        "No suitable account quota/usage/remaining/reset source found",
+        "Public frontend session key API is not a grant to operate it as a third-party integration"
+      ],
+      "fallback": {
+        "current": "Open official Build UI and manually import one intended key",
+        "future": "Dedicated session could remove copy if qualified; retain manual import when unavailable",
+        "reconnect": "Replace intended key while preserving matched account history; mismatched org/account creates explicit new binding"
+      },
+      "codeImplications": [
+        "Keep manual-key Connect as first-class supported acquisition; do not show an OAuth button which cannot complete",
+        "Separate static general provider limits from account quota values",
+        "Do not mark generic SSO, key format or successful save as active inference entitlement; use evidence-specific capability states"
+      ],
+      "sources": [
+        {
+          "url": "https://docs.api.nvidia.com/nim/docs/api-quickstart.md",
+          "kind": "official-doc",
+          "claim": "Hosted NVIDIA Build inference, developer login and key creation/copy workflow.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://docs.api.nvidia.com/nim/docs/product",
+          "kind": "official-doc",
+          "claim": "Free hosted prototyping for Developer Program; production license/self-hosted evaluation are separate.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://build.nvidia.com/api/runtime/content/copy.yaml",
+          "kind": "official-public-config",
+          "claim": "Up to 40 rpm and 10,000 requests per day; model/traffic variation; no usage/remaining/reset/account fields.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://build.nvidia.com/_next/static/chunks/1ezdm36-wvhki.js",
+          "kind": "official-public-web-source",
+          "claim": "Runtime limit display and api.ngc.nvidia.com/login with email, app=api-catalog, redirect_uri.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://build.nvidia.com/_next/static/chunks/2xv_0hdneb8vt.js",
+          "kind": "official-public-web-source",
+          "claim": "Session key list/create /v3/orgs/{org}/keys/type/AI_PLAYGROUNDS_KEY; invoke_function policy; no quota read scope.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://build.nvidia.com/_next/static/chunks/2a1ymhcs400-z.js",
+          "kind": "official-public-web-source",
+          "claim": "Browser credential fetch, per-path routing to api.ngc.nvidia.com or buildapi.ngc.nvidia.com.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://docs.nvidia.com/ngc/latest/ngc-catalog-user-guide.html",
+          "kind": "official-doc",
+          "claim": "Personal keys can explicitly include NVIDIA Public API Endpoints; arbitrary registry or cloud function permission insufficient; $oauthtoken is API-key auth.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://docs.nvidia.com/ngc/latest/ngc-user-guide.html",
+          "kind": "official-doc",
+          "claim": "NCA or SSO membership does not grant NGC roles/service access; Public API Endpoints role separately assigned.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        },
+        {
+          "url": "https://docs.ngc.nvidia.com/cli/cmd.html",
+          "kind": "official-cli-doc",
+          "claim": "NGC CLI setup uses ngc config set and an existing API key; no qualified browser/device login in this workflow.",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Finished quota-auth report; no repeated fetch in follow-up"
+        }
+      ]
+    },
+    {
+      "id": "fireworks-serverless",
+      "provider": "fireworks",
+      "product": "Fireworks Serverless API (not Fire Pass)",
+      "current": {
+        "lain": "API key plus manually supplied account ID; FireworksQuotaAdapter reads explicit account quotas",
+        "official": "firectl signin for Google SSO or signin enterprise-account for custom SSO; account list and named user-key creation documented",
+        "gap": "Global --profile documented on downstream commands, but signin destination isolation not yet established"
+      },
+      "preferredFlow": {
+        "kind": "official-cli-delegation-plus-user-api-key-bootstrap",
+        "status": "proposal-blocked-only-on-bounded-cli-isolation-and-output-qualification; manual import remains shippable",
+        "publicOwnOAuth": "No supported own public OAuth client found; CLI retains its own SSO/session credentials",
+        "officialCliDelegation": "Run qualified CLI version in a proven dedicated profile/config root, never mutate global default",
+        "ownedSession": "Not required for proposed path",
+        "keyProvisioning": "After visible creation disclosure, create one named standard Serverless user key; capture bounded private JSON stdout"
+      },
+      "userSteps": [
+        {
+          "step": 1,
+          "action": "Click Sign in with Fireworks and complete official CLI browser SSO",
+          "disclosure": "Creates a named user key for lain; custom SSO alone requires enterprise-account hint before signin"
+        },
+        {
+          "step": 2,
+          "action": "Select account only if multiple eligible accounts are discovered",
+          "hostWork": "account list -o json under explicit isolated profile; resolve resource name/ID and displayName; do not require typing account ID by default"
+        },
+        {
+          "step": 3,
+          "action": "Optionally choose key expiry; otherwise use explicitly stated default",
+          "hostWork": "Create exactly one current-user lain-named key with explicit account/profile; no service account/admin action"
+        },
+        {
+          "step": 4,
+          "action": "Read independent inference-credential and usage results",
+          "hostWork": "Privately save key/keyId/expiry/account/principal; same key reads quotas, no inference probe; rights failure yields usage-permission state"
+        }
+      ],
+      "credentials": [
+        {
+          "kind": "official-cli-session-reference",
+          "privateOwner": "Official CLI in lain-dedicated proven profile/config context",
+          "rights": "Signed-in user permissions; not copied into frontend or converted to fake own OAuth",
+          "metadata": [
+            "qualified CLI version",
+            "dedicated profile identifier",
+            "principal",
+            "account binding"
+          ],
+          "lifecycle": "SSO expiry affects future delegated operations; it does not automatically invalidate generated API key"
+        },
+        {
+          "kind": "api-key",
+          "acquiredBy": "firectl api-key create with documented --key-name, -o json, --account-id and --profile after qualified isolated signin",
+          "rights": "Current-user inference; endpoint-specific account quota permission separately tested. No admin/service-account requirement by default",
+          "privateOwner": "Host private store; never argv/log/status",
+          "metadata": [
+            "keyId",
+            "displayName",
+            "accountId",
+            "principal/email if returned",
+            "expireTime",
+            "prefix",
+            "isFirepass=false confirmed"
+          ],
+          "lifecycle": "Secret available on creation; optional expiry, omitted API expiry may mean never. Store created keyId to handle partial import/cancel safely"
+        }
+      ],
+      "inference": {
+        "baseUrl": "https://api.fireworks.ai/inference/v1",
+        "auth": "Bearer API key",
+        "productGuard": "Must be standard Serverless key, not Fire Pass. API docs example isFirepass=true is not a default to copy",
+        "accountBinding": "Explicit selected accountId, independent of model owner fireworks, user ID and email",
+        "existingKeyPath": "If key already supplied, discover GET /v1/accounts and choose only if needed; do not create another key"
+      },
+      "monitoring": {
+        "initialAuth": "Same API key first; optional separate already-authorized monitor key on rights failure",
+        "reads": [
+          "GET https://api.fireworks.ai/v1/accounts/{account_id}/quotas"
+        ],
+        "binding": [
+          "explicit accountId",
+          "credential principal",
+          "revision"
+        ],
+        "semantics": [
+          "monthly-spend-usd represents monthly spend-cap room, not prepaid balance",
+          "Other units need documented mapping",
+          "updateTime is not a proven reset or source-as-of timestamp",
+          "Inference key validity does not prove quota permission; missing read is unknown/permission state, never zero"
+        ],
+        "optionalFuture": [
+          "billingUsage / billing summary / usageCosts reporting with explicit attribution and rights; ACCOUNT vs SELF not a default extra scope",
+          "Usage-only path can delegate qualified firectl quota list -o json in dedicated profile without issuing an unnecessary inference key"
+        ]
+      },
+      "maintainerPrerequisites": [
+        "Prove for a fixed CLI version that signin supports a named profile or documented separate config root without modifying global defaults; downstream --profile flags alone are insufficient",
+        "Prove api-key create -o json privately emits the one-time key plus keyId and metadata and requests a standard non-FirePass key; inspect version source/help/dry-run before bounded credentialed qualification",
+        "Qualify account discovery/pagination, custom-SSO hint and identity result without inventing a JSON output option for whoami",
+        "Qualify quota minimal role separately and make denial local to usage; do not require broad admin by assumption",
+        "Implement bounded stdout capture, private secret handling, partial-create tracking, cancellation and exact-key cleanup without global signout"
+      ],
+      "unresolved": [
+        "signin profile write isolation not conclusively documented in opened reference",
+        "CLI JSON secret/standard Serverless-key behavior needs exact-version qualification; REST response alone does not prove CLI output",
+        "Minimum quota read role not publicly pinned down",
+        "No authenticated login, key creation or permission check performed"
+      ],
+      "fallback": {
+        "current": "Manual standard Serverless key; use API-key account discovery where allowed, otherwise one explicit account-ID input",
+        "avoid": [
+          "Global firectl signin or signout",
+          "firectl set-api-key overwriting default",
+          "Secrets in --api-key argv",
+          "Overwrite ~/.fireworks/auth.ini",
+          "Automatic service-account creation or Fire Pass provisioning"
+        ],
+        "reconnect": "Use bound profile/account/principal; retain valid key if CLI SSO expires. Different account needs explicit rebinding. Known orphan keyId is reported/resumed; never claim revoke succeeded without evidence"
+      },
+      "codeImplications": [
+        "Add official-cli delegation/key-bootstrap acquisition kind with explicit dedicated profile and target account; output remains api-key, not owned-oauth",
+        "Replace routine manual accountId with discovery+conditional selector, preserving manual fallback when permission prevents discovery",
+        "Keep API-key, CLI session, inference and quota capability lifecycles separate",
+        "Add private keyId/expiry/principal metadata and partial remote-create state; no global profile mutation or hidden cleanup of unknown keys"
+      ],
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/authentication",
+          "kind": "official-cli-doc",
+          "claim": "signin for Google and custom SSO; no demonstrated isolated signin destination; set-api-key writes credentials and is unsuitable for global use",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Targeted public follow-up fetch"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/firectl/firectl",
+          "kind": "official-cli-doc",
+          "claim": "Official CLI and authentication entry point; no public owned-client OAuth contract established",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Targeted public follow-up fetch"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/account-list",
+          "kind": "official-cli-doc",
+          "claim": "Accessible account discovery, JSON output, account-id and profile global flags",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Targeted public follow-up fetch"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/api-key-create",
+          "kind": "official-cli-doc",
+          "claim": "Current-user key by default, key-name, expire-time, JSON output, dry-run; service-account optional admin path not used",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Targeted public follow-up fetch"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/whoami",
+          "kind": "official-cli-doc",
+          "claim": "Authenticated identity and global account/profile flags; this reference does not document JSON output",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Targeted public follow-up fetch"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/firectl/commands/api-key-list",
+          "kind": "official-cli-doc",
+          "claim": "Per-user default, JSON output and explicit profile/account; all-users is not a default requirement",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Targeted public follow-up fetch"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/create-api-key",
+          "kind": "official-api-reference",
+          "claim": "Create response includes keyId, key, expireTime, email, prefix, isFirepass; API example with isFirepass=true must not become a Serverless default",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Targeted public follow-up fetch"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-accounts",
+          "kind": "official-api-reference",
+          "claim": "Bearer API-key account discovery; account name, displayName, state and pagination",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Targeted public follow-up fetch"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-quotas",
+          "kind": "official-api-reference",
+          "claim": "Existing account-quota reader; endpoint rights independent of inference; reused from finished auth-review",
+          "retrievedAt": "2026-10-24",
+          "evidenceReuse": "Reused completed auth-review"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,889 @@
+{
+  "version": 1,
+  "checkedAt": "2026-10-24",
+  "baseCommit": "5dc916f",
+  "status": "research proposal; no runtime changes or live account qualification",
+  "constraints": [
+    "Public official documentation and source only",
+    "No credentials, user browser, login, registration, authenticated provider calls, inference, purchase, service or build",
+    "Kilo exhausted: no top-up or paid fallback",
+    "Do not reuse vendor client IDs as lain without supported own-client/delegation contract"
+  ],
+  "providers": [
+    {
+      "id": "kilo",
+      "product": "Kilo Gateway (personal balance; organizations separately scoped)",
+      "currentLain": {
+        "catalog": "src/Lain.Host/Providers/Catalog/kilo.json",
+        "state": "prepared API-key inference; quota unsupported; live not tested",
+        "userConstraint": "Account reported exhausted. No top-up, paid fallback, inference or authenticated probe authorized in this research."
+      },
+      "sources": [
+        "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/auth/device.ts",
+        "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/auth/device-auth-tui.ts",
+        "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/api/profile.ts",
+        "https://kilo.ai/docs/gateway/authentication",
+        "https://kilo.ai/docs/gateway/usage-and-billing"
+      ],
+      "authOptions": [
+        {
+          "kind": "existing personal API key",
+          "status": "documented for external Gateway; first-party source evidenced for balance",
+          "credential": "Kilo JWT bearer",
+          "inference": "https://ai-gateway.kilo.ai/api/v1",
+          "monitor": "GET https://api.kilo.ai/api/profile/balance",
+          "sameCredential": true,
+          "separateReadToken": "No documented least-privilege balance scope found. Inference-capable secret."
+        },
+        {
+          "kind": "vendor-specific device authorization",
+          "status": "implemented by official CLI; third-party support unresolved",
+          "initiate": "POST https://api.kilo.ai/api/device-auth/codes",
+          "initiateResponse": [
+            "code",
+            "verificationUrl",
+            "expiresIn"
+          ],
+          "poll": "GET https://api.kilo.ai/api/device-auth/codes/{code}",
+          "pollIntervalSeconds": 3,
+          "pollStatuses": {
+            "202": "pending",
+            "403": "denied",
+            "410": "expired"
+          },
+          "approvedResponse": [
+            "token",
+            "userEmail"
+          ],
+          "clientId": "none in examined official client request",
+          "scopes": "none in examined client request",
+          "pkce": "not in examined flow",
+          "refresh": "Official client stores identical access/refresh token and assigns local one-year expiry; no refresh grant established.",
+          "registration": "No public lain client-registration/third-party Device contract found; vendor flow is evidence of feasibility, not reuse permission."
+        },
+        {
+          "kind": "organization",
+          "status": "separate context/lifecycle",
+          "accountDiscovery": "GET https://api.kilo.ai/api/profile with same bearer; organizations id/name/role, selectedOrganizationId, hasPersonalAccount",
+          "contextHeader": "X-KiloCode-OrganizationId",
+          "organizationToken": "Public Gateway documentation describes 15-minute organization tokens; mint/refresh procedure not established here."
+        },
+        {
+          "kind": "manufacturer login / upstream OAuth / SSO",
+          "status": "distinct",
+          "notes": "Kilo identity sign-in via social login or SSO is distinct from ChatGPT subscription connection or upstream BYOK authorization."
+        }
+      ],
+      "recommendation": {
+        "priority": 2,
+        "action": "Implement fixed-host personal balance adapter using existing inference key before introducing another login. Preserve zero and unknown. Later ask manufacturer about supported own Device client or official CLI token export/delegation.",
+        "balanceUnit": "USD: first-party UI formats numeric balance directly as dollars, not microdollars.",
+        "quotaWindows": [
+          {
+            "kind": "free request ceiling",
+            "scope": "IP across authenticated and anonymous requests",
+            "limit": 200,
+            "window": "hour",
+            "remaining": "not established",
+            "reset": "not established"
+          },
+          {
+            "kind": "organization per-user spending cap",
+            "window": "day",
+            "reset": "00:00 UTC",
+            "remaining": "not established"
+          }
+        ],
+        "nextProbe": "After separate authorization: GET profile and balance only, personal account first, compare USD/zero to dashboard; no inference or purchase."
+      },
+      "missingImplementation": [
+        "Fixed endpoint read transport and strict schema",
+        "Account/team linkage independent of mere org header",
+        "Observation as-of/staleness and explicit unknown",
+        "Supported reauthorization lifecycle; no invented refresh",
+        "Optional separate Kilo Pass subscription adapter"
+      ],
+      "unresolved": [
+        "Own third-party Device use/registration and minimal read scopes",
+        "Actual issued token expiry/revocation contract",
+        "Stable public balance API guarantee vs vendor-client implementation",
+        "Org token mint/refresh and role-specific balance access",
+        "Balance does not expose purchased/used totals, credit expiry or free-IP remaining allowance",
+        "Kilo Pass tRPC is source evidenced but not independently live qualified"
+      ],
+      "evidence": [
+        {
+          "url": "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/auth/device.ts",
+          "beleg": "POST codes and GET polling are implemented; no client_id/scope/PKCE in request.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/auth/device-auth-tui.ts",
+          "beleg": "Successful login returns token as access and refresh; local expiry one year; profile selects organization.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/plugin.ts",
+          "beleg": "API key and OAuth access become kilocodeToken.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/provider.ts",
+          "beleg": "kilocodeToken/API key becomes Gateway bearer.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/api/constants.ts",
+          "beleg": "Official account base https://api.kilo.ai; Gateway base https://ai-gateway.kilo.ai/api/v1.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/api/profile.ts",
+          "beleg": "Profile and balance GET use same token; optional organization header; numeric balance.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-console/src/routes/profile/profile-utils.ts",
+          "beleg": "money() renders balance directly with dollar prefix and two decimal places; usage links have personal/team scope.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/api/kilo-pass.ts",
+          "beleg": "Same bearer calls /api/trpc/kiloPass.getState with batch=1 and input={\"0\":null}; period USD usage/credits and renewal fields parsed.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://kilo.ai/docs/gateway/authentication",
+          "beleg": "Personal JWT, 15-minute org token and BYOK are separate; BYOK failures do not fall back to Kilo keys.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://kilo.ai/docs/getting-started/setup-authentication",
+          "beleg": "ChatGPT sign-in and subscription connection are explicitly separate options.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://kilo.ai/docs/gateway/usage-and-billing",
+          "beleg": "Microdollar per-request cost distinct from balance; free 200/hour IP cap and org daily limit midnight UTC; paid exhaustion 402.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://kilo.ai/terms",
+          "beleg": "Section 1(A) explicitly covers applications exposing Gateway; does not establish third-party Device contract; automated extraction restrictions matter for websession alternative.",
+          "date": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": "opencode-go",
+      "product": "OpenCode Go",
+      "currentLain": {
+        "catalog": "src/Lain.Host/Providers/Catalog/opencode-go.json",
+        "state": "prepared key inference; quota unsupported",
+        "planIdentity": "go"
+      },
+      "sources": [
+        "https://opencode.ai/v2/docs/console/api/",
+        "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/plugin/provider/opencode.ts",
+        "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/console-access.ts",
+        "https://opencode.ai/v2/docs/console/harnesses/",
+        "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/console/app/src/routes/oauth/opencode/client.json.ts",
+        "https://opencode.ai/v2/docs/console/api/inference/",
+        "https://opencode.ai/v2/docs/console/budgets/",
+        "https://opencode.ai/v2/docs/console/billing/"
+      ],
+      "authOptions": [
+        {
+          "kind": "workspace API key",
+          "status": "documented external harness path",
+          "bearer": true,
+          "workspace": "one workspace per key, selected at creation; no workspace header for API keys",
+          "expiry": "never or configured 1-365 days; expired keys cannot renew",
+          "permissions": [
+            "Models Request",
+            "Usage Read",
+            "Budgets Read",
+            "Billing Read"
+          ],
+          "separateReadToken": "Owner/admin can create restricted/read-only monitor key. Members can create only model-call personal keys. Concrete usage/balance REST contract still needed.",
+          "bootstrap": "No API key creates/revokes personal keys. Serviceaccount self-key provisioning requires explicit This account API keys Write; rights cannot expand."
+        },
+        {
+          "kind": "Console device OAuth",
+          "status": "official first-party client implemented; own client support unresolved",
+          "base": "https://opencode.ai/console",
+          "initiate": "POST /auth/device/code",
+          "request": {
+            "client_id": "opencode-cli",
+            "supports_org_scope": true
+          },
+          "token": "POST /auth/device/token",
+          "grants": [
+            "urn:ietf:params:oauth:grant-type:device_code",
+            "refresh_token"
+          ],
+          "response": [
+            "access_token",
+            "refresh_token",
+            "expires_in",
+            "org_id (optional)"
+          ],
+          "pkce": "not present in examined device flow",
+          "refresh": "rotated refresh/access token persisted",
+          "identity": [
+            "GET /api/user",
+            "GET /api/orgs"
+          ],
+          "accountContext": "x-org-id for OAuth Console reads",
+          "config": "GET /api/v2/config",
+          "scopes": "No scope request in examined Device client; own client registration and permissions unresolved.",
+          "sameCredential": "Official client uses Console credential for config and attached Console MCP; public external inference docs require API key. Do not assume MCP OAuth is universal inference auth."
+        },
+        {
+          "kind": "Console MCP OAuth",
+          "status": "documented for external harnesses",
+          "resource": "https://opencode.ai/console/mcp",
+          "registration": "Dynamic client registration explicitly documented",
+          "quotaReadTools": "No concrete read tool names, output schemas or scopes established from opened public documentation. Need discovery/qualification before adapter.",
+          "distinction": "OpenCode /oauth/opencode/client.json source describes OpenCode acting as MCP client; it is not lain registration at Console."
+        },
+        {
+          "kind": "Console SSO / upstream BYOK OAuth",
+          "status": "distinct from manufacturer API grants",
+          "notes": "SSO protects Console identity/session. Personal API keys can require active SSO proof. Upstream provider OAuth is not authorization to read Console billing."
+        }
+      ],
+      "recommendation": {
+        "priority": 3,
+        "action": "Preserve native response billing fields; qualify Console MCP read tools using own DCR client; use documented API-key inference until own Device client contract resolved.",
+        "inferenceBase": "https://opencode.ai/inference/go",
+        "sameLoginForInferenceAndMonitor": "Feasible within official Console client; external API-key rights and MCP OAuth audiences/scopes require separate qualification.",
+        "nextProbe": "No current calls. Future limited discovery of official Console MCP OAuth metadata and tools/list, then only a proven read-only usage/balance tool; do not execute write tools.",
+        "paidFallback": "Keep Extra Usage disabled; no purchase or automatic fallback.",
+        "priceUSDPerMonth": 10,
+        "quotaWindows": [
+          {
+            "window": "5 hours",
+            "monthlyAllowancePercent": 20
+          },
+          {
+            "window": "week",
+            "monthlyAllowancePercent": 50
+          },
+          {
+            "window": "month",
+            "monthlyAllowancePercent": 100
+          }
+        ],
+        "quotaSemantics": "Model-dependent monthly USD reference limits weight allowance; not additive money balances. Native per-request opencode.allowance is not account remaining quota. Exact reset instances and cross-model formula not established."
+      },
+      "missingImplementation": [
+        "Native opencode billing metadata preservation across JSON/SSE and API families",
+        "Console MCP discovery and exact read-only schema qualification",
+        "Own-client OAuth onboarding, secure token rotation and workspace linkage",
+        "Dedicated account usage observation distinct from lain-only history"
+      ],
+      "unresolved": [
+        "Public stable REST endpoint/schema for Usage Read and Billing Read",
+        "Own Console Device client registration/authorization",
+        "MCP OAuth scopes/audience/refresh and concrete usage/quota read tools",
+        "Account-wide usage, remaining/reset/as-of values",
+        "Commercial third-app authentication contract beyond documented external coding harness use",
+        "Single-member workspace; do not create a service account/member without validating subscription compatibility."
+      ],
+      "evidence": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/api/",
+          "beleg": "Workspace-scoped personal/serviceaccount keys, permission axes, role limits, expiry, SSO dependency and constrained self-key provisioning.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/plugin/provider/opencode.ts",
+          "beleg": "Real Console Device OAuth with refresh rotation, org_id, user/org discovery and config bearer reads; vendor client_id opencode-cli.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/console-access.ts",
+          "beleg": "Console default server; OAuth bearer + x-org-id vs API key bearer.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/harnesses/",
+          "beleg": "External coding harness inference documented; Console MCP OAuth with dynamic client registration; PAYG/Go bases distinct.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/console/app/src/routes/oauth/opencode/client.json.ts",
+          "beleg": "Native public-client metadata for OpenCode outbound MCP auth; does not register lain or prove Console scopes.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/api/inference/",
+          "beleg": "cost, billing_source free/balance/go/go-plus/byok, list_cost, Go allowance, protocol final-usage events; response cost may exceed final debit.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/budgets/",
+          "beleg": "Policy budgets reset monthly at 00:00 UTC; Go included usage does not count, extra usage does. Budget failure 429.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/billing/",
+          "beleg": "Workspace prepaid balance; owners/admins view balance; paid exhaustion 402; Go Extra Usage can draw credits.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "beleg": "Distinct $10 Go/$40 Go Plus single-member plans; 20/50/100 percent windows; model references; own user-agent/session required for external coding agents; Extra Usage PAYG optional.",
+          "date": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": "opencode-go-plus",
+      "product": "OpenCode Go Plus",
+      "currentLain": {
+        "catalog": "src/Lain.Host/Providers/Catalog/opencode-go.json",
+        "state": "prepared key inference; quota unsupported",
+        "planIdentity": "go-plus"
+      },
+      "sources": [
+        "https://opencode.ai/v2/docs/console/api/",
+        "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/plugin/provider/opencode.ts",
+        "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/console-access.ts",
+        "https://opencode.ai/v2/docs/console/harnesses/",
+        "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/console/app/src/routes/oauth/opencode/client.json.ts",
+        "https://opencode.ai/v2/docs/console/api/inference/",
+        "https://opencode.ai/v2/docs/console/budgets/",
+        "https://opencode.ai/v2/docs/console/billing/"
+      ],
+      "authOptions": [
+        {
+          "kind": "workspace API key",
+          "status": "documented external harness path",
+          "bearer": true,
+          "workspace": "one workspace per key, selected at creation; no workspace header for API keys",
+          "expiry": "never or configured 1-365 days; expired keys cannot renew",
+          "permissions": [
+            "Models Request",
+            "Usage Read",
+            "Budgets Read",
+            "Billing Read"
+          ],
+          "separateReadToken": "Owner/admin can create restricted/read-only monitor key. Members can create only model-call personal keys. Concrete usage/balance REST contract still needed.",
+          "bootstrap": "No API key creates/revokes personal keys. Serviceaccount self-key provisioning requires explicit This account API keys Write; rights cannot expand."
+        },
+        {
+          "kind": "Console device OAuth",
+          "status": "official first-party client implemented; own client support unresolved",
+          "base": "https://opencode.ai/console",
+          "initiate": "POST /auth/device/code",
+          "request": {
+            "client_id": "opencode-cli",
+            "supports_org_scope": true
+          },
+          "token": "POST /auth/device/token",
+          "grants": [
+            "urn:ietf:params:oauth:grant-type:device_code",
+            "refresh_token"
+          ],
+          "response": [
+            "access_token",
+            "refresh_token",
+            "expires_in",
+            "org_id (optional)"
+          ],
+          "pkce": "not present in examined device flow",
+          "refresh": "rotated refresh/access token persisted",
+          "identity": [
+            "GET /api/user",
+            "GET /api/orgs"
+          ],
+          "accountContext": "x-org-id for OAuth Console reads",
+          "config": "GET /api/v2/config",
+          "scopes": "No scope request in examined Device client; own client registration and permissions unresolved.",
+          "sameCredential": "Official client uses Console credential for config and attached Console MCP; public external inference docs require API key. Do not assume MCP OAuth is universal inference auth."
+        },
+        {
+          "kind": "Console MCP OAuth",
+          "status": "documented for external harnesses",
+          "resource": "https://opencode.ai/console/mcp",
+          "registration": "Dynamic client registration explicitly documented",
+          "quotaReadTools": "No concrete read tool names, output schemas or scopes established from opened public documentation. Need discovery/qualification before adapter.",
+          "distinction": "OpenCode /oauth/opencode/client.json source describes OpenCode acting as MCP client; it is not lain registration at Console."
+        },
+        {
+          "kind": "Console SSO / upstream BYOK OAuth",
+          "status": "distinct from manufacturer API grants",
+          "notes": "SSO protects Console identity/session. Personal API keys can require active SSO proof. Upstream provider OAuth is not authorization to read Console billing."
+        }
+      ],
+      "recommendation": {
+        "priority": 3,
+        "action": "Preserve native response billing fields; qualify Console MCP read tools using own DCR client; use documented API-key inference until own Device client contract resolved.",
+        "inferenceBase": "https://opencode.ai/inference/go",
+        "sameLoginForInferenceAndMonitor": "Feasible within official Console client; external API-key rights and MCP OAuth audiences/scopes require separate qualification.",
+        "nextProbe": "No current calls. Future limited discovery of official Console MCP OAuth metadata and tools/list, then only a proven read-only usage/balance tool; do not execute write tools.",
+        "paidFallback": "Keep Extra Usage disabled; no purchase or automatic fallback.",
+        "priceUSDPerMonth": 40,
+        "quotaWindows": [
+          {
+            "window": "5 hours",
+            "monthlyAllowancePercent": 20
+          },
+          {
+            "window": "week",
+            "monthlyAllowancePercent": 50
+          },
+          {
+            "window": "month",
+            "monthlyAllowancePercent": 100
+          }
+        ],
+        "quotaSemantics": "Model-dependent monthly USD reference limits weight allowance; not additive money balances. Native per-request opencode.allowance is not account remaining quota. Exact reset instances and cross-model formula not established."
+      },
+      "missingImplementation": [
+        "Native opencode billing metadata preservation across JSON/SSE and API families",
+        "Console MCP discovery and exact read-only schema qualification",
+        "Own-client OAuth onboarding, secure token rotation and workspace linkage",
+        "Dedicated account usage observation distinct from lain-only history"
+      ],
+      "unresolved": [
+        "Public stable REST endpoint/schema for Usage Read and Billing Read",
+        "Own Console Device client registration/authorization",
+        "MCP OAuth scopes/audience/refresh and concrete usage/quota read tools",
+        "Account-wide usage, remaining/reset/as-of values",
+        "Commercial third-app authentication contract beyond documented external coding harness use",
+        "Single-member workspace; do not create a service account/member without validating subscription compatibility."
+      ],
+      "evidence": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/api/",
+          "beleg": "Workspace-scoped personal/serviceaccount keys, permission axes, role limits, expiry, SSO dependency and constrained self-key provisioning.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/plugin/provider/opencode.ts",
+          "beleg": "Real Console Device OAuth with refresh rotation, org_id, user/org discovery and config bearer reads; vendor client_id opencode-cli.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/console-access.ts",
+          "beleg": "Console default server; OAuth bearer + x-org-id vs API key bearer.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/harnesses/",
+          "beleg": "External coding harness inference documented; Console MCP OAuth with dynamic client registration; PAYG/Go bases distinct.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/console/app/src/routes/oauth/opencode/client.json.ts",
+          "beleg": "Native public-client metadata for OpenCode outbound MCP auth; does not register lain or prove Console scopes.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/api/inference/",
+          "beleg": "cost, billing_source free/balance/go/go-plus/byok, list_cost, Go allowance, protocol final-usage events; response cost may exceed final debit.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/budgets/",
+          "beleg": "Policy budgets reset monthly at 00:00 UTC; Go included usage does not count, extra usage does. Budget failure 429.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/billing/",
+          "beleg": "Workspace prepaid balance; owners/admins view balance; paid exhaustion 402; Go Extra Usage can draw credits.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "beleg": "Distinct $10 Go/$40 Go Plus single-member plans; 20/50/100 percent windows; model references; own user-agent/session required for external coding agents; Extra Usage PAYG optional.",
+          "date": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": "opencode-zen",
+      "product": "OpenCode Zen / current Console pay-as-you-go",
+      "currentLain": {
+        "catalog": null,
+        "state": "No standalone Zen/PAYG provider qualified in this worktree",
+        "planIdentity": "balance"
+      },
+      "sources": [
+        "https://opencode.ai/v2/docs/console/api/",
+        "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/plugin/provider/opencode.ts",
+        "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/console-access.ts",
+        "https://opencode.ai/v2/docs/console/harnesses/",
+        "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/console/app/src/routes/oauth/opencode/client.json.ts",
+        "https://opencode.ai/v2/docs/console/api/inference/",
+        "https://opencode.ai/v2/docs/console/budgets/",
+        "https://opencode.ai/v2/docs/console/billing/"
+      ],
+      "authOptions": [
+        {
+          "kind": "workspace API key",
+          "status": "documented external harness path",
+          "bearer": true,
+          "workspace": "one workspace per key, selected at creation; no workspace header for API keys",
+          "expiry": "never or configured 1-365 days; expired keys cannot renew",
+          "permissions": [
+            "Models Request",
+            "Usage Read",
+            "Budgets Read",
+            "Billing Read"
+          ],
+          "separateReadToken": "Owner/admin can create restricted/read-only monitor key. Members can create only model-call personal keys. Concrete usage/balance REST contract still needed.",
+          "bootstrap": "No API key creates/revokes personal keys. Serviceaccount self-key provisioning requires explicit This account API keys Write; rights cannot expand."
+        },
+        {
+          "kind": "Console device OAuth",
+          "status": "official first-party client implemented; own client support unresolved",
+          "base": "https://opencode.ai/console",
+          "initiate": "POST /auth/device/code",
+          "request": {
+            "client_id": "opencode-cli",
+            "supports_org_scope": true
+          },
+          "token": "POST /auth/device/token",
+          "grants": [
+            "urn:ietf:params:oauth:grant-type:device_code",
+            "refresh_token"
+          ],
+          "response": [
+            "access_token",
+            "refresh_token",
+            "expires_in",
+            "org_id (optional)"
+          ],
+          "pkce": "not present in examined device flow",
+          "refresh": "rotated refresh/access token persisted",
+          "identity": [
+            "GET /api/user",
+            "GET /api/orgs"
+          ],
+          "accountContext": "x-org-id for OAuth Console reads",
+          "config": "GET /api/v2/config",
+          "scopes": "No scope request in examined Device client; own client registration and permissions unresolved.",
+          "sameCredential": "Official client uses Console credential for config and attached Console MCP; public external inference docs require API key. Do not assume MCP OAuth is universal inference auth."
+        },
+        {
+          "kind": "Console MCP OAuth",
+          "status": "documented for external harnesses",
+          "resource": "https://opencode.ai/console/mcp",
+          "registration": "Dynamic client registration explicitly documented",
+          "quotaReadTools": "No concrete read tool names, output schemas or scopes established from opened public documentation. Need discovery/qualification before adapter.",
+          "distinction": "OpenCode /oauth/opencode/client.json source describes OpenCode acting as MCP client; it is not lain registration at Console."
+        },
+        {
+          "kind": "Console SSO / upstream BYOK OAuth",
+          "status": "distinct from manufacturer API grants",
+          "notes": "SSO protects Console identity/session. Personal API keys can require active SSO proof. Upstream provider OAuth is not authorization to read Console billing."
+        }
+      ],
+      "recommendation": {
+        "priority": 3,
+        "action": "Preserve native response billing fields; qualify Console MCP read tools using own DCR client; use documented API-key inference until own Device client contract resolved.",
+        "inferenceBase": "https://opencode.ai/inference",
+        "sameLoginForInferenceAndMonitor": "Feasible within official Console client; external API-key rights and MCP OAuth audiences/scopes require separate qualification.",
+        "nextProbe": "No current calls. Future limited discovery of official Console MCP OAuth metadata and tools/list, then only a proven read-only usage/balance tool; do not execute write tools.",
+        "paidFallback": "Keep Extra Usage disabled; no purchase or automatic fallback.",
+        "quotaSemantics": "PAYG USD balance distinct from Go/Plus allowance and budget policies; no synthetic 5h subscription quota. Free Console chat models restricted to OpenCode client."
+      },
+      "missingImplementation": [
+        "Native opencode billing metadata preservation across JSON/SSE and API families",
+        "Console MCP discovery and exact read-only schema qualification",
+        "Own-client OAuth onboarding, secure token rotation and workspace linkage",
+        "Dedicated account usage observation distinct from lain-only history"
+      ],
+      "unresolved": [
+        "Public stable REST endpoint/schema for Usage Read and Billing Read",
+        "Own Console Device client registration/authorization",
+        "MCP OAuth scopes/audience/refresh and concrete usage/quota read tools",
+        "Account-wide usage, remaining/reset/as-of values",
+        "Commercial third-app authentication contract beyond documented external coding harness use"
+      ],
+      "evidence": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/api/",
+          "beleg": "Workspace-scoped personal/serviceaccount keys, permission axes, role limits, expiry, SSO dependency and constrained self-key provisioning.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/plugin/provider/opencode.ts",
+          "beleg": "Real Console Device OAuth with refresh rotation, org_id, user/org discovery and config bearer reads; vendor client_id opencode-cli.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/console-access.ts",
+          "beleg": "Console default server; OAuth bearer + x-org-id vs API key bearer.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/harnesses/",
+          "beleg": "External coding harness inference documented; Console MCP OAuth with dynamic client registration; PAYG/Go bases distinct.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/console/app/src/routes/oauth/opencode/client.json.ts",
+          "beleg": "Native public-client metadata for OpenCode outbound MCP auth; does not register lain or prove Console scopes.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/api/inference/",
+          "beleg": "cost, billing_source free/balance/go/go-plus/byok, list_cost, Go allowance, protocol final-usage events; response cost may exceed final debit.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/budgets/",
+          "beleg": "Policy budgets reset monthly at 00:00 UTC; Go included usage does not count, extra usage does. Budget failure 429.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/billing/",
+          "beleg": "Workspace prepaid balance; owners/admins view balance; paid exhaustion 402; Go Extra Usage can draw credits.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/docs/zen/",
+          "beleg": "Legacy Zen docs currently redirect to Console models/PAYG; request-based charging and separate subscription Go.",
+          "date": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": "requesty",
+      "product": "Requesty Gateway; self-key monitor and optional organization monitor",
+      "currentLain": {
+        "catalog": "src/Lain.Host/Providers/Catalog/requesty.json",
+        "state": "prepared API-key inference; manual quota; no implemented self usage/budget or org balance adapter"
+      },
+      "sources": [
+        "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/internal/oauth/flow.go",
+        "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/internal/onboarding/flow.go",
+        "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/internal/client/api_keys.go",
+        "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/internal/client/usage.go",
+        "https://docs.requesty.ai/features/key-management-api",
+        "https://docs.requesty.ai/api-reference/management-apis"
+      ],
+      "authOptions": [
+        {
+          "kind": "existing inference API key",
+          "status": "official CLI implements same-key self monitor",
+          "inference": "https://router.requesty.ai/v1",
+          "selfDetails": "GET https://api-v2.requesty.ai/v1/manage/apikey/self",
+          "selfUsage": "GET https://api-v2.requesty.ai/v1/manage/apikey/self/usage",
+          "selfUsageParameters": "Query: start, optional end, resolution, group_by",
+          "sameCredential": true,
+          "managePermissionRequiredForSelf": false
+        },
+        {
+          "kind": "Authorization Code OAuth + API-key bootstrap",
+          "status": "implemented by official CLI; own-client registration not established",
+          "authorize": "https://api-v2.requesty.ai/v1/oauth/authorize",
+          "token": "https://api-v2.requesty.ai/v1/oauth/token",
+          "client_id": "requesty-cli",
+          "publicClient": true,
+          "clientSecret": false,
+          "pkce": "S256, 32 random byte verifier",
+          "state": "random 16 bytes",
+          "redirect": "http://127.0.0.1:<ephemeral>/callback",
+          "callbackTimeoutSeconds": 300,
+          "scope": "manage:group:r manage:apikey:w",
+          "resource": "https://api-v2.requesty.ai/v1/manage",
+          "bootstrap": [
+            "GET /v1/manage/group",
+            "Select own group if multiple; none means personal if org policy permits",
+            "POST /v1/manage/apikey with name and optional group_id",
+            "Persist returned api_key, not short-lived OAuth bearer"
+          ],
+          "refresh": "Official flow comments say server returns refresh token but CLI deliberately discards it; own refresh grant not examined. API key replaces it for long-lived use.",
+          "permissions": "Official CLI leaves key permissions to organization defaults; README says provisioned key can infer/read its own usage, no arbitrary management.",
+          "registration": "No opened public documentation establishes registering lain own client_id/redirects or permission to reuse requesty-cli."
+        },
+        {
+          "kind": "optional monitor API key",
+          "status": "documented permission axes and GET reads",
+          "permissions": {
+            "manage": "read",
+            "completions": "none"
+          },
+          "orgBalance": "GET https://api-v2.requesty.ai/v1/manage/org",
+          "orgUsage": "GET https://api-v2.requesty.ai/v1/manage/org/usage",
+          "arbitraryKeyUsage": "GET /v1/manage/apikey/{id}/usage",
+          "bootstrap": "Admin creates monitor key; manage-write can provision keys but CLI minimal bootstrap scopes do not establish rights to create privileged org monitor keys.",
+          "sameCredential": "Combined rights can exist, but normal self key does not grant organization reads. Separate read token is optional only for org monitoring."
+        },
+        {
+          "kind": "enterprise SSO",
+          "status": "dashboard identity only",
+          "notes": "Official SSO docs explicitly state API keys/serviceaccounts remain necessary for router calls; unrelated to CLI PKCE and BYOK provider auth."
+        }
+      ],
+      "recommendation": {
+        "priority": 1,
+        "action": "Implement self-key details and self usage first with existing key, then own-client PKCE bootstrap registration; add optional org read-only monitor separately.",
+        "selfDetailsFields": [
+          "id",
+          "name",
+          "monthly_limit",
+          "monthly_spend",
+          "expires_at",
+          "permissions",
+          "group"
+        ],
+        "selfBudgetSemantics": "monthly_limit=0 means no key cap, not zero credit. Missing values unknown. No exact monthly reset timestamp established.",
+        "usageFields": [
+          "usage map by period",
+          "total_requests",
+          "completions_requests",
+          "embedding_requests",
+          "image_requests",
+          "speech_requests",
+          "transcription_requests",
+          "spend",
+          "input_tokens",
+          "output_tokens",
+          "total_tokens",
+          "grouped_data"
+        ],
+        "balanceUnit": "Organization prepaid USD; documented postpaid agreements can allow negative balance.",
+        "freeQuota": {
+          "scope": "organization across all free models",
+          "newOrganization": {
+            "dailyRequests": 200,
+            "requestsPerMinute": 20
+          },
+          "payingOrganization": {
+            "dailyRequests": 1000,
+            "requestsPerMinute": 60
+          },
+          "reset": "daily, precise timezone/instance not established",
+          "remaining": "Cannot derive organization free remaining from key-only total requests."
+        },
+        "nextProbe": "After separate authorization read self details and short explicit self usage window without inference; compare dashboard. Optional manage-read GET org and org usage to qualify account scope, USD and reporting delay."
+      },
+      "missingImplementation": [
+        "Self endpoints and accurate decimal/null handling",
+        "Budget/usage vs remaining-free-quota display distinction",
+        "Own PKCE client registration and callback/state lifecycle",
+        "One-time key bootstrap, group choice and secret persistence",
+        "Optional monitor credential linking to correct organization",
+        "Read-only live qualification and source freshness"
+      ],
+      "unresolved": [
+        "Own third-party OAuth client registration/allowed redirects",
+        "Supported org-read OAuth scopes and refresh contract",
+        "API doc GET-body for arbitrary-key usage vs CLI self query discrepancy",
+        "Organization ID not returned in examined /org schema; prove linkage using key/group metadata",
+        "Free-pool reset timezone, tier identity and precise counting semantics",
+        "Usage reporting delay and provider as-of timestamp",
+        "Full commercial terms body unavailable via public page reader; source-code license is not API authorization"
+      ],
+      "evidence": [
+        {
+          "url": "https://github.com/requestyai/cli",
+          "beleg": "Official README explains browser sign-in creates API key, same key can read own usage, manage subcommands need separate manage-enabled profile; Apache-2.0 code.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/internal/oauth/flow.go",
+          "beleg": "Public requesty-cli, manage:group:r manage:apikey:w, resource binding, authorization code, S256 PKCE, form token exchange; short access-token lifetime and discarded refresh.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/internal/oauth/callback.go",
+          "beleg": "Ephemeral IPv4 loopback callback, state validation, single result, five-minute login timeout.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/internal/onboarding/flow.go",
+          "beleg": "OAuth bearer lists groups then provisions API key with optional group_id; does not explicitly request permissions or budget; saves created key.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/internal/client/api_keys.go",
+          "beleg": "Self alias usable without manage rights; monthly limit/spend/expiry; zero limit means uncapped; permission axes.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/internal/client/usage.go",
+          "beleg": "GET /v1/manage/apikey/self/usage with query; key scoped period map, precise decimal spend and token/request fields.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/features/key-management-api",
+          "beleg": "Every plan; manage READ suffices for GET, WRITE for create/update/delete; exact management base.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/api-reference/endpoint/manage-org-get",
+          "beleg": "GET /v1/manage/org returns name and numeric balance.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/api-reference/endpoint/manage-org-get-usage",
+          "beleg": "Organization usage query start/end RFC3339 max 100 days, resolution and grouping; response period map.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/api-reference/endpoint/manage-apikey/manage-api-key-get-usage",
+          "beleg": "Arbitrary key usage reference shows GET JSON body; discrepancy must be qualified, not guessed.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/api-reference/endpoint/manage-apikey/manage-api-key-create",
+          "beleg": "Key creation returns id and one-time secret; supports permissions.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/api-reference/requesty_management-openapi.json",
+          "beleg": "Permissions manage and completions each none/read/write.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/features/billing",
+          "beleg": "Prepaid USD organization balance; postpaid can be negative; dashboard billing admin-only.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/features/free-models",
+          "beleg": "Organization pool across all free models; 200/20 new and 1000/60 paying day/minute ceilings; daily reset unspecified timezone.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/features/sso",
+          "beleg": "Enterprise OIDC/SAML controls dashboard sign-in; explicitly does not replace API keys.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/features/analytics-exports",
+          "beleg": "User-facing CSV/PDF export of analytics offers bounded websession/export fallback.",
+          "date": "2026-10-24"
+        },
+        {
+          "url": "https://www.requesty.ai/terms",
+          "beleg": "Reader yielded page shell without substantive terms; no comprehensive commercial license inference.",
+          "date": "2026-10-24"
+        }
+      ]
+    }
+  ],
+  "websessionAlternative": {
+    "status": "bounded candidate, not rejected categorically or implemented",
+    "approach": "Future user-controlled export or isolated signed-in view for visible balance/usage/reset only; retain account/as-of/expiry and no background guarantee.",
+    "prefer": [
+      "Kilo bearer balance",
+      "Requesty self/optional manage-read",
+      "OpenCode official MCP OAuth read discovery"
+    ],
+    "gaps": [
+      "Terms/role/MFA/session scope",
+      "Exact selectors/read-only calls",
+      "Credential isolation",
+      "No invented console endpoints"
+    ]
+  }
+}

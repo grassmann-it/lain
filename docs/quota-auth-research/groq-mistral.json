@@ -1,0 +1,703 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-24",
+  "baseCommit": "5dc916fcea702f2a196520903937570745e26dac",
+  "status": "research-proposal-not-product-decision",
+  "scope": "Public official documentation and official SDK/CLI code only; no credentials, authenticated queries, browser accounts, login, registration, purchase, builds, services or product edits.",
+  "providers": [
+    {
+      "id": "groq",
+      "product": "GroqCloud direct inference: Free, Developer PAYG, Enterprise",
+      "currentLain": {
+        "implemented": [
+          "Groq inference API-key route and model metadata",
+          "Six passive Groq headers captured by Core and persisted, read by GroqQuotaAdapter, registered in Host and surfaced through QuotaService/UI"
+        ],
+        "code": [
+          "proxy/adapter/internal/lain/quota_observations.go",
+          "src/Lain.Host/Quota/GroqQuotaAdapter.cs",
+          "src/Lain.Host/Program.cs:86"
+        ],
+        "verification": "Existing synthetic process acceptance only; no real user-account header event qualified in this research.",
+        "freshness": "Original ObservedAt/DataAsOf retained on refresh; FreshUntil = min(observed+5m, supplied reset); no local refill.",
+        "absent": [
+          "Independent public Usage/Spend reader",
+          "Enterprise Prometheus adapter",
+          "Owned OAuth/device/bootstrap integration"
+        ]
+      },
+      "sources": [
+        {
+          "id": "groq-response-headers",
+          "status": "implemented-not-live-qualified",
+          "dataType": "rate-limit-remaining",
+          "access": "Passive ordinary inference response; refresh reads private Core snapshot only",
+          "fields": [
+            "x-ratelimit-limit-requests",
+            "x-ratelimit-remaining-requests",
+            "x-ratelimit-reset-requests",
+            "x-ratelimit-limit-tokens",
+            "x-ratelimit-remaining-tokens",
+            "x-ratelimit-reset-tokens"
+          ],
+          "scope": "Organization limits with potentially overlapping stricter project limits; actual winning scope in headers not publicly settled. Account/model attribution retained, no inferred shared pool.",
+          "units": {
+            "requests": "RPD",
+            "tokens": "TPM"
+          },
+          "reset": "Duration relative to response observation; no calendar-midnight assumption.",
+          "notProvided": [
+            "money balance",
+            "all rate-limit dimensions",
+            "complete monthly usage",
+            "prepaid credits"
+          ],
+          "evidence": [
+            "G1",
+            "G2"
+          ]
+        },
+        {
+          "id": "groq-enterprise-prometheus",
+          "status": "official-enterprise-candidate-unimplemented",
+          "dataType": "usage-performance-rates",
+          "baseUrl": "https://api.groq.com/v1/metrics/prometheus",
+          "documentedPaths": [
+            "/api/v1/query",
+            "/api/v1/query_range",
+            "/api/v1/series",
+            "/api/v1/labels",
+            "/api/v1/label/<label_name>/values",
+            "/api/v1/status/tsdb"
+          ],
+          "auth": "Authorization: Bearer <Groq API key>",
+          "entitlement": "Enterprise only; provider enablement required",
+          "metrics": [
+            "model_project_id_status_code:requests:rate5m",
+            "model_project_id:tokens_in:rate5m",
+            "model_project_id:tokens_out:rate5m",
+            "latency/token histograms",
+            "prompt cache hits/misses"
+          ],
+          "scope": "model and project_id; some metrics status_code/le",
+          "window": "5-minute rate; not cumulative billed usage",
+          "freshness": "Server sample timestamps meaningful; export delay/scrape cadence/retention not documented in reviewed page.",
+          "notProvided": [
+            "configured quota",
+            "remaining quota",
+            "spend",
+            "credit balance",
+            "exact monthly usage"
+          ],
+          "evidence": [
+            "G3"
+          ]
+        },
+        {
+          "id": "groq-console-spend",
+          "status": "official-manual-only-no-qualified-public-read-contract",
+          "dataType": "money-spend-limit",
+          "url": "https://console.groq.com/settings/billing/limits",
+          "scope": "Organization across all API keys",
+          "unit": "USD",
+          "entitlement": "Paid tier; owner manages cap",
+          "freshness": "Spend updates every 10–15 minutes; overshoot possible",
+          "reset": "First of month; timezone undocumented",
+          "blockedResponse": "HTTP 400 blocked_api_access",
+          "evidence": [
+            "G4",
+            "G5"
+          ]
+        }
+      ],
+      "authOptions": [
+        {
+          "id": "existing-inference-key",
+          "status": "available",
+          "inference": true,
+          "reporting": "Passive headers need no additional credential. Same key type documented for Enterprise Prometheus if entitled.",
+          "manualSetup": "https://console.groq.com/keys",
+          "evidence": [
+            "G3",
+            "G6"
+          ]
+        },
+        {
+          "id": "owned-oauth-device-cli",
+          "status": "not-publicly-qualified-in-reviewed-sources",
+          "inference": null,
+          "reporting": null,
+          "scopes": null,
+          "registration": "No public supported registration/bootstrap contract found; console SSO and external MCP OAuth are not delegated Groq account reporting.",
+          "evidence": [
+            "G6",
+            "G7",
+            "G8",
+            "G9"
+          ]
+        }
+      ],
+      "recommendation": {
+        "decision": "Keep passive RPD/TPM source for all tiers. Offer independent Enterprise metrics only as optional usage/performance capability after qualification; do not turn rate5m into exact balance.",
+        "implementationSteps": [
+          "Preserve account/model/original timestamps and unknown project scope.",
+          "If Enterprise access already exists, add bounded Prometheus read-only adapter with explicit project/model matching and sample timestamps.",
+          "Keep monthly spend/credits unknown unless a supported public reporting contract is obtained."
+        ],
+        "nextEvidence": [
+          "Later authorized ordinary user request: securely qualify six headers, timestamp, status, account, model and verified organization/project association.",
+          "For existing Enterprise entitlement: manufacturer confirmation of key role, delay and retention, then authorized project-filtered read against documented query path."
+        ],
+        "sameLoginForInferenceAndReporting": "Same Groq API-key credential type for inference and documented Enterprise metrics; tier/role entitlement still independent. No full money reporting qualified."
+      },
+      "missingImplementation": [
+        "Enterprise Prometheus reader/capability registration",
+        "Verified project/org identity in rate-header scope",
+        "Groq budget reader and own browser/device login (public source contract also missing)"
+      ],
+      "unresolved": [
+        "Real user-account six-header observation absent.",
+        "Which overlapping project/org limit headers represent is not settled.",
+        "Minimum Prometheus key role, export delay, retention and actual user Enterprise entitlement unknown.",
+        "No qualified public general usage/spend/remaining or key-management API in reviewed docs/SDK; not proof of provider-wide absence.",
+        "No publicly qualified third-party OAuth/device flow in reviewed sources."
+      ],
+      "evidence": [
+        {
+          "id": "G1",
+          "url": "https://console.groq.com/docs/rate-limits.md",
+          "claim": "Sechs Header dokumentieren RPD und TPM; Resetwerte als Dauer, retry-after in Sekunden nur bei 429. Orgweite Limits; keine Geldbudgetaussage.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "G2",
+          "url": "https://console.groq.com/docs/projects.md",
+          "claim": "Projektkeys, projektbezogene Usage und engere Modelllimits; Organisation als gemeinsame Obergrenze; ITPM/OTPM nur Org; Owner/Developer/Reader-Rollen.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "G3",
+          "url": "https://console.groq.com/docs/prometheus-metrics.md",
+          "claim": "Enterprise-only. Bearer Groq API key an https://api.groq.com/v1/metrics/prometheus; Prometheus-Pfade, modell-/projektbezogene rate5m-Requests/Tokens/Performance.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "G4",
+          "url": "https://console.groq.com/docs/spend-limits.md",
+          "claim": "Paid + Owner; USD-Orgspendcap über alle Keys, 10–15 Minuten Aktualisierungsverzug, Reset am Ersten (Zeitzone offen), HTTP 400 blocked_api_access. Nur Consolebedienung beschrieben.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "G5",
+          "url": "https://console.groq.com/docs/billing-faqs.md",
+          "claim": "Developer PAYG benötigt Zahlungsmethode; near-real-time Usage und Billing in Console; kein öffentlich qualifizierter Readvertrag.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "G6",
+          "url": "https://console.groq.com/docs/quickstart.md",
+          "claim": "Offizieller Keybootstrap über Console /keys; GROQ_API_KEY.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "G7",
+          "url": "https://github.com/groq/groq-python/blob/55066d94acca028c3cb74e050f2711b80ade6298/api.md",
+          "claim": "Gelesene offizielle SDK-Oberfläche enthält Inferenz/Modelle/Batches/Dateien, keinen qualifizierten Org-/Usage-/Spend-/Keymanagement-/OAuthvertrag. Begrenzte Nichtfund-Aussage.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-sdk"
+        },
+        {
+          "id": "G8",
+          "url": "https://console.groq.com/llms.txt",
+          "claim": "Öffentlicher Dokumentationsindex zur Eingrenzung der Recherche; kein qualifizierter nativer Account-OAuth-/Deviceflow gefunden.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "G9",
+          "url": "https://console.groq.com/docs/api-reference.md",
+          "claim": "Öffentliche API-Referenz gelesen; Requestusage ist kein Accountbudget, kein geeigneter allgemeiner Reporting-/Keymanagementvertrag qualifiziert.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        }
+      ]
+    },
+    {
+      "id": "mistral",
+      "product": "Mistral Studio/API/Vibe Code global plans; Enterprise Admin API Preview",
+      "currentLain": {
+        "implemented": [
+          "Direct Studio API-key inference route",
+          "GET /v1/models metadata adapter"
+        ],
+        "code": [
+          "src/Lain.Host/Providers/Catalog/mistral.json",
+          "src/Lain.Host/Providers/DirectApiModelAdapter.cs",
+          "src/Lain.Host/Accounts/Monitoring/MonitorAccessCatalog.cs",
+          "src/Lain.Host/Program.cs"
+        ],
+        "verification": "No live account query performed; model metadata is not billing proof.",
+        "absent": [
+          "Mistral quota adapter",
+          "Mistral monitor credential option",
+          "Admin reporting registration",
+          "Vibe browser credential bootstrap integration"
+        ],
+        "catalogQuotaSupport": "unsupported"
+      },
+      "sources": [
+        {
+          "id": "mistral-admin-spend-limit",
+          "status": "official-preview-enterprise-candidate-unimplemented-auth-contract-conflict",
+          "dataType": "money-spend-cap-and-current-usage",
+          "method": "GET",
+          "url": "https://api.mistral.ai/v1/admin/spend-limit",
+          "fields": [
+            "limits.currency",
+            "limits.completion.monthly_limit_reached",
+            "limits.completion.no_monthly_limit",
+            "limits.completion.total_usage",
+            "limits.completion.usage",
+            "limits.completion.usage_limit",
+            "limits.completion.vibe_usage",
+            "limits.last_payment_failure",
+            "limits.last_payment_failure_protection"
+          ],
+          "auth": "Dedicated Admin API key; guide x-api-key conflicts with generated HTTP Bearer security/cURL.",
+          "entitlement": "Enterprise only, non-self-serve; Enterprise Account admin creates key",
+          "scope": "Single organization per authentication guide; explicit expected organization required.",
+          "freshness": "No reporting latency SLA or data-as-of timestamp qualified. ObservedAt must be retrieval time only.",
+          "reset": "Monthly cap; exact reset timezone/instant not documented.",
+          "normalization": "Amounts nullable; keep raw named fields, currency and no_monthly_limit. Derived cap remaining = usage_limit-total_usage only after same-period/scope semantics confirmed; not usage+vibe_usage+total_usage.",
+          "notProvided": [
+            "prepaid credit balance",
+            "included plan allowance",
+            "rate remaining"
+          ],
+          "evidence": [
+            "M2",
+            "M3",
+            "M6",
+            "M7",
+            "M8",
+            "M9"
+          ]
+        },
+        {
+          "id": "mistral-admin-rate-limit",
+          "status": "official-preview-enterprise-candidate-unimplemented-auth-contract-conflict",
+          "dataType": "configured-limits",
+          "method": "GET",
+          "url": "https://api.mistral.ai/v1/admin/rate-limit",
+          "fields": [
+            "requests_per_second",
+            "tokens_limits_by_model.*.tokens_per_minute",
+            "tokens_limits_by_model.*.tokens_per_month"
+          ],
+          "scope": "Guide says organization; workspace shared limits also documented; validate actual scope.",
+          "notProvided": [
+            "remaining rate capacity",
+            "used rate tokens",
+            "reset countdown"
+          ],
+          "evidence": [
+            "M2",
+            "M5",
+            "M7",
+            "M9"
+          ]
+        },
+        {
+          "id": "mistral-admin-monthly-usage",
+          "status": "official-preview-enterprise-candidate-unimplemented-auth-contract-conflict",
+          "dataType": "provider-reported-monthly-usage-and-prices",
+          "method": "GET",
+          "url": "https://api.mistral.ai/v1/admin/usage",
+          "queryParameters": [
+            "month",
+            "year",
+            "workspace_id",
+            "api_zone"
+          ],
+          "fields": [
+            "start_date",
+            "end_date",
+            "date",
+            "currency",
+            "prices",
+            "completion",
+            "chat",
+            "ocr",
+            "audio",
+            "connectors",
+            "libraries_api",
+            "fine_tuning",
+            "vibe_code"
+          ],
+          "window": "Calendar month; not necessarily subscription allowance billing period.",
+          "freshness": "date is reference date, not proven data-as-of; reporting delay unknown.",
+          "warning": "vibe_usage is documented legacy always 0 while generated example shows 14; do not use it as Vibe allowance usage.",
+          "evidence": [
+            "M1",
+            "M8",
+            "M9"
+          ]
+        },
+        {
+          "id": "mistral-admin-detailed-usage",
+          "status": "official-preview-enterprise-candidate-unimplemented-auth-contract-conflict",
+          "dataType": "usage-quantities-only",
+          "method": "POST",
+          "readOnlySemantics": true,
+          "url": "https://api.mistral.ai/v1/admin/usage/query",
+          "requiredBody": [
+            "start",
+            "end"
+          ],
+          "optionalBody": [
+            "workspace_ids",
+            "organization_id",
+            "api_key_id",
+            "user_id",
+            "service_account_id",
+            "api_zone",
+            "usage_type",
+            "billing_metric",
+            "billing_group",
+            "billing_display_name",
+            "service_tier",
+            "filters",
+            "group_by",
+            "time_bucket",
+            "limit",
+            "offset",
+            "include_aggregates",
+            "include_nb_api_calls"
+          ],
+          "response": [
+            "groups",
+            "metadata.has_more",
+            "metadata.query_params",
+            "aggregates"
+          ],
+          "semantics": "Inclusive start/exclusive end, UTC buckets; value grouped by billing metrics. count = usage records, nb_api_calls = distinct API calls. Quantities only: no prices/currency/costs.",
+          "scope": "Key guide single organization; metadata customer scope and org-array filter need reconciliation. Validate expected organization/workspace.",
+          "freshness": "Query interval/bucket timestamps do not establish completeness or delay.",
+          "evidence": [
+            "M7",
+            "M9"
+          ]
+        },
+        {
+          "id": "mistral-console-plan-credits",
+          "status": "official-manual-no-qualified-public-read-contract",
+          "dataType": "included-monthly-allowance-and-prepaid-credit-balance",
+          "urls": [
+            "https://admin.mistral.ai/subscription",
+            "https://admin.mistral.ai/organization/billing",
+            "https://admin.mistral.ai/organization/usage"
+          ],
+          "semantics": "Shared included monthly usage first; optional prepaid PAYG after. Credits including tax differ from spend cap excluding tax. Org/workspace caps overlap.",
+          "freshness": "Processing delay acknowledged, duration unspecified; credit balance can go below zero.",
+          "reset": "Included allowance next billing period; do not equate with calendar usage report.",
+          "evidence": [
+            "M1",
+            "M2",
+            "M3",
+            "M5"
+          ]
+        },
+        {
+          "id": "mistral-product-analytics",
+          "status": "partly-documented-not-endpoint-qualified",
+          "dataType": "leChat-and-Vibe-activity",
+          "semantics": "Messages, sessions, token activity; no allowance balance. Guide has TODO for final analytics host; linked analytics reference returned 404.",
+          "evidence": [
+            "M8"
+          ]
+        },
+        {
+          "id": "mistral-local-usage",
+          "status": "separate-local-accounting-only",
+          "dataType": "lain-observed-requests-tokens",
+          "semantics": "Local subset, cannot infer organization consumption or remaining provider budget."
+        }
+      ],
+      "authOptions": [
+        {
+          "id": "studio-api-key",
+          "status": "available",
+          "inference": true,
+          "reporting": false,
+          "scope": "Workspace/product key; plan and PAYG automatically organization settings.",
+          "manualSetup": "https://console.mistral.ai/home?profile_dialog=api-keys",
+          "evidence": [
+            "M4",
+            "M7"
+          ]
+        },
+        {
+          "id": "official-vibe-cli-browser-bootstrap",
+          "status": "official-first-party-flow-evidenced-own-integration-unimplemented",
+          "inference": "API key produced for selected eligible workspace; product/model scope must be verified before use for all lain routes.",
+          "reporting": false,
+          "entrypoint": "vibe --setup (not executed)",
+          "protocol": "Custom browser + S256 PKCE + polling + API-key exchange; not evidenced RFC8628 or general OAuth access/refresh grant.",
+          "apiBase": "https://console.mistral.ai/api",
+          "operations": [
+            "POST /vibe/sign-in with code_challenge and code_challenge_method=S256",
+            "Open returned validated sign_in_url",
+            "GET returned validated poll_url until expires_at/completed/denied",
+            "POST /vibe/sign-in/{process_id}/exchange with exchange_token/code_verifier -> api_key"
+          ],
+          "pollIntervalSeconds": 3,
+          "registration": "No general third-party registration/scopes/refresh contract found. First-party CLI uses no observed client_id in this flow. External integration support must be confirmed.",
+          "storage": "Official CLI OS keyring, private .env fallback; no private state inspected.",
+          "evidence": [
+            "M11",
+            "M12",
+            "M13",
+            "M14",
+            "M15",
+            "M18"
+          ]
+        },
+        {
+          "id": "enterprise-admin-key",
+          "status": "official-available-only-if-entitled-unimplemented-in-lain",
+          "inference": "Not qualified as inference credential; dedicated Admin API use only is documented.",
+          "reporting": true,
+          "scope": "Dedicated single-organization Admin API key per guide. Standard key never works regardless of user role.",
+          "rights": "Enterprise Account admin to create in Admin Panel enterprise section; Enterprise/non-self-serve access required. Read-only key scopes/minimum read role not documented.",
+          "headersConflict": [
+            "x-api-key per authentication/usage guides",
+            "Authorization: Bearer per generated reference/security"
+          ],
+          "expiry": "Optional at key creation; plaintext only shown once.",
+          "scopes": null,
+          "oauth": false,
+          "evidence": [
+            "M6",
+            "M7",
+            "M8",
+            "M9"
+          ]
+        },
+        {
+          "id": "admin-inference-key-provisioning",
+          "status": "official-enterprise-key-management-not-bootstrap-for-admin",
+          "inference": "Can create workspace user API keys if existing Admin API key available.",
+          "reporting": "Does not grant Admin access to created keys.",
+          "operations": [
+            "GET /v1/admin/api-keys",
+            "POST /v1/admin/api-keys (user_id,workspace_uuid; optional name,expiration)",
+            "DELETE /v1/admin/api-keys/{key_id}"
+          ],
+          "executed": false,
+          "evidence": [
+            "M10"
+          ]
+        },
+        {
+          "id": "vibe-whoami",
+          "status": "official-cli-identity-not-budget",
+          "inference": "Existing Vibe API key",
+          "reporting": "Identity/plan/customer/tenant/scope only, no remaining allowance.",
+          "url": "https://console.mistral.ai/api/vibe/whoami",
+          "auth": "Authorization Bearer API key",
+          "cache": "6h official CLI identity cache; not reporting freshness.",
+          "notSameAs": "SDK GET /v1/whoami requires Dashboard context security.",
+          "evidence": [
+            "M16",
+            "M17"
+          ]
+        },
+        {
+          "id": "workload-identity",
+          "status": "official-workload-auth-not-desktop-or-admin-delegation",
+          "inference": "Service account workload JWT with registered issuer and api-gateway audience; scope dependent.",
+          "reporting": "No evidence it replaces dedicated Admin API key.",
+          "rights": "Org admin registers OIDC issuer; workspace admin binds service account.",
+          "evidence": [
+            "M19"
+          ]
+        }
+      ],
+      "recommendation": {
+        "decision": "Separate Vibe login convenience from Enterprise reporting. Keep Studio key/manual dashboard for ordinary plans; qualify optional Enterprise Admin readers without replacing inference credentials.",
+        "sameLoginForInferenceAndReporting": "No. Official Vibe browser login produces ordinary product/workspace API key; Admin endpoints require separately created dedicated Enterprise Admin API key. Same human account does not imply same credential/rights.",
+        "implementationSteps": [
+          "Investigate supported third-party use of official Vibe PKCE/keybootstrap and key product scope; no generic OAuth claim. Alternative deliberate user-authorized import from official CLI only after implementation decision.",
+          "Add optional dedicated monitor Admin credential and explicit expected organization/workspace only after entitlement and auth contract qualification.",
+          "Separate configured rates, monthly usage and money spend cap; preserve null/zero, currency, provider timestamps and unknown delay.",
+          "Keep prepaid balance/included allowance unknown until an appropriate official source is qualified."
+        ],
+        "nextEvidence": [
+          "Resolve x-api-key versus Bearer conflict with current official OpenAPI/provider confirmation; no dual-header guessing.",
+          "Already entitled account: authorized read-only GET /spend-limit, GET /rate-limit, GET /usage and small POST /usage/query; redact secrets and qualify schema, scope, currency, period and data delay.",
+          "Confirm total_usage is cap consumption before calculating usage_limit-total_usage; do not add overlapping totals.",
+          "Confirm official Vibe-bootstrap third-party support and created key capability for intended lain route before owning login."
+        ]
+      },
+      "missingImplementation": [
+        "Mistral Admin credential/capability catalog entry",
+        "Spendcap/rate/usage adapters and Host registration",
+        "Vibe browser/keybootstrap integration and explicit CLI import option",
+        "Verified org/workspace identity matching, null/zero/error/stale normalization",
+        "Plan/prepaid balance reporting: both implementation and qualified public endpoint absent"
+      ],
+      "unresolved": [
+        "Actual user plan, Enterprise entitlement and rights not read.",
+        "Admin auth guide x-api-key contradicts generated HTTP Bearer scheme.",
+        "Single-org key guide versus customer-scoped org-filter usage query needs reconciliation.",
+        "No documented exact reporting delay/data-as-of or reset timezone.",
+        "Legacy vibe_usage documentation conflicts with example.",
+        "Detailed product-analytics base host explicitly TODO; linked reference 404.",
+        "Public third-party login registration/support contract and Vibe bootstrap key product/model scope unqualified.",
+        "No publicly qualified prepaid-balance/PAYG-setting/included-allowance read endpoint in reviewed Admin billing contract.",
+        "No read-only Admin-key scope or general desktop/device OAuth for Admin reporting documented."
+      ],
+      "evidence": [
+        {
+          "id": "M1",
+          "url": "https://docs.mistral.ai/admin/billing-usage/subscriptions.md",
+          "claim": "Free/Pro/Education/Team/Enterprise global für API/Studio/Vibe Code; enthaltene Monatsusage geteilt; PAYG optional vorausbezahlt, nächster Billingperiodenreset.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "M2",
+          "url": "https://docs.mistral.ai/admin/billing-usage/usage-limits.md",
+          "claim": "Org-/Workspacecaps und API-Modellraten; programmatische Usage ausdrücklich nur Enterprise Admin API, andere Pläne Dashboard.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "M3",
+          "url": "https://docs.mistral.ai/admin/billing-usage/billing.md",
+          "claim": "Creditbalance getrennt vom Spendcap; Credits inklusive Steuer, Caps vor Steuer; Verarbeitung verzögert; 402 bei erschöpften Credits über inkludierte Usage hinaus; Panel Admin/Billing-Rolle.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "M4",
+          "url": "https://docs.mistral.ai/admin/identity-access/api-keys.md",
+          "claim": "Studio-/Vibe-/Legacykeys workspacegebunden; keine plangebundenen Keys; Workspace/Connectorzugriff/Ablauf bei Erstellung gebunden.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "M5",
+          "url": "https://docs.mistral.ai/admin/workspaces/usage-limits.md",
+          "claim": "Workspaceraten von Keys geteilt; TPM und Tokens/Monat; Monatscap unter Orgobergrenze; kein exakter Resetzeitpunkt.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "M6",
+          "url": "https://docs.mistral.ai/admin/admin-api/overview.md",
+          "claim": "Admin API Preview, Enterprise-only, nicht self-service, dedizierter Admin-Key.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "M7",
+          "url": "https://docs.mistral.ai/admin/admin-api/authentication.md",
+          "claim": "Enterprise-Account-Admin erstellt optional ablaufenden Org-Admin-Key; Basis /v1/admin, Header x-api-key. Standardkey gewährt nie Adminzugriff unabhängig von Userrolle.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "M8",
+          "url": "https://docs.mistral.ai/admin/admin-api/usage-metrics.md",
+          "claim": "GET /usage, /spend-limit, /rate-limit als Lesen dokumentiert. Produktanalytics separat; Quelle enthält TODO zum Analytics-Basishost.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "M9",
+          "url": "https://docs.mistral.ai/api/endpoint/beta/admin/billing",
+          "claim": "Gerenderte Referenz samt servergeladener expandierbarer Schemata gelesen: POST /usage/query liefert Mengen ohne Preise/Kosten; GET /usage Monatsreport mit Preis/Währung; Spendcap aktuelle Usage; konfigurierte Raten. AdminApiKey hier HTTP Bearer statt Authguide x-api-key.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "M10",
+          "url": "https://docs.mistral.ai/api/endpoint/beta/admin/api-keys",
+          "claim": "Admin-Key-CRUD: GET/POST /v1/admin/api-keys und DELETE /{key_id}; Erstellen braucht user_id/workspace_uuid; Plaintext nur bei Erstellung.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "M11",
+          "url": "https://docs.mistral.ai/vibe/code/cli/api-keys-profiles.md",
+          "claim": "Browser-Sign-in standardmäßig für Mistral-Provider; provisioniert Credentials; vibe --setup und Keyring/.env; kein Adminzugang daraus.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "M12",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/setup/auth/browser_sign_in.py",
+          "claim": "Offizieller CLI-Code: zufälliger PKCE-Verifier, S256, Browser/Polling mit Timeout/Ablehnung, standardmäßig 3s Intervall, Ergebnis API-Key.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli"
+        },
+        {
+          "id": "M13",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/setup/auth/http_browser_sign_in_gateway.py",
+          "claim": "POST Console-API /vibe/sign-in; validierte Browser-/Poll-URLs; POST /vibe/sign-in/{process_id}/exchange mit exchange_token und code_verifier -> api_key; Workspace-Keyerstellungsrecht erforderlich.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli"
+        },
+        {
+          "id": "M14",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/core/config/_defaults.py",
+          "claim": "Standardbrowser https://console.mistral.ai, Auth-API https://console.mistral.ai/api.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli"
+        },
+        {
+          "id": "M15",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/setup/auth/api_key_persistence.py",
+          "claim": "API-Keypersistenz im OS-Keyring, privater .env-Fallback; kein qualifizierter OAuthrefreshzyklus.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli"
+        },
+        {
+          "id": "M16",
+          "url": "https://github.com/mistralai/mistral-vibe/blob/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477/vibe/setup/auth/whoami.py",
+          "claim": "GET Console /api/vibe/whoami mit Bearer-Inferenzkey: Plan-/Customer-/Tenant-/primitive_access_scope-Identität, keine Allowance; 6h Identitätscache ist kein Reporting-SLA.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-cli"
+        },
+        {
+          "id": "M17",
+          "url": "https://github.com/mistralai/client-python/blob/c5b1fcf7503a4151268a164598655e62ba29ae11/docs/sdks/users/README.md",
+          "claim": "SDK GET /v1/whoami sowie Org-/Workspacelisten benutzen Dashboard-Context-Security; getrennt vom Vibe-API-Keyreader, kein Restbudget.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-sdk"
+        },
+        {
+          "id": "M18",
+          "url": "https://docs.mistral.ai/vibe/code/vs-code-extension/install-authenticate.md",
+          "claim": "Browserflow im gebündelten Agenten noch im Rollout beschrieben; bisheriger Terminal-Keysetup verfügbar.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        },
+        {
+          "id": "M19",
+          "url": "https://docs.mistral.ai/admin/identity-access/workload-identity.md",
+          "claim": "OIDC-Workloadfederation mit Org-/Workspaceadminsetup und api-gateway-Audience für Service Account; kein Desktop-User-/Admin-Keyersatz.",
+          "retrievedAt": "2026-10-24",
+          "kind": "official-docs"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,313 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-24",
+  "status": "targeted-reference-research-no-implementation",
+  "baseCommit": "5dc916fcea702f2a196520903937570745e26dac",
+  "referenceWorkingCopy": "/home/tomka/Desktop/lain",
+  "scope": "Only Codex and Command Code reference profiles. Existing reports unchanged; public/read-only research only. No runtime, credentials, account queries, registration, installation, builds or commits.",
+  "existingReportHashes": {
+    "docs/quota-auth-research/groq-mistral.md": "2a107d7f48f77bec769f092fdffd31faa7a5f93849333376fd6f389c4bb969a1",
+    "docs/quota-auth-research/groq-mistral.json": "8e32bb1cc4d20f0c686cec35601adb5a8e506fd3a776c92a411448321f9ec302",
+    "docs/account-connect-research/groq-mistral-google-cloudflare.md": "b1cccd8cbdcf1fa742525826daba171d2a4a4a5a8f045482b7e1112aff6f6305",
+    "docs/account-connect-research/groq-mistral-google-cloudflare.json": "2f6b941cf2f6b1b5d53e65b54cf6333d5d39a32627ceb4ffbe9c21c9108341d1"
+  },
+  "providers": [
+    {
+      "id": "codex",
+      "providerId": "codex",
+      "product": "Codex / ChatGPT subscription reference",
+      "current": {
+        "connection": "Already implemented: chooser browser sign-in → CodexOwnedLoginAdapter → narrow authenticated Core login backend → PKCE/callback → durable owned credential reference. Only Codex has a qualified login adapter registered.",
+        "credentialOwnership": "Core owns refresh tokens and updates owned file; Host stores only owned-file/account reference and reads current access token/expiry through SecretStore. Active applied route bindings AND ownership registry gate Core refresh.",
+        "monitoring": "Existing CodexQuotaAdapter directly reads WHAM using same current access token plus ChatGPT-Account-Id. Imported codex-access-snapshot is a separate nonrenewable credential kind. API keys never qualify this quota reader.",
+        "qualification": "Existing integration is the reference, not missing implementation. This research does not add real-provider or product availability evidence."
+      },
+      "preferredFlow": {
+        "kind": "existing-owned-browser-login",
+        "readiness": "Existing qualified adapter; preserve and reuse.",
+        "summary": "Choose Codex → sign in through browser → save account; attach existing direct quota reader automatically. No client ID, cookie, extra monitoring key or CLI setup.",
+        "resourceSelection": "Show returned account identity; preserve stable local account by provider account ID. Verify selected account/workspace before replacing credentials.",
+        "standaloneMonitoring": "Direct quota reads do not require paid inference; a pure monitor account still needs an explicit owned-refresh lifecycle because current Core refresh requires applied route membership. Do not invent dummy inference routes.",
+        "futureCandidates": [
+          {
+            "kind": "official-codex-app-server-managed",
+            "state": "Documented alternative integration; not current Lain backend.",
+            "value": "Official managed auth + account/rateLimits/read; investigate isolated storage/process adapter without stealing global CLI auth."
+          },
+          {
+            "kind": "siwc-oss-direct-oauth-preview",
+            "state": "New public candidate, not migrated/qualified in Lain.",
+            "value": "Dynamic own registration, public account model list and Responses inference. Separate Host-owned refresh; no manual maintainer registration shown in this specific OSS flow. No quota endpoint entitlement established by these docs."
+          }
+        ]
+      },
+      "userSteps": [
+        "Choose Codex and browser sign-in (existing saved owned account can be reused).",
+        "Open the authorization action, sign in and choose the intended ChatGPT identity/workspace; return to Lain.",
+        "Lain adopts only its newly issued owned credential and reads available quota automatically. Saving login alone leaves inference unverified.",
+        "For an expired/revoked session use reconnect; preserve local identity/routes for the same verified provider account."
+      ],
+      "credentials": {
+        "inference": "Owned OAuth access token from Core; renewable grant stays in private owned-auth directory.",
+        "monitoring": "Same current owned access token and account ID, no second key.",
+        "refresh": "Core is single owner. Host quota reader never copies/rotates refresh tokens. Disabled, removed or unselected owned credentials are inert for Core.",
+        "externalSnapshot": "Copy only access token/account ID/expiry from explicit supported import. Never source refresh/revoke or mutate external auth file. Expiry requires deliberate reimport/reconnect.",
+        "reconnect": "Same verified provider account updates its owned reference; different identity must become a deliberate separate account. Cancellation must not overwrite active credentials.",
+        "disconnect": "Current account removal is local configuration removal after detaching active routes; it retains private credentials. Pending-login cancellation is not logout or revocation. No implemented provider-wide logout claimed.",
+        "clientIdInput": false
+      },
+      "inference": {
+        "current": "Existing Codex Core transport and model routes; adopted account starts unverified. Model catalog/credential check is not completed inference proof.",
+        "subscriptionVsApi": "ChatGPT subscription and OpenAI Platform API-key billing are distinct. Manual API key is a separate account/product flow, not Codex subscription quota fallback.",
+        "futurePreview": "SIWC OSS tokens go to public api.openai.com/v1/responses with store:false, stream:true and account-available model. New audience/grant must not be fed automatically into existing backend-api transport or WHAM reader."
+      },
+      "monitoring": {
+        "current": "GET https://chatgpt.com/backend-api/wham/usage, Bearer + ChatGPT-Account-Id; primary/secondary used percentages and reset/window fields when present.",
+        "meaning": "Provider account windows, not local token counter or exact USD balance; unknown/missing fields stay unknown.",
+        "publicAlternative": "Codex app-server account/rateLimits/read documents multi-bucket rateLimitsByLimitId plus optional plan/credits metadata. Separate adapter candidate; not evidence that SIWC public Responses tokens can call this RPC/WHAM.",
+        "recovery": "Unauthorized/expired → reconnect state; monitor failure must not erase prior observations or claim inference failed. Preserve observation timestamp.",
+        "standalone": "No inference probe is required to read existing quota source. Route-independent owned refresh remains target work."
+      },
+      "maintainerPrerequisites": {
+        "existing": "No new public app registration needed to use today’s shipped Core-owned login. Keep pinned Core/provider qualification and same-token boundaries.",
+        "appServerCandidate": "Package/version/isolate own app-server and prove managed lifecycle and per-account rate limits; no global ~/.codex login/logout manipulation.",
+        "siwcOssCandidate": "Implement documented dynamic registration, issued client mapping, PKCE/state/nonce/ID-token validation, explicit chatgpt.tokens.use.direct grant, secure serialized refresh and selected-session revoke. The documentation does not require a pre-obtained client secret/partner key for this OSS path. Check Preview eligibility/availability before promotion."
+      },
+      "unresolved": [
+        "Real provider refresh and end-to-end browser behavior were not exercised in this report. Existing local lifecycle tests are not new live evidence.",
+        "WHAM is implemented provider behavior, not established here as a public third-party API contract.",
+        "Official app-server adapter and route-independent monitor-owned lifecycle are not currently implemented.",
+        "SIWC Preview availability, eligibility and monitoring capability must be checked separately; do not promise WHAM or public quota API for that token.",
+        "Current local Remove retains credentials; selected owned-session cleanup/revocation needs its own lifecycle operation."
+      ],
+      "fallback": [
+        "Retry existing browser flow if callback port 1455 is busy/blocked; show concrete conflict.",
+        "Keep explicit external snapshot import as a clearly nonrenewable fallback. Do not silently promote snapshot ownership.",
+        "Documented official device flow is an adapter candidate, not a working Lain button until integrated."
+      ],
+      "codeImplications": [
+        "Preserve current CodexOwnedLoginAdapter, HttpCodexOwnedLoginBackend and private Core owner store. Add catalog UX around existing flow, not a replacement generic OAuth form.",
+        "Keep configured/login, inference-qualified and monitor-qualified statuses distinct. Same-token quota attachment should not require manual additional setup.",
+        "For standalone monitoring add explicit owned refresh policy independent of inference route, without weakening snapshot gates.",
+        "A future app-server or SIWC adapter gets its own lifecycle/token audience and qualification; no automatic conversion of current credentials."
+      ],
+      "sources": [
+        "code",
+        "codex-auth",
+        "codex-app-server",
+        "siwc-sign-in",
+        "siwc-sessions",
+        "siwc-inference",
+        "siwc-app-server"
+      ]
+    },
+    {
+      "id": "commandcode",
+      "providerId": "commandcode",
+      "product": "Command Code CLI bootstrap + Provider API reference",
+      "current": {
+        "connection": "Manual API account/import supported; command-code/commandcode and official host normalize to commandcode. No Command Code IQualifiedLoginAdapter exists.",
+        "inference": "Existing generic API-key route transport can use Command Code; transport name (Codex/OpenAI/Anthropic) does not define commercial provider identity.",
+        "monitoring": "Existing CommandCodeQuotaAdapter uses same API key: required alpha/whoami?limits=1, then optional alpha/billing/credits and alpha/billing/subscriptions with returned org.id.",
+        "qualification": "Implemented reader and existing key path; official CLI browser bootstrap is publicly documented, but Lain-owned bootstrap/adoption is not implemented or live-tested here."
+      },
+      "preferredFlow": {
+        "kind": "official-cli-key-bootstrap-with-existing-key-reuse",
+        "readiness": "Reference target combines already existing reader/key integration with a small separately qualified official CLI bootstrap/adoption.",
+        "summary": "Choose Command Code → reuse selected existing key; otherwise official browser bootstrap → adopt only resulting Command Code API key → automatic same-key monitoring. No separate monitor login or user-entered OAuth app parameters.",
+        "bootstrap": "Official command-code login (cmd alias) opens browser and writes API key to its managed auth.json. This is a key-bootstrap result, not an OAuth refresh token grant owned by Lain.",
+        "resourceSelection": "Use already existing personal/organization workspace; show verified whoami organization. Require deliberate replacement if organization changes.",
+        "standaloneMonitoring": "Same-key direct reader can be offered without inference route/entitlement; a plan lacking Provider API inference access can still have monitoring rights if actual reporting reads succeed.",
+        "qualificationBoundary": "Do not claim arbitrary own OAuth client reuse; public quickstart alone does not establish third-party client registration or callback API contract."
+      },
+      "userSteps": [
+        "Choose Command Code and reuse a saved key if present.",
+        "For new access: complete official browser login through qualified CLI helper; review the detected account/organization and adopt its newly produced Command Code key.",
+        "If helper is unavailable, open Studio API Keys, select existing workspace, generate/copy key once into Lain.",
+        "Lain reads identity and available quota using that key; choose a supported model/route only when inference is wanted."
+      ],
+      "credentials": {
+        "inference": "Command Code API key; official Studio states same key authenticates CLI and Provider API.",
+        "monitoring": "Same key in existing reader, no billing cookie/session or separate Admin key. Individual optional endpoints may still be forbidden.",
+        "refresh": "No OAuth refresh token handling proven for the bootstrap API key. Do not invent token renewal; replace revoked/expired key deliberately.",
+        "bootstrapOwnership": "Official CLI owns its login and auth cache. No automatic global cmd logout, overwriting CLI auth.json, environment credential harvesting or full mixed-provider file import. Use a bounded explicitly selected result with verified schema/identity; isolated helper directory only if supported and qualified.",
+        "reconnect": "Replace credential on same account after whoami identity/org check; changing workspace means deliberate new identity/scope. Existing monitors remain stale until refreshed.",
+        "disconnect": "Remove local Lain access without logging out the user’s CLI or revoking a shared key automatically. Offer Studio key management for deliberate revocation.",
+        "clientIdInput": false
+      },
+      "inference": {
+        "publicBaseUrl": "https://api.commandcode.ai/provider/v1",
+        "formats": [
+          "chat/completions",
+          "responses",
+          "messages",
+          "models"
+        ],
+        "authentication": "Bearer API key; choose model-supported endpoint.",
+        "rights": "Official Provider docs: API access is plan-dependent (Go excluded in reviewed current page), model/credit access also varies. Login/key possession and quota success do not prove inference entitlement.",
+        "noProvisioning": "No automatic plan purchase, new organization or billing setup."
+      },
+      "monitoring": {
+        "type": "Direct same-key provider reader, independent of local inference traffic.",
+        "identity": "whoami required; organization scope only from actual returned org.id. Then optional credits/subscriptions; partial failure stays partial.",
+        "fields": "Monthly/purchased/free USD credits; fiveHour/weekly rolling cap/used/reset; returned organization/model limit/spent/reset.",
+        "knownLimit": "Additional monthly per-model remaining is deliberately unknown in current code. Existing PlanCredits lookup is historical account-plan baseline, not authoritative live plan or per-model cap.",
+        "contract": "alpha endpoint behavior evidenced by current implementation; reviewed public Provider docs establish inference API/key reuse, not a public stable billing API contract.",
+        "monitorOnly": "Attach key to direct reporting without requiring inference route. Keep actual reporting permission/result separate from API plan eligibility."
+      },
+      "maintainerPrerequisites": {
+        "existing": "No new OAuth registration for same-key reader/manual Provider API integration.",
+        "bootstrapCandidate": "Qualify official CLI executable/version, exact result schema, safe bounded adoption, cancellation, stale-cache avoidance and organization identity. Verify supported isolated storage if used.",
+        "ownOAuth": "Only if building an independent own browser protocol rather than using official CLI: obtain/verify provider contract and any own public app registration required. Do not invent or reuse a third-party client ID; normal user never enters client ID/secret.",
+        "reader": "Retain implemented same-key reader; improve explicit partial/unknown provenance instead of making extra credential setup mandatory."
+      },
+      "unresolved": [
+        "Lain-owned official CLI bootstrap/adoption and official support for isolated auth-cache path were not qualified in this task.",
+        "Public docs do not establish a supported third-party OAuth client/bootstrap callback protocol; direct reimplementation remains unqualified.",
+        "Billing alpha endpoint stability, per-key/report permissions and real account response schemas need provider qualification; no account queried.",
+        "Historical PlanCredits values may lag current offers. Never treat them as per-model allowance."
+      ],
+      "fallback": [
+        "Existing manual key flow: Studio → existing organization → API Keys → Generate/copy once; automatic same-key monitoring thereafter.",
+        "Explicit supported setup import remains available; generic import must not assume Command Code CLI auth.json is currently supported.",
+        "If optional reporting is unavailable, retain usable inference and offer Studio Usage/Billing link; missing values stay unknown."
+      ],
+      "codeImplications": [
+        "Add provider preset and same-key monitor attachment to existing API-key path; reuse canonical commandcode identity across transport choices.",
+        "A future qualified CLI-bootstrap adapter should return a narrow API-key/account result, not expose raw CLI cache or global logout controls.",
+        "Keep inference-entitlement check separate from whoami/monitor success. Monitor-only access needs no fake inference route.",
+        "Preserve optional billing failures and provenance; do not add browser cookie extraction or guesses for monthly model caps."
+      ],
+      "sources": [
+        "code",
+        "command-quickstart",
+        "command-studio",
+        "command-provider",
+        "command-settings"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "code",
+      "kind": "current-working-copy",
+      "root": "/home/tomka/Desktop/lain",
+      "baseCommit": "5dc916fcea702f2a196520903937570745e26dac",
+      "files": [
+        {
+          "path": "src/Lain.Desktop/MainWindow.AccountChooser.cs",
+          "sha256": "d4d1934cccc20d924fa1a1198475585178d218da90f30342e9389b57194905e7"
+        },
+        {
+          "path": "src/Lain.Host/Accounts/CodexOwnedLoginAdapter.cs",
+          "sha256": "ea14da77acccd9d8520131dd0a355ac3768b97ccd061a2d2225a98b694e67d1e"
+        },
+        {
+          "path": "src/Lain.Host/Accounts/HttpCodexOwnedLoginBackend.cs",
+          "sha256": "7f46c43f344994055b16d502f24da14ac7776bbe1a7131bb591e979e7a25921c"
+        },
+        {
+          "path": "src/Lain.Host/Accounts/AccountService.cs",
+          "sha256": "93575cd5ea180b5f05e26d08cf048a9848078d58a55e81d4ed0356df0ef97c62"
+        },
+        {
+          "path": "src/Lain.Host/Accounts/LegacyImportService.cs",
+          "sha256": "47317dc2ec833d75a56b5c95402a404624cc21d31b95421db77761c421951fac"
+        },
+        {
+          "path": "src/Lain.Host/Operations/OwnStatePaths.cs",
+          "sha256": "653cafd6550c771471064e9141fecfbeafe1903d8dbfa1bd95914a9b1696906b"
+        },
+        {
+          "path": "src/Lain.Host/Operations/ProxyConfigurationWriter.cs",
+          "sha256": "908fbc5308baa8dfc4135f2209727ebfb4295b076fa4488a72c468f5c3438133"
+        },
+        {
+          "path": "src/Lain.Host/Quota/CodexQuotaAdapter.cs",
+          "sha256": "b206cd10c7841a88deb4f3838cf438af53c8eab523351f12fefd0dc63ec4362f"
+        },
+        {
+          "path": "src/Lain.Host/Quota/CommandCodeQuotaAdapter.cs",
+          "sha256": "c103c51f7b7e50d03f97d3870ecba7d8affb839d7fbd919ba4fe67f34323b13c"
+        },
+        {
+          "path": "src/Lain.Host/Quota/QuotaHttp.cs",
+          "sha256": "72f1a95813de1df4b9afa211a0fb4a832a34cdf4ba075d07cf2eee9d9d20f751"
+        },
+        {
+          "path": "proxy/adapter/internal/lain/login.go",
+          "sha256": "4cd546947a09d6867d5fb79c3c142f02e43d8533508d910a183dc871d19f330c"
+        },
+        {
+          "path": "proxy/adapter/internal/lain/owned.go",
+          "sha256": "d4ee264e1698aed2aeba9e5e470b6cad05a377ed6c9f5915c619e83010bb19d4"
+        },
+        {
+          "path": "docs/backend-core.md",
+          "sha256": "fad2dd86800dbdae619a9aa85f53155e2697922f0ed716bf91f8bb56405e31fc"
+        }
+      ],
+      "evidence": "Read-only code inspection; no live login, refresh or inference performed."
+    },
+    {
+      "id": "codex-auth",
+      "kind": "official-docs",
+      "url": "https://learn.chatgpt.com/docs/auth",
+      "evidence": "Browser login, managed automatic refresh, API-key distinction, shared CLI/extension auth ownership."
+    },
+    {
+      "id": "codex-app-server",
+      "kind": "official-docs",
+      "url": "https://learn.chatgpt.com/docs/app-server",
+      "evidence": "Managed browser/device login, external-token host ownership, account/rateLimits/read and multi-bucket metadata."
+    },
+    {
+      "id": "siwc-sign-in",
+      "kind": "official-preview-docs",
+      "url": "https://developers.openai.com/siwc/token-sharing-open-source/sign-in",
+      "evidence": "Dynamic OSS registration without pre-provisioned client secret/partner key; PKCE/state/nonce; issued client ID and granted plan scope."
+    },
+    {
+      "id": "siwc-sessions",
+      "kind": "official-preview-docs",
+      "url": "https://developers.openai.com/siwc/token-sharing-open-source/profiles-and-sessions",
+      "evidence": "Per-registration identity, serialized rotating refresh, selected-session revocation, Usage Settings link."
+    },
+    {
+      "id": "siwc-inference",
+      "kind": "official-preview-docs",
+      "url": "https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference",
+      "evidence": "Account-specific model read; public Responses endpoint, store:false/stream:true and completed inference."
+    },
+    {
+      "id": "siwc-app-server",
+      "kind": "official-preview-docs",
+      "url": "https://developers.openai.com/siwc/token-sharing-open-source/codex-app-server",
+      "evidence": "Separate env-key Responses provider, host refresh/restart; bundled catalog is not entitlement proof."
+    },
+    {
+      "id": "command-quickstart",
+      "kind": "official-docs",
+      "url": "https://commandcode.ai/docs/quickstart",
+      "evidence": "Official command-code/cmd login opens browser; saves API key in ~/.commandcode/auth.json; manual key fallback."
+    },
+    {
+      "id": "command-studio",
+      "kind": "official-docs",
+      "url": "https://commandcode.ai/docs/studio",
+      "evidence": "Existing organization selection, API-key generation; same key usable with Provider API."
+    },
+    {
+      "id": "command-provider",
+      "kind": "official-docs",
+      "url": "https://commandcode.ai/docs/provider",
+      "evidence": "Provider/v1 endpoints, shared CLI/API key, plan-dependent API/model access."
+    },
+    {
+      "id": "command-settings",
+      "kind": "official-docs",
+      "url": "https://commandcode.ai/docs/settings",
+      "evidence": "CLI-managed auth.json and COMMAND_CODE_API_KEY precedence; mixed custom-provider credentials mean whole-file import is inappropriate."
+    }
+  ]
+}

@@ -1,0 +1,858 @@
+{
+  "version": 1,
+  "checkedAt": "2026-10-24",
+  "baseCommit": "5dc916f",
+  "status": "research recommendations only; no implementation or live account access",
+  "scope": [
+    "Kilo",
+    "OpenCode Go",
+    "OpenCode Go Plus",
+    "OpenCode Zen/current Console PAYG",
+    "Requesty",
+    "OpenRouter"
+  ],
+  "constraints": [
+    "Nur öffentliche Dokumentation/Herstellerquellcode und lokaler Produktcode.",
+    "Keine Credentials, Browserkonten, Logins, Registrierungen, authentifizierten APIreads, Provisionierung, Inferenz, Dienste oder Builds.",
+    "Vorherige Reports byte-identisch erhalten.",
+    "Keine Herstellerclient-ID als eigenen Drittclient ausgeben; konkrete offizielle CLIdelegation gesondert qualifizieren."
+  ],
+  "sharedRecommendations": {
+    "accountIdentity": "Stabile lain-Account-ID, separate provider identity/resource/credential revision; Reconnect erzeugt keinen neuen Account/Topf.",
+    "userExperience": "Fehlende Fähigkeiten früh erklären; nur entdeckte Mehrdeutigkeiten auswählen, kein generisches Scope-/Org-/Keyformular. Modellwahl nach Connect; optionale Privilegien getrennt.",
+    "capabilities": "Loginherkunft, Inferenzberechtigung und jeder Monitor getrennt nachweisen. Fehlende Daten unknown, Quelle/Scope/Fenster/as-of/stale/error erhalten."
+  },
+  "providers": [
+    {
+      "id": "kilo",
+      "product": "Kilo Gateway (Wallet und optional persönlicher Pass)",
+      "current": {
+        "state": "API-Key-Inferenz vorbereitet; kein KiloQuotaAdapter registriert; Katalog nur Free-Modelle. Alter TUI-Helfer belegt Balance und Pass mit gleichem Bearer.",
+        "files": [
+          "src/Lain.Host/Providers/Catalog/kilo.json",
+          "src/Lain.Host/Program.cs",
+          "~/.local/share/modelcoach/provider_status.py:357–425"
+        ],
+        "liveQualified": false
+      },
+      "preferredFlow": {
+        "recommendation": "Vorhandenen Gateway-Key für feste Walletreads verwenden; neuer Anschluss zunächst einmaliger Keyimport. Hersteller-Deviceflow oder CLI-Transfer anschließend gezielt qualifizieren.",
+        "publicOwnLogin": "Vendor-Deviceflow konkret implementiert, eigener Drittclientvertrag nicht gefunden; kein pauschales Unmöglichkeitsurteil.",
+        "delegateOfficialCli": "Browserlogin existiert; unterstützter privater Tokenexport nicht nachgewiesen. Kein stilles Scraping privater Authstores.",
+        "personalWebSession": "Separate qualifizierbare Option, falls Herstellerflow/Export fehlt; Auth-/Read-/Lifecyclevertrag offen. Für bestehenden Keymonitor nicht nötig.",
+        "manualKeyRequired": "Für heute dokumentiert unterstützte externe Inferenzanbindung eines neuen Kontos ja; vorhandener Key braucht keinen zweiten Import.",
+        "optionalChoices": [
+          "Personal/Organisation nur bei mehreren ermittelten Ressourcen",
+          "Passmonitor optional",
+          "Kilo Free ist Modellwahl, kein Abo",
+          "Kein Topup oder bezahlter Fallback für erschöpften Account"
+        ]
+      },
+      "userSteps": [
+        "Bestehenden Account öffnen; gespeicherten Key ohne erneuten Login verwenden.",
+        "Bei neuem Account Kilo-Profil öffnen und Gateway-Key einmal übernehmen.",
+        "Mit /api/profile Ressourcen ermitteln; nur bei Mehrdeutigkeit Personal/Organisation wählen.",
+        "Wallet als USD und optional persönlichen Pass anzeigen; Modelle anschließend wählen."
+      ],
+      "credentials": [
+        {
+          "kind": "api-key / vendor device bearer",
+          "rights": "Inferenz und quellcodebelegt Profile/Balance, kein separater Readscope belegt.",
+          "expiry": "Persönlicher Tokenvertrag offen. Herstellerclient setzt lokal ein Jahr und identisches access/refresh; kein Refresh-Grant belegt.",
+          "reconnect": "Bei Ablauf/Widerruf Credential am selben lain-Account ersetzen."
+        },
+        {
+          "kind": "organization token",
+          "rights": "Getrennter Orgkontext; dokumentiert 15 Minuten. Mint/Refresh offen; nicht mit persönlichem Lifecycle verwechseln."
+        }
+      ],
+      "inference": {
+        "base": "https://ai-gateway.kilo.ai/api/v1",
+        "credential": "Bearer",
+        "models": "Freewahl nach Accountanschluss; BYOK kann upstream Kosten verursachen."
+      },
+      "monitoring": [
+        {
+          "source": "GET https://api.kilo.ai/api/profile/balance",
+          "credential": "gleicher Bearer; optional bestätigtes X-KiloCode-OrganizationId",
+          "data": "balance direkt USD; echtes 0 bleibt 0, fehlend/ungültig unknown",
+          "limits": "Kein Gesamtbudget/Verbrauch/Reset aus balance ableiten."
+        },
+        {
+          "source": "GET https://api.kilo.ai/api/trpc/kiloPass.getState?batch=1&input=<encoded JSON>",
+          "credential": "gleicher persönlicher Bearer",
+          "data": "Status, Tier, Basiscredits, Periodenusage, Bonus/issued/unlocked und nächste Termine getrennt.",
+          "limits": "Keinen Bonus addieren oder Resttopf erfinden; Usage kann andere Produkte enthalten."
+        },
+        {
+          "source": "Gateway policy",
+          "data": "200 free Requests/Stunde IP-bezogen, kein gemessenes Accountrestbudget."
+        }
+      ],
+      "maintainerPrerequisites": [
+        "Festen Readadapter und Schemaqualifizierung mit realer Antwort erst nach separater Beauftragung.",
+        "Für Komfortlogin Herstellervertrag für eigenes Device oder unterstützten CLI-Transfer klären.",
+        "Orgzuordnung und eigener Org-Lifecycle vor Orgmonitor nachweisen."
+      ],
+      "unresolved": [
+        "Öffentlicher eigener Devicevertrag, Readscopes, echtes Tokenexpiry/Revoke.",
+        "Balance-/Pass-API sind Herstellerquellcodebelege, kein unabhängig live qualifizierter stabiler Drittvertrag.",
+        "Unterstützter CLIexport und persönliche Sessionreadrechte offen."
+      ],
+      "fallback": {
+        "manual": "Gateway-Key aus persönlichem Kilo-Profil.",
+        "monitor": "Balance unbekannt mit Quellenfehler; Account behalten. Kein Kauf als Fehlerbehebung."
+      },
+      "codeImplications": [
+        "KiloQuotaAdapter für USD-balance registrieren; optional Pass separat.",
+        "Account unabhängig vom Free-Modellplan verbinden.",
+        "Scope/Org, as-of/stale/error und credential revision erhalten; kein erfundener Refresh."
+      ],
+      "sources": [
+        {
+          "url": "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/auth/device.ts",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/auth/device-auth-tui.ts",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/api/profile.ts",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://kilo.ai/docs/gateway/authentication",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://kilo.ai/docs/gateway/usage-and-billing",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/Kilo-Org/kilocode/blob/9723be621429771ea47a2614b0ac433448023cec/packages/kilo-gateway/src/api/kilo-pass.ts",
+          "evidence": "Persönlicher Passreader.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://kilo.ai/docs/getting-started/setup-authentication",
+          "evidence": "Externe Gatewaynutzung mit API-Key.",
+          "checkedAt": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": "opencode-go",
+      "product": "OpenCode Go",
+      "current": {
+        "state": "Eigener Go-Plan im opencode-go Katalog, API-Key-Inferenz vorbereitet, Quota unsupported.",
+        "catalog": "src/Lain.Host/Providers/Catalog/opencode-go.json",
+        "liveQualified": false
+      },
+      "preferredFlow": {
+        "recommendation": "Heute dokumentierter Workspace-Key für externe Inferenz. Öffentlich eigenes MCP-OAuth als gesonderten Monitorzugang qualifizieren; CLIexport als konkrete weitere Option prüfen.",
+        "publicOwnLogin": "Console-MCP https://opencode.ai/console/mcp ausdrücklich für externe Harnesses mit OAuth+DCR; konkrete Quota-/Balance-Readtools und Inferenzrechte daraus nicht nachgewiesen.",
+        "delegateOfficialCli": "Gepinntes dev bietet auth login opencode und auth export opencode. Exportfilter ist integrationID, kann mehrere Accounts und Refresh-Tokens enthalten. Keine dokumentierte Refreshdelegation; Versions-, Account- und Refreshhoheit offen.",
+        "personalWebSession": "Hersteller-Console-Deviceflow mit echter Rotation belegt. Eigener Drittclientvertrag und konkrete Monitorreadrechte offen; nicht categorisch ausgeschlossen. DCR-MCP vor Cookieimport bevorzugen.",
+        "manualKeyRequired": "Für qualifizierte externe Inferenz derzeit Workspace-Key; no-copy CLItransfer kann nach Qualifizierung Alternative werden. Browser-MCP allein beweist keinen Inferenzkey.",
+        "optionalChoices": [
+          "Workspace nur bei Mehrdeutigkeit",
+          "Zusätzliche Monitorrechte nur entsprechend Rolle",
+          "Extra Usage separat und nicht automatisch aktivieren",
+          "Keine Serviceaccounts oder Mitgliedschaften automatisch anlegen"
+        ]
+      },
+      "userSteps": [
+        "OpenCode verbinden wählen; benötigten Workspace-Key und separaten Browsermonitor früh erklären.",
+        "Console Account → Personal API keys → Add → vorhandenen Workspace und Keynamen wählen.",
+        "Key einmal privat übernehmen; passenden bereits vorhandenen Produktstatus zuordnen, keinen Kauf auslösen.",
+        "Nur nach MCP-Readqualifizierung optional Browserlogin für Monitor; Workspaceauswahl nur bei Mehrdeutigkeit.",
+        "Modelle/Protokoll und gegebenenfalls Extra Usage als eigene spätere Wahl."
+      ],
+      "credentials": [
+        {
+          "kind": "personal workspace API key",
+          "rights": "Normales Mitglied: Inferenz. Owner/Admin können Models Request, Usage Read, Budgets Read, Billing Read einschränken. Persönliche Keys dürfen keine persönlichen Keys provisionieren.",
+          "expiry": "Optional nie oder 1–365 Tage; expired keys werden neu erstellt, nicht verlängert. SSO kann aktive Sitzung verlangen.",
+          "reconnect": "Key am gleichen Account und Workspace ersetzen; Rolle/Workspace erneut bestätigen."
+        },
+        {
+          "kind": "Console MCP OAuth via own DCR",
+          "rights": "Workspaceverwaltung über MCP öffentlich unterstützt; benötigte read-only Tools/Scopes nicht qualifiziert. Kein Beleg beliebiger Inferenzrechte.",
+          "expiry": "Tokenendpoint, Rotation/Refresh/Revoke und Audience über öffentliche MCP-Metadaten gesondert qualifizieren."
+        },
+        {
+          "kind": "official CLI Console Device OAuth",
+          "rights": "Herstellerclient opencode-cli: /api/user, /api/orgs, /api/v2/config mit Bearer+x-org-id; Config und Inferenzprovider in offizieller App. Kein eigener Drittclientvertrag.",
+          "expiry": "access_token, refresh_token, expires_in; Refresh rotiert. Keine parallele Refreshhoheit CLI/lain."
+        }
+      ],
+      "inference": {
+        "base": "https://opencode.ai/inference/go",
+        "credential": "workspace API key documented for external harnesses",
+        "headers": "Eigener User-Agent; stabile x-opencode-session bei Go erforderlich.",
+        "restrictions": "Free-tier Console-chatmodelle extern HTTP403; keinen offiziellen Client imitieren. Go/Plus Workspaces single member; keine Serviceaccounts automatisch provisionieren."
+      },
+      "monitoring": [
+        {
+          "source": "Console MCP OAuth (qualification candidate)",
+          "data": "Go: 5h20%, weekly50%, monthly100% der jeweiligen Modellreferenz; genaue Resetinstanzen und Mischmodellrechnung offen.",
+          "rights": "Öffentlicher OAuth-DCR-Zugang belegt; konkrete Readtools, Rechte, Restwerte nicht belegt.",
+          "status": "unqualified reader, not unsupported login"
+        },
+        {
+          "source": "Native inference response usage",
+          "data": "cost, opencode.billing_source=go, list_cost, billed tokens und ggf Go-allowance-Verbrauch.",
+          "limits": "Anfrageverbrauch ist kein vollständiger all-client Rest. cost=0 bei Go kein freies Modell; BYOK gesondert, Kosten können finalen Debit übersteigen."
+        }
+      ],
+      "maintainerPrerequisites": [
+        "MCP-Servermetadaten/DCR, Audience und Callback/PKCE/Refresh qualifizieren, ohne Herstellerclient-ID zu übernehmen.",
+        "Read-only tools/list und genaue Schemata/Rechte für produktspezifische Messung belegen; keine Schreibtools.",
+        "Falls CLIdelegation: unterstützte Version, Integrationfilter, exakte Credential-/Workspaceauswahl, isolierter Prozess und alleinige Refreshhoheit belegen. auth export ohne Ziel nicht verwenden.",
+        "Owner/Admin vs Member vor zusätzlicher Monitorcredential berücksichtigen. Keine automatischen Key-/Serviceaccount-Schreibvorgänge."
+      ],
+      "unresolved": [
+        "Konkrete öffentliche MCP-Lesetools für tatsächliche Restwerte, Scopes und Zeitstempel.",
+        "Eigene Deviceclientregistrierung für lain; outgoing OpenCode client.json ist keine solche Registrierung.",
+        "CLIexport enthält rohe Credentials, löst Accountauswahl/automatische Erneuerung/Refreshownership nicht.",
+        "Persönlicher Console-Sessionreader: Endpunkte, Rollen, CSRF/SSO/Expiry und erlaubter Leseumfang noch zu qualifizieren.",
+        "Go: 5h20%, weekly50%, monthly100% der jeweiligen Modellreferenz; genaue Resetinstanzen und Mischmodellrechnung offen."
+      ],
+      "fallback": {
+        "manual": "Workspace-Key plus Consolelink; keine Extra Usage aktivieren.",
+        "auth": "Kein privater CLIstore-/Cookieimport ohne konkrete Qualifizierung."
+      },
+      "codeImplications": [
+        "Ein Console-Account/Workspace mit getrennten Produktfähigkeiten statt doppelter Credential-/Budgetkonten.",
+        "Inferenzcredential, Monitorcredential und Loginherkunft getrennt speichern.",
+        "Rollenabhängige Monitorlücke früh anzeigen; leere Werte unknown.",
+        "Reconnect an stabile Account-ID, Workspace und Credentialrevision binden.",
+        "MCP-OAuth nicht pauschal als beliebigen Inferenzbearer einsetzen.",
+        "Go-allowance als eigene Quota; Policybudget zählt enthaltene Go-Nutzung nicht."
+      ],
+      "sources": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/api/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/plugin/provider/opencode.ts",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/console-access.ts",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/harnesses/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/console/app/src/routes/oauth/opencode/client.json.ts",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/api/inference/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/budgets/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/billing/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "evidence": "Aktuelle getrennte Go-/Plus-Produktlimits.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/cli/src/commands/handlers/auth/export.ts",
+          "evidence": "Gezielter Integrationexport; rohe Credentialliste.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/cli/src/commands/handlers/auth/login.ts",
+          "evidence": "Konkreter CLIlogin mit Integration und Methode.",
+          "checkedAt": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": "opencode-go-plus",
+      "product": "OpenCode Go Plus",
+      "current": {
+        "state": "Eigene go-plus Planidentität im opencode-go Katalog; Quota unsupported.",
+        "catalog": "src/Lain.Host/Providers/Catalog/opencode-go.json",
+        "liveQualified": false
+      },
+      "preferredFlow": {
+        "recommendation": "Heute dokumentierter Workspace-Key für externe Inferenz. Öffentlich eigenes MCP-OAuth als gesonderten Monitorzugang qualifizieren; CLIexport als konkrete weitere Option prüfen.",
+        "publicOwnLogin": "Console-MCP https://opencode.ai/console/mcp ausdrücklich für externe Harnesses mit OAuth+DCR; konkrete Quota-/Balance-Readtools und Inferenzrechte daraus nicht nachgewiesen.",
+        "delegateOfficialCli": "Gepinntes dev bietet auth login opencode und auth export opencode. Exportfilter ist integrationID, kann mehrere Accounts und Refresh-Tokens enthalten. Keine dokumentierte Refreshdelegation; Versions-, Account- und Refreshhoheit offen.",
+        "personalWebSession": "Hersteller-Console-Deviceflow mit echter Rotation belegt. Eigener Drittclientvertrag und konkrete Monitorreadrechte offen; nicht categorisch ausgeschlossen. DCR-MCP vor Cookieimport bevorzugen.",
+        "manualKeyRequired": "Für qualifizierte externe Inferenz derzeit Workspace-Key; no-copy CLItransfer kann nach Qualifizierung Alternative werden. Browser-MCP allein beweist keinen Inferenzkey.",
+        "optionalChoices": [
+          "Workspace nur bei Mehrdeutigkeit",
+          "Zusätzliche Monitorrechte nur entsprechend Rolle",
+          "Extra Usage separat und nicht automatisch aktivieren",
+          "Keine Serviceaccounts oder Mitgliedschaften automatisch anlegen"
+        ]
+      },
+      "userSteps": [
+        "OpenCode verbinden wählen; benötigten Workspace-Key und separaten Browsermonitor früh erklären.",
+        "Console Account → Personal API keys → Add → vorhandenen Workspace und Keynamen wählen.",
+        "Key einmal privat übernehmen; passenden bereits vorhandenen Produktstatus zuordnen, keinen Kauf auslösen.",
+        "Nur nach MCP-Readqualifizierung optional Browserlogin für Monitor; Workspaceauswahl nur bei Mehrdeutigkeit.",
+        "Modelle/Protokoll und gegebenenfalls Extra Usage als eigene spätere Wahl."
+      ],
+      "credentials": [
+        {
+          "kind": "personal workspace API key",
+          "rights": "Normales Mitglied: Inferenz. Owner/Admin können Models Request, Usage Read, Budgets Read, Billing Read einschränken. Persönliche Keys dürfen keine persönlichen Keys provisionieren.",
+          "expiry": "Optional nie oder 1–365 Tage; expired keys werden neu erstellt, nicht verlängert. SSO kann aktive Sitzung verlangen.",
+          "reconnect": "Key am gleichen Account und Workspace ersetzen; Rolle/Workspace erneut bestätigen."
+        },
+        {
+          "kind": "Console MCP OAuth via own DCR",
+          "rights": "Workspaceverwaltung über MCP öffentlich unterstützt; benötigte read-only Tools/Scopes nicht qualifiziert. Kein Beleg beliebiger Inferenzrechte.",
+          "expiry": "Tokenendpoint, Rotation/Refresh/Revoke und Audience über öffentliche MCP-Metadaten gesondert qualifizieren."
+        },
+        {
+          "kind": "official CLI Console Device OAuth",
+          "rights": "Herstellerclient opencode-cli: /api/user, /api/orgs, /api/v2/config mit Bearer+x-org-id; Config und Inferenzprovider in offizieller App. Kein eigener Drittclientvertrag.",
+          "expiry": "access_token, refresh_token, expires_in; Refresh rotiert. Keine parallele Refreshhoheit CLI/lain."
+        }
+      ],
+      "inference": {
+        "base": "https://opencode.ai/inference/go",
+        "credential": "workspace API key documented for external harnesses",
+        "headers": "Eigener User-Agent; stabile x-opencode-session bei Go erforderlich.",
+        "restrictions": "Free-tier Console-chatmodelle extern HTTP403; keinen offiziellen Client imitieren. Go/Plus Workspaces single member; keine Serviceaccounts automatisch provisionieren."
+      },
+      "monitoring": [
+        {
+          "source": "Console MCP OAuth (qualification candidate)",
+          "data": "Plus-Produkt separat bestätigen; mehr Allowance nicht aus Keyform ableiten. Tatsächlicher Rest und Reset erfordern Reader.",
+          "rights": "Öffentlicher OAuth-DCR-Zugang belegt; konkrete Readtools, Rechte, Restwerte nicht belegt.",
+          "status": "unqualified reader, not unsupported login"
+        },
+        {
+          "source": "Native inference response usage",
+          "data": "cost, opencode.billing_source=go-plus, list_cost, billed tokens und ggf Go-allowance-Verbrauch.",
+          "limits": "Anfrageverbrauch ist kein vollständiger all-client Rest. cost=0 bei Go kein freies Modell; BYOK gesondert, Kosten können finalen Debit übersteigen."
+        }
+      ],
+      "maintainerPrerequisites": [
+        "MCP-Servermetadaten/DCR, Audience und Callback/PKCE/Refresh qualifizieren, ohne Herstellerclient-ID zu übernehmen.",
+        "Read-only tools/list und genaue Schemata/Rechte für produktspezifische Messung belegen; keine Schreibtools.",
+        "Falls CLIdelegation: unterstützte Version, Integrationfilter, exakte Credential-/Workspaceauswahl, isolierter Prozess und alleinige Refreshhoheit belegen. auth export ohne Ziel nicht verwenden.",
+        "Owner/Admin vs Member vor zusätzlicher Monitorcredential berücksichtigen. Keine automatischen Key-/Serviceaccount-Schreibvorgänge."
+      ],
+      "unresolved": [
+        "Konkrete öffentliche MCP-Lesetools für tatsächliche Restwerte, Scopes und Zeitstempel.",
+        "Eigene Deviceclientregistrierung für lain; outgoing OpenCode client.json ist keine solche Registrierung.",
+        "CLIexport enthält rohe Credentials, löst Accountauswahl/automatische Erneuerung/Refreshownership nicht.",
+        "Persönlicher Console-Sessionreader: Endpunkte, Rollen, CSRF/SSO/Expiry und erlaubter Leseumfang noch zu qualifizieren.",
+        "Plus-Produkt separat bestätigen; mehr Allowance nicht aus Keyform ableiten. Tatsächlicher Rest und Reset erfordern Reader."
+      ],
+      "fallback": {
+        "manual": "Workspace-Key; Plan ohne Daten unbestätigt, Consolelink; keine Extra Usage aktivieren.",
+        "auth": "Kein privater CLIstore-/Cookieimport ohne konkrete Qualifizierung."
+      },
+      "codeImplications": [
+        "Ein Console-Account/Workspace mit getrennten Produktfähigkeiten statt doppelter Credential-/Budgetkonten.",
+        "Inferenzcredential, Monitorcredential und Loginherkunft getrennt speichern.",
+        "Rollenabhängige Monitorlücke früh anzeigen; leere Werte unknown.",
+        "Reconnect an stabile Account-ID, Workspace und Credentialrevision binden.",
+        "MCP-OAuth nicht pauschal als beliebigen Inferenzbearer einsetzen.",
+        "Plusstatus und Plusquota eigenständig, gemeinsame Console-Accountidentität."
+      ],
+      "sources": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/api/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/plugin/provider/opencode.ts",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/console-access.ts",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/harnesses/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/console/app/src/routes/oauth/opencode/client.json.ts",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/api/inference/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/budgets/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/billing/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "evidence": "Aktuelle getrennte Go-/Plus-Produktlimits.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/cli/src/commands/handlers/auth/export.ts",
+          "evidence": "Gezielter Integrationexport; rohe Credentialliste.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/cli/src/commands/handlers/auth/login.ts",
+          "evidence": "Konkreter CLIlogin mit Integration und Methode.",
+          "checkedAt": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": "opencode-zen",
+      "product": "OpenCode Zen / aktuelle Console PAYG",
+      "current": {
+        "state": "Kein eigener qualifizierter Zen/PAYG-Katalogpfad in dieser Quellbasis.",
+        "catalog": null,
+        "liveQualified": false
+      },
+      "preferredFlow": {
+        "recommendation": "Heute dokumentierter Workspace-Key für externe Inferenz. Öffentlich eigenes MCP-OAuth als gesonderten Monitorzugang qualifizieren; CLIexport als konkrete weitere Option prüfen.",
+        "publicOwnLogin": "Console-MCP https://opencode.ai/console/mcp ausdrücklich für externe Harnesses mit OAuth+DCR; konkrete Quota-/Balance-Readtools und Inferenzrechte daraus nicht nachgewiesen.",
+        "delegateOfficialCli": "Gepinntes dev bietet auth login opencode und auth export opencode. Exportfilter ist integrationID, kann mehrere Accounts und Refresh-Tokens enthalten. Keine dokumentierte Refreshdelegation; Versions-, Account- und Refreshhoheit offen.",
+        "personalWebSession": "Hersteller-Console-Deviceflow mit echter Rotation belegt. Eigener Drittclientvertrag und konkrete Monitorreadrechte offen; nicht categorisch ausgeschlossen. DCR-MCP vor Cookieimport bevorzugen.",
+        "manualKeyRequired": "Für qualifizierte externe Inferenz derzeit Workspace-Key; no-copy CLItransfer kann nach Qualifizierung Alternative werden. Browser-MCP allein beweist keinen Inferenzkey.",
+        "optionalChoices": [
+          "Workspace nur bei Mehrdeutigkeit",
+          "Zusätzliche Monitorrechte nur entsprechend Rolle",
+          "Extra Usage separat und nicht automatisch aktivieren",
+          "Keine Serviceaccounts oder Mitgliedschaften automatisch anlegen"
+        ]
+      },
+      "userSteps": [
+        "OpenCode verbinden wählen; benötigten Workspace-Key und separaten Browsermonitor früh erklären.",
+        "Console Account → Personal API keys → Add → vorhandenen Workspace und Keynamen wählen.",
+        "Key einmal privat übernehmen; passenden bereits vorhandenen Produktstatus zuordnen, keinen Kauf auslösen.",
+        "Nur nach MCP-Readqualifizierung optional Browserlogin für Monitor; Workspaceauswahl nur bei Mehrdeutigkeit.",
+        "Modelle/Protokoll und gegebenenfalls Extra Usage als eigene spätere Wahl."
+      ],
+      "credentials": [
+        {
+          "kind": "personal workspace API key",
+          "rights": "Normales Mitglied: Inferenz. Owner/Admin können Models Request, Usage Read, Budgets Read, Billing Read einschränken. Persönliche Keys dürfen keine persönlichen Keys provisionieren.",
+          "expiry": "Optional nie oder 1–365 Tage; expired keys werden neu erstellt, nicht verlängert. SSO kann aktive Sitzung verlangen.",
+          "reconnect": "Key am gleichen Account und Workspace ersetzen; Rolle/Workspace erneut bestätigen."
+        },
+        {
+          "kind": "Console MCP OAuth via own DCR",
+          "rights": "Workspaceverwaltung über MCP öffentlich unterstützt; benötigte read-only Tools/Scopes nicht qualifiziert. Kein Beleg beliebiger Inferenzrechte.",
+          "expiry": "Tokenendpoint, Rotation/Refresh/Revoke und Audience über öffentliche MCP-Metadaten gesondert qualifizieren."
+        },
+        {
+          "kind": "official CLI Console Device OAuth",
+          "rights": "Herstellerclient opencode-cli: /api/user, /api/orgs, /api/v2/config mit Bearer+x-org-id; Config und Inferenzprovider in offizieller App. Kein eigener Drittclientvertrag.",
+          "expiry": "access_token, refresh_token, expires_in; Refresh rotiert. Keine parallele Refreshhoheit CLI/lain."
+        }
+      ],
+      "inference": {
+        "base": "https://opencode.ai/inference",
+        "credential": "workspace API key documented for external harnesses",
+        "headers": "Eigener User-Agent; stabile x-opencode-session bei Go erforderlich.",
+        "restrictions": "Free-tier Console-chatmodelle extern HTTP403; keinen offiziellen Client imitieren. Go/Plus Workspaces single member; keine Serviceaccounts automatisch provisionieren."
+      },
+      "monitoring": [
+        {
+          "source": "Console MCP OAuth (qualification candidate)",
+          "data": "Workspacebalance, Member-/Keybudgets und historische Usage getrennt. Policybudget monatlich am 1.00:00 UTC; nicht auf Goallowance übertragen.",
+          "rights": "Öffentlicher OAuth-DCR-Zugang belegt; konkrete Readtools, Rechte, Restwerte nicht belegt.",
+          "status": "unqualified reader, not unsupported login"
+        },
+        {
+          "source": "Native inference response usage",
+          "data": "cost, opencode.billing_source=balance, list_cost, billed tokens und ggf Go-allowance-Verbrauch.",
+          "limits": "Anfrageverbrauch ist kein vollständiger all-client Rest. cost=0 bei Go kein freies Modell; BYOK gesondert, Kosten können finalen Debit übersteigen."
+        }
+      ],
+      "maintainerPrerequisites": [
+        "MCP-Servermetadaten/DCR, Audience und Callback/PKCE/Refresh qualifizieren, ohne Herstellerclient-ID zu übernehmen.",
+        "Read-only tools/list und genaue Schemata/Rechte für produktspezifische Messung belegen; keine Schreibtools.",
+        "Falls CLIdelegation: unterstützte Version, Integrationfilter, exakte Credential-/Workspaceauswahl, isolierter Prozess und alleinige Refreshhoheit belegen. auth export ohne Ziel nicht verwenden.",
+        "Owner/Admin vs Member vor zusätzlicher Monitorcredential berücksichtigen. Keine automatischen Key-/Serviceaccount-Schreibvorgänge."
+      ],
+      "unresolved": [
+        "Konkrete öffentliche MCP-Lesetools für tatsächliche Restwerte, Scopes und Zeitstempel.",
+        "Eigene Deviceclientregistrierung für lain; outgoing OpenCode client.json ist keine solche Registrierung.",
+        "CLIexport enthält rohe Credentials, löst Accountauswahl/automatische Erneuerung/Refreshownership nicht.",
+        "Persönlicher Console-Sessionreader: Endpunkte, Rollen, CSRF/SSO/Expiry und erlaubter Leseumfang noch zu qualifizieren.",
+        "Workspacebalance, Member-/Keybudgets und historische Usage getrennt. Policybudget monatlich am 1.00:00 UTC; nicht auf Goallowance übertragen."
+      ],
+      "fallback": {
+        "manual": "Workspace-Key und Consolelink; kein Guthabenkauf als Connectschritt.",
+        "auth": "Kein privater CLIstore-/Cookieimport ohne konkrete Qualifizierung."
+      },
+      "codeImplications": [
+        "Ein Console-Account/Workspace mit getrennten Produktfähigkeiten statt doppelter Credential-/Budgetkonten.",
+        "Inferenzcredential, Monitorcredential und Loginherkunft getrennt speichern.",
+        "Rollenabhängige Monitorlücke früh anzeigen; leere Werte unknown.",
+        "Reconnect an stabile Account-ID, Workspace und Credentialrevision binden.",
+        "MCP-OAuth nicht pauschal als beliebigen Inferenzbearer einsetzen.",
+        "Eigenen aktuellen PAYG-Pfad ergänzen; Zen nicht als extra Abo erfinden."
+      ],
+      "sources": [
+        {
+          "url": "https://opencode.ai/v2/docs/console/api/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/plugin/provider/opencode.ts",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/core/src/console-access.ts",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/harnesses/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/console/app/src/routes/oauth/opencode/client.json.ts",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/api/inference/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/budgets/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/billing/",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://opencode.ai/v2/docs/console/go/",
+          "evidence": "Aktuelle getrennte Go-/Plus-Produktlimits.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/cli/src/commands/handlers/auth/export.ts",
+          "evidence": "Gezielter Integrationexport; rohe Credentialliste.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/anomalyco/opencode/blob/53b044d3139ddb28a4504c934cd4fa1e7e9829d7/packages/cli/src/commands/handlers/auth/login.ts",
+          "evidence": "Konkreter CLIlogin mit Integration und Methode.",
+          "checkedAt": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": "requesty",
+      "product": "Requesty Gateway + Selfmonitor, optional Organisationsmonitor",
+      "current": {
+        "state": "API-Key-Inferenz vorbereitet, Monitor manuell; keine Self-/Org-Reader.",
+        "catalog": "src/Lain.Host/Providers/Catalog/requesty.json",
+        "liveQualified": false
+      },
+      "preferredFlow": {
+        "recommendation": "Offizielle CLI mit benanntem Profil delegieren, anschließend gezielten Tokenhelper privat übernehmen.",
+        "publicOwnLogin": "Authorization Code S256-PKCE bei Herstellerclient belegt; eigener Drittclient-/Redirectregistrierungsvertrag nicht öffentlich gefunden.",
+        "delegateOfficialCli": "Konkreter Integrationshelper requesty auth token --profile <name>; README nennt Harnessnutzung und API-Key-Ausgabe. Eigene lain-Client-ID dafür nicht nötig.",
+        "personalWebSession": "Nicht nötig für belegten Bootstrap/Selfmonitor; Enterprise-SSO ist Dashboardzugang, kein API-Keyersatz.",
+        "manualKeyRequired": "Bei unterstützter CLIdelegation nein; vorhandenem Key, fehlender CLI oder SSH ohne Callback als Fallback.",
+        "optionalChoices": [
+          "Gruppenwahl nur bei mehreren; bei keine Gruppe persönlicher Key falls Orgpolicy erlaubt",
+          "Orgmonitor separat optional",
+          "Modellwahl nach Connect",
+          "Kein management-write für Dauerbetrieb"
+        ]
+      },
+      "userSteps": [
+        "Mit Requesty-CLI anmelden wählen; fehlende CLI früh mit Installationshinweis/Keyalternative erklären.",
+        "requesty login --profile lain-<account> delegieren, bestehenden fremden Profilzustand nicht überschreiben.",
+        "Im Browser anmelden; CLI fragt Gruppe nur bei mehreren.",
+        "CLI erstellt Key; Host übernimmt requesty auth token --profile <name> ohne stdoutlogging.",
+        "Mit Key-self tatsächliche Metadaten/Scope prüfen und eigenen Cap/Spend anzeigen.",
+        "Nur falls gewünscht Organisationsbalance mit separatem manage-read Key ergänzen."
+      ],
+      "credentials": [
+        {
+          "kind": "CLI OAuth bootstrap bearer",
+          "rights": "client_id=requesty-cli, scopes manage:group:r manage:apikey:w, resource https://api-v2.requesty.ai/v1/manage. Listet Gruppen und erstellt API-Key.",
+          "expiry": "Kurzlebig; CLI verwirft Token/etwaigen Refresh. Kein persistenter Inferenzbearer."
+        },
+        {
+          "kind": "created API key",
+          "rights": "README: completions + self usage. Erstellung ohne explizite Permissionfelder, Orgdefaults wirken; tatsächliche self-Metadaten prüfen.",
+          "expiry": "Keymetadaten expiry; Widerruf/Ablauf erfordert Ersatz.",
+          "reconnect": "Gezielt requesty login --profile <name> --force, Key am selben lain-Account ersetzen; Gruppe/Router prüfen."
+        },
+        {
+          "kind": "optional organization monitor key",
+          "rights": "manage=read, completions=none; kein manage-write nötig.",
+          "expiry": "Separat nach tatsächlichen Keymetadaten, gleiches Account-/Orgziel."
+        }
+      ],
+      "inference": {
+        "base": "https://router.requesty.ai/v1",
+        "credential": "API key, nicht kurzlebiger Bootstrapbearer",
+        "byok": "Upstreamkosten getrennt."
+      },
+      "monitoring": [
+        {
+          "source": "GET https://api-v2.requesty.ai/v1/manage/apikey/self",
+          "credential": "gleicher Inferenzkey ohne manage-Recht",
+          "data": "id,name,monthly_limit,monthly_spend,expiry,permissions,group. monthly_limit=0 bedeutet uncapped.",
+          "limits": "Keygrenze ist keine Orgcredits."
+        },
+        {
+          "source": "GET /v1/manage/apikey/self/usage?start=…",
+          "credential": "gleicher Inferenzkey",
+          "data": "Eigene Requests/Tokens/Spend im Zeitraum; CLI self nutzt Query.",
+          "limits": "Nicht all-client Orgusage oder Freepool-Rest. Arbitrary-key-usage-Doku mit GET-Body nicht auf self übertragen."
+        },
+        {
+          "source": "GET /v1/manage/org und /org/usage",
+          "credential": "optional manage-read Key",
+          "data": "Org USD-balance, kann postpaid negativ sein; Usagezeitreihen separat.",
+          "limits": "start RFC3339, end optional 24h, maximal100 Tage. Freepool shared/all models; genauer Reset offen."
+        }
+      ],
+      "maintainerPrerequisites": [
+        "Unterstützte offizielle CLI-Version, Herkunft und Process-/Profilauswahl qualifizieren.",
+        "Keyhelper stdout privat begrenzen und genau einen Key übernehmen; niemals Shellinterpolation/Frontend/Log.",
+        "Eigener nativer OAuthflow nur nach geklärter Clientregistrierung; nicht requesty-cli als lain verwenden.",
+        "Group-/Routerkontext, Keypermissions/Expiry und Profileigentümerschaft speichern."
+      ],
+      "unresolved": [
+        "CLI-Orgdefaults können Rechte beeinflussen; README beschreibt eingeschränkten Key, Servermetadaten nach Übernahme maßgeblich.",
+        "Eigene OAuth-Registrierung, unterstützte Redirects und eigener client_id noch offen.",
+        "Freepool-Rest/Reset nicht aus self-Nutzung bestimmt.",
+        "SSOpolicy/fehlende Gruppenzuordnung kann Adminhilfe erfordern."
+      ],
+      "fallback": {
+        "manual": "Vorhandener API-Key, bei neuem Key im Dashboard erstellen und einmal privat übernehmen.",
+        "remote": "CLIloopback laut README über SSH ohne passenden Rückkanal ungeeignet; Keyalternative.",
+        "unlink": "Profilauswahl entfernen/Account unlink ist keine serverseitige Revocation."
+      },
+      "codeImplications": [
+        "Expliziten RequestyCliBootstrapAdapter hinzufügen; stable account/profile binding.",
+        "Selfmetadata/-usage Reader zuerst, Orgmonitor separat.",
+        "API-key Credential mit Herkunft cli-bootstrap speichern; keine Bootstraprefreshtokens erfinden.",
+        "Reconnect ersetzt Credentialrevision ohne Account/Budget zu duplizieren."
+      ],
+      "sources": [
+        {
+          "url": "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/internal/oauth/flow.go",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/internal/onboarding/flow.go",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/internal/client/api_keys.go",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/internal/client/usage.go",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/features/key-management-api",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/api-reference/management-apis",
+          "evidence": "Vorheriger Primärquellenbefund unverändert wiederverwendet; siehe quota-auth-research/kilo-opencode-requesty.md/.json.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/cmd/auth.go",
+          "evidence": "Gezielter Integrationshelper druckt Key des ausdrücklich gewählten Profils plus Newline.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/README.md",
+          "evidence": "Benannte Profile, login --force, Helper-Vertrag, Selfrechte, fehlender SSHloopback.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/api-reference/endpoint/manage-org-get",
+          "evidence": "Org USD-Balance separat.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://docs.requesty.ai/api-reference/endpoint/manage-org-get-usage",
+          "evidence": "Zeitraum und Granularität.",
+          "checkedAt": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": "openrouter",
+      "product": "OpenRouter API + Keylimits, optional Accountcredits",
+      "current": {
+        "state": "API-Key-Inferenz und OpenRouterQuotaAdapter GET /api/v1/key vorhanden; eigener Loginadapter fehlt.",
+        "files": [
+          "src/Lain.Host/Quota/OpenRouterQuotaAdapter.cs",
+          "src/Lain.Host/Accounts/AccountService.cs"
+        ],
+        "liveQualified": "Bestehender Code und vorliegender historischer Rootbeleg; keine neuen Kontoabfragen."
+      },
+      "preferredFlow": {
+        "recommendation": "Eigenen öffentlich dokumentierten Browser-PKCE-Keybootstrap als Standard anbieten.",
+        "publicOwnLogin": "Unterstützt ohne Clientregistrierung/Clientsecret; S256, Loopbackcallback beliebiger Port und state. Ergebnis API-Key.",
+        "delegateOfficialCli": "Nicht erforderlich.",
+        "personalWebSession": "Nicht erforderlich; Browserautorisierung benötigt keinen Cookieimport.",
+        "manualKeyRequired": "Nein. Vorhandenen Key optional manuell verbinden; Headless braucht einmaligen Autorisierungscode statt Key.",
+        "optionalChoices": [
+          "Workspace falls mehrere/gewünscht; bei Reconnect bekannte required_workspace_id",
+          "Optional gesonderter Management-Key für Accountcredits",
+          "Modelle nach Connect"
+        ]
+      },
+      "userSteps": [
+        "OpenRouter verbinden klicken; Host erzeugt PKCEverifier und state und öffnet Systembrowser.",
+        "Anmelden und Zugriff/Workspace bestätigen.",
+        "Lokaler Callback tauscht Code gegen API-Key aus; Host übernimmt privat.",
+        "GET /key bestätigt verfügbare Identitäts-/Scope-/Ablaufdaten und liefert Key-/Budgetmonitor.",
+        "Bei Headless Einmalcode innerhalb zehn Minuten eingeben; Vorgang weiterhin an Account/Zweck/Verifier binden."
+      ],
+      "credentials": [
+        {
+          "kind": "PKCE-bootstrapped API key",
+          "rights": "Inferenz und eigener Keyread. Kein Managementrecht allein aus Login ableiten.",
+          "expiry": "expires_at falls geliefert; kein dokumentierter Refresh-Grant.",
+          "reconnect": "Neuer Bootstrap am selben Account; erwarteten Workspace binden, alte Credentialrevision ersetzen."
+        },
+        {
+          "kind": "optional management API key",
+          "rights": "Aktuelle /credits-Doku verlangt Management-Key; zusätzliche explizite Berechtigung.",
+          "expiry": "Separat nach Anbieterkey, kein automatisches Provisioning."
+        }
+      ],
+      "inference": {
+        "base": "https://openrouter.ai/api/v1",
+        "credential": "API-key Bearer"
+      },
+      "monitoring": [
+        {
+          "source": "GET https://openrouter.ai/api/v1/key",
+          "credential": "gleicher Bootstrapkey",
+          "data": "Keycap/-spend, workspace/member/key budgets, free_model_daily_requests, Identityfelder creator_user_id/workspace_id/organization_id und expiry soweit vorhanden.",
+          "limits": "Überlappende Constraints separat, effective_budget kein zusätzliches Geld. Keycap ist keine Accountwallet."
+        },
+        {
+          "source": "GET https://openrouter.ai/api/v1/credits",
+          "credential": "Current docs: Management-Key",
+          "data": "Accountcredits getrennt.",
+          "limits": "Root berichtet historischen 200 mit gewöhnlichem Key; Versions-/Accountabweichung gesondert qualifizieren, nicht alle Standardkeys kategorisch ablehnen oder neue Logins als creditsfähig versprechen."
+        }
+      ],
+      "maintainerPrerequisites": [
+        "OpenRouterLoginAdapter, sicherer Loopbackcallback, S256/state, Timeout/Cancel/Replay implementieren.",
+        "Pendinglogin an stable accountId, Zweck, erwartete Revision und Workspace binden.",
+        "Eigene /key-Felder vor Identitätsbindung prüfen; fehlende Identity unbestätigt lassen.",
+        "Headless ohne echoed state separat behandeln; Code/Verifier nur Host."
+      ],
+      "unresolved": [
+        "Erzeugter Key kann serverseitig bestehen, wenn lokale Übernahme scheitert; nicht unbelegt Delete/Revoke behaupten.",
+        "Historisches Standardkey-/credits-Verhalten versus aktueller Management-Keyvertrag.",
+        "Optional fehlende identity/expiry Felder und abgelehnte/headless stateAntwort."
+      ],
+      "fallback": {
+        "manual": "Vorhandenen API-Key einmal privat einfügen.",
+        "headless": "Öffentlicher Einmalcodeflow mit zehn Minuten Codegültigkeit.",
+        "credits": "Management-Zugang fehlt → Accountcredits unknown, vorhandene Keylimits weiter zeigen."
+      },
+      "codeImplications": [
+        "Bestehenden Inferenz- und /key-Monitorpfad wiederverwenden; acquisition=pkce-key-bootstrap statt oauth Credentialtyp.",
+        "Keyrotation/Reconnect nicht aus Secret abgeleitet als neuer Account behandeln.",
+        "Lokales Unlink ist kein serverseitiger Widerruf.",
+        "POST /auth/keys/code ist authentisiert und kein unauthentisierter Bootstrapersatz."
+      ],
+      "sources": [
+        {
+          "url": "https://openrouter.ai/docs/guides/overview/auth/oauth",
+          "evidence": "Öffentlicher S256-Keybootstrap, Callback/state/Workspace/Headless.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://github.com/OpenRouterTeam/skills/blob/main/skills/openrouter-oauth/README.md",
+          "evidence": "Explizit keine Clientregistrierung nötig.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://openrouter.ai/docs/api/api-reference/api-keys/get-current-api-key",
+          "evidence": "Eigener Key, Identity, Expiry, überlappende Limits.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://openrouter.ai/docs/api/api-reference/credits/get-remaining-credits",
+          "evidence": "Aktuelle /credits-Referenz verlangt Management-Key.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://openrouter.ai/docs/guides/overview/auth/management-api-keys",
+          "evidence": "Managementrechte getrennt vom Inferenzlogin.",
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://openrouter.ai/docs/api/api-reference/oauth/create-authorization-code",
+          "evidence": "Authentisierte Codeerstellung ist kein anonymer Bootstrap.",
+          "checkedAt": "2026-10-24"
+        }
+      ]
+    }
+  ]
+}

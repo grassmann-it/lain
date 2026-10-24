@@ -1,0 +1,937 @@
+{
+  "sourceCommit": "5dc916f",
+  "checkedAt": "2026-10-24",
+  "status": "research_proposal",
+  "actions": "Public documentation/source GET only; no account API requests, login, credentials, inference, registration, purchase, service actions, builds or code edits.",
+  "providers": [
+    {
+      "id": "sambanova",
+      "product": "SambaCloud Free and Developer (separate plan states; not SambaStack/Studio)",
+      "currentLain": {
+        "gateway": "Installed per assignment; catalog API-key openai-chat",
+        "route": "sambanova/Meta-Llama-3.3-70B-Instruct",
+        "baseUrl": "https://api.sambanova.ai/v1",
+        "quota": "console fallback, no adapter",
+        "monitorAccessOptions": [],
+        "planStates": [
+          "free",
+          "developer"
+        ]
+      },
+      "sources": [
+        {
+          "url": "https://docs.sambanova.ai/docs/en/models/rate-limits",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Six per-response RPM/RPD headers; Free without payment method and Developer with payment method. Llama 3.3 70B Free: 20 RPM, 20 RPD, 200000 TPD; Developer: 240 RPM, 48000 RPD, plus 20M tokens/day across models. Reset is time until reset; format/unit not specified."
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/get-started/api-keys-urls",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Cloud key generation in portal; up to 25 keys/user, new keys visible only once. SambaStack uses separate local credentials."
+        },
+        {
+          "url": "https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json",
+          "kind": "official_openapi",
+          "openedAt": "2026-10-24",
+          "claim": "Inference/model paths and Bearer API key; no account billing or quota reader among the inspected paths.",
+          "sha256": "4e97ad109859609087738956d5ae04efd02246683bd6348f30c2b3a2d4874921"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/sambanova/sambanova-python/main/src/sambanova/_client.py",
+          "kind": "official_sdk",
+          "openedAt": "2026-10-24",
+          "claim": "SDK uses API key authentication; inspected client does not establish a browser/device OAuth login.",
+          "sha256": "1dc412f6d781954b008a7c476cd4286271953c0712739cf67612e6b94b61ffcf"
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/35360-10acd791f887f198.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "Same-origin GET /api/usage?user_name=&start_date=&end_date= with optional model_id and api_key_hash; /api/credits?user_name= and /api/auth:me. No account request made.",
+          "sha256": "8e333b9cfaef6eafd3768e982b1cdd6feacd82beab3541e83f0721f65de645dc"
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/app/plans/usage/page-e51f0f756261f20d.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "UTC month selection and model_wise_usage with input_token, output_token and separate pricing fields.",
+          "sha256": "d005e347661057c416d091e908d98c700521bd0a2dc6ce8dac5f8337edf76d05"
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/59468-13418f0de96abfb8.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "GET /resources/credits/balance has amount and readAt; UI settling notice, 300s client cache and 5s refresh cooldown are not backend freshness guarantees.",
+          "sha256": "289beb62a47680b10fa2c186c958b1ed5b51273753f76ab5cb61e73686d0c0c8"
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/app/plans/billing/page-99d49997704cb773.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "credits[] consumed with credit_value, balance_credit_value, end_date, credit_type; client divides credit values by 100.",
+          "sha256": "4322745a54b3a2f1fbab09ecf37a30aad343c4a8060219a46078a52d4c0235ce"
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/app/layout-df257fd00f1eac70.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "POST /api/keys accepts userName, apiKeyName, optional expiresAt; response/session contract not qualified and operation not called.",
+          "sha256": "07f77076ff18932cf5d0bdc08bdfa8430f4457589c9d70257a6a85d057b828dc"
+        }
+      ],
+      "authOptions": [
+        {
+          "kind": "existing_api_key",
+          "status": "documented",
+          "inference": true,
+          "monitoring": "Passive header observation with same inference key; not standalone account balance API",
+          "copyFree": false
+        },
+        {
+          "kind": "personal_browser_session_and_key_bootstrap",
+          "status": "first_party_client_candidate",
+          "copyFree": "Potentially, via session-mediated API key creation and direct private storage",
+          "inference": "Separate generated key",
+          "monitoring": "Console session for usage/credits",
+          "clientRegistration": "No public delegated OAuth/Device client registration, scopes, redirect policy or third-party distribution contract found",
+          "permissions": "Dedicated read-only key/IAM not established; create is a mutation separate from monitor"
+        }
+      ],
+      "nativeMeasurements": {
+        "requestsMinute": {
+          "limitHeader": "x-ratelimit-limit-requests",
+          "remainingHeader": "x-ratelimit-remaining-requests",
+          "resetHeader": "x-ratelimit-reset-requests"
+        },
+        "requestsDay": {
+          "limitHeader": "x-ratelimit-limit-requests-day",
+          "remainingHeader": "x-ratelimit-remaining-requests-day",
+          "resetHeader": "x-ratelimit-reset-requests-day"
+        },
+        "resetFormat": "Time until reset documented; exact syntax/unit unknown",
+        "freePublishedLlamaLimits": {
+          "rpm": 20,
+          "rpd": 20,
+          "tpd": 200000
+        },
+        "developerPublishedLlamaLimits": {
+          "rpm": 240,
+          "rpd": 48000
+        },
+        "developerSharedTpd": 20000000,
+        "tokenDailyRemaining": "unknown; not covered by six headers",
+        "scope": "user/model published limits, preserve observed account/model and do not invent per-key pools",
+        "balanceCandidate": {
+          "endpoint": "https://cloud.sambanova.ai/resources/credits/balance",
+          "fields": [
+            "amount",
+            "readAt"
+          ],
+          "currency": "must confirm before normalization",
+          "freshness": "readAt and settling notice; 300s cache is client policy"
+        }
+      },
+      "recommendation": {
+        "priority": "Implement passive RPM/RPD capture first; separately qualify personal Console reader/loginbootstrap",
+        "oneLoginInferenceAndMonitoring": "Plausible session plus minted API key, not one already proven bearer for both",
+        "nextBoundedProof": "Offline header fixtures for missing/invalid/reset cases, then static key-response/session/CSRF contract; separate authorized read-only Console comparison later"
+      },
+      "missingImplementation": [
+        "Samba header capture/parser and passive quota adapter",
+        "Model/account attribution and stale windows",
+        "Optional isolated Console session reader and own auth lifecycle",
+        "Private API key bootstrap contract, typed response and non-monitor mutation UI",
+        "Do not pass refresh material into quota projections"
+      ],
+      "unresolved": [
+        "Reset header format/unit and live applicability on SSE/errors",
+        "TPD remaining and standalone public reader",
+        "Console session/CSRF/refresh and accepted third-party automation/distribution",
+        "Actual create response, currencies and balance settlement delay",
+        "Separate read-only monitor credential/IAM and verified pool identity"
+      ],
+      "evidence": [
+        {
+          "url": "https://docs.sambanova.ai/docs/en/models/rate-limits",
+          "statement": "Six per-response RPM/RPD headers; Free without payment method and Developer with payment method. Llama 3.3 70B Free: 20 RPM, 20 RPD, 200000 TPD; Developer: 240 RPM, 48000 RPD, plus 20M tokens/day across models. Reset is time until reset; format/unit not specified.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/get-started/api-keys-urls",
+          "statement": "Cloud key generation in portal; up to 25 keys/user, new keys visible only once. SambaStack uses separate local credentials.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json",
+          "statement": "Inference/model paths and Bearer API key; no account billing or quota reader among the inspected paths.",
+          "date": "2026-10-24",
+          "quality": "official_openapi"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/sambanova/sambanova-python/main/src/sambanova/_client.py",
+          "statement": "SDK uses API key authentication; inspected client does not establish a browser/device OAuth login.",
+          "date": "2026-10-24",
+          "quality": "official_sdk"
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/35360-10acd791f887f198.js",
+          "statement": "Same-origin GET /api/usage?user_name=&start_date=&end_date= with optional model_id and api_key_hash; /api/credits?user_name= and /api/auth:me. No account request made.",
+          "date": "2026-10-24",
+          "quality": "first_party_console_bundle_not_public_api"
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/app/plans/usage/page-e51f0f756261f20d.js",
+          "statement": "UTC month selection and model_wise_usage with input_token, output_token and separate pricing fields.",
+          "date": "2026-10-24",
+          "quality": "first_party_console_bundle_not_public_api"
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/59468-13418f0de96abfb8.js",
+          "statement": "GET /resources/credits/balance has amount and readAt; UI settling notice, 300s client cache and 5s refresh cooldown are not backend freshness guarantees.",
+          "date": "2026-10-24",
+          "quality": "first_party_console_bundle_not_public_api"
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/app/plans/billing/page-99d49997704cb773.js",
+          "statement": "credits[] consumed with credit_value, balance_credit_value, end_date, credit_type; client divides credit values by 100.",
+          "date": "2026-10-24",
+          "quality": "first_party_console_bundle_not_public_api"
+        },
+        {
+          "url": "https://cloud.sambanova.ai/_next/static/chunks/app/layout-df257fd00f1eac70.js",
+          "statement": "POST /api/keys accepts userName, apiKeyName, optional expiresAt; response/session contract not qualified and operation not called.",
+          "date": "2026-10-24",
+          "quality": "first_party_console_bundle_not_public_api"
+        }
+      ]
+    },
+    {
+      "id": "upstage",
+      "product": "Upstage direct Solar API: signup grant, prepaid credits and PAYG separately; Studio subscription excluded",
+      "currentLain": {
+        "gateway": "Installed per assignment; catalog API-key openai-chat",
+        "route": "upstage/solar-mini4-260922",
+        "baseUrl": "https://api.upstage.ai/v1",
+        "quota": "console fallback, no adapter",
+        "monitorAccessOptions": []
+      },
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/llms.txt",
+          "kind": "official_documentation_index",
+          "openedAt": "2026-10-24",
+          "claim": "Inspected index contains inference/agent/storage APIs and rate guides; no documented general billing/quota API or OAuth/device login entry.",
+          "sha256": "87471b55a2fb350d4bbcf88e3cda1e16858313994a6c4998f9c06ba834253626"
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Request usage contains prompt_tokens, completion_tokens, total_tokens and completion_tokens_details.reasoning_tokens.",
+          "sha256": "14c8176001662e1600c152706a337902c190a23a440daeca369e0fc484c84275"
+        },
+        {
+          "url": "https://console.upstage.ai/docs/guides/rate-limits.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "RPM/TPM/RPS/PPM differentiated by capability and commitment/legacy tier. Solar Mini 4 Tier 0: 100 RPM and 50000 TPM, published limits rather than observed remaining.",
+          "sha256": "5085f057dde53da0346a626f20f7685e88c251e564ea8b8d8dbca6a163c2347f"
+        },
+        {
+          "url": "https://console.upstage.ai/docs/getting-started",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Advertises $10 signup credit, paid PAYG and prepaid; does not establish individual credit grant or expiry."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/resources/faq.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Organization owns keys, billing and limits. Member can read Org balance/spend/limits but per-key usage only own keys; Owner all keys. Usage UTC filters up to 92 days/CSV. Monthly budget UTC with up to 1s enforcement delay; exhausted credit can charge payment method.",
+          "sha256": "a0a0acb3637ea118c82621b0c8ab34d9ee09ca2fbc359eddd5540808a57ed64b"
+        },
+        {
+          "url": "https://console.upstage.ai/_next/static/chunks/7157-768d821a4d850f5c.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "Same-origin /api/console/v3 BFF, credentials same-origin, x-console-request: 1. Org GET spend, promotions, usage-limit, rate-limit, usage/export. Spend month_to_date/period; money amount_decimal.value*10**exp; promotions credit_balance/total_credit/credit_coupons with paid/expiry. Org API key create/reveal path constants also exist. No private endpoint requested.",
+          "sha256": "8e8f3d0975885d27dfde5d5d5c489b8e4f7a04c94ea73ee7df1f682f97428ae0"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/UpstageAI/cookbook/main/README.md",
+          "kind": "official_sdk_examples",
+          "openedAt": "2026-10-24",
+          "claim": "Official cookbook is an integration/example source; it does not establish a general third-party OAuth login or billing-reader contract.",
+          "sha256": "419b205d556c60c3fc00e46cbf9c54c968e98df8eb2699a1ec892983669f155b"
+        }
+      ],
+      "authOptions": [
+        {
+          "kind": "existing_api_key",
+          "status": "documented",
+          "inference": true,
+          "monitoring": "Per-response token usage only; no public balance reader qualified",
+          "copyFree": false
+        },
+        {
+          "kind": "personal_browser_session_and_org_key_bootstrap",
+          "status": "first_party_client_candidate",
+          "copyFree": "Potentially; separate API-key creation/reveal needs qualification",
+          "inference": "Org API key",
+          "monitoring": "same-origin Console BFF authenticated session",
+          "clientRegistration": "No delegated Upstage OAuth/device/CLI public registration/scopes found; IdP social login is not a lain grant",
+          "permissions": "Member read Org balances/spend/limits, per-key usage only own keys. Owner all keys; no monitor-only API key established"
+        }
+      ],
+      "nativeMeasurements": {
+        "perResponse": [
+          "prompt_tokens",
+          "completion_tokens",
+          "total_tokens",
+          "completion_tokens_details.reasoning_tokens"
+        ],
+        "solarMini4Tier0Published": {
+          "rpm": 100,
+          "tpm": 50000
+        },
+        "scope": "Org settings shared across keys; usage visibility depends on role",
+        "consoleTransport": {
+          "prefix": "https://console.upstage.ai/api/console/v3",
+          "credentials": "same-origin session",
+          "header": {
+            "x-console-request": "1"
+          }
+        },
+        "consoleEndpoints": {
+          "spend": "/organizations/{organizationId}/spend",
+          "credits": "/organizations/{organizationId}/promotions",
+          "budget": "/organizations/{organizationId}/usage-limit",
+          "tier": "/organizations/{organizationId}/rate-limit",
+          "usage": "/organizations/{organizationId}/usage?from=&to=&offset=&limit="
+        },
+        "money": "amount_decimal.value * 10 ** amount_decimal.exp; preserve decimal, do not zero unknown",
+        "creditFields": [
+          "credit_balance",
+          "total_credit",
+          "credit_coupons[].paid",
+          "credit_coupons[].deducted_amount",
+          "credit_coupons[].expired_at_ms"
+        ],
+        "spendFields": [
+          "month_to_date",
+          "period"
+        ],
+        "budgetWindow": "calendar month UTC; up to 1s enforcement delay",
+        "usageRange": "UTC, up to 92 days, paginated plus CSV",
+        "freshness": "Provider as-of unqualified; client credit asOfIso empty; distinguish fetchedAt from settled spending"
+      },
+      "recommendation": {
+        "priority": "Qualify concrete Console session monitor with Org binding; local request usage remains immediately useful",
+        "oneLoginInferenceAndMonitoring": "Session plus separate Org API-key bootstrap plausible; no direct delegated bearer proven for both",
+        "alternative": "Manual usage CSV import preserving interval/role scope",
+        "nextBoundedProof": "Complete static login/BFF cookie and CSRF contract; subsequently exactly one authorized GET spend and promotions in existing session, compare Console. No key create/reveal, purchases or plan changes"
+      },
+      "missingImplementation": [
+        "Isolated personal Console sessionconnector/lifecycle and allowed-origin/BFF adapter",
+        "Org identity verification and role-specific coverage",
+        "Decimal money, grant expiry/type separation and pagination",
+        "Separate private inference key import/bootstrap",
+        "Freshness and provider-data-time projection"
+      ],
+      "unresolved": [
+        "Third-party sessionconnector distribution/terms and durable login/refresh",
+        "Key-bootstrap method/body/response and consent",
+        "Whether official standalone API/read-only key exists beyond opened references",
+        "Credit settlement delay and grant identity",
+        "Documented Remaining/Reset response headers not found"
+      ],
+      "evidence": [
+        {
+          "url": "https://console.upstage.ai/llms.txt",
+          "statement": "Inspected index contains inference/agent/storage APIs and rate guides; no documented general billing/quota API or OAuth/device login entry.",
+          "date": "2026-10-24",
+          "quality": "official_documentation_index"
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat.md",
+          "statement": "Request usage contains prompt_tokens, completion_tokens, total_tokens and completion_tokens_details.reasoning_tokens.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://console.upstage.ai/docs/guides/rate-limits.md",
+          "statement": "RPM/TPM/RPS/PPM differentiated by capability and commitment/legacy tier. Solar Mini 4 Tier 0: 100 RPM and 50000 TPM, published limits rather than observed remaining.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://console.upstage.ai/docs/getting-started",
+          "statement": "Advertises $10 signup credit, paid PAYG and prepaid; does not establish individual credit grant or expiry.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://console.upstage.ai/docs/resources/faq.md",
+          "statement": "Organization owns keys, billing and limits. Member can read Org balance/spend/limits but per-key usage only own keys; Owner all keys. Usage UTC filters up to 92 days/CSV. Monthly budget UTC with up to 1s enforcement delay; exhausted credit can charge payment method.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://console.upstage.ai/_next/static/chunks/7157-768d821a4d850f5c.js",
+          "statement": "Same-origin /api/console/v3 BFF, credentials same-origin, x-console-request: 1. Org GET spend, promotions, usage-limit, rate-limit, usage/export. Spend month_to_date/period; money amount_decimal.value*10**exp; promotions credit_balance/total_credit/credit_coupons with paid/expiry. Org API key create/reveal path constants also exist. No private endpoint requested.",
+          "date": "2026-10-24",
+          "quality": "first_party_console_bundle_not_public_api"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/UpstageAI/cookbook/main/README.md",
+          "statement": "Official cookbook is an integration/example source; it does not establish a general third-party OAuth login or billing-reader contract.",
+          "date": "2026-10-24",
+          "quality": "official_sdk_examples"
+        }
+      ]
+    },
+    {
+      "id": "cohere-evaluation",
+      "product": "Cohere Evaluation / Trial",
+      "currentLain": {
+        "providerId": "cohere",
+        "gateway": "Installed per assignment; API-key openai-chat compatibility route",
+        "route": "cohere/command-a-plus-05-2026",
+        "baseUrl": "https://api.cohere.ai/compatibility/v1",
+        "catalogPlan": "evaluation",
+        "quota": "console fallback, no adapter",
+        "monitorAccessOptions": [],
+        "productionEntitlement": "unverified; do not infer from key selection"
+      },
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/v2/docs/rate-limits",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Evaluation free/limited, 1000 calls/month; Command A+ trial 20 RPM and Production contact sales. Newer model variants may remain trial-limited even on Production key; A/R/R+/R7B Production table 500 RPM."
+        },
+        {
+          "url": "https://docs.cohere.com/docs/going-live",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Production requires legal/usage acknowledgments and possibly use-case approval; signing in or having a key does not prove approved production entitlement."
+        },
+        {
+          "url": "https://docs.cohere.com/docs/how-does-cohere-pricing-work.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Native Chat raw input/output tokens differ from billed_units; Rerank search units and Embed tokens retain native units. Trial usage is free/limited.",
+          "sha256": "cea1e077f141784ea2203b9dafa1b76399d3c3fdfbcfd214d5122448ecaa7454"
+        },
+        {
+          "url": "https://docs.cohere.com/reference/chat.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Native Chat usage is a separate response contract from installed OpenAI-compatible route.",
+          "sha256": "1a64afb5caf6cbdc95a28466c1cebe805ebe6b9a5e7ac03ee92e034ee80ef894"
+        },
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Installed compatibility API is a subset and cannot be assumed to expose every native billed_units field.",
+          "sha256": "765f7b2202d1dba112a7bac9d115e845cca44e1e3d4d284e7e3e0c9674da79e4"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/cohere-ai/cohere-developer-experience/main/cohere-openapi.yaml",
+          "kind": "official_openapi",
+          "openedAt": "2026-10-24",
+          "claim": "Bearer API key and inference/storage/model endpoints; inspected general public schema has no billing/callquota reader. Connector OAuth belongs to connectors.",
+          "sha256": "25184037512d4149d2e2ded604bcf00d748a8fe23f979534020a9f0036fd2e71"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/cohere-ai/cohere-python/main/src/cohere/base_client.py",
+          "kind": "official_sdk",
+          "openedAt": "2026-10-24",
+          "claim": "Public Python client accepts token/API key; inspected source does not qualify a delegated login for billing and inference.",
+          "sha256": "0c19b07af3d3a96d1d672b66712670eb393c98b55ee9333a2d9220df3e92bcd0"
+        },
+        {
+          "url": "https://docs.cohere.com/reference/get-dataset-usage",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "GET /v1/datasets/usage returns organization_usage bytes for dataset storage, not inference quota."
+        },
+        {
+          "url": "https://docs.cohere.com/reference/check-api-key",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "POST /v1/check-api-key validates key, optionally organization_id/owner_id, without balance or key-plan type; currently under Deprecated navigation."
+        },
+        {
+          "url": "https://docs.cohere.com/v2/reference/teams-and-roles",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "User sees usage history and manages trial keys; Owner has additional billing/payment privileges. Does not establish a monitor-only IAM key."
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/_app-93016fb49a1d0e50.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "POST https://production.api.os.cohere.com/rpc/BlobheartAPI/{method}: CLIAuthBegin returns browserURL/secret, CLIAuthConfirm and CLIAuthCheck token; GetAPIUsage/V2 usages and GetBillingActivity/History activity/history. Bearer transport and API key bootstrap methods exist, not called.",
+          "sha256": "8661839af83916085e5b1a7700ad4e791ad9beadb8ae5b28edb6f977ff9c4921"
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/welcome/auth-cli-bd07116a0aa4d76a.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "/welcome/auth-cli requires session, reads cliSession query and displays Allow/Deny before CLIAuthConfirm(secret). Actual proprietary pairing candidate; no standard OAuth Device Grant established.",
+          "sha256": "778dc681a07ef459da771c6f9201ad2c594f910a5af559c77e90394a2c87b0e2"
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/billing-4a7f7fc5f062303e.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "Org/date/pagination usage and quantity/productUnit/total; activity.balanceForMonthlyLimit and organization.balance_limit(_enabled) for budget display, not remaining trial calls.",
+          "sha256": "2b2cf43469ab010c7a9fe624d9b299e977b3eb7329cc41b9ef9248cb8f1b9a48"
+        },
+        {
+          "url": "https://api.github.com/repos/cohere-ai/co",
+          "kind": "official_repository_lookup_failed",
+          "openedAt": "2026-10-24",
+          "claim": "Historical CLI repository candidate currently returns 404; this is a research limit, not proof login is unavailable.",
+          "sha256": "4f50e254a719a6b1b06b529bdaa08980e4acf0878aad0090cba7771f6ebdf0b9"
+        }
+      ],
+      "authOptions": [
+        {
+          "kind": "existing_evaluation_or_production_api_key",
+          "status": "documented",
+          "inference": true,
+          "monitoring": "Local response usage; public datasets usage only storage, not inference allowance",
+          "copyFree": false
+        },
+        {
+          "kind": "proprietary_cli_browser_pairing",
+          "status": "first_party_client_candidate",
+          "copyFree": "Potentially via CLIAuthBegin/Confirm/Check and separate API-key bootstrap",
+          "inference": "CLI token acceptance not proven; CreateAPIKey/ViewRawAPIKey/GetOrCreateDefaultAPIKey methods exist",
+          "monitoring": "GetAPIUsage(V2)/GetBillingActivity with authorized user bearer, exact CLI token rights unqualified",
+          "clientRegistration": "No public third-party client ID/scopes/redirect, pairing distribution approval, token lifetime/refresh/revoke contract found",
+          "permissions": "Org-bound user roles; no read-only monitor key established"
+        }
+      ],
+      "nativeMeasurements": {
+        "requestUsage": "Installed compatibility response contract must be preserved separately from native Chat usage.billed_units and usage.tokens",
+        "nativeUnits": [
+          "input_tokens",
+          "output_tokens",
+          "Rerank search_units",
+          "Embed tokens"
+        ],
+        "publishedCallsMonth": 1000,
+        "commandAPlusRpm": 20,
+        "reset": "Trial monthly reset timezone/timestamp unqualified; budget window not trial window",
+        "scope": "Preserve key plan, organization, model, endpoint and coverage; local usage excludes other clients",
+        "consoleRPCBase": "https://production.api.os.cohere.com/rpc/BlobheartAPI/",
+        "consoleReaderMethods": [
+          "GetAPIUsage",
+          "GetAPIUsageV2",
+          "GetBillingActivity",
+          "GetBillingHistory"
+        ],
+        "consoleUsageFields": [
+          "usages",
+          "quantity",
+          "productUnit",
+          "total"
+        ],
+        "consoleBudgetFields": [
+          "activity.balanceForMonthlyLimit",
+          "organization.balance_limit",
+          "organization.balance_limit_enabled"
+        ],
+        "freshness": "No provider-wide billing freshness SLA qualified; preserve requested interval and observation time"
+      },
+      "recommendation": {
+        "priority": "Local calls/tokens with incomplete-coverage label; separately qualify pairing and Console RPC reader",
+        "oneLoginInferenceAndMonitoring": "Potentially session/CLI token plus separately bootstrapped key; no one-token guarantee",
+        "nextBoundedProof": "Find current official pairing/CLI contract or confirm third-party use, token lifetime/Org binding and key-bootstrap permission; later separately authorized read-only usage/billing comparison, no Go Live/upgrade or inference"
+      },
+      "missingImplementation": [
+        "Distinct Evaluation and Production/approved-model states",
+        "Auth-owned CLI pairing implementation only after third-party contract qualification",
+        "Private user token lifecycle, least privilege and Org checks",
+        "Console RPC reader isolated from inference key",
+        "Native billed-versus-raw usage and costs separated; compatibility schema qualifier",
+        "No 1000-minus-local-calls fake remaining allowance"
+      ],
+      "unresolved": [
+        "CLIAuthCheck token rights for inference versus Billing, expiry/refresh/revoke",
+        "Current official CLI distribution and third-party pairing/registration conditions",
+        "Trial monthly boundary, aggregate counter and error-call charging",
+        "Exact UsageV2 response/pagination and eligibility under User versus Owner",
+        "No general public callquota/billing reader or monitor-only IAM key found in inspected schemas",
+        "Production A+ entitlement/sales approval is independent of production key"
+      ],
+      "evidence": [
+        {
+          "url": "https://docs.cohere.com/v2/docs/rate-limits",
+          "statement": "Evaluation free/limited, 1000 calls/month; Command A+ trial 20 RPM and Production contact sales. Newer model variants may remain trial-limited even on Production key; A/R/R+/R7B Production table 500 RPM.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://docs.cohere.com/docs/going-live",
+          "statement": "Production requires legal/usage acknowledgments and possibly use-case approval; signing in or having a key does not prove approved production entitlement.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://docs.cohere.com/docs/how-does-cohere-pricing-work.md",
+          "statement": "Native Chat raw input/output tokens differ from billed_units; Rerank search units and Embed tokens retain native units. Trial usage is free/limited.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://docs.cohere.com/reference/chat.md",
+          "statement": "Native Chat usage is a separate response contract from installed OpenAI-compatible route.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api.md",
+          "statement": "Installed compatibility API is a subset and cannot be assumed to expose every native billed_units field.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/cohere-ai/cohere-developer-experience/main/cohere-openapi.yaml",
+          "statement": "Bearer API key and inference/storage/model endpoints; inspected general public schema has no billing/callquota reader. Connector OAuth belongs to connectors.",
+          "date": "2026-10-24",
+          "quality": "official_openapi"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/cohere-ai/cohere-python/main/src/cohere/base_client.py",
+          "statement": "Public Python client accepts token/API key; inspected source does not qualify a delegated login for billing and inference.",
+          "date": "2026-10-24",
+          "quality": "official_sdk"
+        },
+        {
+          "url": "https://docs.cohere.com/reference/get-dataset-usage",
+          "statement": "GET /v1/datasets/usage returns organization_usage bytes for dataset storage, not inference quota.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://docs.cohere.com/reference/check-api-key",
+          "statement": "POST /v1/check-api-key validates key, optionally organization_id/owner_id, without balance or key-plan type; currently under Deprecated navigation.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://docs.cohere.com/v2/reference/teams-and-roles",
+          "statement": "User sees usage history and manages trial keys; Owner has additional billing/payment privileges. Does not establish a monitor-only IAM key.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/_app-93016fb49a1d0e50.js",
+          "statement": "POST https://production.api.os.cohere.com/rpc/BlobheartAPI/{method}: CLIAuthBegin returns browserURL/secret, CLIAuthConfirm and CLIAuthCheck token; GetAPIUsage/V2 usages and GetBillingActivity/History activity/history. Bearer transport and API key bootstrap methods exist, not called.",
+          "date": "2026-10-24",
+          "quality": "first_party_console_bundle_not_public_api"
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/welcome/auth-cli-bd07116a0aa4d76a.js",
+          "statement": "/welcome/auth-cli requires session, reads cliSession query and displays Allow/Deny before CLIAuthConfirm(secret). Actual proprietary pairing candidate; no standard OAuth Device Grant established.",
+          "date": "2026-10-24",
+          "quality": "first_party_console_bundle_not_public_api"
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/billing-4a7f7fc5f062303e.js",
+          "statement": "Org/date/pagination usage and quantity/productUnit/total; activity.balanceForMonthlyLimit and organization.balance_limit(_enabled) for budget display, not remaining trial calls.",
+          "date": "2026-10-24",
+          "quality": "first_party_console_bundle_not_public_api"
+        },
+        {
+          "url": "https://api.github.com/repos/cohere-ai/co",
+          "statement": "Historical CLI repository candidate currently returns 404; this is a research limit, not proof login is unavailable.",
+          "date": "2026-10-24",
+          "quality": "official_repository_lookup_failed"
+        }
+      ]
+    },
+    {
+      "id": "cohere-production",
+      "product": "Cohere Production / paid",
+      "currentLain": {
+        "providerId": "cohere",
+        "gateway": "Installed per assignment; API-key openai-chat compatibility route",
+        "route": "cohere/command-a-plus-05-2026",
+        "baseUrl": "https://api.cohere.ai/compatibility/v1",
+        "catalogPlan": "evaluation",
+        "quota": "console fallback, no adapter",
+        "monitorAccessOptions": [],
+        "productionEntitlement": "unverified; do not infer from key selection"
+      },
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/v2/docs/rate-limits",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Evaluation free/limited, 1000 calls/month; Command A+ trial 20 RPM and Production contact sales. Newer model variants may remain trial-limited even on Production key; A/R/R+/R7B Production table 500 RPM."
+        },
+        {
+          "url": "https://docs.cohere.com/docs/going-live",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Production requires legal/usage acknowledgments and possibly use-case approval; signing in or having a key does not prove approved production entitlement."
+        },
+        {
+          "url": "https://docs.cohere.com/docs/how-does-cohere-pricing-work.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Native Chat raw input/output tokens differ from billed_units; Rerank search units and Embed tokens retain native units. Trial usage is free/limited.",
+          "sha256": "cea1e077f141784ea2203b9dafa1b76399d3c3fdfbcfd214d5122448ecaa7454"
+        },
+        {
+          "url": "https://docs.cohere.com/reference/chat.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Native Chat usage is a separate response contract from installed OpenAI-compatible route.",
+          "sha256": "1a64afb5caf6cbdc95a28466c1cebe805ebe6b9a5e7ac03ee92e034ee80ef894"
+        },
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api.md",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "Installed compatibility API is a subset and cannot be assumed to expose every native billed_units field.",
+          "sha256": "765f7b2202d1dba112a7bac9d115e845cca44e1e3d4d284e7e3e0c9674da79e4"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/cohere-ai/cohere-developer-experience/main/cohere-openapi.yaml",
+          "kind": "official_openapi",
+          "openedAt": "2026-10-24",
+          "claim": "Bearer API key and inference/storage/model endpoints; inspected general public schema has no billing/callquota reader. Connector OAuth belongs to connectors.",
+          "sha256": "25184037512d4149d2e2ded604bcf00d748a8fe23f979534020a9f0036fd2e71"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/cohere-ai/cohere-python/main/src/cohere/base_client.py",
+          "kind": "official_sdk",
+          "openedAt": "2026-10-24",
+          "claim": "Public Python client accepts token/API key; inspected source does not qualify a delegated login for billing and inference.",
+          "sha256": "0c19b07af3d3a96d1d672b66712670eb393c98b55ee9333a2d9220df3e92bcd0"
+        },
+        {
+          "url": "https://docs.cohere.com/reference/get-dataset-usage",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "GET /v1/datasets/usage returns organization_usage bytes for dataset storage, not inference quota."
+        },
+        {
+          "url": "https://docs.cohere.com/reference/check-api-key",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "POST /v1/check-api-key validates key, optionally organization_id/owner_id, without balance or key-plan type; currently under Deprecated navigation."
+        },
+        {
+          "url": "https://docs.cohere.com/v2/reference/teams-and-roles",
+          "kind": "official_documentation",
+          "openedAt": "2026-10-24",
+          "claim": "User sees usage history and manages trial keys; Owner has additional billing/payment privileges. Does not establish a monitor-only IAM key."
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/_app-93016fb49a1d0e50.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "POST https://production.api.os.cohere.com/rpc/BlobheartAPI/{method}: CLIAuthBegin returns browserURL/secret, CLIAuthConfirm and CLIAuthCheck token; GetAPIUsage/V2 usages and GetBillingActivity/History activity/history. Bearer transport and API key bootstrap methods exist, not called.",
+          "sha256": "8661839af83916085e5b1a7700ad4e791ad9beadb8ae5b28edb6f977ff9c4921"
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/welcome/auth-cli-bd07116a0aa4d76a.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "/welcome/auth-cli requires session, reads cliSession query and displays Allow/Deny before CLIAuthConfirm(secret). Actual proprietary pairing candidate; no standard OAuth Device Grant established.",
+          "sha256": "778dc681a07ef459da771c6f9201ad2c594f910a5af559c77e90394a2c87b0e2"
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/billing-4a7f7fc5f062303e.js",
+          "kind": "first_party_console_bundle_not_public_api",
+          "openedAt": "2026-10-24",
+          "claim": "Org/date/pagination usage and quantity/productUnit/total; activity.balanceForMonthlyLimit and organization.balance_limit(_enabled) for budget display, not remaining trial calls.",
+          "sha256": "2b2cf43469ab010c7a9fe624d9b299e977b3eb7329cc41b9ef9248cb8f1b9a48"
+        },
+        {
+          "url": "https://api.github.com/repos/cohere-ai/co",
+          "kind": "official_repository_lookup_failed",
+          "openedAt": "2026-10-24",
+          "claim": "Historical CLI repository candidate currently returns 404; this is a research limit, not proof login is unavailable.",
+          "sha256": "4f50e254a719a6b1b06b529bdaa08980e4acf0878aad0090cba7771f6ebdf0b9"
+        }
+      ],
+      "authOptions": [
+        {
+          "kind": "existing_evaluation_or_production_api_key",
+          "status": "documented",
+          "inference": true,
+          "monitoring": "Local response usage; public datasets usage only storage, not inference allowance",
+          "copyFree": false
+        },
+        {
+          "kind": "proprietary_cli_browser_pairing",
+          "status": "first_party_client_candidate",
+          "copyFree": "Potentially via CLIAuthBegin/Confirm/Check and separate API-key bootstrap",
+          "inference": "CLI token acceptance not proven; CreateAPIKey/ViewRawAPIKey/GetOrCreateDefaultAPIKey methods exist",
+          "monitoring": "GetAPIUsage(V2)/GetBillingActivity with authorized user bearer, exact CLI token rights unqualified",
+          "clientRegistration": "No public third-party client ID/scopes/redirect, pairing distribution approval, token lifetime/refresh/revoke contract found",
+          "permissions": "Org-bound user roles; no read-only monitor key established"
+        }
+      ],
+      "nativeMeasurements": {
+        "requestUsage": "Installed compatibility response contract must be preserved separately from native Chat usage.billed_units and usage.tokens",
+        "nativeUnits": [
+          "input_tokens",
+          "output_tokens",
+          "Rerank search_units",
+          "Embed tokens"
+        ],
+        "publishedCallsMonth": "Newer Chat variants can remain 1000/month even with production key; not universal production allowance",
+        "commandAPlusRpm": "Contact sales; not published as 500/1000 RPM",
+        "reset": "Trial monthly reset timezone/timestamp unqualified; budget window not trial window",
+        "scope": "Preserve key plan, organization, model, endpoint and coverage; local usage excludes other clients",
+        "consoleRPCBase": "https://production.api.os.cohere.com/rpc/BlobheartAPI/",
+        "consoleReaderMethods": [
+          "GetAPIUsage",
+          "GetAPIUsageV2",
+          "GetBillingActivity",
+          "GetBillingHistory"
+        ],
+        "consoleUsageFields": [
+          "usages",
+          "quantity",
+          "productUnit",
+          "total"
+        ],
+        "consoleBudgetFields": [
+          "activity.balanceForMonthlyLimit",
+          "organization.balance_limit",
+          "organization.balance_limit_enabled"
+        ],
+        "freshness": "No provider-wide billing freshness SLA qualified; preserve requested interval and observation time"
+      },
+      "recommendation": {
+        "priority": "Local calls/tokens with incomplete-coverage label; separately qualify pairing and Console RPC reader",
+        "oneLoginInferenceAndMonitoring": "Potentially session/CLI token plus separately bootstrapped key; no one-token guarantee",
+        "nextBoundedProof": "Find current official pairing/CLI contract or confirm third-party use, token lifetime/Org binding and key-bootstrap permission; later separately authorized read-only usage/billing comparison, no Go Live/upgrade or inference"
+      },
+      "missingImplementation": [
+        "Distinct Evaluation and Production/approved-model states",
+        "Auth-owned CLI pairing implementation only after third-party contract qualification",
+        "Private user token lifecycle, least privilege and Org checks",
+        "Console RPC reader isolated from inference key",
+        "Native billed-versus-raw usage and costs separated; compatibility schema qualifier",
+        "No 1000-minus-local-calls fake remaining allowance"
+      ],
+      "unresolved": [
+        "CLIAuthCheck token rights for inference versus Billing, expiry/refresh/revoke",
+        "Current official CLI distribution and third-party pairing/registration conditions",
+        "Trial monthly boundary, aggregate counter and error-call charging",
+        "Exact UsageV2 response/pagination and eligibility under User versus Owner",
+        "No general public callquota/billing reader or monitor-only IAM key found in inspected schemas",
+        "Production A+ entitlement/sales approval is independent of production key"
+      ],
+      "evidence": [
+        {
+          "url": "https://docs.cohere.com/v2/docs/rate-limits",
+          "statement": "Evaluation free/limited, 1000 calls/month; Command A+ trial 20 RPM and Production contact sales. Newer model variants may remain trial-limited even on Production key; A/R/R+/R7B Production table 500 RPM.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://docs.cohere.com/docs/going-live",
+          "statement": "Production requires legal/usage acknowledgments and possibly use-case approval; signing in or having a key does not prove approved production entitlement.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://docs.cohere.com/docs/how-does-cohere-pricing-work.md",
+          "statement": "Native Chat raw input/output tokens differ from billed_units; Rerank search units and Embed tokens retain native units. Trial usage is free/limited.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://docs.cohere.com/reference/chat.md",
+          "statement": "Native Chat usage is a separate response contract from installed OpenAI-compatible route.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api.md",
+          "statement": "Installed compatibility API is a subset and cannot be assumed to expose every native billed_units field.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/cohere-ai/cohere-developer-experience/main/cohere-openapi.yaml",
+          "statement": "Bearer API key and inference/storage/model endpoints; inspected general public schema has no billing/callquota reader. Connector OAuth belongs to connectors.",
+          "date": "2026-10-24",
+          "quality": "official_openapi"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/cohere-ai/cohere-python/main/src/cohere/base_client.py",
+          "statement": "Public Python client accepts token/API key; inspected source does not qualify a delegated login for billing and inference.",
+          "date": "2026-10-24",
+          "quality": "official_sdk"
+        },
+        {
+          "url": "https://docs.cohere.com/reference/get-dataset-usage",
+          "statement": "GET /v1/datasets/usage returns organization_usage bytes for dataset storage, not inference quota.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://docs.cohere.com/reference/check-api-key",
+          "statement": "POST /v1/check-api-key validates key, optionally organization_id/owner_id, without balance or key-plan type; currently under Deprecated navigation.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://docs.cohere.com/v2/reference/teams-and-roles",
+          "statement": "User sees usage history and manages trial keys; Owner has additional billing/payment privileges. Does not establish a monitor-only IAM key.",
+          "date": "2026-10-24",
+          "quality": "official_documentation"
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/_app-93016fb49a1d0e50.js",
+          "statement": "POST https://production.api.os.cohere.com/rpc/BlobheartAPI/{method}: CLIAuthBegin returns browserURL/secret, CLIAuthConfirm and CLIAuthCheck token; GetAPIUsage/V2 usages and GetBillingActivity/History activity/history. Bearer transport and API key bootstrap methods exist, not called.",
+          "date": "2026-10-24",
+          "quality": "first_party_console_bundle_not_public_api"
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/welcome/auth-cli-bd07116a0aa4d76a.js",
+          "statement": "/welcome/auth-cli requires session, reads cliSession query and displays Allow/Deny before CLIAuthConfirm(secret). Actual proprietary pairing candidate; no standard OAuth Device Grant established.",
+          "date": "2026-10-24",
+          "quality": "first_party_console_bundle_not_public_api"
+        },
+        {
+          "url": "https://dashboard.cohere.com/_next/static/chunks/pages/billing-4a7f7fc5f062303e.js",
+          "statement": "Org/date/pagination usage and quantity/productUnit/total; activity.balanceForMonthlyLimit and organization.balance_limit(_enabled) for budget display, not remaining trial calls.",
+          "date": "2026-10-24",
+          "quality": "first_party_console_bundle_not_public_api"
+        },
+        {
+          "url": "https://api.github.com/repos/cohere-ai/co",
+          "statement": "Historical CLI repository candidate currently returns 404; this is a research limit, not proof login is unavailable.",
+          "date": "2026-10-24",
+          "quality": "official_repository_lookup_failed"
+        }
+      ]
+    }
+  ],
+  "sharedImplementationConstraints": [
+    "Keep provider-native request/token/money/storage measures separate",
+    "Do not infer price/remaining/expiry or promote strict free_only from login/credit probes",
+    "Auth service owns refresh/session material; quota adapter only gets bounded access projections",
+    "Console bundle presence is evidence of a candidate, not public API stability or third-party authorization",
+    "Missing research is unresolved, not a provider prohibition"
+  ]
+}
