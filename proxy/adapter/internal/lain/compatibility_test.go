@@ -56,7 +56,7 @@ func TestSharedCompatibilityDispatchMatrix(t *testing.T) {
 			if row.IngressProtocol == "responses" {
 				format = translator.FormatOpenAIResponse
 			}
-			policy, err := compatibilityForDispatch(ctx, a, executor.Request{Model: row.Model}, executor.Options{SourceFormat: format})
+			policy, err := compatibilityForDispatch(ctx, a, executor.Request{Model: row.Model}, executor.Options{SourceFormat: format}, "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -144,7 +144,7 @@ func TestCompatibilityFinalTransportRejectsOverrideAndRecordsCategory(t *testing
 
 func TestBeamCountsFinalTopLevelToolsWithoutMutation(t *testing.T) {
 	_, ctx, a := compatibilityFixture(t, "commandcode", "reflection/beam:free", "openai")
-	p, err := compatibilityForDispatch(ctx, a, executor.Request{Model: "reflection/beam:free"}, executor.Options{SourceFormat: translator.FormatOpenAIResponse})
+	p, err := compatibilityForDispatch(ctx, a, executor.Request{Model: "reflection/beam:free"}, executor.Options{SourceFormat: translator.FormatOpenAIResponse}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +173,7 @@ func TestCompatibilityScopeAndDuplicateControlsFailClosed(t *testing.T) {
 	_, ctx, a := compatibilityFixture(t, "commandcode", "stealth/glyph-cluster:free", "openai")
 	req := executor.Request{Model: "stealth/glyph-cluster:free"}
 	opts := executor.Options{SourceFormat: translator.FormatOpenAIResponse}
-	p, err := compatibilityForDispatch(ctx, a, req, opts)
+	p, err := compatibilityForDispatch(ctx, a, req, opts, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,12 +186,12 @@ func TestCompatibilityScopeAndDuplicateControlsFailClosed(t *testing.T) {
 		t.Fatal("function data treated as native tools", err)
 	}
 	req.Model = "alias"
-	if _, err := compatibilityForDispatch(ctx, a, req, opts); err == nil {
+	if _, err := compatibilityForDispatch(ctx, a, req, opts, ""); err == nil {
 		t.Fatal("alias model selected upstream rule")
 	}
 	req.Model = "stealth/glyph-cluster:free"
 	a.Attributes["upstream_protocol"] = "openai-responses"
-	if _, err := compatibilityForDispatch(ctx, a, req, opts); err == nil {
+	if _, err := compatibilityForDispatch(ctx, a, req, opts, ""); err == nil {
 		t.Fatal("mismatched transport accepted")
 	}
 	if err := p.validate([]byte(`{"model":"other","tools":[]}`), true); err == nil {
@@ -207,5 +207,70 @@ func TestCompatibilityScopeAndDuplicateControlsFailClosed(t *testing.T) {
 	}
 	if compatibilityErrorCategory(errors.New("429 unsupported_tool")) != "" {
 		t.Fatal("free text classified as policy rejection")
+	}
+}
+
+type namedFixtureExecutor struct {
+	fixtureExecutor
+	name string
+}
+
+func (e *namedFixtureExecutor) Identifier() string { return e.name }
+
+type formattedFixtureExecutor struct {
+	namedFixtureExecutor
+	format translator.Format
+}
+
+func (e *formattedFixtureExecutor) RequestToFormat(executor.Request, executor.Options) translator.Format {
+	return e.format
+}
+
+func TestCompatibilityNativeExecutorsDoNotInheritChatConstraints(t *testing.T) {
+	for _, row := range []struct {
+		provider, model, protocol, name string
+		format                          translator.Format
+	}{
+		{"xiaomi-mimo", "mimo-v2.6-pro", "responses", "codex", ""},
+		{"commandcode", "stealth/glyph-cluster:free", "anthropic", "claude", ""},
+		{"commandcode", "reflection/beam:free", "gemini", "gemini", translator.FormatGemini},
+	} {
+		t.Run(row.protocol, func(t *testing.T) {
+			i, ctx, a := compatibilityFixture(t, row.provider, row.model, row.protocol)
+			a.Attributes = map[string]string{}
+			base := &namedFixtureExecutor{name: row.name}
+			var raw auth.ProviderExecutor = base
+			if row.format != "" {
+				raw = &formattedFixtureExecutor{namedFixtureExecutor: *base, format: row.format}
+			}
+			bound := i.ExecutorDecorator(nil)(raw)
+			_, err := bound.Execute(ctx, a, executor.Request{Model: row.model, Payload: []byte(`{"tools":[{"type":"web_search"},{"type":"custom"},{"type":"namespace","tools":[]}]}`)}, executor.Options{SourceFormat: translator.FormatOpenAIResponse})
+			if err != nil {
+				t.Fatal("native transport inherited Chat constraint", err)
+			}
+			page, _ := i.Journal.Read(0, 100)
+			if len(page.Events) != 3 || page.Events[1].ErrorCategory != nil || *page.Events[1].Outcome != "success" {
+				t.Fatal(page)
+			}
+		})
+	}
+}
+
+func TestCompatibilityLegacyChatDefaultRequiresMatchingExecutorKey(t *testing.T) {
+	i, ctx, a := compatibilityFixture(t, "xiaomi-mimo", "mimo-v2.6-pro", "openai")
+	a.Attributes = map[string]string{"compat_name": "fixture", "provider_key": "openai-compatible-fixture"}
+	raw := &namedFixtureExecutor{name: "openai-compatible-fixture"}
+	_, err := i.ExecutorDecorator(nil)(raw).Execute(ctx, a, executor.Request{Model: "mimo-v2.6-pro", Payload: []byte(`{"tools":[{"type":"web_search"}]}`)}, executor.Options{SourceFormat: translator.FormatOpenAIResponse})
+	if compatibilityErrorCategory(err) != "unsupported_tool" || raw.executions != 0 {
+		t.Fatal("qualified legacy Chat default lost", err)
+	}
+	a.Attributes["provider_key"] = "different-executor"
+	_, err = i.ExecutorDecorator(nil)(raw).Execute(ctx, a, executor.Request{Model: "mimo-v2.6-pro", Payload: []byte(`{"tools":[]}`)}, executor.Options{SourceFormat: translator.FormatOpenAIResponse})
+	if err == nil || compatibilityErrorCategory(err) != "" {
+		t.Fatal("unproven executor key guessed a transport", err)
+	}
+	_, err = compatibilityForDispatch(ctx, a, executor.Request{Model: "mimo-v2.6-pro"}, executor.Options{}, translator.FormatClaude)
+	if err == nil {
+		t.Fatal("native executor mismatch accepted")
 	}
 }

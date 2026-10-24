@@ -89,7 +89,14 @@ func (e *boundExecutor) begin(ctx context.Context, a *auth.Auth, req executor.Re
 	if err = e.integration.Before(ctx, a, req, opts); err != nil {
 		return ctx, err
 	}
-	policy, err := compatibilityForDispatch(ctx, a, req, opts)
+	actualFormat := e.RequestToFormat(req, opts)
+	// The pinned compatibility executor defaults to Chat when its protocol is
+	// omitted. Only a matching synthesized executor key proves this legacy
+	// transport; account/route provider labels are not protocol evidence.
+	if actualFormat == "" && a.Attributes["upstream_protocol"] == "" && a.Attributes["compat_name"] != "" && a.Attributes["provider_key"] == e.inner.Identifier() {
+		actualFormat = translator.FormatOpenAI
+	}
+	policy, err := compatibilityForDispatch(ctx, a, req, opts, actualFormat)
 	if err == nil {
 		err = policy.validate(originalCompatibilityRequest(ctx, req, opts), false)
 	}
@@ -295,6 +302,15 @@ func (e *boundExecutor) RequestToFormat(req executor.Request, opts executor.Opti
 		RequestToFormat(executor.Request, executor.Options) translator.Format
 	}); ok {
 		return p.RequestToFormat(req, opts)
+	}
+	// The pinned native Claude/Codex executors do not expose RequestToFormat.
+	// Their exact registered executor identifiers select fixed implementations
+	// (plugins are disabled), independent of any logical account provider name.
+	switch e.inner.Identifier() {
+	case "claude":
+		return translator.FormatClaude
+	case "codex":
+		return translator.FormatCodex
 	}
 	return ""
 }

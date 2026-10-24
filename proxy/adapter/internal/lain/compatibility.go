@@ -37,7 +37,7 @@ func compatibilityErrorCategory(err error) string {
 	return ""
 }
 
-func compatibilityForDispatch(ctx context.Context, a *auth.Auth, req executor.Request, opts executor.Options) (compatibilityPolicy, error) {
+func compatibilityForDispatch(ctx context.Context, a *auth.Auth, req executor.Request, opts executor.Options, actualFormat translator.Format) (compatibilityPolicy, error) {
 	selected, ok := routeSelection(ctx)
 	if !ok || a == nil || !selected.Allowed[a.ID] {
 		return compatibilityPolicy{}, closed(errors.New("compatibility dispatch identity missing"))
@@ -58,11 +58,28 @@ func compatibilityForDispatch(ctx context.Context, a *auth.Auth, req executor.Re
 		return compatibilityPolicy{}, closed(errors.New("compatibility dispatch model differs from bound model"))
 	}
 	protocol := ""
+	switch actualFormat {
+	case translator.FormatOpenAI:
+		protocol = "openai"
+	case translator.FormatOpenAIResponse, translator.FormatCodex:
+		protocol = "responses"
+	case translator.FormatClaude:
+		protocol = "anthropic"
+	case translator.FormatGemini:
+		protocol = "gemini"
+	}
+	attributeProtocol := ""
 	switch a.Attributes["upstream_protocol"] {
 	case "openai-chat":
-		protocol = "openai"
+		attributeProtocol = "openai"
 	case "openai-responses":
-		protocol = "responses"
+		attributeProtocol = "responses"
+	}
+	if protocol != "" && attributeProtocol != "" && protocol != attributeProtocol {
+		return compatibilityPolicy{}, closed(errors.New("compatibility executor differs from credential protocol"))
+	}
+	if protocol == "" {
+		protocol = attributeProtocol
 	}
 	if route.UpstreamProtocol != "" && protocol != route.UpstreamProtocol {
 		return compatibilityPolicy{}, closed(errors.New("compatibility transport differs from bound protocol"))

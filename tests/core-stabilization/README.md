@@ -36,6 +36,14 @@ The additive binding field is `upstreamProtocol` (`openai` or `responses` for
 these rules), checked against the credential's actual transport attribute.
 Public aliases and client version headers do not select or bypass constraints.
 
+Native protocol evidence comes from the selected executor's `RequestToFormat`;
+the pinned native Claude/Codex executors have fixed registered implementations
+and do not expose that optional method. Their exact executor identities provide
+the corresponding native format. A legacy compatibility configuration without
+`upstream_protocol` defaults to Chat only when its synthesized `provider_key`
+matches the actual selected executor. Logical account/provider labels never
+substitute for protocol evidence.
+
 * `xiaomi-mimo`, `mimo-v2.6-pro`/`mimo-v2.6-flash`, Responses-to-Chat: native
   web search cannot traverse the qualified local translator. This is not a
   generic claim about MiMo provider capability or native Responses routes.
@@ -141,3 +149,18 @@ destinations, source/sequence failures and writer exclusion. Existing sticky
 fsync/disk-full injection tests remain. Real full-disk faults, abrupt process
 death, complete backup/restore and sustained history growth require separate
 runtime qualification before marking all of ST-04 complete.
+
+The separate actual-process harness is prepared for the integrator's serialized
+runtime slot. It accepts only an explicitly supplied freshly built Core:
+
+```sh
+python3 tests/core-stabilization/process_probe.py \
+  --core /absolute/private-build/lain-proxy \
+  --report /absolute/private-evidence/core-stabilization-process.json
+```
+
+Its assertions cover gated SSE/drain/reopen, original and final tool constraints,
+native executor protocol scope, actual stdin EOF, abrupt synthetic owner death,
+legacy-format checkpoint replay, startup refusal of torn tails and adoption of
+a recovered copy into a temporary fixture. Only a passing report bound to the
+binary and source-manifest hashes counts as executed process evidence.
