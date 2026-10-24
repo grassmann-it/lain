@@ -46,7 +46,7 @@ internal sealed class TraySmokeApp : Application
     {
         var production = new App(); production.Initialize();
         RequestedThemeVariant = production.RequestedThemeVariant;
-        Resources = production.Resources; production.Resources = new ResourceDictionary();
+        var resources = production.Resources; production.Resources = new ResourceDictionary(); Resources = resources;
         var styles = production.Styles.ToArray(); production.Styles.Clear();
         foreach (var style in styles) Styles.Add(style);
     }
