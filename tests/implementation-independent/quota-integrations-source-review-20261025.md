@@ -74,3 +74,44 @@ to the inspected source; subsequent integration fixes require separate review.
   Refresh pins CLI account plus verified userinfo subject/email and project
   settings; SDK retains refresh ownership. No shared config or ADC import path
   was found in the inspected code. Real consent/entitlement was not tested.
+
+## Fix follow-up: Main `2c4bf7b`
+
+Source and fixture inspection only; no test execution.
+
+- **Finding 1 closed by `87f745f`.** `CloudflareQuotaAdapter.cs:27-38`
+  explicitly selects the existing BearerToken for no-monitor/inference-key and
+  the separate Secret otherwise. It rejects an unexpected second secret on an
+  inference-key reference, applies the saved inference expiry, and cannot fall
+  back from an absent separate token. `tests/cloudflare-quota/Program.cs:43-73`
+  exercises actual `MonitorAccessService.Set` → `HostQuotaSource` → adapter
+  selection with synthetic private state and checks the outgoing token and
+  measured result. Lines 86-109 cover missing separate tokens, unexpected secret,
+  expired inference references, and independent monitor expiry behavior.
+- **Finding 2 closed for the reported switch by `91cdf99`.** Login rechecks
+  identity after usage before preparing a credential
+  (`MiMoConsoleLoginAdapter.cs:50-58`). Quota rechecks after usage/detail, including
+  optional-detail failure (`MiMoQuotaAdapter.cs:39-56`), before returning rows.
+  The fixtures at `tests/console-connections/MiMoConnectionChecks.cs:43-57,81-87`
+  cover switches during usage, detail and detail failure, the final request
+  order, and no private generation/publication after a login switch. The browser
+  remains explicit-only; the follow-up adds no OpenAsync to quota reads.
+- Missing/closed/expired MiMo sessions now produce setup-required without a
+  synthetic provider error (`MiMoQuotaAdapter.cs:25,37,53,59-68`); these paths
+  return no new measured rows. QuotaService retains any prior rows as stale
+  through unavailable support, preserving their original observation times.
+- No new material defect found in these two fixes. This is not an atomic
+  provider-side identity transaction: repeated A→B→A switching entirely between
+  identity reads remains outside the demonstrated guarantee. The ordinary
+  one-way login-switch failure reported above is covered.
+- **Finding 3 remains pending** the separately developed gcloud profile
+  retention/cleanup implementation. Root also owns MiMo cleanup integration;
+  these two reader fixes do not establish that lifecycle wiring.
+- Root reports an exact seven-scope gcloud validator and broad-grant UI copy in
+  progress. At the follow-up read, the named google-quota worktree still exposed
+  the earlier validator and `scope=openid` fixture, so that change is **not yet
+  independently inspected**. Public SDK `auth/login.py:GetScopes` confirms the
+  default six scopes plus accounts.reauth and optional explicit Drive addition;
+  normal auth login does not expose a generic `--scopes` option. No recommendation
+  to pass an unsupported flag is implied by this review.
+- Foundation's retained-retry follow-up is separate and not claimed reviewed here.
