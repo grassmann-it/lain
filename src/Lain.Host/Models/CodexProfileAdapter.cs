@@ -28,6 +28,8 @@ public sealed class CodexProfileAdapter(ModelsService models)
             model = {Quote(selected.Alias)}
             model_provider = "lain"
             model_catalog_json = {Quote(absoluteCatalogPath)}
+            # Native Responses search requires separate gateway support; ordinary function/MCP tools remain configured by Codex.
+            web_search = "disabled"
 
             [model_providers.lain]
             name = "lain"
@@ -52,6 +54,7 @@ public sealed class CodexProfileAdapter(ModelsService models)
                 shell_type = "unified_exec", visibility = "list", supported_in_api = true, priority = index,
                 base_instructions = "You are a coding assistant.", supports_reasoning_summaries = false,
                 support_verbosity = false, truncation_policy = new { mode = "tokens", limit = 10000 },
+                supports_search_tool = false, tool_mode = (string?)null,
                 experimental_supported_tools = Array.Empty<string>(), input_modalities = new[] { "text" }
             }).ToArray()
         }, new JsonSerializerOptions { WriteIndented = true });

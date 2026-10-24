@@ -1,0 +1,190 @@
+{
+  "syntheticOnly": true,
+  "personalStateRead": false,
+  "cases": [
+    {
+      "apply_patch_tool_type": "freeform",
+      "multi_agent": true,
+      "exitCode": 0,
+      "requests": [
+        {
+          "path": "/v1/responses",
+          "count": 9,
+          "tools": [
+            {
+              "type": "function",
+              "name": "exec_command"
+            },
+            {
+              "type": "function",
+              "name": "write_stdin"
+            },
+            {
+              "type": "function",
+              "name": "request_user_input"
+            },
+            {
+              "type": "custom",
+              "name": "apply_patch"
+            },
+            {
+              "type": "function",
+              "name": "view_image"
+            },
+            {
+              "type": "namespace",
+              "name": "multi_agent_v1"
+            },
+            {
+              "type": "function",
+              "name": "get_goal"
+            },
+            {
+              "type": "function",
+              "name": "create_goal"
+            },
+            {
+              "type": "function",
+              "name": "update_goal"
+            }
+          ]
+        }
+      ],
+      "clientError": null
+    },
+    {
+      "apply_patch_tool_type": null,
+      "multi_agent": true,
+      "exitCode": 0,
+      "requests": [
+        {
+          "path": "/v1/responses",
+          "count": 8,
+          "tools": [
+            {
+              "type": "function",
+              "name": "exec_command"
+            },
+            {
+              "type": "function",
+              "name": "write_stdin"
+            },
+            {
+              "type": "function",
+              "name": "request_user_input"
+            },
+            {
+              "type": "function",
+              "name": "view_image"
+            },
+            {
+              "type": "namespace",
+              "name": "multi_agent_v1"
+            },
+            {
+              "type": "function",
+              "name": "get_goal"
+            },
+            {
+              "type": "function",
+              "name": "create_goal"
+            },
+            {
+              "type": "function",
+              "name": "update_goal"
+            }
+          ]
+        }
+      ],
+      "clientError": null
+    },
+    {
+      "apply_patch_tool_type": "omitted",
+      "multi_agent": true,
+      "exitCode": 0,
+      "requests": [
+        {
+          "path": "/v1/responses",
+          "count": 8,
+          "tools": [
+            {
+              "type": "function",
+              "name": "exec_command"
+            },
+            {
+              "type": "function",
+              "name": "write_stdin"
+            },
+            {
+              "type": "function",
+              "name": "request_user_input"
+            },
+            {
+              "type": "function",
+              "name": "view_image"
+            },
+            {
+              "type": "namespace",
+              "name": "multi_agent_v1"
+            },
+            {
+              "type": "function",
+              "name": "get_goal"
+            },
+            {
+              "type": "function",
+              "name": "create_goal"
+            },
+            {
+              "type": "function",
+              "name": "update_goal"
+            }
+          ]
+        }
+      ],
+      "clientError": null
+    },
+    {
+      "apply_patch_tool_type": null,
+      "multi_agent": false,
+      "exitCode": 0,
+      "requests": [
+        {
+          "path": "/v1/responses",
+          "count": 7,
+          "tools": [
+            {
+              "type": "function",
+              "name": "exec_command"
+            },
+            {
+              "type": "function",
+              "name": "write_stdin"
+            },
+            {
+              "type": "function",
+              "name": "request_user_input"
+            },
+            {
+              "type": "function",
+              "name": "view_image"
+            },
+            {
+              "type": "function",
+              "name": "get_goal"
+            },
+            {
+              "type": "function",
+              "name": "create_goal"
+            },
+            {
+              "type": "function",
+              "name": "update_goal"
+            }
+          ]
+        }
+      ],
+      "clientError": null
+    }
+  ]
+}
