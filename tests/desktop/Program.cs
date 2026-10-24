@@ -511,7 +511,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             .Single(x => Equals(x.Header, name))).ToArray();
         var disclosures = Find(Controls<UsageView>().Single(), headings);
         var original = disclosures.Select(x => x.IsExpanded).ToArray();
-        foreach (var disclosure in disclosures) disclosure.IsExpanded = true;
+        foreach (var disclosure in disclosures) { disclosure.IsExpanded = false; disclosure.IsExpanded = true; }
         Named<ComboBox>("Compare by").Focus();
         await SelectPresentation(InformationLevel.Barebones);
         Check(disclosures.All(x => x.IsExpanded), "Barebones preserves explicitly opened Usage details with focus outside them");
