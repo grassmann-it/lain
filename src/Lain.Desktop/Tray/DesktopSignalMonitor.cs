@@ -175,8 +175,10 @@ public sealed class DesktopSignalMonitor(LainApiClient client)
         {
             var account = names.GetValueOrDefault(quota.AccountId);
             var pool = !string.IsNullOrWhiteSpace(quota.BudgetPoolId);
+            // A source endpoint and unit can report multiple named windows. Keep the
+            // reported label in their identity; only identical pool/window evidence deduplicates.
             return new QuotaRow(quota, account, new WindowKey(IdentityKey(account?.Provider ?? ""), pool,
-                IdentityKey(pool ? quota.BudgetPoolId! : quota.AccountId), IdentityKey(quota.Source), IdentityKey(quota.Unit)));
+                IdentityKey(pool ? quota.BudgetPoolId! : quota.AccountId), IdentityKey(quota.Source), IdentityKey(quota.Unit), IdentityKey(quota.WindowLabel ?? "")));
         }).GroupBy(row => row.Key);
     }
 
@@ -284,7 +286,7 @@ public sealed class DesktopSignalMonitor(LainApiClient client)
         public bool MoreProviders;
         public HashSet<string> Providers { get; } = new(StringComparer.Ordinal);
     }
-    private sealed record WindowKey(string Provider, bool Pool, string Identity, string Source, string Unit);
+    private sealed record WindowKey(string Provider, bool Pool, string Identity, string Source, string Unit, string Label);
     private sealed record QuotaRow(QuotaDto Quota, AccountDto? Account, WindowKey Key);
     private sealed class WindowSignal(bool low, DateTimeOffset? resetAt, DateTimeOffset observedAt)
     {

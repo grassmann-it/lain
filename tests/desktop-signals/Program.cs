@@ -166,12 +166,14 @@ static class SignalsTest
         Check(snapshot.Alerts.Length == 1 && snapshot.Alerts[0].Body.Contains("Personal account / Work account") && snapshot.Alerts[0].Body.Contains("shared provider pool"), "only a known identical pool/window deduplicates shared quota alerts");
 
         using var independent = new Fixture();
-        independent.Quotas = [Quota(Start, 50), Quota(Start, 50) with { Source = "provider-window-week", WindowLabel = "Weekly" }];
+        independent.Quotas = [Quota(Start, 50) with { BudgetPoolId = "same-pool" },
+            Quota(Start, 50) with { BudgetPoolId = "same-pool", WindowLabel = "Weekly" }];
         var separate = new DesktopSignalMonitor(independent.Client);
         await separate.PollAsync(Start, default);
         independent.Quotas = independent.Quotas.Select(quota => quota with { UsedPercent = 85, Remaining = 15, LastSuccessAt = Start.AddSeconds(10) }).ToArray();
         snapshot = await separate.PollAsync(Start.AddSeconds(10), default);
-        Check(snapshot.Alerts.Length == 2 && snapshot.Alerts.Any(alert => alert.Body.Contains("5 hours")) && snapshot.Alerts.Any(alert => alert.Body.Contains("Weekly")), "independent named windows never become a summed account quota");
+        Check(snapshot.Alerts.Length == 2 && snapshot.Alerts.Any(alert => alert.Body.Contains("5 hours")) && snapshot.Alerts.Any(alert => alert.Body.Contains("Weekly")),
+            "different reported window labels remain separate with the same source, unit and known pool");
     }
 
     private static async Task SafetyAndFailures()
