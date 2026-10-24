@@ -60,5 +60,5 @@ done
 export DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/session-bus" LAIN_TEST_SESSION_BUS="unix:path=$runtime/session-bus" LAIN_TEST_DBUS_PID="$bus_pid"
 export LAIN_TEST_XVFB_PID="$xvfb_pid" LAIN_TEST_DISPLAY="$DISPLAY" LAIN_TEST_OUTPUT="$output"
 timeout --signal=TERM --kill-after=5s 360s dotnet \
-  "$repo/tests/desktop/bin/Debug/net10.0/Lain.Desktop.Smoke.dll" "$@" 2>&1 | tee "$output/run.log"
+  "${LAIN_TEST_ASSEMBLY:-$repo/tests/desktop/bin/Debug/net10.0/Lain.Desktop.Smoke.dll}" "$@" 2>&1 | tee "$output/run.log"
 echo "Desktop evidence: $output"

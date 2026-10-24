@@ -151,19 +151,19 @@ internal sealed partial class Acceptance(IClassicDesktopStyleApplicationLifetime
 
     private async Task Case(string name, Func<Task> action)
     {
-        currentCase = name;
+        currentCase = name; fixture.Scenario = name;
         var first = assertions.Count;
         var timer = Stopwatch.StartNew();
         try
         {
             await action();
-            cases.Add(new { name, functionalResult = "PASS", assertions = assertions.Count - first, elapsedMs = timer.ElapsedMilliseconds });
+            cases.Add(new { name, fixtureSession = fixture.SessionId, functionalResult = "PASS", assertions = assertions.Count - first, elapsedMs = timer.ElapsedMilliseconds });
             Console.WriteLine("PASS " + name);
         }
         catch (Exception error)
         {
             Failed = true;
-            cases.Add(new { name, functionalResult = "FAIL", error = error.ToString(), elapsedMs = timer.ElapsedMilliseconds });
+            cases.Add(new { name, fixtureSession = fixture.SessionId, functionalResult = "FAIL", error = error.ToString(), elapsedMs = timer.ElapsedMilliseconds });
             try { Capture(name + "-failure"); } catch { }
             Console.Error.WriteLine("FAIL " + name + ": " + error.Message);
         }
@@ -516,7 +516,7 @@ internal sealed partial class Acceptance(IClassicDesktopStyleApplicationLifetime
             if (!capture.WaitForExit(3000)) { capture.Kill(); throw new TimeoutException("Private X11 screenshot"); }
             if (capture.ExitCode != 0) throw new InvalidOperationException("Private X11 screenshot failed: " + capture.StandardError.ReadToEnd());
         }
-        images.Add(new { file, currentCase, page, runtimeMode = fixture.Config.RuntimeMode, informationLevel = level.ToString(),
+        images.Add(new { file, currentCase, fixtureSession = fixture.SessionId, page, runtimeMode = fixture.Config.RuntimeMode, informationLevel = level.ToString(),
             density = density.ToString(), width = target.ClientSize.Width, height = target.ClientSize.Height,
             fixture = "five-accounts-45-routes-three-profiles", visualReview = "REQUIRED", nativeScreen, nativeInput = nativeInputTrace.Any(value => value.StartsWith(currentCase + ": ", StringComparison.Ordinal)),
             renderScaling = target.RenderScaling, scaleMethod = "AVALONIA_GLOBAL_SCALE_FACTOR",

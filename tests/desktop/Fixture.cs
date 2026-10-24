@@ -44,9 +44,12 @@ internal sealed class Fixture : HttpMessageHandler
     public MonitorAccessRequest? LastMonitorAccess;
     public string? LastMonitorAccount;
     public string? LastQuotaRefreshAccount;
+    public string Scenario = "startup";
+    public string SessionId { get; } = Guid.NewGuid().ToString("N");
     public readonly List<string> Requests = [];
     public readonly List<object> RequestDetails = [];
     public bool ConfigurationFailure, StatusFailure, LoseApplyResponse;
+    public string? ApplyRejectionCode;
     public bool? CoreLoginOverride;
     public DateTimeOffset? StatusObservedAtOverride;
     public ProfileApplicationStatusDto? ApplicationStatus;
@@ -85,7 +88,7 @@ internal sealed class Fixture : HttpMessageHandler
         if (request.RequestUri.Host != "fixture.invalid" || request.Headers.Authorization is not null)
             throw UnexpectedRequest(request);
         var requestBody = request.Content is null ? null : await request.Content.ReadAsStringAsync(ct);
-        RequestDetails.Add(new { sequence = Requests.Count, method = request.Method.Method, path, query = request.RequestUri.Query, body = requestBody,
+        RequestDetails.Add(new { fixtureSession = SessionId, currentCase = Scenario, sequence = Requests.Count, method = request.Method.Method, path, query = request.RequestUri.Query, body = requestBody,
             configurationRevision = Config.Revision, activeProfileId = ActiveProfileId, activeProfileRevision = ActiveProfileRevision });
         if (pending.TryGetValue(request.Method.Method + " " + path, out var held) && held.Count > 0)
         {
@@ -156,6 +159,8 @@ internal sealed class Fixture : HttpMessageHandler
         }
         else if (request.Method == HttpMethod.Post && path.EndsWith("/apply"))
         {
+            if (ApplyRejectionCode is { } rejected) return new(HttpStatusCode.Conflict)
+                { Content = JsonContent.Create(new ApiError(rejected, "Synthetic drain timed out; previous runtime preserved.")) };
             if (ApplyFailure) return new(HttpStatusCode.ServiceUnavailable)
                 { Content = JsonContent.Create(new ApiError("fixture_apply_failed", "Synthetic apply failed; previous active profile is retained.")) };
             var applyBody = await request.Content!.ReadFromJsonAsync<ProfileApplyRequest>(cancellationToken: ct);
@@ -228,6 +233,8 @@ internal sealed class Fixture : HttpMessageHandler
             strict ? ["upstream_cost_controls_unavailable"] : []);
     }
     private ProviderCatalogDto Providers() { ProviderCalls++; return CatalogOverride ?? ProviderCatalog; }
+    public ConnectionMethodCatalogDto ConnectionMethodSnapshot() => ConnectionMethods();
+
     private ConnectionMethodCatalogDto ConnectionMethods() => ConnectionMethodsOverride ?? new(Api.Version,
     [
         new("codex", "browser", "Continue in browser", "browser", ["quota", "inference"],

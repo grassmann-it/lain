@@ -62,5 +62,5 @@ export DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/session-bus" LAIN_TEST_SESSI
 export LAIN_TEST_COMMIT="$(git -C "$repo" rev-parse HEAD)"
 export LAIN_TEST_XVFB_PID="$xvfb_pid" LAIN_TEST_DISPLAY="$DISPLAY" LAIN_TEST_OUTPUT="$output"
 timeout --signal=TERM --kill-after=5s 360s dotnet \
-  "$repo/tests/uxd-acceptance/bin/Debug/net10.0/Lain.Uxd.Acceptance.dll" "$@" 2>&1 | tee "$output/run.log"
+  "${LAIN_TEST_ASSEMBLY:-$repo/tests/uxd-acceptance/bin/Debug/net10.0/Lain.Uxd.Acceptance.dll}" "$@" 2>&1 | tee "$output/run.log"
 echo "UXD acceptance evidence: $output"

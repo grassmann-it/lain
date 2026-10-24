@@ -1,7 +1,7 @@
 # UXD-22 state-flow acceptance
 
 Source prepared against c3db87e and UXD-17–21 deltas, 2026-10-25.
-**Not executed. No functional, native-input or visual PASS is claimed here.**
+**Intermediate native runs executed; final required cases remain open. No overall acceptance PASS.**
 The integrator owns the serialized, 2-GiB-constrained build/runtime slot.
 
 Chosen variants: Draft B (direct navigation, persistent return/discard notice),
@@ -44,3 +44,31 @@ Follow-up adds raw XTEST input trace. First-snapshot cases have native X11 image
 but do not claim pointer/keyboard input unless recorded. `LAIN_TEST_SCALE=1.25`
 sets supported Avalonia global scaling; images record actual `RenderScaling`.
 A separate targeted scaled run is required before claiming enlarged UI coverage.
+
+## Intermediate runtime evidence
+
+`state-flow-evidence.json` records exact manifests, assembly hashes, historical
+results and individually opened PNG hashes. R1: 18/24 functional cases, 374
+assertions, 64 page images plus private X11 captures. R2 targeted corrections:
+7/8 cases, 199 assertions, 24 images. These are separate runs, not a combined
+blanket pass. R2 confirmed native menu entry parity/filter reset, Connect
+prerequisites and retained A while B edit is blocked/B save succeeds. The one
+remaining R2 failure was a fixture selector expecting an inventory Edit button
+after narrow navigation correctly retained selected detail; source corrected,
+rerun pending.
+
+Image inspection found two real product issues: empty programmatic model popup
+(fixed by owner `2f51a69`) and stale saved/proxy metadata after status recovery
+(fixed by owner `77a6134`, final runtime still pending). An earlier assertion
+requiring disabled stale Save was corrected to a native Save attempt proving
+local rejection and retained input. Setup/installer, Browse/Escape, account
+late-success/error A→B, preview target switching, unknown/old/incomplete status
+and confirmed runtime_busy rejection all executed in both sizes in R1.
+
+The external build project lives in the private SSD qualification cache because
+legacy test locks contain no RID target. It retains the original assembly name,
+source Compile includes and resource name, references the original desktop
+project, and creates only an external lock. Repository locks remain unchanged.
+Two production builds succeeded after the owner's Avalonia12 menu API fix.
+The separate owner18/19 structural harness had a removed-API compile failure;
+no structural runtime PASS is claimed until its corrected fixture is run.

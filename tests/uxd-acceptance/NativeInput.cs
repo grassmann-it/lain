@@ -79,7 +79,17 @@ internal sealed class NativeInput : IDisposable
         if (mod != 0) XTestFakeKeyEvent(display, mod, 0, 0);
         XFlush(display);
     }
-    public void Type(string value) { foreach (var letter in value) Key(letter); }
+    public void Type(string value)
+    {
+        const string shifted = "!@#$%^&*()_+{}|:\"<>?";
+        const string plain = "1234567890-=[]\\;\",./";
+        foreach (var letter in value)
+        {
+            if (char.IsAsciiLetterUpper(letter)) Key(char.ToLowerInvariant(letter), 0xffe1);
+            else if (shifted.IndexOf(letter) is var index && index >= 0) Key(plain[index], 0xffe1);
+            else Key(letter);
+        }
+    }
     public void Dispose() { if (display != 0) XCloseDisplay(display); }
 
     [DllImport("libX11.so.6")] private static extern nint XOpenDisplay(string? name);

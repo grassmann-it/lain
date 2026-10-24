@@ -18,11 +18,15 @@ internal sealed partial class Acceptance
             (string Name, Func<Task> Action)[] flows =
             [
                 ("native-state-draft", NativeDraftFlow),
+                ("native-state-retained-model-command", NativeRetainedModelCommandFlow),
                 ("native-state-account-refresh", NativeAccountRefreshFlow),
                 ("native-state-model-menu", NativeModelMenuFlow),
                 ("native-state-apply", NativeApplyFlow),
                 ("native-state-apply-late-preview", NativeLatePreviewFlow),
+                ("native-state-apply-rejected", NativeRejectedApplyFlow),
                 ("native-state-connect", NativeConnectPrerequisiteFlow),
+                ("native-state-connect-late", NativeLateConnectionFlow),
+                ("native-state-status-late", NativeLateStatusFlow),
                 ("native-state-setup", NativeSetupFlow),
                 ("native-state-browse", NativeBrowseFlow)
             ];
@@ -125,16 +129,48 @@ internal sealed partial class Acceptance
         fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 };
         await NativePress(input, Need<Button>("Reload status"));
         Check(!enabled.IsChecked.GetValueOrDefault(), "new configuration revision retains the local field");
-        Check(!Need<Button>("Save model access").IsEnabled, "stale editor save is disabled");
+        await NativePress(input, Need<Button>("Save model access"));
+        Check(Mutations == mutations && !enabled.IsChecked.GetValueOrDefault(), "stale editor Save is rejected locally without request or input loss");
         Capture(FlowImage("stale"));
         await NativeGo(input, "Profiles");
         await NativePress(input, Need<Button>("Discard Models · gpt-lain-01 draft"));
         Check(Find<Button>(backName) is null, "explicit discard removes this draft notice");
         await NativeGo(input, "Models");
-        await NativePress(input, Need<Button>("Edit model access gpt-lain-01"));
+        await NativePress(input, Find<Button>("Edit model access gpt-lain-01") ?? Need<Button>("Edit selected model access gpt-lain-01"));
         Check(Need<CheckBox>("Model access enabled").IsChecked == true, "discard restores saved value on next edit");
         Check(Mutations == mutations && fixture.ApplyCalls == 0, "draft return, revision update and discard send no Save or Apply");
         Capture(FlowImage("discarded"));
+    }
+
+    private async Task NativeRetainedModelCommandFlow()
+    {
+        using var input = new NativeInput(); input.Focus(window);
+        await NativeGo(input, "Models");
+        await NativePress(input, Need<Button>("Edit model access gpt-lain-01"));
+        var draft = Need<CheckBox>("Model access enabled");
+        await NativePress(input, draft);
+        await NativeGo(input, "Profiles");
+        await NativePress(input, Need<Button>("Select profile Daily"));
+        await NativePress(input, Need<Button>("Open model access gpt-lain-02")); page = "Models";
+        await NativePress(input, Need<Button>("Edit selected model access gpt-lain-02"));
+        Check(Find<CheckBox>("Model access enabled") is null && Find<Button>("Return to Models · gpt-lain-01 draft") is not null,
+            "editing context B is blocked while retained A remains available");
+        Check(Mutations == 0, "context navigation and blocked Edit B never save A");
+        Capture(FlowImage("blocked-edit-b"));
+        var more = Need<Button>("Selected model actions gpt-lain-02");
+        await NativePress(input, more);
+        await Wait(() => more.ContextMenu?.Items.OfType<MenuItem>().Any() == true);
+        var enable = more.ContextMenu!.Items.OfType<MenuItem>().Single(value => Equals(value.Header, "Enable at next Apply"));
+        input.Click(enable);
+        await Wait(() => fixture.Config.Routes.Single(value => value.Id == "r2").Enabled);
+        Check(Find<Button>("Return to Models · gpt-lain-01 draft") is not null, "successful B command does not delete retained A");
+        await NativeGo(input, "Accounts");
+        await NativePress(input, Need<Button>("Return to Models · gpt-lain-01 draft")); page = "Models";
+        Check(ReferenceEquals(draft, Need<CheckBox>("Model access enabled")) && draft.IsChecked == false,
+            "return after B mutation preserves exact A editor and input");
+        Check(fixture.Requests.Count(value => value == "PUT /api/v1/routes/r2") == 1 && Mutations == 1,
+            "only explicitly chosen B action sends mutation with stable r2 identity");
+        Capture(FlowImage("returned-a-after-b-save"));
     }
 
     private async Task NativeAccountRefreshFlow()
@@ -199,12 +235,73 @@ internal sealed partial class Acceptance
         Check(Mutations == 0, "menu, Escape and filter reset paths remain read-only");
     }
 
+    private StatusDto CurrentFixtureStatus() => new(1, "test", "ready", true, fixture.Config.Revision, fixture.Config.AppliedRevision,
+        DateTimeOffset.UtcNow, ActiveProfileId: fixture.ActiveProfileId, ActiveProfileRevision: fixture.ActiveProfileRevision,
+        Capabilities: new(true, true, true, true, true, true), Application: fixture.ApplicationStatus);
+
+    private async Task NativeLateConnectionFlow()
+    {
+        using var input = new NativeInput(); input.Focus(window);
+        var heldStatus = fixture.Defer("GET", "/api/v1/status");
+        var heldMethods = fixture.Defer("GET", "/api/v1/connection-methods");
+        var tile = Need<Border>("Account budgets for Personal Codex");
+        var more = tile.GetVisualDescendants().OfType<Button>().Single(value => Equals(value.Content, "⋯") || Equals(value.Content, "…"));
+        await NativePress(input, more);
+        var reconnect = more.ContextMenu!.Items.OfType<MenuItem>().Single(value => Equals(value.Header, "Reconnect account…"));
+        input.Click(reconnect);
+        await Wait(() => heldStatus.Entered.Task.IsCompleted && heldMethods.Entered.Task.IsCompleted);
+        await NativeGo(input, "Models");
+        await NativePress(input, Need<Button>("Edit model access gpt-lain-01"));
+        var draft = Need<CheckBox>("Model access enabled"); await NativePress(input, draft);
+        heldStatus.Complete(CurrentFixtureStatus()); heldMethods.Complete(fixture.ConnectionMethodSnapshot());
+        await Task.Delay(180);
+        Check(ReferenceEquals(draft, Need<CheckBox>("Model access enabled")) && draft.IsChecked == false,
+            "late reconnect responses cannot replace a newer Models editor");
+        Capture(FlowImage("reconnect-response-discarded"));
+        await NativeGo(input, "Accounts");
+        var failedMethods = fixture.Defer("GET", "/api/v1/connection-methods");
+        await NativePress(input, Need<Button>("Add account"));
+        await Wait(() => failedMethods.Entered.Task.IsCompleted);
+        await NativeGo(input, "Models");
+        failedMethods.Fail("Synthetic obsolete chooser failure"); await Task.Delay(180);
+        Check(ReferenceEquals(draft, Need<CheckBox>("Model access enabled")) && draft.IsChecked == false,
+            "late chooser failure cannot replace restored Models draft");
+        Check(!Controls<TextBlock>().Any(value => value.Text == "Connections unavailable") && fixture.LoginBegins == 0 && Mutations == 0,
+            "obsolete chooser and reconnect never start login or publish an error on another page");
+        Capture(FlowImage("chooser-error-discarded"));
+    }
+
+    private async Task NativeLateStatusFlow()
+    {
+        using var input = new NativeInput(); input.Focus(window);
+        await NativeGo(input, "Profiles");
+        await NativePress(input, Need<Button>("Select profile Daily"));
+        await NativePress(input, Need<Button>("Apply to proxy…"));
+        await Wait(() => Find<Button>("Apply to proxy")?.IsEnabled == true);
+        fixture.LoseApplyResponse = true;
+        await NativePress(input, Need<Button>("Apply to proxy"));
+        await Wait(() => fixture.ApplyCalls == 1 && Find<Button>("Check current status")?.IsEnabled == true);
+        var held = fixture.Defer("GET", "/api/v1/status");
+        await NativePress(input, Need<Button>("Check current status"));
+        await Wait(() => held.Entered.Task.IsCompleted);
+        await NativePress(input, Need<Button>("Cancel review"));
+        await NativePress(input, Need<Button>("Select profile Workspace 3"));
+        held.Complete(CurrentFixtureStatus());
+        await Wait(() => Need<TextBlock>("Applied proxy profile status").Text?.Contains("Applied to proxy: Daily") == true);
+        Check(Need<TextBlock>("Selected profile status").Text == "Viewing Workspace 3", "late status confirmation preserves newer profile selection");
+        Check(!Controls<TextBlock>().Any(value => value.Text?.Contains("outcome unknown", StringComparison.OrdinalIgnoreCase) == true),
+            "late global status clarification updates mounted summary and list");
+        Check(fixture.ApplyCalls == 1, "delayed status clarification never repeats Apply");
+        Capture(FlowImage("confirmed-after-navigation"));
+    }
+
     private async Task NativeConnectPrerequisiteFlow()
     {
         using var input = new NativeInput(); input.Focus(window);
         foreach (var monitor in new[] { true, false })
         {
             await NativeGo(input, "Accounts");
+            if (Find<Button>("Back to accounts") is { } backToAccounts) await NativePress(input, backToAccounts);
             fixture.SetMonitor(monitor); fixture.CoreLoginOverride = false;
             await NativePress(input, Need<Button>("Reload status"));
             await NativePress(input, Need<Button>("Add account"));
@@ -299,6 +396,34 @@ internal sealed partial class Acceptance
         Capture(FlowImage("installed"));
     }
 
+    private async Task NativeRejectedApplyFlow()
+    {
+        using var input = new NativeInput(); input.Focus(window);
+        fixture.ApplicationStatus = new("completed", "previous-operation", "p2", 1);
+        await NativePress(input, Need<Button>("Reload status"));
+        await NativeGo(input, "Profiles");
+        await NativePress(input, Need<Button>("Select profile Daily"));
+        await NativePress(input, Need<Button>("Apply to proxy…"));
+        await Wait(() => Find<Button>("Apply to proxy")?.IsEnabled == true);
+        fixture.ApplyRejectionCode = "runtime_busy";
+        await NativePress(input, Need<Button>("Apply to proxy"));
+        await Wait(() => Need<TextBlock>("Profile apply review message").Text?.StartsWith("Apply rejected:") == true);
+        Check(fixture.ActiveProfileId == "p2" && fixture.ApplyCalls == 0, "confirmed runtime_busy rejection preserves previous runtime");
+        Check(!Need<Button>("Apply to proxy").IsEnabled && Need<Button>("Refresh preview").IsEnabled,
+            "confirmed rejection invalidates diff and permits manual preview");
+        Check(!Controls<TextBlock>().Any(value => value.Text?.Contains("outcome unknown", StringComparison.OrdinalIgnoreCase) == true),
+            "confirmed runtime_busy rejection is not mislabeled unknown");
+        Capture(FlowImage("rejected"));
+        await NativePress(input, Need<Button>("Check current status"));
+        Check(Need<TextBlock>("Profile apply confirmed status").Text?.Contains("Applied to proxy: Workspace 2") == true,
+            "unchanged previous completed operation confirms preserved Workspace 2");
+        await NativePress(input, Need<Button>("Refresh preview"));
+        await Wait(() => Need<Button>("Apply to proxy").IsEnabled);
+        Check(fixture.Requests.Count(value => value == "POST /api/v1/profiles/p1/apply") == 1,
+            "status and preview refresh do not retry rejected Apply");
+        Capture(FlowImage("manual-new-review"));
+    }
+
     private async Task NativeLatePreviewFlow()
     {
         using var input = new NativeInput(); input.Focus(window);
@@ -333,6 +458,9 @@ internal sealed partial class Acceptance
         {
             Check(summary.Text?.Contains("Daily") == true && !summary.Text.Contains("unknown", StringComparison.OrdinalIgnoreCase), "shell confirms Daily after fresh terminal status");
             Check(review.Contains("Applied to proxy: Daily") && !review.Contains("unknown", StringComparison.OrdinalIgnoreCase), "review confirms the same Daily state");
+            Check(review.Contains($"saved {fixture.Config.Revision} / proxy {fixture.Config.AppliedRevision}") &&
+                !Controls<TextBlock>().Any(value => value.Text?.StartsWith("Saved changes pending") == true),
+                "confirmed status aligns saved/proxy revision and clears stale pending label");
             Check(inventory.Any(value => value?.Contains("Applied · revision " + fixture.Config.Revision) == true), "inventory confirms Daily at matching revision");
         }
     }

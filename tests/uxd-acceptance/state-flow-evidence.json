@@ -1,0 +1,284 @@
+{
+  "status": "IN_PROGRESS; mandatory final cases pending",
+  "runs": [
+    {
+      "run": "native-r1",
+      "manifest": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/evidence.json",
+      "manifestSha256": "0da438d00b64caebc6bd7c0168f6602d82a5ea4be87cc7017ad1f2d189d042e0",
+      "commit": "ce53ab56e843a7da6b2e20fa5d438c400637d2b8",
+      "assemblySha256": "EEF2B2AEA9EDC513927C19318F4F86683831B31A7C5F8C3CAB5107551150BC2E",
+      "cases": [
+        {
+          "name": "native-state-first-snapshot-data-1120x780",
+          "functionalResult": "PASS",
+          "assertions": 3,
+          "elapsedMs": 1012
+        },
+        {
+          "name": "native-state-first-snapshot-empty-1120x780",
+          "functionalResult": "PASS",
+          "assertions": 3,
+          "elapsedMs": 395
+        },
+        {
+          "name": "native-state-first-snapshot-error-1120x780",
+          "functionalResult": "PASS",
+          "assertions": 3,
+          "elapsedMs": 442
+        },
+        {
+          "name": "native-state-first-snapshot-data-800x560",
+          "functionalResult": "PASS",
+          "assertions": 3,
+          "elapsedMs": 405
+        },
+        {
+          "name": "native-state-first-snapshot-empty-800x560",
+          "functionalResult": "PASS",
+          "assertions": 3,
+          "elapsedMs": 568
+        },
+        {
+          "name": "native-state-first-snapshot-error-800x560",
+          "functionalResult": "PASS",
+          "assertions": 3,
+          "elapsedMs": 848
+        },
+        {
+          "name": "native-state-draft-1120x780",
+          "functionalResult": "FAIL",
+          "error": "System.InvalidOperationException: stale editor save is disabled\n   at Acceptance.Check(Boolean condition, String description) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 558\n   at Acceptance.NativeDraftFlow() in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/StateFlows.cs:line 129\n   at Acceptance.Case(String name, Func`1 action) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 159",
+          "elapsedMs": 3056
+        },
+        {
+          "name": "native-state-account-refresh-1120x780",
+          "functionalResult": "PASS",
+          "assertions": 13,
+          "elapsedMs": 1914
+        },
+        {
+          "name": "native-state-model-menu-1120x780",
+          "functionalResult": "FAIL",
+          "error": "System.InvalidOperationException: native right click has same stable command set\n   at Acceptance.Check(Boolean condition, String description) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 558\n   at Acceptance.NativeModelMenuFlow() in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/StateFlows.cs:line 188\n   at Acceptance.Case(String name, Func`1 action) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 159",
+          "elapsedMs": 860
+        },
+        {
+          "name": "native-state-apply-1120x780",
+          "functionalResult": "PASS",
+          "assertions": 31,
+          "elapsedMs": 3923
+        },
+        {
+          "name": "native-state-apply-late-preview-1120x780",
+          "functionalResult": "PASS",
+          "assertions": 6,
+          "elapsedMs": 1155
+        },
+        {
+          "name": "native-state-apply-rejected-1120x780",
+          "functionalResult": "PASS",
+          "assertions": 12,
+          "elapsedMs": 1635
+        },
+        {
+          "name": "native-state-connect-1120x780",
+          "functionalResult": "FAIL",
+          "error": "System.InvalidOperationException: Missing reachable Button: Add account\n   at Acceptance.Need[T](String name) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 532\n   at Acceptance.NativeConnectPrerequisiteFlow() in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/StateFlows.cs:line 211\n   at Acceptance.Case(String name, Func`1 action) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 159",
+          "elapsedMs": 2596
+        },
+        {
+          "name": "native-state-setup-1120x780",
+          "functionalResult": "PASS",
+          "assertions": 18,
+          "elapsedMs": 3123
+        },
+        {
+          "name": "native-state-browse-1120x780",
+          "functionalResult": "PASS",
+          "assertions": 5,
+          "elapsedMs": 1381
+        },
+        {
+          "name": "native-state-draft-800x560",
+          "functionalResult": "FAIL",
+          "error": "System.InvalidOperationException: stale editor save is disabled\n   at Acceptance.Check(Boolean condition, String description) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 558\n   at Acceptance.NativeDraftFlow() in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/StateFlows.cs:line 129\n   at Acceptance.Case(String name, Func`1 action) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 159",
+          "elapsedMs": 2612
+        },
+        {
+          "name": "native-state-account-refresh-800x560",
+          "functionalResult": "PASS",
+          "assertions": 13,
+          "elapsedMs": 1779
+        },
+        {
+          "name": "native-state-model-menu-800x560",
+          "functionalResult": "FAIL",
+          "error": "System.InvalidOperationException: native right click has same stable command set\n   at Acceptance.Check(Boolean condition, String description) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 558\n   at Acceptance.NativeModelMenuFlow() in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/StateFlows.cs:line 188\n   at Acceptance.Case(String name, Func`1 action) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 159",
+          "elapsedMs": 897
+        },
+        {
+          "name": "native-state-apply-800x560",
+          "functionalResult": "PASS",
+          "assertions": 31,
+          "elapsedMs": 2800
+        },
+        {
+          "name": "native-state-apply-late-preview-800x560",
+          "functionalResult": "PASS",
+          "assertions": 6,
+          "elapsedMs": 1104
+        },
+        {
+          "name": "native-state-apply-rejected-800x560",
+          "functionalResult": "PASS",
+          "assertions": 12,
+          "elapsedMs": 1791
+        },
+        {
+          "name": "native-state-connect-800x560",
+          "functionalResult": "FAIL",
+          "error": "System.InvalidOperationException: Missing reachable Button: Add account\n   at Acceptance.Need[T](String name) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 532\n   at Acceptance.NativeConnectPrerequisiteFlow() in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/StateFlows.cs:line 211\n   at Acceptance.Case(String name, Func`1 action) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 159",
+          "elapsedMs": 1585
+        },
+        {
+          "name": "native-state-setup-800x560",
+          "functionalResult": "PASS",
+          "assertions": 18,
+          "elapsedMs": 2952
+        },
+        {
+          "name": "native-state-browse-800x560",
+          "functionalResult": "PASS",
+          "assertions": 5,
+          "elapsedMs": 1167
+        }
+      ],
+      "assertions": 374,
+      "images": 64,
+      "visualResult": "PARTIALLY_REVIEWED; no overall visual pass"
+    },
+    {
+      "run": "native-r2",
+      "manifest": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r2/evidence.json",
+      "manifestSha256": "53344707c6b7bb517d627bd6b865b37915505ed4d0a8ae5fb0a9f3538ac22f55",
+      "commit": "87e82135ad9d9648897b1c00628da91fd031b5fb",
+      "assemblySha256": "8C2713EDFF27D06DA9445A735FEB6DA11BE405F9FCFAECEF88155678369F0301",
+      "cases": [
+        {
+          "name": "native-state-draft-1120x780",
+          "functionalResult": "PASS",
+          "assertions": 40,
+          "elapsedMs": 4586
+        },
+        {
+          "name": "native-state-retained-model-command-1120x780",
+          "functionalResult": "PASS",
+          "assertions": 15,
+          "elapsedMs": 2716
+        },
+        {
+          "name": "native-state-model-menu-1120x780",
+          "functionalResult": "PASS",
+          "assertions": 11,
+          "elapsedMs": 3168
+        },
+        {
+          "name": "native-state-connect-1120x780",
+          "functionalResult": "PASS",
+          "assertions": 19,
+          "elapsedMs": 3574
+        },
+        {
+          "name": "native-state-draft-800x560",
+          "functionalResult": "FAIL",
+          "error": "System.InvalidOperationException: Missing reachable Button: Edit model access gpt-lain-01\n   at Acceptance.Need[T](String name) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 532\n   at Acceptance.NativeDraftFlow() in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/StateFlows.cs:line 137\n   at Acceptance.Case(String name, Func`1 action) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 159",
+          "elapsedMs": 3500
+        },
+        {
+          "name": "native-state-retained-model-command-800x560",
+          "functionalResult": "PASS",
+          "assertions": 15,
+          "elapsedMs": 1964
+        },
+        {
+          "name": "native-state-model-menu-800x560",
+          "functionalResult": "PASS",
+          "assertions": 11,
+          "elapsedMs": 2028
+        },
+        {
+          "name": "native-state-connect-800x560",
+          "functionalResult": "PASS",
+          "assertions": 19,
+          "elapsedMs": 3083
+        }
+      ],
+      "assertions": 199,
+      "images": 24,
+      "visualResult": "PARTIALLY_REVIEWED; no overall visual pass"
+    }
+  ],
+  "reviewedImages": [
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-connect-1120x780-failure.png",
+      "sha256": "dee72ff350e8aaf84d3612a954299ab6611c6ab8dcd8729d41b83657d3a3663a",
+      "finding": "Retained prerequisite view; second fixture iteration must explicitly return to inventory.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-model-menu-1120x780-failure-x11.png",
+      "sha256": "cd23ee9bb6f84b5386634c0b43a15f5c02f1741e9dc9376412532f38bf9e34e9",
+      "finding": "Native right-click correctly shows full command list.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-model-menu-1120x780-pointer-menu-x11.png",
+      "sha256": "2670a5c6b06cdbeccb3e4efc6b7733cb389be4b7b7931cd1faa05337d826361e",
+      "finding": "FAIL: programmatic open after pointer click produced empty popup; owner fix 2f51a69.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-account-refresh-800x560-late-success-b-selected.png",
+      "sha256": "20de92649b356b26659abe8237cac67f716c84209e2dd36cfba501541e2a0ea7",
+      "finding": "Inventory/detail remain adjacent; A42% and B55% weekly separated. Right reset sentence clips.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-apply-800x560-unknown.png",
+      "sha256": "7a247292c09b21b3619af54bcfe58887a702f6ad3930645ee485a92e0e120608",
+      "finding": "List, fixed review and shell explicitly show unknown/last-confirmed Workspace2; actions reachable.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-apply-800x560-confirmed.png",
+      "sha256": "7688675acb72e89b0d6fb26a15c7ebec1fe133177016cba29f38dfc18976c5f3",
+      "finding": "FAIL: Daily3 confirmed but saved3/proxy1 and pending label stale; owner fix77a6134.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-setup-800x560-prepared.png",
+      "sha256": "16a385bf796d9df1276395921b38f7765d8f245d135182dd85362ca0452942e6",
+      "finding": "Prepared identity and target visible; Install separate and no files installed text explicit.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r2/native-state-draft-800x560-failure.png",
+      "sha256": "c5a10a71a99072ba1b344fffda26bec0c66d03067bd6151a3158bc732155a391",
+      "finding": "Discard correctly returns saved selected model detail; fixture must use selected Edit action.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    }
+  ],
+  "buildNotes": [
+    "First original RID locked harness restore rejected NU1004 without tracked lock mutation.",
+    "External cache csproj preserves original AssemblyName, source includes and resource logical name; production ProjectReference unchanged.",
+    "RID linux-x64 self-contained, RestoreLockedMode=true, NuGetAudit=false, m1/nrfalse, 1536M high/2G max/256M swap/CPU150%, nice10/ionice2:7.",
+    "Owner18/19 structural run not executed: Uxd18AccountsCases GetVisualRoot compile error fixed in subsequent ebb120a."
+  ],
+  "pending": [
+    "Final narrow draft selector rerun",
+    "New delayed Connect/status navigation and confirmed metadata cases",
+    "Monitor table and persistent-left Live layout",
+    "125% rendering scale and representative final PNG review",
+    "Owner18/19 structural fixtures"
+  ]
+}
