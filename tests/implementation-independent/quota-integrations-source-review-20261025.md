@@ -203,3 +203,35 @@ needed. Finding sent to Root before this report update.
 - No live Google/MiMo consent, real account entitlement, provider availability or
   production login qualification is claimed. Existing measurement/freshness limits
   described earlier remain unchanged.
+
+## Targeted Google cleanup closure: Main `4ec2cde`
+
+Reviewed the exact `4ec2cde` change (worker fix `9727aef`) against the finding
+above. **The concrete removed-target slot leak and false-success finding is
+closed at source level.** No build or fixture execution was performed by this
+reviewer; Root's backend test run remains outstanding.
+
+- `TargetRemovedAsync` now propagates unfinished-process, busy-lease and deletion
+  errors. Ownership mismatches are errors, not successful cleanup. Confirmed
+  deletion or confirmed path absence reaches `CompleteAttempt`, which removes
+  only the same captured attempt instance and disposes its cancellation source.
+  A failed cleanup retains the cancelled attempt for another call.
+- Foundation `CleanupRemovedTargetAsync` (`LoginOperationService.cs:479-503`)
+  sets completed/released only after that hook returns successfully. Exceptions
+  leave its active cleanup slot and pruning protection intact; polling/shutdown
+  can retry. No external grant revocation was added.
+- `ReleaseAsync` checks process completion before removing its attempt.
+  `DisposeAsync` prevents new Begin calls while stopping, continues stopping peers
+  after an IOException, and throws with remaining attempts retained for a later
+  disposal retry instead of marking an incomplete shutdown disposed.
+- New fixtures exercise nine sequential removed-target operations, idempotent
+  cleanup, a held profile lease that must reject cleanup, preservation of the
+  exact cancelled attempt without an additional login call, successful retry
+  after releasing the lease, and a subsequent new Begin.
+
+No new material regression found in the inspected diff. The fixtures test the
+adapter directly; Foundation's exception/retention contract was separately traced
+in source. They do not newly demonstrate every concurrent shutdown ordering or
+an end-to-end Foundation-plus-gcloud cleanup failure. Other explicit limits from
+the preceding review remain unchanged, including ordinary disconnect's deferred
+retention behavior and absence of live login qualification.
