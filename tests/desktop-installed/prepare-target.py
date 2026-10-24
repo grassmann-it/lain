@@ -25,9 +25,9 @@ for filename in required:
     if not (desktop / filename).is_file():
         parser.error('missing target file: ' + filename)
 artwork = desktop / 'Assets/Brand/lain-cat.png'
-expected_artwork = 'b6d32ab02ca21965f6941f61ec209ff756c7ea9841641cf20c0f5bda4aefaba7'
+expected_artwork = '6c9024b7220b6e015eeeb36aec9763fa5d804224b2b9e260caa7c4947c8436b1'
 if not artwork.is_file() or hashlib.sha256(artwork.read_bytes()).hexdigest() != expected_artwork:
-    parser.error('target must contain unchanged original cat artwork')
+    parser.error('target must contain the approved contrast-adjusted cat photo artwork')
 shutil.copytree(desktop, target)
 # Overlay only harness entrypoint metadata, never a production dependency.
 for suffix in ('.dll', '.deps.json', '.runtimeconfig.json'):
@@ -44,6 +44,6 @@ for name in ('Lain.Desktop', 'Lain.Client', 'Lain.Core', 'Avalonia.Controls'):
     records[name] = {'Source': str(source), 'Copy': str(copied), 'Sha256': expected}
 (runtime / 'assemblies.json').write_text(json.dumps(records, indent=2) + '\n')
 (runtime / 'target-selection.json').write_text(json.dumps({
-    'sourceApp': str(app), 'sourceDesktop': str(desktop), 'originalArtworkSha256': expected_artwork,
+    'sourceApp': str(app), 'sourceDesktop': str(desktop), 'artworkSha256': expected_artwork, 'artworkVariant': 'approved contrast-adjusted cat photo',
     'scope': 'Selected target copied read-only; runtime checks actual loaded assembly hashes and source hashes before and after GUI workflow.'
 }, indent=2) + '\n')

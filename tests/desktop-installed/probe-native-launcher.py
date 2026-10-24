@@ -15,7 +15,7 @@ import subprocess
 import tempfile
 import time
 
-ARTWORK = 'b6d32ab02ca21965f6941f61ec209ff756c7ea9841641cf20c0f5bda4aefaba7'
+ARTWORK = '6c9024b7220b6e015eeeb36aec9763fa5d804224b2b9e260caa7c4947c8436b1'
 TITLE = 'lain — Local AI Gateway'
 
 
@@ -219,7 +219,7 @@ def main():
     require((app / '.lain-package').is_file(), 'Expected managed installed application')
     ownership = json.loads((state / 'desktop-integration.json').read_text())
     require(all(ownership.get(str(path)) == digest(path) for path in (desktop, icon)), 'Desktop/icon ownership hash differs')
-    require(digest(icon) == ARTWORK and digest(app / 'desktop/Assets/Brand/lain-cat.png') == ARTWORK, 'Original cat artwork hash differs')
+    require(digest(icon) == ARTWORK and digest(app / 'desktop/Assets/Brand/lain-cat.png') == ARTWORK, 'Approved contrast-adjusted cat photo artwork hash differs')
     wrapper = (app / 'packaging/lain').read_text().replace(': "${LAIN_HOME:=$HOME/.local/share/lain}"',
         'if [ -z "${LAIN_HOME:-}" ]; then LAIN_HOME=' + shlex.quote(str(state)) + '; fi')
     require(launcher.read_text() == wrapper and os.access(launcher, os.X_OK), 'Launcher differs from owned managed wrapper')
@@ -300,7 +300,7 @@ def main():
                 except subprocess.TimeoutExpired:
                     xvfb.kill()
                     xvfb.wait(timeout=5)
-    report['scope'] = 'Actual owned .desktop launched by gio on private Xvfb. XQueryTree/EWMH mapped window title, tagged child PID/executable, normal window type and nonempty transparent _NET_WM_ICON inspected. Original installed icon/source PNG hashes verified. No UI input, screen capture, inference, provider refresh, service action or normal desktop session. Native icon property presence/content metadata does not independently compare every scaled pixel with the source.'
+    report['scope'] = 'Actual owned .desktop launched by gio on private Xvfb. XQueryTree/EWMH mapped window title, tagged child PID/executable, normal window type and nonempty transparent _NET_WM_ICON inspected. Approved contrast-adjusted cat photo installed icon/source PNG hashes verified. No UI input, screen capture, inference, provider refresh, service action or normal desktop session. Native icon property presence/content metadata does not independently compare every scaled pixel with the source.'
     (output / 'native-launcher.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
     return 0 if report['result'] == 'PASS' else 1

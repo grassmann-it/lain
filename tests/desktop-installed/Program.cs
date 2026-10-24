@@ -148,7 +148,7 @@ internal sealed class Probe
         Check(Controls<Button>().Where(x => x.Classes.Contains("nav")).Select(x => x.Tag?.ToString()).SequenceEqual(Destinations), "exactly five primary destinations");
         Check(Controls<Button>().Single(x => x.Classes.Contains("nav") && Equals(x.Tag, "Accounts")) is var initialNav && AutomationProperties.GetHelpText(initialNav) == "Current page", "Accounts is initial destination");
         var image = Controls<Image>().Single(x => AutomationProperties.GetName(x) == "Application logo");
-        Check(image.Source is not null && image.Bounds.Width > 0 && image.Bounds.Height > 0 && window!.Icon is not null, "original cat logo and native window icon are present");
+        Check(image.Source is not null && image.Bounds.Width > 0 && image.Bounds.Height > 0 && window!.Icon is not null, "approved cat photo logo and native window icon are present");
         await ReadAccountWindows(observer, config);
         await CaptureBoth("accounts-simple", verifyFooter: true);
         foreach (var destination in Destinations.Skip(1))

@@ -38,7 +38,7 @@ dependencies from the build directory. Before platform initialization and again
 after the GUI workflow, the harness checks the loaded locations and SHA-256 of
 Desktop, Client, Core and Avalonia.Controls against both copied and original
 selected files. `selected-assemblies.json`, `target-selection.json` and the final
-report record those bindings. A target without the original cat PNG or the safe
+report record those bindings. A target without the approved contrast-adjusted cat photo PNG or the safe
 `MainWindow(client, preferencesPath)` overload is refused.
 
 A private Xvfb is mandatory: the runner clears DISPLAY, Wayland and desktop bus
@@ -113,13 +113,13 @@ production application; the probe performs no presentation edits.
 Before launch it checks desktop/icon ownership hashes, exact quoted absolute
 `Exec=... ui`, exact Icon path, application name and allowed desktop-entry keys.
 The actual executable wrapper must equal the installed managed wrapper. Both the
-installed icon and the published source PNG must retain the original artwork hash.
+installed icon and the published source PNG must match the approved contrast-adjusted photo artwork hash.
 A Linux child subreaper and per-launch inherited nonce bind the native PID to this
 launch. ctypes `XQueryTree` inspects only the newly allocated private display;
 EWMH `_NET_WM_PID`, `_NET_WM_NAME`, normal window type, mapped geometry and
 `_NET_WM_ICON` are recorded. Native icon dimensions, ARGB hash and transparency
 range prove a meaningful native icon property; they do not independently compare
-every scaled pixel against the original PNG. No window-manager client-list
+every scaled pixel against the source PNG. No window-manager client-list
 property is assumed because the private Xvfb has no normal desktop session.
 
 Only process groups whose surviving members all carry this launch's nonce can

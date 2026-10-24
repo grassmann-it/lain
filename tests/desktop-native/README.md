@@ -22,5 +22,5 @@ Native behavior was checked against Avalonia 12.1.4's exact NuGet source commit
 
 The notification adapter uses `/usr/bin/notify-send` without a shell, escapes
 bounded plaintext, identifies the desktop entry as `lain`, and references the
-unchanged original cat at `Assets/Brand/lain-cat.png` beside the application.
+approved contrast-adjusted cat photo at `Assets/Brand/lain-cat.png` beside the application.
 Callers must compose non-sensitive messages; command errors are never forwarded.
