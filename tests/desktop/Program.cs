@@ -300,6 +300,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(Controls<Expander>().Any(x => AutomationProperties.GetName(x)?.StartsWith("Account budgets for ", StringComparison.Ordinal) == true),
             "Accounts is the initial workspace");
         Check(window.Icon is not null && Controls<Image>().Any(x => x.Source is not null), "application window and shell show bundled cat branding");
+        Check(window.Title == "lain — Local AI Gateway" && HasText("Local AI Gateway"), "window title and shell identify lain as the Local AI Gateway");
     }
 
     private async Task SelectPresentation(InformationLevel level, ViewDensity? density = null)
@@ -464,6 +465,33 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Wait(() => HasText("NVIDIA Build"), "credential-free discovery uses the same provider catalog");
         fixture.Config = savedInventory;
         await Click("Accounts"); await Click("Reload status");
+        await CheckPendingWithLongProfile();
+    }
+
+    private async Task CheckPendingWithLongProfile()
+    {
+        var saved = fixture.Config;
+        var appliedId = fixture.ActiveProfileId ?? throw new Exception("Fixture applied profile missing");
+        const string longName = "Very long applied profile name that must not hide pending configuration changes from any client";
+        fixture.Config = saved with { Revision = saved.Revision + 1,
+            Profiles = saved.Profiles.Select(x => x.Id == appliedId ? x with { Name = longName } : x).ToArray() };
+        await Click("Reload status");
+        await CaptureBoth("pending-long-profile", verify: () =>
+        {
+            var footer = Named<Button>("Local service").GetVisualDescendants().OfType<TextBlock>().Single(x => x.Text?.Contains("Changes pending", StringComparison.Ordinal) == true);
+            var text = footer.Text!;
+            var pending = text.IndexOf("Changes pending", StringComparison.Ordinal);
+            var profile = text.IndexOf(longName, StringComparison.Ordinal);
+            Check(pending >= 0 && profile > pending, "pending configuration precedes a long applied profile name in the global status");
+            var end = text.IndexOf(')', pending);
+            var prefix = text[..(end >= 0 ? end + 1 : profile)];
+            var measured = new FormattedText(prefix + "…", System.Globalization.CultureInfo.CurrentCulture, footer.FlowDirection,
+                new Typeface(footer.FontFamily, footer.FontStyle, footer.FontWeight, footer.FontStretch), footer.FontSize, footer.Foreground ?? Brushes.White);
+            Check(FitsScrollViewports(footer) && measured.WidthIncludingTrailingWhitespace <= footer.Bounds.Width + 1,
+                $"pending configuration remains visibly readable before profile-name trimming at {window.Bounds.Width:0}px");
+        });
+        fixture.Config = saved;
+        await Click("Reload status");
     }
 
     private async Task OpenAccountOptions()
