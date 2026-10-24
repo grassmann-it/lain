@@ -11,7 +11,8 @@ out=${1:-"$root/artifacts/lain-linux-x64-$mode"}
 cd "$root"
 revision=$(git rev-parse HEAD)
 # Application source pins describe an exact tracked tree; unrelated notes may be dirty.
-frozen_inputs=(src Directory.Build.props Directory.Build.targets global.json NuGet.Config nuget.config scripts proxy packaging skills)
+frozen_inputs=(src Directory.Build.props Directory.Build.targets global.json NuGet.Config nuget.config scripts packaging skills)
+if [[ "$mode" == gateway ]]; then frozen_inputs+=(proxy); fi
 verify_frozen_inputs() {
     [[ "$(git rev-parse HEAD)" == "$revision" ]] || { echo 'Git HEAD changed during publish' >&2; exit 2; }
     git diff --exit-code "$revision" -- "${frozen_inputs[@]}"
