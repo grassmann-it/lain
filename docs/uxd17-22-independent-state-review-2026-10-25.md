@@ -198,3 +198,71 @@ Zusätzlich gelesene Ownerkorrekturen, noch ohne Laufzeitnachweis:
 
 Weitere Ownercommits und native Evidenz sind zum Zeitpunkt dieser Fassung
 noch nicht abschließend gegengeprüft.
+
+## Folgeprüfung auf Main `7a6b88c`
+
+Die konkreten Kontrollflüsse aus F01–F06 wurden erneut gelesen. „Quelle
+geschlossen“ bedeutet hier: Die benannte Reproduktion erreicht den falschen
+Zustandsübergang nicht mehr. Es ersetzt keinen nativen Nachweis des Endstands.
+
+| Befund | In Main gelesene Korrektur | Ergebnis der Quellprüfung |
+| --- | --- | --- |
+| F01 | Shell `84ae915`, Models `30f7b33`, Profiles `fc1462f` | Quelle geschlossen für die benannten Models-/Profiles-/Setup-/Removal-Einstiege. Zweiter Editor verweist auf Continue/Discard; fremde Inventaraktion entfernt den Draft nicht. |
+| F02 | Profiles `fc1462f` | Quelle geschlossen: aktuelle stabile Profil-ID wird vor Edit/Setup aufgelöst; Save/Remove prüfen Existenz und ursprüngliche Revision. |
+| F03 | Profiles `7372784` | Quelle geschlossen: ausschließlich bestätigtes 409/`runtime_busy` hebt Unknown auf, erhält den alten Status und verlangt frische Vorschau/neue Bestätigung. Recovery und Transportverlust bleiben getrennt. |
+| F04 | Shell `cc6f092` | Quelle geschlossen. Bei beiden vereinbarten Größen bleiben die Accountflächen nebeneinander, Inventarheader wird schmal gestapelt. |
+| F05 | Profiles `fc1462f` | Quelle geschlossen: globaler Statuscallback aktualisiert gemountete Summary und Listenmarker auch nach Cancel/Reviewwechsel, ohne fokussierte Seite oder Draft zu ersetzen. |
+| F06 | Shell `2b0829d`, Connect `2330217` | Quelle geschlossen: Anfrage, akzeptierte Navigation, Abschnitt und Contentbesitz werden nach Await auf Erfolg und Fehler geprüft; veraltete Antworten schreiben keine fremde Seite. |
+| F07 / F08 | Ownerdeltas separat beauftragt | Noch offen, noch keine Korrektur gelesen. |
+
+Modellmenüfix `d14ec65` wurde zusätzlich gelesen. Er bindet denselben Commandsatz
+auch vor programmatischem `ContextMenu.Open`, weil Avalonia dort das Openingevent
+nicht zuverlässig auslöst. Die Identitäts-/Revisionsprüfung bleibt erhalten.
+
+## Unabhängige Sichtung der ersten nativen Evidenz
+
+Gelesenes Manifest:
+`/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/evidence.json`.
+Der Testowner führte diesen Lauf aus, nicht der Reviewer.
+
+- Manifestcommit `ce53ab56e843a7da6b2e20fa5d438c400637d2b8`;
+  Desktopassembly SHA-256
+  `EEF2B2AEA9EDC513927C19318F4F86683831B31A7C5F8C3CAB5107551150BC2E`.
+- 18/24 Fälle PASS, sechs fehlgeschlagen; 374 Assertions, 64 Bilddatensätze.
+  Der gesamte Lauf meldet korrekt FAIL, visuelle Prüfung nicht automatisch
+  bestanden und Accessibility nicht qualifiziert. Private Xvfb, tatsächliche
+  RenderScaling 1 in den gesichteten 800×560-Aufnahmen.
+- Die beiden Draftfailures prüfen einen Disabled-Savezustand, den der Vertrag
+  nicht zwingend fordert und das Produkt nicht implementiert. Der vorhandene
+  Saveguard verhindert den Request. Im Folgelauf ist der tatsächliche native
+  Saveversuch samt ausbleibendem Request und erhaltenen Eingaben zu prüfen.
+- Die beiden Menüfailures decken einen echten Unterschied beim Öffnungsweg auf;
+  der genannte Menüfix ist dafür quellengeprüft. Die beiden Connectfälle enden
+  wegen nicht erreichbarem Add-account-Auslöser nach dem vorherigen gehaltenen
+  Connectdraft; ein abgebrochener Fall zählt nicht als Gesamtnachweis.
+
+Selbst geöffnete PNGs aus demselben Verzeichnis:
+
+| PNG | Tatsächlicher visueller Befund |
+| --- | --- |
+| `native-state-draft-800x560-retained.png` | Bleibender Hinweis benennt Models und gpt-lain-01; Continue editing/Discard sowie Footer sind sichtbar. Das Bild allein beweist keinen Fokus- oder Scrollübergang. |
+| `native-state-account-refresh-800x560-late-success-b-selected.png` | Inventar und Command-Code-Detail stehen nebeneinander; vorhandene Daten/Last known und linker aktualisierter Wert sind sichtbar. Keine Behauptung über sämtliche Scrollpositionen. |
+| `native-state-setup-800x560-prepared.png` | Daily, echte Fixture-ID/Revision/Exportgeneration, privates Ziel, No files installed yet sowie separate Install-/Cancelaktionen sind lesbar; Workspace 2 bleibt in der Shell berichtet. Dateiabwesenheit ist ein eigener Fixturecheck. |
+| `native-state-connect-800x560-monitor-prerequisite.png` | Coreanforderung und unveränderte Monitorabsicht werden vor Login erklärt; Quellen-, Gateway-, Reload- und Rückwege sind erreichbar dargestellt. |
+| `native-state-apply-800x560-confirmed.png` | Review bleibt neben der Liste; echter zusätzlicher Widerspruch: Daily Applied revision 3 und Shell Active Daily, aber Summary/Review noch saved 3 / proxy 1 mit Pending. |
+
+Der letzte Bildbefund wurde vom Testowner ebenfalls erkannt. Profilesfix
+`b87c9c3` wurde gelesen: Statusklärung übernimmt nur bestätigte AppliedRevision,
+keine gespeicherten Objekte oder Editorrevisionen; Description und Pending
+verwenden ausreichend aktuelle Hostmetadaten und benennen einen älteren
+geladenen Snapshot. Damit ist dieser konkrete Widerspruch an der Quelle
+adressiert; das korrigierte Bild ist noch nachzuweisen.
+
+Die Requestdetails im r1-Manifest enthalten Methode, Pfad, Body und Revision,
+aber keine Fallkennung; ihre Sequenz beginnt je Fixture wieder bei 1. Identische
+Requests verschiedener Größen sind so nicht eindeutig einem Fall zuzuordnen.
+Der Testowner wurde um die vorhandene `currentCase`-Zuordnung im Folgemanifest
+gebeten. Native Inputtrace und Bilder haben diese Zuordnung bereits.
+
+Kein Gesamt-PASS für UXD-22 aus diesem ersten Lauf oder den fünf Bildern.
+F07/F08 und die gezielte native Nachprüfung der Korrekturen bleiben erforderlich.
