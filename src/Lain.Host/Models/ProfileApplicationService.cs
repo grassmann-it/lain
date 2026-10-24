@@ -30,8 +30,14 @@ public sealed class ProfileApplicationService(
         {
             if (Volatile.Read(ref currentOperation) is { } running)
                 return new(running.State, running.Id, running.ProfileId, running.Revision);
-            if (!File.Exists(OperationPath))
+            if (!AppliedProfileStatus.MetadataEntryExists(OperationPath))
             {
+                var appliedRevision = repository.Snapshot.AppliedRevision;
+                if (AppliedProfileStatus.CanPreserveLegacyRuntime(ActivePath, RuntimePath, appliedRevision))
+                {
+                    var active = AppliedProfileStatus.Read(ActivePath, RuntimePath, appliedRevision);
+                    return new("legacy-preserved", null, active.Id, appliedRevision);
+                }
                 if (Directory.Exists(OperationPath) ||
                     ((File.Exists(ActivePath) || File.Exists(RuntimePath)) &&
                      AppliedProfileStatus.Read(ActivePath, RuntimePath, repository.Snapshot.AppliedRevision).Id is null))
@@ -54,7 +60,10 @@ public sealed class ProfileApplicationService(
 
     public void RequireCompletedRuntime()
     {
-        if (Status.State is not ("idle" or "completed") ||
+        var status = Status;
+        if (status.State == "legacy-preserved" &&
+            AppliedProfileStatus.CanPreserveLegacyRuntime(ActivePath, RuntimePath, repository.Snapshot.AppliedRevision)) return;
+        if (status.State is not ("idle" or "completed") ||
             AppliedProfileStatus.Read(ActivePath, RuntimePath, repository.Snapshot.AppliedRevision).Id is null)
             throw new InvalidOperationException("Runtime application is incomplete. Preview and apply a saved profile to recover.");
     }

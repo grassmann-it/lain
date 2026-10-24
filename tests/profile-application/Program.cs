@@ -9,6 +9,84 @@ var root = Path.Combine(Path.GetTempPath(), "lain-profile-application-" + Guid.N
 var checks = 0;
 try
 {
+    // Upgrade compatibility: the previously applied runtime is independent of pending saves.
+    var legacyPaths = new OwnStatePaths(Path.Combine(root, "legacy"));
+    var legacyRepository = new ConfigurationRepository(legacyPaths);
+    legacyRepository.Update(0, c => c);
+    legacyRepository.Update(1, c => c);
+    legacyRepository.MarkApplied(2);
+    for (var revision = 2; revision < 11; revision++) legacyRepository.Update(revision, c => c);
+    var legacyActivePath = Path.Combine(legacyPaths.Root, "active-profile.json");
+    var legacyRuntimePath = Path.Combine(legacyPaths.Proxy, "runtime.json");
+    var legacyOperationPath = Path.Combine(legacyPaths.Root, "profile-application.json");
+    const string legacyActive = "{\"id\":\"legacy\",\"revision\":2}";
+    const string legacyRuntime = "{\"valid\":true,\"revision\":2}";
+    File.WriteAllText(legacyActivePath, legacyActive);
+    File.WriteAllText(legacyRuntimePath, legacyRuntime);
+    File.WriteAllText(legacyPaths.ProxyConfig, "PRESERVED LEGACY RUNTIME");
+    var legacyConfiguration = File.ReadAllText(legacyPaths.Configuration);
+    var legacyService = new ProfileApplicationService(legacyPaths, legacyRepository, new ModelsService(legacyRepository),
+        _ => throw new Exception("Legacy validation must not drain"),
+        (_, _, _) => throw new Exception("Legacy validation must not apply"),
+        _ => throw new Exception("Legacy validation must not stop"));
+    Check(legacyService.Status is { State: "legacy-preserved", ProfileId: null, Revision: 2 },
+        "unknown legacy profile retains explicit preserved applied revision independently of desired revision11");
+    legacyService.RequireCompletedRuntime();
+    Check(AppliedProfileStatus.Read(legacyActivePath, legacyRuntimePath, 2).Id is null,
+        "permitting legacy startup never invents an active profile identity");
+    Check(legacyRepository.Snapshot is { Revision: 11, AppliedRevision: 2 } &&
+        File.ReadAllText(legacyPaths.Configuration) == legacyConfiguration &&
+        File.ReadAllText(legacyPaths.ProxyConfig) == "PRESERVED LEGACY RUNTIME" &&
+        File.ReadAllText(legacyActivePath) == legacyActive && File.ReadAllText(legacyRuntimePath) == legacyRuntime &&
+        !File.Exists(legacyOperationPath), "legacy startup validation preserves pending saves and every existing runtime file without publication");
+    File.WriteAllText(legacyRuntimePath, "{\"valid\":true,\"revision\":2,\"profileId\":\"legacy\"}");
+    Check(legacyService.Status is { State: "legacy-preserved", ProfileId: "legacy" },
+        "independently proven legacy profile identity remains available");
+    File.WriteAllText(legacyRuntimePath, legacyRuntime);
+    foreach (var invalidRuntime in new[]
+    {
+        "{\"valid\":false,\"revision\":2}", "{\"valid\":true,\"revision\":11}",
+        "{\"valid\":true,\"revision\":2,\"generationId\":null}",
+        "{\"valid\":true,\"revision\":2,\"generationId\":\"new\"}", "null", "{broken"
+    })
+    {
+        File.WriteAllText(legacyRuntimePath, invalidRuntime);
+        Check(legacyService.Status.State == "recovery-required", "invalid or generation-bearing runtime cannot enter the legacy compatibility path");
+        Reject(legacyService.RequireCompletedRuntime);
+    }
+    File.WriteAllText(legacyRuntimePath, legacyRuntime);
+    foreach (var invalidActive in new[]
+    {
+        "{\"revision\":11}", "{\"revision\":2,\"generationId\":null}",
+        "{\"revision\":2,\"generationId\":\"new\"}", "[]"
+    })
+    {
+        File.WriteAllText(legacyActivePath, invalidActive);
+        Check(legacyService.Status.State == "recovery-required", "inconsistent or generation-bearing active metadata cannot enter legacy compatibility");
+        Reject(legacyService.RequireCompletedRuntime);
+    }
+    File.WriteAllText(legacyActivePath, legacyActive);
+    foreach (var marker in new[] { "{}", "{\"state\":\"draining\"}", "{\"state\":\"completed\",\"id\":\"new\",\"profileId\":\"legacy\",\"revision\":2}" })
+    {
+        File.WriteAllText(legacyOperationPath, marker);
+        Check(legacyService.Status.State == "recovery-required", "any new operation marker blocks fallback to otherwise valid legacy files");
+        Reject(legacyService.RequireCompletedRuntime);
+    }
+    File.Delete(legacyOperationPath);
+    Directory.CreateDirectory(legacyOperationPath);
+    Reject(legacyService.RequireCompletedRuntime);
+    Directory.Delete(legacyOperationPath);
+    if (!OperatingSystem.IsWindows())
+    {
+        File.CreateSymbolicLink(legacyOperationPath, Path.Combine(legacyPaths.Root, "missing-marker-target"));
+        Reject(legacyService.RequireCompletedRuntime);
+        File.Delete(legacyOperationPath);
+    }
+    File.Delete(legacyActivePath);
+    Reject(legacyService.RequireCompletedRuntime);
+    File.WriteAllText(legacyActivePath, legacyActive);
+    legacyService.RequireCompletedRuntime();
+
     var paths = new OwnStatePaths(Path.Combine(root, "state"));
     var repository = new ConfigurationRepository(paths);
     var configuration = repository.Update(0, c => c with
