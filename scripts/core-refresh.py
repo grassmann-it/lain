@@ -210,8 +210,10 @@ def stage(args):
     for name in ('build-manifest.json', 'source-manifest.json', 'qualification.json'):
         shutil.copyfile(base / 'proxy' / name, provenance / ('baseline-core-' + name))
     shutil.copy2(root / 'scripts/core-refresh.py', out / 'core-refresh.py')
-    old_core = {key: info.get(key) for key in ('coreSourceCommit', 'proxySha256', 'sourceManifestSha256', 'coreBuildManifestSha256', 'qualificationSha256')}
+    old_core = {key: info.get(key) for key in ('coreSourceCommit', 'proxySha256', 'sourceManifestSha256', 'coreBuildManifestSha256', 'qualificationSha256', 'coreBuild')}
     info.update(corePackagingCommit=revision, coreSourceCommit=revision, proxySha256=binary_hash,
+                coreBuild={key: build[key] for key in ('goVersion', 'snapshotVersion', 'lainPatchVersion', 'upstreamVersion',
+                    'upstreamCommit', 'upstreamSourceModified', 'upstreamArchiveSha256', 'patchSetSha256')},
                 coreBuildManifestSha256=digest(proxy / 'build-manifest.json'), sourceManifestSha256=digest(proxy / 'source-manifest.json'),
                 qualificationSha256=digest(proxy / 'qualification.json'), coreSourceProvenanceInventorySha256=digest(provenance / 'inventory.json'),
                 coreRefresh={'sourceCommit': revision, 'baseManifestSha256': base_files['SHA256SUMS'],

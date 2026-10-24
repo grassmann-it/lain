@@ -17,6 +17,19 @@ must pass for both the exact binary and source-manifest SHA-256. Package/install
 acceptance remains false. The historical patch-2 `stage-expansion-release.py`
 explicitly refuses schema 2.
 
+Fresh publish freezes the Git revision and tracked compile/packaging inputs before
+restore and rechecks them before recording metadata. Each project's evaluated
+`InformationalVersion` is read with MSBuild without building; its existing version
+metadata is preserved and the full frozen commit is appended. That exact explicit
+property is passed to `dotnet publish` with automatic revision appending disabled,
+and its full custom-attribute blob must appear in the published assembly. No
+post-build version is guessed. `source-provenance/publish-properties/` retains
+those evaluated and explicit properties. `build-info.json` records each
+application's source commit, actual informational version, assembly/lock/shared
+assembly hashes and the Core sidecar provenance separately, so this fresh package
+can later serve as an exact Core-only baseline. Unrelated dirty notes remain
+visible through `packagingSourceDirty`; compile inputs themselves must be frozen.
+
 A Core-only update uses `scripts/core-refresh.py`; it does not republish or relabel
 the installed Host, CLI or Desktop. The integrator must first freeze and qualify
 the new Core, complete the old-data/new-Core compatibility check independently,
@@ -91,4 +104,5 @@ metadata, with no app/runtime/service/network activity:
 
 ```sh
 python3 scripts/test-core-refresh.py
+python3 scripts/test-fresh-build-info.py
 ```

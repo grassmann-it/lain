@@ -52,7 +52,7 @@ def main():
     require(not output.exists(), "Go notice output must not exist (prevents stale evidence)")
     output.mkdir(parents=True)
     go = os.environ.get("LAIN_GO") or shutil.which("go") or str(Path.home() / ".local/share/model-usage/toolchain/go/bin/go")
-    env = dict(os.environ, GOTOOLCHAIN="local", GOWORK="off", GOPROXY="off", GOSUMDB="off")
+    env = dict(os.environ, GOTOOLCHAIN="local", GOWORK="off", GOFLAGS="-mod=readonly", GOPROXY="off", GOSUMDB="off")
     metadata = subprocess.check_output([go, "version", "-m", str(binary)], text=True, env=env)
     settings = json.loads(subprocess.check_output([go, "env", "-json", "GOMODCACHE", "GOROOT", "GOVERSION"], text=True, env=env))
     compiled_version = metadata.splitlines()[0].rsplit(": ", 1)[-1]

@@ -89,7 +89,7 @@ f=d/'prepared-manifest.json';f.write_text(json.dumps(record));print(json.dumps({
             'componentInformationalVersions': {'cli': '1.0+416fe13', 'host': '1.0+a66cb2a', 'desktop': '1.0+416fe13'},
             'components': {name: {'assemblySha256': sha(base / name / (project + '.dll'))} for name, project in
                            [('cli', 'Lain.Cli'), ('host', 'Lain.Host'), ('desktop', 'Lain.Desktop')]},
-            'coreSourceCommit': 'original-core-pin', 'proxySha256': sha(base / 'proxy/lain-proxy')}
+            'coreSourceCommit': 'original-core-pin', 'proxySha256': sha(base / 'proxy/lain-proxy'), 'coreBuild': {'upstreamVersion': 'historical'}}
     write(base / 'build-info.json', info)
     write(base / 'gate-status.json', {'backendQualified': True, 'releaseQualified': True, 'clientRefreshQualified': True})
     write(base / '.lain-package', 'managed\n')
@@ -129,7 +129,10 @@ else: raise SystemExit('Unexpected fake Go invocation')
     run(command, env=env)
     updated = api.verify(target)
     api.protected(original, updated)
-    assert api.load(target / 'build-info.json')['components'] == info['components']
+    target_info = api.load(target / 'build-info.json')
+    assert target_info['components'] == info['components']
+    assert target_info['coreBuild']['upstreamVersion'] == 'v8.0.41'
+    assert target_info['coreRefresh']['previousCore']['coreBuild'] == info['coreBuild']
     assert api.load(target / 'core-source-provenance/baseline-gate-status.json')['releaseQualified'] is True
     assert api.load(target / 'gate-status.json')['releaseQualified'] is False
     assert not (target / 'core-source-provenance/old').exists()
