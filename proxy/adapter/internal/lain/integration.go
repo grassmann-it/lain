@@ -50,6 +50,7 @@ type Integration struct {
 	Journal      *Journal
 	Bindings     Bindings
 	Inspector    *Inspector
+	Quotas       *quotaObservations
 	mu           sync.Mutex
 	active       map[string]*attempt
 	captureSlots int
@@ -102,7 +103,7 @@ func New(j *Journal, b Bindings) (*Integration, error) {
 			}
 		}
 	}
-	return &Integration{Journal: j, Bindings: b, Inspector: newInspector(), active: map[string]*attempt{}}, nil
+	return &Integration{Journal: j, Bindings: b, Inspector: newInspector(), Quotas: openQuotaObservations(j.file.Name() + ".quota-observations.json"), active: map[string]*attempt{}}, nil
 }
 func routeSelection(ctx context.Context) (selection, bool) {
 	if c, ok := ctx.Value("gin").(*gin.Context); ok && c != nil {

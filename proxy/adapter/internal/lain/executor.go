@@ -83,7 +83,12 @@ func (e *boundExecutor) begin(ctx context.Context, a *auth.Auth, req executor.Re
 	if err != nil {
 		return ctx, err
 	}
-	ctx = httptransport.WithDecorator(ctx, func(next http.RoundTripper) http.RoundTripper { return &guardedTransport{next: next, auth: a} })
+	if err = validateCohereInput(a, req, opts); err != nil {
+		return ctx, err
+	}
+	ctx = httptransport.WithDecorator(ctx, func(next http.RoundTripper) http.RoundTripper {
+		return &guardedTransport{next: next, auth: a, integration: e.integration, cohereValidated: true}
+	})
 	return ctx, e.integration.Before(ctx, a, req, opts)
 }
 func (e *boundExecutor) Execute(ctx context.Context, a *auth.Auth, req executor.Request, opts executor.Options) (executor.Response, error) {
@@ -282,19 +287,28 @@ func (e *boundExecutor) RequestToFormat(req executor.Request, opts executor.Opti
 }
 
 type guardedTransport struct {
-	next http.RoundTripper
-	auth *auth.Auth
+	next            http.RoundTripper
+	auth            *auth.Auth
+	integration     *Integration
+	cohereValidated bool
 }
 
 func (t *guardedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err := validateFinalTools(req); err != nil {
 		return nil, err
 	}
+	if err := t.normalizeCohereRequest(req); err != nil {
+		return nil, err
+	}
 	if t.auth != nil && t.auth.Attributes["auth_header"] == "bearer" {
 		req.Header.Del("x-goog-api-key")
 		req.Header.Set("Authorization", "Bearer "+t.auth.Attributes["api_key"])
 	}
-	for name, value := range t.auth.Attributes {
+	var attributes map[string]string
+	if t.auth != nil {
+		attributes = t.auth.Attributes
+	}
+	for name, value := range attributes {
 		if strings.EqualFold(name, "header:x-opencode-session") && value == "$CPA-SESSION-ID" {
 			session := req.Header.Get("x-opencode-session")
 			if session == "" || len(session) > 256 {
@@ -314,6 +328,9 @@ func (t *guardedTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		}
 	}
 	response, err := t.next.RoundTrip(req)
+	if err == nil && response != nil && t.integration != nil {
+		t.integration.observeQuotaResponse(req, t.auth, response)
+	}
 	if _, pinned := freeonly.OpenRouterPin(req.Context()); pinned && err == nil && response != nil && response.StatusCode >= 300 && response.StatusCode < 400 {
 		if response.Body != nil {
 			_ = response.Body.Close()

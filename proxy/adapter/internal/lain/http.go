@@ -31,6 +31,19 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 				return
 			}
 			switch path {
+			case "/lain/quota/observations":
+				if c.Request.Method != "GET" {
+					c.AbortWithStatus(405)
+					return
+				}
+				data, err := i.Quotas.read()
+				c.Header("Cache-Control", "no-store")
+				if err != nil {
+					c.AbortWithStatusJSON(503, gin.H{"error": "passive quota observations unavailable"})
+					return
+				}
+				c.Data(200, "application/json", data)
+				c.Abort()
 			case "/lain/inspector/events":
 				if c.Request.Method != "GET" {
 					c.AbortWithStatus(405)
