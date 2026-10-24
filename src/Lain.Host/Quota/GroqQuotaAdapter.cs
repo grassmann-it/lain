@@ -69,7 +69,11 @@ public sealed class GroqQuotaAdapter(HttpClient core, TimeProvider? timeProvider
             if (rows.Length > 0) latest[model] = (observed.Value, rows);
         }
         var readings = latest.OrderBy(x => x.Key, StringComparer.Ordinal).SelectMany(x => x.Value.Rows).ToArray();
-        return new(readings, Support: readings.Length == 0
+        // Preserve omitted windows as stale in QuotaService; never merge their old
+        // duration headers into a new observation timestamp.
+        var partial = latest.Values.Any(value => value.Rows.Count < 2);
+        return new(readings, partial ? "Some Groq rate-limit windows are unavailable; previous observations retained." : null,
+            Support: readings.Length == 0
             ? new("awaiting-observation", "Limits appear after the next ordinary Groq request; refreshing does not send inference.", ConsoleUrl)
             : new("passive", "Observed Groq response headers; organization rate limits may be shared with other keys.", ConsoleUrl));
     }

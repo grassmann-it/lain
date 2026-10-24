@@ -52,6 +52,11 @@ var foreign = await passive.FetchAsync(account, new("unused-secret"));
 Check(foreign.Readings.Count == 0 && foreign.Error is null, "foreign account snapshot cannot supply values");
 using (var invalid = JsonDocument.Parse("""{"version":1,"observations":[{"accountId":"account-a","provider":"groq","model":"x","observedAt":"2026-10-24T12:00:00Z","statusCode":200,"headers":{"x-ratelimit-limit-tokens":["100","200"],"x-ratelimit-remaining-tokens":["NaN"]}}]}"""))
     Check(GroqQuotaAdapter.Normalize(invalid.RootElement, "account-a", clock.GetUtcNow()).Readings.Count == 0, "ambiguous and malformed header values are absent");
+using (var partial = JsonDocument.Parse("""{"version":1,"observations":[{"accountId":"account-a","provider":"groq","model":"x","observedAt":"2026-10-24T12:00:00Z","statusCode":200,"headers":{"x-ratelimit-limit-tokens":["100"],"x-ratelimit-remaining-tokens":["1"]}}]}"""))
+{
+    var result = GroqQuotaAdapter.Normalize(partial.RootElement, "account-a", clock.GetUtcNow());
+    Check(result.Readings.Single().Remaining == 1 && result.Error is not null, "partial windows retain usable data and request last-good preservation");
+}
 
 var googleAccount = account with { Provider = "gemini-api", Name = "Gemini" };
 var monitor = new QuotaMonitorCredential("access-token-snapshot", "synthetic-monitor-token", "project-one", clock.GetUtcNow().AddHours(1));
