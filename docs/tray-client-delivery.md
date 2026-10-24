@@ -7,12 +7,20 @@ Use `scripts/client-refresh.py` for this specific client update over the install
 
 The new helper replaces whole `cli/` and `desktop/` publish directories, including
 their own local `Lain.Client.dll` and .NET `Lain.Core.dll`. It never replaces
-`host/` or `proxy/`, never changes launcher/service/desktop-entry/icon integration,
-and never opens private credentials, configuration, preferences or usage databases.
+`host/` or `proxy/`, never changes the launcher/service/desktop entry, and never
+opens private credentials, configuration, preferences or usage databases. The user
+explicitly selected a replacement logo; only its verified owned launcher icon and
+the corresponding ownership-map entry are additionally replaced.
 The Go Core remains `bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87`.
 Host remains assembly SHA-256
 `06fe63b0c845348a7949d95afe8ba0f8eb65bc06063d0ad473c55f88f5b57cb9`.
 No Host/service restart or daemon reload is required.
+
+The new original is `/home/tomka/Downloads/00CHR/icon-review-20261024/lain-icon.png`,
+copied unchanged as `Assets/Brand/lain-cat.png`, SHA-256
+`b6d32ab02ca21965f6941f61ec209ff756c7ea9841641cf20c0f5bda4aefaba7`.
+Stage records both the prior baseline artwork hash and this new original hash.
+Earlier stages from the superseded icon/source are obsolete and must be rebuilt.
 
 The current installed gate still says `releaseQualified=false`; completed older
 observations live in separate evidence. Staging accepts its exact valid manifest
@@ -110,11 +118,27 @@ python3 "$TRAY_PACKAGE/client-refresh.py" install \
 Installation verifies exact baseline parity and refuses running installed CLI/GUI
 processes. It prepares copied payloads and uses Linux `renameat2(RENAME_EXCHANGE)`
 for each existing client/metadata item; new metadata paths use rename. The Host,
-Go-Core and all other baseline files must remain identical. Integration assets and
-private data are outside the write set. The two explicitly allowlisted client
+Go-Core and all other baseline files must remain identical. Private application
+data and all integration except the explicitly selected owned icon/map are outside
+the write set. The two explicitly allowlisted client
 documentation files are `docs/cli-usage.md` and `skills/lain-usage/SKILL.md`.
-No service command is issued. The only new
-files outside `app/` are the private update lock and explicitly chosen backup.
+No service command is issued.
+
+For the icon, install discovers exactly one absolute key ending `/icons/lain.png`
+in `LAIN_HOME/desktop-integration.json`. Its old hash must match the baseline PNG
+and the current file bytes. The same-prefix `/applications/lain.desktop` must be
+another verified ownership-map key, and its `Icon=` must name that exact icon.
+Foreign/custom artwork, missing or ambiguous ownership, symlinks and a changed
+desktop entry are refused before application changes. No arbitrary icon path is
+accepted. This also supports isolated installer tests: their temporary ownership
+map must contain the same exact icon/desktop pairing under the test prefix.
+
+The icon and ownership map must share the backup/app filesystem. Atomic exchanges
+preserve their old exact bytes under `backup/external/lain.png` and
+`backup/external/desktop-integration.json`. Only the icon key's hash changes in the
+map; other entries and the actual `.desktop` file stay unchanged. The transaction
+journal records exact paths and prior/new hashes. Both external swaps participate
+in ordinary-error rollback. The active-client refusal remains in place.
 
 Ordinary exceptions trigger reverse exchanges and a verified restoration to the
 baseline. `backup/previous/` preserves replaced directories/files and
