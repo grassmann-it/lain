@@ -6,6 +6,7 @@ using Lain.Core;
 using Lain.Host.Accounts;
 using Lain.Host.Accounts.Credentials;
 using Lain.Host.Accounts.Monitoring;
+using Lain.Host.Models;
 using Lain.Host.Operations;
 using Lain.Host.Quota;
 using Lain.Host.Usage;
@@ -25,10 +26,11 @@ try
     await Run("quota-only core ownership resolves selected purpose", QuotaOnlyCore);
     await Run("missing explicit handle never falls back to inference", MissingExplicitHandle);
     await Run("failed newer generation write retries newer payload", PersistenceRetry);
+    await Run("legacy preservation rejects contradictory profile identities", LegacyContradictions);
     await Run("historical canonical journal digest survives replay", HistoricalJournal);
 }
 finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
-Console.WriteLine($"Independent scenarios: {9 - failures.Count}/9 passed.");
+Console.WriteLine($"Independent scenarios: {10 - failures.Count}/10 passed.");
 Environment.ExitCode = failures.Count == 0 ? 0 : 1;
 
 async Task Run(string label, Func<Task> test)
@@ -178,6 +180,19 @@ async Task PersistenceRetry()
     var recovered = CredentialRecoveryService.Read(f.Secrets.Generations, operation.Id);
     Require(recovered.Handle?.Generation == 2 && recovered.Handle.Binding.Subject == "subject-a");
     Require(f.Repository.Snapshot.Accounts.Length == 0); // Recovery retry persists; adoption remains explicit.
+}
+
+Task LegacyContradictions()
+{
+    var f = Fresh("legacy-runtime");
+    var active = Path.Combine(f.Paths.Root, "active-profile.json");
+    var runtime = Path.Combine(f.Paths.Proxy, "runtime.json");
+    OwnStatePaths.WritePrivate(active, "{\"id\":\"profile-a\",\"revision\":7}");
+    OwnStatePaths.WritePrivate(runtime, "{\"valid\":true,\"revision\":7,\"profileId\":\"profile-b\"}");
+    Require(!AppliedProfileStatus.CanPreserveLegacyRuntime(active, runtime, 7));
+    OwnStatePaths.WritePrivate(runtime, "{\"valid\":true,\"revision\":7}");
+    Require(AppliedProfileStatus.CanPreserveLegacyRuntime(active, runtime, 7));
+    return Task.CompletedTask;
 }
 
 async Task HistoricalJournal()

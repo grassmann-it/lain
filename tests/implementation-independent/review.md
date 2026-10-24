@@ -20,6 +20,7 @@ below do not establish AC-10 completion.
 | OpenRouter key is received, then optional metadata network read precedes private persistence | Long crash window loses already received once-only key | Shared immediate checkpoint added before metadata network request; final metadata supersedes same credential generation |
 | Final generation write fails after replacing the in-memory prepared payload | Retry treats old handle as if it contained the newer result | Reported to foundation; distinguish pending payload from last durable payload |
 | Drain timeout followed by failed admission-resume request | Old Core may remain draining while prior completed/ready status is restored | Reported to integrator; degraded/recovery state must expose an unconfirmed resume without killing streams |
+| Legacy runtime and active-profile explicitly name different profiles at same revision | Legacy fallback accepts contradictory files | Reported to application owner; unknown legacy identity must remain distinct from affirmative mismatch |
 
 Additional source checks found no concrete blocker in bounded loopback callback
 parsing/state validation, profile transaction marker checks, partial token SQL

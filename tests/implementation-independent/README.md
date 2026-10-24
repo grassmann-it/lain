@@ -17,7 +17,8 @@ identity; independent monitoring preservation during inference replacement;
 crash after durable remote credential before recovery pointer; restored rotating
 grant quarantine; quota-only core credential projection; absent explicit handle
 fail-closed behavior; failed superseding-generation persistence retry; replay
-against a literal historical canonical journal digest.
+against a literal historical canonical journal digest; contradictory legacy
+profile metadata versus an honestly unknown legacy identity.
 
 Each scenario reports only its name and exception type. A passing source test
 does not qualify exact packaged binaries, real providers, Core startup on restored
