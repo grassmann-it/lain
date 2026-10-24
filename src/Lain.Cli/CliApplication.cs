@@ -297,17 +297,17 @@ public static partial class CliApplication
         if (json) { await output.WriteLineAsync(JsonSerializer.Serialize(value, value.GetType(), Json)); return; }
         switch (value)
         {
-            case StatusDto s: await output.WriteLineAsync($"lain {s.Version}: {s.State}; proxy {(s.ProxyReady ? "ready" : "unavailable")}; configuration {s.AppliedRevision}/{s.Revision}"); break;
+            case StatusDto s: await output.WriteLineAsync($"lain {Cell(s.Version)}: {Cell(s.State)}; proxy {(s.ProxyReady ? "ready" : "unavailable")}; configuration {s.AppliedRevision}/{s.Revision}"); break;
             case AccountDto[] accounts:
-                foreach (var a in accounts) await output.WriteLineAsync($"{a.Id}\t{a.Name}\t{a.Provider}\t{(a.Enabled ? "enabled" : "disabled")}\t{a.State}"); break;
+                await WriteAccounts(output, accounts); break;
             case LoginDto login:
-                await output.WriteLineAsync($"Login {login.Id} ({login.Provider}): {login.State}");
-                if (login.Url is not null) await output.WriteLineAsync(login.Url);
+                await output.WriteLineAsync($"Login {Cell(login.Id)} ({Cell(login.Provider)}): {Cell(login.State)}");
+                if (login.Url is not null) await output.WriteLineAsync(Cell(login.Url));
                 break;
             case ModelCatalogDto models:
-                foreach (var m in models.Models) await output.WriteLineAsync($"{m.Id}\t{m.Provider}\t{string.Join(",", m.AccountIds)}"); break;
+                await WriteModels(output, models); break;
             case ProfileDto[] profiles:
-                foreach (var p in profiles) await output.WriteLineAsync($"{p.Id}\t{p.Name}\t{string.Join(",", p.RouteIds)}"); break;
+                await WriteProfiles(output, profiles); break;
             case UsageSummaryDto u:
                 await output.WriteLineAsync($"{u.From:O} to {u.To:O} ({u.TimeZone})");
                 await output.WriteLineAsync($"Requests {u.Totals.Requests}; attempts {u.Totals.Attempts}; errors {u.Totals.Errors}; tokens {u.Totals.Tokens.Total?.ToString(CultureInfo.InvariantCulture) ?? "unknown"}");
@@ -326,14 +326,7 @@ public static partial class CliApplication
                 }
                 break;
             case QuotaDto[] quotas:
-                foreach (var q in quotas)
-                {
-                    await output.WriteLineAsync($"{Cell(q.AccountId)}\twindow {Cell(q.WindowLabel)}\tpool {Cell(q.BudgetPoolId)}\t{Cell(q.State)}\tremaining {Number(q.Remaining)} / {Number(q.Limit)} {Cell(q.Unit)}\treset {q.ResetsAt?.ToString("O", CultureInfo.InvariantCulture) ?? "unknown"}");
-                    await output.WriteLineAsync($"  Source {Cell(q.Source)}; observed {q.ObservedAt?.ToString("O", CultureInfo.InvariantCulture) ?? "unknown"}; used {Number(q.Used)} {Cell(q.Unit)}");
-                    if (q.SharedWithLegacy) await output.WriteLineAsync("  Shared budget with legacy usage.");
-                    if (q.Error is { } quotaError) await output.WriteLineAsync("  " + Cell(quotaError));
-                }
-                break;
+                await WriteQuotas(output, quotas); break;
             case ImportResult i:
                 await output.WriteLineAsync($"Imported revision {i.Revision}: {i.Added} added, {i.Updated} updated."); break;
             case CodexInstallResult i:
@@ -347,8 +340,7 @@ public static partial class CliApplication
     }
 
     // Keep remote identifiers and redacted previews on a single terminal line.
-    private static string Cell(string? value) => value is null ? "unknown" :
-        string.Concat(value.Select(c => char.IsControl(c) ? ' ' : c));
+    private static string Cell(string? value) => HumanTable.Clean(value);
     private static string Number<T>(T? value) where T : struct, IFormattable =>
         value?.ToString(null, CultureInfo.InvariantCulture) ?? "unknown";
     private static async Task WriteUsageGroups(TextWriter output, string dimension, UsageGroup[] groups)

@@ -53,12 +53,10 @@ public static partial class CliApplication
                 }
                 return true;
             case ProviderCatalogDto catalog:
-                await output.WriteLineAsync($"Providers {catalog.Providers.Length}; observed {catalog.ObservedAt:O}");
-                foreach (var provider in catalog.Providers)
-                    await output.WriteLineAsync($"{Cell(provider.Id)}\t{Cell(provider.Name)}\tadapter {Cell(provider.AdapterState)}\tlive {Cell(provider.LiveVerification)}\troutes {provider.Routes.Length}; free-only eligible {provider.Routes.Count(r => r.FreeOnlyEligible)}");
+                await WriteProviderCatalog(output, catalog);
                 return true;
             case ProviderOnboardingDto onboarding:
-                await output.WriteLineAsync($"{Cell(onboarding.ProviderId)}: {Cell(onboarding.State)}; live verification {Cell(onboarding.LiveVerification)}");
+                await output.WriteLineAsync($"{Cell(onboarding.ProviderId)}: {ReadableState(onboarding.State)}; live check {LiveCheck(onboarding.LiveVerification)}");
                 await WriteProvider(output, onboarding.Descriptor);
                 await output.WriteLineAsync($"Accounts: {(onboarding.AccountIds.Length == 0 ? "none" : string.Join(", ", onboarding.AccountIds.Select(Cell)))}");
                 await output.WriteLineAsync($"Missing credentials: {(onboarding.MissingCredentialFields.Length == 0 ? "none" : string.Join(", ", onboarding.MissingCredentialFields.Select(Cell)))}");
@@ -68,6 +66,7 @@ public static partial class CliApplication
                 await WriteProvider(output, provider);
                 return true;
             case ProviderRouteDescriptorDto[] routes:
+                await HumanTable.WriteTextAsync(output, "Free-only eligibility describes catalog controls; account access is not verified.");
                 foreach (var route in routes) await WriteProviderRoute(output, route);
                 return true;
             case RouteCostDecisionDto decision:
@@ -111,7 +110,7 @@ public static partial class CliApplication
         await output.WriteLineAsync($"{Cell(provider.Name)} ({Cell(provider.Id)}) — {Cell(provider.Summary)}");
         await output.WriteLineAsync($"Account: {Cell(provider.AccountUrl)}");
         await output.WriteLineAsync($"Documentation: {Cell(provider.DocumentationUrl)}");
-        await output.WriteLineAsync($"Adapter {Cell(provider.AdapterState)}; live {Cell(provider.LiveVerification)}; quota support {Cell(provider.QuotaSupport)}");
+        await output.WriteLineAsync($"Adapter {ReadableState(provider.AdapterState)}; live check {LiveCheck(provider.LiveVerification)}; quota support {ReadableState(provider.QuotaSupport)}");
         foreach (var field in provider.Credentials)
             await output.WriteLineAsync($"Credential: {Cell(field.Id)} ({Cell(field.Label)}); {(field.Required ? "required" : "optional")}; {Cell(field.Kind)}{(field.Secret ? "; secret" : "")}");
         foreach (var step in provider.SetupSteps)
@@ -125,6 +124,7 @@ public static partial class CliApplication
                 await output.WriteLineAsync($"  Limit {Cell(limit.Kind)}: {Number(limit.Value)} {Cell(limit.Unit)}; window {Cell(limit.Window)}; scope {Cell(limit.Scope)}");
             if (plan.Notes is { } notes) await output.WriteLineAsync("  " + Cell(notes));
         }
+        if (provider.Routes.Length > 0) await HumanTable.WriteTextAsync(output, "Free-only eligibility describes catalog controls; account access is not verified.");
         foreach (var route in provider.Routes) await WriteProviderRoute(output, route);
         foreach (var restriction in provider.Restrictions) await output.WriteLineAsync("Restriction: " + Cell(restriction));
         foreach (var source in provider.Sources)

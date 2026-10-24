@@ -230,7 +230,7 @@ handler.Handle = request =>
 };
 output = new(); error = new();
 exit = await CliApplication.RunAsync(["providers", "onboarding", "test/provider"], output, error, () => client);
-Require(exit == 0 && output.ToString().Contains("Missing credentials: api_key") && output.ToString().Contains("live verification not_tested") &&
+Require(exit == 0 && output.ToString().Contains("Missing credentials: api_key") && output.ToString().Contains("live check Not checked") &&
     output.ToString().Contains("scope account; unknown points") && output.ToString().Contains("https://provider.test/account"),
     "keyless onboarding shows account link, credential field names and native budget units"); assertions++;
 handler.Handle = request =>
@@ -388,6 +388,7 @@ finally
     if (Directory.Exists(state)) Directory.Delete(state, true);
 }
 assertions += await ExpansionContractChecks.RunAsync();
+assertions += await HumanRenderingChecks.RunAsync();
 Console.WriteLine($"PASS: {assertions} client/CLI contract checks.");
 
 sealed class FakeHandler : HttpMessageHandler
