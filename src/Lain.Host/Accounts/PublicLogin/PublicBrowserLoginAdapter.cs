@@ -60,9 +60,11 @@ public abstract class PublicBrowserLoginAdapter : IAccountLoginAdapter, IDisposa
                 uri => { created = CreateAttempt(context, uri); return created.State; }, RegisteredCallback);
             try
             {
-                var attempt = new Attempt(context, callback, created.Authorization, created.Request);
+                var authorization = created.Authorization ?? throw new InvalidOperationException("Missing authorization URL.");
+                var tokenRequest = created.Request ?? throw new InvalidOperationException("Missing authorization request.");
+                var attempt = new Attempt(context, callback, authorization, tokenRequest);
                 attempts.Add(context.OperationId, attempt);
-                return Task.FromResult(new LoginAdapterResult("waiting", created.Authorization.AbsoluteUri));
+                return Task.FromResult(new LoginAdapterResult("waiting", authorization.AbsoluteUri));
             }
             catch { callback.Dispose(); throw; }
         }

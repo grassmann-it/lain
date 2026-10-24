@@ -67,8 +67,9 @@ internal sealed class LoopbackLoginCallback : IDisposable
                         && System.Uri.TryCreate(Uri.GetLeftPart(UriPartial.Authority) + first[1], UriKind.Absolute, out var target)
                         && target.AbsolutePath == Uri.AbsolutePath && target.Fragment.Length == 0)
                     {
-                        var query = ParseQuery(target.Query);
-                        if (query.TryGetValue("state", out var receivedState) && StateEquals(receivedState))
+                        Dictionary<string, string>? query = null;
+                        try { query = ParseQuery(target.Query); } catch (ArgumentException) { }
+                        if (query is not null && query.TryGetValue("state", out var receivedState) && StateEquals(receivedState))
                         {
                             if (query.ContainsKey("error") && !query.ContainsKey("code")) callback = new(null, true);
                             else if (query.TryGetValue("code", out var code) && code.Length is > 0 and <= 4096 && !code.Any(char.IsControl)

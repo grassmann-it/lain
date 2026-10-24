@@ -4,7 +4,9 @@ OpenRouter uses `OpenRouterLoginAdapter`, method `browser`, with no Core or clie
 registration. The adapter binds a fresh S256 verifier/state to a bounded IPv4
 loopback callback and exchanges once at `https://openrouter.ai/api/v1/auth/keys`.
 The prepared host-owned API key uses `https://openrouter.ai/api/v1`; it may serve
-inference and own-key monitoring, according to the requested purposes. The
+inference and own-key monitoring. Requested purposes limit lain’s enabled
+capabilities; a monitor-only choice does not make the issued key read-only or
+remove its provider-side spending permissions. The
 adapter checkpoints the issued key through the shared operation service before
 any further network call, then reads only `GET /api/v1/key` after issuance, to confirm any returned
 `creator_user_id`, `workspace_id` and `expires_at`. A requested workspace is sent

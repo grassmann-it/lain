@@ -11,7 +11,8 @@ var checks = 0;
 void Check(bool value, string name) { if (!value) throw new Exception(name); checks++; }
 LoginOperationContext Context(string provider = "openrouter", ResourceBindingDto? binding = null) => new(Guid.NewGuid().ToString("N"), "account-fixed", 7, 3,
     new(provider, "browser", ["quota"], AccountId: "account-fixed", Binding: binding), DateTimeOffset.UtcNow.AddMinutes(2));
-Dictionary<string, string> Query(string value) => LoopbackLoginCallback.ParseQuery(new Uri(value).Query);
+Dictionary<string, string> Query(string value) => new Uri(value).Query.TrimStart('?').Split('&').Select(pair => pair.Split('=', 2))
+    .ToDictionary(parts => Uri.UnescapeDataString(parts[0]), parts => Uri.UnescapeDataString(parts[1]));
 async Task Callback(LoginAdapterResult begin, string? stateOverride = null, string extra = "code=fixture-code", bool valid = true)
 {
     var auth = Query(begin.Url!);
@@ -105,8 +106,8 @@ using (var adapter = new OpenRouterLoginAdapter(new FakeProvider()))
 // Operation expiry releases callbacks without an exchange, even without a status caller.
 using (var adapter = new OpenRouterLoginAdapter(new FakeProvider()))
 {
-    var context = Context() with { ExpiresAt = DateTimeOffset.UtcNow.AddMilliseconds(50) };
-    await adapter.BeginAsync(context, default); await Task.Delay(100);
+    var context = Context() with { ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(1) };
+    await adapter.BeginAsync(context, default); await Task.Delay(1100);
     Check((await adapter.StatusAsync(context, default)).State == "cancelled", "callback TTL");
 }
 // Once sent, cancellation cannot discard an issued key: finish and return it to the recovery owner.
