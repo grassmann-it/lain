@@ -45,6 +45,26 @@ internal sealed class Fixture : HttpMessageHandler
     public string? LastMonitorAccount;
     public string? LastQuotaRefreshAccount;
     public readonly List<string> Requests = [];
+    public readonly List<object> RequestDetails = [];
+    public bool ConfigurationFailure, StatusFailure, LoseApplyResponse;
+    public bool? CoreLoginOverride;
+    public ProfileApplicationStatusDto? ApplicationStatus;
+    public CodexProfileArtifacts? ExportOverride;
+    private readonly Dictionary<string, Queue<PendingResponse>> pending = [];
+    public sealed class PendingResponse
+    {
+        public readonly TaskCompletionSource<bool> Entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public readonly TaskCompletionSource<HttpResponseMessage> Response = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public void Complete(object value) => Response.TrySetResult(new(HttpStatusCode.OK) { Content = JsonContent.Create(value) });
+        public void Fail(string message) => Response.TrySetResult(new(HttpStatusCode.ServiceUnavailable)
+            { Content = JsonContent.Create(new ApiError("fixture_delayed_failure", message)) });
+    }
+    public PendingResponse Defer(string method, string path)
+    {
+        var key = method + " " + path;
+        if (!pending.TryGetValue(key, out var queue)) pending[key] = queue = new();
+        var response = new PendingResponse(); queue.Enqueue(response); return response;
+    }
     public readonly List<long> InspectorEventAfters = [];
     public readonly List<string> Unexpected = [];
     public readonly List<Dictionary<string, string>> UsageQueries = [];
@@ -63,6 +83,16 @@ internal sealed class Fixture : HttpMessageHandler
         Requests.Add($"{request.Method} {path}");
         if (request.RequestUri.Host != "fixture.invalid" || request.Headers.Authorization is not null)
             throw UnexpectedRequest(request);
+        var requestBody = request.Content is null ? null : await request.Content.ReadAsStringAsync(ct);
+        RequestDetails.Add(new { sequence = Requests.Count, method = request.Method.Method, path, body = requestBody,
+            configurationRevision = Config.Revision, activeProfileId = ActiveProfileId, activeProfileRevision = ActiveProfileRevision });
+        if (pending.TryGetValue(request.Method.Method + " " + path, out var held) && held.Count > 0)
+        {
+            var response = held.Dequeue(); response.Entered.TrySetResult(true);
+            return await response.Response.Task.WaitAsync(ct);
+        }
+        if ((ConfigurationFailure && path == "/api/v1/configuration") || (StatusFailure && path == "/api/v1/status"))
+            return new(HttpStatusCode.ServiceUnavailable) { Content = JsonContent.Create(new ApiError("fixture_read_failed", "Synthetic read unavailable")) };
         if (Offline) throw new HttpRequestException("offline fixture");
         if (AnalysisFailure && path == "/api/v1/usage/analysis")
             return new(HttpStatusCode.ServiceUnavailable) { Content = JsonContent.Create(new ApiError("fixture_analysis_unavailable", "Fixture analysis temporarily unavailable")) };
@@ -127,12 +157,17 @@ internal sealed class Fixture : HttpMessageHandler
         {
             if (ApplyFailure) return new(HttpStatusCode.ServiceUnavailable)
                 { Content = JsonContent.Create(new ApiError("fixture_apply_failed", "Synthetic apply failed; previous active profile is retained.")) };
+            var applyBody = await request.Content!.ReadFromJsonAsync<ProfileApplyRequest>(cancellationToken: ct);
+            Revision(applyBody!.Revision);
             ApplyCalls++; Config = Config with { AppliedRevision = Config.Revision };
-            ActiveProfileId = path.Split('/')[4]; ActiveProfileRevision = Config.Revision; value = Config;
+            ActiveProfileId = path.Split('/')[4]; ActiveProfileRevision = Config.Revision;
+            ApplicationStatus = new("completed", "fixture-operation", ActiveProfileId, Config.Revision);
+            if (LoseApplyResponse) throw new HttpRequestException("Synthetic response lost after commit");
+            value = Config;
         }
         else if (request.Method == HttpMethod.Post && path.EndsWith("/codex/export"))
         {
-            ExportCalls++; value = new CodexProfileArtifacts("lain.config.toml", "# fixture configuration", "lain.models.json", "{}", ["--no-daemon", "--profile", "lain"], Config.Revision);
+            ExportCalls++; value = ExportOverride ?? new CodexProfileArtifacts("lain.config.toml", "model_catalog_json = \"lain.models.json\"\n# fixture configuration", "lain.models.json", "{}", ["--no-daemon", "--profile", "lain"], Config.Revision, ProfileId: path.Split('/')[4], GenerationId: "fixture-export-" + Config.Revision);
         }
         else if (request.Method == HttpMethod.Put && path.StartsWith("/api/v1/profiles/"))
         {
@@ -349,7 +384,7 @@ internal sealed class Fixture : HttpMessageHandler
         return new(1, "test", "ready", !MonitorMode, Config.Revision, Config.AppliedRevision, DateTimeOffset.UtcNow,
             ActiveProfileId: ActiveProfileId, ActiveProfileRevision: ActiveProfileRevision,
             RuntimeMode: MonitorMode ? "monitor" : "gateway",
-            Capabilities: new(true, !MonitorMode, !MonitorMode, !MonitorMode || MonitorHistory, !MonitorMode, !MonitorMode));
+            Capabilities: new(true, !MonitorMode, !MonitorMode, !MonitorMode || MonitorHistory, !MonitorMode, CoreLoginOverride ?? !MonitorMode), Application: ApplicationStatus);
     }
     private UsageSummaryDto Usage(Uri uri)
     {

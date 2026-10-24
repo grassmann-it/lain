@@ -54,7 +54,7 @@ internal sealed class AcceptanceApp : Application
     }
 }
 
-internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetime)
+internal sealed partial class Acceptance(IClassicDesktopStyleApplicationLifetime lifetime)
 {
     private static readonly string[] Pages = ["Accounts", "Models", "Profiles", "Usage", "Live", "Settings"];
     private readonly string output = Environment.GetEnvironmentVariable("LAIN_TEST_OUTPUT")!;
@@ -76,10 +76,12 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
     public async Task Run()
     {
         Directory.CreateDirectory(output);
+        await RunStateFlows();
         // Matrix renders the same production pages, changing only local presentation state.
         foreach (var information in Enum.GetValues<InformationLevel>())
         foreach (var compactness in Enum.GetValues<ViewDensity>())
         {
+            if (!Pages.Any(destination => Selected($"matrix-{destination}-{information}-{compactness}"))) continue;
             await Open(information, compactness);
             foreach (var destination in Pages)
             {
@@ -105,7 +107,7 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
         [
             ("account-adjacent-and-back", AccountAnchors), ("native-pointer-keyboard-menus", NativeAccounts),
             ("connect-provider-start-wait-key-result", ConnectFlows), ("model-long-name-and-policies", ModelDetails),
-            ("profile-viewing-applied-and-dialog", ProfileDetails), ("usage-partial-null-and-draft", UsageStates),
+            ("native-profile-viewing-applied-and-review", ProfileDetails), ("usage-partial-null-and-draft", UsageStates),
             ("live-output-and-source-states", LiveStates), ("settings-local-scope", SettingsScope),
             ("monitor-capabilities-and-offline-gateway", ModeStates)
         ];
@@ -121,9 +123,9 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
     private static bool Selected(string name) => Environment.GetEnvironmentVariable("LAIN_UXD_ONLY") is not { Length: > 0 } filter
         || filter.Split(',', StringSplitOptions.RemoveEmptyEntries).Any(value => name.Contains(value, StringComparison.OrdinalIgnoreCase));
 
-    private async Task Open(InformationLevel information, ViewDensity compactness)
+    private async Task Open(InformationLevel information, ViewDensity compactness, Action<Fixture>? configure = null, bool waitForAccounts = true)
     {
-        fixture = new Fixture(); fixture.UseUxdInventory();
+        fixture = new Fixture(); fixture.UseUxdInventory(); configure?.Invoke(fixture);
         level = information; density = compactness; page = "Accounts";
         var preferencePath = Path.Combine(output, $"preferences-{Guid.NewGuid():N}.json");
         var store = new WorkspacePreferencesStore(preferencePath);
@@ -132,13 +134,14 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
         http = new HttpClient(fixture) { BaseAddress = new Uri("http://fixture.invalid/api/v1/") };
         window = new MainWindow(new LainApiClient(http), preferencePath);
         window.Show();
-        await Wait(() => Find<Button>("Open account details for Personal Codex") is not null);
+        if (waitForAccounts) await Wait(() => Find<Button>("Open account details for Personal Codex") is not null);
         await Resize(1120, 780);
     }
 
     private async Task Close()
     {
         requests.AddRange(fixture.Requests);
+        requestDetails.AddRange(fixture.RequestDetails);
         Check(fixture.Unexpected.Count == 0, "requests stayed inside the explicit in-memory allowlist");
         foreach (var child in lifetime.Windows.Where(w => w != window).ToArray()) child.Close();
         window.Close(); await Task.Delay(50); http?.Dispose(); http = null;
@@ -196,7 +199,7 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
             : level switch
             {
                 InformationLevel.Barebones => ["Accounts", "Profiles", "Usage"],
-                InformationLevel.Simple => ["Accounts", "Models", "Profiles", "Usage"],
+                InformationLevel.Simple => ["Accounts", "Models", "Profiles", "Usage", "Live"],
                 _ => ["Accounts", "Models", "Profiles", "Usage", "Live"]
             };
         var direct = Controls<Button>().Where(control => control.Tag is string tag && Pages.Contains(tag))
@@ -385,36 +388,21 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
 
     private async Task ProfileDetails()
     {
-        await Navigate("Profiles"); await Resize(1120, 780);
+        await Navigate("Profiles");
         Click(Need<Button>("Select profile Daily")); await Task.Delay(80);
-        Check(fixture.ApplyCalls == 0 && fixture.ExportCalls == 0, "profile selection is separate from Apply and export");
-        Check(Controls<TextBlock>().Any(control => control.Text?.Contains("Workspace 2") == true), "selected Daily retains separate applied Workspace2 evidence");
-        Capture("profiles-selected-daily-wide");
         using var input = new NativeInput(); input.Focus(window);
-        var apply = Controls<Button>().Single(button => Equals(button.Content, "Apply to proxy…")); input.Click(apply);
-        await Wait(() => lifetime.Windows.Any(candidate => candidate != window && candidate.IsVisible));
-        var dialog = lifetime.Windows.Single(candidate => candidate != window && candidate.IsVisible);
-        Check(fixture.PreviewCalls > 0 && fixture.ApplyCalls == 0, "Apply review loads real preview endpoint without applying");
-        Capture("profiles-apply-dialog-wide", dialog);
-        input.Focus(dialog); input.Key(0xff1b); await Task.Delay(120);
-        Check(!dialog.IsVisible && fixture.ApplyCalls == 0, "native Escape cancels Apply dialog without host mutation");
-        Check(apply.IsFocused, "Apply dialog returns focus to its trigger");
-        await Resize(800, 560);
-        Check(Find<Button>("Back to profiles") is not null && Find<Button>("Select profile Daily") is null,
-            "explicit profile selection opens a separate narrow detail task with Back");
-        Capture("profiles-selected-daily-narrow");
-        var narrowApply = Controls<Button>().Single(button => Equals(button.Content, "Apply to proxy…"));
-        input.Focus(window); input.Click(narrowApply);
-        await Wait(() => lifetime.Windows.Any(candidate => candidate != window && candidate.IsVisible));
-        dialog = lifetime.Windows.Single(candidate => candidate != window && candidate.IsVisible);
-        Capture("profiles-apply-dialog-narrow", dialog); input.Focus(dialog); input.Key(0xff1b); await Task.Delay(80);
-        Check(!dialog.IsVisible && narrowApply.IsFocused && fixture.ApplyCalls == 0,
-            "narrow Apply Escape returns trigger focus without applying");
-        input.Focus(window); input.Click(Need<Button>("Back to profiles"));
-        await Wait(() => Find<Button>("Select profile Daily")?.IsFocused == true);
-        Check(Find<TextBlock>("Selected profile status") is null,
-            "native narrow Back restores the selected inventory action and one-pane layout");
-        Capture("profiles-narrow-return");
+        foreach (var (width, height) in new[] { (1120, 780), (800, 560) })
+        {
+            await Resize(width, height);
+            var apply = Need<Button>("Apply to proxy…");
+            await NativePress(input, apply);
+            await Wait(() => Find<Control>("Profile apply review") is not null);
+            Check(!lifetime.Windows.Any(candidate => candidate != window && candidate.IsVisible), "confirmed Apply review remains in-place");
+            Check(fixture.PreviewCalls > 0 && fixture.ApplyCalls == 0, "review loads preview without applying");
+            Capture($"profiles-inplace-review-{width}x{height}");
+            await NativePress(input, Need<Button>("Cancel review"));
+            Check(apply.IsFocused && fixture.ApplyCalls == 0, "native Cancel restores review trigger without mutation");
+        }
     }
 
     private async Task UsageStates()
@@ -581,7 +569,7 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
             requestedFilter = Environment.GetEnvironmentVariable("LAIN_UXD_ONLY"),
             commit = Environment.GetEnvironmentVariable("LAIN_TEST_COMMIT"), assembly = assembly.Location,
             assemblySha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))),
-            privateXvfb = true, cases, assertions, images, geometry, focusTrace, requests,
+            privateXvfb = true, cases, assertions, images, geometry, focusTrace, requests, requestDetails,
             limitations = new[] { "Images require independent visual review", "XTEST is synthetic OS input, not a screenreader audit",
                 "No real host, providers, credentials, installed app, external browser, clipboard, or tray qualification" }
         }, new JsonSerializerOptions { WriteIndented = true }));

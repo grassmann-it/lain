@@ -22,10 +22,20 @@ internal sealed class NativeInput : IDisposable
         if (!int.TryParse(pid, out _) || string.IsNullOrWhiteSpace(owned) ||
             Environment.GetEnvironmentVariable("DISPLAY") != owned ||
             !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")) ||
-            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS")) ||
+            !PrivateSessionBus() ||
             !File.Exists($"/proc/{pid}/cmdline") ||
             Path.GetFileName(File.ReadAllText($"/proc/{pid}/cmdline").Split('\0')[0]) != "Xvfb")
             throw new InvalidOperationException("Refusing GUI/input: runner-owned private Xvfb required");
+    }
+
+    private static bool PrivateSessionBus()
+    {
+        var pid = Environment.GetEnvironmentVariable("LAIN_TEST_DBUS_PID");
+        var address = Environment.GetEnvironmentVariable("LAIN_TEST_SESSION_BUS");
+        return int.TryParse(pid, out _) && address?.StartsWith("unix:path=/", StringComparison.Ordinal) == true
+            && Environment.GetEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS") == address
+            && File.Exists($"/proc/{pid}/cmdline")
+            && Path.GetFileName(File.ReadAllText($"/proc/{pid}/cmdline").Split('\0')[0]) == "dbus-daemon";
     }
 
     public void Focus(Window window)

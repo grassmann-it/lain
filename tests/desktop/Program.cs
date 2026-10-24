@@ -37,15 +37,19 @@ internal static class Program
             Console.Error.WriteLine("Refusing GUI startup: use tests/desktop/run-private-xvfb.sh (private Xvfb required).");
             return 2;
         }
+        SmokeApp.AccountSnapshotsOnly = args.Contains("--account-snapshots-smoke", StringComparer.Ordinal);
+        SmokeApp.ModelIdentityOnly = args.Contains("--model-identity-smoke", StringComparer.Ordinal);
         SmokeApp.AccountSortOnly = args.Contains("--account-sort-smoke", StringComparer.Ordinal);
         SmokeApp.ProviderSetupOnly = args.Contains("--provider-setup-smoke", StringComparer.Ordinal);
         return AppBuilder.Configure<SmokeApp>().UsePlatformDetect().WithInterFont()
-            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--account-sort-smoke" or "--provider-setup-smoke")).ToArray());
+            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--model-identity-smoke")).ToArray());
     }
 }
 
 internal sealed class SmokeApp : Application
 {
+    public static bool AccountSnapshotsOnly { get; set; }
+    public static bool ModelIdentityOnly { get; set; }
     public static bool AccountSortOnly { get; set; }
     public static bool ProviderSetupOnly { get; set; }
     public override void Initialize()
@@ -72,7 +76,9 @@ internal sealed class SmokeApp : Application
             var scenario = new Scenario(lifetime);
             try
             {
-                if (ProviderSetupOnly) await scenario.RunProviderSetupSmoke();
+                if (AccountSnapshotsOnly) await scenario.RunAccountSnapshotsSmoke();
+                else if (ModelIdentityOnly) await scenario.RunModelIdentitySmoke();
+                else if (ProviderSetupOnly) await scenario.RunProviderSetupSmoke();
                 else if (AccountSortOnly) await scenario.RunAccountSortSmoke();
                 else await scenario.Run();
                 lifetime.Shutdown(0);
@@ -89,7 +95,7 @@ internal sealed class SmokeApp : Application
     }
 }
 
-internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
+internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
 {
     public static readonly string Output = Environment.GetEnvironmentVariable("LAIN_TEST_OUTPUT") ?? throw new InvalidOperationException("Runner output missing");
     private readonly Fixture fixture = new();
@@ -319,6 +325,18 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             settings = new { settingsBounds.X, settingsBounds.Y, settingsBounds.Width, settingsBounds.Height } });
     }
 
+    public async Task RunModelIdentitySmoke()
+    {
+        Directory.CreateDirectory(Output);
+        await Open();
+        await RunUxd19ModelCases();
+        await CaptureBoth("uxd19-model-identity-complete");
+        await File.WriteAllTextAsync(Path.Combine(Output, "uxd19-evidence.json"), JsonSerializer.Serialize(new
+        { checks, screenshots, requests = fixture.Requests, requestDetails = fixture.RequestDetails,
+          inputMethod = "production command invocation; no native claim", visualResult = "NOT_REVIEWED" }, new JsonSerializerOptions { WriteIndented = true }));
+        window.Close();
+    }
+
     public async Task Run()
     {
         Directory.CreateDirectory(Output);
@@ -528,7 +546,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             : level switch
             {
                 InformationLevel.Barebones => ["Accounts", "Profiles", "Usage"],
-                InformationLevel.Simple => ["Accounts", "Models", "Profiles", "Usage"],
+                InformationLevel.Simple => ["Accounts", "Models", "Profiles", "Usage", "Live"],
                 _ => allDestinations
             };
         var navigation = Controls<Button>().Where(b => b.Tag is string tag && allDestinations.Contains(tag))
