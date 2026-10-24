@@ -29,7 +29,10 @@ internal sealed class ProfileTestApp : Application
     public override void Initialize()
     {
         var production = new App(); production.Initialize(); RequestedThemeVariant = production.RequestedThemeVariant;
-        Resources = production.Resources; production.Resources = new ResourceDictionary();
+        // Detach the production dictionary before attaching it to this fixture app.
+        var resources = production.Resources;
+        production.Resources = new ResourceDictionary();
+        Resources = resources;
         var styles = production.Styles.ToArray(); production.Styles.Clear(); foreach (var style in styles) Styles.Add(style);
     }
     public override void OnFrameworkInitializationCompleted()
