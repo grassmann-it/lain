@@ -135,9 +135,11 @@ public sealed partial class MainWindow
         var rowOrigins = new Dictionary<string, Button>(StringComparer.Ordinal);
         string AccountNames(string[] ids) => ids.Length == 0 ? "Account not supplied" : string.Join(", ", ids.Select(id => cfg.Accounts.FirstOrDefault(a => a.Id == id)?.Name ?? id));
         Grid RowGrid() => new() { ColumnDefinitions = new ColumnDefinitions("1.1*,1.5*,82,58,92"), ColumnSpacing = 8 };
-        void UpdateLayout()
+        void UpdateLayout(double? availableWidth = null)
         {
-            var wide = (Bounds.Width > 0 ? Bounds.Width : Width) >= 1000;
+            // The child is arranged during its parent's resize. Window.Bounds can
+            // still describe the preceding viewport at that point.
+            var wide = (availableWidth ?? root.Bounds.Width) >= 960;
             inventory.IsVisible = wide || !_modelNarrowDetail;
             detail.IsVisible = wide || _modelNarrowDetail;
             root.ColumnDefinitions = new ColumnDefinitions(wide ? "*,320" : "*");
@@ -214,7 +216,7 @@ public sealed partial class MainWindow
         provider.SelectionChanged += (_, _) => { _routeProvider = provider.SelectedItem as string ?? "All providers"; Populate(); };
         visibility.SelectionChanged += (_, _) => { _routeVisibility = visibility.SelectedItem as string ?? "All visibility"; Populate(); };
         state.SelectionChanged += (_, _) => { _routeState = state.SelectedItem as string ?? "All states"; Populate(); };
-        root.SizeChanged += (_, _) => UpdateLayout();
+        root.SizeChanged += (_, e) => UpdateLayout(e.NewSize.Width);
         Populate();
         if (_selectedModelRouteId is { } selected) ShowDetails(selected);
         else detail.Child = Ui.Stack(Ui.Text("Model configuration", 15), Ui.Text("Select a model to inspect its binding, profiles and provenance. Edit and actions are available in every row.", 12, Ui.Muted));
