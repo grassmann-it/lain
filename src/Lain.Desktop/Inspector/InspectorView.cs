@@ -68,6 +68,7 @@ public sealed class InspectorView : UserControl, IPresentationView
     private CancellationTokenSource? _lifetime;
     private TopLevel? _topLevel;
     private InspectorSnapshotDto? _snapshot;
+    private EventPageFacts? _eventPageFacts;
     private string? _sourceId;
     private string? _selectedGroup;
     private string? _selectedRequest;
@@ -84,6 +85,7 @@ public sealed class InspectorView : UserControl, IPresentationView
     private bool _selectionMatchesFilter = true;
     private bool _adjustingScroll;
     private bool _restoreRequestOffset;
+    private bool _sourceDetailsExpanded;
     private string? _lastDetachedSource;
     private string? _lastDetachedRequest;
     private string? _lastDetachedGroup;
@@ -416,7 +418,8 @@ public sealed class InspectorView : UserControl, IPresentationView
         if (request is null) return;
         try
         {
-            var page = await _client.InspectorEventsAsync(new InspectorEventQuery(_sourceId, _after, 100, request), token);
+            var requestedAfter = _after;
+            var page = await _client.InspectorEventsAsync(new InspectorEventQuery(_sourceId, requestedAfter, 100, request), token);
             token.ThrowIfCancellationRequested();
             if (request != _selectedRequest) return;
             if (page.SourceId != _sourceId)
@@ -427,6 +430,8 @@ public sealed class InspectorView : UserControl, IPresentationView
                 _nextSnapshot = 0;
                 return;
             }
+            _eventPageFacts = new(request, requestedAfter, page.SourceId, page.NextCursor, page.HighWatermark,
+                page.EarliestCursor, page.DroppedEvents, page.Truncated, page.GapReason);
             if (page.Truncated || page.GapReason is not null)
                 _contentGap = "Content gap · " + (page.GapReason ?? "part of the live buffer is no longer available");
             foreach (var entry in page.Events.Where(e => e.RequestId == request && e.Cursor > _after).OrderBy(e => e.Cursor))
@@ -629,7 +634,16 @@ public sealed class InspectorView : UserControl, IPresentationView
         if (_identity.IsKeyboardFocusWithin) return;
         var facts = new StackPanel { Spacing = 7 };
         facts.Children.Add(Selectable($"Source {_snapshot.SourceId} · snapshot cursor {_snapshot.Cursor} · earliest cursor {_snapshot.EarliestCursor} · dropped {_snapshot.DroppedEvents} · complete {_snapshot.Complete}"));
-        facts.Children.Add(Selectable("Reported limits: " + JsonSerializer.Serialize(_snapshot.Limits, TechnicalJson)));
+        var sourceFacts = JsonSerializer.SerializeToNode(_snapshot, TechnicalJson)!.AsObject();
+        sourceFacts.Remove(nameof(InspectorSnapshotDto.Streams));
+        sourceFacts["ReportedStreamCount"] = _snapshot.Streams.Length;
+        var sourceDetails = new Expander { Header = "Source and cursor attributes", HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            IsExpanded = _sourceDetailsExpanded,
+            Content = new StackPanel { Spacing = 5, Children = { Selectable(sourceFacts.ToJsonString(TechnicalJson)),
+                Selectable(_eventPageFacts?.RequestId == _selectedRequest ? JsonSerializer.Serialize(_eventPageFacts, TechnicalJson) : "No event-page metadata received for this request yet.") } } };
+        sourceDetails.PropertyChanged += (_, args) =>
+        { if (args.Property == Expander.IsExpandedProperty) _sourceDetailsExpanded = sourceDetails.IsExpanded; };
+        facts.Children.Add(sourceDetails);
         facts.Children.Add(Ui.Text("Complete reported attributes include unverified claims. Only identities with matching supported evidence above are used for grouping.", 11, Ui.Muted));
         var conversations = streams.Select(stream => KnownIdentity(stream.Dimensions, "conversationId", stream.Dimensions?.ConversationId)).OfType<string>().Distinct().Count();
         var parents = streams.Select(stream => KnownIdentity(stream.Dimensions, "parentRequestId", stream.Dimensions?.ParentRequestId)).OfType<string>().Distinct().Count();
@@ -816,12 +830,13 @@ public sealed class InspectorView : UserControl, IPresentationView
 
     private void CloseEventMenus()
     {
-        foreach (var control in _eventList.GetVisualDescendants().OfType<Control>()) control.ContextMenu?.Close();
+        foreach (var control in _eventList.GetVisualDescendants().OfType<Control>().ToArray()) control.ContextMenu?.Close();
     }
 
     private void CopyRetainedText(EventDetailKey key, Func<string> text)
     {
-        if (key.SourceId == _sourceId && key.RequestId == _selectedRequest && _eventReceived.ContainsKey(key.Cursor)) CopyText(text());
+        if (key.SourceId == _sourceId && key.RequestId == _selectedRequest && _eventReceived.TryGetValue(key.Cursor, out var received)
+            && Stopwatch.GetElapsedTime(received) < TimeSpan.FromSeconds(_snapshot?.Limits.ContentTtlSeconds ?? 120)) CopyText(text());
     }
 
     private void CopyText(string text)
@@ -842,7 +857,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         foreach (var key in _eventDetailOverrides.Keys.Where(key => !retained.Contains(key)).ToArray())
             _eventDetailOverrides.Remove(key);
     }
-    private void ClearEvents() { CloseEventMenus(); _events.Clear(); _eventReceived.Clear(); _eventDetailOverrides.Clear(); }
+    private void ClearEvents() { CloseEventMenus(); _eventPageFacts = null; _events.Clear(); _eventReceived.Clear(); _eventDetailOverrides.Clear(); }
     private void ResetDetachedState()
     {
         _lastDetachedSource = _sourceId; _lastDetachedRequest = _selectedRequest; _lastDetachedGroup = _selectedGroup;
@@ -852,7 +867,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         _snapshot = null; _sourceId = null; _selectedGroup = null; _selectedRequest = null;
         _after = 0; _nextSnapshot = 0; _refreshOnce = false; _renderPending = false; _lastOutput = null;
         ClearEvents(); _eventList.Children.Clear(); _eventTimes.Clear(); _eventDetails.Clear(); _eventSurfaces.Clear(); _eventAnchors.Clear();
-        _streamDetailOverrides.Clear(); _localLimitNotice = null; _localExpiryNotice = null;
+        _streamDetailOverrides.Clear(); _sourceDetailsExpanded = false; _localLimitNotice = null; _localExpiryNotice = null;
         _groups.Clear(); _groupButtons.Clear(); _groupList.Children.Clear();
         _updatingChoices = true;
         _conversation.ItemsSource = Array.Empty<GroupChoice>(); _request.ItemsSource = Array.Empty<RequestChoice>();
@@ -867,7 +882,7 @@ public sealed class InspectorView : UserControl, IPresentationView
     {
         _sourceId = sourceId; _selectedGroup = null; _selectedRequest = null; _after = 0;
         _lastDetachedSource = null; _lastDetachedRequest = null; _lastDetachedGroup = null;
-        _requestOffsets.Clear(); _streamDetailOverrides.Clear(); _localLimitNotice = null; _localExpiryNotice = null;
+        _requestOffsets.Clear(); _streamDetailOverrides.Clear(); _sourceDetailsExpanded = false; _localLimitNotice = null; _localExpiryNotice = null;
         ClearEvents(); _groups.Clear(); _groupButtons.Clear(); _groupList.Children.Clear();
         _navigation.Children.Clear(); _navigationKey = null;
         _updatingChoices = true; _conversation.ItemsSource = Array.Empty<GroupChoice>(); _request.ItemsSource = Array.Empty<RequestChoice>(); _updatingChoices = false;
@@ -886,6 +901,8 @@ public sealed class InspectorView : UserControl, IPresentationView
     private sealed record RequestChoice(string Id, string Name) { public override string ToString() => Name; }
     private sealed record EventDetailKey(string? SourceId, long Cursor, string RequestId);
     private sealed record OutputViewport(string? SourceId, string? RequestId, Vector Offset, EventDetailKey? Anchor, double RelativeY);
+    private sealed record EventPageFacts(string RequestId, long RequestedAfter, string SourceId, long NextCursor,
+        long HighWatermark, long EarliestCursor, long DroppedEvents, bool Truncated, string? GapReason);
     private sealed class EventBlock(InspectorEventDto first, string channel)
     {
         public InspectorEventDto First { get; } = first;
