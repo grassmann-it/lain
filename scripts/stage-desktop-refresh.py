@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import runpy
 import shutil
 import subprocess
 import sys
@@ -56,6 +57,13 @@ if not os.access(desktop / "Lain.Desktop", os.X_OK):
     parser.error("desktop launcher must be executable")
 source_commit = subprocess.check_output(
     ["git", "rev-parse", args.desktop_source_commit + "^{commit}"], cwd=root, text=True).strip()
+subprocess.run(["git", "diff", "--exit-code", source_commit, "--", "src"], cwd=root,
+               check=True, stdout=subprocess.DEVNULL)
+serialized_version = runpy.run_path(str(root / "scripts/stage-component-refresh.py"))["serialized_version"]
+if serialized_version(args.desktop_informational_version) not in (desktop / "Lain.Desktop.dll").read_bytes():
+    parser.error("desktop assembly informational version differs from the frozen publish")
+if not args.desktop_informational_version.partition("+")[2] or not source_commit.startswith(args.desktop_informational_version.partition("+")[2]):
+    parser.error("desktop informational version must identify its source commit")
 packaging_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
 # Validate the read-only baseline before trusting its files or inherited evidence.
 subprocess.run(["sha256sum", "--check", "--quiet", "SHA256SUMS"], cwd=base, check=True)
@@ -78,6 +86,12 @@ for name, expected in protected.items():
 info = json.loads((out / "build-info.json").read_text())
 info.setdefault("componentSourceCommits", {})["desktop"] = source_commit
 info.setdefault("componentInformationalVersions", {})["desktop"] = args.desktop_informational_version
+info.setdefault("components", {})["desktop"] = {
+    "sourceCommit": source_commit,
+    "informationalVersion": args.desktop_informational_version,
+    "assemblySha256": digest(desktop / "Lain.Desktop.dll"),
+    "lockfileSha256": digest(root / "src/Lain.Desktop/packages.lock.json"),
+}
 info["packagingCommit"] = packaging_commit
 info["desktopRefresh"] = {
     "baseManifestSha256": digest(base / "SHA256SUMS"),
