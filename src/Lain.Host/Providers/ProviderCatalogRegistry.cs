@@ -1,4 +1,7 @@
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
+using Lain.Host.Accounts.Monitoring;
 using System.Text.Json;
 using Lain.Core;
 
@@ -14,7 +17,7 @@ public sealed class ProviderCatalogRegistry
 
     public ProviderCatalogRegistry(IEnumerable<ProviderDescriptorDto> descriptors)
     {
-        providers = descriptors.Select(Clone).OrderBy(p => p.Id, StringComparer.Ordinal).ToArray();
+        providers = descriptors.Select(p => Prepare(Clone(p))).OrderBy(p => p.Id, StringComparer.Ordinal).ToArray();
         if (providers.Select(p => p.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != providers.Length)
             throw new InvalidDataException("Duplicate provider catalog identity.");
         foreach (var provider in providers) Validate(provider);
@@ -29,8 +32,52 @@ public sealed class ProviderCatalogRegistry
     {
         var descriptor = JsonSerializer.Deserialize<ProviderDescriptorDto>(json, Json)
             ?? throw new InvalidDataException("Empty provider manifest.");
-        Validate(descriptor);
-        return descriptor;
+        return Prepare(descriptor);
+    }
+
+    public ProviderConnectionDto? FindConnection(string providerId, string? connectionId) =>
+        connectionId is null ? null : Find(providerId)?.Connections?.SingleOrDefault(c => c.Id == connectionId);
+
+    private static ProviderDescriptorDto Prepare(ProviderDescriptorDto provider)
+    {
+        Validate(provider);
+        var connections = provider.Connections ?? provider.Routes
+            .GroupBy(r => (Endpoint: r.BaseUrl.TrimEnd('/'), r.Protocol))
+            .OrderBy(g => g.Key.Endpoint, StringComparer.Ordinal).ThenBy(g => g.Key.Protocol, StringComparer.Ordinal)
+            .Select(g => new ProviderConnectionDto(
+                "connection-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(g.Key.Endpoint + "\0" + g.Key.Protocol))).ToLowerInvariant()[..16],
+                provider.Name + " · " + g.Key.Protocol, g.Key.Endpoint, g.Key.Protocol,
+                g.SelectMany(r => r.BillingPlanIds).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),
+                g.Select(r => r.Id).Order(StringComparer.Ordinal).ToArray())).ToArray();
+        Unique(connections.Select(c => c.Id));
+        Unique(connections.Select(c => c.BaseUrl.TrimEnd('/') + "\0" + c.Protocol));
+        var membership = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var connection in connections)
+        {
+            Identity(connection.Id); Text(connection.Name); Text(connection.Protocol); EndpointUrl(connection.BaseUrl);
+            if (connection.ProviderRouteIds is null || connection.ProviderRouteIds.Length == 0 || connection.BillingPlanIds is null || connection.BillingPlanIds.Length == 0)
+                throw new InvalidDataException("Provider connections require model templates and billing plans.");
+            Unique(connection.ProviderRouteIds); Unique(connection.BillingPlanIds);
+            var routes = connection.ProviderRouteIds.Select(id => provider.Routes.SingleOrDefault(r => r.Id == id)
+                ?? throw new InvalidDataException("Provider connection references an unknown model template.")).ToArray();
+            if (routes.Any(r => r.Protocol != connection.Protocol || r.BaseUrl.TrimEnd('/') != connection.BaseUrl.TrimEnd('/')) ||
+                connection.ProviderRouteIds.Any(id => !membership.Add(id)))
+                throw new InvalidDataException("Provider connection models must share one endpoint and protocol without overlapping connections.");
+            var plans = routes.SelectMany(r => r.BillingPlanIds).ToHashSet(StringComparer.Ordinal);
+            if (!plans.SetEquals(connection.BillingPlanIds))
+                throw new InvalidDataException("Provider connection billing plans must match its model templates.");
+        }
+        if (membership.Count != provider.Routes.Length)
+            throw new InvalidDataException("Each model template must belong to exactly one provider connection.");
+        var defaultName = provider.DefaultAccountName ?? (provider.Id switch
+        {
+            "nvidia-build" => "NVIDIA Build", "cloudflare-workers-ai" => "Cloudflare Workers AI",
+            "gemini-api" => "Gemini", _ => provider.Name
+        });
+        Text(defaultName);
+        if (defaultName.Length > 120 || defaultName.Any(char.IsControl)) throw new InvalidDataException("Provider default account name is too long.");
+        return provider with { Connections = connections, DefaultAccountName = defaultName,
+            MonitorAccessOptions = MonitorAccessCatalog.Options(provider.Id) };
     }
 
     private static IEnumerable<ProviderDescriptorDto> ReadEmbedded(Assembly assembly)
@@ -63,11 +110,12 @@ public sealed class ProviderCatalogRegistry
         }
         foreach (var route in provider.Routes)
         {
-            Identity(route.Id); Text(route.Model); Text(route.Name); Text(route.Protocol); EndpointUrl(route.BaseUrl);
-            if (route.Capabilities is null || route.BillingPlanIds is null || route.BillingPlanIds.Any(id => !provider.BillingPlans.Any(p => p.Id == id)))
+            Identity(route.Id); Identity(route.Model); Text(route.Name); Text(route.Protocol); EndpointUrl(route.BaseUrl);
+            if (route.Capabilities is null || route.BillingPlanIds is null || route.BillingPlanIds.Length == 0 || route.BillingPlanIds.Any(id => !provider.BillingPlans.Any(p => p.Id == id)))
                 throw new InvalidDataException("Provider route references an unknown billing plan.");
             if (route.Capabilities.ContextWindow is <= 0 || route.Capabilities.MaximumOutput is <= 0)
                 throw new InvalidDataException("Unknown model limits must be null, not zero or negative.");
+            Unique(route.BillingPlanIds);
             foreach (var source in route.Sources ?? []) Source(source);
         }
         foreach (var source in provider.Sources) Source(source);
@@ -104,5 +152,8 @@ public sealed class ProviderCatalogRegistry
         if (concrete is not null && (concrete.Contains('{') || concrete.Contains('}')))
             throw new InvalidDataException("Unknown provider endpoint template field.");
         Url(concrete);
+        var endpoint = new Uri(concrete!, UriKind.Absolute);
+        if (endpoint.Query.Length != 0 || endpoint.Fragment.Length != 0)
+            throw new InvalidDataException("Provider endpoints must not contain query strings or fragments.");
     }
 }

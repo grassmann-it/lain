@@ -33,3 +33,11 @@ transport results, never live-provider or quota qualification.
 2026-10-24 local Host qualification: restore/build succeeded, zero warnings/errors;
 both fixture invocations passed 42 assertions each. Core probe was not executed
 in the worker build slot and remains an integrated qualification step.
+
+`ConnectionChecks.cs` runs automatically at the start of both .NET fixture
+invocations above. It qualifies connection derivation and explicit manifest
+validation, monitor guidance, settings/billing/model rejection before private
+writes, empty versus explicit model selection in one revision, stable account
+and route identities, name preservation, request redaction and legacy setup.
+This connection-first extension awaits the integrated build after the original
+42-assertion provider runs; no separate runner or live credentials are needed.

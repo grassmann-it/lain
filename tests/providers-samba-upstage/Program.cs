@@ -15,7 +15,7 @@ if (!Uri.TryCreate(loopback, UriKind.Absolute, out var uri) || uri.Scheme != "ht
     throw new ArgumentException("Fixture endpoint must be HTTP loopback /v1.");
 if (port is < 1 or > 65535) throw new ArgumentException("Invalid fixture port.");
 if (selected is not ("sambanova" or "upstage")) throw new ArgumentException("Unknown fixture provider.");
-var count = 0;
+var count = ConnectionChecks.Run();
 void Check(bool condition, string message) { if (!condition) throw new Exception(message); count++; }
 void Reject(Action action) { try { action(); } catch (ArgumentException) { count++; return; } catch (InvalidDataException) { count++; return; } throw new Exception("Expected transport rejection."); }
 var catalog = new ProviderCatalogRegistry();
