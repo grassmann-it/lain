@@ -99,3 +99,11 @@ monitor-only creation, cancellation, wrong UID, session expiry, optional-detail
 failure, weighted-credit/validity distinction and public-data redaction. Existing
 schema/nonce/origin/replay/payload-bound tests remain. No real credentials,
 provider login, personal browser state or provider requests are used by tests.
+
+Local validation on 2026-10-25: pinned `linux-x64` / `SelfContained=true`
+locked restore and the fixture harness both passed; no lockfile drift. The run
+used CPUQuota=150%, MemoryHigh=1536M, MemoryMax=2G, MemorySwapMax=256M,
+IOWeight=10, nice 15 and idle I/O, with the assigned private qualification
+TMPDIR. Both existing boundary/schema fixtures and the new fake-browser
+account/session lifecycle fixtures passed. This did not launch Chromium or
+contact a provider, and does not qualify a real login or provider entitlement.
