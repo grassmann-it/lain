@@ -32,7 +32,7 @@ for spec in 'Lain.Cli cli' 'Lain.Host host' 'Lain.Desktop desktop'; do
     read -r project directory <<< "$spec"
     # Read each project's evaluated version without triggering a build. The exact
     # explicit informational version below is passed to publish and verified in its DLL.
-    dotnet msbuild "src/$project/$project.csproj" -nologo -verbosity:quiet \
+    dotnet msbuild "src/$project/$project.csproj" -nologo -verbosity:quiet -target:GetAssemblyVersion \
         -getProperty:Version,InformationalVersion -p:Configuration=Release -p:RuntimeIdentifier=linux-x64 \
         -p:SelfContained=true -p:IncludeSourceRevisionInInformationalVersion=false \
         > "$publish_parent/properties/$directory.evaluated.json"
