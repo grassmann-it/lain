@@ -279,6 +279,7 @@ using (var adapter = new CloudOAuthAdapter(Client(), handler, clock))
     var result = await Poll(adapter, reconnect);
     Check(result.State == "prepared" && result.Credential!.Binding.Subject == "123456", "bound reconnect verifies exact project and preserves immutable identity");
 }
+checks += await GoogleGcloudChecks.RunAsync();
 Console.WriteLine($"PASS {checks} cloud connection and quota assertions; synthetic HTTP and isolated loopback only.");
 
 static Dictionary<string, string> Query(string query) => query.TrimStart('?').Split('&').Select(p => p.Split('=', 2)).ToDictionary(p => Uri.UnescapeDataString(p[0]), p => Uri.UnescapeDataString(p[1]));

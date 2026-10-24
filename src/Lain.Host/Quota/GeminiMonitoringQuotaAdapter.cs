@@ -42,6 +42,11 @@ public sealed class GeminiMonitoringQuotaAdapter(HttpClient http, TimeProvider? 
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, baseUrl + (token is null ? "" : "&pageToken=" + Uri.EscapeDataString(token)));
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", monitor.Secret);
+                if (credential.Settings.TryGetValue("quotaProjectId", out var quotaProject))
+                {
+                    if (quotaProject != project) throw new QuotaFetchException("Google quota project does not match the monitor resource.");
+                    request.Headers.Add("X-Goog-User-Project", quotaProject);
+                }
                 var document = await QuotaSourceHttp.ReadJsonAsync(http, request, ct);
                 pages.Add(document);
                 token = JsonFields.String(document.RootElement, "nextPageToken");

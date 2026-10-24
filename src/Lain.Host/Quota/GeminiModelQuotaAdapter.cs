@@ -33,7 +33,8 @@ public sealed class GeminiModelQuotaAdapter : IQuotaAdapter, IDisposable
         var project = credential.Settings.GetValueOrDefault("projectId") ?? credential.Monitor?.ResourceId;
         var number = credential.Settings.GetValueOrDefault("projectNumber");
         var access = credential.Monitor?.Secret;
-        if (!CloudResourceDiscovery.ProjectId(project) || credential.Monitor?.Kind != "access-token-snapshot" || string.IsNullOrWhiteSpace(access)
+        var quotaProject = credential.Settings.GetValueOrDefault("quotaProjectId");
+        if (quotaProject is not null && quotaProject != project || !CloudResourceDiscovery.ProjectId(project) || credential.Monitor?.Kind != "access-token-snapshot" || string.IsNullOrWhiteSpace(access)
             || credential.Monitor.ResourceId != project || credential.Monitor?.ExpiresAt is null || credential.Monitor.ExpiresAt <= now
             || account.Binding?.ResourceId is { } pinned && pinned != project || number is not null && !CloudResourceDiscovery.ProjectNumber(number)
             || account.Binding?.Subject is { } pinnedNumber && number is not null && pinnedNumber != number)
@@ -62,7 +63,7 @@ public sealed class GeminiModelQuotaAdapter : IQuotaAdapter, IDisposable
             var pages = new List<JsonDocument>();
             try
             {
-                await ReadPages(endpoint, "nextPageToken", access!, pages, ct);
+                await ReadPages(endpoint, "nextPageToken", access!, pages, ct, quotaProject);
                 var result = NormalizeUsage(pages.Select(p => p.RootElement), project!, number, family, start, now);
                 readings.AddRange(result.Readings);
                 if (result.Error is not null) diagnostics.Add(result.Error);
@@ -84,7 +85,7 @@ public sealed class GeminiModelQuotaAdapter : IQuotaAdapter, IDisposable
             var pages = new List<JsonDocument>();
             try
             {
-                await ReadPages(endpoint, "nextPageToken", access!, pages, ct);
+                await ReadPages(endpoint, "nextPageToken", access!, pages, ct, quotaProject);
                 var result = NormalizeMetricLimits(pages.Select(p => p.RootElement), project!, number, family, now);
                 readings.AddRange(result.Readings);
                 if (result.Error is not null) diagnostics.Add(result.Error);
@@ -98,7 +99,7 @@ public sealed class GeminiModelQuotaAdapter : IQuotaAdapter, IDisposable
             var pages = new List<JsonDocument>();
             try
             {
-                await ReadPages($"https://cloudquotas.googleapis.com/v1/projects/{number}/locations/global/services/generativelanguage.googleapis.com/quotaInfos?pageSize=100", "nextPageToken", access!, pages, ct);
+                await ReadPages($"https://cloudquotas.googleapis.com/v1/projects/{number}/locations/global/services/generativelanguage.googleapis.com/quotaInfos?pageSize=100", "nextPageToken", access!, pages, ct, quotaProject);
                 readings.AddRange(NormalizeLimits(pages.Select(p => p.RootElement), project!, number, now));
             }
             catch (CloudProviderException error) when (error.Status is HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
@@ -110,12 +111,12 @@ public sealed class GeminiModelQuotaAdapter : IQuotaAdapter, IDisposable
         return new(readings, diagnostics.Count == 0 ? null : string.Join(' ', diagnostics.Distinct()),
             Support: new(readings.Count == 0 ? "unavailable" : "api", "Reported project/model usage may be delayed by 150 seconds and incomplete. Effective model limits are shown separately from delayed usage; remaining capacity is unknown. Empty series do not mean zero usage.", GeminiMonitoringQuotaAdapter.ConsoleUrl));
     }
-    private async Task ReadPages(string endpoint, string tokenField, string access, List<JsonDocument> pages, CancellationToken ct)
+    private async Task ReadPages(string endpoint, string tokenField, string access, List<JsonDocument> pages, CancellationToken ct, string? quotaProject = null)
     {
         string? token = null; var seen = new HashSet<string>(StringComparer.Ordinal);
         for (var page = 0; page < 16; page++)
         {
-            using var request = CloudProviderHttp.Get(endpoint + (token is null ? "" : "&pageToken=" + Uri.EscapeDataString(token)), access);
+            using var request = CloudProviderHttp.Get(endpoint + (token is null ? "" : "&pageToken=" + Uri.EscapeDataString(token)), access, quotaProject);
             var document = await http.ReadAsync(request, ct); pages.Add(document);
             token = JsonFields.String(document.RootElement, tokenField);
             if (string.IsNullOrEmpty(token)) return;

@@ -30,12 +30,17 @@ public sealed class CloudProviderHttp : IDisposable
         if (document.RootElement.ValueKind != JsonValueKind.Object) { document.Dispose(); throw new InvalidDataException("Invalid cloud response."); }
         return document;
     }
-    public static HttpRequestMessage Get(string url, string token)
+    public static HttpRequestMessage Get(string url, string token, string? quotaProjectId = null)
     {
         if (string.IsNullOrWhiteSpace(token) || token.Length > 32768 || token.Any(char.IsWhiteSpace) || token.Any(char.IsControl))
             throw new ArgumentException("Invalid cloud access credential.");
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        if (quotaProjectId is not null)
+        {
+            if (!CloudResourceDiscovery.ProjectId(quotaProjectId)) throw new ArgumentException("Invalid Google quota project.");
+            request.Headers.Add("X-Goog-User-Project", quotaProjectId);
+        }
         return request;
     }
     public void Dispose() => http.Dispose();

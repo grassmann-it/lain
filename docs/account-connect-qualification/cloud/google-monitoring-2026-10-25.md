@@ -83,7 +83,13 @@ project with `projects.get`; it does not enumerate unrelated projects or silentl
 switch the selected resource. A new connection still uses `projects:search` and
 the existing project picker.
 
-## Official gcloud fallback assessment
+## Official gcloud fallback assessment (superseded by implementation)
+
+The subsequent implementation and exact host contracts are in
+[Official Google Cloud CLI browser monitoring](google-gcloud-2026-10-25.md).
+The assessment below records the prerequisites that implementation addresses.
+
+### Initial assessment
 
 `/usr/bin/gcloud` is present on the qualification machine; only binary presence
 was checked. No CLI command or user gcloud configuration was read or executed.
