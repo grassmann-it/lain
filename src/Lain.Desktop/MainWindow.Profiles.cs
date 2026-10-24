@@ -23,16 +23,16 @@ public sealed partial class MainWindow
         var dense = presentation.Density == ViewDensity.Compact;
         var create = Ui.Button("Create profile", () => EditProfile(null));
         create.Classes.Add("primary");
-        var panel = Ui.Stack(ProfileHeader("Profiles", presentation.Level == InformationLevel.Barebones ? "Saved model menus. Select to view; apply to change the proxy." : "Choose a saved model menu, apply it to the global proxy, or set up a client.", create));
+        var panel = Ui.Stack(ProfileHeader("Profiles", "Saved model menus. Selection does not change the proxy.", create));
+        panel.Spacing = dense ? 7 : 10;
         if (_configuration is not { } cfg) { panel.Children.Add(Empty("Connect to the host to manage profiles.")); return panel; }
         var applied = Ui.Text(AppliedProfileDescription(cfg), 12, Ui.Muted);
         AutomationProperties.SetName(applied, "Applied proxy profile status");
         panel.Children.Add(applied);
-        panel.Children.Add(Ui.Text($"{cfg.Profiles.Length} saved profiles · Saved configuration {cfg.Revision} · Proxy configuration {cfg.AppliedRevision}", 12, Ui.Muted));
         if (cfg.Revision != cfg.AppliedRevision)
-            panel.Children.Add(Ui.Text($"Saved configuration {cfg.Revision} is pending; the proxy uses configuration {cfg.AppliedRevision}.", 12, Ui.Warning));
-        if (_status?.ActiveProfileRevision is { } activeRevision && activeRevision != cfg.Revision)
-            panel.Children.Add(Ui.Text($"The saved configuration differs from applied profile revision {activeRevision}. Selecting or editing a profile does not apply those changes.", 12, Ui.Warning));
+            panel.Children.Add(Ui.Text("Saved changes are pending; the applied proxy settings remain unchanged.", 12, Ui.Warning));
+        else if (_status?.ActiveProfileRevision is { } activeRevision && activeRevision != cfg.Revision)
+            panel.Children.Add(Ui.Text("The saved configuration differs from the applied profile snapshot. Review the saved settings before applying.", 12, Ui.Warning));
         if (cfg.Profiles.Length == 0)
         {
             panel.Children.Add(Empty("No saved profiles yet. Create a profile to choose its model access entries and default model."));
@@ -85,10 +85,11 @@ public sealed partial class MainWindow
     private string AppliedProfileDescription(ConfigurationDto cfg)
     {
         var lastReport = _hostAvailable ? "Applied to proxy" : "Last host report: applied to proxy";
-        if (_status?.ActiveProfileId is not { } id) return "Applied profile not reported by the host. Selecting a saved profile does not change the proxy.";
+        var configuration = $"Configuration: saved {cfg.Revision} / proxy {cfg.AppliedRevision}";
+        if (_status?.ActiveProfileId is not { } id) return $"Applied profile not reported by the host · {configuration}";
         var name = cfg.Profiles.FirstOrDefault(p => p.Id == id)?.Name ?? id;
         var revision = _status?.ActiveProfileRevision is { } value ? value.ToString() : "unknown";
-        return $"{lastReport}: {name} · Profile revision {revision}";
+        return $"{lastReport}: {name} · Profile revision {revision} · {configuration}";
     }
 
     private Control ProfileDetails(ConfigurationDto cfg, ProfileDto selected, List<Button> detailActions, PresentationOptions presentation)
@@ -110,20 +111,17 @@ public sealed partial class MainWindow
             }
             routes.Children.Add(new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(0, presentation.Density == ViewDensity.Compact ? 5 : 8), Child = content });
         }
-        var selectionState = Ui.Text($"Selected profile: {selected.Name}", 12, Ui.Accent);
+        var selectionState = Ui.Text($"Selected profile: {selected.Name}", 18);
         AutomationProperties.SetName(selectionState, "Selected profile status");
-        var details = Ui.Stack(Ui.Text(selected.Name, 18), selectionState,
-            Ui.Text(_status?.ActiveProfileId == selected.Id
-                ? $"This profile identity is applied to the proxy · Host profile revision {_status?.ActiveProfileRevision?.ToString() ?? "unknown"}"
-                : "This selection is for viewing. Apply to proxy changes the running proxy for every client.", 12, Ui.Muted),
+        var details = Ui.Stack(selectionState,
+            ProfileWrap(apply, Ui.Button("Set up Codex client…", () => ShowCodexExport(selected)), Ui.Button("Edit selection", () => EditProfile(selected))),
+            Ui.Text("Apply changes the global proxy for every client. Codex setup exports separate client files.", 12, Ui.Muted),
             Ui.Text($"{selected.RouteIds.Length} selected model access entries · Default client name: {cfg.Routes.FirstOrDefault(r => r.Id == selected.DefaultRouteId)?.Alias ?? "None"}", 12, Ui.Muted),
             Ui.Text(selected.Policy?.CostPolicy switch {
                 "free_only" => "Spending policy: Only free — no paid fallback",
                 null or "configured" => "Spending policy: Configured access; stricter model access policies still apply",
                 var policy => $"Spending policy: {policy}"
             }, 12, Ui.Muted),
-            ProfileWrap(Ui.Button("Edit selection", () => EditProfile(selected)), apply, Ui.Button("Set up Codex client…", () => ShowCodexExport(selected))),
-            Ui.Text("Applying changes the global proxy. Client setup exports a separate Codex connection.", 12, Ui.Muted),
             new ScrollViewer { MaxHeight = presentation.Level == InformationLevel.Barebones ? 220 : 310, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = routes });
         var technical = Ui.Stack(Ui.Text($"Profile ID: {selected.Id}", 11, Ui.Muted),
             Ui.Text($"Default model access ID: {selected.DefaultRouteId ?? "None"}", 11, Ui.Muted));
@@ -136,7 +134,7 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(more, $"Details and export for profile {selected.Name}");
         more.PropertyChanged += (_, e) => { if (e.Property == Expander.IsExpandedProperty) _profileDetails[selected.Id] = more.IsExpanded; };
         details.Children.Add(more);
-        details.Spacing = presentation.Density == ViewDensity.Compact ? 7 : 12;
+        details.Spacing = presentation.Density == ViewDensity.Compact ? 7 : 10;
         return Ui.Card(details);
     }
 
