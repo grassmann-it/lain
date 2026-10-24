@@ -46,14 +46,16 @@ protection and literal historical journal replay as well as the earlier identity
 and credential invariants. Drain recovery handling was source reviewed; that
 source review is not an independently executed crash/interleaving test.
 
-An additional recovery blocker remains: after restore quarantines owned grants,
+An additional recovery blocker was identified: after restore quarantines owned grants,
 saved Gateway runtime files still reference the removed grants. Codex reconnect
 requires Core management, but starting that saved runtime fails before login.
-Root is implementing a separate empty login runtime. Acceptance requires separate
+Root implemented a separate empty login runtime. Acceptance requires separate
 config/bindings/journal files, explicit management-only readiness, unchanged active
 profile/application proof, no replacement of a live draining child, and normal
 transactional Apply before inference readiness. A synthetic exact-artifact restored
-Gateway check is still outstanding; no live OAuth is authorized for it.
+Gateway check against final artifacts is still outstanding; no live OAuth is
+authorized for it. See [the final source review](final-source-review.md) for the
+`1206cb7` integration assessment and exact remaining evidence limits.
 
 Additional source checks found no concrete blocker in bounded loopback callback
 parsing/state validation, profile transaction marker checks, partial token SQL
