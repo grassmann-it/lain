@@ -134,8 +134,13 @@ class ProviderRun(Run):
         self.write_bindings()
         self.provider_id = provider
         config = self.root / "core.yaml"
-        text = config.read_text().replace("name: fixture", "name: " + provider + "-openai-chat")
-        text = text.replace("name: fixture-model", "name: " + fixture.model).replace("alias: fixture-model", "alias: owned-alias")
+        # Match whole YAML lines: replacing the provider-name prefix also
+        # changes "name: fixture-model" before its concrete-model substitution.
+        text = config.read_text().replace("  - name: fixture\n", "  - name: " + provider + "-openai-chat\n")
+        text = text.replace("      - name: fixture-model\n", "      - name: " + fixture.model + "\n")
+        # Match Host writer: public aliases live in bindings; Core model names
+        # and aliases both identify the concrete upstream model.
+        text = text.replace("        alias: fixture-model\n", "        alias: " + fixture.model + "\n")
         text = text.replace("    base-url:", "    upstream-protocol: openai-chat\n    base-url:")
         config.write_text(text)
 

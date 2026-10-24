@@ -165,6 +165,11 @@ def check(core, exporter, dotnet, provider_id, model):
             response.read()
         _, unknown_usage = assert_complete(run.events()["events"][before:], 1)
         expect(all(row["totalTokens"] is None for row in unknown_usage), "Incomplete stream invented provider usage")
+        expect(all(row["outcome"] == "failed" for row in unknown_usage), "Truncated stream became successful completion")
+        # A correctly failed stream can cool down its credential. The following
+        # cancellation is an independent fixture, just like the status cases.
+        run.stop()
+        run.start()
         before = len(run.events()["events"])
         connection = http.client.HTTPConnection("127.0.0.1", run.port, timeout=10)
         connection.request("POST", "/v1/chat/completions", json.dumps(run.body("cancel", stream=True)),
