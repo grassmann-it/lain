@@ -71,11 +71,11 @@ destination's owned auth directory. The original/current snapshot YAML remains
 unchanged, and every other retained state file must compare exactly. External,
 ambiguous and unsupported auth-path syntax must be rejected.
 
-One final source condition remains in the inspected worktree: the scalar parser
-counts only bare top-level `auth-dir` keys. Quoted/explicit duplicate key forms
-and merge syntax must be rejected for its deliberately restricted compiler-format
-contract; otherwise its stated ambiguity refusal is not enforced. This finding
-was handed to Root after the delivery agent stopped on a rate-limit error.
+The final parser condition is now closed in source. After taking over the delivery
+worktree, Root added rejection of top-level quoted/explicit keys, aliases, tags
+and merge syntax before counting the single bare `auth-dir` key. The reviewer
+inspected this guard and five ambiguous-mapping subtests; it did not execute them.
+No remaining source blocker was found within this exact legacy rollback boundary.
 
 Writer exclusion combines mandatory `--stopped`, process inspection and repeated
 source/copy inventories. It does not prove that a future or noncooperative writer
