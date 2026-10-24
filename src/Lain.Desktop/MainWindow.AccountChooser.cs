@@ -1,6 +1,7 @@
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Lain.Core;
+using Lain.Desktop.Providers;
 
 namespace Lain.Desktop;
 
@@ -18,8 +19,20 @@ public sealed partial class MainWindow
         _page.Content = Ui.Stack(Heading("Add account", "Loading available provider connections…"));
         try
         {
-            var methods = await _client.ConnectionMethodsAsync(ct: _lifetime.Token);
+            async Task<ProviderCatalogDto?> ReadDocumentationAsync()
+            {
+                try { return await _client.ProvidersAsync(_lifetime.Token); }
+                catch (Exception error) when (error is not OperationCanceledException) { return _providerCatalog; }
+            }
+            var methodTask = _client.ConnectionMethodsAsync(ct: _lifetime.Token);
+            var documentationTask = ReadDocumentationAsync();
+            await Task.WhenAll(methodTask, documentationTask);
+            var methods = await methodTask;
+            _providerCatalog = await documentationTask;
             _connectionMethods = methods;
+            _providers.SetConnectionMethods(methods);
+            var inventory = ProviderInventory.Merge(_providerCatalog, methods);
+            _providers.SetCatalog(inventory, _configuration?.Accounts);
             if (!_editing || _section != "Accounts") return;
             var search = Ui.Input(hint: "Search providers");
             AutomationProperties.SetName(search, "Choose account provider");
@@ -27,12 +40,11 @@ public sealed partial class MainWindow
             void Populate()
             {
                 rows.Children.Clear();
-                foreach (var group in methods.Methods.GroupBy(m => m.Provider).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
-                    .Where(g => g.Key.Contains(search.Text?.Trim() ?? "", StringComparison.OrdinalIgnoreCase)))
+                foreach (var provider in inventory.Providers.Where(p => $"{p.Id} {p.Name}".Contains(search.Text?.Trim() ?? "", StringComparison.OrdinalIgnoreCase)))
                 {
-                    var available = group.Any(ConnectionMethodAvailable);
-                    var choose = Ui.Button(ConnectProviderName(group.Key), () => ShowConnectionMethods(group.Key));
-                    AutomationProperties.SetName(choose, "Connect provider " + group.Key);
+                    var available = methods.Methods.Any(m => m.Provider == provider.Id && ConnectionMethodAvailable(m));
+                    var choose = Ui.Button(provider.Name, () => ShowConnectionMethods(provider.Id));
+                    AutomationProperties.SetName(choose, "Connect provider " + provider.Id);
                     rows.Children.Add(Ui.Card(Ui.Stack(choose, Ui.Text(available ? "Choose a connection method" : "View connection requirements and alternatives", 12, Ui.Muted))));
                 }
                 if (rows.Children.Count == 0) rows.Children.Add(Ui.Text("No providers match this search.", 13, Ui.Muted));
@@ -56,9 +68,9 @@ public sealed partial class MainWindow
     {
         try
         {
+            if (_section != "Accounts") await NavigateToAsync(new("Accounts", AccountId: reconnect?.Id));
             var normalized = providerId switch { "command-code" => "commandcode", "mimo" => "xiaomi-mimo", _ => providerId };
             _connectionMethods = await _client.ConnectionMethodsAsync(normalized, _lifetime.Token);
-            if (_connectionMethods.Methods.Length == 0) throw new InvalidOperationException("No connection method is installed for this provider.");
             ShowConnectionMethods(normalized, reconnect);
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
@@ -84,6 +96,7 @@ public sealed partial class MainWindow
         }
         var content = Ui.Stack(Heading(reconnect is null ? "Connect " + ConnectProviderName(provider) : "Reconnect " + reconnect.Name,
             "Connect only the access this method provides. No model request is sent."));
+        if (methods.Length == 0) content.Children.Add(Ui.Text("No connection method is installed for this documented provider. Review its official requirements in Discover providers or use a deliberate manual setup.", 13, Ui.Muted));
         foreach (var method in methods)
         {
             var choose = Ui.Button(method.Title, () => ShowConnectionMethod(method, reconnect));
@@ -188,15 +201,25 @@ public sealed partial class MainWindow
     {
         if (_configuration?.Accounts.FirstOrDefault(a => a.Id == accountId) is not { } account) return;
         try { _quotas = await _client.QuotasAsync(_lifetime.Token); } catch (Exception error) when (error is not OperationCanceledException) { _quotaError = Friendly(error); }
-        var content = Ui.Stack(Heading(account.Name, "Credential connected. Quota observations are shown separately from local storage."));
-        foreach (var capability in account.Capabilities ?? []) content.Children.Add(Ui.Text(capability.Purpose + " · " + capability.State, 13, capability.State is "ready" or "available" ? Ui.Accent : Ui.Muted));
+        _workspace.Offset = default;
+        var details = Ui.Stack(Ui.Text(account.Name, 18), Ui.Text(ConnectProviderName(account.Provider) + " · Credential connected", 13, Ui.Accent));
+        foreach (var capability in account.Capabilities ?? [])
+        {
+            var observed = capability.State is "ready" or "available";
+            var state = observed ? "Available" : capability.State is "unverified" or "connected" ? "Not verified" : capability.State;
+            details.Children.Add(Ui.Text(capability.Purpose + " · " + state, 12, observed ? Ui.Accent : Ui.Muted));
+        }
         var quotas = _quotas.Where(q => q.AccountId == accountId).ToArray();
-        if (quotas.Length == 0) content.Children.Add(Ui.Text("Quota has not been observed. You can refresh it from the account.", 13, Ui.Muted));
-        foreach (var quota in quotas) content.Children.Add(AccountTileWindow(account, quota));
+        if (quotas.Length == 0) details.Children.Add(Ui.Text("Quota has not been observed. You can refresh it from the account.", 13, Ui.Muted));
+        foreach (var quota in quotas) details.Children.Add(AccountTileWindow(account, quota));
         var done = Ui.PrimaryButton("Done", () => { _editing = false; Render(); });
         var actions = OverviewActions(done);
         if (!IsMonitorMode && account.Capabilities?.Any(c => c.Purpose == "inference" && c.State is "ready" or "available" or "unverified" or "connected") == true)
             actions.Children.Add(Ui.Button("Choose models (optional)", () => _ = ShowAccountModelsAsync(accountId)));
-        content.Children.Add(actions); _page.Content = content;
+        details.Children.Add(Ui.Text("Quota observations and local credential presence do not prove successful inference.", 11, Ui.Muted));
+        details.Children.Add(actions);
+        var content = Ui.Stack(Heading("Connection saved", "Review the observed result. Models are optional."), Ui.Card(details));
+        content.MaxWidth = 680;
+        _page.Content = content;
     }
 }

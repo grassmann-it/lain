@@ -8,12 +8,16 @@ namespace Lain.Desktop.Providers;
 public sealed partial class ProviderCatalogView
 {
     private string? _snapshot;
+    private ConnectionMethodCatalogDto? _installedMethods;
+
+    public void SetConnectionMethods(ConnectionMethodCatalogDto methods) => _installedMethods = methods;
 
     /// <summary>Render only secret-free descriptors and account counts; never infer a connection from a configured key.</summary>
     public void SetCatalog(ProviderCatalogDto catalog, IReadOnlyList<AccountDto>? accounts = null)
     {
         ArgumentNullException.ThrowIfNull(catalog);
-        var counts = (accounts ?? []).GroupBy(a => a.Provider, StringComparer.OrdinalIgnoreCase)
+        catalog = ProviderInventory.Merge(catalog, _installedMethods);
+        var counts = (accounts ?? []).GroupBy(a => ProviderInventory.Canonical(a.Provider), StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
         // The source observation time can change without changing the documentation.
         // Keep focused controls and expanded cards on identical passive refreshes.

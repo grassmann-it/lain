@@ -22,6 +22,12 @@ public sealed partial class MainWindow
         {
             var catalog = await _client.ProvidersAsync(_lifetime.Token);
             _providerCatalog = catalog;
+            try
+            {
+                _connectionMethods = await _client.ConnectionMethodsAsync(ct: _lifetime.Token);
+                _providers.SetConnectionMethods(_connectionMethods);
+            }
+            catch (Exception error) when (error is not OperationCanceledException) { }
             _providers.SetCatalog(catalog, _configuration?.Accounts);
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }

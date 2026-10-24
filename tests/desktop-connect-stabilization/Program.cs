@@ -64,6 +64,9 @@ internal static class Probe
         var fixture = new Fixture();
         var http = new HttpClient(fixture) { BaseAddress = new Uri("http://fixture.invalid/api/v1/") };
         window = new MainWindow(new LainApiClient(http), Path.Combine(Output, "preferences.json"));
+        var browserOpens = 0;
+        typeof(MainWindow).GetField("_connectionBrowser", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(window,
+            (Func<Uri, Task<bool>>)(uri => { if (uri.Host != "example.invalid") throw new Exception("Synthetic browser seam only"); browserOpens++; return Task.FromResult(true); }));
         window.Show();
         await Wait(() => Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Open account details for Command Code"));
         Check(!Controls<TextBlock>().Any(t => t.Text == "Exhausted" || t.Text == "Last known exhausted"), "empty free-credit window never claims whole-account exhaustion");
@@ -107,6 +110,24 @@ internal static class Probe
         Click(Controls<Button>().Single(b => Equals(b.Content, "Add account")));
         await Wait(() => Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Connect provider kilo"));
         await Capture("connect-chooser", 1120, 780); await Capture("connect-chooser", 800, 560);
+        Click(Named("Connect provider codex"));
+        Check(Controls<Button>().Any(b => Equals(b.Content, "Continue in browser")), "browser connection has a distinct explicit start action");
+        await Capture("connect-browser-start", 1120, 780); await Capture("connect-browser-start", 800, 560);
+        Click(Controls<Button>().Single(b => Equals(b.Content, "Continue in browser")));
+        await Wait(() => Controls<Button>().Any(b => Equals(b.Content, "Reopen browser")));
+        Check(browserOpens == 1 && fixture.LoginStarts == 1, "initial browser action creates one operation and opens its URL once");
+        await Capture("connect-browser-waiting", 1120, 780); await Capture("connect-browser-waiting", 800, 560);
+        Click(Controls<Button>().Single(b => Equals(b.Content, "Reopen browser")));
+        await Wait(() => browserOpens == 2);
+        Check(fixture.LoginStarts == 1, "reopening a browser preserves the original login operation");
+        await Wait(() => fixture.LoginReadPending);
+        Click(Controls<Button>().Single(b => Equals(b.Content, "Cancel sign-in")));
+        await Wait(() => fixture.LoginCancelled);
+        fixture.ReleaseLateLogin(); await Task.Delay(120);
+        Check(((LoginDto)typeof(MainWindow).GetField("_login", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!).State == "cancelled"
+            && fixture.AccountCount == 2 && !Controls<Button>().Any(b => Equals(b.Content, "Done")), "late completed response after Cancel cannot report success or duplicate an account");
+        Click(Controls<Button>().Single(b => Equals(b.Content, "Add account")));
+        await Wait(() => Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Connect provider kilo"));
         Click(Named("Connect provider kilo"));
         var alternatives = Controls<Expander>().Single(e => Equals(e.Header, "Other connection methods")); alternatives.IsExpanded = true;
         Check(!Named("Connection method device").IsEnabled, "unqualified device flow stays unavailable with guidance");
@@ -160,7 +181,7 @@ internal static class Probe
         var training = Controls<CheckBox>().Single(b => AutomationProperties.GetName(b) == "Allow Contributor training endpoints");
         Check(training.IsChecked == false, "Contributor training consent starts explicitly unchecked");
         Click(Controls<Button>().Single(b => Equals(b.Content, "Add selected models"))); await Task.Delay(60);
-        Check(fixture.Requests.Count(r => r.StartsWith("POST ")) == 2 && Controls<TextBlock>().Any(t => t.Text?.Contains("requires explicit workspace training permission") == true), "missing Contributor consent blocks submission and preserves the draft");
+        Check(fixture.Requests.Count(r => r.StartsWith("POST ")) == 3 && Controls<TextBlock>().Any(t => t.Text?.Contains("requires explicit workspace training permission") == true), "missing Contributor consent blocks submission and preserves the draft");
         training.IsChecked = true; contributor.IsChecked = false; contributor.IsChecked = true;
         Check(training.IsChecked == false, "changing model selection cannot inherit prior training consent");
         Click(Controls<Button>().Single(b => Equals(b.Content, "Cancel")));
@@ -179,7 +200,7 @@ internal static class Probe
         fixture.Monitor = false; await InvokeAsync("RefreshAsync", true); await Wait(() => !(window.Title ?? "").Contains("Monitor"));
         fixture.Offline = true; await InvokeAsync("RefreshAsync", true); await Task.Delay(100);
         Check(Nav().Contains("Profiles"), "offline configured Gateway keeps its navigation");
-        Check(fixture.Requests.Count(r => r.StartsWith("POST ")) == 2 && fixture.Requests.All(r => r.StartsWith("GET ") || r is "POST /api/v1/accounts/connect" or "POST /api/v1/accounts/connected/models"), "only explicit Connect and model attachment mutate the synthetic host; no provider, inference or Apply actions");
+        Check(fixture.Requests.Count(r => r.StartsWith("POST ")) == 3 && fixture.Requests.All(r => r.StartsWith("GET ") || r is "POST /api/v1/accounts/login" or "DELETE /api/v1/accounts/login/login-codex" or "POST /api/v1/accounts/connect" or "POST /api/v1/accounts/connected/models"), "only explicit login/cancel, Connect and model attachment mutate the synthetic host; no provider, inference or Apply actions");
         File.WriteAllText(Path.Combine(Output, "evidence.json"), JsonSerializer.Serialize(new { checks, requests = fixture.Requests }, new JsonSerializerOptions { WriteIndented = true }));
         window.Close();
     }
@@ -198,6 +219,11 @@ internal sealed class Fixture : HttpMessageHandler
     public int AccountCount => accounts.Length;
     public string AccountName => accounts.Single(a => a.Id == "connected").Name;
     public long AppliedRevision => 1;
+    public int LoginStarts;
+    public bool LoginReadPending, LoginCancelled;
+    private readonly TaskCompletionSource<HttpResponseMessage> lateLogin = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public void ReleaseLateLogin() => lateLogin.TrySetResult(new HttpResponseMessage(HttpStatusCode.OK) {
+        Content = JsonContent.Create(new LoginDto("login-codex", "codex", "completed", AccountId: "phantom-late-account")) });
     public List<string> Requests { get; } = [];
     private AccountDto[] accounts = [new("cc", "Command Code", "command-code", true, "api-key", "ready"), new("kilo", "Kilo Wallet", "kilo", true, "api-key", "ready")];
     private RouteDto[] routes = Enumerable.Range(1, 45).Select(i => new RouteDto("r" + i, "research-" + i.ToString("00"), "model-" + i, "fixture", ["cc"])).ToArray();
@@ -213,6 +239,21 @@ internal sealed class Fixture : HttpMessageHandler
         Requests.Add(request.Method + " " + request.RequestUri!.AbsolutePath);
         if (Offline) throw new HttpRequestException("synthetic offline");
         if (request.RequestUri.Host != "fixture.invalid") throw new InvalidOperationException("Forbidden fixture request");
+        if (request.Method == HttpMethod.Post && request.RequestUri.AbsolutePath == "/api/v1/accounts/login")
+        {
+            LoginStarts++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new LoginDto("login-codex", "codex", "waiting", "https://example.invalid/authorize")) });
+        }
+        if (request.Method == HttpMethod.Delete && request.RequestUri.AbsolutePath == "/api/v1/accounts/login/login-codex")
+        {
+            LoginCancelled = true;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new LoginDto("login-codex", "codex", "cancelled")) });
+        }
+        if (request.Method == HttpMethod.Get && request.RequestUri.AbsolutePath == "/api/v1/accounts/login/login-codex")
+        {
+            LoginReadPending = true;
+            return lateLogin.Task;
+        }
         if (request.Method == HttpMethod.Post && request.RequestUri.AbsolutePath == "/api/v1/accounts/connect")
         {
             var envelope = request.Content!.ReadFromJsonAsync<RevisionRequest<ConnectCredentialRequest>>(cancellationToken: token).GetAwaiter().GetResult()!;
@@ -253,7 +294,8 @@ internal sealed class Fixture : HttpMessageHandler
                     [new("contributor", "gemini-4-argon-contributor", "Contributor", "https://example.invalid/v1", "gemini", ["subscription"], new())], [], [],
                     Connections: [new("connection-contributor", "Contributor", "https://example.invalid/v1", "gemini", ["subscription"], ["contributor"])])]),
             "/api/v1/connection-methods" => new ConnectionMethodCatalogDto(1,
-                [new("kilo", "api-key", "Use existing Kilo key", "api-key", ["quota", "inference"], "available", false, true, "api-key", "Wallet and personal Pass use the same key.", "https://example.invalid/v1", Recommended: true),
+                [new("codex", "codex-owned", "Sign in with ChatGPT", "browser", ["quota", "inference"], "available", true, false, Recommended: true),
+                 new("kilo", "api-key", "Use existing Kilo key", "api-key", ["quota", "inference"], "available", false, true, "api-key", "Wallet and personal Pass use the same key.", "https://example.invalid/v1", Recommended: true),
                  new("kilo", "device", "Kilo device sign-in", "device", ["quota"], "unavailable", false, false, Guidance: "Device lifecycle is not qualified in this host."),
                  new("groq", "api-key", "Use existing Groq key", "api-key", ["inference"], "available", false, true, "api-key", Guidance: "Quota headers require normal Gateway traffic; no standalone monitor.")]),
             "/api/v1/profiles/p1/preview" => new ProfileApplyPreviewDto(1, "p1", revision, null, null, ["r1"], [], [], ["cc"], ["all connected clients"], "global proxy restart", false),

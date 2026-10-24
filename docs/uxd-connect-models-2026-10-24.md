@@ -9,8 +9,9 @@ available method. Other methods are local alternatives with their actual host
 requirements; unavailable methods cannot submit. Back retains only name and
 nonsecret resource values; private input is cleared on method/provider changes.
 Kilo key setup remains name plus private key without a model or plan requirement.
-The provider catalog remains documentation; the installed method endpoint decides
-which connection is executable.
+Discover and Add account use one inventory projected from provider documentation
+and installed methods. Method-only providers gain no invented pricing, credential
+or capability facts. The installed method endpoint decides which connection is executable.
 
 Browser state uses POST accounts/login once, then GET accounts/login/{id} on the
 same operation. Continue in browser starts that operation and opens its URL once;
@@ -20,7 +21,9 @@ cannot turn the current page into a successful connection. Expiry, unsupported,
 resource selection, failure and cancellation have separate local guidance. The
 browser launcher is an injectable in-memory fixture seam; no real login is claimed.
 
-Credential completion is separate from quota observations and inference success.
+The bounded completion card groups account identity, credential presence and only
+observed capability/quota results. Credential completion is separate from quota
+observations and inference success.
 Done saves no models. Optional model setup and an account's Models context open
 one template picker. GET providers supplies exact connection IDs, template IDs and
 pricing facts. POST accounts/{id}/models uses RevisionRequest with account generation,
