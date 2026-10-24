@@ -78,3 +78,24 @@ dotnet run --project tests/public-login/PublicLogin.Tests.csproj
 The root Host build and shared lifecycle tests are required integration checks.
 A separately authorized real browser consent plus read-only quota check remains
 a different qualification step; no model prompt is necessary.
+
+## Offline qualification, 24 October 2026
+
+The final standalone public-login suite passed **56 checks** with no build
+warnings. Existing Poe/OpenCode checks passed **50 assertions**, and the existing
+gateway/OpenRouter suite passed **37 assertions**. These runs used fake provider
+HTTP, synthetic keys and local loopback callbacks only. They did not start the
+Host/Core, authenticate, open a browser or perform inference.
+
+The public-login project also supports checking the same fixtures against the
+actual integrated Host assembly, excluding the standalone contract seam:
+
+```sh
+dotnet run --project tests/public-login/PublicLogin.Tests.csproj \
+  -p:UseHostAssembly=true \
+  -p:PublicLoginHostProject=/absolute/path/to/src/Lain.Host/Lain.Host.csproj
+```
+
+This integrated check is deferred to the root integration slot: the integrator's
+Host wiring still awaited its method catalog and transport bindings when the
+public-login slot ended. The standalone build does not substitute for that check.
