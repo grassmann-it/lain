@@ -115,3 +115,91 @@ Source and fixture inspection only; no test execution.
   normal auth login does not expose a generic `--scopes` option. No recommendation
   to pass an unsupported flag is implied by this review.
 - Foundation's retained-retry follow-up is separate and not claimed reviewed here.
+
+## Final backend follow-up: Main `fee826a`
+
+Inspected source and synthetic fixtures for Google `c82b2d0`/`4361fb1`/`36a31d6`,
+Root integration `32d390e`/`fee826a`, Foundation `2e0b3f3`/`9d27f92`, and MiMo
+`25ced79`. No build, service, browser login, provider call, or real credential read
+was performed. Public installed SDK source was inspected only as code.
+
+### New actionable finding
+
+**Google removed-target cleanup leaks an adapter operation slot and can report
+unfinished cleanup as complete.** `GoogleGcloudLoginAdapter.cs:302-330` cancels
+and may delete its owned profile, but never removes the operation from `attempts`
+or disposes its CTS. `LoginOperationService.CleanupRemovedTargetAsync` marks a
+normally returning hook `TargetCleanupCompleted=true` and `Released=true`, so
+the ordinary `ReleaseAsync` removal at `GoogleGcloudLoginAdapter.cs:344-348` does
+not run. After eight such attempts, the global `attempts.Count >= 8` guard at
+line 71 rejects subsequent gcloud connects until restart. The existing fixture
+checks profile deletion once, not slot reuse.
+
+The same hook returns normally when login remains active (line 306), and swallows
+an IOException during profile deletion (line 328). That tells Foundation cleanup
+succeeded although the comment promises a later cleanup pass. Preserve the retry
+signal on busy/IO failure; only remove the adapter entry/dispose CTS after
+confirmed local completion. Add repeated removed-target connects followed by
+another Begin and a held-profile-lease retry fixture. No remote revocation is
+needed. Finding sent to Root before this report update.
+
+### Closed or strengthened boundaries
+
+- Removed-account operations are explicitly invalidated. The durable
+  `target-removed` state survives late prepared/publication writes, and Adopt
+  rejects it before considering a recreated account. In-flight late results
+  retain private evidence without regaining publication rights. The default
+  adapter hook releases local bookkeeping without invoking cancellation/revoke;
+  MiMo's specific hook closes only the owned profile. Fixtures cover waiting,
+  late completion, already released recovery, same-ID recreation, and the default
+  external-grant behavior (`tests/quota-host-integration/Program.cs:127-187`).
+- Generic retry scheduling is fair by last attempt rather than repeatedly taking
+  the same eight entries. One shared five-second cancellation budget covers the
+  pass, including removed-target cleanup from middleware. The fixture places eight
+  failures before a ninth healthy item and checks that the second pass reaches it
+  (`:189-209`). This bounds waiting in cooperative callbacks, not synchronous
+  filesystem stalls or callback code that ignores cancellation.
+- MiMo shutdown now erases owned profiles. Startup scans a bounded receipt set,
+  refuses unsafe paths/receipts, checks process start identity, preserves a live
+  owner host, and closes stale owned sessions instead of resuming browser access
+  (`MiMoConsoleBrowser.cs:161-220,234`). Fixtures cover stale receipts, PID reuse,
+  live-owner recovery, links and enumeration bounds. Startup reconciliation is
+  invoked before serving requests; runtime quota still never opens a browser.
+- gcloud startup retention and disconnect run under the shared mutations gate
+  (`Program.cs:103-115`). Retention includes all selected capability references
+  and unpublished prepared Google recovery references. Unknown/malformed recovery,
+  restore quarantine or exceeded scan bounds preserve grants. Owner receipts and
+  private profile tree are validated, and an exclusive CLI lease protects deletion.
+  Startup can retire an unreferenced profile without a previous in-memory AccountDto.
+- gcloud is registered as login adapter and refresh owner. The selected quota
+  handle callback requires owner `google-gcloud`; MonitorCredentialStore projects
+  only its access token/resource/real handle expiry, and the catalog accurately
+  labels the broad standard CLI grant. Refresh remains bound to the saved account,
+  verified userinfo subject/email and project settings.
+- The URL bridge now verifies the installed SDK client ID and the exact seven
+  default scopes, including accounts.reauth and excluding Drive. The SDK owns
+  OAuth/PKCE; lain only validates the emitted URL. Fixed commands do not use an
+  unsupported `--scopes` flag. Environment clearing, private CLOUDSDK_CONFIG,
+  disabled metadata checks, a freshly seeded false SDK GCE cache, and the explicit
+  metrics environment prevent the inspected SDK paths from using ambient metadata.
+  A source fixture denies non-loopback connects/DNS and checks the bridge and GCE
+  cache; these are fixture definitions inspected here, not reviewer execution.
+
+### Explicit remaining limits
+
+- The generic retry dictionary still has no hard absolute cap. Failed references
+  are intentionally not silently dropped; fairness/time budgeting does not bound
+  accumulated records or persist that dictionary across restart.
+- Removed-target invalidation covers known live/retained operation records.
+  Previously pruned recovery archives are not globally searched and invalidated.
+- Google retention deliberately defers deletion on uncertainty. Its normal
+  disconnect wrapper swallows uncertainty and ignores the adapter's false/busy
+  return, so the generic queue can consider that callback finished; startup
+  reconciliation is the fallback, not a proven continuous retry mechanism for
+  every deferred profile.
+- MiMo's bounded startup reconciliation can leave unvisited or invalid receipts;
+  the host currently discards the returned reconciliation counts. No full-state
+  cleanup guarantee is inferred for malformed or over-bound profile trees.
+- No live Google/MiMo consent, real account entitlement, provider availability or
+  production login qualification is claimed. Existing measurement/freshness limits
+  described earlier remain unchanged.
