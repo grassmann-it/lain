@@ -115,7 +115,7 @@ public sealed partial class SqliteUsageStore
         if (whole.Length == 1) { totals = whole[0].Totals; performance = whole[0].Performance; }
         else
         {
-            totals = new(0, 0, 0, new(null, null, null, null, null), 0);
+            totals = EmptyTotals();
             performance = new(UnknownMetric(0), UnknownMetric(0), UnknownMetric(0));
         }
         var dimensions = new List<UsageDimensionDto>();

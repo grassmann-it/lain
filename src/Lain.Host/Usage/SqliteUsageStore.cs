@@ -235,6 +235,8 @@ public sealed partial class SqliteUsageStore : IUsageStore, IUsageAnalysisStore
 
     // A component is only a known total when every selected attempt supplies that component.
     // Cache/reasoning values are subsets: they are never added to provider-reported total.
+    // Separate known sums and per-component sample counts keep partial measurements useful.
+    // SUM stays NULL with no samples; a reported zero counts as a measured sample.
     private const string Aggregate = """
         COUNT(DISTINCT source_id || ':' || request_id), COUNT(*),
         COALESCE(SUM(CASE WHEN state IN ('failed','canceled') OR status_code >= 400 THEN 1 ELSE 0 END),0),
@@ -243,7 +245,11 @@ public sealed partial class SqliteUsageStore : IUsageStore, IUsageAnalysisStore
         CASE WHEN COUNT(cached_tokens)=COUNT(*) THEN SUM(cached_tokens) END,
         CASE WHEN COUNT(reasoning_tokens)=COUNT(*) THEN SUM(reasoning_tokens) END,
         CASE WHEN COUNT(total_tokens)=COUNT(*) THEN SUM(total_tokens) END,
-        COALESCE(SUM(CASE WHEN usage_reported=0 OR total_tokens IS NULL THEN 1 ELSE 0 END),0)
+        COALESCE(SUM(CASE WHEN usage_reported=0 OR total_tokens IS NULL THEN 1 ELSE 0 END),0),
+        CASE WHEN COUNT(cache_creation_tokens)=COUNT(*) THEN SUM(cache_creation_tokens) END,
+        SUM(input_tokens),COUNT(input_tokens),SUM(output_tokens),COUNT(output_tokens),
+        SUM(cached_tokens),COUNT(cached_tokens),SUM(cache_creation_tokens),COUNT(cache_creation_tokens),
+        SUM(reasoning_tokens),COUNT(reasoning_tokens),SUM(total_tokens),COUNT(total_tokens)
         """;
 
     public async Task<UsageSummaryDto> SummaryAsync(UsageQuery query, CancellationToken ct = default)
@@ -281,7 +287,7 @@ public sealed partial class SqliteUsageStore : IUsageStore, IUsageAnalysisStore
         using var command = Filtered(connection, transaction, """
             SELECT attempt_id,request_id,account_id,route_id,provider,model,started_ms,finished_ms,status_code,state,
                 input_tokens,output_tokens,cached_tokens,reasoning_tokens,total_tokens,duration_ms,first_token_ms,
-                dimensions_json,measurements_json,source_id,requested_model,completion_state
+                dimensions_json,measurements_json,source_id,requested_model,completion_state,cache_creation_tokens
             """, query, window, "ORDER BY started_ms DESC, source_id, attempt_id LIMIT $limit OFFSET $offset");
         command.Parameters.AddWithValue("$limit", query.Limit);
         command.Parameters.AddWithValue("$offset", query.Offset);
@@ -290,7 +296,7 @@ public sealed partial class SqliteUsageStore : IUsageStore, IUsageAnalysisStore
         while (await reader.ReadAsync(ct))
             items.Add(new(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), reader.GetString(4), reader.GetString(5),
                 DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(6)), reader.IsDBNull(7) ? null : DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(7)),
-                reader.IsDBNull(8) ? null : reader.GetInt32(8), reader.GetString(9), new(NullableLong(reader, 10), NullableLong(reader, 11), NullableLong(reader, 12), NullableLong(reader, 13), NullableLong(reader, 14)),
+                reader.IsDBNull(8) ? null : reader.GetInt32(8), reader.GetString(9), new(NullableLong(reader, 10), NullableLong(reader, 11), NullableLong(reader, 12), NullableLong(reader, 13), NullableLong(reader, 14), NullableLong(reader, 22)),
                 reader.IsDBNull(15) ? null : reader.GetDouble(15), reader.IsDBNull(16) ? null : reader.GetDouble(16),
                 Dimensions: reader.IsDBNull(17) ? null : JsonSerializer.Deserialize<AttemptDimensionsDto>(reader.GetString(17), JournalJson.Options),
                 Measurements: reader.IsDBNull(18) ? null : JsonSerializer.Deserialize<AttemptMeasurementsDto>(reader.GetString(18), JournalJson.Options),
@@ -299,8 +305,18 @@ public sealed partial class SqliteUsageStore : IUsageStore, IUsageAnalysisStore
     }
 
     private static long? NullableLong(SqliteDataReader reader, int index) => reader.IsDBNull(index) ? null : reader.GetInt64(index);
-    private static UsageTotals ReadTotals(SqliteDataReader reader, int start = 0) => new(reader.GetInt64(start), reader.GetInt64(start + 1), reader.GetInt64(start + 2),
-        new(NullableLong(reader, start + 3), NullableLong(reader, start + 4), NullableLong(reader, start + 5), NullableLong(reader, start + 6), NullableLong(reader, start + 7)), reader.GetInt64(start + 8));
+    private static UsageTotals ReadTotals(SqliteDataReader reader, int start = 0)
+    {
+        var eligible = reader.GetInt64(start + 1);
+        TokenComponentMeasurementDto Component(int offset) => new(NullableLong(reader, start + offset), reader.GetInt64(start + offset + 1), eligible);
+        return new(reader.GetInt64(start), eligible, reader.GetInt64(start + 2),
+            new(NullableLong(reader, start + 3), NullableLong(reader, start + 4), NullableLong(reader, start + 5),
+                NullableLong(reader, start + 6), NullableLong(reader, start + 7), NullableLong(reader, start + 9)), reader.GetInt64(start + 8),
+            new(Component(10), Component(12), Component(14), Component(16), Component(18), Component(20)));
+    }
+
+    private static UsageTotals EmptyTotals() => new(0, 0, 0, new(null, null, null, null, null), 0,
+        new(new(null, 0, 0), new(null, 0, 0), new(null, 0, 0), new(null, 0, 0), new(null, 0, 0), new(null, 0, 0)));
     private static SqliteCommand Command(SqliteConnection connection, SqliteTransaction? transaction, string sql, params (string Name, object? Value)[] parameters)
     {
         var command = connection.CreateCommand();
