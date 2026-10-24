@@ -21,9 +21,10 @@ var body = Vector([
 var handler = new FixtureHttp((request, _) =>
 {
     calls++;
-    Check(request.Method == HttpMethod.Get && request.RequestUri!.GetLeftPart(UriPartial.Path) == GroqEnterpriseUsageReader.Endpoint, "fixed read-only official query endpoint");
+    var uri = request.RequestUri ?? throw new Exception("Groq metrics request URI is missing.");
+    Check(request.Method == HttpMethod.Get && uri.GetLeftPart(UriPartial.Path) == GroqEnterpriseUsageReader.Endpoint, "fixed read-only official query endpoint");
     Check(request.Headers.Authorization?.Parameter == "selected-monitor-key", "only explicitly selected monitor identity used");
-    var query = Uri.UnescapeDataString(request.RequestUri.Query);
+    var query = Uri.UnescapeDataString(uri.Query);
     Check(query.Contains("project_id=\"project-one\"") && query.Contains("timestamp(") && query.Contains("lain_sample_kind"), "project pinned and raw sample timestamps requested");
     Check(!query.Contains("selected-monitor-key") && !query.Contains("unused-inference-key"), "no secret in URL");
     return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body) });
@@ -88,7 +89,8 @@ result = await enterprise.FetchAsync(new("unused", monitor: new("api-token", "se
 Check(result.Support?.Kind == "setup-required" && calls == before, "query injection resource never leaves machine");
 var expired = new QuotaCredential("unused", monitor: new("api-token", "expired-secret", project, clock.GetUtcNow().AddSeconds(-1)));
 try { await enterprise.FetchAsync(expired); throw new Exception("expired credential accepted"); }
-catch (QuotaFetchException) { Check(calls == before, "expired credential is not transmitted"); }
+catch (Exception error) when (error.Message == "Groq monitor access expired; reconnect monitoring.")
+{ Check(calls == before, "expired credential is not transmitted with the expected safe diagnostic"); }
 using var cancel = new CancellationTokenSource();
 cancel.Cancel();
 try { await enterprise.FetchAsync(credential, cancel.Token); throw new Exception("cancellation ignored"); }
