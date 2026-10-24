@@ -50,7 +50,8 @@ internal static class Probe
     public static string Output => Environment.GetEnvironmentVariable("LAIN_TEST_OUTPUT")!;
     private static MainWindow window = null!;
     private static readonly List<string> checks = [];
-    private static T[] Controls<T>() where T : Control => window.GetVisualDescendants().OfType<T>().Where(c => c.IsVisible && c.GetVisualAncestors().OfType<Control>().All(p => p.IsVisible)).ToArray();
+    private static T[] Controls<T>() where T : Control => new[] { window }.Concat(window.OwnedWindows.Where(w => w.IsVisible))
+        .SelectMany(w => w.GetVisualDescendants()).OfType<T>().Where(c => c.IsVisible && c.GetVisualAncestors().OfType<Control>().All(p => p.IsVisible)).ToArray();
     private static void Check(bool condition, string name) { if (!condition) throw new InvalidOperationException(name); checks.Add(name); }
     private static Button Named(string name) => Controls<Button>().Single(b => AutomationProperties.GetName(b) == name);
     private static void Click(Button b) => b.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -98,6 +99,10 @@ internal static class Probe
             await Capture("accounts-" + level.ToString().ToLowerInvariant(), 800, 560);
         }
         Invoke("Navigate", "Profiles"); await Task.Delay(100);
+        // Narrow Profiles starts in its inventory; editing belongs to the selected
+        // profile's separate detail task, just as it does in the wide detail pane.
+        Click(Named("Select profile Daily"));
+        await Wait(() => Controls<Button>().Any(b => Equals(b.Content, "Edit selection")));
         var workspace = (ScrollViewer)typeof(MainWindow).GetField("_workspace", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
         workspace.Offset = new Vector(0, 150);
         Click(Controls<Button>().Single(b => Equals(b.Content, "Edit selection")));
@@ -217,11 +222,17 @@ internal static class Probe
         Check(training.IsChecked == false, "changing model selection cannot inherit prior training consent");
         Click(Controls<Button>().Single(b => Equals(b.Content, "Cancel")));
         Invoke("Navigate", "Profiles"); await Task.Delay(60); await Capture("profiles", 1120, 780);
+        window.Width = 800; window.Height = 560; await Task.Delay(100);
+        if (Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Select profile Daily")) Click(Named("Select profile Daily"));
+        await Wait(() => Controls<Button>().Any(b => Equals(b.Content, "Apply to proxy…")));
         Click(Controls<Button>().Single(b => Equals(b.Content, "Apply to proxy…")));
         await Wait(() => Controls<Button>().Any(b => Equals(b.Content, "Apply to proxy")));
-        Check(Controls<TextBlock>().Any(t => t.Text?.Contains("Active baseline is unknown") == true), "Apply preview keeps unknown active baseline visible");
-        await Capture("apply-preview", 800, 560);
+        await Wait(() => Controls<TextBlock>().Any(t => t.Text?.Contains("Applied baseline unknown") == true));
+        Check(Controls<TextBlock>().Any(t => t.Text?.Contains("Applied baseline unknown") == true), "Apply preview keeps unknown active baseline visible");
+        var previewDialog = window.OwnedWindows.Single(w => w.IsVisible);
+        await Capture("apply-preview-dialog", (int)Math.Ceiling(previewDialog.Bounds.Width), (int)Math.Ceiling(previewDialog.Bounds.Height), previewDialog);
         Click(Controls<Button>().Single(b => Equals(b.Content, "Cancel")));
+        await Wait(() => !window.OwnedWindows.Any(w => w.IsVisible));
         fixture.Monitor = true;
         Invoke("Navigate", "Accounts");
         await InvokeAsync("RefreshAsync", true);
@@ -236,11 +247,12 @@ internal static class Probe
         File.WriteAllText(Path.Combine(Output, "evidence.json"), JsonSerializer.Serialize(new { checks, requests = fixture.Requests }, new JsonSerializerOptions { WriteIndented = true }));
         window.Close();
     }
-    private static async Task Capture(string name, int width, int height)
+    private static async Task Capture(string name, int width, int height, Window? target = null)
     {
-        window.Width = width; window.Height = height; await Task.Delay(100);
+        target ??= window;
+        target.Width = width; target.Height = height; await Task.Delay(100);
         using var bitmap = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96, 96));
-        bitmap.Render(window); bitmap.Save(Path.Combine(Output, $"{name}-{width}x{height}.png"));
+        bitmap.Render(target); bitmap.Save(Path.Combine(Output, $"{name}-{width}x{height}.png"), new PngBitmapEncoderOptions());
     }
 }
 internal sealed class Fixture : HttpMessageHandler
