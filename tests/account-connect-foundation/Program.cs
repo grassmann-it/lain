@@ -18,6 +18,7 @@ try
     await LegacyPreservation();
     await ModelAttachment();
     await PublicationGate();
+    await AutomaticRenewal();
     await QuotaGeneration();
     Console.WriteLine($"Account connect foundation: {assertions} assertions passed (offline synthetic state only).");
 }
@@ -469,6 +470,90 @@ async Task PublicationGate()
         "final local CAS publishes after apply releases shared gate and releases its own lease");
 }
 
+async Task AutomaticRenewal()
+{
+    var clock = new FakeClock();
+    var f = New("automatic-renewal");
+    AccountDto Add(Fixture fixture, string owner, string[] purposes, DateTimeOffset expiry, bool enabled = true)
+    {
+        var account = fixture.Accounts.Connect(fixture.Repository.Snapshot.Revision, new("test", "fixture", purposes),
+            Key("renewal-initial-" + Guid.NewGuid().ToString("N"), owner: owner, purposes: purposes, recovery: owner != "static-key") with { ExpiresAt = expiry }).Accounts.Last();
+        if (!enabled) fixture.Accounts.SetEnabled(fixture.Repository.Snapshot.Revision, account.Id, false);
+        return account;
+    }
+    PreparedLoginCredential Renewed(CredentialRefreshContext context) => new(context.Handle.Owner, context.Handle.Purposes, context.Handle.Binding,
+        "{\"kind\":\"api-key\",\"apiKey\":\"renewed-synthetic-access\"}", clock.GetUtcNow().AddHours(1), PreserveForRecovery: true);
+    var owner = new ScheduledOwner("scheduled-oauth", (context, _) => Task.FromResult(Renewed(context)));
+    var due = Add(f, owner.Owner, ["quota"], clock.GetUtcNow().AddMinutes(1));
+    Add(f, owner.Owner, ["quota"], clock.GetUtcNow().AddHours(1));
+    Add(f, owner.Owner, ["quota"], clock.GetUtcNow().AddMinutes(1), enabled: false);
+    Add(f, owner.Owner, ["inference"], clock.GetUtcNow().AddMinutes(1));
+    Add(f, "unregistered-oauth", ["quota"], clock.GetUtcNow().AddMinutes(1));
+    Add(f, "static-key", ["quota"], clock.GetUtcNow().AddMinutes(1));
+    Add(f, "external-snapshot", ["quota"], clock.GetUtcNow().AddMinutes(1));
+    Add(f, "core", ["quota"], clock.GetUtcNow().AddMinutes(1));
+    var ownerService = new CredentialOwnerService(f.Repository, f.Accounts, f.Secrets.Generations, [owner]);
+    var automatic = new OwnedCredentialRefreshService(f.Repository, ownerService, f.Secrets.Generations, [owner], clock);
+    var observations = await automatic.RefreshDueAsync();
+    Check(owner.Calls == 1 && observations.Single().State == "renewed", "automatic renewal selects only near-expiry enabled quota capability with registered owner");
+    Check(f.Repository.Snapshot.Accounts.Single(a => a.Id == due.Id).Credentials!.Single().Generation == 2, "automatic owner publishes renewed immutable generation");
+    await automatic.RefreshDueAsync();
+    Check(owner.Calls == 1, "fresh renewed credential is not renewed again on next pass");
+
+    var failed = New("automatic-failed");
+    var failingOwner = new ScheduledOwner("failing-oauth", (_, _) => throw new IOException("synthetic-private-response-must-not-leak"));
+    Add(failed, failingOwner.Owner, ["quota"], clock.GetUtcNow());
+    var failures = new CredentialOwnerService(failed.Repository, failed.Accounts, failed.Secrets.Generations, [failingOwner]);
+    var failedLoop = new OwnedCredentialRefreshService(failed.Repository, failures, failed.Secrets.Generations, [failingOwner], clock);
+    var failedStatus = await failedLoop.RefreshDueAsync();
+    await failedLoop.RefreshDueAsync();
+    var restartedLoop = new OwnedCredentialRefreshService(failed.Repository, failures, failed.Secrets.Generations, [failingOwner], clock);
+    await restartedLoop.RefreshDueAsync();
+    Check(failingOwner.Calls == 1 && failedStatus.Single().State == "recovery-required", "failed generation is not blindly rotated again across ticks or helper restart");
+    Check(!JsonSerializer.Serialize(failedStatus).Contains("synthetic-private-response-must-not-leak"), "automatic renewal diagnostics never contain raw provider exceptions");
+
+    var bounded = New("automatic-bounds");
+    var firstTwo = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var active = 0; var maximumActive = 0; var concurrentGate = new object();
+    var boundedOwner = new ScheduledOwner("bounded-oauth", async (context, token) =>
+    {
+        lock (concurrentGate) { active++; maximumActive = Math.Max(active, maximumActive); if (active == 2) firstTwo.TrySetResult(); }
+        try { await release.Task.WaitAsync(token); return Renewed(context); }
+        finally { lock (concurrentGate) active--; }
+    });
+    for (var index = 0; index < 10; index++) Add(bounded, boundedOwner.Owner, ["quota"], clock.GetUtcNow().AddMinutes(1));
+    var boundedService = new CredentialOwnerService(bounded.Repository, bounded.Accounts, bounded.Secrets.Generations, [boundedOwner]);
+    var boundedLoop = new OwnedCredentialRefreshService(bounded.Repository, boundedService, bounded.Secrets.Generations, [boundedOwner], clock);
+    var pass = boundedLoop.RefreshDueAsync();
+    await firstTwo.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    Check(boundedOwner.Calls == 2 && !pass.IsCompleted, "automatic renewal limits simultaneous provider operations");
+    release.SetResult();
+    var completed = await pass;
+    Check(boundedOwner.Calls == 8 && maximumActive == 2 && completed.All(o => o.State == "renewed"), "one pass is bounded and unrelated account commits revalidate safely");
+    await boundedLoop.RefreshDueAsync();
+    Check(boundedOwner.Calls == 10, "later pass handles remaining due accounts without repeating completed generations");
+
+    var blocked = New("owner-publication-gate");
+    var blockedAccount = Add(blocked, owner.Owner, ["quota"], clock.GetUtcNow());
+    using var publication = new SemaphoreSlim(0, 1);
+    using var cancellation = new CancellationTokenSource();
+    var blockedService = new CredentialOwnerService(blocked.Repository, blocked.Accounts, blocked.Secrets.Generations, [owner], publication);
+    var blockedHandle = blockedAccount.Credentials!.Single();
+    var pending = blockedService.RefreshAsync(blockedAccount.Id, blockedHandle.Id, cancellation.Token);
+    Check(!pending.IsCompleted && blocked.Secrets.Generations.IsRetired(blockedHandle), "owner refresh runs and retires old material outside blocked publication gate");
+    var recoveryFile = Directory.EnumerateFiles(Path.Combine(blocked.Paths.Credentials, "recovery"), "rotation-*.json").Single();
+    var recoveryId = Path.GetFileNameWithoutExtension(recoveryFile);
+    Check(CredentialRecoveryService.Read(blocked.Secrets.Generations, recoveryId).Handle?.Generation == 2, "new rotation result is durable before waiting for apply gate");
+    cancellation.Cancel();
+    await Throws<OperationCanceledException>(() => pending, "cancelled publication wait must not publish owner result");
+    Check(publication.CurrentCount == 0 && blocked.Repository.Snapshot.Accounts.Single().Credentials!.Single().Generation == 1,
+        "cancelled owner wait preserves references and cannot release another gate lease");
+    ThrowsSync<InvalidDataException>(() => new CredentialResolver(blocked.Repository, blocked.Secrets).Resolve(blockedAccount.Id, "quota"), "cancellation never resurrects consumed old refresh material");
+    new CredentialRecoveryService(blocked.Repository, blocked.Accounts, blocked.Secrets.Generations).Adopt(blocked.Repository.Snapshot.Revision, recoveryId);
+    Check(blocked.Repository.Snapshot.Accounts.Single().Credentials!.Single().Generation == 2, "saved cancelled owner result remains explicitly recoverable");
+}
+
 sealed class Fixture
 {
     public OwnStatePaths Paths { get; }
@@ -501,6 +586,14 @@ sealed class FakeOwner : ICredentialOwner
     public string Owner => "session-owner"; public int Calls;
     public required Func<CancellationToken, Task<PreparedLoginCredential>> Refresh;
     public Task<PreparedLoginCredential> RefreshAsync(CredentialRefreshContext context, CancellationToken ct) { Calls++; return Refresh(ct); }
+}
+sealed class ScheduledOwner(string owner, Func<CredentialRefreshContext, CancellationToken, Task<PreparedLoginCredential>> refresh) : ICredentialOwner
+{
+    public string Owner => owner;
+    private int calls;
+    public int Calls => Volatile.Read(ref calls);
+    public Task<PreparedLoginCredential> RefreshAsync(CredentialRefreshContext context, CancellationToken ct)
+    { Interlocked.Increment(ref calls); return refresh(context, ct); }
 }
 sealed class FakeQuota(string provider, Func<AccountDto, QuotaCredential, CancellationToken, Task<QuotaFetchResult>> fetch) : IQuotaAdapter
 {

@@ -103,10 +103,11 @@ public interface ICredentialOwner
 
 /// <summary>One rotating owner consumes a generation once. A failed or lost result requires explicit recovery.</summary>
 public sealed class CredentialOwnerService(ConfigurationRepository configuration, AccountService accounts,
-    CredentialGenerationStore generations, IEnumerable<ICredentialOwner> owners)
+    CredentialGenerationStore generations, IEnumerable<ICredentialOwner> owners, SemaphoreSlim? publicationGate = null)
 {
     private readonly Dictionary<string, ICredentialOwner> implementations = owners.ToDictionary(o => o.Owner, StringComparer.Ordinal);
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> gates = new(StringComparer.Ordinal);
+    private readonly SemaphoreSlim localPublicationGate = new(1, 1);
 
     public async Task<ConfigurationDto> RefreshAsync(string accountId, string credentialId, CancellationToken ct = default)
     {
@@ -132,15 +133,33 @@ public sealed class CredentialOwnerService(ConfigurationRepository configuration
             // This marker is durable before the remote call. Backups cannot reactivate consumed refresh material.
             generations.RetireForRotation(handle, operationId);
             var refreshed = await owner.RefreshAsync(new(account.Id, handle, stored.PrivateJson), ct);
-            if (refreshed.Owner != handle.Owner) throw new InvalidDataException("Credential refresh changed its owner.");
-            AccountService.EnsureCompatibleBinding(handle.Binding, refreshed.Binding);
-            var next = generations.Prepare(account.Id, refreshed with { PreserveForRecovery = true }, operationId,
+            var next = generations.Prepare(account.Id, refreshed with { Owner = handle.Owner, PreserveForRecovery = true }, operationId,
                 handle.Id, checked(handle.Generation + 1));
             CredentialRecoveryService.SavePrepared(generations, context, next, refreshed.RemoteId);
+            if (refreshed.Owner != handle.Owner) throw new InvalidDataException("Credential refresh changed its owner.");
+            AccountService.EnsureCompatibleBinding(handle.Binding, refreshed.Binding);
             // Remote rotation may have consumed the old token; no error path restores it.
-            var result = accounts.CommitPrepared(context, next, () => !ct.IsCancellationRequested);
-            CredentialRecoveryService.MarkPublished(generations, operationId);
-            return result;
+            var acquired = false;
+            var commitGate = publicationGate ?? localPublicationGate;
+            try
+            {
+                await commitGate.WaitAsync(ct);
+                acquired = true;
+                var latest = configuration.Snapshot;
+                var current = latest.Accounts.SingleOrDefault(value => value.Id == account.Id);
+                if (current is null || current.Generation != account.Generation || current.Enabled != account.Enabled ||
+                    current.Credentials?.Any(value => value.Id == handle.Id && value.Generation == handle.Generation) != true ||
+                    !AccountService.EffectiveCapabilities(current).Where(value => value.CredentialId == handle.Id).Select(value => value.Purpose)
+                        .Order(StringComparer.Ordinal).SequenceEqual(purposes.Order(StringComparer.Ordinal)))
+                    throw new InvalidOperationException("Account or credential binding changed during renewal. Review its saved result.");
+                // An unrelated account/configuration mutation may advance revision while this owner waits.
+                // Revalidate the target under the publication gate, then adopt the already saved result locally.
+                var result = accounts.CommitPrepared(context with { Revision = latest.Revision }, next, () => !ct.IsCancellationRequested);
+                try { CredentialRecoveryService.MarkPublished(generations, operationId); }
+                catch (IOException) { } // Configuration is authoritative; recovery reconciles a matching published handle.
+                return result;
+            }
+            finally { if (acquired) commitGate.Release(); }
         }
         finally { gate.Release(); }
     }
