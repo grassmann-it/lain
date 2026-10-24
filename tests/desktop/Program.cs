@@ -192,11 +192,14 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         var usageInput = Controls<UsageView>().Single().GetVisualDescendants().OfType<TextBox>().First();
         usageInput.Focus();
         Check(usageInput.IsFocused, "usage input accepts keyboard focus");
+        usageInput.Text = "2026-10-20";
         var unsubmittedFilter = usageInput.Text;
+        var appliedFromBeforePoll = fixture.UsageQueries.Last()["from"];
         var pollStart = fixture.UsageCalls;
         await Task.Delay(5300);
         Check(fixture.UsageCalls > pollStart && UsageConnected(), "usage refreshes after five seconds");
-        Check(usageInput.IsFocused && usageInput.Text == unsubmittedFilter, "usage input focus and filter survive polling");
+        Check(usageInput.IsFocused && usageInput.Text == unsubmittedFilter && fixture.UsageQueries.Last()["from"] == appliedFromBeforePoll,
+            "usage input focus and unapplied date draft survive polling without silently applying the draft");
         Check(Controls<Expander>().Any(b => AutomationProperties.GetName(b) == "Analysis group modelFamily fixture-family" && b.IsExpanded),
             "selected usage breakdown detail expansion survives polling");
         await Click("Details for attempt attempt-fixture");
@@ -207,11 +210,17 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Task.Delay(5300);
         Check(fixture.UsageCalls > attemptPollStart && Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Details for attempt attempt-fixture" && b.IsFocused), "attempt detail focus survives polling");
         var accountScopeBeforeLink = fixture.UsageQueries.Last().GetValueOrDefault("accountId");
+        var appliedStatusBeforeLink = fixture.UsageQueries.Last().GetValueOrDefault("statusCode");
+        Named<TextBox>("HTTP status").Text = "503";
         await Click("Open account for attempt attempt-fixture");
         await Wait(() => Controls<Expander>().Any(x => AutomationProperties.GetName(x) == "Account budgets for Personal Codex updated"), "usage attempt links to its configured account");
         await Click("Back");
         await Wait(UsageConnected, "Back restores loaded Usage");
-        Check(fixture.UsageQueries.Last().GetValueOrDefault("accountId") == accountScopeBeforeLink, "Usage account navigation retains loaded filter context on Back");
+        Check(fixture.UsageQueries.Last().GetValueOrDefault("accountId") == accountScopeBeforeLink
+            && fixture.UsageQueries.Last().GetValueOrDefault("statusCode") == appliedStatusBeforeLink
+            && Named<TextBox>("HTTP status").Text == "503" && Named<TextBox>("From · inclusive").Text == unsubmittedFilter,
+            "Usage Back restores the applied query separately from unapplied status and date drafts");
+        Named<TextBox>("HTTP status").Text = "";
         var daily = Controls<Expander>().Single(x => Equals(x.Header, "Daily totals"));
         daily.IsExpanded = true;
         await CaptureBoth("usage-details");
