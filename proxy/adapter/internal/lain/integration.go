@@ -54,6 +54,9 @@ type Integration struct {
 	mu           sync.Mutex
 	active       map[string]*attempt
 	captureSlots int
+	activityMu   sync.Mutex
+	draining     bool
+	requests     int64
 }
 type dispatchError struct{ message string }
 

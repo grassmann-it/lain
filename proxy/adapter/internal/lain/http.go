@@ -31,6 +31,19 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 				return
 			}
 			switch path {
+			case "/lain/activity", "/lain/drain":
+				if path == "/lain/activity" && c.Request.Method != "GET" || path == "/lain/drain" && c.Request.Method != "POST" && c.Request.Method != "DELETE" {
+					c.AbortWithStatus(405)
+					return
+				}
+				i.activityMu.Lock()
+				if path == "/lain/drain" {
+					i.draining = c.Request.Method == "POST"
+				}
+				activity := gin.H{"draining": i.draining, "activeRequests": i.requests}
+				i.activityMu.Unlock()
+				c.Header("Cache-Control", "no-store")
+				c.AbortWithStatusJSON(200, activity)
 			case "/lain/quota/observations":
 				if c.Request.Method != "GET" {
 					c.AbortWithStatus(405)
@@ -165,6 +178,23 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 			c.AbortWithStatus(404)
 			return
 		}
+		// Admission and drain publication share one lock. The count spans the
+		// complete HTTP handler, including provider retries and stream delivery;
+		// an executor finishing does not mean the client has received its tail.
+		i.activityMu.Lock()
+		if i.draining {
+			i.activityMu.Unlock()
+			c.Header("Retry-After", "1")
+			c.AbortWithStatusJSON(503, gin.H{"error": gin.H{"code": "runtime_draining", "message": "runtime is draining"}})
+			return
+		}
+		i.requests++
+		i.activityMu.Unlock()
+		defer func() {
+			i.activityMu.Lock()
+			i.requests--
+			i.activityMu.Unlock()
+		}()
 		if err := i.Journal.Health(); err != nil {
 			c.AbortWithStatusJSON(503, gin.H{"error": "durable journal unavailable"})
 			return
