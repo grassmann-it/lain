@@ -94,7 +94,12 @@ def main():
                         result[str(path.relative_to(adapter.parent))] = digest(path)
             return result
         require(prepared_inventory() == prepared["files"], "Prepared source tree changed before notice collection")
-        raw_graph = subprocess.check_output([go, "list", "-mod=readonly", "-m", "-json", "all"], cwd=adapter, text=True, env=env)
+        # Inspect the modules actually linked into this binary. Listing "all"
+        # would require uncached metadata for unrelated optional/test modules
+        # even though none contributes bytes or notices to the shipped artifact.
+        linked_modules = [module["module"] for module in modules]
+        require(linked_modules, "Binary has no linked module evidence")
+        raw_graph = subprocess.check_output([go, "list", "-mod=readonly", "-m", "-json", *linked_modules], cwd=adapter, text=True, env=env)
         graph = {entry["Path"]: entry for entry in json_stream(raw_graph)}
         # Record stable evidence without ephemeral build paths.
         def stable(entry):

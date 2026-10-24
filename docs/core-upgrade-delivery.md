@@ -53,7 +53,8 @@ matching its retained provenance. It assembles upstream privately using
 `prepare-core.py` and the verified archive cache; `--archive` can supply the
 already downloaded official zip. No binary is built or executed. The Go collector
 uses the matching compiler only for `version -m`, `env` and readonly/offline
-`list -m -json all`. It checks the prepared-source inventory before/after collection,
+`list -m -json` for the exact linked module names from the binary. This avoids
+requiring uncached metadata for unrelated optional/test modules. It checks the prepared-source inventory before/after collection,
 resolves the pinned local upstream replacement explicitly, preserves its original
 MIT text, and reports every missing root notice. Core staging refuses incomplete
 root-notice evidence. Nested/generated third-party obligations remain subject to
