@@ -22,10 +22,11 @@ try
     await Run("durable remote result recovers across recovery-record crash gap", PreparedCrashGap);
     await Run("restored rotating generation is quarantined", RestoredGrant);
     await Run("quota-only core ownership resolves selected purpose", QuotaOnlyCore);
+    await Run("missing explicit handle never falls back to inference", MissingExplicitHandle);
     await Run("historical canonical journal digest survives replay", HistoricalJournal);
 }
 finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
-Console.WriteLine($"Independent scenarios: {7 - failures.Count}/7 passed.");
+Console.WriteLine($"Independent scenarios: {8 - failures.Count}/8 passed.");
 Environment.ExitCode = failures.Count == 0 ? 0 : 1;
 
 async Task Run(string label, Func<Task> test)
@@ -121,6 +122,22 @@ Task QuotaOnlyCore()
     var access = new CredentialResolver(f.Repository, f.Secrets).Resolve(state.Accounts.Single().Id, "quota");
     Require(access is not null && access.PrivateJson.Contains("synthetic-core-access") && !access.PrivateJson.Contains("synthetic-core-refresh"));
     Require(!f.Secrets.HasAccount(state.Accounts.Single().Id));
+    return Task.CompletedTask;
+}
+
+Task MissingExplicitHandle()
+{
+    var f = Fresh("missing-reference");
+    var state = f.Accounts.AddApi(0, new("Synthetic", "test", "synthetic-inference", "https://fixture.invalid/v1"));
+    var account = state.Accounts.Single();
+    f.Repository.Update(state.Revision, current => current with
+    {
+        Accounts = [account with { Capabilities = account.Capabilities!.Select(c => c.Purpose == "quota" ? c with { CredentialId = "missing-handle" } : c).ToArray() }]
+    });
+    var refused = false;
+    try { refused = new CredentialResolver(f.Repository, f.Secrets).Resolve(account.Id, "quota") is null; }
+    catch (Exception error) when (error is InvalidDataException or InvalidOperationException) { refused = true; }
+    Require(refused);
     return Task.CompletedTask;
 }
 
