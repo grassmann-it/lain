@@ -34,6 +34,42 @@ public sealed partial class MainWindow
         if (target.RouteId is { } id) _modelDetails[id] = true;
     }
 
+    private Action CaptureModelsNavigation()
+    {
+        var section = _section;
+        var search = _routeSearch;
+        var provider = _routeProvider;
+        var visibility = _routeVisibility;
+        var state = _routeState;
+        var accountId = _routeAccountId;
+        var routeId = _routeContextId;
+        var model = _routeModel;
+        var modelDetails = new Dictionary<string, bool>(_modelDetails, StringComparer.Ordinal);
+        var profileId = _selectedProfileId;
+        var profileDetails = new Dictionary<string, bool>(_profileDetails, StringComparer.Ordinal);
+        return () =>
+        {
+            if (section == "Models")
+            {
+                _routeSearch = search;
+                _routeProvider = provider;
+                _routeVisibility = visibility;
+                _routeState = state;
+                _routeAccountId = accountId;
+                _routeContextId = routeId;
+                _routeModel = model;
+                _modelDetails.Clear();
+                foreach (var pair in modelDetails) _modelDetails.Add(pair.Key, pair.Value);
+            }
+            else if (section == "Profiles")
+            {
+                _selectedProfileId = profileId;
+                _profileDetails.Clear();
+                foreach (var pair in profileDetails) _profileDetails.Add(pair.Key, pair.Value);
+            }
+        };
+    }
+
     private Control RoutesPage()
     {
         var presentation = PresentationFor("Models");
@@ -154,6 +190,14 @@ public sealed partial class MainWindow
     private void EditRoute(RouteDto? route, ModelEntryDto? catalogModel = null)
     {
         if (_configuration is not { } cfg) return;
+        var routeId = route?.Id;
+        RegisterEditor(() =>
+        {
+            if (routeId is null) { EditRoute(null); return; }
+            var latest = _configuration?.Routes.FirstOrDefault(item => item.Id == routeId)
+                ?? throw new InvalidOperationException("This model access was removed from the latest configuration. Cancel this draft and review Models.");
+            EditRoute(latest);
+        }, cfg.Revision);
         _editing = true;
         var contextAccount = route is null ? cfg.Accounts.FirstOrDefault(a => a.Id == _routeAccountId) : null;
         var alias = Ui.Input(route?.Alias ?? catalogModel?.Id ?? _routeModel, "client-facing-model");
@@ -183,12 +227,16 @@ public sealed partial class MainWindow
         var enabled = new CheckBox { Content = "Enabled", IsChecked = route?.Enabled ?? true };
         var visible = new CheckBox { Content = "Visible in client model menu", IsChecked = route?.Visible ?? true };
         var pooled = new CheckBox { Content = "Explicit account pool", IsChecked = route?.Pooled ?? catalogModel?.AccountIds.Length > 1 };
+        AutomationProperties.SetName(enabled, "Model access enabled");
+        AutomationProperties.SetName(visible, "Model access visible in client menu");
+        AutomationProperties.SetName(pooled, "Model access uses explicit account pool");
         var selectedIds = route?.AccountIds ?? catalogModel?.AccountIds ?? (contextAccount is null ? [] : new[] { contextAccount.Id });
         var choices = cfg.Accounts.Select(a => (Account: a, Box: new CheckBox { Content = Ui.Text($"{a.Name} · {a.Provider}"), IsChecked = selectedIds.Contains(a.Id), MinHeight = 30 })).ToArray();
         var accounts = new StackPanel { Spacing = 2 };
         foreach (var choice in choices)
         {
-            AutomationProperties.SetName(choice.Box, $"{choice.Account.Name} · {choice.Account.Provider}");
+            AutomationProperties.SetName(choice.Box, $"Bind account {choice.Account.Id}");
+            AutomationProperties.SetHelpText(choice.Box, $"{choice.Account.Name} · {choice.Account.Provider}");
             accounts.Children.Add(choice.Box);
         }
         if (choices.Length == 0) accounts.Children.Add(Ui.Text("Add an account before saving model access.", 13, Ui.Muted));

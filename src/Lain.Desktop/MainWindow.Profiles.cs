@@ -230,6 +230,14 @@ public sealed partial class MainWindow
     private void EditProfile(ProfileDto? profile)
     {
         if (_configuration is not { } cfg) return;
+        var profileId = profile?.Id;
+        RegisterEditor(() =>
+        {
+            if (profileId is null) { EditProfile(null); return; }
+            var latest = _configuration?.Profiles.FirstOrDefault(item => item.Id == profileId)
+                ?? throw new InvalidOperationException("This profile was removed from the latest configuration. Cancel this draft and review Profiles.");
+            EditProfile(latest);
+        }, cfg.Revision);
         _editing = true;
         var name = Ui.Input(profile?.Name, "Profile name");
         var search = Ui.Input(hint: "Search model access, providers or models");
@@ -247,7 +255,8 @@ public sealed partial class MainWindow
             var box = new CheckBox { IsChecked = profile?.RouteIds.Contains(route.Id) ?? false,
                 HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
                 Content = ProfileRouteContent(route.Alias, $"{route.Provider} / {route.UpstreamModel}", false), MinHeight = 42 };
-            AutomationProperties.SetName(box, $"{route.Alias}, {route.Provider}, {route.UpstreamModel}");
+            AutomationProperties.SetName(box, $"Include model access {route.Id}");
+            AutomationProperties.SetHelpText(box, $"{route.Alias}, {route.Provider}, {route.UpstreamModel}");
             var row = new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(8, 0), Child = box };
             routeList.Children.Add(row);
             return (Route: route, Box: box, Row: row);
@@ -278,12 +287,12 @@ public sealed partial class MainWindow
             var defaultId = defaults.SelectedIndex > 0 ? cfg.Routes[defaults.SelectedIndex - 1].Id : null;
             if (ids.Length == 0) throw new InvalidOperationException("Select at least one model access entry.");
             if (defaultId is not null && !ids.Contains(defaultId)) throw new InvalidOperationException("Select the default model access in this profile too.");
-            var profileId = profile?.Id ?? Guid.NewGuid().ToString("N");
+            var savedProfileId = profile?.Id ?? Guid.NewGuid().ToString("N");
             if (profile is not null && profile.RouteIds.Length == ids.Length && profile.RouteIds.All(id => ids.Contains(id, StringComparer.Ordinal))) ids = profile.RouteIds;
-            var original = profile ?? new ProfileDto(profileId, "", []);
+            var original = profile ?? new ProfileDto(savedProfileId, "", []);
             _configuration = await _client.SaveProfileAsync(cfg.Revision,
                 original with { Name = name.Text.Trim(), RouteIds = ids, DefaultRouteId = defaultId, Policy = spending.Resolve() }, _lifetime.Token);
-            _selectedProfileId = profileId;
+            _selectedProfileId = savedProfileId;
         }, "Profile saved.");
         save.Classes.Add("primary");
         var fields = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), ColumnSpacing = 14 };
