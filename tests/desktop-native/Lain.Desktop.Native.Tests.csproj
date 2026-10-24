@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/Lain.Desktop/Tray/LinuxDesktopNotificationSink.cs" Link="LinuxDesktopNotificationSink.cs" />
+    <Compile Include="../../src/Lain.Desktop/Tray/TrayAvailability.cs" Link="TrayAvailability.cs" />
+  </ItemGroup>
+</Project>
