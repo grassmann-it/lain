@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "passed": true,
+  "executedBy": "upgrade_qualification",
+  "coreSha256": "e39e141daaca6c1946d93866e4d67e93651a07ff9664edf03078d4a9c49b6fe6",
+  "baselineCoreSha256": "bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87",
+  "sourceManifestSha256": "c5ff7548dcf72a0dd40b9c9a389799303bd7efebb7d1d30835aec13b1349d0cb",
+  "scope": "synthetic protocol/durability/auth/Inspector/credential/policy/transport gates, 10x actual SQLite replay, synthetic journal upgrade and rollback read; separately linked adapter/hook unit evidence",
+  "networkIsolation": "all independent final runtime probes in a new user/network namespace with only loopback enabled",
+  "baselineRequestsUseOnlyNewPrivateSyntheticJournals": true,
+  "behaviorChanges": [
+    "native server-side image_generation now rejected because its multiple usage reporters are unqualified; ordinary image-named functions and Vision inputs remain accepted"
+  ],
+  "notTested": [
+    "real provider inference",
+    "real OAuth login/refresh",
+    "new upstream capabilities",
+    "installed service workflow"
+  ],
+  "evidence": [
+    {
+      "path": "adapter-unit-summary.json",
+      "sha256": "b9be3fba9aa439142730abeb6b53c64712a29b55391f98e5e0223918a37bfb52"
+    },
+    {
+      "path": "artifact-manifest.json",
+      "sha256": "f1255b385bce7e318a58f702626a6e40b9d1cfd3d6f5dd8a0155462305b39d5b"
+    },
+    {
+      "path": "baseline-boundaries-final.json",
+      "sha256": "8ed78e3f7414e8faa8f6c67a157896c2340042a3f9b108a7b4e8d0d24408c540"
+    },
+    {
+      "path": "baseline-hostwriter-final.json",
+      "sha256": "091175e69a1cb19ca9c9981ad7f9be89c185756e28be452f5910a4411028f49e"
+    },
+    {
+      "path": "consumer-replay.json",
+      "sha256": "77d2ccc7c8a87336d60fabe5d7ab3e1b6f58442b4100304d295288f89c953fd4"
+    },
+    {
+      "path": "event-examples.json",
+      "sha256": "f5cbf63be6d42af94266821937cba252e09929d1fb5148b7c3c3df012ebbe007"
+    },
+    {
+      "path": "fixture-selftests.json",
+      "sha256": "6387c43ff1355c2d53d67a0865c2a2dfe436e206ed22a1694bc9e0b7d3b30b3c"
+    },
+    {
+      "path": "hostwriter-transports.json",
+      "sha256": "eb8972d4838ac9718a7ae8836cb570b8483449ebfb5ce40b595f6267e6e6bf6f"
+    },
+    {
+      "path": "independent-auth-crash.json",
+      "sha256": "e056f9d3e6e12c73be29952080d7e15616aba86b88c263fa8692bd711acbdc7d"
+    },
+    {
+      "path": "inspector.json",
+      "sha256": "ab7b83d06d19f936b7b362b42ea8b8e75949107b5db34e985404f9ba91135738"
+    },
+    {
+      "path": "mixed-source-batch.json",
+      "sha256": "437cffeda06941c39bb96b05849e3b74ffab19799046646cab5d0b2c61c871f7"
+    },
+    {
+      "path": "native-tool-boundary.json",
+      "sha256": "c6c52f422d36bd10e09743f6830fdd97fbc165ee7d18974cb2af1ebe705c8de0"
+    },
+    {
+      "path": "protocol-durability.json",
+      "sha256": "80c40b60bc62f2eeee1ae80d022a86df255b6c18f67969e1f57b29986a19219b"
+    },
+    {
+      "path": "qualification.json",
+      "sha256": "5212522e13746db3d30f13834fffc395cc3d0796b0de6970fa53561fca6f556d"
+    },
+    {
+      "path": "source-batch.json",
+      "sha256": "fb6794ece88e93ef0fbeb8b4ad057e8bf479276f6fe964409aaf8b9c4ae515ab"
+    },
+    {
+      "path": "upgrade-boundaries.json",
+      "sha256": "1b6ade9c4dc2fdb67203cff02846015345a91e8c66d499fb64c2c67ae73bcd48"
+    },
+    {
+      "path": "upstream-hooks-unit-summary.json",
+      "sha256": "c12ea8ebd6c82d370083c96d4eb8a8d637d08ec9033eac2c247e0b4ad9d062d9"
+    },
+    {
+      "path": "version-transition.json",
+      "sha256": "75c39a57d1c515e4b12fe43859ebf3dd8e46f4bfdbf5eea4c792ad2a049aafff"
+    }
+  ]
+}

@@ -11,6 +11,45 @@ The prior expansion binary was qualified at SHA-256
 `bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87`.
 Those reports remain historical evidence and do not qualify v8.0.41.
 
+## Observed final synthetic acceptance, 24 October 2026
+
+The independent final run passed on the integrated, frozen executable SHA-256
+`e39e141daaca6c1946d93866e4d67e93651a07ff9664edf03078d4a9c49b6fe6`,
+with source manifest
+`c5ff7548dcf72a0dd40b9c9a389799303bd7efebb7d1d30835aec13b1349d0cb`.
+The preserved executable was hashed again after qualification and was unchanged.
+All product processes used new private paths and a user/network namespace with
+only loopback enabled. The installed baseline executable supplied read-only
+bytes; its process, credentials, journals and databases were not accessed.
+
+The [acceptance inventory](../tests/acceptance/evidence/core-v8/acceptance.json)
+binds all sanitized evidence files to their hashes. The
+[runtime report](../tests/acceptance/evidence/core-v8/qualification.json) records
+15 original protocol/durability cases, two independent authentication/crash cases,
+15 Inspector cases, four upgrade-boundary cases, two native-tool boundary cases,
+two actual Hostwriter transport cases, and the version-transition/consumer checks.
+All passed. Nine fixture/evidence selftests passed separately. The old baseline
+also passed the current four credential/policy/Gemini cases and both actual
+Hostwriter cases. Adapter/hook unit summaries are linked separately in the
+inventory: those were executed by the core integration worker, not rerun by the
+independent binary qualifier.
+
+The [complete normal batch](../tests/acceptance/evidence/core-v8/source-batch.json)
+replayed through the actual SQLite store, reopened ten times, produced cursor
+600, exactly 200 requests/attempts, 3,600 tokens and two accounts. Cache/reasoning
+remained unknown. The
+[mixed-version batch](../tests/acceptance/evidence/core-v8/mixed-source-batch.json)
+retained the v7 source UUID, original journal bytes and events, continued from
+cursor 6 to 12 under v8, then passed a v7 rollback read. Its ten consumer replays
+produced exactly four requests/attempts and 72 tokens across two accounts.
+
+Native `image_generation` is the deliberate restriction described below:
+explicit tools/tool choice returned 400 without an attempt or upstream call;
+an injected final payload also returned 400 with a retained failed attempt and
+unknown usage. Ordinary image-named functions, Vision input, and subsequent
+ordinary requests passed. These results do not qualify live providers, real
+OAuth rotation, every new upstream capability, or the installed service workflow.
+
 ## Required behavior and existing executable evidence
 
 | Promise | Executable acceptance gate | Upgrade requirement / gap |

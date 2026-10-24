@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "passed": true,
+  "executedBy": "upgrade_core",
+  "sourceManifestSha256": "c5ff7548dcf72a0dd40b9c9a389799303bd7efebb7d1d30835aec13b1349d0cb",
+  "originalTestLogSha256": "0a6d314c0cd641e119cca3abf8da4d786f94b43c4714d7c4e91e13d82fd11359",
+  "testCount": 5,
+  "packageCount": 4,
+  "packages": [
+    "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/usage",
+    "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth",
+    "github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor/helps",
+    "github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor"
+  ],
+  "tests": [
+    {
+      "package": "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/usage",
+      "test": "TestDurableSinkPrecedesQueueAndFailureCannotEnqueue"
+    },
+    {
+      "package": "github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor/helps",
+      "test": "TestReportedUsageDoesNotInventTotalsOrEraseZero"
+    },
+    {
+      "package": "github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor",
+      "test": "TestEmbeddingNativeResponsesTransport/json"
+    },
+    {
+      "package": "github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor",
+      "test": "TestEmbeddingNativeResponsesTransport/sse"
+    },
+    {
+      "package": "github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor",
+      "test": "TestEmbeddingNativeResponsesTransport"
+    }
+  ]
+}

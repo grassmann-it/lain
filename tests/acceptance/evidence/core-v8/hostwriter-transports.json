@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "coreSha256": "e39e141daaca6c1946d93866e4d67e93651a07ff9664edf03078d4a9c49b6fe6",
+  "hostExporterDllSha256": "bdcf9637a381ca072831d87f9ad3d73bce9ba6f3f6051ba5e67c550f962793a2",
+  "checks": [
+    {
+      "name": "openai-chat",
+      "passed": true,
+      "evidence": {
+        "upstreamProtocol": "openai-chat",
+        "observedEndpoint": "/v1/chat/completions",
+        "requests": 4,
+        "hostWriterCredentialIdsMatch": true,
+        "hiddenAliasCallable": true,
+        "hiddenAliasListed": false,
+        "disabledAccountRegistered": false,
+        "durableUsage": true
+      }
+    },
+    {
+      "name": "openai-responses",
+      "passed": true,
+      "evidence": {
+        "upstreamProtocol": "openai-responses",
+        "observedEndpoint": "/v1/responses",
+        "requests": 4,
+        "hostWriterCredentialIdsMatch": true,
+        "hiddenAliasCallable": true,
+        "hiddenAliasListed": false,
+        "disabledAccountRegistered": false,
+        "durableUsage": true
+      }
+    }
+  ],
+  "passed": true
+}

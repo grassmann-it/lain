@@ -1,0 +1,292 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "passed": true,
+  "executedBy": "upgrade_core",
+  "sourceManifestSha256": "c5ff7548dcf72a0dd40b9c9a389799303bd7efebb7d1d30835aec13b1349d0cb",
+  "originalTestLogSha256": "570475d0646249f3893e06f090b02fae87dafc5f4ee6efb36064039d29fda9e3",
+  "testCount": 69,
+  "packageCount": 2,
+  "packages": [
+    "lain.local/proxy/internal/freeonly",
+    "lain.local/proxy/internal/lain"
+  ],
+  "tests": [
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestFreshZeroCapAndFinalPayload"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"paid/model\",\"messages\":[]}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"qwen/qwen3-coder:free\",\"models\":[\"paid/model\"],\"messages\":[]}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"qwen/qwen3-coder:free\",\"route\":\"fallback\",\"messages\":[]}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"qwen/qwen3-coder:free\",\"extra_body\":{\"model\":\"paid/model\"},\"messages\":[]}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"qwen/qwen3-coder:free\",\"provider\":{\"allow_fallbacks\":true},\"messages\":[]}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"qwen/qwen3-coder:free\",\"provider\":{\"max_price\":{\"prompt\":1e-1000}},\"messages\":[]}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"qwen/qwen3-coder:free\",\"provider\":{\"only\":[\"paid\"]},\"messages\":[]}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"qwen/qwen3-coder:free\",\"plugins\":[{\"id\":\"web\"}],\"messages\":[]}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"qwen/qwen3-coder:free\",\"tools\":[{\"type\":\"openrouter:web_search\"}],\"messages\":[]}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"qwen/qwen3-coder:free\",\"tools\":[{\"type\":\"function\",\"function\":{\"name\":\"openrouter:web_search\"}}],\"messages\":[]}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"qwen/qwen3-coder:free\",\"modalities\":[\"audio\"],\"messages\":[]}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"qwen/qwen3-coder:free\",\"messages\":[{\"content\":[{\"type\":\"file\",\"file\":{\"file_data\":\"private\"}}]}]}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"paid/model\",\"model\":\"qwen/qwen3-coder:free\",\"messages\":[]}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/{\"model\":\"qwen/qwen3-coder:free\",\"messages\":[]}_{}"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint/null"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestUnsafeInputsNeverReachProofEndpoint"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestZeroCapProofFailsClosed"
+    },
+    {
+      "package": "lain.local/proxy/internal/freeonly",
+      "test": "TestInboundAndContextPin"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestEveryExecutorRegistrationAndAPIKeyViewIsBound"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestOwnedExecutorLifecycleAndStrictSelection"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestBoundLowerPriorityCredentialRemainsSelectable"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestExecutorCapabilitiesSurviveWrapping"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestFreeOnlyStartupRequiresExactQualifiedBinding"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestFreeOnlyContextIsRequiredAndKeepsRequestIdentity"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestFreeOnlyWrongAuthOrTranslatedModelNeverGetsPin"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestFreeOnlyHTTPValidatesOriginalBodyBeforeModelRewrite"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestHTTPRoutesAuthenticateAndBindExactMembership"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestInspectorReplayBoundsExpiryAndRestart"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestInspectorRetentionUsesReceiptClockInsteadOfWallTimestamp"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestCaptureRedactsAcrossChunksAndBoundsUnterminatedLines"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestCaptureNormalizesSplitHiddenMarkersBeforeRedaction"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestDimensionsRequireExplicitEvidenceAndRejectInferredIdentities"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestOutputClassificationExcludesTransportAndUsageEvents"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestMeasuredCompletionFollowsEarlyUsageAndKeepsJournalMetadataOnly"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestOptionalJournalFieldsPreserveLegacySerialization"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestPendingCaptureHasGlobalCapacityAndExpiry"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestFreeOnlyDescriptorCannotBypassRuntimeEnforcement"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestJournalReplayRestartAndExclusiveOwnership"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestJournalSyncIsBeforeVisibilityAndFaultIsSticky"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestJournalTornAppendAndWrongSequenceFailClosed/{\"sequence\":1"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestJournalTornAppendAndWrongSequenceFailClosed/{}_"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestJournalTornAppendAndWrongSequenceFailClosed"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestJournalConcurrentContiguousAndBounded"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestDispatchRequiresDurableIdentityAndTerminalUnknown"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestUsageSynchronouslyDurableAndNotDoubleCounted"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestUsageIdentityMismatchClosesDispatch"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestRouteCredentialOverridesPreserveLogicalAccount"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestDispatchPreservesPublicAliasForPayloadRules"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestOwnedLoginDurableSeparateAndOnlySelectedCredentialWritable"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestCanceledOwnedLoginNeverPersistsLateExchange"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestSnapshotRejectsRefreshAndOwnedRegistryCannotPromoteUnknownFile"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestTerminalMarkerThenUpstreamErrorCannotEscapeAsSuccess/response.completed"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestTerminalMarkerThenUpstreamErrorCannotEscapeAsSuccess/response.incomplete"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestTerminalMarkerThenUpstreamErrorCannotEscapeAsSuccess/message_stop"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestTerminalMarkerThenUpstreamErrorCannotEscapeAsSuccess"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestTerminalBufferLimitsCancelAndDrain"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestChatFinishIsHeldUntilDurableEnd"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestIncompleteCompletionCannotPrecedeTerminalJournalWrite"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestLocalBufferAbortIsNotReportedAsClientCancellation"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestFinalFreeOnlyDecoratorBoundary/allowed"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestFinalFreeOnlyDecoratorBoundary/wrong-pin"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestFinalFreeOnlyDecoratorBoundary/wrong-model"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestFinalFreeOnlyDecoratorBoundary/responses"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestFinalFreeOnlyDecoratorBoundary/redirect"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestFinalFreeOnlyDecoratorBoundary/same-endpoint-redirect"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestFinalFreeOnlyDecoratorBoundary"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestProviderSessionAndGeminiBearerFinalHeaders"
+    },
+    {
+      "package": "lain.local/proxy/internal/lain",
+      "test": "TestNativeImageToolsRejectedAtFinalBoundaryWithoutAffectingFunctions"
+    }
+  ]
+}

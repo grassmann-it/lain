@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "coreSha256": "e39e141daaca6c1946d93866e4d67e93651a07ff9664edf03078d4a9c49b6fe6",
+  "behaviorChange": "explicit exclusion of unqualified native image_generation",
+  "passed": true,
+  "checks": [
+    {
+      "name": "native-image-generation-exclusion-and-positive-controls",
+      "passed": true,
+      "evidence": {
+        "rejectedCases": [
+          "native-tool",
+          "native-tool-choice",
+          "native-tool-choice-string",
+          "native-tool-and-choice"
+        ],
+        "rejectedStatus": 400,
+        "nativeToolUpstreamAttempts": 0,
+        "nativeToolDurableAttempts": 0,
+        "ordinaryImageNamedFunctionsPreserved": [
+          "image_generation",
+          "generate_image"
+        ],
+        "visionImageInputPreserved": true,
+        "positiveControlAttempts": 3,
+        "scope": "new explicit image_generation exclusion; no image output or real provider used"
+      }
+    },
+    {
+      "name": "final-payload-override-exclusion-and-recovery",
+      "passed": true,
+      "evidence": {
+        "payloadOverrideAppliedAfterClientBoundary": true,
+        "injectedNativeToolUpstreamAttempts": 0,
+        "rejectedStatus": 400,
+        "failedDurableAttemptRetained": true,
+        "usageUnknown": true,
+        "ordinaryRouteStillDispatches": true,
+        "journalHealthy": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "passed": true,
+  "testCount": 9,
+  "executedBy": "upgrade_qualification",
+  "testSourceIntegrationCommit": "32a4f29",
+  "command": "python3 -m unittest discover -s tests/backend -p 'test_*.py' -v",
+  "scope": "fake provider fixtures and replay-evidence assertions; no Core/Host product process",
+  "networkIsolation": "new user/network namespace with loopback only"
+}
