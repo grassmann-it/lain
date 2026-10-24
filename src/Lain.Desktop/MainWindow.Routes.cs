@@ -272,7 +272,7 @@ public sealed partial class MainWindow
             foreach (var item in items) menu.Items.Add(item);
         };
         menu.Closed += (_, _) => Dispatcher.UIThread.Post(() => {
-            if (_section == "Models" && !_editing && origin() is { } control && control.GetVisualRoot() == this)
+            if (_section == "Models" && !_editing && origin() is { } control && TopLevel.GetTopLevel(control) == this)
                 control.Focus();
         }, DispatcherPriority.Loaded);
         return menu;
