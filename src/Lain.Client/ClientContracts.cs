@@ -17,4 +17,5 @@ public sealed record AccountPlaceholderDto(string Id, string Provider);
 public sealed record ProfileExportDto(int ContractVersion, long Revision, ProfileDto Profile, RouteDto[] Routes, AccountPlaceholderDto[] Accounts);
 public sealed record ProfileApplyRequest(long Revision);
 public sealed record CodexExportRequest(long Revision, string ExecutablePath, string CatalogPath);
-public sealed record CodexProfileArtifacts(string ConfigFileName, string Configuration, string CatalogFileName, string Catalog, string[] LaunchArguments, long Revision);
+public sealed record CodexProfileArtifacts(string ConfigFileName, string Configuration, string CatalogFileName, string Catalog, string[] LaunchArguments, long Revision,
+    ModelCompatibilityManifestDto? Compatibility = null, string? ProfileId = null, string? GenerationId = null);

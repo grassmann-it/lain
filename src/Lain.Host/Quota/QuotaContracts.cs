@@ -11,11 +11,13 @@ public interface IQuotaAccountSource
 public interface IQuotaCredentialSource
 {
     Task<QuotaCredential?> GetCredentialAsync(string accountId, CancellationToken ct = default);
+    Task<string?> GetBindingVersionAsync(string accountId, CancellationToken ct = default) => Task.FromResult<string?>(null);
 }
 
 // Deliberately contains no refresh token, token endpoint, or ability to rotate credentials.
 public sealed class QuotaCredential(string bearerToken, string? providerAccountId = null, DateTimeOffset? expiresAt = null, string? baseUrl = null,
-    IReadOnlyDictionary<string, string>? settings = null, QuotaMonitorCredential? monitor = null)
+    IReadOnlyDictionary<string, string>? settings = null, QuotaMonitorCredential? monitor = null,
+    string? bindingVersion = null, string[]? purposes = null)
 {
     public string BearerToken { get; } = bearerToken;
     public string? ProviderAccountId { get; } = providerAccountId;
@@ -24,11 +26,14 @@ public sealed class QuotaCredential(string bearerToken, string? providerAccountI
     public IReadOnlyDictionary<string, string> Settings { get; } = settings is null
         ? new Dictionary<string, string>() : new Dictionary<string, string>(settings, StringComparer.Ordinal);
     public QuotaMonitorCredential? Monitor { get; } = monitor;
+    public string? BindingVersion { get; } = bindingVersion;
+    public string[]? Purposes { get; } = purposes?.ToArray();
     public string? MonitorBearerToken => Monitor?.Secret;
     public override string ToString() => "QuotaCredential [redacted]";
 
     // Accepts the normalized private SecretStore schema, never the legacy store path.
-    public static QuotaCredential? FromSecretJson(string json, QuotaMonitorCredential? monitor = null)
+    public static QuotaCredential? FromSecretJson(string json, QuotaMonitorCredential? monitor = null,
+        string? bindingVersion = null, string[]? purposes = null)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
@@ -45,7 +50,7 @@ public sealed class QuotaCredential(string bearerToken, string? providerAccountI
             JsonFields.Object(root, "settings") is { ValueKind: JsonValueKind.Object } values
                 ? values.EnumerateObject().Where(p => p.Value.ValueKind == JsonValueKind.String)
                     .ToDictionary(p => p.Name, p => p.Value.GetString()!, StringComparer.Ordinal)
-                : null, monitor);
+                : null, monitor, bindingVersion, purposes);
     }
 }
 
@@ -64,16 +69,20 @@ public record QuotaReading(string Source, string Unit, double? Used = null, doub
     string? WindowId = null, string? MeasurementKind = null, string? Scope = null, string? ScopeId = null,
     string? Model = null, string? SourceUrl = null, DateTimeOffset? ObservedAt = null, DateTimeOffset? DataAsOf = null,
     DateTimeOffset? WindowStart = null, DateTimeOffset? WindowEnd = null, DateTimeOffset? FreshUntil = null,
-    DateTimeOffset? ProviderUpdatedAt = null, double? ApprovedLimit = null);
+    DateTimeOffset? ProviderUpdatedAt = null, double? ApprovedLimit = null,
+    string? ExactUsed = null, string? ExactLimit = null, string? ExactRemaining = null,
+    DateTimeOffset? NextRegenerationAt = null, double? NextRegenerationPercent = null, string? ExactNextRegeneration = null);
 
 // A partial response may contain usable readings and a sanitized diagnostic.
-public record QuotaFetchResult(IReadOnlyList<QuotaReading> Readings, string? Error = null, QuotaSupportDto? Support = null);
+public record QuotaFetchResult(IReadOnlyList<QuotaReading> Readings, string? Error = null, QuotaSupportDto? Support = null,
+    KiloPassState? KiloPass = null, RequestyKeyMetadata? RequestyKey = null);
 
 public interface IQuotaAdapter
 {
     bool Supports(string provider);
     string Source { get; }
     bool RequiresCredential => true;
+    string CredentialPurpose => "quota";
     Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default);
 }
 
