@@ -1,0 +1,1 @@
+{"code":0,"data":{"kind":"ok","quota":{"usages":{"limit5h":{"usedRatio":0.25,"resetAt":"2026-10-25T01:00:00Z"},"limit7d":{"usedRatio":0},"monthCode":{"usedRatio":0.5}},"extraUsage":{"balanceCents":1250,"totalCents":2000,"monthlyChargeLimitEnabled":true,"monthlyChargeLimitCents":3000,"monthlyUsedCents":750,"currency":"CNY"}}}}
