@@ -61,6 +61,14 @@ type Integration struct {
 }
 type dispatchError struct{ message string }
 
+// Drain closes HTTP inference admission before the launcher starts shutdown.
+// It does not claim that an operating-system signal preserves live streams.
+func (i *Integration) Drain() {
+	i.activityMu.Lock()
+	i.draining = true
+	i.activityMu.Unlock()
+}
+
 func (e *dispatchError) Error() string         { return e.message }
 func (e *dispatchError) StatusCode() int       { return 503 }
 func (e *dispatchError) IsRequestScoped() bool { return true }

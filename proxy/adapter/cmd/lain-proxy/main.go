@@ -11,6 +11,7 @@ import (
 	auth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 	_ "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator/builtin"
+	"io"
 	"lain.local/proxy/internal/lain"
 	"os"
 	"os/signal"
@@ -31,6 +32,7 @@ func run() error {
 	journalPath := flag.String("journal", "", "durable event journal path")
 	tokenPath := flag.String("management-token-file", "", "private management bearer token file")
 	ownedPath := flag.String("owned-auth-dir", "", "separate directory for credentials created by lain login")
+	parentStdin := flag.Bool("parent-stdin", false, "stop when the owning host closes standard input")
 	flag.Parse()
 	for _, p := range []string{*configPath, *bindingsPath, *journalPath, *tokenPath} {
 		if p == "" || !filepath.IsAbs(p) {
@@ -133,5 +135,18 @@ func run() error {
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+	if *parentStdin {
+		go monitorParent(os.Stdin, func() {
+			integration.Drain()
+			cancel()
+		})
+	}
 	return service.Run(ctx)
+}
+
+// A private inherited pipe ties this runtime to its owning Host. Do not retain
+// stdin content or use process IDs, ports, or Go-thread-sensitive parent signals.
+func monitorParent(input io.Reader, stopped func()) {
+	_, _ = io.Copy(io.Discard, input)
+	stopped()
 }
