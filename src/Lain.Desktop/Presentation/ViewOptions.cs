@@ -15,6 +15,9 @@ public sealed record WorkspacePreferences
     public string AccountSort { get; init; } = "favorites";
     public bool GroupAccountsByProvider { get; init; }
     public string[] PinnedAccountIds { get; init; } = [];
+    public bool MinimizeToTray { get; init; } = true;
+    public bool CloseToTray { get; init; }
+    public bool NotificationsEnabled { get; init; } = true;
 }
 
 /// <summary>Typed targets preserve identity through contextual navigation.</summary>

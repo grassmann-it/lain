@@ -12,6 +12,23 @@ try
           store.Current.Densities.Count == 0 && store.Current.PinnedAccountIds.Length == 0,
         "a missing preference file defaults to Simple, Normal, favorites and no pins");
     Check(store.Error is null && !Directory.Exists(Path.GetDirectoryName(path)), "loading missing preferences has no write side effect");
+    Check(store.Current.MinimizeToTray && !store.Current.CloseToTray && store.Current.NotificationsEnabled,
+        "default tray settings minimize to tray, close normally and enable notifications");
+
+    var legacyPath = Path.Combine(root, "legacy-v1.json");
+    const string legacyJson = "{\"version\":1,\"level\":\"Advanced\",\"accountSort\":\"five-hour\"}";
+    File.WriteAllText(legacyPath, legacyJson);
+    var legacy = new WorkspacePreferencesStore(legacyPath);
+    Check(legacy.Error is null && legacy.Current.MinimizeToTray && !legacy.Current.CloseToTray &&
+          legacy.Current.NotificationsEnabled && legacy.Current.Level == InformationLevel.Advanced &&
+          legacy.Current.AccountSort == "five-hour", "version-one files without new tray fields retain settings and acquire defaults");
+    Check(File.ReadAllText(legacyPath) == legacyJson, "loading older preferences does not rewrite them");
+    Check(legacy.Save(legacy.Current with { MinimizeToTray = false, CloseToTray = true, NotificationsEnabled = false }),
+        "all tray and notification choices save");
+    var trayReload = new WorkspacePreferencesStore(legacyPath);
+    Check(trayReload.Error is null && trayReload.Current.Version == 1 && !trayReload.Current.MinimizeToTray &&
+          trayReload.Current.CloseToTray && !trayReload.Current.NotificationsEnabled && trayReload.Current.AccountSort == "five-hour",
+        "tray and notification choices survive restart without changing preference version or sort contract");
     var requested = store.Current with
     {
         Level = InformationLevel.Advanced,
@@ -72,7 +89,8 @@ try
     {
         "{broken", "null", "{\"version\":2}", "{\"level\":\"Impossible\"}", "{\"level\":99}",
         "{\"densities\":{\"Setup\":\"Normal\"}}", "{\"densities\":null}",
-        "{\"pinnedAccountIds\":[\"a\",\"a\"]}", "{\"accountSort\":\"quota\"}", "{\"unexpected\":true}"
+        "{\"pinnedAccountIds\":[\"a\",\"a\"]}", "{\"accountSort\":\"quota\"}", "{\"unexpected\":true}",
+        "{\"minimizeToTray\":\"true\"}", "{\"closeToTray\":null}", "{\"notificationsEnabled\":1}"
     })
     {
         File.WriteAllText(corruptPath, json);
@@ -91,8 +109,10 @@ try
     // A directory at the destination forces rename failure even when tests run as root.
     File.Move(path, path + ".backup");
     Directory.CreateDirectory(path);
-    Check(!store.Save(store.Current with { Level = InformationLevel.Barebones }) &&
-          store.Current.Level == InformationLevel.Advanced && store.Error is not null,
+    Check(!store.Save(store.Current with { Level = InformationLevel.Barebones, MinimizeToTray = false,
+              CloseToTray = true, NotificationsEnabled = false }) &&
+          store.Current.Level == InformationLevel.Advanced && store.Current.MinimizeToTray && !store.Current.CloseToTray &&
+          store.Current.NotificationsEnabled && store.Error is not null,
         "failed atomic replacement preserves the current snapshot");
     Check(Directory.Exists(path) && !Directory.EnumerateFiles(Path.GetDirectoryName(path)!, "*.tmp").Any(),
         "failed writes preserve destination and remove temporary files");
@@ -130,6 +150,21 @@ try
           sortWindow.Current.Densities["Accounts"] == ViewDensity.Compact &&
           new WorkspacePreferencesStore(fiveHourPath).Current.AccountSort == "provider",
         "changing away from five-hour order persists and retains independent presentation edits");
+
+    var trayPath = Path.Combine(root, "tray-windows.json");
+    var minimizeWindow = new WorkspacePreferencesStore(trayPath);
+    var closeWindow = new WorkspacePreferencesStore(trayPath);
+    var notificationWindow = new WorkspacePreferencesStore(trayPath);
+    Check(minimizeWindow.Save(minimizeWindow.Current with { MinimizeToTray = false }), "one window changes minimize behavior");
+    Check(closeWindow.Save(closeWindow.Current with { CloseToTray = true }), "a stale window changes close behavior independently");
+    Check(notificationWindow.Save(notificationWindow.Current with { NotificationsEnabled = false }),
+        "another stale window changes notification behavior independently");
+    var mergedTray = new WorkspacePreferencesStore(trayPath).Current;
+    Check(!mergedTray.MinimizeToTray && mergedTray.CloseToTray && !mergedTray.NotificationsEnabled,
+        "independent tray and notification changes from three windows all survive");
+    Check(minimizeWindow.Save(minimizeWindow.Current with { MinimizeToTray = true }) &&
+          minimizeWindow.Current.MinimizeToTray && minimizeWindow.Current.CloseToTray && !minimizeWindow.Current.NotificationsEnabled,
+        "changing one tray setting back preserves newer close and notification choices");
 
     if (!OperatingSystem.IsWindows())
     {

@@ -130,7 +130,11 @@ public sealed class WorkspacePreferencesStore
             GroupAccountsByProvider = requested.GroupAccountsByProvider == previous.GroupAccountsByProvider
                 ? latest.GroupAccountsByProvider : requested.GroupAccountsByProvider,
             PinnedAccountIds = requested.PinnedAccountIds.SequenceEqual(previous.PinnedAccountIds, StringComparer.Ordinal)
-                ? [.. latest.PinnedAccountIds] : [.. requested.PinnedAccountIds]
+                ? [.. latest.PinnedAccountIds] : [.. requested.PinnedAccountIds],
+            MinimizeToTray = requested.MinimizeToTray == previous.MinimizeToTray ? latest.MinimizeToTray : requested.MinimizeToTray,
+            CloseToTray = requested.CloseToTray == previous.CloseToTray ? latest.CloseToTray : requested.CloseToTray,
+            NotificationsEnabled = requested.NotificationsEnabled == previous.NotificationsEnabled
+                ? latest.NotificationsEnabled : requested.NotificationsEnabled
         };
     }
 

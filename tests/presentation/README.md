@@ -22,3 +22,8 @@ IDs (1–100 ASCII letters, digits, hyphen or underscore each).
 Account sort keys are `favorites` (default), `provider`, `name` and the explicit
 `five-hour` option. The store persists the user's choice only; quota polling and
 the moment at which a five-hour order is calculated belong to the Accounts view.
+
+Version-one preferences also contain `minimizeToTray` (default `true`),
+`closeToTray` (default `false`) and `notificationsEnabled` (default `true`).
+Older files may omit all three: loading supplies the defaults without rewriting
+the file. Each choice merges independently across windows and survives restart.
