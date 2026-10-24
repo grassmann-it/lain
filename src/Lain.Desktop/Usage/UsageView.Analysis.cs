@@ -219,7 +219,9 @@ public sealed partial class UsageView
                     detail.Children.Add(link);
                 }
             }
-            var expander = new Expander { Header = header, Content = detail, IsExpanded = _expandedAnalysisGroups.Contains(stateKey),
+            // Attach the completed header once. Giving its cells to the Expander first
+            // and then moving them into a Grid breaks Avalonia's logical-parent lifecycle.
+            var expander = new Expander { Content = detail, IsExpanded = _expandedAnalysisGroups.Contains(stateKey),
                 HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
             var commands = new List<ObjectCommand> { new("details", "Token and measurement details", () => expander.IsExpanded = true) };
             commands.AddRange(detail.Children.OfType<Button>().Select((button, index) => new ObjectCommand("action-" + index, button.Content?.ToString() ?? "Open context", () => button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)))));
