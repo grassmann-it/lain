@@ -100,6 +100,30 @@ using (var client = new HttpClient(new FakeHandler((_, _) => Task.FromResult(Rep
     var mismatch = await new RequestyQuotaAdapter(client).FetchAsync(Account("requesty") with { Binding = new("requesty", ResourceType: "group", ResourceId: "different-group") }, new(secret));
     Check(mismatch.Readings.Count == 0 && mismatch.RequestyKey is null && mismatch.Error is not null, "Mismatched Requesty binding exposes no usage or metadata");
 }
+foreach (var resourceType in new[] { "key", "group" })
+foreach (var selfFailure in new[] { "http-error", "malformed-json", "unknown-schema" })
+{
+    var usageCalls = 0;
+    using var client = new HttpClient(new FakeHandler((req, _) =>
+    {
+        if (req.RequestUri!.AbsolutePath.EndsWith("/usage"))
+        { usageCalls++; return Task.FromResult(Reply("{\"usage\":{\"a\":{\"spend\":0,\"total_requests\":0,\"total_tokens\":0}}}")); }
+        return Task.FromResult(selfFailure == "http-error" ? new HttpResponseMessage(HttpStatusCode.Forbidden)
+            : Reply(selfFailure == "malformed-json" ? "{" : "{}"));
+    }));
+    var result = await new RequestyQuotaAdapter(client).FetchAsync(Account("requesty") with
+        { Binding = new("requesty", ResourceType: resourceType, ResourceId: "expected-resource") }, new(secret));
+    Check(usageCalls == 0 && result.Readings.Count == 0 && result.RequestyKey is null && result.Error is not null,
+        "Bound Requesty identity must be verified before publishing or fetching usage after " + selfFailure);
+}
+using (var client = new HttpClient(new FakeHandler((req, _) => Task.FromResult(req.RequestUri!.AbsolutePath.EndsWith("/usage")
+    ? Reply("{\"usage\":{\"a\":{\"spend\":0,\"total_requests\":0,\"total_tokens\":0}}}")
+    : new HttpResponseMessage(HttpStatusCode.Forbidden)))))
+{
+    var result = await new RequestyQuotaAdapter(client).FetchAsync(Account("requesty"), new(secret));
+    Check(result.Readings.Count == 3 && result.Readings.All(r => r.ScopeId is null) && result.Error is not null,
+        "Unbound legacy Requesty usage remains an independent partial observation");
+}
 using (var client = new HttpClient(new FakeHandler((_, _) => throw new Exception("Unexpected network"))))
 {
     await Denied(() => new KiloQuotaAdapter(client).FetchAsync(Account("kilo"), new(secret, baseUrl: "https://untrusted.invalid/v1")), "Wrong Kilo host rejected before request");

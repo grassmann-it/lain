@@ -20,12 +20,15 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
         if (account.Binding is { } binding && (!binding.Provider.Equals("requesty", StringComparison.OrdinalIgnoreCase)
             || binding.ResourceType is not null && binding.ResourceType is not ("api_key" or "key" or "group")))
             throw new QuotaFetchException("Requesty Self requires its own key resource binding.");
+        if (account.Binding is { ResourceId: not null, ResourceType: null })
+            throw new QuotaFetchException("Requesty Self requires a key or group type for its bound resource.");
         var now = DateTimeOffset.UtcNow;
         var start = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
         var rows = new List<QuotaReading>();
         var errors = new List<string>();
         RequestyKeyMetadata? metadata = null;
         var resourceMismatch = false;
+        var resourceVerified = false;
         try
         {
             using var doc = await QuotaHttp.GetAsync(client, Endpoint, credential, ct, userAgent: "lain/1.0");
@@ -35,6 +38,7 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
             if (account.Binding is { ResourceId: { } expected, ResourceType: { } resourceType }
                 && (resourceType == "group" ? metadata?.GroupId : metadata?.KeyId) != expected)
             { metadata = null; resourceMismatch = true; throw new QuotaFetchException("Requesty Self resource does not match the bound account."); }
+            resourceVerified = metadata is not null;
             rows.AddRange(Normalize(doc.RootElement, start));
             if (metadata is null) errors.Add("Requesty key metadata unknown.");
         }
@@ -42,6 +46,10 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
         catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
         { errors.Add("Requesty Self response unavailable or invalid."); }
         if (resourceMismatch) return new([], "Requesty Self resource does not match the bound account.");
+        // A bound identity requires a successful Self read. Transport/schema failure
+        // must not let independent usage bypass that identity check with a null ID.
+        if (account.Binding?.ResourceId is not null && !resourceVerified)
+            return new([], "Requesty Self identity could not be verified for the bound resource.");
         // Explicit month-to-observation bounds; no all-time spend compared with a monthly cap.
         var usageUrl = Endpoint + "/usage?start=" + Uri.EscapeDataString(start.ToString("O", CultureInfo.InvariantCulture))
             + "&end=" + Uri.EscapeDataString(now.ToString("O", CultureInfo.InvariantCulture));
