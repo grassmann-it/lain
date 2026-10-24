@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 
 namespace Lain.Desktop.Tray;
@@ -9,7 +8,7 @@ namespace Lain.Desktop.Tray;
 public sealed class TrayWorkspaceController : IDisposable
 {
     private readonly Window _window;
-    private readonly IClassicDesktopStyleApplicationLifetime _lifetime;
+    private readonly Action _quitUi;
     private readonly Func<DateTimeOffset, CancellationToken, Task<TrayStatusSnapshot>> _poll;
     private readonly IDesktopNotificationSink _notifications;
     private readonly Func<CancellationToken, Task<bool>> _trayAvailable;
@@ -40,17 +39,15 @@ public sealed class TrayWorkspaceController : IDisposable
     public event Action<bool>? AvailabilityChanged;
     public event Action<bool>? NotificationsEnabledChanged;
 
-    public TrayWorkspaceController(Window window, IClassicDesktopStyleApplicationLifetime lifetime,
+    public TrayWorkspaceController(Window window, Action quitUi,
         Func<DateTimeOffset, CancellationToken, Task<TrayStatusSnapshot>> poll,
         IDesktopNotificationSink notifications, Func<CancellationToken, Task<bool>> trayAvailable)
     {
         _window = window;
-        _lifetime = lifetime;
+        _quitUi = quitUi;
         _poll = poll;
         _notifications = notifications;
         _trayAvailable = trayAvailable;
-        // Hide keeps the main window alive; a real close must always terminate the UI.
-        lifetime.ShutdownMode = ShutdownMode.OnMainWindowClose;
         var open = new NativeMenuItem("Open window");
         open.Click += (_, _) => Reopen();
         var quota = new NativeMenuItem("Quota summary") { Menu = _quotaMenu };
@@ -286,7 +283,7 @@ public sealed class TrayWorkspaceController : IDisposable
     private void Quit()
     {
         _quitting = true;
-        _lifetime.Shutdown();
+        _quitUi();
     }
 
     private void OnWindowClosed(object? sender, EventArgs args) => Dispose();

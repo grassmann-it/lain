@@ -25,9 +25,11 @@ public sealed class App : Application
         {
             var window = new MainWindow(LainApiClient.CreateLocal());
             desktop.MainWindow = window;
+            // Hiding preserves the main window; a real close always terminates the UI.
+            desktop.ShutdownMode = Avalonia.Controls.ShutdownMode.OnMainWindowClose;
             var monitorClient = LainApiClient.CreateLocal();
             var monitor = new DesktopSignalMonitor(monitorClient);
-            var tray = new TrayWorkspaceController(window, desktop, monitor.PollAsync,
+            var tray = new TrayWorkspaceController(window, () => desktop.Shutdown(), monitor.PollAsync,
                 new LinuxDesktopNotificationSink(), TrayAvailability.IsAvailableAsync);
             window.AttachTrayController(tray);
             window.Opened += (_, _) => tray.Start();
