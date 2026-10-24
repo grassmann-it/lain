@@ -58,7 +58,7 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
         var account = RequireAccount(state, accountId);
         var resourceId = request.ResourceId?.Trim();
         Validate(account, request.Kind, request.Secret, resourceId, request.ExpiresAt, requireFutureExpiry: true);
-        var resourceType = MonitorAccessCatalog.Provider(account.Provider) == "gemini-api" ? "project" : "account";
+        var resourceType = MonitorAccessCatalog.Provider(account.Provider) is "gemini-api" or "groq" ? "project" : "account";
         var binding = (account.Binding ?? new ResourceBindingDto(account.Provider)) with { ResourceType = resourceType, ResourceId = resourceId };
         AccountService.EnsureCompatibleBinding(account.Binding, binding);
         var connection = new ConnectAccountRequest(account.Provider, "monitor-" + request.Kind, ["quota"], AccountId: account.Id,
@@ -74,7 +74,7 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
         provider = AccountService.CanonicalProviderId(provider);
         if (request.Kind == "inference-key") throw new ArgumentException("Create a monitor account with its own access token first.");
         var accounts = new AccountService(configuration, secrets);
-        var resourceType = MonitorAccessCatalog.Provider(provider) == "gemini-api" ? "project" : "account";
+        var resourceType = MonitorAccessCatalog.Provider(provider) is "gemini-api" or "groq" ? "project" : "account";
         var binding = new ResourceBindingDto(provider, ResourceType: resourceType, ResourceId: request.ResourceId?.Trim());
         var connection = new ConnectAccountRequest(provider, "monitor-" + request.Kind, ["quota"], Name: name, Binding: binding);
         var context = accounts.ReserveConnect(revision, connection, "monitor-" + Guid.NewGuid().ToString("N"), clock.GetUtcNow().AddMinutes(10));
@@ -142,6 +142,15 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
             if (boundIds.Any(id => !string.Equals(id, resourceId, StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException("Cloudflare monitor and inference account IDs must match.");
         }
+        else if (provider == "groq")
+        {
+            if (!GroqEnterpriseUsageReader.ValidProject(resourceId))
+                throw new ArgumentException("Use the exact Groq project ID without a resource prefix.");
+            var boundProject = account.Binding is { ResourceType: "project" } ? account.Binding.ResourceId : null;
+            if (boundProject is not null && boundProject != resourceId
+                || InferenceResourceIds(account, provider).Any(id => id != resourceId))
+                throw new ArgumentException("Groq monitor and inference project IDs must match.");
+        }
         else if (provider == "fireworks")
         {
             if (!Regex.IsMatch(resourceId, @"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$", RegexOptions.CultureInvariant))
@@ -167,7 +176,7 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
             {
                 if (value.ValueKind != JsonValueKind.Object) return;
                 if (value.TryGetProperty("settings", out var settings) && settings.ValueKind == JsonValueKind.Object &&
-                    settings.TryGetProperty("accountId", out var id) && id.ValueKind == JsonValueKind.String && !string.IsNullOrEmpty(id.GetString()))
+                    settings.TryGetProperty(provider == "groq" ? "projectId" : "accountId", out var id) && id.ValueKind == JsonValueKind.String && !string.IsNullOrEmpty(id.GetString()))
                     ids.Add(id.GetString()!);
                 if (provider == "cloudflare-workers-ai" && value.TryGetProperty("baseUrl", out var baseUrl) && baseUrl.ValueKind == JsonValueKind.String &&
                     Uri.TryCreate(baseUrl.GetString(), UriKind.Absolute, out var uri) && uri.Scheme == "https" && uri.IdnHost == "api.cloudflare.com")

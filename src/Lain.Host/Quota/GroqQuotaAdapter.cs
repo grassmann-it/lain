@@ -10,6 +10,7 @@ public sealed class GroqQuotaAdapter(HttpClient core, TimeProvider? timeProvider
 {
     public const string Documentation = "https://console.groq.com/docs/rate-limits";
     public const string ConsoleUrl = "https://console.groq.com/settings/limits";
+    public const string UsageConsoleUrl = "https://console.groq.com/dashboard/usage";
     private readonly TimeProvider clock = timeProvider ?? TimeProvider.System;
     public string Source => "groq:response-headers";
     public bool RequiresCredential => false;
@@ -62,7 +63,7 @@ public sealed class GroqQuotaAdapter(HttpClient core, TimeProvider? timeProvider
                     Limit: window.Limit, Remaining: window.Remaining, ResetsAt: window.ResetsAt,
                     InheritAccountPool: false,
                     WindowLabel: $"{model} · {(window.Window == "day" ? "Requests per day" : "Tokens per minute")}",
-                    WindowId: window.Kind, MeasurementKind: "quota", Scope: "organization-model-observed-via-account",
+                    WindowId: window.Kind, MeasurementKind: "quota", Scope: "organization-or-project-model-observed-via-account",
                     ScopeId: accountId, Model: model, SourceUrl: Documentation, DataAsOf: observed,
                     FreshUntil: freshness, ObservedAt: observed);
             }).ToArray();
@@ -74,7 +75,7 @@ public sealed class GroqQuotaAdapter(HttpClient core, TimeProvider? timeProvider
         var partial = latest.Values.Any(value => value.Rows.Count < 2);
         return new(readings, partial ? "Some Groq rate-limit windows are unavailable; previous observations retained." : null,
             Support: readings.Length == 0
-            ? new("awaiting-observation", "Limits appear after the next ordinary Groq request; refreshing does not send inference.", ConsoleUrl)
-            : new("passive", "Observed Groq response headers; organization rate limits may be shared with other keys.", ConsoleUrl));
+            ? new("awaiting-observation", "No saved Groq limits yet. Free/Developer monitoring has no qualified independent quota API. Check your Groq console; RPD/TPM appear after an ordinary Gateway request. Reload only reads saved observations.", UsageConsoleUrl)
+            : new("passive", "Saved RPD/TPM response headers, not current account spend or credit balance. Organization and project limits may overlap and be shared with other keys; exact pool scope is unverified.", ConsoleUrl));
     }
 }

@@ -73,9 +73,9 @@ try
     var now = new ManualClock(new DateTimeOffset(2026, 10, 24, 10, 0, 0, TimeSpan.Zero));
     var service = new MonitorAccessService(configuration, secrets, store, now);
     Equal("not-configured", service.Get(account.Id).State, "status does not contact provider");
-    Equal("unsupported", service.Get(groq.Id).State, "passive Groq needs no extra credential");
+    Equal("not-configured", service.Get(groq.Id).State, "optional Enterprise monitor is not implicitly enabled for passive Groq");
     Throws<KeyNotFoundException>(() => service.Get("acct-absent"), "unknown account rejected");
-    Throws<ArgumentException>(() => service.Set(configuration.Snapshot.Revision, groq.Id, new("api-token", "synthetic", "unused")), "unsupported extra credentials refused");
+    Throws<ArgumentException>(() => service.Set(configuration.Snapshot.Revision, groq.Id, new("access-token-snapshot", "synthetic", "unused")), "unsupported Groq OAuth snapshot refused");
     var before = configuration.Snapshot;
     var configured = service.Set(before.Revision, account.Id, new("inference-key", ResourceId: "example-account"));
     Equal(before.Revision + 1, configured.Revision, "monitor mutation participates in revisions");

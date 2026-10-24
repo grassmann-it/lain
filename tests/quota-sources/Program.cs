@@ -31,7 +31,7 @@ Check(rows.Length == 6, "separate request and token windows per account and mode
 var token = rows.Single(r => r.AccountId == "account-a" && r.Model == "model-one" && r.Unit == "tokens");
 Check(token.Remaining == 7900 && token.Limit == 8000 && token.ResetsAt == observedAt.AddSeconds(7.66), "real headers parsed with response-relative reset");
 Check(token.DataAsOf == observedAt && token.ObservedAt == observedAt && token.FreshUntil == observedAt.AddSeconds(7.66), "source timestamps survive service projection");
-Check(token.ScopeId == "account-a" && token.Scope == "organization-model-observed-via-account" && token.BudgetPoolId is null, "no guessed organization pool");
+Check(token.ScopeId == "account-a" && token.Scope == "organization-or-project-model-observed-via-account" && token.BudgetPoolId is null, "no guessed organization or project pool");
 Check(rows.Single(r => r.AccountId == "account-a" && r.Model == "model-two" && r.Unit == "tokens").Remaining == 0, "explicit zero remains visible");
 Check(rows.Single(r => r.AccountId == "account-b" && r.Unit == "tokens").Remaining == 4100, "account observations stay isolated");
 clock.Advance(TimeSpan.FromSeconds(10));

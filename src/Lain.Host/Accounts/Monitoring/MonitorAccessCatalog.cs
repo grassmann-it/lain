@@ -9,9 +9,19 @@ public static class MonitorAccessCatalog
     public const string GoogleMonitoringDocs = "https://docs.cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.timeSeries/list";
     public const string CloudflareAnalyticsDocs = "https://developers.cloudflare.com/analytics/graphql-api/getting-started/authentication/api-token-auth/";
     public const string FireworksQuotaDocs = "https://docs.fireworks.ai/api-reference/list-quotas";
+    public const string GroqMetricsDocs = "https://console.groq.com/docs/prometheus-metrics";
 
     public static MonitorAccessOptionDto[] Options(string providerId) => Provider(providerId) switch
     {
+        "groq" =>
+        [
+            new("inference-key", "Groq Enterprise metrics with existing key", false, "Groq project ID",
+                "The exact Groq project used by this account. Confirm it in your Groq console.", GroqMetricsDocs, [],
+                "Enable only for an existing Enterprise metrics entitlement. Reads 5-minute average request/token rates with the current API key; does not provide remaining quotas, spend or credits. Free/Developer monitoring keeps saved response headers and the console."),
+            new("api-token", "Separate Groq Enterprise metrics key", true, "Groq project ID",
+                "Use a key authorized for the same Groq project as this inference account.", GroqMetricsDocs, [],
+                "Optional Enterprise metrics access, including a standalone monitor. Requires existing Enterprise enablement; minimum key role is not publicly specified. This is an API key, not OAuth, and reported rates are not remaining quota.")
+        ],
         "fireworks" =>
         [
             new("inference-key", "Use existing Fireworks API key", false, "Fireworks account ID",
