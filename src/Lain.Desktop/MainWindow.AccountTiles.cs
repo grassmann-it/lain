@@ -137,7 +137,7 @@ public sealed partial class MainWindow
             : percent is { } consumed ? $"{BudgetNumber(100 - consumed)}% left"
             : unavailable ? "Remaining not available" : "Remaining not supplied";
         var resetText = QuotaResetText(quota, unavailable);
-        if (percent is { } usedPercent && options.Level != InformationLevel.Barebones)
+        if (percent is { } usedPercent)
         {
             var bar = new ProgressBar
             {
