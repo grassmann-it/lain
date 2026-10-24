@@ -3,8 +3,11 @@
 set -euo pipefail
 umask 077
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-out=${1:-"$root/artifacts/lain-linux-x64"}
-[[ "$out" == /* && ! -e "$out" ]] || { echo 'Output must be an absolute, nonexistent directory' >&2; exit 2; }
+mode=gateway
+if [[ "${1:-}" == --mode ]]; then mode=${2:?Missing mode}; shift 2; fi
+[[ "$mode" == monitor || "$mode" == gateway ]] || { echo 'Mode must be monitor or gateway' >&2; exit 2; }
+out=${1:-"$root/artifacts/lain-linux-x64-$mode"}
+[[ "$out" == /* && ! -e "$out" && ! -L "$out" && ! -e "$out.tar.gz" && ! -L "$out.tar.gz" && ! -e "$out.tar.gz.sha256" && ! -L "$out.tar.gz.sha256" ]] || { echo 'Output must be an absolute, nonexistent directory' >&2; exit 2; }
 cd "$root"
 revision=$(git rev-parse HEAD)
 # Application source pins describe an exact tracked tree; unrelated notes may be dirty.
@@ -15,30 +18,34 @@ verify_frozen_inputs() {
     [[ -z "$(git ls-files --others --exclude-standard -- "${frozen_inputs[@]}")" ]] || { echo 'Untracked compile/packaging inputs must be committed before publishing' >&2; exit 2; }
 }
 verify_frozen_inputs
+if [[ "$mode" == gateway ]]; then
 python3 - <<'PYCATALOG'
 import pathlib, runpy
 runpy.run_path('scripts/core-refresh.py')['check_codex_catalog'](pathlib.Path('proxy/codex-model-catalog.json'))
 PYCATALOG
+fi
 publish_parent=$(mktemp -d "${TMPDIR:-/tmp}/lain-publish.XXXXXXXX")
 trap 'rm -rf -- "$publish_parent"' EXIT
 mkdir -p "$publish_parent/properties"
+if [[ "$mode" == gateway ]]; then
 [[ "$(python3 -c 'import json; print(json.load(open("proxy/source-manifest.json"))["schemaVersion"])')" == 2 ]] || { echo 'Fresh publish requires external Core schema 2' >&2; exit 2; }
+fi
 expected=$(python3 -c 'import json; print(json.load(open("global.json"))["sdk"]["version"])')
 [[ "$(dotnet --version)" == "$expected" ]] || { echo "Requires .NET SDK $expected" >&2; exit 2; }
-[[ -x scripts/build-core.sh && -f proxy/source-manifest.json ]] || { echo 'Qualified proxy source and build script required' >&2; exit 2; }
+[[ "$mode" == monitor || ( -x scripts/build-core.sh && -f proxy/source-manifest.json ) ]] || { echo 'Qualified proxy source and build script required' >&2; exit 2; }
 # Locked restore refuses package graph changes. Update committed lockfiles explicitly.
 for project in Lain.Cli Lain.Host Lain.Desktop; do
     [[ -f "src/$project/packages.lock.json" ]] || { echo "Missing lockfile: $project" >&2; exit 2; }
-    dotnet restore "src/$project/$project.csproj" --locked-mode -m:1 -p:BuildInParallel=false -nr:false -r linux-x64 -p:SelfContained=true
+    dotnet restore "src/$project/$project.csproj" --locked-mode -m:1 -p:BuildInParallel=false -nr:false -r linux-x64 -p:SelfContained=true -p:LainRuntimeMode="$mode"
  done
-mkdir -p "$out/proxy" "$out/packaging" "$out/skills"
+mkdir -p "$out/packaging" "$out/skills"
 for spec in 'Lain.Cli cli' 'Lain.Host host' 'Lain.Desktop desktop'; do
     read -r project directory <<< "$spec"
     # Read each project's evaluated version without triggering a build. The exact
     # explicit informational version below is passed to publish and verified in its DLL.
     dotnet msbuild "src/$project/$project.csproj" -nologo -verbosity:quiet -target:GetAssemblyVersion \
         -getProperty:Version,InformationalVersion -p:Configuration=Release -p:RuntimeIdentifier=linux-x64 \
-        -p:SelfContained=true -p:IncludeSourceRevisionInInformationalVersion=false \
+        -p:SelfContained=true -p:LainRuntimeMode="$mode" -p:IncludeSourceRevisionInInformationalVersion=false \
         > "$publish_parent/properties/$directory.evaluated.json"
     python3 - "$publish_parent/properties/$directory.evaluated.json" "$publish_parent/properties/$directory.json" "$revision" "$project" <<'PYPUBLISHVERSION'
 import json, pathlib, re, sys
@@ -56,8 +63,10 @@ PYPUBLISHVERSION
     informational_version=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["publishProperties"]["InformationalVersion"])' "$publish_parent/properties/$directory.json")
     dotnet publish "src/$project/$project.csproj" --no-restore -m:1 -p:BuildInParallel=false -nr:false -c Release -r linux-x64 --self-contained true -o "$out/$directory" \
         -p:ContinuousIntegrationBuild=true -p:Deterministic=true -p:DebugType=None -p:DebugSymbols=false -p:PathMap="$root=/_/lain" \
-        -p:InformationalVersion="$informational_version" -p:IncludeSourceRevisionInInformationalVersion=false -p:SourceRevisionId="$revision"
+        -p:LainRuntimeMode="$mode" -p:InformationalVersion="$informational_version" -p:IncludeSourceRevisionInInformationalVersion=false -p:SourceRevisionId="$revision"
 done
+if [[ "$mode" == gateway ]]; then
+mkdir -p "$out/proxy"
 scripts/build-core.sh "$out/proxy/lain-proxy"
 cp proxy/LICENSE.upstream "$out/proxy/LICENSE"
 cp proxy/upstream.json proxy/source-manifest.json proxy/toolchain.json proxy/codex-model-catalog.json "$out/proxy/"
@@ -107,17 +116,25 @@ if approved:
 (root / 'gate-status.json').write_text(json.dumps({'backendQualified': qualified, 'releaseQualified': False,
     'status': 'awaiting-final-package-and-desktop-acceptance' if qualified else 'staged-awaiting-final-acceptance'}, indent=2))
 PYGATE
+else
+    printf '%s\n' '{"backendQualified":null,"releaseQualified":false,"status":"monitor-staged-awaiting-final-acceptance"}' > "$out/gate-status.json"
+fi
 cp packaging/lain packaging/lain.service.in packaging/lain.desktop.in "$out/packaging/"
 cp scripts/install-linux.sh "$out/install-linux.sh"
+cp scripts/lain-maintenance.py "$out/packaging/"
+if [[ "$mode" == gateway ]]; then
 python3 scripts/collect-notices.py "$out/notices" --prepared-adapter "$publish_parent/prepared/adapter"
 python3 - "$out/notices/go/inventory.json" <<'PYNOTICES'
 import json, pathlib, sys
 if json.loads(pathlib.Path(sys.argv[1]).read_text())['missingEvidence']:
     raise SystemExit('Go notice evidence is incomplete; review before packaging')
 PYNOTICES
+else
+python3 scripts/collect-notices.py "$out/notices" --without-core
+fi
 cp -a skills/lain-usage "$out/skills/"
 verify_frozen_inputs
-python3 - "$out" "$expected" "$revision" "$publish_parent/properties" <<'PYBUILDINFO'
+python3 - "$out" "$expected" "$revision" "$publish_parent/properties" "$mode" <<'PYBUILDINFO'
 import hashlib, json, pathlib, runpy, shutil, subprocess, sys
 out, sdk, revision, properties = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3], pathlib.Path(sys.argv[4])
 root = pathlib.Path.cwd()
@@ -152,29 +169,36 @@ for name in source_paths:
 provenance_path = out / 'source-provenance/inventory.json'
 provenance_path.write_text(json.dumps({'format': 1, 'sourceCommit': revision, 'files': provenance,
     'scope': 'Frozen application project/lock/config inputs and exact explicit publish properties; full source is identified by Git commit'}, indent=2) + '\n')
-proxy = out / 'proxy'
-build = json.loads((proxy / 'build-manifest.json').read_text())
-if build['binarySha256'] != digest(proxy / 'lain-proxy') or build['sourceManifestSha256'] != digest(proxy / 'source-manifest.json'):
-    raise SystemExit('Core build provenance changed before build-info generation')
-check_catalog = runpy.run_path(str(root / 'scripts/core-refresh.py'))['check_codex_catalog']
-catalog = check_catalog(proxy / 'codex-model-catalog.json')
-if (catalog != check_catalog(root / 'proxy/codex-model-catalog.json') or
-        catalog != check_catalog(out / 'core-source-provenance/proxy/codex-model-catalog.json')):
-    raise SystemExit('Codex model catalog differs from frozen source')
+mode = sys.argv[5]
+if mode == 'gateway':
+    proxy = out / 'proxy'
+    build = json.loads((proxy / 'build-manifest.json').read_text())
+    if build['binarySha256'] != digest(proxy / 'lain-proxy') or build['sourceManifestSha256'] != digest(proxy / 'source-manifest.json'):
+        raise SystemExit('Core build provenance changed before build-info generation')
+    check_catalog = runpy.run_path(str(root / 'scripts/core-refresh.py'))['check_codex_catalog']
+    catalog = check_catalog(proxy / 'codex-model-catalog.json')
+    if (catalog != check_catalog(root / 'proxy/codex-model-catalog.json') or
+            catalog != check_catalog(out / 'core-source-provenance/proxy/codex-model-catalog.json')):
+        raise SystemExit('Codex model catalog differs from frozen source')
 dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], text=True).strip())
 info = {'format': 1, 'runtime': 'linux-x64', 'sdk': sdk, 'commit': revision, 'sourceDirty': dirty,
     'packagingCommit': revision, 'packagingSourceDirty': dirty, 'compileInputsFrozen': True,
     'componentSourceCommits': {name: revision for name in projects}, 'componentInformationalVersions': versions,
-    'components': components, 'coreSourceCommit': revision, 'proxySha256': build['binarySha256'],
-    'sourceManifestSha256': build['sourceManifestSha256'], 'coreBuildManifestSha256': digest(proxy / 'build-manifest.json'),
+    'components': components, 'runtimeMode': mode,
     'sourceProvenanceInventorySha256': digest(provenance_path),
-    'codexModelCatalog': catalog,
-    'coreBuild': {key: build[key] for key in ('goVersion', 'snapshotVersion', 'lainPatchVersion', 'upstreamVersion',
-        'upstreamCommit', 'upstreamSourceModified', 'upstreamArchiveSha256', 'patchSetSha256')},
     'packagingToolSha256': {name: digest(root / 'scripts' / name) for name in
-        ('publish-linux.sh', 'build-core.sh', 'prepare-core.py', 'build-core-verify.py', 'collect-notices.py', 'collect-go-notices.py', 'core-refresh.py')}}
-if (proxy / 'qualification.json').is_file():
+        ('publish-linux.sh', 'install-linux.sh', 'lain-maintenance.py', 'collect-notices.py')}}
+if mode == 'gateway':
+    info['packagingToolSha256'].update({name: digest(root / 'scripts' / name) for name in
+        ('build-core.sh', 'prepare-core.py', 'build-core-verify.py', 'collect-go-notices.py', 'core-refresh.py')})
+    info.update({'coreSourceCommit': revision, 'proxySha256': build['binarySha256'],
+        'sourceManifestSha256': build['sourceManifestSha256'], 'coreBuildManifestSha256': digest(proxy / 'build-manifest.json'),
+        'codexModelCatalog': catalog,
+        'coreBuild': {key: build[key] for key in ('goVersion', 'snapshotVersion', 'lainPatchVersion', 'upstreamVersion',
+            'upstreamCommit', 'upstreamSourceModified', 'upstreamArchiveSha256', 'patchSetSha256')}})
+if mode == 'gateway' and (proxy / 'qualification.json').is_file():
     info['qualificationSha256'] = digest(proxy / 'qualification.json')
+(out / 'package-metadata.json').write_text(json.dumps({'format': 1, 'runtimeMode': mode, 'sourceCommit': revision, 'runtime': 'linux-x64'}, indent=2) + '\n')
 (out / 'build-info.json').write_text(json.dumps(info, indent=2) + '\n')
 PYBUILDINFO
 (cd "$out" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)

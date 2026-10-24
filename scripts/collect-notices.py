@@ -12,6 +12,7 @@ import xml.etree.ElementTree as ET
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("output", type=Path)
 parser.add_argument("--prepared-adapter", type=Path, help="verified schema-2 prepared adapter for Go notices")
+parser.add_argument("--without-core", action="store_true", help="monitor package: omit Go/Core inventory entirely")
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
 output = args.output.resolve()
@@ -102,16 +103,17 @@ with (output / "README.txt").open("a") as handle:
     handle.write("\nFonts: inventory.json bundledFonts lists embedded application font sources and hashes; "
                  "fonts/ preserves their original family-specific OFL texts and copyright notices. "
                  "The desktop publish also carries Assets/Fonts/<family>/OFL.txt.\n")
-go_command = [sys.executable, str(root / "scripts/collect-go-notices.py"),
-              str(output.parent / "proxy/lain-proxy"), str(output / "go")]
-if args.prepared_adapter:
-    go_command.extend(["--prepared-adapter", str(args.prepared_adapter),
-                       "--source-manifest", str(output.parent / "proxy/source-manifest.json"),
-                       "--build-manifest", str(output.parent / "proxy/build-manifest.json")])
-subprocess.run(go_command, check=True)
-with (output / "README.txt").open("a") as handle:
-    handle.write("\nGo: go/inventory.json lists the actual binary's linked module versions/checksums, "
-                 "source URLs, cached root LICENSE/COPYING/NOTICE files and the matching Go toolchain LICENSE. "
-                 "Missing evidence is explicit; no modules are downloaded/upgraded. Nested or generated "
-                 "third-party attribution obligations still require review.\n")
+if not args.without_core:
+    go_command = [sys.executable, str(root / "scripts/collect-go-notices.py"),
+                  str(output.parent / "proxy/lain-proxy"), str(output / "go")]
+    if args.prepared_adapter:
+        go_command.extend(["--prepared-adapter", str(args.prepared_adapter),
+                           "--source-manifest", str(output.parent / "proxy/source-manifest.json"),
+                           "--build-manifest", str(output.parent / "proxy/build-manifest.json")])
+    subprocess.run(go_command, check=True)
+    with (output / "README.txt").open("a") as handle:
+        handle.write("\nGo: go/inventory.json lists the actual binary's linked module versions/checksums, "
+                     "source URLs, cached root LICENSE/COPYING/NOTICE files and the matching Go toolchain LICENSE. "
+                     "Missing evidence is explicit; no modules are downloaded/upgraded. Nested or generated "
+                     "third-party attribution obligations still require review.\n")
 print(f"Collected metadata for {len(inventory)} exact NuGet/runtime packages and pinned official notices")

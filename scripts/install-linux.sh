@@ -12,16 +12,62 @@ icon_file="$data_dir/icons/lain.png"
 for path in "$package" "$prefix" "$lain_home" "$unit_dir" "$data_dir"; do
     [[ "$path" == /* && "$path" != *$'\n'* && "$path" != *$'\r'* ]] || { echo 'All installation paths must be absolute and single-line' >&2; exit 2; }
 done
+python3 - "$package" "$prefix/bin/lain" "$lain_home" "$lain_home/app" "$lain_home/app.previous" "$unit_dir/lain.service" "$desktop_file" "$icon_file" <<'PYPATHS'
+import pathlib, sys
+for name in sys.argv[1:]:
+    p = pathlib.Path(name)
+    for ancestor in (p, *p.parents):
+        if ancestor.is_symlink(): raise SystemExit('Installation paths cannot contain symlinks: ' + str(ancestor))
+PYPATHS
 # systemd rejects these literal characters in executable paths. Keep supported
 # homes explicit instead of creating an installation with an unusable service.
 case "$lain_home" in
     *[\\\"\'%]*|*$'\t'*) echo 'LAIN_HOME cannot contain quotes, backslashes, percent signs or tabs; spaces are supported' >&2; exit 2;;
 esac
-for part in cli/Lain.Cli host/Lain.Host desktop/Lain.Desktop proxy/lain-proxy; do
+# Legacy packages without metadata remain Gateway; new packages declare their mode.
+mode=$(python3 - "$package" <<'PYMODE'
+import json, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+p = root / 'package-metadata.json'
+mode = json.loads(p.read_text())['runtimeMode'] if p.is_file() else 'gateway'
+if mode not in ('monitor', 'gateway'): raise SystemExit('Invalid package runtimeMode')
+if mode == 'monitor' and (root / 'proxy').exists(): raise SystemExit('Monitor package contains Core directory')
+print(mode)
+PYMODE
+)
+parts=(cli/Lain.Cli host/Lain.Host desktop/Lain.Desktop)
+if [[ "$mode" == gateway ]]; then parts+=(proxy/lain-proxy); fi
+for part in "${parts[@]}"; do
     [[ -x "$package/$part" ]] || { echo "Missing executable: $part" >&2; exit 2; }
 done
 [[ -f "$package/SHA256SUMS" && -f "$package/packaging/lain.service.in" && -f "$package/packaging/lain" && -f "$package/packaging/lain.desktop.in" && -f "$package/desktop/Assets/Brand/lain-cat.png" ]] || { echo 'Not a lain package with desktop branding' >&2; exit 2; }
-(cd "$package" && sha256sum --check --strict SHA256SUMS >/dev/null)
+# Verify all files, reject traversal/symlinks and files omitted from the checksum inventory.
+python3 - "$package" <<'PYINTEGRITY'
+import hashlib, pathlib, re, sys
+root = pathlib.Path(sys.argv[1])
+listed = set()
+for line in (root / 'SHA256SUMS').read_text().splitlines():
+    match = re.fullmatch(r'([0-9a-f]{64})  (.+)', line)
+    if not match: raise SystemExit('Invalid SHA256SUMS record')
+    digest, name = match.groups()
+    p = pathlib.PurePosixPath(name)
+    if p.is_absolute() or '..' in p.parts or str(p) in listed: raise SystemExit('Unsafe/duplicate package path')
+    listed.add(str(p))
+    path = root / p
+    if path.is_symlink() or not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+        raise SystemExit('Package integrity failure: ' + name)
+actual = set()
+for path in root.rglob('*'):
+    if path.is_symlink(): raise SystemExit('Package symlinks are unsupported')
+    if path.is_file() and path.name != 'SHA256SUMS': actual.add(str(path.relative_to(root)))
+if actual != listed: raise SystemExit('Package inventory does not cover exact files')
+PYINTEGRITY
+# A package change must never silently remove an installed Core or change intent.
+if [[ "$mode" == monitor && -e "$lain_home/app/proxy/lain-proxy" ]]; then
+    echo 'Refusing Gateway-to-Monitor package replacement: retain Gateway package and change runtime mode explicitly' >&2; exit 2
+fi
+fresh=false
+[[ -e "$lain_home/configuration.json" || -e "$lain_home/initial-runtime-mode" || -e "$lain_home/app" ]] || fresh=true
 # Refuse accidental ownership of another application or proxy installation.
 [[ ! -e "$lain_home/app" || -f "$lain_home/app/.lain-package" ]] || { echo 'Existing app directory is not a lain package' >&2; exit 2; }
 [[ ! -e "$prefix/bin/lain" || -f "$lain_home/app/.lain-package" ]] || { echo 'Existing lain launcher is not managed by this installation' >&2; exit 2; }
@@ -54,6 +100,7 @@ fi
 if [[ -e "$lain_home/app" ]]; then mv "$lain_home/app" "$lain_home/app.previous"; fi
 mv "$stage" "$lain_home/app"
 stage=
+if [[ "$fresh" == true ]]; then printf '%s\n' "$mode" > "$lain_home/initial-runtime-mode"; fi
 # Embed the chosen private home while keeping an explicit runtime override.
 python3 - "$lain_home" "$prefix/bin/lain" "$unit_dir/lain.service" "$desktop_file" "$icon_file" <<'PY'
 import hashlib, json, pathlib, re, shlex, sys
