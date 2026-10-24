@@ -27,10 +27,11 @@ try
     await Run("missing explicit handle never falls back to inference", MissingExplicitHandle);
     await Run("failed newer generation write retries newer payload", PersistenceRetry);
     await Run("legacy preservation rejects contradictory profile identities", LegacyContradictions);
+    await Run("new Codex snapshot reaches qualified quota read", CodexSnapshotQuota);
     await Run("historical canonical journal digest survives replay", HistoricalJournal);
 }
 finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
-Console.WriteLine($"Independent scenarios: {10 - failures.Count}/10 passed.");
+Console.WriteLine($"Independent scenarios: {11 - failures.Count}/11 passed.");
 Environment.ExitCode = failures.Count == 0 ? 0 : 1;
 
 async Task Run(string label, Func<Task> test)
@@ -193,6 +194,26 @@ Task LegacyContradictions()
     OwnStatePaths.WritePrivate(runtime, "{\"valid\":true,\"revision\":7}");
     Require(AppliedProfileStatus.CanPreserveLegacyRuntime(active, runtime, 7));
     return Task.CompletedTask;
+}
+
+async Task CodexSnapshotQuota()
+{
+    var f = Fresh("codex-snapshot-read");
+    var state = f.Accounts.ConnectCredential(0, new(new("codex", "snapshot", ["quota"],
+        Binding: new("codex", Subject: "synthetic-subject")), "synthetic-access", "access-token-snapshot", DateTimeOffset.UtcNow.AddHours(1)));
+    var account = state.Accounts.Single();
+    var credential = await new HostQuotaSource(f.Repository, f.Secrets, f.Monitor).GetCredentialAsync(account.Id);
+    Require(credential is not null && credential.ProviderAccountId == "synthetic-subject");
+    var calls = 0;
+    using var client = new HttpClient(new Handler(request =>
+    {
+        calls++;
+        Require(request.Headers.GetValues("Chatgpt-Account-Id").Single() == "synthetic-subject");
+        return new(HttpStatusCode.OK) { Content = new StringContent("{\"rate_limit\":{\"primary_window\":{\"used_percent\":0,\"limit_window_seconds\":18000}}}") };
+    }));
+    var result = await new CodexQuotaAdapter(client).FetchAsync(account, credential!);
+    Require(calls == 1 && result.Readings.Single().UsedPercent == 0);
+    Require(!f.Secrets.HasAccount(account.Id));
 }
 
 async Task HistoricalJournal()

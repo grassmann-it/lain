@@ -22,6 +22,7 @@ def require(condition, description):
 
 
 def main():
+    os.umask(0o077)
     assembly = Path(sys.argv[1]).resolve(strict=True)
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     with tempfile.TemporaryDirectory(prefix="lain-independent-monitor-") as temporary:
