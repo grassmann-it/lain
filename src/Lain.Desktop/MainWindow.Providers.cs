@@ -110,12 +110,6 @@ public sealed partial class MainWindow
         }
         var form = AccountForm($"Set up {provider.Name}", "Add credentials for your provider account. Choose models now or later without entering the key again.", AccountFormRow("Display name", name));
         form.Children.Add(Ui.Button("Open official credential page", async () => await OpenProviderLinkAsync(new Uri(provider.AccountUrl))));
-        foreach (var step in provider.SetupSteps)
-        {
-            form.Children.Add(Ui.Text(step.Title + " · " + step.Description, 11, Ui.Muted));
-            if (Uri.TryCreate(step.Url, UriKind.Absolute, out var link) && link.Scheme == Uri.UriSchemeHttps)
-                form.Children.Add(Ui.Button(step.Title, async () => await OpenProviderLinkAsync(link)));
-        }
         if (connections.Length > 1) form.Children.Add(AccountFormRow("Account connection", connection));
         form.Children.Add(AccountFormRow("Billing plan", billing));
         form.Children.Add(Ui.Text("Select the plan on your account. No entitlement, balance or live access has been verified.", 11, Ui.Muted));
@@ -144,6 +138,12 @@ public sealed partial class MainWindow
         form.Children.Add(models);
         var restrictionText = Ui.Text(string.Join("\n\n", provider.Restrictions), 11, Ui.Muted);
         var technical = Ui.Stack(AccountFormRow("Base URL", endpoint), restrictionText);
+        foreach (var step in provider.SetupSteps)
+        {
+            technical.Children.Add(Ui.Text(step.Title + " · " + step.Description, 11, Ui.Muted));
+            if (Uri.TryCreate(step.Url, UriKind.Absolute, out var link) && link.Scheme == Uri.UriSchemeHttps)
+                technical.Children.Add(Ui.Button(step.Title, async () => await OpenProviderLinkAsync(link)));
+        }
         _providerTerms = new Expander { Header = "Technical details and provider terms", Content = technical, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetName(_providerTerms, "Technical details and provider terms");
         _providerTerms.PropertyChanged += (_, change) => { if (change.Property == Expander.IsExpandedProperty && !_applyingProviderPresentation) _providerTermsOverride = true; };

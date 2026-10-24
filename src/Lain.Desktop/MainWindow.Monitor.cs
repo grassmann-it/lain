@@ -21,7 +21,7 @@ public sealed partial class MainWindow
     {
         if (_configuration is not { } configuration) throw new InvalidOperationException("Connect to the local host first.");
         RegisterEditor(() => BuildMonitorEditor(account, provider, current), configuration.Revision);
-        _editing = true; _actions.Clear(); _workspace.Offset = default;
+        _editing = true; _actions.Clear(); _workspace.Offset = default; _notice.Text = "";
         var options = provider?.MonitorAccessOptions ?? [];
         var form = AccountForm("Monitoring access for " + account.Name,
             "Attach optional quota-reading access to this same account. Inference credentials and monitoring permissions serve different purposes.");

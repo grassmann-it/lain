@@ -118,7 +118,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             ? new QuotaDto(account.Id, null, "https://openrouter.ai/api/v1/key#key-spend-cap", "ok", now, now, null, "USD", 2, 10, 8, false, WindowLabel: "API key spend cap")
             : new(account.Id, null, "unavailable", "unsupported", now, null, null, "unknown", null, null, null, false)).ToArray();
         await Open();
-        Check(names.All(name => HasText(name)), "five synthetic provider accounts retain their custom names");
+        await Wait(() => names.All(name => HasText(name)), "five synthetic provider accounts retain their custom names");
         Check(Controls<ProgressBar>().Length == 1 && HasText("20% used") && HasText("API key spend cap"), "only the observed bounded key budget gets a percentage bar");
         Check(Controls<TextBlock>().Count(text => text.Text?.StartsWith("No separate quota lookup is configured.", StringComparison.Ordinal) == true) == 4, "unsupported accounts each get one neutral explanation");
         Check(!HasText("Credential state: unverified", true) && !HasText("Check credential details", true), "unverified credential presence is neutral and does not warn on each usable account");
@@ -142,7 +142,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         var checksBefore = Controls<CheckBox>().Where(check => AutomationProperties.GetName(check)?.StartsWith("Add model ", StringComparison.Ordinal) == true).ToArray();
         Check(checksBefore.Length == 2 && checksBefore.All(check => check.IsChecked != true), "optional model selection lists all compatible models, initially unchecked");
         foreach (var check in checksBefore) check.IsChecked = true;
-        await CaptureBoth("provider-connection-credentials-models");
+        await CaptureBoth("provider-connection-credentials-models", () => Named<TextBox>("Own API key").BringIntoView());
         var writes = MutatingRequestCount();
         await Click("Add account");
         await Wait(() => fixture.LastAddedAccount is not null, "account save reached synthetic Host");
@@ -163,7 +163,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         QuotaTile("My custom NVIDIA").IsExpanded = true; await Task.Delay(100); await Click("Monitoring access");
         Named<TextBox>("Monitoring token").Text = "SYNTHETIC-UI-MONITOR";
         Named<TextBox>("Account ID").Text = "fixture-reporting-account";
-        await CaptureBoth("provider-monitoring-access");
+        await CaptureBoth("provider-monitoring-access", () => Named<TextBox>("Monitoring token").BringIntoView());
         await Click("Save monitoring access");
         await Wait(() => fixture.LastMonitorAccess is not null, "monitor request reached the synthetic Host");
         Check(fixture.LastMonitorAccount == "a-new" && fixture.LastMonitorAccess is { Kind: "api-token", ResourceId: "fixture-reporting-account", Secret: "SYNTHETIC-UI-MONITOR" }

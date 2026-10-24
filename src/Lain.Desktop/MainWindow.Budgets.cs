@@ -191,7 +191,7 @@ public sealed partial class MainWindow
 
         var consumption = new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
         var percent = unavailable ? null : QuotaUsedPercent(quota);
-        if (percent is { } usedPercent)
+        if (percent is { } usedPercent && quota is not null)
         {
             var knownRemaining = ReportedRemaining(quota);
             var remaining = knownRemaining is { } amount
