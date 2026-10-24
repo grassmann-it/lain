@@ -149,6 +149,10 @@ def check(core, exporter, dotnet, provider_id, model):
             failed_starts, failed_usage = assert_complete(after, 1)
             expect(all(row["accountId"] == run.manifest["accountA"] for row in failed_starts), "Error borrowed another account")
             expect(all(row["statusCode"] == expected_status and row["totalTokens"] is None for row in failed_usage), "Failure invented usage or lost status")
+            # Authentication failures and 429 can legitimately cool down a key.
+            # Restart the owned Core before the next independent error fixture.
+            run.stop()
+            run.start()
         count = len(run.provider.snapshot())
         try:
             with run.send(run.body("unknown", alias="nonexistent-model")) as response:

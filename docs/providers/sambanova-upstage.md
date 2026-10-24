@@ -29,6 +29,8 @@ state before a free probe. SambaStack credentials and endpoints are separate.
 
 Upstage's [Solar Mini 4 specification](https://console.upstage.ai/docs/models/solar-mini-4)
 identifies the dated snapshot, 512K context, 128K output and explicit tool support.
+The numeric catalog limits stay unknown because those pages do not establish
+exact token integers for this Chat route; no K convention is assumed.
 The [Chat API](https://console.upstage.ai/api/chat) documents SSE chunks,
 `tool_calls`, usage, and the global `/v1/chat/completions` path. The older Solar
 Mini/Pro 2/Pro 3 series is scheduled for deprecation on 2026-10-30; this entry

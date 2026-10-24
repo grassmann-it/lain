@@ -57,7 +57,7 @@
       ],
       "capabilities": {
         "contextWindow": null,
-        "maximumOutput": 131072,
+        "maximumOutput": null,
         "tools": true,
         "streaming": true,
         "reasoning": null,
@@ -95,7 +95,7 @@
       ],
       "restrictions": [
         "Pinned dated snapshot solar-mini4-260922, avoiding a silently moving model alias. Global API endpoint only; Korean regional and marketplace endpoints are separate configurations.",
-        "Published context is 512K; the exact context token integer remains unverified rather than assuming a decimal or binary K convention.",
+        "Published context is 512K and output is 128K; exact token integers remain unverified for this Chat route rather than assuming a decimal or binary K convention or importing a different protocol limit.",
         "Text input/output only on this prepared route. Tools and streaming are explicitly documented for Solar Mini 4, not inferred from OpenAI compatibility.",
         "Reasoning modes and structured output are documented upstream but not qualified end-to-end by this package; those route fields remain unknown.",
         "Signup credit offer is not observed balance. Actual credit grant, expiry, card requirement and no-charge entitlement must be confirmed privately before a live probe.",
@@ -140,12 +140,6 @@
       "title": "Tier-dependent rate limits",
       "checkedAt": "2026-10-24T15:49:15Z",
       "notes": "Published tier limits are not an observed remaining quota or a polling API."
-    },
-    {
-      "url": "https://console.upstage.ai/api/responses",
-      "title": "Output token validation bound for the same Solar Mini 4 model",
-      "checkedAt": "2026-10-24T15:49:15Z",
-      "notes": "Documents max_output_tokens maximum 131,072 including reasoning; Chat model specification separately states 128K output. Native Responses is not configured by this package."
     }
   ],
   "restrictions": [
