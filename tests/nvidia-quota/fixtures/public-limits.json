@@ -1,0 +1,1 @@
+{"rateLimits":{"requestsPerMinute":"Up to 40 rpm","requestsPerDay":"10,000 requests per day","details":"Maximum API requests accepted in a given timeframe.\nRate limits may vary by model and traffic from other users may cause throttling.\nFor dedicated availability, deploy models as a dedicated endpoint with [NVIDIA NIM](https://docs.api.nvidia.com/nim/reference/models-1).\n"}}
