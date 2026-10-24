@@ -381,6 +381,7 @@ public sealed partial class MainWindow
 
     private void ShowModelRemoval(ConfigurationDto cfg, RouteDto route)
     {
+        if (!CanOpenSectionEditor()) return;
         _editing = true;
         var references = ModelRouteReferences(cfg, route.Id);
         var remove = Action("Remove model access", async () => {
@@ -412,6 +413,7 @@ public sealed partial class MainWindow
 
     private void EditRoute(RouteDto? route, ModelEntryDto? catalogModel = null)
     {
+        if (!CanOpenSectionEditor()) return;
         if (_configuration is not { } cfg) return;
         if (route is not null)
         {
