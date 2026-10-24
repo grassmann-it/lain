@@ -85,7 +85,7 @@ with tempfile.TemporaryDirectory(prefix="lain-package-test-") as temporary:
     # Prefixes use desktop-entry Exec quoting rather than shell quoting. Verify
     # literal metacharacters stay in one absolute launcher argument after both
     # desktop string decoding and Exec argument parsing.
-    for label in ('prefix with spaces', 'prefix"quoted', 'prefix$money`tick', 'prefix%field', 'prefix\\slash'):
+    for label in ('prefix with spaces', 'prefix"quoted', 'prefix$money`tick', 'prefix%field', 'prefix\\slash', 'prefix@ICON@@EXEC@'):
         alternate_prefix = temporary / label
         env['LAIN_SYSTEMD_DIR'] = str(temporary / ('units-' + label))
         # LAIN_HOME deliberately has a restricted systemd path grammar.

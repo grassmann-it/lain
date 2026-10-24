@@ -56,7 +56,7 @@ mv "$stage" "$lain_home/app"
 stage=
 # Embed the chosen private home while keeping an explicit runtime override.
 python3 - "$lain_home" "$prefix/bin/lain" "$unit_dir/lain.service" "$desktop_file" "$icon_file" <<'PY'
-import hashlib, json, pathlib, shlex, sys
+import hashlib, json, pathlib, re, shlex, sys
 home, launcher, unit, desktop, icon = sys.argv[1:]
 root = pathlib.Path(home) / 'app' / 'packaging'
 wrapper = (root / 'lain').read_text().replace(': "${LAIN_HOME:=$HOME/.local/share/lain}"', 'if [ -z "${LAIN_HOME:-}" ]; then LAIN_HOME=' + shlex.quote(home) + '; fi')
@@ -80,7 +80,8 @@ def exec_argument(value):
         value = value.replace(character, '\\' + character)
     return desktop_string('"' + value + '"')
 entry = (root / 'lain.desktop.in').read_text()
-entry = entry.replace('@EXEC@', exec_argument(launcher)).replace('@ICON@', desktop_string(icon))
+substitutions = {'EXEC': exec_argument(launcher), 'ICON': desktop_string(icon)}
+entry = re.sub(r'@(EXEC|ICON)@', lambda match: substitutions[match[1]], entry)
 pathlib.Path(desktop).parent.mkdir(parents=True, exist_ok=True)
 pathlib.Path(icon).parent.mkdir(parents=True, exist_ok=True)
 pathlib.Path(desktop).write_text(entry)
