@@ -32,12 +32,13 @@ static class Test
         Check(rows.Single(r => r.AccountId == "a" && r.Source.EndsWith("secondary_window")).State == "unknown", "null window unknown");
         Check(rows.Where(r => r.AccountId == "a").All(r => r.SharedWithLegacy && r.BudgetPoolId is null), "legacy flag; no inferred shared provider pool");
         var success = rows.First().LastSuccessAt;
+        var observedAt = rows.First().ObservedAt;
         clock.Advance(TimeSpan.FromMinutes(6));
         Check((await service.GetSnapshotsAsync()).First().State == "stale", "five minute stale");
         transport.Response = request => request.Headers.Authorization!.Parameter == "a" ? throw new HttpRequestException("secret bearer a") : """{"rate_limit":{"primary_window":{"used_percent":66}}}""";
         rows = await service.RefreshAsync();
         var stale = rows.First(r => r.AccountId == "a");
-        Check(stale.State == "stale" && stale.Remaining == 80 && stale.LastSuccessAt == success && stale.ObservedAt > success, "failure retains last success");
+        Check(stale.State == "stale" && stale.Remaining == 80 && stale.LastSuccessAt == success && stale.ObservedAt == observedAt && stale.ObservedAt < clock.GetUtcNow(), "failure retains original value, observation and last success");
         Check(rows.Single(r => r.AccountId == "b").State == "ok", "one failure does not hide others");
         Check(!JsonSerializer.Serialize(rows).Contains("secret bearer"), "sanitized failures");
         using var cancel = new CancellationTokenSource();
@@ -111,7 +112,7 @@ static class Test
         };
         var partialRows = await partialService.RefreshAsync();
         var oldMonthly = partialRows.Single(r => r.Source.EndsWith("monthlyCredits"));
-        Check(oldMonthly.State == "stale" && oldMonthly.Remaining == 12 && oldMonthly.LastSuccessAt == previousMonthly.LastSuccessAt, "partial response retains old missing window");
+        Check(oldMonthly.State == "stale" && oldMonthly.Remaining == 12 && oldMonthly.LastSuccessAt == previousMonthly.LastSuccessAt && oldMonthly.ObservedAt == previousMonthly.ObservedAt, "partial response retains old missing window and original observation");
         Check(partialRows.Single(r => r.Source.EndsWith("weekly")).State == "ok", "partial response exposes fresh successful window");
         await ProviderQuotaTests(account, clock);
         Console.WriteLine($"Quota: {assertions} assertions passed (synthetic only).");
