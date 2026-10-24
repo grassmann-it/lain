@@ -1,10 +1,52 @@
 # UXD-09 visual and interaction evidence
 
-Review started 24 October 2026 against source baseline `ec68062`. Initial status:
-**actual image review and prepared tests; new runtime not yet executed**.
+Review started 24 October 2026 against source baseline `ec68062`. The initial
+reference review below is preserved; integrated runtime evidence follows here.
 The supplied stabilization evidence contains 26 assertion descriptions but no
 assembly hash or source commit. Its images establish the visible captured state,
-not the current checkout. Builds/runs await the integrator's slot.
+not the current checkout.
+
+## Integrated runs and independently discovered defects
+
+All execution used the runner-owned private Xvfb and in-memory fixture. No
+user display, session bus, real host, provider, browser or credential was used.
+
+| Run | Product commit / assembly SHA-256 | Executed result |
+| --- | --- | --- |
+| `artifacts/uxd-acceptance-20261024-pass1` | `87c9b5bd29a6e2fa98052138637e4957df893533`; `99C2B52094EA9BE3B82A19204FC7374E840740DDBE59EA497F8EB7808A0FBC5E` | 45 cases, 658 passed assertions, 95 image records. Six Usage variants failed on a real Avalonia logical-parent exception; native typing and Live selection had fixture sequencing errors. |
+| `artifacts/uxd-acceptance-20261024-pass2` | `f2f1e885dd63d7f2a490022fbb7af3e1555f9edd` (same product as source plus Usage `7a38075`); `0008D5FD61AF45694212BDDBED29E4AAAFA0542168299EE91BD568B47114790A` | Focused 14 cases, 215 assertions, 31 image records passed. This does **not** mean visual acceptance: narrow Usage still had no readable result row. Harness edits were uncommitted during this diagnostic run and are recorded in `bdc4b88`. |
+
+Native pointer/keyboard evidence in pass2 establishes typing the full `codex`,
+Ctrl+A/Backspace, Tab to Details, Enter to open, Escape with trigger focus return,
+and right-click/visible-menu/Shift+F10 parity. Each key now waits for actual UI
+processing. The first burst-input result was `code`; the expected text was not
+weakened. Live now explicitly returns to its narrow inventory before native
+pointer selection. Native Apply pointer → owned dialog → Escape → trigger focus
+already passed in run1, with actual X11 root images showing the dialog.
+
+Independent image review found defects that passing geometry checks missed:
+
+| Finding | Evidence and action |
+| --- | --- |
+| Usage row construction exception | Run1 shows `AttachedToLogicalTreeCore called for Grid but control has no logical parent`; no rows. Owner fixed double attachment in `7a38075`; run2 confirms rendered rows. |
+| Usage800 has no readable first row | Run2 `usage-simple-normal-800x560.png` shows only table header and a few border pixels. The former intersection assertion was insufficient. Changed to fully visible first account-name text; source owner supplies `70a940a`. |
+| Models responsive state follows previous width | Run1 wide Simple lacks its reserved pane while `models-advanced-compact-800x560.png` retains a 320px empty inspector and squeezes names. Owner confirmed root resize callback used stale outer bounds; source correction pending retest. |
+| Profiles800 normal/compact breakpoint | Run1 still shows two columns. Source `60c9c15` handles 760px normal content; compact content is772px and needs a density-independent boundary. Both densities now have explicit one-pane assertions. |
+| Pending Connect claims success | Run1 `connect-codex-waiting-narrow.png` says `Connection saved.` while authorization is waiting. Next Kilo form retains the prior Codex success notice. Owner `ec2a618` clears/gates notices and keeps Cancel above optional guidance; retest pending. |
+| Chooser and model labels misaligned | Run1 chooser has90px fullwidth cards with tiny centered provider buttons; model names centered under left-aligned header. `ec2a618` supplies compact left-aligned rows/labels; retest pending. |
+
+Accounts before/after selection kept every measured rectangle and both scroll
+anchors across Settings/Back. Their initial lower-reference setup revealed only
+Z.ai's title at the fold; the next capture explicitly scrolls to inventory bottom
+and requires the entire Z.ai card before comparison. This is an evidence setup
+correction, not a product movement bug.
+
+Reviewed native product images show correct separate Viewed Daily/Applied
+Workspace2, visible distinct Export/Client setup, full wide profile rows,
+readable modal actions, three calm Settings groups and one bottom-right
+information selector. Simple/Normal wide and narrow frames plus targeted states
+were inspected at full size. Some repetitive matrix variants remain only
+automatically checked; they are not individually marked visually passed.
 
 All 14 final UX-Pilot PNGs were opened directly from the final manifest under
 `/home/tomka/Desktop/lain/artifacts/uxpilot-20261024/`. Discarded generator

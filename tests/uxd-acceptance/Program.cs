@@ -224,9 +224,16 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
             var edits = Controls<Button>().Where(control => AutomationProperties.GetName(control)?.StartsWith("Edit model access ") == true).ToArray();
             Check(edits.Length == Fixture.InitialRoutes, "all45 models retain a direct edit action");
             Check(edits.Count(Fits) >= (window.Bounds.Width >= 1000 ? 6 : 3), "compact model inventory exposes useful first-viewport rows");
+            Check((Find<Border>("Selected model details") is not null) == (window.Bounds.Width >= 1000),
+                "model inspector follows the actual resized viewport; no stale wide pane at800px");
         }
-        if (destination == "Profiles") Check(Find<Button>("Select profile Daily") is not null || Find<TextBlock>("Selected profile status") is not null,
-            "profile inventory or selected detail is reachable");
+        if (destination == "Profiles")
+        {
+            Check(Find<Button>("Select profile Daily") is not null || Find<TextBlock>("Selected profile status") is not null,
+                "profile inventory or selected detail is reachable");
+            if (window.Bounds.Width <= 800) Check(Find<Button>("Select profile Daily") is not null && Find<TextBlock>("Selected profile status") is null,
+                "initial narrow Profiles uses one inventory pane in both densities");
+        }
         if (destination == "Usage")
         {
             var rows = Controls<Expander>().Where(control => AutomationProperties.GetName(control)?.StartsWith("Analysis group ") == true).ToArray();
@@ -248,8 +255,12 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
     private async Task AccountAnchors()
     {
         await Navigate("Accounts"); await Resize(1120, 780);
-        var origin = Need<Button>("Open account details for Z.ai Coding"); origin.BringIntoView(); await Task.Delay(100);
         var scroller = Need<ScrollViewer>("Account inventory");
+        // Frame 2/3 compares a fully visible lower account, not only its title at the fold.
+        scroller.Offset = new Vector(0, Math.Max(0, scroller.Extent.Height - scroller.Viewport.Height));
+        await Task.Delay(100);
+        var origin = Need<Button>("Open account details for Z.ai Coding");
+        Check(Fits(Need<Border>("Account budgets for Z.ai Coding")), "lower reference account is fully visible before selection");
         var before = AccountGeometry(); var offset = scroller.Offset;
         Capture("accounts-lower-before"); Click(origin); await Task.Delay(100);
         Check(AccountGeometry().SequenceEqual(before) && scroller.Offset == offset, "adjacent inspector preserves every inventory rectangle and scroll offset");
@@ -388,7 +399,10 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
         input.Focus(dialog); input.Key(0xff1b); await Task.Delay(120);
         Check(!dialog.IsVisible && fixture.ApplyCalls == 0, "native Escape cancels Apply dialog without host mutation");
         Check(apply.IsFocused, "Apply dialog returns focus to its trigger");
-        await Resize(800, 560); Capture("profiles-selected-daily-narrow");
+        await Resize(800, 560);
+        Check(Find<Button>("Back to profiles") is not null && Find<Button>("Select profile Daily") is null,
+            "explicit profile selection opens a separate narrow detail task with Back");
+        Capture("profiles-selected-daily-narrow");
         input.Focus(window); input.Click(Controls<Button>().Single(button => Equals(button.Content, "Apply to proxy…")));
         await Wait(() => lifetime.Windows.Any(candidate => candidate != window && candidate.IsVisible));
         dialog = lifetime.Windows.Single(candidate => candidate != window && candidate.IsVisible);
