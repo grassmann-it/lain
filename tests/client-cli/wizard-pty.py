@@ -36,10 +36,10 @@ def exercise(cancel=False):
         cursor = len(output)
 
     try:
-        for prompt, answer in [("Provider number", "1"), ("Access / billing plan number", "1"), ("Account ID", "scope-one")]:
+        for prompt, answer in [("Provider number", "1"), ("Account ID", "scope-one"), ("Account name [Fixture 2]", "")]:
             until(prompt + ": ")
             os.write(master, (answer + "\n").encode())
-        until("API key (hidden): ")
+        until("api-key (hidden): ")
         os.write(master, secret.encode())
         # Pause within the secret prompt to catch kernel and application echo.
         time.sleep(0.1)
@@ -48,11 +48,7 @@ def exercise(cancel=False):
         assert secret.encode() not in output, "Secret was echoed by terminal"
         os.write(master, b"\x1b" if cancel else b"\n")
         if not cancel:
-            until("Display name [Fixture 2]: ")
-            os.write(master, b"\n")
-            until("Model numbers (comma-separated) (optional): ")
-            os.write(master, b"1,2\n")
-            until("Save locally? Type yes (optional): ")
+            until("Connect? Type yes (optional): ")
             os.write(master, b"yes\n")
         deadline = time.monotonic() + 10
         while time.monotonic() < deadline:
@@ -71,7 +67,7 @@ def exercise(cancel=False):
         assert process.wait(timeout=2) == 0, output.decode(errors="replace")
         text = output.decode(errors="replace")
         assert secret not in text
-        assert ("No account was saved" if cancel else "Account saved locally") in text
+        assert ("No account was saved" if cancel else "Credential connected locally") in text
     finally:
         if process.poll() is None:
             process.kill()

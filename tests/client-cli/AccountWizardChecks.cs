@@ -11,16 +11,16 @@ internal static class AccountWizardChecks
     {
         var checks = 0;
         void Check(bool condition, string message) { checks++; if (!condition) throw new Exception(message); }
-        var answers = new string?[] { "1", "1", "scope-one", "SYNTHETIC-WIZARD-KEY", "", "1,2", "yes" };
+        var answers = new string?[] { "1", "scope-one", "", "SYNTHETIC-WIZARD-KEY", "yes" };
         var terminal = new ScriptedTerminal(answers);
         var handler = new Handler();
         var output = new StringWriter(); var error = new StringWriter();
         var exit = await Run(terminal, handler, output, error);
         Check(exit == 0 && handler.Writes == 1 && handler.LastRevision == 7, "wizard sends one atomic save using the initial revision");
-        Check(handler.SavedName == "Fixture 2" && handler.SelectedModels.SequenceEqual(new[] { "fixture-model-one", "fixture-model-two" }), "wizard shares short name collision rule and explicitly selected models");
+        Check(handler.SavedName == "Fixture 2" && handler.SelectedModels.Length == 0, "wizard shares short name collision rule and leaves optional models for later");
         Check(terminal.SecretPrompts == 1 && !output.ToString().Contains("SYNTHETIC-WIZARD-KEY") && !error.ToString().Contains("SYNTHETIC-WIZARD-KEY"), "credential uses hidden prompt and never enters output");
-        Check(output.ToString().Contains("Official credentials: https://example.invalid/keys") && output.ToString().Contains("Saving performs neither provider action"), "wizard shows credential link and distinguishes saving from checks");
-        Check(handler.Requests.All(path => path is "/api/v1/providers" or "/api/v1/configuration" or "/api/v1/accounts"), "wizard has no quota refresh, login or inference side effects");
+        Check(output.ToString().Contains("Official guidance: https://example.invalid/keys") && output.ToString().Contains("quota observations and inference are separate facts"), "wizard shows credential link and distinguishes saving from checks");
+        Check(handler.Requests.All(path => path is "/api/v1/connection-methods" or "/api/v1/configuration" or "/api/v1/accounts/connect" or "/api/v1/quotas"), "wizard has no quota refresh, login or inference side effects");
         for (var cancelAt = 0; cancelAt < answers.Length; cancelAt++)
         {
             handler = new(); output = new(); error = new();
@@ -29,7 +29,7 @@ internal static class AccountWizardChecks
             Check(exit == 0 && handler.Writes == 0 && output.ToString().Contains("No account was saved"), "cancellation at prompt " + cancelAt + " leaves no partial account");
         }
         handler = new(); output = new(); error = new();
-        terminal = new(["1", "1", "scope-one", "SYNTHETIC-WIZARD-KEY", "Named by user", "", "yes"]);
+        terminal = new(["1", "scope-one", "Named by user", "SYNTHETIC-WIZARD-KEY", "yes"]);
         exit = await Run(terminal, handler, output, error);
         Check(exit == 0 && handler.SavedName == "Named by user" && handler.SelectedModels.Length == 0, "custom name and account-only save are preserved");
         handler = new() { Conflict = true }; output = new(); error = new();
@@ -80,29 +80,23 @@ internal static class AccountWizardChecks
             Requests.Add(path);
             var configuration = new ConfigurationDto(7, 7, [new("existing", "Fixture", "fixture", true, "api-key", "ready")], [], []);
             if (request.Method == HttpMethod.Get && path == "/api/v1/configuration") return Ok(configuration);
-            if (request.Method == HttpMethod.Get && path == "/api/v1/providers")
-            {
-                var routes = new[] {
-                    new ProviderRouteDescriptorDto("fixture-model-one", "model-one", "Model one", "https://example.invalid/{accountId}/v1", "openai-chat", ["trial"], new()),
-                    new ProviderRouteDescriptorDto("fixture-model-two", "model-two", "Model two", "https://example.invalid/{accountId}/v1", "openai-chat", ["trial"], new()) };
-                var descriptor = new ProviderDescriptorDto("fixture", "Fixture", "Synthetic wizard fixture", "https://example.invalid/keys", "https://example.invalid/docs",
-                    [new("apiKey", "API key", "api-key"), new("accountId", "Account ID", "text", Secret: false)], [],
-                    [new("trial", "Trial", "trial", "account", "credits")], routes, [], [],
-                    Connections: [new("fixture-connection", "Fixture account", "https://example.invalid/{accountId}/v1", "openai-chat", ["trial"], routes.Select(route => route.Id).ToArray())]);
-                return Ok(new ProviderCatalogDto(1, DateTimeOffset.UtcNow, [descriptor]));
-            }
-            if (request.Method == HttpMethod.Post && path == "/api/v1/accounts")
+            if (request.Method == HttpMethod.Get && path == "/api/v1/connection-methods")
+                return Ok(new ConnectionMethodCatalogDto(1, [new("fixture", "api-key", "Existing key", "api-key", ["inference", "quota"], "available", false, true,
+                    "api-key", "Synthetic wizard fixture", "https://example.invalid/v1", [new("accountId", "Account ID")], "https://example.invalid/keys", Recommended: true)]));
+            if (request.Method == HttpMethod.Get && path == "/api/v1/quotas") return Ok(Array.Empty<QuotaDto>());
+            if (request.Method == HttpMethod.Post && path == "/api/v1/accounts/connect")
             {
                 Writes++;
                 using var document = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(ct));
                 var envelope = document.RootElement; var value = envelope.GetProperty("value");
                 LastRevision = envelope.GetProperty("revision").GetInt64();
-                SavedName = value.GetProperty("name").GetString();
-                SelectedModels = value.GetProperty("selectedModelRouteIds").EnumerateArray().Select(item => item.GetString()!).ToArray();
-                if (value.GetProperty("apiKey").GetString() != "SYNTHETIC-WIZARD-KEY" || value.GetProperty("providerConnectionId").GetString() != "fixture-connection" ||
-                    value.GetProperty("baseUrl").GetString() != "https://example.invalid/scope-one/v1") throw new Exception("Wizard request contract mismatch");
+                SavedName = value.GetProperty("connection").GetProperty("name").GetString();
+                SelectedModels = [];
+                if (value.GetProperty("connection").TryGetProperty("billingPlan", out _) || value.TryGetProperty("selectedModelRouteIds", out _)) throw new Exception("Connect must not require tariff/model templates");
+                if (value.GetProperty("secret").GetString() != "SYNTHETIC-WIZARD-KEY" || value.GetProperty("connection").GetProperty("method").GetString() != "api-key" ||
+                    value.GetProperty("baseUrl").GetString() != "https://example.invalid/v1") throw new Exception("Wizard request contract mismatch");
                 return Conflict ? new(HttpStatusCode.Conflict) { Content = JsonContent.Create(new ApiError("revision_conflict", "Reload configuration and restart setup.")) }
-                    : Ok(configuration with { Revision = 8 });
+                    : Ok(configuration with { Revision = 8, Accounts = configuration.Accounts.Append(new("new", SavedName!, "fixture", true, "api-key", "unverified")).ToArray() });
             }
             throw new Exception("Unexpected wizard fixture request");
         }
