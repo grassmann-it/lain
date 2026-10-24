@@ -134,7 +134,7 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
             var error = cached.Error ?? snapshot?.Error;
             var rowState = !account.Enabled ? "disabled" : snapshot?.Refreshing == true ? "refreshing"
                 : cached.LastSuccessAt is null ? error is not null ? "error" : unavailable ? snapshot!.Support!.Kind : "unknown"
-                : error is not null || unavailable || clock.GetUtcNow() >= (row.FreshUntil ?? cached.LastSuccessAt.Value + RefreshInterval) ? "stale" : "ok";
+                : cached.Error is not null || unavailable || clock.GetUtcNow() >= (row.FreshUntil ?? cached.LastSuccessAt.Value + RefreshInterval) ? "stale" : "ok";
             yield return new(account.Id, row.BudgetPoolId ?? (row.InheritAccountPool ? account.BudgetPoolId : null), row.Source, rowState,
                 cached.ObservedAt, cached.LastSuccessAt, row.ResetsAt, row.Unit, row.Used, row.Limit, row.Remaining,
                 account.SharedWithLegacy, error, row.WindowLabel, row.UsedPercent, snapshot?.Support,

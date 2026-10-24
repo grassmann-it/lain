@@ -8,6 +8,7 @@
     <Compile Include="../../src/Lain.Host/Accounts/*.cs" Link="Accounts/%(Filename)%(Extension)" />
     <Compile Include="../../src/Lain.Host/Operations/*.cs" Link="Operations/%(Filename)%(Extension)" />
     <Compile Include="../../src/Lain.Host/Providers/*.cs" Link="Providers/%(Filename)%(Extension)" />
+    <Compile Include="../../src/Lain.Host/Accounts/Monitoring/MonitorAccessCatalog.cs" Link="Accounts/MonitorAccessCatalog.cs" />
     <Compile Include="../../src/Lain.Host/Providers/NvidiaStep/*.cs" Link="Providers/NvidiaStep/%(Filename)%(Extension)" />
     <EmbeddedResource Include="../../src/Lain.Host/Providers/Catalog/*.json" LogicalName="Lain.Host.Providers.Catalog.%(Filename)%(Extension)" />
   </ItemGroup>

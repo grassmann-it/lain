@@ -13,6 +13,7 @@ cat > "$temp/FireworksTests.csproj" <<XML
     <Compile Include="$root/src/Lain.Host/Quota/QuotaService.cs" />
     <Compile Include="$root/src/Lain.Host/Quota/FireworksQuotaAdapter.cs" />
     <Compile Include="$root/src/Lain.Host/Providers/ProviderCatalogRegistry.cs" />
+    <Compile Include="$root/src/Lain.Host/Accounts/Monitoring/MonitorAccessCatalog.cs" />
     <Compile Include="$root/tests/providers-fireworks/Program.cs" />
   </ItemGroup>
 </Project>

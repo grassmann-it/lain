@@ -6,6 +6,7 @@
     <Using Include="Microsoft.AspNetCore.Builder" /><Using Include="Microsoft.AspNetCore.Http" /><Using Include="Microsoft.AspNetCore.Routing" />
     <Compile Include="../../src/Lain.Host/Models/*.cs" Link="Models/%(Filename)%(Extension)" />
     <Compile Include="../../src/Lain.Host/Providers/ProviderCatalogRegistry.cs" Link="Providers/ProviderCatalogRegistry.cs" />
+    <Compile Include="../../src/Lain.Host/Accounts/Monitoring/MonitorAccessCatalog.cs" Link="Accounts/MonitorAccessCatalog.cs" />
     <Compile Include="../../src/Lain.Host/Providers/ProviderCostPolicy.cs" Link="Providers/ProviderCostPolicy.cs" />
     <Compile Include="$(OperationsSource)/ConfigurationRepository.cs" Link="Operations/ConfigurationRepository.cs" />
     <Compile Include="$(OperationsSource)/OwnStatePaths.cs" Link="Operations/OwnStatePaths.cs" />
