@@ -76,8 +76,10 @@ public sealed partial class MainWindow
         layout.Children.Add(inventory); Grid.SetColumn(detail, 1); layout.Children.Add(detail);
         var root = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 10 };
         root.Children.Add(summary); Grid.SetRow(layout, 1); root.Children.Add(layout);
-        // At the supported 800px window width, shell padding leaves exactly 760px.
-        bool Narrow() => root.Bounds.Width > 0 && root.Bounds.Width <= 760;
+        // The supported 800px layout stays narrow in both Normal and Compact density.
+        // Also protect a constrained viewport inside a larger window.
+        bool Narrow() => (Bounds.Width > 0 ? Bounds.Width : Width) <= 800 ||
+            root.Bounds.Width is > 0 and <= 760;
         void Arrange()
         {
             var narrow = Narrow();
