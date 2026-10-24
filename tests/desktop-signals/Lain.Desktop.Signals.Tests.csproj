@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Lain.Client/Lain.Client.csproj" />
+    <Compile Include="../../src/Lain.Desktop/Tray/DesktopMonitorContracts.cs" Link="DesktopMonitorContracts.cs" />
+    <Compile Include="../../src/Lain.Desktop/Tray/DesktopSignalMonitor.cs" Link="DesktopSignalMonitor.cs" />
+  </ItemGroup>
+</Project>
