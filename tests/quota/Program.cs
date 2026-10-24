@@ -72,7 +72,8 @@ static class Test
         Check(commandTransport.Urls.All(u => !u.Contains("usage/summary") && !u.Contains("oauth")), "no inference or refresh endpoints");
         commandTransport.Response = request => request.RequestUri!.AbsolutePath == "/alpha/billing/credits" ? throw new HttpRequestException("raw secret") : "{}";
         var partial = await command.FetchAsync(cmdAccount, new("cmd-secret"));
-        Check(partial.Error == "billing/credits unavailable.", "partial failure sanitized");
+        Check(partial.Error == "billing/credits unavailable. Quota request failed (transport)."
+            && !JsonSerializer.Serialize(partial).Contains("raw secret", StringComparison.Ordinal), "partial failure sanitized with actionable transport category");
         var secret = QuotaCredential.FromSecretJson("""{"kind":"codex-access-snapshot","accessToken":"private","accountId":"provider-a","refreshToken":"never-used"}""");
         Check(secret?.BearerToken == "private" && secret.ProviderAccountId == "provider-a" && !secret.ToString().Contains("private"), "normalized secret parse and redaction");
         var ownedSecret = QuotaCredential.FromSecretJson("""{"kind":"codex-owned","accessToken":"owned-access","accountId":"provider-owned","expiresAt":"2026-10-29T06:55:59Z","refreshToken":"must-not-be-used","idToken":"must-not-be-used"}""");
