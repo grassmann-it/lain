@@ -14,7 +14,7 @@ namespace Lain.Desktop;
 
 public sealed partial class MainWindow
 {
-    private Func<Uri, Task<bool>>? _connectionBrowser;
+    private Func<Uri, Task<bool>>? _connectionBrowser = null;
     private Task<bool> OpenConnectionBrowserAsync(Uri uri) => _connectionBrowser?.Invoke(uri) ?? Launcher.LaunchUriAsync(uri);
     private static bool LoginPending(LoginDto? login) => login?.State is "waiting" or "pending" or "resource-required" or "awaiting-resource";
 

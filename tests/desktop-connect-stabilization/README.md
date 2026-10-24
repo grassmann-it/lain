@@ -5,7 +5,9 @@ in the integrator's serialized build/runtime slot. Set `LAIN_DESKTOP_SKIP_BUILD=
 for a previously built harness. The runner rejects inherited displays, owns its
 Xvfb/Xauthority, and uses temporary HOME/XDG/LAIN_HOME. Only an in-memory,
 allowlisted fixture can answer API requests. Only an explicitly clicked synthetic
-Connect and model attachment can POST; browser, service, inference and provider operations are absent.
+Connect, synthetic login/cancel, model attachment and explicit model-editor save
+can mutate the in-memory fixture. The browser launcher is replaced by a strict
+synthetic delegate; service, inference and provider operations are absent.
 
 Checks cover mixed empty free credits and nonempty quota windows (F03), a
 coordinate-stable adjacent wide inspector / separate narrow task page and focus return, common menu commands, distinct
@@ -22,6 +24,12 @@ explicit multi-plan access, omits artificial single-plan fields, selects no
 models by default and disables already-configured templates. The fixture
 attaches two models, rejects any submitted key and verifies that Apply never
 runs. Manual model access remains available in Models.
+
+Browser lifecycle checks cover a distinct start, reopening the same operation,
+Cancel and a delayed completed response after Cancel. Model checks cover dense
+nonoverlapping rows/details, a separate narrow detail task, keyboard focus return,
+editor cancellation, explicit fallback order and paid permission, and expert-field
+reload. Follow-up evidence supersedes prior artifact counts only after execution.
 
 `dotnet run --project tests/client-connect-stabilization/ClientConnect.Stabilization.csproj`
 checks the same production CLI renderers against in-memory typed quota/usage facts.

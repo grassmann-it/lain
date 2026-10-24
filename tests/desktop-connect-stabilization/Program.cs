@@ -172,6 +172,37 @@ internal static class Probe
         Click(Controls<Button>().Single(b => Equals(b.Content, "Clear model context")));
         await Task.Delay(60); await Capture("models", 1120, 780); await Capture("models", 800, 560);
         Check(Controls<Button>().Count(b => (AutomationProperties.GetName(b) ?? "").StartsWith("Edit model access ")) == 47, "45 existing and two newly attached model access entries retain direct edit actions");
+        window.Width = 1120; window.Height = 780; await Task.Delay(80);
+        var modelOrigin = Named("Select model access research-01"); Click(modelOrigin); await Task.Delay(60);
+        var modelRow = Controls<Border>().Single(b => AutomationProperties.GetName(b) == "Model row r1");
+        var modelDetail = Controls<Border>().Single(b => AutomationProperties.GetName(b) == "Selected model details");
+        Check(modelRow.Bounds.Height <= 60 && modelRow.TranslatePoint(default, window)!.Value.X + modelRow.Bounds.Width <= modelDetail.TranslatePoint(default, window)!.Value.X, "dense model row and independent detail occupy adjacent nonoverlapping regions");
+        await Capture("model-details", 1120, 780); await Capture("model-details", 800, 560);
+        Check(!Controls<Button>().Any(b => (AutomationProperties.GetName(b) ?? "").StartsWith("Select model access ")), "narrow model details use a separate task page");
+        Click(Named("Close model details research-01")); await Task.Delay(60);
+        Check(modelOrigin.IsFocused, "closing narrow model detail restores the stable row focus");
+        Click(Named("Edit model access research-01")); await Task.Delay(50);
+        Controls<TextBox>().Single(b => AutomationProperties.GetName(b) == "Client name").Text = "cancelled-name";
+        Click(Controls<Button>().Single(b => Equals(b.Content, "Cancel"))); await Task.Delay(60);
+        Check(fixture.RouteWrites == 0, "cancelling a model editor does not persist draft fields");
+        Click(Named("Edit selected model access research-01")); await Task.Delay(40);
+        Check(Controls<TextBox>().Single(b => AutomationProperties.GetName(b) == "Client name").Text == "research-01", "reopened model editor uses the saved stable identity after cancellation");
+        Controls<Expander>().Single(e => Equals(e.Header, "Spending and fallback policy")).IsExpanded = true;
+        ComboBox Fallback(int position) => Controls<ComboBox>().Single(b => AutomationProperties.GetName(b) == "Fallback position " + position);
+        void ChooseFallback(int position, string id) => Fallback(position).SelectedItem = Fallback(position).Items.Cast<object>().Single(item => (string)item.GetType().GetProperty("Id")!.GetValue(item)! == id);
+        ChooseFallback(1, "r2"); ChooseFallback(2, "r3");
+        Controls<CheckBox>().Single(b => AutomationProperties.GetName(b) == "Allow paid fallback routes").IsChecked = true;
+        await Capture("model-editor", 1120, 780); await Capture("model-editor", 800, 560);
+        Click(Controls<Button>().Single(b => Equals(b.Content, "Save model access")));
+        await Wait(() => fixture.RouteWrites == 1);
+        Check(fixture.SavedRoute?.Policy is { AllowPaidFallback: true } savedPolicy && savedPolicy.FallbackRouteIds!.SequenceEqual(new[] { "r2", "r3" })
+            && fixture.SavedRoute.AccountIds.SequenceEqual(new[] { "cc" }) && fixture.AppliedRevision == 1, "model editor saves explicit fallback order and paid permission while preserving binding without Apply");
+        await Wait(() => Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Edit selected model access research-01"));
+        Click(Named("Edit selected model access research-01")); await Task.Delay(40);
+        Controls<Expander>().Single(e => Equals(e.Header, "Spending and fallback policy")).IsExpanded = true;
+        Check((string)Fallback(1).SelectedItem!.GetType().GetProperty("Id")!.GetValue(Fallback(1).SelectedItem)! == "r2"
+            && Controls<CheckBox>().Single(b => AutomationProperties.GetName(b) == "Allow paid fallback routes").IsChecked == true, "saved expert fallback fields survive reopening");
+        Click(Controls<Button>().Single(b => Equals(b.Content, "Cancel")));
         fixture.UseContributorAccount();
         await InvokeAsync("RefreshAsync", true);
         await InvokeAsync("ShowAccountModelsAsync", "connected");
@@ -200,7 +231,8 @@ internal static class Probe
         fixture.Monitor = false; await InvokeAsync("RefreshAsync", true); await Wait(() => !(window.Title ?? "").Contains("Monitor"));
         fixture.Offline = true; await InvokeAsync("RefreshAsync", true); await Task.Delay(100);
         Check(Nav().Contains("Profiles"), "offline configured Gateway keeps its navigation");
-        Check(fixture.Requests.Count(r => r.StartsWith("POST ")) == 3 && fixture.Requests.All(r => r.StartsWith("GET ") || r is "POST /api/v1/accounts/login" or "DELETE /api/v1/accounts/login/login-codex" or "POST /api/v1/accounts/connect" or "POST /api/v1/accounts/connected/models"), "only explicit login/cancel, Connect and model attachment mutate the synthetic host; no provider, inference or Apply actions");
+        Check(fixture.Requests.Count(r => r.StartsWith("POST ")) == 3 && fixture.Requests.Count(r => r.StartsWith("PUT ")) == 1
+            && fixture.Requests.All(r => r.StartsWith("GET ") || r is "POST /api/v1/accounts/login" or "DELETE /api/v1/accounts/login/login-codex" or "POST /api/v1/accounts/connect" or "POST /api/v1/accounts/connected/models" or "PUT /api/v1/routes/r1"), "only explicit login/cancel, Connect, model attachment and editor save mutate the synthetic host; no provider, inference or Apply actions");
         File.WriteAllText(Path.Combine(Output, "evidence.json"), JsonSerializer.Serialize(new { checks, requests = fixture.Requests }, new JsonSerializerOptions { WriteIndented = true }));
         window.Close();
     }
@@ -219,6 +251,8 @@ internal sealed class Fixture : HttpMessageHandler
     public int AccountCount => accounts.Length;
     public string AccountName => accounts.Single(a => a.Id == "connected").Name;
     public long AppliedRevision => 1;
+    public int RouteWrites;
+    public RouteDto? SavedRoute;
     public int LoginStarts;
     public bool LoginReadPending, LoginCancelled;
     private readonly TaskCompletionSource<HttpResponseMessage> lateLogin = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -239,6 +273,14 @@ internal sealed class Fixture : HttpMessageHandler
         Requests.Add(request.Method + " " + request.RequestUri!.AbsolutePath);
         if (Offline) throw new HttpRequestException("synthetic offline");
         if (request.RequestUri.Host != "fixture.invalid") throw new InvalidOperationException("Forbidden fixture request");
+        if (request.Method == HttpMethod.Put && request.RequestUri.AbsolutePath == "/api/v1/routes/r1")
+        {
+            var envelope = request.Content!.ReadFromJsonAsync<RevisionRequest<RouteDto>>(cancellationToken: token).GetAwaiter().GetResult()!;
+            if (envelope.Revision != revision || envelope.Value.Id != "r1") throw new Exception("Stale or mismatched model save");
+            SavedRoute = envelope.Value; RouteWrites++;
+            routes = routes.Select(r => r.Id == SavedRoute.Id ? SavedRoute : r).ToArray(); revision++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new ConfigurationDto(revision, 1, accounts, routes, profiles)) });
+        }
         if (request.Method == HttpMethod.Post && request.RequestUri.AbsolutePath == "/api/v1/accounts/login")
         {
             LoginStarts++;
