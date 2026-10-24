@@ -4,11 +4,12 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Lain.Desktop.Presentation;
 
 namespace Lain.Desktop.Providers;
 
 /// <summary>Read-only provider discovery and setup guidance; account actions belong to the shell.</summary>
-public sealed partial class ProviderCatalogView : UserControl
+public sealed partial class ProviderCatalogView : UserControl, IPresentationView
 {
     private readonly Action<Uri>? _openLink;
     private readonly Action<string>? _beginSetup;
@@ -20,6 +21,11 @@ public sealed partial class ProviderCatalogView : UserControl
     private readonly HashSet<string> _expanded = new(StringComparer.Ordinal);
     private CatalogCard[] _catalog = [];
     private bool _loaded;
+    private PresentationOptions _presentation = new();
+    private readonly List<(string Id, Expander Expander)> _detailExpanders = [];
+    private readonly List<Border> _cardBorders = [];
+    private readonly HashSet<string> _detailOverrides = new(StringComparer.Ordinal);
+    private bool _applyingPresentation;
     private static readonly string[] BillingFilters = ["All access types", "Free access", "One-time trial", "Subscription", "Pay as you go", "Unknown pricing"];
     private static readonly string[] SetupFilters = ["All providers", "No account configured", "Has configured accounts"];
 
@@ -27,7 +33,7 @@ public sealed partial class ProviderCatalogView : UserControl
     {
         _openLink = openLink;
         _beginSetup = beginSetup;
-        AutomationProperties.SetName(this, "Supported providers");
+        AutomationProperties.SetName(this, "Discover providers");
         AutomationProperties.SetName(_search, "Search providers");
         AutomationProperties.SetName(_billing, "Filter provider access type");
         AutomationProperties.SetName(_setup, "Filter provider setup state");
@@ -42,7 +48,7 @@ public sealed partial class ProviderCatalogView : UserControl
             Spacing = 14,
             Children =
             {
-                Ui.PageHeader("Supported providers", "Choose a provider, get your own account and credentials, then return for assisted setup."),
+                Ui.PageHeader("Discover providers", "Compare providers and access requirements before adding an account. Credentials are not needed to browse."),
                 Ui.Text("Documentation, prepared adapters and live verification are shown separately. A saved account does not prove a working connection.", 12, Ui.Muted),
                 filters, _count, _cards
             }
@@ -52,12 +58,31 @@ public sealed partial class ProviderCatalogView : UserControl
         _setup.SelectionChanged += (_, _) => Populate();
     }
 
+    /// <summary>Change defaults in place so filtering, local details and keyboard focus survive.</summary>
+    public void SetPresentation(PresentationOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        _presentation = options;
+        _cards.Spacing = options.Density == ViewDensity.Compact ? 6 : 10;
+        foreach (var card in _cardBorders) card.Padding = new Thickness(options.Density == ViewDensity.Compact ? 10 : 16);
+        _applyingPresentation = true;
+        try
+        {
+            foreach (var (id, expander) in _detailExpanders)
+                if (!_detailOverrides.Contains(id) && !expander.IsKeyboardFocusWithin)
+                    expander.IsExpanded = options.Level == InformationLevel.Advanced;
+        }
+        finally { _applyingPresentation = false; }
+    }
+
     /// <summary>Keep a failed fetch visible without implying that provider credentials are invalid.</summary>
     public void ShowUnavailable(string? message = null)
     {
         _loaded = false;
         _catalog = [];
         _cards.Children.Clear();
+        _detailExpanders.Clear();
+        _cardBorders.Clear();
         _count.Text = "Provider catalog unavailable";
         _cards.Children.Add(Ui.Card(Ui.Stack(
             Ui.Text("The catalog could not be loaded.", 14),
@@ -82,6 +107,8 @@ public sealed partial class ProviderCatalogView : UserControl
             && (setup == SetupFilters[0] || (p.AccountCount > 0) == (setup == SetupFilters[2]))).ToArray();
         _count.Text = $"{found.Length} of {_catalog.Length} providers · open a card for requirements, model capabilities and sources";
         _cards.Children.Clear();
+        _detailExpanders.Clear();
+        _cardBorders.Clear();
         foreach (var provider in found) _cards.Children.Add(Card(provider));
         if (found.Length == 0)
             _cards.Children.Add(Ui.Card(Ui.Text(_catalog.Length == 0 ? "No provider descriptions are available yet." : "No providers match these filters.", 13, Ui.Muted)));
@@ -112,11 +139,11 @@ public sealed partial class ProviderCatalogView : UserControl
         var actions = new WrapPanel { Orientation = Orientation.Horizontal };
         AddLink(actions, provider, new CatalogLink("Official account / keys", provider.AccountUrl), primary: true);
         AddLink(actions, provider, new CatalogLink("Official documentation", provider.DocumentationUrl));
-        var setup = Ui.Button("Set up in lain", () => _beginSetup?.Invoke(provider.Id));
+        var setup = Ui.Button("Add this provider account", () => _beginSetup?.Invoke(provider.Id));
         setup.IsEnabled = _beginSetup is not null;
         setup.Margin = new Thickness(0, 0, 8, 6);
-        AutomationProperties.SetName(setup, $"Set up {provider.Name} in lain");
-        ToolTip.SetTip(setup, "Choose the route and enter your own credentials in the account form.");
+        AutomationProperties.SetName(setup, $"Add {provider.Name} account");
+        ToolTip.SetTip(setup, "Choose a connection and billing plan, then enter your own credentials. Saving does not verify access.");
         actions.Children.Add(setup);
         var details = new StackPanel { Spacing = 15 };
         details.Children.Add(Facts("Access and credentials", provider.Access));
@@ -137,9 +164,9 @@ public sealed partial class ProviderCatalogView : UserControl
                 AutomationProperties.SetName(routeDetails, $"{provider.Name}: {route.Name} capabilities");
                 routes.Children.Add(routeDetails);
             }
-            details.Children.Add(Ui.Section("Protocols and model capabilities", routes, "Capabilities belong to the concrete route. Unreported capabilities remain unknown."));
+            details.Children.Add(Ui.Section("Protocols and model capabilities", routes, "Capabilities belong to the concrete connection / API endpoint. Unreported capabilities remain unknown."));
         }
-        else details.Children.Add(Ui.Section("Protocols and model capabilities", Ui.Text("No verified route capability matrix is available yet.", 12, Ui.Muted)));
+        else details.Children.Add(Ui.Section("Protocols and model capabilities", Ui.Text("No verified connection capability matrix is available yet.", 12, Ui.Muted)));
         if (provider.Steps.Length > 0)
         {
             var steps = new StackPanel { Spacing = 8 };
@@ -157,7 +184,7 @@ public sealed partial class ProviderCatalogView : UserControl
             Header = Ui.Text("Setup, budgets and model capabilities", 12), Content = details,
             HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
             BorderBrush = Ui.Edge, BorderThickness = new Thickness(0), CornerRadius = new CornerRadius(4),
-            IsExpanded = _expanded.Contains(provider.Id)
+            IsExpanded = _expanded.Contains(provider.Id) || (!_detailOverrides.Contains(provider.Id) && _presentation.Level == InformationLevel.Advanced)
         };
         expander.Classes.Add("account-tile");
         if (Application.Current?.TryFindResource("CardExpander", out var theme) == true && theme is Avalonia.Styling.ControlTheme controlTheme)
@@ -175,9 +202,15 @@ public sealed partial class ProviderCatalogView : UserControl
         expander.PropertyChanged += (_, change) =>
         {
             if (change.Property != Expander.IsExpandedProperty) return;
+            if (_applyingPresentation) return;
+            _detailOverrides.Add(provider.Id);
             if (expander.IsExpanded) _expanded.Add(provider.Id); else _expanded.Remove(provider.Id);
         };
-        return Ui.Card(new StackPanel { Spacing = 8, Children = { heading, actions, expander } });
+        _detailExpanders.Add((provider.Id, expander));
+        var card = Ui.Card(new StackPanel { Spacing = 8, Children = { heading, actions, expander } });
+        card.Padding = new Thickness(_presentation.Density == ViewDensity.Compact ? 10 : 16);
+        _cardBorders.Add(card);
+        return card;
     }
 
     private void AddLink(Panel target, CatalogCard provider, CatalogLink link, bool primary = false)

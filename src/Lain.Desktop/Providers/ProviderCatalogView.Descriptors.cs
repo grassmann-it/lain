@@ -98,7 +98,7 @@ public sealed partial class ProviderCatalogView
             new("Price class", Human(route.PricingClass)),
             new("Free-only routing", Join(
                 route.FreeOnlyEligible && route.PricingClass == "free" ? "Documented free access" : "Paid or unknown pricing is excluded",
-                "Strict free-only access requires qualified runtime controls; availability differs by route. Catalog documentation alone does not enable it.",
+                "Strict free-only access requires qualified runtime controls; availability differs by connection. Catalog documentation does not enable it or change the applied policy.",
                 route.FreeOnlyEnforcement)),
             new("Context window / maximum output", $"{Tokens(capabilities.ContextWindow)} / {Tokens(capabilities.MaximumOutput)}"),
             new("Tools / streaming / reasoning", $"{Support(capabilities.Tools)} / {Support(capabilities.Streaming)} / {Support(capabilities.Reasoning)}"),
@@ -107,8 +107,8 @@ public sealed partial class ProviderCatalogView
         };
         if (!string.IsNullOrWhiteSpace(route.Publisher) || !string.IsNullOrWhiteSpace(route.PublisherType))
             facts.Add(new("Model / bot publisher", Join(Known(route.Publisher), Human(route.PublisherType))));
-        if (route.Restrictions is { Length: > 0 }) facts.Add(new("Route restrictions", string.Join("\n", route.Restrictions)));
-        if (route.Sources is { Length: > 0 }) facts.Add(new("Route evidence", string.Join("\n", route.Sources.Select(source =>
+        if (route.Restrictions is { Length: > 0 }) facts.Add(new("Connection restrictions", string.Join("\n", route.Restrictions)));
+        if (route.Sources is { Length: > 0 }) facts.Add(new("Connection evidence", string.Join("\n", route.Sources.Select(source =>
             Join(source.Title, source.CheckedAt is { } date ? $"Checked {date:dd MMM yyyy}" : "Check date unknown", source.Notes)))));
         return facts.ToArray();
     }

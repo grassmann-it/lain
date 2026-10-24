@@ -112,11 +112,11 @@ public sealed partial class MainWindow
             buttons.Children.Add(cancel);
         }
         var content = new StackPanel { Spacing = 20, MaxWidth = 680, HorizontalAlignment = HorizontalAlignment.Stretch };
-        content.Children.Add(Heading("Connect Codex", "Sign in to add a Codex account to lain."));
+        content.Children.Add(Heading("Sign in to Codex", "Add a Codex provider account through browser authorization."));
         var card = Ui.Card(details);
         card.Padding = new Thickness(20);
         content.Children.Add(card);
-        content.Children.Add(Ui.Text("Authorization is saved in lain’s own account storage.", 12, Ui.Muted));
+        content.Children.Add(Ui.Text("Authorization is saved in lain’s own account storage. Applying a proxy profile or exporting settings for the Codex client are separate actions in Profiles.", 12, Ui.Muted));
         content.Children.Add(buttons);
         _page.Content = content;
     }

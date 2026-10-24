@@ -5,11 +5,34 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Lain.Client;
 using Lain.Core;
+using Lain.Desktop.Presentation;
 
 namespace Lain.Desktop;
 
 public sealed partial class MainWindow
 {
+    private StackPanel? _providerForm;
+    private Expander? _providerOptionalSettings;
+    private Expander? _providerTerms;
+    private bool _providerOptionalOverride;
+    private bool _providerTermsOverride;
+    private bool _applyingProviderPresentation;
+
+    // Update the existing editor rather than rebuilding controls holding credentials.
+    private void SetProviderPresentation(PresentationOptions options)
+    {
+        if (_providerForm is not null) _providerForm.Spacing = options.Density == ViewDensity.Compact ? 8 : 12;
+        _applyingProviderPresentation = true;
+        try
+        {
+            if (_providerOptionalSettings is { } optional && !_providerOptionalOverride && !optional.IsKeyboardFocusWithin)
+                optional.IsExpanded = options.Level == InformationLevel.Advanced;
+            if (_providerTerms is { } terms && !_providerTermsOverride && !terms.IsKeyboardFocusWithin)
+                terms.IsExpanded = options.Level == InformationLevel.Advanced;
+        }
+        finally { _applyingProviderPresentation = false; }
+    }
+
     private async Task RefreshProviderCatalogAsync()
     {
         if (_providerLoading || _lifetime.IsCancellationRequested) return;
@@ -51,48 +74,75 @@ public sealed partial class MainWindow
         var provider = _providerCatalog?.Providers.FirstOrDefault(item => item.Id == providerId);
         if (provider is null) { _notice.Text = "Refresh the provider catalog before starting setup."; return; }
         _editing = true;
+        _loginVisible = false;
+        _actions.Clear();
+        _providerOptionalSettings = null;
+        _providerTerms = null;
+        _providerOptionalOverride = _providerTermsOverride = false;
         _workspace.Offset = default;
         var name = Ui.Input($"My {provider.Name} account");
-        var route = new ComboBox { ItemsSource = provider.Routes.Select(item => $"{item.Name} · {item.Protocol}").ToArray(), PlaceholderText = "Choose a concrete route", HorizontalAlignment = HorizontalAlignment.Stretch };
+        var route = new ComboBox { ItemsSource = provider.Routes.Select(item => $"{item.Name} · {item.Protocol}").ToArray(), PlaceholderText = "Choose a connection / API endpoint", HorizontalAlignment = HorizontalAlignment.Stretch };
         var billing = new ComboBox { PlaceholderText = "Choose an access / billing plan", HorizontalAlignment = HorizontalAlignment.Stretch };
-        var endpoint = Ui.Input(hint: "Derived from the selected route and account settings");
+        var endpoint = Ui.Input(hint: "Derived from the selected connection and account settings");
         endpoint.IsReadOnly = true;
         var secretFields = provider.Credentials.Where(field => field.Secret).ToArray();
         if (secretFields.Length != 1)
         {
             _page.Content = Ui.Stack(Heading($"Set up {provider.Name}", "This provider needs a credential flow that is not prepared in this account form."),
                 Ui.Text("Review the official access requirements before returning with credentials.", 13, Ui.Muted),
-                Ui.Button("Back to supported providers", () => { _editing = false; Render(); }));
+                Ui.Button("Back to Discover providers", ShowProviderCatalog));
             return;
         }
         var secret = Ui.Input(hint: secretFields[0].Label); secret.PasswordChar = '●';
         var settings = new Dictionary<string, (ProviderCredentialFieldDto Field, Control Input)>(StringComparer.Ordinal);
         var settingRows = new StackPanel { Spacing = 6 };
-        foreach (var field in provider.Credentials.Where(field => !field.Secret && field.Kind != "client-id"))
+        var optionalRows = new StackPanel { Spacing = 6 };
+        foreach (var field in provider.Credentials.Where(field => !field.Secret && (field.Kind != "client-id" || field.Required)))
         {
             Control input = field.Kind == "consent" ? new CheckBox { Content = "I explicitly allow this", IsChecked = false } : Ui.Input(hint: field.Required ? "Required" : "Optional");
             settings.Add(field.Id, (field, input));
-            settingRows.Children.Add(AccountFormRow(field.Label + (field.Required ? " *" : ""), input));
+            var rows = field.Required ? settingRows : optionalRows;
+            rows.Children.Add(AccountFormRow(field.Label + (field.Required ? " *" : ""), input));
             AutomationProperties.SetName(input, field.Label);
             AutomationProperties.SetHelpText(input, field.Required ? "Required account setting" : "Optional account setting");
-            if (!string.IsNullOrWhiteSpace(field.Help)) settingRows.Children.Add(Ui.Text(field.Help, 11, Ui.Muted));
+            if (!string.IsNullOrWhiteSpace(field.Help)) rows.Children.Add(Ui.Text(field.Help, 11, Ui.Muted));
         }
-        var routeNotes = Ui.Text("Choose a route to review its protocol, billing plans and restrictions.", 12, Ui.Muted);
+        var routeNotes = Ui.Text("Choose a connection to review its protocol, billing plans and restrictions.", 12, Ui.Muted);
         var form = AccountForm($"Set up {provider.Name}", "Save your own credentials locally. Saving does not verify provider access or enable free-only routing.",
-            AccountFormRow("Display name", name), AccountFormRow("Provider route", route), AccountFormRow("Billing plan", billing));
+            AccountFormRow("Display name", name), AccountFormRow("Connection / API endpoint", route), AccountFormRow("Billing plan", billing));
         form.Children.Add(routeNotes);
         form.Children.Add(settingRows);
+        if (optionalRows.Children.Count > 0)
+        {
+            _providerOptionalSettings = new Expander
+            {
+                Header = "Optional connection settings", Content = optionalRows,
+                HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch
+            };
+            AutomationProperties.SetName(_providerOptionalSettings, "Optional connection settings");
+            _providerOptionalSettings.PropertyChanged += (_, change) =>
+            {
+                if (change.Property == Expander.IsExpandedProperty && !_applyingProviderPresentation) _providerOptionalOverride = true;
+            };
+            form.Children.Add(_providerOptionalSettings);
+        }
         form.Children.Add(AccountFormRow("Base URL", endpoint));
         form.Children.Add(AccountFormRow(secretFields[0].Label, secret));
         if (!string.IsNullOrWhiteSpace(secretFields[0].Help)) form.Children.Add(Ui.Text(secretFields[0].Help!, 11, Ui.Muted));
         var restrictionText = Ui.Text(string.Join("\n\n", provider.Restrictions), 11, Ui.Muted);
         var restrictions = new Expander
         {
-            Header = "Provider terms and route details", HorizontalAlignment = HorizontalAlignment.Stretch,
+            Header = "Provider terms and connection details", HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Stretch, Content = restrictionText
         };
-        AutomationProperties.SetName(restrictions, "Provider terms and route details");
+        AutomationProperties.SetName(restrictions, "Provider terms and connection details");
+        _providerTerms = restrictions;
+        restrictions.PropertyChanged += (_, change) =>
+        {
+            if (change.Property == Expander.IsExpandedProperty && !_applyingProviderPresentation) _providerTermsOverride = true;
+        };
         form.Children.Add(restrictions);
+        form.Children.Add(Ui.Text("Saving credentials leaves the applied proxy policy unchanged. A documented free plan does not enable strict free-only routing; check Profiles for the applied policy.", 12, Ui.Muted));
         string[] planIds = [];
         Dictionary<string, string> CurrentSettings()
         {
@@ -120,7 +170,7 @@ public sealed partial class MainWindow
             planIds = selected.BillingPlanIds;
             billing.ItemsSource = planIds.Select(id => provider.BillingPlans.FirstOrDefault(plan => plan.Id == id) is { } plan ? $"{plan.Name} · {ProviderAccessLabel(plan.Kind)}" : id).ToArray();
             billing.SelectedIndex = -1;
-            routeNotes.Text = string.Join("\n", new[] { $"{selected.Model} · {selected.Protocol}", "Choose the plan for this route explicitly. No account balance or live access has been verified.", provider.Summary });
+            routeNotes.Text = string.Join("\n", new[] { $"{selected.Model} · {selected.Protocol}", "Choose the plan for this connection explicitly. No account balance or live access has been verified.", provider.Summary });
             restrictionText.Text = string.Join("\n\n", provider.Restrictions.Concat(selected.Restrictions ?? []).Distinct(StringComparer.Ordinal));
             UpdateEndpoint();
         };
@@ -130,7 +180,7 @@ public sealed partial class MainWindow
         form.Children.Add(Ui.Row(Action("Add account", async () =>
         {
             if (string.IsNullOrWhiteSpace(name.Text) || string.IsNullOrWhiteSpace(secret.Text)) throw new InvalidOperationException("Enter an account name and your own API credential.");
-            if (route.SelectedIndex < 0 || route.SelectedIndex >= provider.Routes.Length) throw new InvalidOperationException("Choose a concrete provider route.");
+            if (route.SelectedIndex < 0 || route.SelectedIndex >= provider.Routes.Length) throw new InvalidOperationException("Choose a connection / API endpoint.");
             if (billing.SelectedIndex < 0 || billing.SelectedIndex >= planIds.Length) throw new InvalidOperationException("Choose the access or billing plan you intend to use.");
             foreach (var item in settings.Values.Where(item => item.Field.Required))
                 if ((item.Input is TextBox text && string.IsNullOrWhiteSpace(text.Text)) || (item.Input is CheckBox check && check.IsChecked != true))
@@ -142,6 +192,8 @@ public sealed partial class MainWindow
             secret.Text = "";
             _section = "Accounts";
         }, "Account saved. Provider access and live budgets remain unverified."), Ui.Button("Cancel", () => { secret.Text = ""; _editing = false; Render(); })));
+        _providerForm = form;
+        SetProviderPresentation(PresentationFor("Accounts"));
         _page.Content = form;
     }
 }
