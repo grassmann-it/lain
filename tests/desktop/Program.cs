@@ -37,12 +37,15 @@ internal static class Program
             Console.Error.WriteLine("Refusing GUI startup: use tests/desktop/run-private-xvfb.sh (private Xvfb required).");
             return 2;
         }
-        return AppBuilder.Configure<SmokeApp>().UsePlatformDetect().WithInterFont().StartWithClassicDesktopLifetime(args);
+        SmokeApp.AccountSortOnly = args.Contains("--account-sort-smoke", StringComparer.Ordinal);
+        return AppBuilder.Configure<SmokeApp>().UsePlatformDetect().WithInterFont()
+            .StartWithClassicDesktopLifetime(args.Where(x => x != "--account-sort-smoke").ToArray());
     }
 }
 
 internal sealed class SmokeApp : Application
 {
+    public static bool AccountSortOnly { get; set; }
     public override void Initialize()
     {
         // Reuse production initialization (Semi/Ursa resources included), not a test theme.
@@ -65,7 +68,12 @@ internal sealed class SmokeApp : Application
         Dispatcher.UIThread.Post(async () =>
         {
             var scenario = new Scenario(lifetime);
-            try { await scenario.Run(); lifetime.Shutdown(0); }
+            try
+            {
+                if (AccountSortOnly) await scenario.RunAccountSortSmoke();
+                else await scenario.Run();
+                lifetime.Shutdown(0);
+            }
             catch (Exception error)
             {
                 await scenario.SaveFailureEvidence(error);
@@ -86,8 +94,98 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     private readonly List<object> screenshots = [];
     private readonly List<object> tileLayouts = [];
     private readonly List<object> inspectorLayouts = [];
+    private readonly List<object> headerLayouts = [];
     private MainWindow window = null!;
     private readonly List<HttpClient> transports = [];
+
+    public async Task RunAccountSortSmoke()
+    {
+        Directory.CreateDirectory(Output);
+        fixture.AccountSortScenario = true;
+        var config = JsonSerializer.Serialize(fixture.Config);
+        await Open();
+        await CaptureBoth("header-logo-left", verify: CheckHeaderOrder);
+        await OpenAccountOptions();
+        var order = Named<ComboBox>("Account order");
+        Check(order.Items.Cast<object>().Any(x => Equals(x, "5h usage")), "Accounts offers explicit 5h usage ordering");
+        order.SelectedItem = "5h usage";
+        await Task.Delay(100);
+        string[] initial = ["Z.ai Coding", "Command Code Pro", "Kimi Coding", "Personal Codex", "MiMo API"];
+        CheckAccountOrder(initial, "current 5h consumption sorts highest first before stale and unknown windows");
+        Check(Named<TextBlock>("5h usage for Z.ai Coding").Text == "5h usage · 70% used"
+            && Named<TextBlock>("5h usage for Command Code Pro").Text == "5h usage · 20% used",
+            "5h ordering uses each account's reported five-hour percentage");
+        Check(Named<TextBlock>("5h usage for Kimi Coding").Text == "5h usage · Last known · 95% used",
+            "higher stale 5h consumption remains last known rather than current or free");
+        Check(Named<TextBlock>("5h usage for Personal Codex").Text == "5h usage · Window not reported"
+            && Named<TextBlock>("5h usage for MiMo API").Text == "5h usage · Percentage unknown",
+            "weekly-only and unknown 5h windows never invent a zero/free percentage");
+        CheckQuotaBar("Personal Codex", "7 days", 99);
+        CheckQuotaBar("Command Code Pro", "Weekly", 88);
+        Check(!Controls<ProgressBar>().Any(x => AutomationProperties.GetName(x)?.StartsWith("MiMo API · ", StringComparison.Ordinal) == true),
+            "unknown five-hour usage has no invented progress bar");
+        var oldColor = (Named<ProgressBar>("Command Code Pro · 5 hours · consumed").Foreground as ISolidColorBrush)?.Color;
+        await CaptureBoth("five-hour-initial", verify: CheckHeaderOrder);
+        fixture.AccountSortPhase = 1;
+        await Click("Reload status");
+        await Wait(() => Named<TextBlock>("5h usage for Command Code Pro").Text == "5h usage · 90% used", "reload updates reported 5h usage while retaining the chosen rank snapshot");
+        CheckAccountOrder(initial, "quota reload updates metrics without moving frozen account IDs");
+        var changedColor = (Named<ProgressBar>("Command Code Pro · 5 hours · consumed").Foreground as ISolidColorBrush)?.Color;
+        Check(oldColor is not null && changedColor is not null && oldColor != changedColor,
+            "reported 5h consumption crossing the warning threshold updates its existing quota color");
+        var polls = fixture.StatusCalls;
+        await Task.Delay(10300);
+        Check(fixture.StatusCalls > polls, "passive host polling ran during the focused account ordering test");
+        CheckAccountOrder(initial, "passive polling preserves the frozen 5h account order");
+        await OpenAccountOptions();
+        await Click("Update 5h order");
+        string[] updated = ["Command Code Pro", "Z.ai Coding", "Kimi Coding", "Personal Codex", "MiMo API"];
+        CheckAccountOrder(updated, "only explicit Update 5h order applies the new consumption rank");
+        await CaptureBoth("five-hour-updated", verify: CheckHeaderOrder);
+        Check(new WorkspacePreferencesStore().Current.AccountSort == "five-hour", "the explicit five-hour sort choice is persisted locally");
+        window.Close(); await Open();
+        await Wait(() => Controls<TextBlock>().Any(x => AutomationProperties.GetName(x) == "5h usage for Command Code Pro"), "reopened Accounts restores the five-hour sort choice");
+        CheckAccountOrder(updated, "a new window computes its initial 5h snapshot from current reported quotas");
+        Check(new WorkspacePreferencesStore().Current.AccountSort == "five-hour", "five-hour ordering preference survives window restart");
+        await CaptureBoth("five-hour-reopened", verify: CheckHeaderOrder);
+        Check(JsonSerializer.Serialize(fixture.Config) == config && MutatingRequestCount() == 0,
+            "five-hour sorting refresh and header navigation checks never mutate host configuration");
+        Check(fixture.Unexpected.Count == 0, "focused sort requests all match the in-memory fixture allowlist");
+        window.Close();
+        foreach (var transport in transports) transport.Dispose();
+        var assembly = typeof(MainWindow).Assembly;
+        await File.WriteAllTextAsync(Path.Combine(Output, "evidence.json"), JsonSerializer.Serialize(new
+        {
+            result = "PASS", scenario = "account-sort-smoke", display = Environment.GetEnvironmentVariable("DISPLAY"), privateXvfb = true,
+            assembly = assembly.Location, sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))),
+            checks, screenshots, headerLayouts, requests = fixture.Requests,
+            scope = "Production MainWindow on private Xvfb; header geometry and explicit five-hour account ordering, freshness, frozen polling order and preference restart. In-memory HTTP only; no real providers, credentials, host or service mutation."
+        }, new JsonSerializerOptions { WriteIndented = true }));
+        Console.WriteLine($"PASS account sort smoke: {checks.Count} checks, {screenshots.Count} screenshots. {Output}/evidence.json");
+    }
+
+    private void CheckAccountOrder(string[] names, string description)
+    {
+        var expected = names.Select(x => "Account budgets for " + x).ToArray();
+        Check(AccountTileNames().SequenceEqual(expected), description + ": " + string.Join(", ", AccountTileNames()));
+    }
+
+    private void CheckHeaderOrder()
+    {
+        Rect Bounds(Control control) => new(control.TranslatePoint(default, window) ?? throw new Exception("Detached header control"), control.Bounds.Size);
+        var logo = Named<Image>("Application logo");
+        var back = Named<Button>("Back");
+        var view = Named<Button>("View");
+        var logoBounds = Bounds(logo); var backBounds = Bounds(back); var viewBounds = Bounds(view);
+        Check(logoBounds.Left <= 24 && logoBounds.Right < backBounds.Left && backBounds.Right <= viewBounds.Left,
+            $"application logo stays at the far left before Back and View at {window.Bounds.Width:0}px");
+        Check(Equals(back.Content, "← Back") && FitsScrollViewports(logo) && FitsScrollViewports(back) && FitsScrollViewports(view),
+            $"Back is labelled and header controls remain visible at {window.Bounds.Width:0}px");
+        headerLayouts.Add(new { width = window.Bounds.Width, height = window.Bounds.Height,
+            logo = new { logoBounds.X, logoBounds.Y, logoBounds.Width, logoBounds.Height },
+            back = new { backBounds.X, backBounds.Y, backBounds.Width, backBounds.Height },
+            view = new { viewBounds.X, viewBounds.Y, viewBounds.Width, viewBounds.Height } });
+    }
 
     public async Task Run()
     {
@@ -1251,7 +1349,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             SaveWindowImage("failure.png");
             await File.WriteAllTextAsync(Path.Combine(Output, "failure-evidence.json"), JsonSerializer.Serialize(new
             {
-                error = error.ToString(), layout = LayoutEvidence(), checks, screenshots, inspectorLayouts, requests = fixture.Requests
+                error = error.ToString(), layout = LayoutEvidence(), checks, screenshots, inspectorLayouts, headerLayouts, requests = fixture.Requests
             }, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception diagnosticError) { Console.Error.WriteLine("Failure evidence could not be saved: " + diagnosticError.Message); }

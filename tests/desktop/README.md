@@ -71,3 +71,17 @@ window. A quota availability change verifies stable inventory ordering. The
 35-account scenario includes disabled accounts and captures both required sizes.
 These view changes are also checked against unchanged configuration/revision and
 an unchanged in-memory mutation request count.
+
+For the narrow header/account-order regression, reuse this same runner and fixture:
+
+```sh
+./tests/desktop/run-private-xvfb.sh /tmp/lain-account-sort-evidence --account-sort-smoke
+```
+
+This entry renders both required sizes, checks the leftmost logo and labelled
+Back/View order, distinguishes current/stale/unknown five-hour windows from
+weekly quotas, verifies threshold colors, holds account IDs through quota reload
+and passive polling, then updates the rank explicitly and reloads the sort
+preference in a new window. All requests remain in the in-memory fixture; no
+provider refresh or host configuration mutation is involved. Frozen rank IDs are
+window-local; a new window computes its first rank from its current quota snapshot.

@@ -6,6 +6,7 @@ unset DISPLAY WAYLAND_DISPLAY DBUS_SESSION_BUS_ADDRESS
 export GDK_BACKEND=x11 QT_QPA_PLATFORM=xcb AVALONIA_USE_WAYLAND=0
 repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 output=${1:-"$repo/tests/desktop/artifacts/$(date -u +%Y%m%dT%H%M%SZ)-$$"}
+if (( $# > 0 )); then shift; fi
 mkdir -p -- "$output"
 output=$(cd -- "$output" && pwd)
 for dependency in dotnet Xvfb xauth timeout; do
@@ -48,5 +49,5 @@ export HOME="$runtime/home" XDG_CONFIG_HOME="$runtime/home/config" XDG_DATA_HOME
 export XDG_RUNTIME_DIR="$runtime/xdg" LAIN_HOME="$runtime/lain"
 export LAIN_TEST_XVFB_PID="$xvfb_pid" LAIN_TEST_DISPLAY="$DISPLAY" LAIN_TEST_OUTPUT="$output"
 timeout --signal=TERM --kill-after=5s 360s dotnet \
-  "$repo/tests/desktop/bin/Debug/net10.0/Lain.Desktop.Smoke.dll" 2>&1 | tee "$output/run.log"
+  "$repo/tests/desktop/bin/Debug/net10.0/Lain.Desktop.Smoke.dll" "$@" 2>&1 | tee "$output/run.log"
 echo "Desktop evidence: $output"

@@ -25,6 +25,8 @@ internal sealed class Fixture : HttpMessageHandler
     public bool Offline, UsageFailure, NullTokens, IncompleteCoverage, AnalysisFailure, InspectorFailure;
     public int ProviderCalls, InspectorCalls, InspectorEventCalls, CostPolicyCalls;
     public bool InspectorRestarted, InspectorEmpty, InspectorGap, InspectorAdditionalEvent, QuotaAvailabilityChanged;
+    public bool AccountSortScenario;
+    public int AccountSortPhase;
     public long InspectorHighWater => InspectorRestarted ? 1 : InspectorAdditionalEvent ? 14 : 13;
     public string? ActiveProfileId = "p2";
     public long? ActiveProfileRevision = 1;
@@ -197,6 +199,7 @@ internal sealed class Fixture : HttpMessageHandler
     // Concrete provider budgets exercise percentage, numeric balance, exhaustion and unsupported rendering.
     private QuotaDto[] Quotas()
     {
+        if (AccountSortScenario) return AccountSortQuotas();
         var observed = DateTimeOffset.Parse("2026-10-23T12:00:00Z");
         QuotaDto Reading(string id, string source, string label, double used, double limit, string unit, double percent, bool shared = false)
             => new(id, null, source, "ok", observed, observed,
@@ -226,6 +229,24 @@ internal sealed class Fixture : HttpMessageHandler
             QuotaAvailabilityChanged ? Reading("a5", "fixture-quota-recovery", "Recovered quota", 10, 100, "%", 10)
                 : new("a5", null, "unavailable", "unsupported", observed, null, null, "unknown", null, null, null, false,
                 "Provider quota is not available.", "Provider quota")
+        ];
+    }
+
+    private QuotaDto[] AccountSortQuotas()
+    {
+        var now = DateTimeOffset.UtcNow;
+        QuotaDto Current(string id, string source, string label, double percent) => new(id, null, source, "ok", now, now,
+            now.AddHours(5), "%", null, null, null, false, WindowLabel: label, UsedPercent: percent);
+        return
+        [
+            Current("a1", "https://chatgpt.com/backend-api/wham/usage#primary_window", "7 days", 99) with { ResetsAt = now.AddDays(7) },
+            Current("a2", "https://api.commandcode.ai/alpha/billing/credits#fiveHour", "5 hours", AccountSortPhase == 0 ? 20 : 90),
+            Current("a2", "fixture-weekly", "Weekly", 88) with { ResetsAt = now.AddDays(7) },
+            Current("a3", "fixture-credits", "Credits · 5 hours", AccountSortPhase == 0 ? 70 : 10),
+            Current("a4", "https://api.kimi.com/coding/v1/usages#limit_5h", "5 hours", 95) with
+                { State = "stale", ObservedAt = now.AddMinutes(-20), LastSuccessAt = now.AddMinutes(-20), Error = "Fixture retained last known usage" },
+            new("a5", null, "unavailable", "unsupported", now, null, null, "unknown", null, null, null, false,
+                "Provider quota is not available.", "Tokens · 5 hours")
         ];
     }
 
