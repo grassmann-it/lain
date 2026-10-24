@@ -42,7 +42,7 @@ public static partial class CliApplication
                     const int cells = 10;
                     var consumed = (int)Math.Round(used / 100 * cells, MidpointRounding.AwayFromZero);
                     fields.Add("[" + new string('#', consumed) + new string('-', cells - consumed) + "] "
-                        + used.ToString("0.##", CultureInfo.InvariantCulture) + "% used");
+                        + Lain.Client.QuotaDisplayFacts.Percent(used) + "% used");
                 }
                 else if (quota.Remaining is null && quota.Used is null && quota.Limit is null) fields.Add("Quota values not reported");
                 if (quota.MeasurementKind is not ("usage" or "limit"))
@@ -95,7 +95,7 @@ public static partial class CliApplication
         if (unsupported) return "Remaining unavailable";
         if (quota.Remaining is { } amount && double.IsFinite(amount)) return QuotaAmount(amount, quota.Unit) + " left";
         if (percent is { } known && quota.Unit is ("percent" or "%"))
-            return (100 - known).ToString("0.##", CultureInfo.InvariantCulture) + "% left";
+            return Lain.Client.QuotaDisplayFacts.Percent(100 - known) + "% left";
         return "Remaining unknown";
     }
 }

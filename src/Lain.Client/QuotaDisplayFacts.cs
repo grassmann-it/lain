@@ -8,15 +8,44 @@ public static class QuotaDisplayFacts
 {
     public static string Number(double value, string? exact = null)
     {
-        if (exact is not null && decimal.TryParse(exact, NumberStyles.Float, CultureInfo.InvariantCulture, out _)) return exact;
-        return value.ToString("G15", CultureInfo.InvariantCulture);
+        if (!double.IsFinite(value)) return "unknown";
+        if (exact is not null && decimal.TryParse(exact, NumberStyles.Float, CultureInfo.InvariantCulture, out var supplied)
+            && (supplied != 0 || value == 0))
+        {
+            if (supplied is > 0 and < 0.01m) return "<0.01";
+            if (supplied is < 0 and > -0.01m) return ">-0.01";
+            return supplied.ToString("#,0.##", CultureInfo.InvariantCulture);
+        }
+        return Amount(value);
+    }
+
+    /// <summary>Human display only. Raw amounts and exact provider strings remain separate.</summary>
+    public static string Amount(double? value, IFormatProvider? format = null)
+    {
+        if (value is not { } number || !double.IsFinite(number)) return "unknown";
+        format ??= CultureInfo.InvariantCulture;
+        if (number is > 0 and < 0.01) return "<" + 0.01.ToString("0.##", format);
+        if (number is < 0 and > -0.01) return ">" + (-0.01).ToString("0.##", format);
+        return number.ToString("#,0.##", format);
+    }
+
+    /// <summary>Format after ratio calculation; boundary labels do not imply zero or exhaustion.</summary>
+    public static string Percent(double? value, IFormatProvider? format = null)
+    {
+        if (value is not { } number || !double.IsFinite(number)) return "unknown";
+        format ??= CultureInfo.InvariantCulture;
+        if (number is > 0 and < 0.1) return "<" + 0.1.ToString("0.#", format);
+        if (number is < 0 and > -0.1) return ">" + (-0.1).ToString("0.#", format);
+        if (number is > 99.9 and < 100) return ">" + 99.9.ToString("0.#", format);
+        if (number is > 100 and < 100.1) return ">100";
+        return number.ToString("#,0.#", format);
     }
 
     public static IEnumerable<string> Describe(QuotaDto quota)
     {
         if (quota.NextRegenerationAt is { } regeneration)
         {
-            var amount = quota.NextRegenerationPercent is { } percent ? Number(percent, quota.ExactNextRegeneration) + "%" : quota.ExactNextRegeneration;
+            var amount = quota.NextRegenerationPercent is { } percent ? Percent(percent) + "%" : quota.ExactNextRegeneration;
             yield return "Partial regeneration" + (amount is null ? "" : " · " + amount) + " · " + regeneration.ToUniversalTime().ToString("yyyy-MM-dd HH:mm 'UTC'");
         }
         if (quota.KiloPassObservation is { } passObservation)

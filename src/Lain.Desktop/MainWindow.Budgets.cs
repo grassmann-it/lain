@@ -63,11 +63,13 @@ public sealed partial class MainWindow
 
     private static bool PercentUnit(string unit) => unit.Equals("percent", StringComparison.OrdinalIgnoreCase) || unit == "%";
 
-    private static string BudgetNumber(double value) => value.ToString("#,0.###############", CultureInfo.CurrentCulture);
+    private static string BudgetNumber(double value) => Lain.Client.QuotaDisplayFacts.Amount(value, CultureInfo.CurrentCulture);
+
+    private static string BudgetPercent(double value) => Lain.Client.QuotaDisplayFacts.Percent(value, CultureInfo.CurrentCulture);
 
     private static string BudgetAmount(double value, string unit)
     {
-        if (PercentUnit(unit)) return $"{BudgetNumber(value)}%";
+        if (PercentUnit(unit)) return $"{BudgetPercent(value)}%";
         var suffix = string.IsNullOrWhiteSpace(unit) || unit == "unknown" ? "" : " " + unit;
         return BudgetNumber(value) + suffix;
     }
@@ -200,9 +202,9 @@ public sealed partial class MainWindow
             var knownRemaining = ReportedRemaining(quota);
             var remaining = knownRemaining is { } amount
                 ? BudgetAmount(amount, quota.Unit) + " left"
-                : $"{BudgetNumber(100 - usedPercent)}% left";
+                : $"{BudgetPercent(100 - usedPercent)}% left";
             var values = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), ColumnSpacing = 8 };
-            var used = Ui.Text($"{BudgetNumber(usedPercent)}% used", 12);
+            var used = Ui.Text($"{BudgetPercent(usedPercent)}% used", 12);
             used.FontWeight = FontWeight.Medium;
             values.Children.Add(used);
             var left = Ui.Text(remaining, 11, Ui.Muted);
@@ -218,7 +220,7 @@ public sealed partial class MainWindow
                 Background = Ui.Edge
             };
             AutomationProperties.SetName(bar, $"{account.Name} · {QuotaWindowLabel(quota)} · consumed");
-            AutomationProperties.SetHelpText(bar, $"{BudgetNumber(usedPercent)}% used. {remaining}. {state}");
+            AutomationProperties.SetHelpText(bar, $"{BudgetPercent(usedPercent)}% used. {remaining}. {state}");
             consumption.Children.Add(bar);
             if (!PercentUnit(quota.Unit) && ValidAmount(quota.Used) is { } amountUsed && ValidAmount(quota.Limit) is { } limit)
                 consumption.Children.Add(Ui.Text($"{BudgetNumber(amountUsed)} of {BudgetAmount(limit, quota.Unit)} used", 11, Ui.Muted));

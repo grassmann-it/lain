@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using Lain.Core;
 
@@ -47,7 +46,7 @@ public static partial class CliApplication
             await HumanTable.WriteTextAsync(output, QuotaWindowName(quota) + (state.Length > 0 ? " · " + state : ""), context, "  ");
             if (percent is { } used)
             {
-                var metric = used.ToString("0.##", CultureInfo.InvariantCulture) + "% used";
+                var metric = Lain.Client.QuotaDisplayFacts.Percent(used) + "% used";
                 var cells = Math.Clamp(context.Width - 4 - metric.Length - 3, 8, 44);
                 var consumed = (int)Math.Round(used / 100 * cells, MidpointRounding.AwayFromZero);
                 var bar = "[" + new string('#', consumed) + new string('-', cells - consumed) + "] " + metric;
@@ -57,7 +56,7 @@ public static partial class CliApplication
 
             var remaining = unsupported ? "Remaining unavailable"
                 : quota.Remaining is { } amount && double.IsFinite(amount) ? "Remaining " + QuotaAmount(amount, quota.Unit)
-                : percent is { } known ? "Remaining " + (100 - known).ToString("0.##", CultureInfo.InvariantCulture)
+                : percent is { } known ? "Remaining " + Lain.Client.QuotaDisplayFacts.Percent(100 - known)
                     + (quota.Unit is "percent" or "%" ? "%" : "% (amount unknown)")
                 : "Remaining unknown" + (quota.Unit is "unknown" or "" ? "" : " " + Cell(quota.Unit));
             var resetLabel = unsupported ? "Reset unavailable" : quota.ResetsAt is { } next
@@ -109,7 +108,7 @@ public static partial class CliApplication
         }
     }
 
-    private static string QuotaAmount(double amount, string unit) => (double.IsFinite(amount) ? Lain.Client.QuotaDisplayFacts.Number(amount) : "unknown")
+    private static string QuotaAmount(double amount, string unit) => (unit is "%" or "percent" ? Lain.Client.QuotaDisplayFacts.Percent(amount) : Lain.Client.QuotaDisplayFacts.Amount(amount))
         + (unit is "%" or "percent" ? "%" : unit is "" or "unknown" ? "" : " " + Cell(unit));
 
     private static string QuotaWindowName(QuotaDto quota)

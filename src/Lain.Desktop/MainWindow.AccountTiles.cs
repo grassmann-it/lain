@@ -54,7 +54,7 @@ public sealed partial class MainWindow
                 var fiveHourPercent = QuotaUsedPercent(fiveHour);
                 var current = fiveHour is not null && CurrentFiveHourWindow(fiveHour);
                 var fiveHourStatus = fiveHourPercent is { } used
-                    ? $"5h usage · {(current ? "" : "Last known · ")}{BudgetNumber(used)}% used"
+                    ? $"5h usage · {(current ? "" : "Last known · ")}{BudgetPercent(used)}% used"
                     : fiveHour is null ? "5h usage · Window not reported" : "5h usage · Percentage unknown";
                 var fiveHourColor = fiveHourPercent is null ? Ui.Muted : !current ? Ui.Warning
                     : fiveHourPercent >= 95 ? Ui.Danger : fiveHourPercent >= 80 ? Ui.Warning : Ui.Accent;
@@ -155,7 +155,7 @@ public sealed partial class MainWindow
         var lastKnown = quota is not null && LastKnownQuota(quota);
         var heading = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 10 };
         heading.Children.Add(TileText(QuotaWindowLabel(quota), 12));
-        var value = percent is { } used ? $"{BudgetNumber(used)}% used" : unavailable ? "Not available"
+        var value = percent is { } used ? $"{BudgetPercent(used)}% used" : unavailable ? "Not available"
             : ReportedRemaining(quota) is { } balance ? BudgetAmount(balance, quota!.Unit) + " left"
             : quota is null ? "No quota snapshot" : "Not supplied";
         var metric = TileText(value, 12, lastKnown ? Ui.Warning : percent >= 100 ? Ui.Danger : Ui.Ink);
@@ -163,8 +163,8 @@ public sealed partial class MainWindow
         Grid.SetColumn(metric, 1); heading.Children.Add(metric);
         panel.Children.Add(heading);
         var remaining = !unavailable && ReportedRemaining(quota) is { } amount ?
-            (ValidAmount(quota!.Limit) is { } total ? BudgetNumber(amount) + " of " + BudgetAmount(total, quota.Unit) : BudgetAmount(amount, quota.Unit)) + " left"
-            : percent is { } consumed ? $"{BudgetNumber(100 - consumed)}% left"
+            (ValidAmount(quota!.Limit) is { } total ? (PercentUnit(quota.Unit) ? BudgetPercent(amount) : BudgetNumber(amount)) + " of " + BudgetAmount(total, quota.Unit) : BudgetAmount(amount, quota.Unit)) + " left"
+            : percent is { } consumed ? $"{BudgetPercent(100 - consumed)}% left"
             : unavailable ? "Remaining not available" : "Remaining not supplied";
         var resetText = QuotaResetText(quota, unavailable);
         if (percent is { } usedPercent)
@@ -176,7 +176,7 @@ public sealed partial class MainWindow
                 Foreground = lastKnown ? Ui.Warning : usedPercent >= 95 ? Ui.Danger : usedPercent >= 80 ? Ui.Warning : Ui.Accent
             };
             AutomationProperties.SetName(bar, $"{account.Name} · {QuotaWindowLabel(quota)} · consumed");
-            AutomationProperties.SetHelpText(bar, $"{BudgetNumber(usedPercent)}% used. {remaining}. {resetText}. {QuotaStateLabel(quota)}. Last success {Ui.When(quota!.LastSuccessAt)}.");
+            AutomationProperties.SetHelpText(bar, $"{BudgetPercent(usedPercent)}% used. {remaining}. {resetText}. {QuotaStateLabel(quota)}. Last success {Ui.When(quota!.LastSuccessAt)}.");
             panel.Children.Add(bar);
         }
         // Remaining and reset are explicit even when the provider supplies neither.
@@ -207,7 +207,7 @@ public sealed partial class MainWindow
                     ? "Checked " + success.ToLocalTime().ToString("dd MMM · HH:mm", CultureInfo.CurrentCulture) + " local time"
                     : "Check time not supplied", 11, Ui.Muted));
             if (quota.NextRegenerationAt is { } next)
-                panel.Children.Add(TileText("Partial regeneration " + (quota.NextRegenerationPercent is { } portion ? BudgetNumber(portion) + "% · " : "")
+                panel.Children.Add(TileText("Partial regeneration " + (quota.NextRegenerationPercent is { } portion ? BudgetPercent(portion) + "% · " : "")
                     + next.ToLocalTime().ToString("dd MMM · HH:mm", CultureInfo.CurrentCulture) + " local time", 11, Ui.Muted));
         }
         if (quota is not null && !string.IsNullOrWhiteSpace(quota.Error))
