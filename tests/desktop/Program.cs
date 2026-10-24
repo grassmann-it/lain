@@ -525,7 +525,8 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             "selecting a saved profile leaves the authoritative applied profile and global proxy unchanged");
         fixture.ActiveProfileId = null; fixture.ActiveProfileRevision = null;
         await Click("Reload status");
-        Check(HasText("Applied profile not reported by the host.", true) && !HasText("Applied to proxy: Daily", true),
+        Check(Named<TextBlock>("Applied proxy profile status").Text?.StartsWith("Applied profile not reported by the host", StringComparison.Ordinal) == true
+            && !HasText("Applied to proxy") && !HasText("Applied to proxy: Daily", true),
             "missing applied metadata remains unknown instead of being inferred from selection");
         fixture.ActiveProfileId = "p2"; fixture.ActiveProfileRevision = 1;
         await Click("Reload status");
