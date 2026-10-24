@@ -6,8 +6,8 @@ independent Gateway packages; neither implements an account quota monitor.
 
 | Package | Exact route | Credential and scope | Status |
 | --- | --- | --- | --- |
-| PV-COHERE | `https://api.cohere.ai/compatibility/v1` + `/chat/completions`; `command-a-plus-05-2026` | Own Cohere evaluation API key; intended organization; Bearer authentication | Prepared; local checks pending integration slot; not installed; live not tested |
-| PV-KILO | `https://ai-gateway.kilo.ai/api/v1` + `/chat/completions`; `google/gemma-4-26b-a4b-it:free` | Existing personal Kilo Gateway API key; personal account; Bearer authentication | Prepared; local checks pending integration slot; not installed; live not tested; existing account reported exhausted |
+| PV-COHERE | `https://api.cohere.ai/compatibility/v1` + `/chat/completions`; `command-a-plus-05-2026` | Own Cohere evaluation API key; intended organization; Bearer authentication | Prepared; 43 local Host checks passed; Core probe pending; not installed; live not tested |
+| PV-KILO | `https://ai-gateway.kilo.ai/api/v1` + `/chat/completions`; `google/gemma-4-26b-a4b-it:free` | Existing personal Kilo Gateway API key; personal account; Bearer authentication | Prepared; 43 local Host checks passed; Core probe pending; not installed; live not tested; existing account reported exhausted |
 
 Both use the existing `openai-chat` transport and provider-specific private
 identities (`cohere-openai-chat`, `kilo-openai-chat`). Exact base paths matter:
@@ -100,8 +100,11 @@ dotnet run --project tests/providers-cohere-kilo/Providers.CohereKilo.Tests.cspr
 python3 tests/providers-cohere-kilo/gateway_probe.py --core /absolute/qualified/lain-proxy --report /tmp/lain-cohere-kilo-gateway.json
 ```
 
-At preparation delivery these commands have **not** been executed. Keep local,
-installation and live states separate. Missing free credit/access leaves live
+Local Host qualification passed on 2026-10-24 after Main granted its serialized
+build slot: build succeeded with **0 warnings / 0 errors**, then **43 assertions
+passed** against the real Host services. The gateway probe passed a static Python
+syntax parse; its Core runtime scenarios have **not** been executed. Keep local
+Host, local Core, installation and live states separate. Missing free credit/access leaves live
 qualification open; it does not block catalog/fixture implementation or authorize
 a purchase. Main coordinates installation and any eventual private live check.
 

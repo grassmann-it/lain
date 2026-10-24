@@ -26,6 +26,8 @@ dotnet run --project tests/providers-cohere-kilo/Providers.CohereKilo.Tests.cspr
 python3 tests/providers-cohere-kilo/gateway_probe.py --core /absolute/qualified/lain-proxy --report /tmp/lain-cohere-kilo-gateway.json
 ```
 
-Preparation state: source and fixtures ready; commands not yet run. Installation
-not performed; both providers live `not_tested`. Kilo account is reported
-exhausted and no paid replacement route is prepared.
+Local Host state on 2026-10-24: build succeeded with 0 warnings/errors; **43
+assertions passed**. Python probe syntax parsed; Core runtime scenarios remain
+pending Main's integrated-binary slot. Installation not performed; both providers
+live `not_tested`. Kilo account is reported exhausted and no paid replacement
+route is prepared.
