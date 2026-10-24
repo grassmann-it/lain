@@ -58,7 +58,7 @@ static class Tests
         catch (QuotaFetchException) { Check(handler.Count == 3, "xAI credential not sent to Synthetic"); }
         handler.Status = HttpStatusCode.Redirect;
         try { await adapter.FetchAsync(account, new("mock-only-secret", baseUrl: "https://api.synthetic.new/v1")); throw new Exception("Expected redirect rejection"); }
-        catch (QuotaFetchException e) { Check(e.Message == "Quota HTTP 302.", "redirect fails with sanitized error"); }
+        catch (QuotaFetchException e) { Check(e.Message == "Quota HTTP 302 (http-error).", "redirect fails with sanitized error"); }
         handler.Status = HttpStatusCode.OK;
         handler.Body = "{}";
         var unknown = await adapter.FetchAsync(account, new("mock-only-secret", baseUrl: "https://api.synthetic.new/v1"));

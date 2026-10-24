@@ -19,7 +19,7 @@ public sealed class StepFunQuotaAdapter(HttpClient client) : IQuotaAdapter
 
     public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
-        if (!Supports(account.Provider) || account.CredentialKind != "api-key" || string.IsNullOrWhiteSpace(credential.BearerToken))
+        if (!Supports(account.Provider) || (credential.CredentialKind ?? account.CredentialKind) != "api-key" || string.IsNullOrWhiteSpace(credential.BearerToken))
             throw new QuotaFetchException("StepFun PAYG balance requires an API key.");
         // A key may be shared by official API products, but their budgets are not.
         // Exact endpoint qualification prevents Plan and compatible gateway keys
@@ -40,9 +40,9 @@ public sealed class StepFunQuotaAdapter(HttpClient client) : IQuotaAdapter
             var readings = Normalize(doc.RootElement);
             return new(readings, readings.Count == 0 ? "No recognized PAYG account balance; remaining balance unknown." : null);
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { throw new QuotaFetchException("StepFun balance request timed out."); }
+        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested) { throw new QuotaFetchException(QuotaFetchException.SafeDiagnostic(ex)); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
-        { throw new QuotaFetchException("StepFun balance response unavailable or invalid."); }
+        { throw new QuotaFetchException(QuotaFetchException.SafeDiagnostic(ex)); }
     }
 
     public static IReadOnlyList<QuotaReading> Normalize(JsonElement root)

@@ -15,7 +15,7 @@ public sealed class ZaiQuotaAdapter(HttpClient client) : IQuotaAdapter
 
     public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
-        if (account.CredentialKind != "api-key" || string.IsNullOrWhiteSpace(credential.BearerToken))
+        if ((credential.CredentialKind ?? account.CredentialKind) != "api-key" || string.IsNullOrWhiteSpace(credential.BearerToken))
             throw new QuotaFetchException("Z.ai quota requires a qualified API key.");
         if (!IsOfficialBaseUrl(credential.BaseUrl))
             throw new QuotaFetchException("Z.ai quota requires a recognized official API base URL.");

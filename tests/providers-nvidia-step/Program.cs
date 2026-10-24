@@ -35,7 +35,7 @@ foreach (var json in new[] { Fixture("plan-credits-not-account"), "{}", "{\"obje
 }
 http.Status = HttpStatusCode.TooManyRequests;
 try { await adapter.FetchAsync(account, new("synthetic-test-secret", baseUrl: StepFunQuotaAdapter.ApiBaseUrl)); throw new Exception("Expected HTTP rejection"); }
-catch (QuotaFetchException e) { Check(e.Message == "Quota HTTP 429.", "HTTP body and credentials never exposed"); }
+catch (QuotaFetchException e) { Check(e.Message == "Quota HTTP 429 (rate-limit).", "HTTP body and credentials never exposed"); }
 Check(NvidiaStepConfiguration.Validate("nvidia-build", "developer", "openai-chat", "https://integrate.api.nvidia.com/v1").Count == 0, "NVIDIA official setup");
 Check(NvidiaStepConfiguration.Validate("stepfun", "payg", "openai-chat", StepFunQuotaAdapter.ApiBaseUrl).Count == 0, "PAYG official setup");
 Check(NvidiaStepConfiguration.Validate("stepfun", "step-plan-mini", "openai-chat", "https://api.stepfun.com/step_plan/v1").Count == 0, "Plan OpenAI setup");

@@ -11,7 +11,7 @@ public sealed class KimiQuotaAdapter(HttpClient client) : IQuotaAdapter
 
     public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
-        if (account.CredentialKind != "api-key")
+        if ((credential.CredentialKind ?? account.CredentialKind) != "api-key")
             throw new QuotaFetchException("Kimi quota requires a qualified API key.");
         // Only the account's own normalized secret qualifies its endpoint. A custom
         // Kimi-compatible gateway key must never be sent to the official service.

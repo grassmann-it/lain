@@ -13,7 +13,7 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
 
     public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
-        if (!Supports(account.Provider) || account.CredentialKind != "api-key" || string.IsNullOrWhiteSpace(credential.BearerToken))
+        if (!Supports(account.Provider) || (credential.CredentialKind ?? account.CredentialKind) != "api-key" || string.IsNullOrWhiteSpace(credential.BearerToken))
             throw new QuotaFetchException("Requesty Self requires its own API key account.");
         if (credential.BaseUrl is not null && credential.BaseUrl.TrimEnd('/') != "https://router.requesty.ai/v1")
             throw new QuotaFetchException("Requesty Self requires its official router API base URL.");
@@ -43,9 +43,9 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
             rows.AddRange(Normalize(doc.RootElement, start));
             if (metadata is null) { metadataError = "Requesty key metadata unknown."; errors.Add(metadataError); }
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { metadataError = "Requesty Self request timed out."; errors.Add(metadataError); }
+        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested) { metadataError = "Requesty Self unavailable. " + QuotaFetchException.SafeDiagnostic(ex); errors.Add(metadataError); }
         catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
-        { metadataError = "Requesty Self response unavailable or invalid."; errors.Add(metadataError); }
+        { metadataError = "Requesty Self unavailable. " + QuotaFetchException.SafeDiagnostic(ex); errors.Add(metadataError); }
         if (resourceMismatch) return new([], "Requesty Self resource does not match the bound account.",
             RequestyKeyOutcome: new(false, "Requesty Self resource does not match the bound account."));
         // A bound identity requires a successful Self read. Transport/schema failure
@@ -61,9 +61,9 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
             using var doc = await QuotaHttp.GetAsync(client, usageUrl, credential, ct, userAgent: "lain/1.0");
             rows.AddRange(NormalizeUsage(doc.RootElement, start, now, metadata?.KeyId));
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { errors.Add("Requesty Self usage request timed out."); }
+        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested) { errors.Add("Requesty Self usage unavailable. " + QuotaFetchException.SafeDiagnostic(ex)); }
         catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
-        { errors.Add("Requesty Self usage response unavailable or invalid."); }
+        { errors.Add("Requesty Self usage unavailable. " + QuotaFetchException.SafeDiagnostic(ex)); }
         if (rows.Count == 0 && metadata is null && errors.Count == 0) errors.Add("Requesty Self quota unknown.");
         return new(rows, errors.Count == 0 ? null : string.Join(" ", errors), RequestyKey: metadata,
             RequestyKeyOutcome: new(metadata is not null, metadataError));

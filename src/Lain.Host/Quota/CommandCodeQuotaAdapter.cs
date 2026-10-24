@@ -21,28 +21,39 @@ public sealed class CommandCodeQuotaAdapter(HttpClient client) : IQuotaAdapter
 
     public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
-        if (account.CredentialKind != "api-key")
+        if ((credential.CredentialKind ?? account.CredentialKind) != "api-key")
             throw new QuotaFetchException("Command Code quota requires a qualified API key.");
         using var whoami = await QuotaHttp.GetAsync(client, Api + "whoami?limits=1", credential, ct);
         var orgId = JsonFields.String(JsonFields.Object(whoami.RootElement, "org"), "id");
         var query = orgId is null ? "" : "?orgId=" + Uri.EscapeDataString(orgId);
-        var errors = new List<string>();
-        async Task<JsonDocument?> Optional(string path)
+        async Task<(JsonDocument? Document, string? Error)> Optional(string path)
         {
-            try { return await QuotaHttp.GetAsync(client, Api + path + query, credential, ct); }
+            try { return (await QuotaHttp.GetAsync(client, Api + path + query, credential, ct), null); }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-            catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or OperationCanceledException)
+            catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or OperationCanceledException or IOException or ArgumentException or FormatException)
             {
-                // No exception messages or response bodies: they can contain provider secrets.
-                errors.Add(path + " unavailable.");
-                return null;
+                return (null, path + " unavailable. " + QuotaFetchException.SafeDiagnostic(ex));
             }
         }
-        // Sequential, so partial diagnostics and provider requests are deterministic.
-        using var billing = await Optional("billing/credits");
-        using var subscription = await Optional("billing/subscriptions");
+        // Both reads use the same identity already established by whoami. Keep
+        // result/error ordering deterministic without serializing independent I/O.
+        var billingTask = Optional("billing/credits");
+        var subscriptionTask = Optional("billing/subscriptions");
+        try { await Task.WhenAll(billingTask, subscriptionTask); }
+        catch
+        {
+            // A canceled sibling must not leave a successfully parsed document undisposed.
+            if (billingTask.IsCompletedSuccessfully) billingTask.Result.Document?.Dispose();
+            if (subscriptionTask.IsCompletedSuccessfully) subscriptionTask.Result.Document?.Dispose();
+            throw;
+        }
+        var billingResult = await billingTask;
+        var subscriptionResult = await subscriptionTask;
+        using var billing = billingResult.Document;
+        using var subscription = subscriptionResult.Document;
+        var errors = new[] { billingResult.Error, subscriptionResult.Error }.Where(error => error is not null).ToArray();
         var rows = Normalize(billing?.RootElement ?? default, subscription?.RootElement ?? default, whoami.RootElement, orgId);
-        return new(rows, errors.Count > 0 ? string.Join(" ", errors) : rows.Count == 0 ? "No recognized quota fields; remaining budget unknown." : null);
+        return new(rows, errors.Length > 0 ? string.Join(" ", errors) : rows.Count == 0 ? "No recognized quota fields; remaining budget unknown." : null);
     }
 
     private static List<QuotaReading> Normalize(JsonElement billing, JsonElement subscription, JsonElement whoami, string? orgId)

@@ -82,7 +82,7 @@ using (var client = new HttpClient(new FakeHandler((_, _) => throw new HttpReque
 using (var client = new HttpClient(new FakeHandler((_, _) => throw new TaskCanceledException(secret))))
 {
     var result = await new KiloQuotaAdapter(client).FetchAsync(Account("kilo"), new(secret));
-    Check(result.Error?.Contains("timed out") == true && !JsonSerializer.Serialize(result).Contains(secret), "Timeout sanitized");
+    Check(result.Error?.Contains("timeout") == true && !JsonSerializer.Serialize(result).Contains(secret), "Timeout sanitized");
 }
 using (var client = new HttpClient(new FakeHandler((_, _) => Task.FromResult(Reply(new string('x', 1024 * 1024 + 1))))))
 {
@@ -133,6 +133,7 @@ using (var client = new HttpClient(new FakeHandler((_, _) => throw new Exception
     await Denied(() => new XaiKeyMetadataReader(client).ReadAsync(Account("xai"), new(secret, baseUrl: "https://api.x.ai/v1?key=private")), "Wrong xAI target rejected");
 }
 checks += await MetadataRetention.RunAsync();
+checks += await ReaderRecovery.RunAsync();
 Console.WriteLine($"PASS: {checks} account-connect reader checks");
 
 async Task Denied(Func<Task> action, string message)

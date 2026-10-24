@@ -77,3 +77,20 @@ unbound legacy case proves independent partial usage remains available. The narr
 52-case suite passed after this fix with zero warnings/errors under the same
 linux-x64/no-node-reuse setup. Other provider suites above are unchanged by this
 Requesty-only fix and were not repeated.
+
+Reader recovery follow-up (2026-10-25): selected quota credential kind takes
+precedence over the account's historical credential label. An explicitly
+incompatible selected kind never falls back to that label. Independent Fireworks
+monitor keys work without inference credentials or an inference endpoint, keep the
+bound account, and never fall back when their token is absent. Kilo's exact legacy
+`https://api.kilo.ai/api/gateway/v1` origin is also accepted: the pinned official
+`Kilo-Org/kilocode@9723be621429771ea47a2614b0ac433448023cec`
+`packages/kilo-gateway/src/api/constants.ts` documents its rewrite to the same
+Gateway in `resolveKiloAiGatewayBase`.
+
+Fake HTTP recovery covers Kilo, Command Code, Z.ai and OpenRouter authentication,
+permission, rate-limit, timeout and response drift: original values and observation
+stamps survive failures, and the next successful read recovers on the same account.
+Partial diagnostics retain only fixed failure categories and numeric HTTP status.
+Kilo wallet/Pass and Command Code credit/subscription reads overlap, preserving
+independent outcomes without spending consecutive full request timeouts.

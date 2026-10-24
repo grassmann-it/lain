@@ -14,7 +14,10 @@ public sealed class KiloQuotaAdapter(HttpClient client) : IQuotaAdapter
     internal static void ValidateCredential(QuotaCredential credential)
     {
         if (string.IsNullOrWhiteSpace(credential.BearerToken)) throw new QuotaFetchException("Kilo requires its own API key.");
-        if (credential.BaseUrl is not null && credential.BaseUrl.TrimEnd('/') != "https://ai-gateway.kilo.ai/api/v1")
+        // The pinned manufacturer client rewrites the legacy API-app gateway URL
+        // to the same personal gateway (api/constants.ts, resolveKiloAiGatewayBase).
+        if (credential.BaseUrl is not null && credential.BaseUrl.TrimEnd('/') is not
+            ("https://ai-gateway.kilo.ai/api/v1" or "https://api.kilo.ai/api/gateway/v1"))
             throw new QuotaFetchException("Kilo requires its official Gateway API base URL.");
         if (credential.Settings.Any(p => p.Key.Contains("organization", StringComparison.OrdinalIgnoreCase)
             && !string.IsNullOrWhiteSpace(p.Value)))
@@ -23,31 +26,41 @@ public sealed class KiloQuotaAdapter(HttpClient client) : IQuotaAdapter
 
     public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
-        if (!Supports(account.Provider) || account.CredentialKind != "api-key") throw new QuotaFetchException("Kilo requires its own API key account.");
+        if (!Supports(account.Provider) || (credential.CredentialKind ?? account.CredentialKind) != "api-key") throw new QuotaFetchException("Kilo requires its own API key account.");
         ValidateCredential(credential);
         if (account.Binding is { } binding && (!binding.Provider.Equals("kilo", StringComparison.OrdinalIgnoreCase)
             || binding.Product is not null && binding.Product != Product
             || binding.ResourceType is not null && binding.ResourceType != ResourceType))
             throw new QuotaFetchException("Kilo quota requires its personal Gateway resource binding.");
-        IReadOnlyList<QuotaReading> rows = [];
-        KiloPassState? pass = null;
-        string? passError = null;
-        var errors = new List<string>();
-        try
+        async Task<(IReadOnlyList<QuotaReading> Rows, string? Error)> Wallet()
         {
-            using var doc = await QuotaHttp.GetAsync(client, Endpoint, credential, ct, userAgent: "lain/1.0");
-            rows = Normalize(doc.RootElement);
-            if (rows.Count == 0) errors.Add("Kilo wallet balance unknown.");
+            try
+            {
+                using var doc = await QuotaHttp.GetAsync(client, Endpoint, credential, ct, userAgent: "lain/1.0");
+                var rows = Normalize(doc.RootElement);
+                return (rows, rows.Count == 0 ? "Kilo wallet balance unknown." : null);
+            }
+            catch (OperationCanceledException ex) when (!ct.IsCancellationRequested)
+            { return ([], "Kilo wallet unavailable. " + QuotaFetchException.SafeDiagnostic(ex)); }
+            catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
+            { return ([], "Kilo wallet unavailable. " + QuotaFetchException.SafeDiagnostic(ex)); }
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { errors.Add("Kilo wallet request timed out."); }
-        catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
-        { errors.Add("Kilo wallet response unavailable or invalid."); }
-        try { pass = await new KiloPassReader(client).ReadAsync(credential, ct); }
-        catch (QuotaFetchException) { passError = "Kilo Pass response unavailable or invalid."; errors.Add(passError); }
-        // Independent failures preserve a valid wallet or Pass. No bonus addition or
-        // subtraction of Pass usage from the independent wallet balance.
-        return new(rows, errors.Count == 0 ? null : string.Join(" ", errors), KiloPass: pass,
-            KiloPassOutcome: new(passError is null, passError));
+        async Task<(KiloPassState? Value, string? Error)> Pass()
+        {
+            try { return (await new KiloPassReader(client).ReadAsync(credential, ct), null); }
+            catch (QuotaFetchException ex) { return (null, "Kilo Pass unavailable. " + QuotaFetchException.SafeDiagnostic(ex)); }
+        }
+        // Independent fixed read endpoints run together, so a slow Pass cannot
+        // consume a second full request timeout after the wallet finishes.
+        var walletTask = Wallet();
+        var passTask = Pass();
+        await Task.WhenAll(walletTask, passTask);
+        var wallet = await walletTask;
+        var pass = await passTask;
+        var errors = new[] { wallet.Error, pass.Error }.Where(error => error is not null).ToArray();
+        // Never add Pass credits to the independent wallet balance.
+        return new(wallet.Rows, errors.Length == 0 ? null : string.Join(" ", errors), KiloPass: pass.Value,
+            KiloPassOutcome: new(pass.Error is null, pass.Error));
     }
 
     public static IReadOnlyList<QuotaReading> Normalize(JsonElement root)

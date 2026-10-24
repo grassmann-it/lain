@@ -16,11 +16,17 @@ public sealed class FireworksQuotaAdapter(HttpClient client, TimeProvider? timeP
     public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        if (!Supports(account.Provider) || account.CredentialKind != "api-key" || string.IsNullOrWhiteSpace(credential.BearerToken))
-            throw new QuotaFetchException("Fireworks quota requires an API-key account.");
-        if (!IsOfficialBaseUrl(credential.BaseUrl))
-            throw new QuotaFetchException("Fireworks quota requires its official serverless API base URL.");
+        if (!Supports(account.Provider)) throw new QuotaFetchException("Fireworks quota requires its own account.");
         var monitor = credential.Monitor;
+        // A separately selected monitor key is independent of inference access,
+        // including its expiry, legacy account label and configured inference URL.
+        if (monitor?.Kind != "api-token")
+        {
+            if ((credential.CredentialKind ?? account.CredentialKind) != "api-key" || string.IsNullOrWhiteSpace(credential.BearerToken))
+                throw new QuotaFetchException("Fireworks quota requires an API key.");
+            if (!IsOfficialBaseUrl(credential.BaseUrl))
+                throw new QuotaFetchException("Fireworks quota requires its official serverless API base URL.");
+        }
         if (monitor is not null && monitor.Kind is not ("inference-key" or "api-token"))
             return new([], Support: new("setup-required", "Fireworks quota requires an authorized Fireworks API key.", Source, "quota"));
         if (monitor?.ExpiresAt <= (timeProvider ?? TimeProvider.System).GetUtcNow())
@@ -31,6 +37,10 @@ public sealed class FireworksQuotaAdapter(HttpClient client, TimeProvider? timeP
         var accountId = monitor?.ResourceId ?? credential.Settings.GetValueOrDefault("accountId");
         if (!ValidId(accountId))
             return new([], Support: new("setup-required", "Enter the Fireworks account ID to read account quotas.", Source, "quota"));
+        if (account.Binding is { } binding && (!Supports(binding.Provider)
+            || binding.ResourceType is not (null or "account")
+            || binding.ResourceId is not null && binding.ResourceId != accountId))
+            throw new QuotaFetchException("Fireworks quota does not match the bound account.");
         var httpCredential = new QuotaCredential(bearerToken);
         var endpoint = QuotaBaseUrl + accountId + "/quotas?pageSize=200";
         var rows = new List<QuotaReading>();
@@ -55,7 +65,7 @@ public sealed class FireworksQuotaAdapter(HttpClient client, TimeProvider? timeP
                     var name = JsonFields.String(quota, "name");
                     if (name is null || !name.StartsWith("accounts/" + accountId + "/quotas/", StringComparison.Ordinal)
                         || !ValidId(name[("accounts/" + accountId + "/quotas/").Length..])
-                        || name.Contains(credential.BearerToken, StringComparison.Ordinal)
+                        || !string.IsNullOrEmpty(credential.BearerToken) && name.Contains(credential.BearerToken, StringComparison.Ordinal)
                         || name.Contains(bearerToken, StringComparison.Ordinal))
                     {
                         diagnostic = "Fireworks quota response contained an invalid or mismatched account scope.";
@@ -82,7 +92,7 @@ public sealed class FireworksQuotaAdapter(HttpClient client, TimeProvider? timeP
             }
             catch (QuotaFetchException ex) when (rows.Count > 0)
             {
-                diagnostic = ex.Message;
+                diagnostic = QuotaFetchException.SafeDiagnostic(ex);
                 break;
             }
             catch (JsonException) when (rows.Count > 0)
@@ -90,14 +100,14 @@ public sealed class FireworksQuotaAdapter(HttpClient client, TimeProvider? timeP
                 diagnostic = "Fireworks quota response was malformed; results are partial.";
                 break;
             }
-            catch (HttpRequestException) when (rows.Count > 0)
+            catch (HttpRequestException ex) when (rows.Count > 0)
             {
-                diagnostic = "Fireworks quota transport failed; results are partial.";
+                diagnostic = "Fireworks quota partial. " + QuotaFetchException.SafeDiagnostic(ex);
                 break;
             }
-            catch (OperationCanceledException) when (!ct.IsCancellationRequested && rows.Count > 0)
+            catch (OperationCanceledException ex) when (!ct.IsCancellationRequested && rows.Count > 0)
             {
-                diagnostic = "Fireworks quota request timed out; results are partial.";
+                diagnostic = "Fireworks quota partial. " + QuotaFetchException.SafeDiagnostic(ex);
                 break;
             }
         }

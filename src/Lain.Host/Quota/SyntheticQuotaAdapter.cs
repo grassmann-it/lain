@@ -12,7 +12,7 @@ public sealed class SyntheticQuotaAdapter(HttpClient client) : IQuotaAdapter
 
     public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
-        if (!Supports(account.Provider) || account.CredentialKind != "api-key" || string.IsNullOrWhiteSpace(credential.BearerToken))
+        if (!Supports(account.Provider) || (credential.CredentialKind ?? account.CredentialKind) != "api-key" || string.IsNullOrWhiteSpace(credential.BearerToken))
             throw new QuotaFetchException("Synthetic quota requires its own API key account.");
         // Custom gateway credentials must never leave their configured origin.
         if (credential.BaseUrl?.TrimEnd('/') is not ("https://api.synthetic.new/openai/v1" or
@@ -24,9 +24,9 @@ public sealed class SyntheticQuotaAdapter(HttpClient client) : IQuotaAdapter
             var rows = Normalize(doc.RootElement);
             return new(rows, rows.Count == 0 ? "No recognized subscription quota; remaining budget unknown." : null);
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { throw new QuotaFetchException("Synthetic quota request timed out."); }
+        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested) { throw new QuotaFetchException(QuotaFetchException.SafeDiagnostic(ex)); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
-        { throw new QuotaFetchException("Synthetic quota response unavailable or invalid."); }
+        { throw new QuotaFetchException(QuotaFetchException.SafeDiagnostic(ex)); }
     }
 
     public static IReadOnlyList<QuotaReading> Normalize(JsonElement root)

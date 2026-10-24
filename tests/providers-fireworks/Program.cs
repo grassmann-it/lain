@@ -54,6 +54,17 @@ var separate = new QuotaCredential("synthetic-inference", settings: new Dictiona
     monitor: new("api-token", "synthetic-monitor", "demo"));
 await adapter.FetchAsync(account, separate);
 Check(http.Calls.Last().Token == "synthetic-monitor" && http.Calls.Last().Url.Contains("accounts/demo/"), "monitor token and explicit resource override inference settings together");
+// This is the actual HostQuotaSource shape for a separately selected monitor:
+// no inference bearer or URL, and an account whose original kind may be monitor.
+var monitorOnly = new QuotaCredential("", monitor: new("api-token", "synthetic-monitor", "demo"), credentialKind: "api-token");
+var monitorAccount = account with { CredentialKind = "monitor", Binding = new("fireworks", ResourceType: "account", ResourceId: "demo") };
+var independent = await adapter.FetchAsync(monitorAccount, monitorOnly);
+Check(independent.Readings.Count == 3 && independent.Error is null && http.Calls.Last().Token == "synthetic-monitor",
+    "independent monitor has no inference prerequisites and empty inference bearer does not reject resource names");
+var monitorBefore = http.Calls.Count;
+try { await adapter.FetchAsync(monitorAccount with { Binding = monitorAccount.Binding! with { ResourceId = "other" } }, monitorOnly); throw new Exception("Expected scope rejection"); }
+catch (QuotaFetchException) { Check(http.Calls.Count == monitorBefore, "independent monitor cannot change bound resource scope"); }
+
 before = http.Calls.Count;
 var missingSecret = await adapter.FetchAsync(account, new("synthetic-inference", monitor: new("api-token", null, "demo")));
 Check(missingSecret.Support?.Kind == "setup-required" && http.Calls.Count == before, "missing separate monitor key never falls back to inference key");
@@ -75,7 +86,7 @@ foreach (var status in new[] { HttpStatusCode.Unauthorized, HttpStatusCode.Forbi
 {
     http.Respond = (_, _) => Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent("synthetic-inference body") });
     try { await adapter.FetchAsync(account, credential); throw new Exception("Expected HTTP rejection"); }
-    catch (QuotaFetchException e) { Check(e.Message == $"Quota HTTP {(int)status}.", "401/403/429 sanitized"); }
+    catch (QuotaFetchException e) { Check(e.Message == QuotaFetchException.Http(status).Message, "401/403/429 sanitized"); }
 }
 http.Respond = (_, _) => Task.FromResult(Json("""{"quotas":[{"name":"accounts/demo/quotas/monthly-spend-usd","maxValue":"500"}]}"""));
 var ceilingOnly = (await adapter.FetchAsync(account, credential)).Readings.Single();
@@ -100,7 +111,7 @@ http.Respond = (_, _) => Task.FromResult(++pageCalls == 1
     ? Json("""{"quotas":[{"name":"accounts/demo/quotas/monthly-spend-usd","value":"50","usage":5}],"nextPageToken":"next"}""")
     : new HttpResponseMessage(HttpStatusCode.TooManyRequests) { Content = new StringContent("synthetic-inference") });
 var partial = await adapter.FetchAsync(account, credential);
-Check(partial.Readings.Single().Used == 5 && partial.Error == "Quota HTTP 429.", "later-page failure preserves independent usable rows as partial");
+Check(partial.Readings.Single().Used == 5 && partial.Error == "Quota HTTP 429 (rate-limit).", "later-page failure preserves independent usable rows as partial");
 
 http.Respond = (_, _) => Task.FromResult(Json(Fixture("mixed")));
 var service = new QuotaService(new Accounts([account, account with { Id = "local-b" }]), new Credentials(credential), [adapter], clock);
@@ -112,11 +123,11 @@ Check((await service.GetSnapshotsAsync()).All(r => r.State == "stale"), "service
 http.Respond = (_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Forbidden) { Content = new StringContent("synthetic-inference") });
 snapshots = await service.RefreshAsync("local-a");
 var stale = snapshots.Single(r => r.AccountId == "local-a" && r.Source.EndsWith("/monthly-spend-usd", StringComparison.Ordinal));
-Check(stale.State == "stale" && stale.Used == 12.5 && stale.LastSuccessAt == lastGood && stale.Error == "Quota HTTP 403.", "403 retains last good account-specific snapshot");
+Check(stale.State == "stale" && stale.Used == 12.5 && stale.LastSuccessAt == lastGood && stale.Error == "Quota HTTP 403 (permission).", "403 retains last good account-specific snapshot");
 Check(snapshots.Where(r => r.AccountId == "local-b").All(r => r.Error is null), "one account refresh does not fail another account");
 http.Respond = (_, _) => throw new TaskCanceledException("synthetic-inference timeout");
 var timedOut = await service.RefreshAsync("local-a");
-Check(timedOut.Single(r => r.AccountId == "local-a" && r.Source.EndsWith("/monthly-spend-usd", StringComparison.Ordinal)) is { State: "stale", Used: 12.5, Error: "Quota refresh failed." }, "upstream timeout retains last good data with sanitized error");
+Check(timedOut.Single(r => r.AccountId == "local-a" && r.Source.EndsWith("/monthly-spend-usd", StringComparison.Ordinal)) is { State: "stale", Used: 12.5, Error: "Quota request failed (timeout)." }, "upstream timeout retains last good data with sanitized error");
 var entered = new TaskCompletionSource();
 http.Respond = async (_, ct) => { entered.TrySetResult(); await Task.Delay(Timeout.Infinite, ct); return Json("{}"); };
 using var cancel = new CancellationTokenSource();

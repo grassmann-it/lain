@@ -22,9 +22,9 @@ public sealed class KiloPassReader(HttpClient client)
                 && subscription.ValueKind == JsonValueKind.Null) return null;
             return Normalize(doc.RootElement) ?? throw new QuotaFetchException("Kilo Pass response unavailable or invalid.");
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { throw new QuotaFetchException("Kilo Pass request timed out."); }
+        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested) { throw new QuotaFetchException(QuotaFetchException.SafeDiagnostic(ex)); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
-        { throw new QuotaFetchException("Kilo Pass response unavailable or invalid."); }
+        { throw new QuotaFetchException(QuotaFetchException.SafeDiagnostic(ex)); }
     }
 
     private static JsonElement SubscriptionRoot(JsonElement value)

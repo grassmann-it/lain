@@ -11,6 +11,11 @@ cat > "$temp/ReaderTests.csproj" <<XML
     <Compile Include="$root/src/Lain.Host/Quota/QuotaContracts.cs" />
     <Compile Include="$root/src/Lain.Host/Quota/QuotaHttp.cs" />
     <Compile Include="$root/src/Lain.Host/Quota/QuotaService.cs" />
+    <Compile Include="$root/src/Lain.Host/Quota/FireworksQuotaAdapter.cs" />
+    <Compile Include="$root/src/Lain.Host/Quota/OpenRouterQuotaAdapter.cs" />
+    <Compile Include="$root/src/Lain.Host/Quota/KimiQuotaAdapter.cs" />
+    <Compile Include="$root/src/Lain.Host/Quota/ZaiQuotaAdapter.cs" />
+    <Compile Include="$root/src/Lain.Host/Quota/CommandCodeQuotaAdapter.cs" />
     <Compile Include="$root/src/Lain.Host/Quota/KiloQuotaAdapter.cs" />
     <Compile Include="$root/src/Lain.Host/Quota/KiloPassReader.cs" />
     <Compile Include="$root/src/Lain.Host/Quota/RequestyQuotaAdapter.cs" />
@@ -19,6 +24,7 @@ cat > "$temp/ReaderTests.csproj" <<XML
     <Compile Include="$root/src/Lain.Host/Providers/Xai/XaiKeyMetadataReader.cs" />
     <Compile Include="$root/tests/account-connect-readers/Program.cs" />
     <Compile Include="$root/tests/account-connect-readers/MetadataRetention.cs" />
+    <Compile Include="$root/tests/account-connect-readers/ReaderRecovery.cs" />
   </ItemGroup>
 </Project>
 XML

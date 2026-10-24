@@ -47,10 +47,10 @@ foreach (var bad in new[] { "http://openrouter.ai/api/v1", "https://openrouter.a
 handler.Status = HttpStatusCode.Unauthorized;
 handler.Body = "raw provider message containing mock-key";
 try { await adapter.FetchAsync(account, new QuotaCredential("mock-key")); throw new Exception("Expected HTTP rejection"); }
-catch (QuotaFetchException ex) { Check(ex.Message == "Quota HTTP 401.", "HTTP errors omit provider body and credentials"); }
+catch (QuotaFetchException ex) { Check(ex.Message == "Quota HTTP 401 (authentication).", "HTTP errors omit provider body and credentials"); }
 handler.Status = HttpStatusCode.Redirect;
 try { await adapter.FetchAsync(account, new QuotaCredential("mock-key")); throw new Exception("Expected redirect rejection"); }
-catch (QuotaFetchException ex) { Check(ex.Message == "Quota HTTP 302.", "redirect response rejected"); }
+catch (QuotaFetchException ex) { Check(ex.Message == "Quota HTTP 302 (http-error).", "redirect response rejected"); }
 
 var accountId = new string('a', 32);
 Check(GatewayRouteValidation.CloudflareBaseUrl(accountId) == $"https://api.cloudflare.com/client/v4/accounts/{accountId}/ai/v1", "account-specific direct Cloudflare endpoint");

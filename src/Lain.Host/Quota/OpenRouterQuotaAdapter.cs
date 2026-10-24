@@ -14,7 +14,7 @@ public sealed class OpenRouterQuotaAdapter(HttpClient client) : IQuotaAdapter
 
     public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
-        if (account.CredentialKind != "api-key" || string.IsNullOrWhiteSpace(credential.BearerToken))
+        if ((credential.CredentialKind ?? account.CredentialKind) != "api-key" || string.IsNullOrWhiteSpace(credential.BearerToken))
             throw new QuotaFetchException("OpenRouter quota requires an API key.");
         if (!IsOfficialBaseUrl(credential.BaseUrl))
             throw new QuotaFetchException("OpenRouter quota requires its official API base URL.");
