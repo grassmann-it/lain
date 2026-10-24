@@ -85,6 +85,15 @@ foreach (var mode in new[] { "lost", "redirect", "oversize", "malformed" })
     await adapter.StatusAsync(context, default);
     Check(transport.Posts == 1, "uncertain exchange is never retried " + mode);
 }
+// A local checkpoint failure returns the one-time key for central recovery, without another remote read.
+var checkpointFailure = new FakeProvider { BeforeMetadata = () => throw new Exception("metadata after failed checkpoint") };
+using (var adapter = new OpenRouterLoginAdapter(checkpointFailure))
+{
+    var context = Context() with { CheckpointCredentialAsync = (_, _) => throw new IOException("private disk detail") };
+    var begin = await adapter.BeginAsync(context, default); await Callback(begin);
+    var result = await Poll(adapter, context);
+    Check(result.State == "recovery-required" && result.Credential is not null && !result.Error!.Contains("disk detail"), "checkpoint failure retains key and redacts details");
+}
 // Deny and cancellation never issue a key.
 using (var adapter = new OpenRouterLoginAdapter(new FakeProvider()))
 {
