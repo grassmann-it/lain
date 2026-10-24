@@ -1,5 +1,10 @@
 # Linux component refresh packaging
 
+For the current five-destination UI release on the accepted expansion Core,
+use [UI structure delivery](ui-structure-delivery.md) and
+`scripts/stage-ui-structure-release.py`. The historical helpers below retain
+their original guards and do not replace that release procedure.
+
 Use `scripts/stage-component-refresh.py` when CLI, Host and Desktop change
 together. The desktop-only helper deliberately refuses changed Host/CLI graphs.
 This staging operation does not install software, execute application binaries,

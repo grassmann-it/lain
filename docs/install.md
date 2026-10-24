@@ -139,6 +139,8 @@ Standardpfade:
 | Zweck | Pfad |
 | --- | --- |
 | Launcher | `~/.local/bin/lain` |
+| Desktop-Eintrag | `~/.local/share/applications/lain.desktop` |
+| Originales Logo | `~/.local/share/icons/lain.png` |
 | Private Daten | `~/.local/share/lain` (Modus 0700) |
 | Programme | `~/.local/share/lain/app/{cli,host,desktop,proxy}` |
 | Service | `~/.config/systemd/user/lain.service` |
@@ -152,7 +154,18 @@ Anführungszeichen, Backslashes, Prozentzeichen und Tabs in `LAIN_HOME` verweige
 der Installer vor jeder Änderung, da diese Pfade keine unterstützte systemd-
 Programmpfadform sind. Beim Installieren wird der gewählte
 Wert auch im Launcher und im Service festgehalten. Ein abweichendes
-Installationspräfix als zweites Argument ändert nur den Ort von `bin/lain`.
+Installationspräfix als zweites Argument ändert den Ort von `bin/lain`.
+Der aktuelle Installer legt zusätzlich `share/applications/lain.desktop` und
+`share/icons/lain.png` unter diesem Präfix ab; `LAIN_DESKTOP_DATA_DIR` kann
+den absoluten `share`-Pfad separat setzen. Der Desktop-Eintrag startet den
+absoluten Launcher mit `ui`, unabhängig von `PATH` und Arbeitsverzeichnis.
+Exec-Argumente und Desktop-Zeichenfolgen werden nach ihrer jeweiligen Syntax
+maskiert. Das originale transparente Katzenbild wird unverändert kopiert;
+der Desktop skaliert es für Menü und Taskleiste.
+`LAIN_HOME/desktop-integration.json` zeichnet die geschriebenen Desktop-/Icon-
+Pfade und Hashes auf. Vorhandene fremde Dateien, Symlinks oder nachträglich
+angepasste Desktop-Einträge/Icons werden vor jeder Installationsänderung
+verweigert; eigene Anpassungen bleiben so erhalten.
 `LAIN_SYSTEMD_DIR` wählt das Verzeichnis für die Service-Datei, ansonsten gilt
 `$XDG_CONFIG_HOME/systemd/user` beziehungsweise `~/.config/systemd/user`.
 
@@ -183,9 +196,14 @@ als `app` zurücksetzen. Eine Programm-Sicherung ersetzt keine Sicherung des
 Datenverzeichnisses; bei Datenbankschemaänderungen passende Daten sichern.
 
 Deinstallation: Dienst stoppen und deaktivieren, die ausgewiesene Service-Datei,
-den Launcher und den eigenen `app`-Ordner entfernen, anschließend
+den Launcher, den eigenen Desktop-Eintrag `share/applications/lain.desktop`,
+das eigene Icon `share/icons/lain.png` und den eigenen `app`-Ordner entfernen, anschließend
 `systemctl --user daemon-reload`. Private Daten nur auf ausdrücklichen Wunsch
-löschen.
+löschen. Das übergeordnete `LAIN_HOME` und `app.previous` bleiben erhalten;
+kein rekursives Löschen von `~/.local/share/lain` ausführen. Bei individuellen
+Pfaden die vom Installer ausgegebenen konkreten Dateien verwenden.
+Desktop-Eintrag und Icon nur entfernen, wenn Pfad und aktueller SHA-256 zu
+`desktop-integration.json` gehören; angepasste oder fremde Dateien behalten.
 
 ## Synthetisch prüfen
 

@@ -46,7 +46,7 @@ if approved:
 (root / 'gate-status.json').write_text(json.dumps({'backendQualified': qualified, 'releaseQualified': False,
     'status': 'awaiting-final-package-and-desktop-acceptance' if qualified else 'staged-awaiting-final-acceptance'}, indent=2))
 PYGATE
-cp packaging/lain packaging/lain.service.in "$out/packaging/"
+cp packaging/lain packaging/lain.service.in packaging/lain.desktop.in "$out/packaging/"
 cp scripts/install-linux.sh "$out/install-linux.sh"
 python3 scripts/collect-notices.py "$out/notices"
 cp -a skills/lain-usage "$out/skills/"

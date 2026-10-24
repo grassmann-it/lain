@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=lain
+Comment=Accounts, models, profiles, usage and live requests
+Exec=@EXEC@ ui
+Icon=@ICON@
+Terminal=false
+Categories=Development;Utility;
+StartupNotify=true

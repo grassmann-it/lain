@@ -4,6 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets/Fonts/**/*.ttf" />
+    <AvaloniaResource Include="Assets/Brand/lain-cat.png" />
+    <None Update="Assets/Brand/**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Update="Assets/Fonts/**/OFL.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
