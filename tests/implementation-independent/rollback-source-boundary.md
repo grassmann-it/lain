@@ -86,6 +86,24 @@ keeps the active staged state's latest auth files. The amended fixture follows
 this direction and checks old→new→old→new schema 3→4→3→4 with real artifacts only
 inside a private loopback network namespace.
 
+The final Main fixture follow-up also captures expected credential/auth inventories
+from the original CURRENT home before preparation. Its synthetic current grant
+differs from the checkpoint grant, and the staged copy must match CURRENT before
+either old or new runtime starts. Comparing only the prepared copy to itself
+would not independently detect accidental checkpoint-grant restoration.
+
+Root selected and the reviewer source-checked the concrete original-home return
+path. The fixture retains pristine helper-produced old app/v3 database before
+the staged forward run, archives the original current app/v4 database, and
+promotes only the prepared old app plus converted database into the original
+paths while writers are stopped. Original YAML, configuration, credentials,
+both auth directories and journal remain in place. Their bytes/inventories and
+canonical `journal_events` digests are checked after the old runtime and after
+the app-only forward upgrade. The latter must migrate back to schema 4 without
+copying archived credentials or the staged rebased YAML into the original home.
+Existing service/launcher paths therefore remain valid. This is a reviewed
+fixture/procedure, not evidence that an actual user installation was changed.
+
 Source review does not establish the pending exact-artifact process result.
 Without the guarded conversion and passing old/new process evidence, historical
 rollback remains unqualified. A current-package backup/restore test and retained
