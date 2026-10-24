@@ -1,0 +1,271 @@
+--- a/internal/config/config_types.go
++++ b/internal/config/config_types.go
+@@ -832,6 +832,8 @@
+ // GeminiKey represents the configuration for a Gemini API key,
+ // including optional overrides for upstream base URL, proxy routing, and headers.
+ type GeminiKey struct {
++	// AuthHeader selects bearer for Gemini-compatible gateways.
++	AuthHeader string `yaml:"auth-header,omitempty" json:"auth-header,omitempty"`
+ 	// APIKey is the authentication key for accessing Gemini API services.
+ 	APIKey string `yaml:"api-key" json:"api-key"`
+ 
+@@ -920,6 +922,8 @@
+ // OpenAICompatibility represents the configuration for OpenAI API compatibility
+ // with external providers, allowing model aliases to be routed through OpenAI API format.
+ type OpenAICompatibility struct {
++	// UpstreamProtocol selects the native wire protocol independently of the client.
++	UpstreamProtocol string `yaml:"upstream-protocol,omitempty" json:"upstream-protocol,omitempty"`
+ 	// Name is the identifier for this OpenAI compatibility configuration.
+ 	Name string `yaml:"name" json:"name"`
+ 
+--- /dev/null
++++ b/internal/runtime/executor/embedding_protocol_test.go
+@@ -0,0 +1,79 @@
++package executor
++
++import (
++	"context"
++	"io"
++	"net/http"
++	"net/http/httptest"
++	"strings"
++	"testing"
++
++	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
++	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
++	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
++	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
++	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
++	"github.com/tidwall/gjson"
++)
++
++// Tests exercise real executors with loopback fake providers; no vendor access is claimed.
++func TestEmbeddingNativeResponsesTransport(t *testing.T) {
++	for _, stream := range []bool{false, true} {
++		t.Run(map[bool]string{false: "json", true: "sse"}[stream], func(t *testing.T) {
++			var captured []byte
++			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++				captured, _ = io.ReadAll(r.Body)
++				if r.URL.Path != "/inference/go/openai/v1/responses" || r.Header.Get("Authorization") != "Bearer fixture-key" || r.Header.Get("X-Opencode-Session") != "fixture-session" || r.Header.Get("User-Agent") != "lain/1.0" {
++					t.Errorf("incorrect native Responses path/headers")
++				}
++				if stream {
++					w.Header().Set("Content-Type", "text/event-stream")
++					io.WriteString(w, "event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"delta\":\"fixture\",\"output_index\":0,\"content_index\":0}\n\n")
++					io.WriteString(w, "event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":2,\"output_tokens\":1,\"total_tokens\":3}}}\n\n")
++				} else {
++					w.Header().Set("Content-Type", "application/json")
++					io.WriteString(w, `{"id":"resp_fixture","object":"response","status":"completed","output":[],"usage":{"input_tokens":2,"output_tokens":1,"total_tokens":3}}`)
++				}
++			}))
++			defer server.Close()
++			auth := &cliproxyauth.Auth{Provider: "opencode-go-openai-responses", Attributes: map[string]string{"base_url": server.URL + "/inference/go/openai/v1", "api_key": "fixture-key", "upstream_protocol": "openai-responses", "header:User-Agent": "lain/1.0", "header:x-opencode-session": "$CPA-SESSION-ID"}}
++			payload := []byte(`{"model":"gpt-6-luna","previous_response_id":"resp_prior","input":[{"type":"function_call_output","call_id":"call_prior","output":"fixture tool result"}],"tools":[{"type":"function","name":"inspect","parameters":{"type":"object"}}]}`)
++			request := cliproxyexecutor.Request{Model: "gpt-6-luna", Payload: payload}
++			options := cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatOpenAIResponse, ResponseFormat: sdktranslator.FormatOpenAIResponse, Stream: stream}
++			ctx := util.WithSessionID(context.Background(), "fixture-session")
++			executor := NewOpenAICompatExecutor(auth.Provider, &config.Config{})
++			if stream {
++				result, err := executor.ExecuteStream(ctx, auth, request, options)
++				if err != nil {
++					t.Fatal(err)
++				}
++				var output strings.Builder
++				for chunk := range result.Chunks {
++					if chunk.Err != nil {
++						t.Fatal(chunk.Err)
++					}
++					output.Write(chunk.Payload)
++				}
++				if !strings.Contains(output.String(), "response.completed") {
++					t.Fatal("missing native terminal event")
++				}
++			} else {
++				result, err := executor.Execute(ctx, auth, request, options)
++				if err != nil {
++					t.Fatal(err)
++				}
++				if gjson.GetBytes(result.Payload, "id").String() != "resp_fixture" {
++					t.Fatal("native response lost")
++				}
++			}
++			for key, want := range map[string]string{"previous_response_id": "resp_prior", "input.0.call_id": "call_prior", "tools.0.name": "inspect"} {
++				if gjson.GetBytes(captured, key).String() != want {
++					t.Errorf("native continuation field %s changed", key)
++				}
++			}
++			if gjson.GetBytes(captured, "stream_options").Exists() {
++				t.Fatal("Chat-only stream_options sent to Responses")
++			}
++		})
++	}
++}
+--- a/internal/runtime/executor/openai_compat_executor.go
++++ b/internal/runtime/executor/openai_compat_executor.go
+@@ -120,8 +120,10 @@
+ 
+ 	from := opts.SourceFormat
+ 	responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
+-	to := sdktranslator.FromString("openai")
+-	endpoint := "/chat/completions"
++	to, endpoint, errProtocol := openAICompatProtocol(auth)
++	if errProtocol != nil {
++		return resp, errProtocol
++	}
+ 	if opts.Alt == "responses/compact" {
+ 		to = sdktranslator.FromString("openai-response")
+ 		endpoint = "/responses/compact"
+@@ -150,7 +152,7 @@
+ 	if helps.ShouldNormalizeOpenAIToolResultsForModel(compat, baseModel, requestedModel) {
+ 		translated = helps.NormalizeOpenAIToolResultsTextOnly(translated)
+ 	}
+-	if opts.Alt != "responses/compact" {
++	if to == sdktranslator.FormatOpenAI && opts.Alt != "responses/compact" {
+ 		useMCT := helps.ShouldUseMaxCompletionTokensForModel(compat, baseModel, requestedModel)
+ 		translated = helps.NormalizeOpenAIMaxTokens(translated, useMCT)
+ 		translated, err = e.applyPromptCacheKeyWithCompat(ctx, auth, compat, from, baseModel, req, opts, translated)
+@@ -360,7 +362,10 @@
+ 
+ 	from := opts.SourceFormat
+ 	responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
+-	to := sdktranslator.FromString("openai")
++	to, endpoint, errProtocol := openAICompatProtocol(auth)
++	if errProtocol != nil {
++		return nil, errProtocol
++	}
+ 	originalPayloadSource := req.Payload
+ 	if len(opts.OriginalRequest) > 0 {
+ 		originalPayloadSource = opts.OriginalRequest
+@@ -385,7 +390,7 @@
+ 	if helps.ShouldNormalizeOpenAIToolResultsForModel(compat, baseModel, requestedModel) {
+ 		translated = helps.NormalizeOpenAIToolResultsTextOnly(translated)
+ 	}
+-	if opts.Alt != "responses/compact" {
++	if to == sdktranslator.FormatOpenAI && opts.Alt != "responses/compact" {
+ 		useMCT := helps.ShouldUseMaxCompletionTokensForModel(compat, baseModel, requestedModel)
+ 		translated = helps.NormalizeOpenAIMaxTokens(translated, useMCT)
+ 		translated, err = e.applyPromptCacheKeyWithCompat(ctx, auth, compat, from, baseModel, req, opts, translated)
+@@ -396,9 +401,11 @@
+ 
+ 	// Request usage data in the final streaming chunk so that token statistics
+ 	// are captured even when the upstream is an OpenAI-compatible provider.
+-	translated = helps.SetBoolIfDifferent(translated, "stream_options.include_usage", true)
+-
+-	url := strings.TrimSuffix(baseURL, "/") + "/chat/completions"
++	if to == sdktranslator.FormatOpenAI {
++		translated = helps.SetBoolIfDifferent(translated, "stream_options.include_usage", true)
++	}
++
++	url := strings.TrimSuffix(baseURL, "/") + endpoint
+ 	translated = helps.ApplyPayloadConfigWithRequest(e.cfg, baseModel, to.String(), from.String(), "", translated, originalTranslated, requestedModel, requestPath, opts.Headers)
+ 	reporter.SetTranslatedReasoningEffort(translated, to.String())
+ 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(translated))
+@@ -513,6 +520,15 @@
+ 			}
+ 			dataPayload := bytes.TrimSpace(bytes.Join(dataLines, []byte("\n")))
+ 			isDone := bytes.Equal(dataPayload, []byte("[DONE]"))
++			if isDone && to == sdktranslator.FormatOpenAIResponse {
++				publishStreamError(statusErr{code: http.StatusBadGateway, msg: "native Responses stream ended before terminal response event"}, false)
++				return true
++			}
++			nativeTerminal := to == sdktranslator.FormatOpenAIResponse && (gjson.GetBytes(dataPayload, "type").String() == "response.completed" || gjson.GetBytes(dataPayload, "type").String() == "response.incomplete")
++			if to == sdktranslator.FormatOpenAIResponse && !isDone {
++				detail, ok := helps.ParseCodexUsage(dataPayload)
++				streamUsage.Observe(detail, ok)
++			}
+ 			if isDone && openAICompatErrorEvent(eventName) {
+ 				publishStreamError(statusErr{code: http.StatusBadGateway, msg: "upstream error event ended before [DONE]"}, false)
+ 				return true
+@@ -548,7 +564,7 @@
+ 				publishStreamError(statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage}, false)
+ 				return true
+ 			}
+-			if isDone {
++			if isDone || nativeTerminal {
+ 				seenDone = true
+ 				return true
+ 			}
+@@ -590,7 +606,7 @@
+ 		if !streamFailed && !streamAborted && helps.EndApplyPatchStream(ctx, param, reporter, out, statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage}) {
+ 			return
+ 		}
+-		if !streamFailed && !streamAborted && !seenDone && errScan == nil && responseFormat == sdktranslator.FormatOpenAIResponse && ctx.Err() == nil && helps.CanFinalizeResponseStream(param) {
++		if !streamFailed && !streamAborted && !seenDone && errScan == nil && to == sdktranslator.FormatOpenAI && responseFormat == sdktranslator.FormatOpenAIResponse && ctx.Err() == nil && helps.CanFinalizeResponseStream(param) {
+ 			finalChunks := helps.TranslateStreamWithClaudeInputTokens(ctx, to, responseFormat, req.Model, helps.ApplyPatchOriginalRequest(req, opts), translated, []byte("data: [DONE]"), &param, claudeInputTokens)
+ 			for _, finalChunk := range finalChunks {
+ 				select {
+@@ -619,7 +635,7 @@
+ 		} else if !seenDone {
+ 			// Without a translator-confirmed terminal state, a clean Responses or Claude EOF
+ 			// without [DONE] remains a failed stream instead of completing it.
+-			if responseFormat == sdktranslator.FormatOpenAIResponse || (responseFormat == sdktranslator.FormatClaude && !sawFinishReason) {
++			if responseFormat == sdktranslator.FormatOpenAIResponse || to == sdktranslator.FormatOpenAIResponse || (responseFormat == sdktranslator.FormatClaude && !sawFinishReason) {
+ 				streamErr := statusErr{code: http.StatusBadGateway, msg: "upstream stream closed before [DONE]"}
+ 				helps.RecordAPIResponseError(ctx, e.cfg, streamErr)
+ 				if !helps.RecordApplyPatchStreamFailureWithUsage(ctx, param, reporter, &streamUsage, streamErr) {
+@@ -1211,3 +1227,19 @@
+ 
+ // SupportsApplyPatch reports the actual executor contract, independent of its provider name.
+ func (e *OpenAICompatExecutor) SupportsApplyPatch() bool { return e != nil }
++
++// The transport protocol is independent of the downstream request protocol.
++func openAICompatProtocol(auth *cliproxyauth.Auth) (sdktranslator.Format, string, error) {
++	protocol := ""
++	if auth != nil {
++		protocol = auth.Attributes["upstream_protocol"]
++	}
++	switch protocol {
++	case "", "openai-chat":
++		return sdktranslator.FormatOpenAI, "/chat/completions", nil
++	case "openai-responses":
++		return sdktranslator.FormatOpenAIResponse, "/responses", nil
++	default:
++		return sdktranslator.FormatOpenAI, "", statusErr{code: http.StatusBadRequest, msg: "unsupported upstream protocol"}
++	}
++}
+--- a/internal/watcher/synthesizer/config.go
++++ b/internal/watcher/synthesizer/config.go
+@@ -94,6 +94,7 @@
+ 		if key != "" {
+ 			attrs["api_key"] = key
+ 		}
++		attrs["auth_header"] = entry.AuthHeader
+ 		metadata := map[string]any{}
+ 		if entry.DisableCooling != nil {
+ 			metadata["disable_cooling"] = *entry.DisableCooling
+@@ -317,11 +318,12 @@
+ 			idKind := fmt.Sprintf("openai-compatibility:%s", providerName)
+ 			id, token := idGen.Next(idKind, key, base, proxyURL)
+ 			attrs := map[string]string{
+-				"source":       fmt.Sprintf("config:%s[%s]", providerName, token),
+-				"base_url":     base,
+-				"compat_name":  compat.Name,
+-				"provider_key": internalProviderKey,
+-				"config_index": strconv.Itoa(i),
++				"source":            fmt.Sprintf("config:%s[%s]", providerName, token),
++				"base_url":          base,
++				"compat_name":       compat.Name,
++				"upstream_protocol": compat.UpstreamProtocol,
++				"provider_key":      internalProviderKey,
++				"config_index":      strconv.Itoa(i),
+ 			}
+ 			metadata := map[string]any{}
+ 			if disableCooling != nil {
+@@ -363,11 +365,12 @@
+ 			idKind := fmt.Sprintf("openai-compatibility:%s", providerName)
+ 			id, token := idGen.Next(idKind, base)
+ 			attrs := map[string]string{
+-				"source":       fmt.Sprintf("config:%s[%s]", providerName, token),
+-				"base_url":     base,
+-				"compat_name":  compat.Name,
+-				"provider_key": internalProviderKey,
+-				"config_index": strconv.Itoa(i),
++				"source":            fmt.Sprintf("config:%s[%s]", providerName, token),
++				"base_url":          base,
++				"compat_name":       compat.Name,
++				"upstream_protocol": compat.UpstreamProtocol,
++				"provider_key":      internalProviderKey,
++				"config_index":      strconv.Itoa(i),
+ 			}
+ 			metadata := map[string]any{}
+ 			if disableCooling != nil {

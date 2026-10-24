@@ -1,0 +1,305 @@
+--- a/internal/runtime/executor/helps/plugin_executor_usage.go
++++ b/internal/runtime/executor/helps/plugin_executor_usage.go
+@@ -163,6 +163,7 @@
+ // MergeStreamUsageDetail merges existing stream usage with a newer update.
+ func MergeStreamUsageDetail(existing, update usage.Detail) usage.Detail {
+ 	merged := update
++	merged.Reported = mergeReportedUsage(existing.Reported, update.Reported)
+ 	if merged.InputTokens == 0 && existing.InputTokens > 0 {
+ 		merged.InputTokens = existing.InputTokens
+ 	}
+--- /dev/null
++++ b/internal/runtime/executor/helps/reported_usage.go
+@@ -0,0 +1,46 @@
++package helps
++
++import (
++	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/usage"
++	"github.com/tidwall/gjson"
++)
++
++func reportedToken(node gjson.Result) *int64 {
++	if !node.Exists() || node.Type != gjson.Number {
++		return nil
++	}
++	value := node.Int()
++	if value < 0 || node.Float() != float64(value) {
++		return nil
++	}
++	return &value
++}
++
++func mergeReportedUsage(previous, update *usage.ReportedDetail) *usage.ReportedDetail {
++	if previous == nil {
++		return update
++	}
++	if update == nil {
++		return previous
++	}
++	merged := *update
++	if merged.InputTokens == nil {
++		merged.InputTokens = previous.InputTokens
++	}
++	if merged.OutputTokens == nil {
++		merged.OutputTokens = previous.OutputTokens
++	}
++	if merged.TotalTokens == nil {
++		merged.TotalTokens = previous.TotalTokens
++	}
++	if merged.CacheReadTokens == nil {
++		merged.CacheReadTokens = previous.CacheReadTokens
++	}
++	if merged.CacheCreationTokens == nil {
++		merged.CacheCreationTokens = previous.CacheCreationTokens
++	}
++	if merged.ReasoningTokens == nil {
++		merged.ReasoningTokens = previous.ReasoningTokens
++	}
++	return &merged
++}
+--- /dev/null
++++ b/internal/runtime/executor/helps/reported_usage_test.go
+@@ -0,0 +1,30 @@
++package helps
++
++import (
++	"context"
++	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/usage"
++	"testing"
++)
++
++func TestReportedUsageDoesNotInventTotalsOrEraseZero(t *testing.T) {
++	openai := ParseOpenAIUsage([]byte(`{"usage":{"prompt_tokens":0,"completion_tokens":7}}`))
++	if openai.Reported == nil || openai.Reported.InputTokens == nil || *openai.Reported.InputTokens != 0 || openai.Reported.TotalTokens != nil || openai.Reported.ReasoningTokens != nil {
++		t.Fatalf("presence lost: %#v", openai.Reported)
++	}
++	first := ParseClaudeUsage([]byte(`{"usage":{"input_tokens":9,"output_tokens":3}}`))
++	update := ParseClaudeUsage([]byte(`{"usage":{"output_tokens":0,"cache_read_input_tokens":0}}`))
++	merged := MergeStreamUsageDetail(first, update)
++	if *merged.Reported.InputTokens != 9 || *merged.Reported.OutputTokens != 0 || *merged.Reported.CacheReadTokens != 0 || merged.Reported.TotalTokens != nil {
++		t.Fatal("Claude start/delta presence lost")
++	}
++	var buffer StreamUsageBuffer
++	buffer.ObserveOpenAIStream([]byte(`data: {"service_tier":"default","usage":{"prompt_tokens":0,"completion_tokens":0,"total_tokens":0}}`))
++	detail, ok := buffer.Detail()
++	if !ok || detail.Reported == nil || detail.Reported.TotalTokens == nil || *detail.Reported.TotalTokens != 0 {
++		t.Fatal("zero usage plus service tier lost presence")
++	}
++	reporter := NewUsageReporter(usage.WithExecutionRequestID(context.Background(), "bound-attempt"), "fixture", "model", nil)
++	if reporter.RequestID() != "bound-attempt" {
++		t.Fatal("bound attempt ID overwritten")
++	}
++}
+--- a/internal/runtime/executor/helps/usage_helpers.go
++++ b/internal/runtime/executor/helps/usage_helpers.go
+@@ -123,8 +123,12 @@
+ 	if traceID == "" {
+ 		traceID = internallogging.GetRequestID(ctx)
+ 	}
++	requestID := usage.ExecutionRequestIDFromContext(ctx)
++	if requestID == "" {
++		requestID = uuid.NewString()
++	}
+ 	reporter := &UsageReporter{
+-		requestID:       uuid.NewString(),
++		requestID:       requestID,
+ 		traceID:         traceID,
+ 		provider:        provider,
+ 		baseURL:         baseURL,
+@@ -909,7 +913,7 @@
+ 		return
+ 	}
+ 	responseServiceTier := strings.TrimSpace(detail.ResponseServiceTier)
+-	if responseServiceTier == "" || hasNonZeroTokenUsage(detail) {
++	if responseServiceTier == "" || detail.Reported != nil || hasNonZeroTokenUsage(detail) {
+ 		preservedTier := b.detail.ResponseServiceTier
+ 		b.detail = detail
+ 		if b.detail.ResponseServiceTier == "" {
+@@ -1118,6 +1122,7 @@
+ 	if reasoning.Exists() {
+ 		detail.ReasoningTokens = reasoning.Int()
+ 	}
++	detail.Reported = &usage.ReportedDetail{InputTokens: reportedToken(inputNode), OutputTokens: reportedToken(outputNode), TotalTokens: reportedToken(usageNode.Get("total_tokens")), CacheReadTokens: reportedToken(cached), CacheCreationTokens: reportedToken(cacheCreation), ReasoningTokens: reportedToken(reasoning)}
+ 	if hasOpenAIStyleUsageBucketFields(usageNode) {
+ 		if inputNode.Exists() && outputNode.Exists() {
+ 			detail.TokenBreakdown = usage.NewSubsetTokenBreakdown(
+@@ -1231,6 +1236,7 @@
+ 		CacheReadTokens:     cacheReadTokens,
+ 		CacheCreationTokens: cacheCreationTokens,
+ 	}
++	detail.Reported = &usage.ReportedDetail{InputTokens: reportedToken(usageNode.Get("input_tokens")), OutputTokens: reportedToken(usageNode.Get("output_tokens")), TotalTokens: reportedToken(usageNode.Get("total_tokens")), CacheReadTokens: reportedToken(usageNode.Get("cache_read_input_tokens")), CacheCreationTokens: reportedToken(usageNode.Get("cache_creation_input_tokens")), ReasoningTokens: reportedToken(reasoningNode)}
+ 	// Anthropic reports the speed a response was served and billed at in
+ 	// usage.speed ("fast" or "standard"): fast mode costs more, and a
+ 	// fast request on a model without it runs, and is billed, at standard.
+--- a/sdk/cliproxy/auth/conductor.go
++++ b/sdk/cliproxy/auth/conductor.go
+@@ -105,6 +105,13 @@
+ 	Pick(ctx context.Context, provider, model string, opts cliproxyexecutor.Options, auths []*Auth) (*Auth, error)
+ }
+ 
++// SelectorCandidateFilter narrows credentials before quota and priority selection.
++// An embedding host can enforce per-request membership without allowing unrelated
++// higher-priority credentials to hide valid lower-priority members.
++type SelectorCandidateFilter interface {
++	AllowCandidate(context.Context, *Auth) bool
++}
++
+ type PluginScheduler interface {
+ 	PickAuth(context.Context, pluginapi.SchedulerPickRequest) (pluginapi.SchedulerPickResponse, bool, error)
+ }
+@@ -173,6 +180,7 @@
+ 	cooldownStore             CooldownStateStore
+ 	pendingCooldownStateStore CooldownStateStore
+ 	executors                 map[string]ProviderExecutor
++	executorDecorator         func(ProviderExecutor) ProviderExecutor
+ 	selector                  Selector
+ 	hook                      Hook
+ 	resultPolicy              atomic.Pointer[resultPolicyHolder]
+--- a/sdk/cliproxy/auth/conductor_lifecycle.go
++++ b/sdk/cliproxy/auth/conductor_lifecycle.go
+@@ -45,6 +45,9 @@
+ 	var replaced ProviderExecutor
+ 	var toReschedule []string
+ 	m.mu.Lock()
++	if m.executorDecorator != nil {
++		executor = m.executorDecorator(executor)
++	}
+ 	replaced = m.executors[provider]
+ 	m.executors[provider] = executor
+ 	for id, auth := range m.auths {
+--- a/sdk/cliproxy/auth/conductor_selection.go
++++ b/sdk/cliproxy/auth/conductor_selection.go
+@@ -1857,6 +1857,9 @@
+ 		if candidate == nil || canonicalSchedulingProvider(executorKeyFromAuth(candidate)) != targetKey || candidate.Disabled {
+ 			continue
+ 		}
++		if filter, ok := selector.(SelectorCandidateFilter); ok && !filter.AllowCandidate(ctx, candidate) {
++			continue
++		}
+ 		if pinnedAuthID != "" && candidate.ID != pinnedAuthID {
+ 			continue
+ 		}
+@@ -2193,6 +2196,9 @@
+ 		if candidate == nil || candidate.Disabled {
+ 			continue
+ 		}
++		if filter, ok := selector.(SelectorCandidateFilter); ok && !filter.AllowCandidate(ctx, candidate) {
++			continue
++		}
+ 		if pinnedAuthID != "" && candidate.ID != pinnedAuthID {
+ 			continue
+ 		}
+--- /dev/null
++++ b/sdk/cliproxy/auth/executor_decorator.go
+@@ -0,0 +1,16 @@
++package auth
++
++import "errors"
++
++// SetExecutorDecorator installs a wrapper before the first executor registration.
++// Every subsequent registration is decorated before it becomes visible to refresh
++// or inference. The decorator runs under the manager lock and must not re-enter it.
++func (m *Manager) SetExecutorDecorator(decorate func(ProviderExecutor) ProviderExecutor) error {
++	m.mu.Lock()
++	defer m.mu.Unlock()
++	if len(m.executors) != 0 {
++		return errors.New("executor decorator must be installed before registration")
++	}
++	m.executorDecorator = decorate
++	return nil
++}
+--- /dev/null
++++ b/sdk/cliproxy/usage/durable.go
+@@ -0,0 +1,22 @@
++package usage
++
++import "context"
++
++// ReportedDetail preserves absent versus explicitly reported zero components.
++// Values retain the provider wire semantics; computed totals are never inserted.
++type ReportedDetail struct {
++	InputTokens, OutputTokens, TotalTokens                *int64
++	CacheReadTokens, CacheCreationTokens, ReasoningTokens *int64
++}
++
++// DurableSink must latch its failure so the executor owner can fail closed.
++// It runs synchronously before records are visible to the volatile usage queue.
++type DurableSink func(context.Context, Record) error
++type durableSinkContextKey struct{}
++
++func WithDurableSink(ctx context.Context, sink DurableSink) context.Context {
++	if ctx == nil {
++		ctx = context.Background()
++	}
++	return context.WithValue(ctx, durableSinkContextKey{}, sink)
++}
+--- /dev/null
++++ b/sdk/cliproxy/usage/durable_test.go
+@@ -0,0 +1,23 @@
++package usage
++
++import (
++	"context"
++	"errors"
++	"testing"
++)
++
++func TestDurableSinkPrecedesQueueAndFailureCannotEnqueue(t *testing.T) {
++	manager := NewManager(1)
++	calls := 0
++	ctx := WithDurableSink(context.Background(), func(context.Context, Record) error {
++		calls++
++		if len(manager.queue) != 0 {
++			t.Fatal("queue visible before durability")
++		}
++		return errors.New("disk full")
++	})
++	manager.Publish(ctx, Record{RequestID: "attempt"})
++	if calls != 1 || len(manager.queue) != 0 {
++		t.Fatal("failed durable write reached queue")
++	}
++}
+--- a/sdk/cliproxy/usage/manager.go
++++ b/sdk/cliproxy/usage/manager.go
+@@ -85,6 +85,8 @@
+ 
+ // Detail holds the token usage breakdown.
+ type Detail struct {
++	// Reported preserves original provider fields before total normalization.
++	Reported            *ReportedDetail
+ 	InputTokens         int64
+ 	OutputTokens        int64
+ 	ReasoningTokens     int64
+@@ -535,6 +537,13 @@
+ 			record.IsNativeKey = IsNativeAccessProvider(record.AccessProvider)
+ 		}
+ 	}
++	if ctx != nil {
++		if sink, _ := ctx.Value(durableSinkContextKey{}).(DurableSink); sink != nil {
++			if err := sink(ctx, record); err != nil {
++				return
++			}
++		}
++	}
+ 	// ensure worker is running even if Start was not called explicitly
+ 	m.Start(context.Background())
+ 	m.mu.Lock()
+--- /dev/null
++++ b/sdk/oauth/codex/codex.go
+@@ -0,0 +1,16 @@
++// Package codex exposes the existing OAuth implementation to embedding hosts.
++package codex
++
++import (
++	internal "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/codex"
++	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
++)
++
++type CodexAuth = internal.CodexAuth
++type CodexAuthBundle = internal.CodexAuthBundle
++type PKCECodes = internal.PKCECodes
++type CodexTokenStorage = internal.CodexTokenStorage
++type CodexTokenData = internal.CodexTokenData
++
++func NewCodexAuth(cfg *config.Config) *CodexAuth { return internal.NewCodexAuth(cfg) }
++func GeneratePKCECodes() (*PKCECodes, error)     { return internal.GeneratePKCECodes() }
