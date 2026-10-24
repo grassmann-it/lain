@@ -241,7 +241,7 @@ public sealed partial class UsageStoreTests : IDisposable
         await store.IngestAsync(Batch(started, Finished(2, started)));
         RestoreLegacySchema(1);
         store = new SqliteUsageStore(Database);
-        Assert.Equal(3, InspectLong("PRAGMA user_version"));
+        Assert.Equal(4, InspectLong("PRAGMA user_version"));
         Assert.Equal(2, await store.GetCursorAsync("source-a"));
         Assert.Equal(0, InspectLong("SELECT COUNT(*) FROM coverage_gaps"));
         var summary = await store.SummaryAsync(Query());

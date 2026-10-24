@@ -17,7 +17,8 @@ public sealed record JournalEvent(
     double? TtftMs = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AttemptDimensionsDto? Dimensions = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] AttemptMeasurementsDto? Measurements = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? CompletionState = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? CompletionState = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ErrorCategory = null);
 
 public sealed record JournalBatch(string SourceId, JournalEvent[] Events, long NextCursor, long HighWatermark);
 

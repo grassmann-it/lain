@@ -31,8 +31,8 @@ public sealed partial class SqliteUsageStore : IUsageStore, IUsageAnalysisStore
         if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
         using var transaction = connection.BeginTransaction();
         var version = Convert.ToInt32(Command(connection, transaction, "PRAGMA user_version").ExecuteScalar(), CultureInfo.InvariantCulture);
-        if (version > 3) throw new InvalidOperationException("Usage database schema is newer than this host.");
-        foreach (var migration in new[] { (Version: 1, File: "001_usage.sql"), (Version: 2, File: "002_source_coverage.sql"), (Version: 3, File: "003_attempt_dimensions.sql") })
+        if (version > 4) throw new InvalidOperationException("Usage database schema is newer than this host.");
+        foreach (var migration in new[] { (Version: 1, File: "001_usage.sql"), (Version: 2, File: "002_source_coverage.sql"), (Version: 3, File: "003_attempt_dimensions.sql"), (Version: 4, File: "004_attempt_error.sql") })
         {
             if (version >= migration.Version) continue;
             var assembly = typeof(SqliteUsageStore).Assembly;
@@ -145,6 +145,7 @@ public sealed partial class SqliteUsageStore : IUsageStore, IUsageAnalysisStore
         if (e.Kind == "attempt_finished" && (e.Outcome is not null || e.StatusCode is not null || e.UsageReported ||
             new[] { e.InputTokens, e.OutputTokens, e.TotalTokens, e.CacheReadTokens, e.CacheCreationTokens, e.ReasoningTokens }.Any(n => n is not null)))
             throw new InvalidDataException("Attempt completion may only add observation metadata, not rewrite reported usage.");
+        ValidateErrorCategory(e);
         ValidateDimensions(e.Dimensions);
         ValidateMeasurements(e.Measurements);
         if (e.CompletionState is not null && (e.CompletionState is not ("success" or "failed" or "canceled") || e.Kind == "attempt_started"))
@@ -166,6 +167,7 @@ public sealed partial class SqliteUsageStore : IUsageStore, IUsageAnalysisStore
             if (await finish.ExecuteNonQueryAsync(ct) != 1)
                 throw new InvalidDataException("Attempt completion requires matching reported usage and may occur only once.");
             await SaveObservationsAsync(connection, transaction, e, ct);
+            await SaveErrorCategoryAsync(connection, transaction, e, ct);
             return;
         }
         if (e.Kind == "attempt_started")
@@ -177,6 +179,7 @@ public sealed partial class SqliteUsageStore : IUsageStore, IUsageAnalysisStore
                 ("$credential", e.CredentialId), ("$route", e.RouteId), ("$provider", e.Provider), ("$requested", e.RequestedModel), ("$model", e.Model), ("$started", e.ObservedAt.ToUnixTimeMilliseconds()));
             await insert.ExecuteNonQueryAsync(ct);
             await SaveObservationsAsync(connection, transaction, e, ct);
+            await SaveErrorCategoryAsync(connection, transaction, e, ct);
             return;
         }
         using var update = Command(connection, transaction, """
@@ -193,6 +196,7 @@ public sealed partial class SqliteUsageStore : IUsageStore, IUsageAnalysisStore
             ("$total", e.UsageReported ? e.TotalTokens : null), ("$duration", e.LatencyMs), ("$first", e.TtftMs));
         if (await update.ExecuteNonQueryAsync(ct) != 1) throw new InvalidDataException("Terminal event lacks a matching pending dispatch or changes its identity.");
         await SaveObservationsAsync(connection, transaction, e, ct);
+        await SaveErrorCategoryAsync(connection, transaction, e, ct);
     }
 
     private sealed record Window(DateTimeOffset From, DateTimeOffset To, TimeZoneInfo Zone);
@@ -287,20 +291,25 @@ public sealed partial class SqliteUsageStore : IUsageStore, IUsageAnalysisStore
         using var command = Filtered(connection, transaction, """
             SELECT attempt_id,request_id,account_id,route_id,provider,model,started_ms,finished_ms,status_code,state,
                 input_tokens,output_tokens,cached_tokens,reasoning_tokens,total_tokens,duration_ms,first_token_ms,
-                dimensions_json,measurements_json,source_id,requested_model,completion_state,cache_creation_tokens
+                dimensions_json,measurements_json,source_id,requested_model,completion_state,cache_creation_tokens,error_category
             """, query, window, "ORDER BY started_ms DESC, source_id, attempt_id LIMIT $limit OFFSET $offset");
         command.Parameters.AddWithValue("$limit", query.Limit);
         command.Parameters.AddWithValue("$offset", query.Offset);
         using var reader = await command.ExecuteReaderAsync(ct);
         var items = new List<AttemptDto>();
         while (await reader.ReadAsync(ct))
+        {
+            var error = DescribeError(reader.IsDBNull(23) ? null : reader.GetString(23), reader.IsDBNull(8) ? null : reader.GetInt32(8),
+                reader.GetString(9), reader.IsDBNull(21) ? null : reader.GetString(21));
             items.Add(new(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3), reader.GetString(4), reader.GetString(5),
                 DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(6)), reader.IsDBNull(7) ? null : DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(7)),
                 reader.IsDBNull(8) ? null : reader.GetInt32(8), reader.GetString(9), new(NullableLong(reader, 10), NullableLong(reader, 11), NullableLong(reader, 12), NullableLong(reader, 13), NullableLong(reader, 14), NullableLong(reader, 22)),
                 reader.IsDBNull(15) ? null : reader.GetDouble(15), reader.IsDBNull(16) ? null : reader.GetDouble(16),
+                Error: error?.Category, ErrorDetails: error,
                 Dimensions: reader.IsDBNull(17) ? null : JsonSerializer.Deserialize<AttemptDimensionsDto>(reader.GetString(17), JournalJson.Options),
                 Measurements: reader.IsDBNull(18) ? null : JsonSerializer.Deserialize<AttemptMeasurementsDto>(reader.GetString(18), JournalJson.Options),
                 SourceId: reader.GetString(19), RequestedModel: reader.GetString(20), CompletionState: reader.IsDBNull(21) ? null : reader.GetString(21)));
+        }
         return new(items.ToArray(), query.Offset, query.Limit, total);
     }
 

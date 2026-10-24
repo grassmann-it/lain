@@ -26,6 +26,7 @@ public sealed partial class UsageStoreTests
             ALTER TABLE attempts DROP COLUMN total_duration_ms;
             ALTER TABLE attempts DROP COLUMN completion_recorded;
             ALTER TABLE attempts DROP COLUMN completion_state;
+            ALTER TABLE attempts DROP COLUMN error_category;
             """ + (version == 1 ? "DROP TABLE coverage_gaps; DROP TABLE collector_state;" : "") + $"PRAGMA user_version={version};";
         command.ExecuteNonQuery();
     }
@@ -88,7 +89,7 @@ public sealed partial class UsageStoreTests
         RestoreLegacySchema(2);
         var store = new SqliteUsageStore(Database);
         for (var replay = 0; replay < 10; replay++) await store.IngestAsync(batch);
-        Assert.Equal(3, InspectLong("PRAGMA user_version"));
+        Assert.Equal(4, InspectLong("PRAGMA user_version"));
         Assert.Equal(2, await store.GetCursorAsync("source-a"));
         var row = Assert.Single((await store.AttemptsAsync(Query())).Items);
         Assert.Null(row.Dimensions);
