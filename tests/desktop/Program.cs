@@ -141,6 +141,18 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Input("e.g. command-code").Text = "command-code";
         Input("https://…/v1").Text = "https://example.invalid/v1";
         Input("API key").Text = "fake-test-key-never-a-secret";
+        var draftMutations = MutatingRequestCount();
+        fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 };
+        await Click("Reload status");
+        Check(Input("My API account").Text == "Command account" && Input("API key").Text == "fake-test-key-never-a-secret"
+            && HasText("Configuration changed while this draft was open.", true),
+            "external revision changes retain the account draft and visibly request review");
+        await Click("Review latest configuration");
+        Check(Input("My API account").Text == "Command account" && Input("e.g. command-code").Text == "command-code"
+            && Input("https://…/v1").Text == "https://example.invalid/v1" && Input("API key").Text == "fake-test-key-never-a-secret"
+            && Input("API key").PasswordChar == '●' && MutatingRequestCount() == draftMutations,
+            "explicit latest-configuration review restores account fields and masked credentials without saving them");
+        await CaptureBoth("account-draft-review");
         await Click("Add account");
         await Wait(() => fixture.Config.Accounts.Length == Fixture.InitialAccounts + 1, "account added");
         await Click("Disable"); Check(fixture.EnableCalls == 1, "account disabled");
