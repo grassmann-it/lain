@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "evidence": {
+    "filesystem": "private_tmpfs",
+    "capacityBytes": 1048576,
+    "actualErrno": 28,
+    "confirmedEventsBeforeFault": 3,
+    "preFaultJournalSha256": "81c24e7b35c26bedb434ad7fc88b206722e37178b1a9333860bc7f9353e47eb0",
+    "failedDispatchStatus": 503,
+    "failedDispatchUpstreamCalls": 0,
+    "stickyAfterSpaceFreed": true,
+    "originalHistoryUnchanged": true,
+    "sourceCursorPreservedAcrossRestart": true,
+    "recoveredCopyReplayIdentical": true,
+    "automaticTruncationOrDeletion": false
+  },
+  "schemaVersion": 1,
+  "actualCoreProcess": true,
+  "syntheticOnly": true,
+  "actualKernelENOSPC": true,
+  "coreSha256": "39c09202ca7c38c636cfb949abec3b71c6c9843dd2651cbc8bf44944c13c0629",
+  "binaryUnchanged": true,
+  "coreSourceManifestSha256": "4441b3bfb5caf5be7c5ab954303c25eac7be2bbd4a3833e4a496cd755d257750",
+  "networkIsolation": "private_network_namespace_loopback_only",
+  "filesystemIsolation": "private_mount_namespace_1MiB_tmpfs",
+  "notQualified": [
+    "production filesystem/device failures",
+    "full Host backup/restore transaction",
+    "sustained growth"
+  ]
+}

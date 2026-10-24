@@ -149,9 +149,10 @@ The tests cover admission, pipeline attribution, original/final controls, sparse
 cursor boundaries and legacy bytes, unchanged corrupt originals, fresh recovery
 destinations, source/sequence failures and writer exclusion. Existing sticky
 fsync/disk-full injection tests remain. Abrupt synthetic Core death and replay
-also pass the process regressions. Real filesystem exhaustion, complete Host
-backup/restore and sustained production growth still require separate
-qualification before marking all of ST-04 complete.
+also pass the process regressions. The bounded real filesystem exhaustion
+qualification below complements those injections. Complete Host backup/restore
+and sustained production growth still require separate qualification before
+marking all of ST-04 complete.
 
 The separate actual-process harness runs in the integrator's serialized runtime
 slot. It accepts only an explicitly supplied freshly built Core:
@@ -202,3 +203,74 @@ old-binary rollback and full Host backup/restore remain explicitly unclaimed.
 `python3 tests/core-stabilization/check-evidence.py --core /absolute/lain-proxy`
 checks that the current manifest, qualification, reports and supplied binary
 belong together. Omitting `--core` checks the repository evidence chain only.
+
+## Executed actual Host + Core and filesystem qualification
+
+[The joint evidence](evidence/host-core/qualification.json) selects three actually
+passing restored-Gateway cases from the retained raw reports. Every case used
+the qualified Core above and the same compiled Host SHA-256
+`24f7d47fcf19f674952ea3fd5f57c1c9997c7a70802475462b564dcbb2ec41c8`.
+The Host reported build revision `6104a5c`; the initial report's manually supplied
+`a890903` label describes the builder-reported product baseline, not the observed
+build stamp. All Host DLL, dependency/runtime manifests and `Lain.Core.dll`
+hashes are retained and agree across runs.
+
+The cases cover an unusable legacy saved configuration, an interrupted Apply,
+and a syntactically valid saved Core configuration with a restored owned grant.
+The old synthetic grant and ownership registry remain unchanged in quarantine;
+the saved runtime registers no old grant and rejects its old inference alias.
+Actual Core login Begin/Poll/Cancel works in the separate management-only runtime
+with empty bindings and journal. Active configuration, bindings, proof, journal
+and source identity remain byte-identical before explicit Apply. Saving a fresh
+synthetic account/route/profile does not activate it; explicit Apply replaces the
+bootstrap and publishes the normal ready runtime.
+
+The interrupted case also exercises the actual Host's gated SSE drain and
+20-second deadline. The timeout currently returns HTTP 500, preserves the old
+Core PID, applied revision and exact configuration/proof bytes, reopens
+admission and preserves the admitted stream tail. Explicit retry succeeds.
+Normal Host shutdown returns exit 0. Both normal shutdown and abrupt Host
+SIGKILL release the listener and leave no Core orphan; the final lifecycle run
+also checks unchanged journal/configuration/proof bytes after both exits.
+
+The first run failed an extra assertion requiring Core exit 0 after Host SIGKILL;
+its raw failure remains in `initial.json` and is not counted as passing. A scoped
+diagnostic repeat recorded Core exit 0; the final repeat recorded SIGPIPE (-13).
+Host-owned stdout/stderr pipes are redirected, so abrupt owner death is not
+claimed to have identical clean-exit semantics to the standalone stdin-EOF test.
+The qualification requires bounded process exit, released listener, and preserved
+durable state, and retains the actual observed exit/signal.
+
+[The filesystem report](evidence/host-core/filesystem.json) records actual kernel
+ENOSPC (errno 28) on a private **1 MiB tmpfs** in its own mount/network namespaces.
+The Core refuses dispatch with HTTP 503 before an upstream attempt, leaves
+confirmed history unchanged, and stays faulted after only the filler is removed.
+Explicit restart preserves the original source/cursor and resumes append;
+an explicitly recovered copy replays identically. Only the bounded fixture is
+filled; no host filesystem or existing service is touched.
+
+Reproduce in the serialized runtime slot with explicit retained binaries:
+
+```sh
+unshare -Urn sh -c 'ip link set lo up && exec python3 \
+  tests/core-stabilization/host_core_probe.py \
+  --host /absolute/build/Lain.Host.dll --host-source-commit BUILD_REVISION \
+  --core /absolute/private-build/lain-proxy --dotnet /usr/bin/dotnet \
+  --report /absolute/private-evidence/host-core.json'
+python3 tests/core-stabilization/filesystem_probe.py \
+  --core /absolute/private-build/lain-proxy \
+  --report /absolute/private-evidence/filesystem.json
+```
+
+The filesystem launcher creates its own private user, mount and network
+namespaces. The Host harness requires the reference qualification environment
+supported by this build, uses temporary state and ephemeral ports, and disables
+quota/refresh work for these synthetic fixtures. Both require loopback-only
+networking. No OAuth callback/token exchange or live provider is exercised;
+the saved grant is synthetic and expired. Full configuration/credentials/journal/
+SQLite backup and restore, actual old-binary rollback, production device failures
+and sustained growth remain unqualified.
+
+`check-evidence.py` also validates the new raw-report hashes and selected cases.
+Pass `--host /absolute/retained/Lain.Host.dll` to check all retained Host build
+inputs, in addition to the optional `--core` artifact check.

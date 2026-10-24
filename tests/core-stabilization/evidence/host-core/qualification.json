@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "actualHostAndCoreProcesses": true,
+  "syntheticOnly": true,
+  "networkIsolation": "private_network_namespace_loopback_only",
+  "hostObservedBuildCommit": "6104a5ce8c3c5730d1a13575154813ad59d2c603",
+  "hostProductBaselineReportedByBuilder": "a8909037a388efa822f57ac0ecd3782fecfbc019",
+  "hostInputSha256": {
+    "Lain.Host.dll": "24f7d47fcf19f674952ea3fd5f57c1c9997c7a70802475462b564dcbb2ec41c8",
+    "Lain.Host.deps.json": "b518dc93b6ec0785ed898f38f01ac0305cd4c82e312c72d9d65e9518b24ad099",
+    "Lain.Host.runtimeconfig.json": "2854c873c21edc9fa7c2056f9d4744054aeb11f009d271702daa7794b74e895f",
+    "Lain.Core.dll": "c7f10de9354cbbdb2d03e97ef4bb275198d7155d1b9a4a52d694b2d6699835dc"
+  },
+  "coreSha256": "39c09202ca7c38c636cfb949abec3b71c6c9843dd2651cbc8bf44944c13c0629",
+  "coreSourceManifestSha256": "4441b3bfb5caf5be7c5ab954303c25eac7be2bbd4a3833e4a496cd755d257750",
+  "sourceReports": {
+    "initial.json": {
+      "sha256": "9204f3c57836d84f8818bc37df9664417c3154a8056fa2e156bd069f14c885aa",
+      "passed": false
+    },
+    "parent-diagnostic.json": {
+      "sha256": "a07b4d572ecc7cdfdd582dfa59a96b4c3a7e40dd1d867ce6d16dd615aadd9c7a",
+      "passed": true
+    },
+    "lifecycle.json": {
+      "sha256": "78d32ae0544dfba9030cf4a3ff83adb970221890860149b926dc04055b40ef14",
+      "passed": true
+    },
+    "filesystem.json": {
+      "sha256": "2efd8235434ee377acfe3948276297764466ff5da66e47658f419eea1e11af1f",
+      "passed": true
+    }
+  },
+  "checks": [
+    {
+      "name": "legacy-repair",
+      "passed": true,
+      "evidence": {
+        "bootstrap": {
+          "bootstrapPid": 2232580,
+          "separateEmptyRuntime": true,
+          "realLoginBeginPollCancel": true,
+          "activeFilesByteIdentical": [
+            "active-profile.json",
+            "configuration.json",
+            "proxy/bindings.json",
+            "proxy/config.yaml",
+            "proxy/events.jsonl",
+            "proxy/events.jsonl.source",
+            "proxy/runtime.json"
+          ],
+          "quarantinedOldGrantUnchanged": true,
+          "providerRequestsBeforeApply": 0,
+          "savedRuntimeRegisteredNoOldGrant": false,
+          "savedInferenceStatus": null
+        },
+        "apply": {
+          "savedChangesDidNotActivate": true,
+          "explicitApplyPublished": true,
+          "bootstrapReplaced": true,
+          "activeRevision": 3,
+          "quarantinedGrantNotRegistered": true
+        },
+        "shutdown": {
+          "hostKilledAbruptly": false,
+          "hostExitCode": 0,
+          "noOrphanCore": true,
+          "listenerReleased": true,
+          "reparentedCoreExitCode": null,
+          "reparentedCoreSignal": null,
+          "journalConfigurationProofUnchanged": true
+        },
+        "hostVersion": "1.0.0+6104a5ce8c3c5730d1a13575154813ad59d2c603",
+        "syntheticInferenceRequestsAfterApply": 0
+      },
+      "sourceReport": "lifecycle.json",
+      "sourceReportSha256": "78d32ae0544dfba9030cf4a3ff83adb970221890860149b926dc04055b40ef14"
+    },
+    {
+      "name": "interrupted",
+      "passed": true,
+      "evidence": {
+        "bootstrap": {
+          "bootstrapPid": 2191171,
+          "separateEmptyRuntime": true,
+          "realLoginBeginPollCancel": true,
+          "activeFilesByteIdentical": [
+            "active-profile.json",
+            "configuration.json",
+            "profile-application.json",
+            "proxy/bindings.json",
+            "proxy/config.yaml",
+            "proxy/events.jsonl",
+            "proxy/events.jsonl.source",
+            "proxy/runtime.json"
+          ],
+          "quarantinedOldGrantUnchanged": true,
+          "providerRequestsBeforeApply": 0,
+          "savedRuntimeRegisteredNoOldGrant": false,
+          "savedInferenceStatus": null
+        },
+        "apply": {
+          "savedChangesDidNotActivate": true,
+          "explicitApplyPublished": true,
+          "bootstrapReplaced": true,
+          "activeRevision": 3,
+          "quarantinedGrantNotRegistered": true
+        },
+        "drainSuccess": {
+          "actualHostDrain": true,
+          "admittedSSETailPreserved": true,
+          "newRequestsRejected": true,
+          "timeoutPreservedRuntimeAndProof": false,
+          "refusedApplyStatus": null,
+          "explicitRetryOrApplySucceeded": true
+        },
+        "drainTimeout": {
+          "actualHostDrain": true,
+          "admittedSSETailPreserved": true,
+          "newRequestsRejected": true,
+          "timeoutPreservedRuntimeAndProof": true,
+          "refusedApplyStatus": 500,
+          "explicitRetryOrApplySucceeded": true
+        },
+        "shutdown": {
+          "hostKilledAbruptly": false,
+          "noOrphanCore": true,
+          "listenerReleased": true,
+          "reparentedCoreExitCode": null
+        },
+        "hostVersion": "1.0.0+6104a5ce8c3c5730d1a13575154813ad59d2c603",
+        "syntheticInferenceRequestsAfterApply": 4
+      },
+      "sourceReport": "initial.json",
+      "sourceReportSha256": "9204f3c57836d84f8818bc37df9664417c3154a8056fa2e156bd069f14c885aa"
+    },
+    {
+      "name": "valid-restored",
+      "passed": true,
+      "evidence": {
+        "bootstrap": {
+          "bootstrapPid": 2235576,
+          "separateEmptyRuntime": true,
+          "realLoginBeginPollCancel": true,
+          "activeFilesByteIdentical": [
+            "active-profile.json",
+            "configuration.json",
+            "proxy/bindings.json",
+            "proxy/config.yaml",
+            "proxy/events.jsonl",
+            "proxy/events.jsonl.source",
+            "proxy/runtime.json"
+          ],
+          "quarantinedOldGrantUnchanged": true,
+          "providerRequestsBeforeApply": 0,
+          "savedRuntimeRegisteredNoOldGrant": true,
+          "savedInferenceStatus": 400
+        },
+        "apply": {
+          "savedChangesDidNotActivate": true,
+          "explicitApplyPublished": true,
+          "bootstrapReplaced": true,
+          "activeRevision": 3,
+          "quarantinedGrantNotRegistered": true
+        },
+        "shutdown": {
+          "hostKilledAbruptly": true,
+          "hostExitCode": -9,
+          "noOrphanCore": true,
+          "listenerReleased": true,
+          "reparentedCoreExitCode": -13,
+          "reparentedCoreSignal": "SIGPIPE",
+          "journalConfigurationProofUnchanged": true
+        },
+        "hostVersion": "1.0.0+6104a5ce8c3c5730d1a13575154813ad59d2c603",
+        "syntheticInferenceRequestsAfterApply": 0
+      },
+      "sourceReport": "lifecycle.json",
+      "sourceReportSha256": "78d32ae0544dfba9030cf4a3ff83adb970221890860149b926dc04055b40ef14"
+    }
+  ],
+  "actualFilesystemExhaustion": {
+    "sourceReport": "filesystem.json",
+    "sourceReportSha256": "2efd8235434ee377acfe3948276297764466ff5da66e47658f419eea1e11af1f"
+  },
+  "qualificationNotes": [
+    "This is a hash-bound selection of actually passing case results from retained raw reports, not a claim that every source run passed.",
+    "initial.json used the manually supplied Host product-baseline label a890903; all observed Host versions and input hashes agree with the later reported build revision 6104a5c.",
+    "The first valid-restored run failed an extra assertion requiring Core exit 0 after Host SIGKILL. That run did not retain its nonzero status and is not counted as passing.",
+    "The diagnostic repeat recorded Core exit 0 after Host SIGKILL. The final repeat recorded Core SIGPIPE (-13). Both were reaped and released the listener; the final repeat also verifies unchanged journal/configuration/proof.",
+    "Actual Host drain timeout returned HTTP 500. Prior PID/configuration/proof/applied revision and admitted stream were preserved, admission reopened, and explicit retry succeeded.",
+    "The valid-restored fixture has a syntactically valid saved runtime and an expired synthetic owned grant. It proves quarantine and absence of registered old grants, not provider validity of that grant."
+  ],
+  "notQualified": [
+    "real OAuth callback/token exchange",
+    "live-provider credentials",
+    "installed services",
+    "complete configuration/credentials/journal/SQLite backup and restore transaction",
+    "actual old-binary rollback",
+    "production filesystem/device failures",
+    "sustained production growth"
+  ]
+}

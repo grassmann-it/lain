@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "actualHostAndCoreProcesses": true,
+  "syntheticOnly": true,
+  "networkIsolation": "private_network_namespace_loopback_only",
+  "hostSourceCommit": "6104a5ce8c3c5730d1a13575154813ad59d2c603",
+  "hostInputSha256": {
+    "Lain.Host.dll": "24f7d47fcf19f674952ea3fd5f57c1c9997c7a70802475462b564dcbb2ec41c8",
+    "Lain.Host.deps.json": "b518dc93b6ec0785ed898f38f01ac0305cd4c82e312c72d9d65e9518b24ad099",
+    "Lain.Host.runtimeconfig.json": "2854c873c21edc9fa7c2056f9d4744054aeb11f009d271702daa7794b74e895f",
+    "Lain.Core.dll": "c7f10de9354cbbdb2d03e97ef4bb275198d7155d1b9a4a52d694b2d6699835dc"
+  },
+  "hostInputsUnchanged": true,
+  "coreSha256": "39c09202ca7c38c636cfb949abec3b71c6c9843dd2651cbc8bf44944c13c0629",
+  "coreSourceManifestSha256": "4441b3bfb5caf5be7c5ab954303c25eac7be2bbd4a3833e4a496cd755d257750",
+  "checks": [
+    {
+      "name": "legacy-repair",
+      "passed": true,
+      "evidence": {
+        "bootstrap": {
+          "bootstrapPid": 2232580,
+          "separateEmptyRuntime": true,
+          "realLoginBeginPollCancel": true,
+          "activeFilesByteIdentical": [
+            "active-profile.json",
+            "configuration.json",
+            "proxy/bindings.json",
+            "proxy/config.yaml",
+            "proxy/events.jsonl",
+            "proxy/events.jsonl.source",
+            "proxy/runtime.json"
+          ],
+          "quarantinedOldGrantUnchanged": true,
+          "providerRequestsBeforeApply": 0,
+          "savedRuntimeRegisteredNoOldGrant": false,
+          "savedInferenceStatus": null
+        },
+        "apply": {
+          "savedChangesDidNotActivate": true,
+          "explicitApplyPublished": true,
+          "bootstrapReplaced": true,
+          "activeRevision": 3,
+          "quarantinedGrantNotRegistered": true
+        },
+        "shutdown": {
+          "hostKilledAbruptly": false,
+          "hostExitCode": 0,
+          "noOrphanCore": true,
+          "listenerReleased": true,
+          "reparentedCoreExitCode": null,
+          "reparentedCoreSignal": null,
+          "journalConfigurationProofUnchanged": true
+        },
+        "hostVersion": "1.0.0+6104a5ce8c3c5730d1a13575154813ad59d2c603",
+        "syntheticInferenceRequestsAfterApply": 0
+      }
+    },
+    {
+      "name": "valid-restored",
+      "passed": true,
+      "evidence": {
+        "bootstrap": {
+          "bootstrapPid": 2235576,
+          "separateEmptyRuntime": true,
+          "realLoginBeginPollCancel": true,
+          "activeFilesByteIdentical": [
+            "active-profile.json",
+            "configuration.json",
+            "proxy/bindings.json",
+            "proxy/config.yaml",
+            "proxy/events.jsonl",
+            "proxy/events.jsonl.source",
+            "proxy/runtime.json"
+          ],
+          "quarantinedOldGrantUnchanged": true,
+          "providerRequestsBeforeApply": 0,
+          "savedRuntimeRegisteredNoOldGrant": true,
+          "savedInferenceStatus": 400
+        },
+        "apply": {
+          "savedChangesDidNotActivate": true,
+          "explicitApplyPublished": true,
+          "bootstrapReplaced": true,
+          "activeRevision": 3,
+          "quarantinedGrantNotRegistered": true
+        },
+        "shutdown": {
+          "hostKilledAbruptly": true,
+          "hostExitCode": -9,
+          "noOrphanCore": true,
+          "listenerReleased": true,
+          "reparentedCoreExitCode": -13,
+          "reparentedCoreSignal": "SIGPIPE",
+          "journalConfigurationProofUnchanged": true
+        },
+        "hostVersion": "1.0.0+6104a5ce8c3c5730d1a13575154813ad59d2c603",
+        "syntheticInferenceRequestsAfterApply": 0
+      }
+    }
+  ],
+  "selectedCases": [
+    "legacy-repair",
+    "valid-restored"
+  ],
+  "passed": true,
+  "notQualified": [
+    "real OAuth callback/token exchange",
+    "live-provider credentials",
+    "installed services",
+    "full Host backup/restore transaction"
+  ]
+}
