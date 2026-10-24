@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Styling;
 using Lain.Client;
+using Lain.Desktop.Tray;
 using Semi.Avalonia;
 using System.Globalization;
 using Ursa.Themes.Semi;
@@ -21,7 +22,18 @@ public sealed class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            desktop.MainWindow = new MainWindow(LainApiClient.CreateLocal());
+        {
+            var window = new MainWindow(LainApiClient.CreateLocal());
+            desktop.MainWindow = window;
+            var monitorClient = LainApiClient.CreateLocal();
+            var monitor = new DesktopSignalMonitor(monitorClient);
+            var tray = new TrayWorkspaceController(window, desktop, monitor.PollAsync,
+                new LinuxDesktopNotificationSink(), TrayAvailability.IsAvailableAsync);
+            window.AttachTrayController(tray);
+            window.Opened += (_, _) => tray.Start();
+            Program.InstanceOwner?.StartListening(tray.Reopen);
+            desktop.Exit += (_, _) => { tray.Dispose(); monitorClient.Dispose(); };
+        }
         base.OnFrameworkInitializationCompleted();
     }
 }
