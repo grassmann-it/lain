@@ -101,7 +101,7 @@ public sealed partial class MainWindow : Window
         _backButton.Margin = new Thickness(0, 6, 8, 6);
         AutomationProperties.SetName(_backButton, "Back"); ToolTip.SetTip(_backButton, "Back to previous view");
         Grid.SetColumn(_backButton, 1); header.Children.Add(_backButton);
-        _viewButton = Ui.Button("View · " + _preferences.Level, ToggleViewOptions);
+        _viewButton = Ui.Button("View", ToggleViewOptions);
         _viewButton.Margin = new Thickness(0, 6, 8, 6);
         AutomationProperties.SetName(_viewButton, "View");
         Grid.SetColumn(_viewButton, 2); header.Children.Add(_viewButton);
@@ -167,7 +167,19 @@ public sealed partial class MainWindow : Window
             AutomationProperties.SetName(nav, name);
             _navigation.Children.Add(nav);
         }
-        var navigationBar = new Border { Background = Ui.Surface, BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 1, 0, 0), Child = _navigation };
+        AutomationProperties.SetName(_informationLevel, "Information level");
+        const string levelHelp = "Barebones: essentials with local details available. Simple: everyday summaries. Advanced: more technical detail.";
+        AutomationProperties.SetHelpText(_informationLevel, levelHelp);
+        ToolTip.SetTip(_informationLevel, levelHelp);
+        _informationLevel.SelectionChanged += (_, _) =>
+        {
+            if (_viewOptionsUpdating || _informationLevel.SelectedIndex < 0) return;
+            SavePreferences(p => p with { Level = (InformationLevel)_informationLevel.SelectedIndex });
+        };
+        var navigationContent = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        navigationContent.Children.Add(_navigation);
+        Grid.SetColumn(_informationLevel, 1); navigationContent.Children.Add(_informationLevel);
+        var navigationBar = new Border { Background = Ui.Surface, BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 1, 0, 0), Child = navigationContent };
         Grid.SetRow(navigationBar, 5); shell.Children.Add(navigationBar);
         Content = shell;
         SizeChanged += (_, _) => UpdateNavigationLayout();

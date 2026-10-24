@@ -17,6 +17,12 @@ public sealed partial class MainWindow
     private readonly Button _viewButton;
     private readonly Button _backButton;
     private readonly Button _reviewDraftButton;
+    private readonly ComboBox _informationLevel = new()
+    {
+        ItemsSource = Enum.GetNames<InformationLevel>(), Width = 146, MinWidth = 0,
+        Height = 32, Margin = new Thickness(8, 0, 14, 0), FontSize = 12,
+        VerticalAlignment = VerticalAlignment.Center
+    };
     private readonly Stack<PageVisit> _history = new();
     private readonly Dictionary<string, PageDraft> _drafts = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Vector> _scrollPositions = new(StringComparer.Ordinal);
@@ -114,6 +120,7 @@ public sealed partial class MainWindow
         if (!_preferencesStore.Save(change(_preferences)))
         {
             _notice.Text = _preferencesStore.Error ?? "View preferences could not be saved.";
+            SynchronizeInformationLevel();
             return;
         }
         ApplyPresentation(render);
@@ -126,13 +133,21 @@ public sealed partial class MainWindow
         _inspector.SetPresentation(PresentationFor("Live"));
         _providers.SetPresentation(PresentationFor("Accounts"));
         SetProviderPresentation(PresentationFor("Accounts"));
-        if (_viewButton is not null) _viewButton.Content = "View · " + _preferences.Level;
+        SynchronizeInformationLevel();
         if (_workspace is not null)
             _workspace.Margin = PresentationFor(_section).Density == ViewDensity.Compact
                 ? new Thickness(14, 12) : new Thickness(20, 18);
         // Edit controls stay mounted: preferences cannot discard drafts or secrets.
         // Live/Usage have in-place presentation; detaching Live would clear its buffer.
         if (render && !_editing && _section is not ("Usage" or "Live" or "Providers")) Render();
+    }
+
+    private void SynchronizeInformationLevel()
+    {
+        var wasUpdating = _viewOptionsUpdating;
+        _viewOptionsUpdating = true;
+        _informationLevel.SelectedIndex = (int)_preferences.Level;
+        _viewOptionsUpdating = wasUpdating;
     }
 
     private void ToggleViewOptions()
@@ -144,12 +159,11 @@ public sealed partial class MainWindow
     private void BuildViewOptions()
     {
         _viewOptionsUpdating = true;
-        var level = new ComboBox { ItemsSource = Enum.GetNames<InformationLevel>(), SelectedIndex = (int)_preferences.Level, MinWidth = 140 };
         var density = new ComboBox { ItemsSource = Enum.GetNames<ViewDensity>(), SelectedIndex = (int)PresentationFor(_section).Density, MinWidth = 125 };
         var primary = PrimarySection(_section);
         var row = new WrapPanel { Orientation = Orientation.Horizontal };
         foreach (var control in new Control[] {
-            Ui.Field("Information level", level), Ui.Field("View density", density),
+            Ui.Field("View density", density),
             Ui.Text($"Density for {primary} · details remain available in every view", 12, Ui.Muted),
             Ui.Button("Getting started", () => Navigate("Setup")),
             Ui.Button("Close view options", () => _presentationPanel.IsVisible = false) })
@@ -181,11 +195,6 @@ public sealed partial class MainWindow
             ? "Tray and alerts keep working while the window is hidden. Quit UI from the tray menu."
             : "Without an available tray, the window uses normal minimize and close behavior.", 12, Ui.Muted);
         _presentationPanel.Child = Ui.Stack(row, background, trayHint);
-        level.SelectionChanged += (_, _) =>
-        {
-            if (_viewOptionsUpdating || level.SelectedIndex < 0) return;
-            SavePreferences(p => p with { Level = (InformationLevel)level.SelectedIndex });
-        };
         density.SelectionChanged += (_, _) =>
         {
             if (_viewOptionsUpdating || density.SelectedIndex < 0) return;
