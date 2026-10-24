@@ -114,16 +114,39 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         var providers = new[] { "groq", "gemini-api", "nvidia-build", "cloudflare-workers-ai", "openrouter" };
         fixture.Config = fixture.Config with { Accounts = names.Select((name, index) => new AccountDto("a" + (index + 1), name, providers[index], true, "api-key", "unverified")).ToArray() };
         var now = DateTimeOffset.UtcNow;
+        const string noSeriesMessage = "No Gemini API request series was returned for this project and UTC day. This does not prove zero usage or remaining quota.";
         fixture.QuotaOverride = fixture.Config.Accounts.Select((account, index) => index == 4
             ? new QuotaDto(account.Id, null, "https://openrouter.ai/api/v1/key#key-spend-cap", "ok", now, now, null, "USD", 2, 10, 8, false, WindowLabel: "API key spend cap")
+            : index == 1 ? new(account.Id, null, "gemini:cloud-monitoring:api-requests", "unavailable", null, null, null,
+                "unknown", null, null, null, false, Support: new("unavailable", noSeriesMessage, "https://aistudio.google.com/usage"))
             : new(account.Id, null, "unavailable", "unsupported", now, null, null, "unknown", null, null, null, false)).ToArray();
         await Open();
         await Wait(() => names.All(name => HasText(name)), "five synthetic provider accounts retain their custom names");
         Check(Controls<ProgressBar>().Length == 1 && HasText("20% used") && HasText("API key spend cap"), "only the observed bounded key budget gets a percentage bar");
-        Check(Controls<TextBlock>().Count(text => text.Text?.StartsWith("No separate quota lookup is configured.", StringComparison.Ordinal) == true) == 4, "unsupported accounts each get one neutral explanation");
+        Check(Controls<TextBlock>().Count(text => text.Text?.StartsWith("No separate quota lookup is configured.", StringComparison.Ordinal) == true) == 3, "unsupported accounts each get one neutral explanation");
         Check(!HasText("Credential state: unverified", true) && !HasText("Check credential details", true), "unverified credential presence is neutral and does not warn on each usable account");
         Check(!HasText("Remaining not available") && !HasText("Reset not available") && !HasText("Quota warning"), "unsupported accounts do not repeat missing measurements or warnings");
         await CaptureBoth("provider-five-account-quotas");
+        Check(HasText(noSeriesMessage) && Controls<Button>().Any(button => Equals(button.Content, "View quota access guidance"))
+            && !HasText("Could not load budget") && !HasText("Unavailable"), "HTTP200 no-series monitoring preserves neutral guidance and its next-step link");
+        await OpenAccountOptions();
+        Named<ComboBox>("Filter accounts by state").SelectedIndex = 3;
+        await Wait(() => AccountTileNames().Length == 0, "successful empty monitoring is excluded from Needs attention");
+        Named<ComboBox>("Filter accounts by state").SelectedIndex = 0; await Task.Delay(100);
+        var emptyGemini = fixture.QuotaOverride![1];
+        fixture.QuotaOverride![1] = emptyGemini with { State = "stale", Used = 123, Unit = "requests", MeasurementKind = "usage", LastSuccessAt = now.AddMinutes(-10) };
+        await Click("Reload status");
+        await Wait(() => HasText("Last known", true) && HasText("123 requests used"), "last-good Gemini usage remains stale after an empty successful refresh");
+        fixture.QuotaOverride![1] = emptyGemini with { Error = "HTTP 403: monitoring.read denied" };
+        await Click("Reload status");
+        await Wait(() => HasText("HTTP 403: monitoring.read denied"), "a real empty-monitor authentication failure remains visible");
+        await OpenAccountOptions();
+        Named<ComboBox>("Filter accounts by state").SelectedIndex = 3;
+        await Wait(() => AccountTileNames().SequenceEqual(new[] { "Account budgets for Project Gemini" }), "real monitor failure is included in Needs attention");
+        Named<ComboBox>("Filter accounts by state").SelectedIndex = 0;
+        fixture.QuotaOverride![1] = emptyGemini;
+        await Click("Reload status");
+        await Wait(() => HasText(noSeriesMessage), "a later successful no-series response returns to neutral guidance");
         await Click("Discover providers");
         await Wait(() => HasText("NVIDIA Build"), "synthetic connection catalog loaded");
         Named<Expander>("Provider NVIDIA Build").IsExpanded = true; await Task.Delay(100);

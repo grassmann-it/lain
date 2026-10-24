@@ -85,6 +85,10 @@ public static partial class CliApplication
     }
 
     private static bool QuotaHasSupportOnly(QuotaDto quota) => quota.State is "unsupported" or "not-supported"
+        // A successful monitor response without exported series is guidance, not an update failure.
+        // Retained readings (stale) and any real error keep their diagnostic presentation.
+        || quota is { State: "unavailable", Error: null, Used: null, Remaining: null, Limit: null, UsedPercent: null,
+            Support: { Kind: "unavailable" } }
         || quota.State is not ("error" or "unavailable" or "stale") && quota.Used is null && quota.Remaining is null && quota.Limit is null && quota.UsedPercent is null
         && quota.Support?.Kind is "console" or "unsupported" or "unimplemented" or "setup-required" or "awaiting-observation" or "passive";
 

@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Http.Json;
 using Lain.Client;
 using Lain.Cli;
 using Lain.Core;
@@ -50,6 +52,41 @@ internal static class SetupPresentationChecks
         Check(errorText.Contains("401") && errorText.Contains("Last known"), "real authentication failure retains last-good values and its error");
         var overdrawn = await Render(template with { MeasurementKind = "quota", Used = 13, Remaining = -3 });
         Check(overdrawn.Contains("-3 USD left") && overdrawn.Contains("Exhausted") && !overdrawn.Contains("%"), "negative observed remaining is visible without a fabricated clamped percentage");
+        // Host snapshot after HTTP 200 {"timeSeries":[]} from Gemini Monitoring.
+        // The quota-source tests separately qualify that upstream normalization.
+        const string noSeriesMessage = "No Gemini API request series was returned for this project and UTC day. This does not prove zero usage or remaining quota.";
+        var noSeries = new QuotaDto(accounts[1].Id, null, "gemini:cloud-monitoring:api-requests", "unavailable", null, null, null,
+            "unknown", null, null, null, false, Support: new("unavailable", noSeriesMessage, "https://aistudio.google.com/usage"));
+        foreach (var command in new[] { new[] { "usage" }, new[] { "usage", "--full" }, new[] { "quotas" } })
+        {
+            using var http = new HttpClient(new EmptySeriesHandler(accounts[1], noSeries)) { BaseAddress = new Uri("http://fixture.invalid/") };
+            var writer = new StringWriter(); var errors = new StringWriter();
+            var result = await CliApplication.RunAsync(command, writer, errors, () => new LainApiClient(http));
+            var rendered = writer.ToString();
+            Check(result == 0 && errors.ToString() == "" && rendered.Contains("No Gemini API request series") && rendered.Contains("https://aistudio.google.com/usage"),
+                string.Join(' ', command) + " preserves successful empty-monitor guidance and action link");
+            Check(!rendered.Contains("Unavailable") && !rendered.Contains("Quota values not reported") && !rendered.Contains("Last known") && !rendered.Contains("%") && !rendered.Contains("Remaining unknown"),
+                string.Join(' ', command) + " has no error state, stale value or fabricated zero for HTTP200 no series");
+        }
+        var failedEmpty = await Render(noSeries with { Error = "HTTP 403: monitoring.read denied" });
+        Check(failedEmpty.Contains("403") && failedEmpty.Contains("Unavailable") && !failedEmpty.Contains("No Gemini API request series"), "a real error with empty values remains a visible failed lookup");
+        var retained = await Render(noSeries with { State = "stale", Used = 123, Unit = "requests", MeasurementKind = "usage", LastSuccessAt = observed.AddMinutes(-10) });
+        Check(retained.Contains("Last known") && retained.Contains("Used 123 requests") && !retained.Contains("No Gemini API request series"), "empty successful refresh does not hide retained stale usage");
         return checks;
+    }
+
+    private sealed class EmptySeriesHandler(AccountDto account, QuotaDto quota) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.Method != HttpMethod.Get || request.RequestUri?.Host != "fixture.invalid") throw new Exception("Unexpected empty-monitor presentation request");
+            object body = request.RequestUri.AbsolutePath switch
+            {
+                "/api/v1/accounts" => new[] { account },
+                "/api/v1/quotas" => new[] { quota },
+                _ => throw new Exception("Empty-monitor fixture permits only cached account/quota reads")
+            };
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(body, body.GetType()) });
+        }
     }
 }
