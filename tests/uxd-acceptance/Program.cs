@@ -83,6 +83,7 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
             await Open(information, compactness);
             foreach (var destination in Pages)
             {
+                if (!Selected($"matrix-{destination}-{information}-{compactness}")) continue;
                 await Case($"matrix-{destination}-{information}-{compactness}", async () =>
                 {
                     await Navigate(destination);
@@ -110,11 +111,15 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
         ];
         foreach (var (name, action) in focused)
         {
+            if (!Selected(name)) continue;
             await Open(InformationLevel.Simple, ViewDensity.Normal);
             await Case(name, action);
             await Close();
         }
     }
+
+    private static bool Selected(string name) => Environment.GetEnvironmentVariable("LAIN_UXD_ONLY") is not { Length: > 0 } filter
+        || filter.Split(',', StringSplitOptions.RemoveEmptyEntries).Any(value => name.Contains(value, StringComparison.OrdinalIgnoreCase));
 
     private async Task Open(InformationLevel information, ViewDensity compactness)
     {
@@ -225,7 +230,9 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
         if (destination == "Usage")
         {
             var rows = Controls<Expander>().Where(control => AutomationProperties.GetName(control)?.StartsWith("Analysis group ") == true).ToArray();
-            Check(rows.Length > 0 && rows.Any(IntersectsViewport), "actual Usage breakdown begins in initial viewport");
+            Check(rows.Length > 0 && rows.SelectMany(row => row.GetVisualDescendants().OfType<TextBlock>())
+                .Any(text => text.Text == "Personal Codex" && Fits(text)),
+                "first Usage account name is fully readable in initial viewport, not merely an intersecting row border");
         }
         if (destination == "Live") Check(Controls<Button>().Any(control => AutomationProperties.GetName(control)?.StartsWith("Inspect group ") == true)
             || Controls<SelectableTextBlock>().Any(control => control.Text?.Contains("First answer") == true), "Live inventory or selected output remains visible");
@@ -270,7 +277,9 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
         await Navigate("Accounts"); await Resize(1120, 780);
         using var input = new NativeInput(); input.Focus(window);
         var search = Need<TextBox>("Search accounts"); search.BringIntoView(); await Task.Delay(50);
-        input.Click(search); await Task.Delay(40); input.Type("codex"); await Task.Delay(120);
+        input.Click(search); await Wait(() => search.IsFocused);
+        foreach (var letter in "codex") { input.Key(letter); await Task.Delay(60); }
+        await Wait(() => search.Text == "codex");
         Check(search.Text == "codex" && search.IsFocused, "native pointer hit-testing and native keyboard input reach Search accounts");
         Capture("native-search-focus");
         input.Key('a', 0xffe3); input.Key(0xff08); await Task.Delay(100);
@@ -337,6 +346,9 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
         await Wait(() => Find<Button>("Reopen browser") is not null);
         Check(browserCalls == 1 && fixture.LoginBegins == 1, "initial browser start creates one operation through synthetic launcher");
         Capture("connect-codex-waiting-wide"); await Resize(800, 560); Capture("connect-codex-waiting-narrow");
+        Check(!Controls<TextBlock>().Any(text => text.Text == "Connection saved."), "pending authorization never claims a saved connection");
+        var cancel = Controls<Button>().FirstOrDefault(button => button.Content is string text && text.StartsWith("Cancel", StringComparison.Ordinal));
+        Check(cancel is not null && Fits(cancel), "Cancel sign-in remains visible in narrow waiting view");
         Click(Need<Button>("Reopen browser")); await Task.Delay(70);
         Check(browserCalls == 2 && fixture.LoginBegins == 1, "Reopen uses the existing login operation");
         fixture.HoldLogin = false;
@@ -348,6 +360,7 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
         if (Find<Button>("Connection method api-key") is { } key) { Click(key); await Task.Delay(70); }
         var secret = Controls<TextBox>().Single(control => control.PasswordChar != '\0');
         var name = Need<TextBox>("Account name"); name.Text = "Fixture Kilo";
+        Check(!Controls<TextBlock>().Any(text => text.Text == "Codex credential connected."), "new provider form clears the previous connection notice");
         Check(!Controls<ComboBox>().Any(control => AutomationProperties.GetName(control)?.Contains("plan", StringComparison.OrdinalIgnoreCase) == true),
             "key connection requires no artificial plan selector");
         Capture("connect-kilo-key-wide"); await Resize(800, 560); Capture("connect-kilo-key-narrow");
@@ -410,7 +423,9 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
     private async Task LiveStates()
     {
         await Navigate("Live"); await Resize(800, 560);
-        Click(Need<Button>("Inspect group conversation:conversation-ui")); await Task.Delay(120);
+        if (Find<Button>("Back to live requests") is { } back) { Click(back); await Task.Delay(80); }
+        var group = Need<Button>("Inspect group conversation:conversation-ui"); group.BringIntoView(); await Task.Delay(40);
+        using var input = new NativeInput(); input.Focus(window); input.Click(group); await Task.Delay(120);
         Check(Controls<SelectableTextBlock>().Any(control => control.Text?.Contains("First answer") == true && IntersectsViewport(control)),
             "selected Live output appears within narrow initial viewport");
         Capture("live-selected-output-narrow");
@@ -541,6 +556,7 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
         await File.WriteAllTextAsync(Path.Combine(output, "evidence.json"), JsonSerializer.Serialize(new
         {
             functionalResult = Failed ? "FAIL" : "PASS", visualResult = "NOT_REVIEWED_BY_HARNESS", accessibilityResult = "NOT_QUALIFIED",
+            requestedFilter = Environment.GetEnvironmentVariable("LAIN_UXD_ONLY"),
             commit = Environment.GetEnvironmentVariable("LAIN_TEST_COMMIT"), assembly = assembly.Location,
             assemblySha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))),
             privateXvfb = true, cases, assertions, images, geometry, focusTrace, requests,
