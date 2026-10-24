@@ -102,7 +102,16 @@ void RequireAppliedRuntime()
  if (!runtime.GetProperty("valid").GetBoolean() || runtime.GetProperty("revision").GetInt64() != repository.Snapshot.AppliedRevision)
   throw new InvalidOperationException("Runtime application is incomplete.");
 }
-StatusDto Status() { var config = repository.Snapshot; var ps = proxy.Status; return new(Api.Version, "0.1.0", config.Revision != config.AppliedRevision ? "pending-application" : ps.State, ps.Ready, config.Revision, config.AppliedRevision, DateTimeOffset.UtcNow, ps.Error); }
+StatusDto Status()
+{
+ var config = repository.Snapshot;
+ var ps = proxy.Status;
+ var active = AppliedProfileStatus.Read(Path.Combine(paths.Root, "active-profile.json"), runtimeManifest, config.AppliedRevision);
+ return new(Api.Version, "0.1.0", config.Revision != config.AppliedRevision ? "pending-application" : ps.State,
+  ps.Ready, config.Revision, config.AppliedRevision, DateTimeOffset.UtcNow, ps.Error, active.Id, active.Revision);
+}
+// Matching profile identity and revision in both metadata files reject partial
+// publication. Reads stay responsive while another request refreshes provider quotas.
 app.MapGet(Api.Prefix + "/status", Status);
 app.MapGet(Api.Prefix + "/configuration", () => repository.Snapshot);
 app.MapGet(Api.Prefix + "/accounts", (AccountService svc) => svc.List());
@@ -137,14 +146,14 @@ app.MapPost(Api.Prefix + "/profiles/{id}/apply", async (string id, ApplyRequest 
  var accountIds = activeRoutes.SelectMany(r => r.AccountIds).ToHashSet();
  var runtime = selected.Configuration with { Routes = activeRoutes, Accounts = selected.Configuration.Accounts.Where(a => accountIds.Contains(a.Id)).ToArray() };
  await proxy.StopAsync(ct); // Stop before changing files observed by the Core's watcher.
- OwnStatePaths.WritePrivate(runtimeManifest, JsonSerializer.Serialize(new { valid = false, revision = request.Revision }));
+ OwnStatePaths.WritePrivate(runtimeManifest, JsonSerializer.Serialize(new { valid = false, revision = request.Revision, profileId = id }));
  var identities = writer.Write(runtime);
  new RouteBindingsWriter(paths).Write(runtime, identities, writer.RouteCredentials,
   profileId: selected.Profile.Id, qualifiedProviderRouteIds: writer.QualifiedProviderRouteIds);
  await proxy.StartAsync(ct);
- repository.MarkApplied(request.Revision);
- OwnStatePaths.WritePrivate(runtimeManifest, JsonSerializer.Serialize(new { valid = true, revision = request.Revision }));
  OwnStatePaths.WritePrivate(Path.Combine(paths.Root, "active-profile.json"), JsonSerializer.Serialize(new { id, revision = request.Revision }));
+ repository.MarkApplied(request.Revision);
+ OwnStatePaths.WritePrivate(runtimeManifest, JsonSerializer.Serialize(new { valid = true, revision = request.Revision, profileId = id }));
  return repository.Snapshot;
 });
 app.MapGet(Api.Prefix + "/usage", (HttpRequest request, IUsageStore store, CancellationToken ct) => store.SummaryAsync(ParseQuery(request), ct));

@@ -1,4 +1,4 @@
-# lain
+# lain — Local AI Gateway
 
 Eigener lokaler Proxy, Accountverwaltung und persistente Nutzungsstatistik für
 Linux x64. Ein eigenständiger .NET-10-Host betreibt den gepinnten CLIProxyAPI-Core;

@@ -81,8 +81,9 @@ The integrator owns serialized execution and installation. Before approving:
    and historical positive UI evidence marked as previous.
 4. On private Xvfb at 1120 × 780 and 800 × 560, inspect title bar logo and window
    icon, initial Accounts and all five destinations. No user screen capture.
-5. Before installation, close the owned GUI and follow the controlled Host
-   restart/update procedure because Host changes. Retain a rollback copy and
+5. Follow the controlled Host restart/update procedure because Host changes.
+   The existing read-only user window can remain open; own inference and
+   configuration mutations must be quiescent. Retain a rollback copy and
    snapshot the paths/hashes/counts of private configuration, account records,
    preferences and usage data. Never remove the surrounding data directory.
 6. Install only the verified new package. Compare installed manifest and entire

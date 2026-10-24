@@ -8,24 +8,12 @@ namespace Lain.Desktop;
 
 public sealed partial class MainWindow
 {
-    private Control OverviewPage()
+    private Control ServicePage()
     {
         var status = _status;
         var configuration = _configuration;
-        var panel = Ui.Stack(Heading("Overview", "Provider budgets and local proxy status."));
+        var panel = Ui.Stack(Ui.PageHeader("Local service", "Proxy operation, applied configuration and setup help.", Ui.Button("Back to accounts", () => Navigate("Accounts"))));
         panel.Spacing = 14;
-
-        if (configuration is { Accounts.Length: > 0 })
-        {
-            var heading = Ui.Text("Provider budgets", 14);
-            heading.Classes.Add("section-title");
-            var budgets = new StackPanel { Spacing = 10 };
-            budgets.Children.Add(heading);
-            budgets.Children.Add(Ui.Text("Every reported window at a glance. Open a tile for balances, controls and source details.", 12, Ui.Muted));
-            if (!_hostAvailable || _quotaError is not null) budgets.Children.Add(Ui.Text(BudgetSnapshotNote(), 12, Ui.Warning));
-            budgets.Children.Add(AccountTiles(configuration));
-            panel.Children.Add(budgets);
-        }
 
         var hostState = _hostAvailable ? "Host online" : status is null ? "Host unavailable" : "Host offline";
         var proxyState = status is null ? "Proxy unknown" : status.ProxyReady ? "Proxy ready" : $"Proxy {status.State}";
@@ -104,10 +92,10 @@ public sealed partial class MainWindow
             accountsState = $"Last known: {accountsState}";
             routingState = $"Last known: {routingState}";
         }
-        return Ui.Stack(Heading("Setup", "Connect an account, choose models and configure your client."),
+        return Ui.Stack(Ui.PageHeader("Getting started", "Connect an account, choose models and configure your client.", Ui.Button("Back to accounts", () => Navigate("Accounts"))),
             Ui.Card(OverviewGroup("1. Connect to the local host",
                 Ui.Text(hostState, 13, _hostAvailable ? Ui.Accent : Ui.Muted),
-                Ui.Text("Start the lain user service using the supplied installer. The host keeps running when this window closes.", 13, Ui.Muted),
+                Ui.Text("Run lain service start in your terminal. The host keeps running when this window closes.", 13, Ui.Muted),
                 OverviewActions(Ui.Button("Check connection", () => _ = RefreshAsync(true))))),
             Ui.Card(OverviewGroup("2. Add an account",
                 Ui.Text(accountsState, 13, Ui.Muted),

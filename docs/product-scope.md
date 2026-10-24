@@ -9,8 +9,9 @@ zu lesen.
 
 ## Bestätigt
 
-- Das Produkt heißt **lain**. Der zunächst genannte Arbeitstitel/Ordner
-  `multitool` wurde entsprechend umbenannt.
+- Das Produkt heißt **lain — Local AI Gateway** (Produktbezeichnung am
+  24.10.2026 ausdrücklich bestätigt). Der Befehlsname ist `lain`. Der zunächst
+  genannte Arbeitstitel/Ordner `multitool` wurde entsprechend umbenannt.
 - Menschen installieren lain **lokal und verbinden ihre eigenen Accounts**.
   Dies wurde auf die Frage nach dem Betriebsmodell ausdrücklich gewählt.
 - Mehrwert für verschiedene **Harnesse** ist ein Schwerpunkt: Codex/ChatGPT
@@ -89,9 +90,20 @@ Im anschließenden Sparring bestätigt der Nutzer fünf Hauptbereiche:
 übersichtlich bleiben; auch Models, Profiles und Usage sollen klar gegliedert
 sein. Sinnvolle Accountreihenfolge und konfigurierbare Darstellung werden
 ausgearbeitet. Barebones/Simple/Advanced nach MeowChan sind eine eingebrachte
-Option; konkrete Stufengrenzen, Sortierregeln und Defaults sind noch nicht
-entschieden. Das Gespräch ist weiterhin Struktur-Sparring, keine bereits
-umgesetzte oder zur Veröffentlichung beauftragte UI-Änderung.
+Option und sind inzwischen zur Umsetzung freigegeben: Simple als Standard,
+unabhängige Dichte und stabile Sortierung sowie lokal aufklappbare Details.
+Der Auftrag „baue bis fertig“ umfasst Implementierung, Prüfung und Installation;
+der verbindliche Zuschnitt steht in [UI-Umsetzung](ui-structure-implementation.md).
+
+### Optionaler Betrieb ohne lokalen Proxy
+
+Am 24.10.2026 wünscht der Nutzer zusätzlich eine Möglichkeit für Menschen, die
+nur Usage anzeigen und keinen lokalen CLIProxyAPI-Core betreiben möchten.
+Der erste Lieferumfang ist bestätigt: **Kontingente und Resets zuerst,
+Request-/Tokenhistorie später ergänzen.** Der vorgeschlagene Modus „Monitor“
+und seine technischen Trennstellen stehen im [Monitor-Entwurf](monitor-mode.md);
+er ist noch nicht implementiert und
+erweitert nicht stillschweigend die laufende UI-Strukturlieferung.
 
 ### Ursprünglicher Zuschnitt
 

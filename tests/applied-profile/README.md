@@ -14,8 +14,9 @@ no `profileId` yield unknown. Partial publication when switching profiles at the
 same saved revision also yields unknown until valid runtime and active metadata
 agree; desired/selected profiles are never used to guess this identity.
 
-The status endpoint lock requires code review or an HTTP integration test: this
-unit harness does not execute ASP.NET middleware. Ordinary GET status requests
-acquire the global mutation semaphore inside the endpoint; mutation requests
-acquire it in middleware and call the synchronous status reader without trying
-to acquire it again.
+The unit harness does not execute ASP.NET middleware. GET status remains outside
+the global mutation semaphore, so a slow quota refresh cannot block status reads.
+Mutations are serialized in middleware. Apply publishes active-profile metadata
+and the applied repository revision before writing the matching valid runtime
+manifest last; the reader rejects incomplete publication through identity and
+revision checks. The actual Host probe separately exercises the HTTP boundary.

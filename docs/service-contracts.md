@@ -114,6 +114,14 @@ Revisionen liefern 409. Konfiguration beschreibt gewünschten und angewendeten
 Stand getrennt. Ein Profil wird erst nach erfolgreichem Start als angewendet
 markiert. Ungültige Runtimegenerationen dürfen nicht neu gestartet werden.
 
+Status ergänzt optional `activeProfileId` und `activeProfileRevision`. Diese
+benennen nur durch übereinstimmende Profil-/Runtime-Metadaten belegte Anwendung;
+Auswahl im Fenster und gewünschte Konfiguration sind keine Quelle dafür.
+Fehlende, alte oder unvollständig veröffentlichte Metadaten ergeben `null`.
+Ältere Installationen ohne die eindeutige Runtime-Profilkennung bleiben bis
+zu einer ausdrücklich ausgelösten erfolgreichen Profilanwendung unbekannt.
+Das UI-Update wendet keine ausstehende Konfiguration an, um die Anzeige zu füllen.
+
 Usage: GET `/api/v1/usage` und `/api/v1/attempts`, Parameter `from`, `to`,
 `timeZone`, `accountId`, `model`, `statusCode`, `offset`, `limit`. Intervalle
 sind höchstens 366 Tage, Requestseiten höchstens 500 Einträge. Die Endpunkte

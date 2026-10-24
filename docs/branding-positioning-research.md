@@ -1,7 +1,8 @@
 # Positionierung und Namensrecherche
 
-Stand: **24. Oktober 2026**. Vorschlag zur Entscheidung, keine beschlossene
-Umbenennung. Grundlage sind README, Produktumfang und der aktuelle
+Stand: **24. Oktober 2026**. Der Nutzer hat inzwischen **„lain — Local AI Gateway“**
+als Produktbezeichnung bestätigt. Alternative Namen im Bericht bleiben Vorschläge;
+Befehls- und Paketname werden dadurch nicht geändert. Grundlage sind README, Produktumfang und der aktuelle
 UI-Strukturauftrag. Alle externen Quellen wurden am 24.10.2026 abgerufen;
 Fremdprodukte wurden anhand ihrer öffentlichen Primärquellen eingeordnet,
 nicht installiert oder gegeneinander getestet.
@@ -34,7 +35,8 @@ Ein Untertitel verbessert die Einordnung. Er löst **nicht** alle Probleme des
 Namens `lain`: Ein anderes AI-Entwicklerwerkzeug verwendet bereits genau
 diesen CLI-Befehl. Bei einer späteren öffentlichen Distribution gehören
 Produktname, Paketname und ausführbarer Befehlsname deshalb in dieselbe
-Entscheidung. Hier wurde nichts umbenannt.
+Entscheidung. Die bestätigte Produktbezeichnung wird in Fenstertitel, Launcher
+und Projektbeschreibung verwendet.
 
 ## Warum „lain“ allein schwer einzuordnen ist
 
