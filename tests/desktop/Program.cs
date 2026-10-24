@@ -989,7 +989,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             "clear never regresses the event cursor or replays output ahead of the snapshot");
         fixture.InspectorGap = true;
         await Click("Refresh inspector");
-        Check(HasText("Content gap · retention_limit", true), "live retention gaps stay visible even when no new output arrives");
+        await Wait(() => HasText("Content gap · retention_limit", true), "live retention gaps stay visible even when no new output arrives");
         fixture.InspectorGap = false;
         fixture.InspectorRestarted = true;
         await Click("Refresh inspector");
