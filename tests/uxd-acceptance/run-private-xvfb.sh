@@ -3,6 +3,7 @@ set -euo pipefail
 
 # Never inherit the user's desktop, even on a failing dependency/build path.
 unset DISPLAY WAYLAND_DISPLAY DBUS_SESSION_BUS_ADDRESS
+export AVALONIA_GLOBAL_SCALE_FACTOR="${LAIN_TEST_SCALE:-1}"
 export GDK_BACKEND=x11 QT_QPA_PLATFORM=xcb AVALONIA_USE_WAYLAND=0
 repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 output=${1:-"$repo/tests/uxd-acceptance/artifacts/$(date -u +%Y%m%dT%H%M%SZ)-$$"}

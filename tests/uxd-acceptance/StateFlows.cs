@@ -2,6 +2,8 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 using Lain.Core;
+using System.Reflection;
+using Lain.Desktop;
 using Lain.Desktop.Presentation;
 
 internal sealed partial class Acceptance
@@ -19,8 +21,10 @@ internal sealed partial class Acceptance
                 ("native-state-account-refresh", NativeAccountRefreshFlow),
                 ("native-state-model-menu", NativeModelMenuFlow),
                 ("native-state-apply", NativeApplyFlow),
+                ("native-state-apply-late-preview", NativeLatePreviewFlow),
                 ("native-state-connect", NativeConnectPrerequisiteFlow),
-                ("native-state-setup", NativeSetupFlow)
+                ("native-state-setup", NativeSetupFlow),
+                ("native-state-browse", NativeBrowseFlow)
             ];
             foreach (var (name, action) in flows)
             {
@@ -90,6 +94,24 @@ internal sealed partial class Acceptance
         await NativePress(input, enabled);
         Check(enabled.IsChecked == false && enabled.IsFocused, "native toggle creates focused local disabled draft");
         var mutations = Mutations;
+        var size = window.ClientSize;
+        foreach (var selected in new[] { InformationLevel.Advanced, InformationLevel.Barebones, InformationLevel.Simple })
+        {
+            await NativePress(input, Need<ComboBox>("Information level"));
+            input.Key(0xff50);
+            for (var i = 0; i < (int)selected; i++) input.Key(0xff54);
+            input.Key(0xff0d); await Task.Delay(100); level = selected;
+            Check(ReferenceEquals(enabled, Need<CheckBox>("Model access enabled")) && !enabled.IsChecked.GetValueOrDefault(),
+                "native information-level change keeps mounted draft");
+            Check(window.ClientSize == size, "information-level selection preserves window size");
+        }
+        await NativeGo(input, "Settings");
+        var densityControl = Need<ComboBox>("Density for Models");
+        await NativePress(input, densityControl); input.Key(0xff57); input.Key(0xff0d); await Task.Delay(100);
+        await NativePress(input, Need<Button>("Back")); page = "Models";
+        Check(ReferenceEquals(enabled, Need<CheckBox>("Model access enabled")) && !enabled.IsChecked.GetValueOrDefault(),
+            "native Settings density change and Back restore the same draft");
+        Check(window.ClientSize == size, "density selection preserves window size");
         await NativeGo(input, "Profiles");
         var backName = "Return to Models · gpt-lain-01 draft";
         Check(Fits(Need<Button>(backName)), "chosen Draft B provides persistent visible return outside page scrolling");
@@ -118,25 +140,35 @@ internal sealed partial class Acceptance
     private async Task NativeAccountRefreshFlow()
     {
         using var input = new NativeInput(); input.Focus(window);
-        var held = fixture.Defer("POST", "/api/v1/quotas/refresh");
-        var refresh = Need<Button>("Refresh quota for Personal Codex");
-        var summary = Need<Border>("Account budgets for Personal Codex");
-        var values = summary.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text).ToArray();
-        await NativePress(input, refresh);
-        await Wait(() => held.Entered.Task.IsCompleted);
-        Check(!Need<Button>("Refresh quota for Personal Codex").IsEnabled, "only requested refresh is busy");
-        Check(values.Where(text => text?.Contains('%') == true).All(value =>
-            Need<Border>("Account budgets for Personal Codex").GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == value)),
-            "last known quota percentages remain during held request");
-        Capture(FlowImage("busy"));
-        await NativePress(input, Need<Button>("Open account details for Command Code Pro"));
-        var selected = Need<Button>("Close account details for Command Code Pro");
-        held.Fail("Synthetic delayed Personal Codex failure");
-        await Wait(() => Need<Button>("Refresh quota for Personal Codex").IsEnabled);
-        Check(ReferenceEquals(selected, Need<Button>("Close account details for Command Code Pro")), "late A error does not replace selected B inspector");
-        Check(fixture.Requests.Count(value => value == "POST /api/v1/quotas/refresh") == 1, "one account refresh request without retry");
-        Check(fixture.RequestDetails.Any(value => System.Text.Json.JsonSerializer.Serialize(value).Contains("a1")), "refresh ledger includes requested a1 identity");
-        Capture(FlowImage("late-error-b-selected"));
+        var quotas = fixture.QuotaSnapshot();
+        foreach (var fail in new[] { false, true })
+        {
+            var held = fixture.Defer("POST", "/api/v1/quotas/refresh");
+            var refresh = Need<Button>("Refresh quota for Personal Codex");
+            var summary = Need<Border>("Account budgets for Personal Codex");
+            var values = summary.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text).ToArray();
+            await NativePress(input, refresh);
+            await Wait(() => held.Entered.Task.IsCompleted);
+            Check(!Need<Button>("Refresh quota for Personal Codex").IsEnabled, "only requested refresh is busy");
+            Check(values.Where(text => text?.Contains('%') == true).All(value =>
+                Need<Border>("Account budgets for Personal Codex").GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == value)),
+                "last known quota percentages remain during held request");
+            Capture(FlowImage(fail ? "error-busy" : "success-busy"));
+            if (Find<Button>("Close account details for Command Code Pro") is null)
+                await NativePress(input, Need<Button>("Open account details for Command Code Pro"));
+            var selected = Need<Button>("Close account details for Command Code Pro");
+            var b = Need<Border>("Account budgets for Command Code Pro").GetVisualDescendants().OfType<TextBlock>().Select(value => value.Text).ToArray();
+            if (fail) held.Fail("Synthetic delayed Personal Codex failure");
+            else held.Complete(quotas.Select(value => value.AccountId == "a1" ? value with { Used = 42, Remaining = 58, UsedPercent = 42 }
+                : value.AccountId == "a2" ? value with { Used = 99, Remaining = 1, UsedPercent = 99 } : value).ToArray());
+            await Wait(() => Need<Button>("Refresh quota for Personal Codex").IsEnabled);
+            Check(ReferenceEquals(selected, Need<Button>("Close account details for Command Code Pro")), "late A response does not replace selected B inspector");
+            Check(Need<Border>("Account budgets for Command Code Pro").GetVisualDescendants().OfType<TextBlock>().Select(value => value.Text).SequenceEqual(b),
+                "late A full response does not merge stale B values");
+            Capture(FlowImage(fail ? "late-error-b-selected" : "late-success-b-selected"));
+        }
+        Check(fixture.Requests.Count(value => value == "POST /api/v1/quotas/refresh") == 2, "one request per explicit account refresh without retry");
+        Check(fixture.RequestDetails.Count(value => System.Text.Json.JsonSerializer.Serialize(value).Contains("quotas/refresh")) == 2, "request ledger preserves both refresh bodies");
     }
 
     private async Task NativeModelMenuFlow()
@@ -158,24 +190,43 @@ internal sealed partial class Acceptance
         input.Key(0xffc7, 0xffe1); await Task.Delay(100);
         Check(more.ContextMenu?.IsOpen == true || row.ContextMenu?.IsOpen == true, "native Shift+F10 opens model commands");
         Capture(FlowImage("keyboard-menu")); input.Key(0xff1b);
-        Check(Mutations == 0, "all menu entry and Escape paths remain read-only");
+        var search = Need<TextBox>("Search configured model access");
+        await NativeText(input, search, "no-match-demo");
+        Check(Find<Button>("Clear filters") is not null && search.Text == "no-match-demo", "no-match retains native query with explicit reset");
+        Capture(FlowImage("no-match"));
+        await NativePress(input, Need<Button>("Clear filters"));
+        Check(Need<TextBox>("Search configured model access").Text == "" && Find<Border>("Model row r1") is not null, "native filter reset restores actual inventory");
+        Check(Mutations == 0, "menu, Escape and filter reset paths remain read-only");
     }
 
     private async Task NativeConnectPrerequisiteFlow()
     {
         using var input = new NativeInput(); input.Focus(window);
-        fixture.SetMonitor(true);
-        await NativePress(input, Need<Button>("Reload status"));
-        await NativePress(input, Need<Button>("Add account"));
-        await NativePress(input, Need<Button>("Connect provider codex"));
-        var review = Find<Button>("Review requirements for Continue in browser") ?? Need<Button>("Review requirements");
-        await NativePress(input, review);
-        Check(Find<Control>("Connection prerequisites browser") is not null, "Core requirement is explained before browser login");
-        Check(fixture.LoginBegins == 0 && fixture.Config.RuntimeMode == "monitor", "missing Core sends no login and preserves Monitor intent");
-        Capture(FlowImage("monitor-prerequisite"));
-        await NativePress(input, Need<Button>("Review Gateway setup"));
-        Check(fixture.Config.RuntimeMode == "monitor" && Mutations == 0, "Gateway review navigation does not change operating mode");
-        Capture(FlowImage("gateway-review"));
+        foreach (var monitor in new[] { true, false })
+        {
+            await NativeGo(input, "Accounts");
+            fixture.SetMonitor(monitor); fixture.CoreLoginOverride = false;
+            await NativePress(input, Need<Button>("Reload status"));
+            await NativePress(input, Need<Button>("Add account"));
+            await NativePress(input, Need<Button>("Connect provider codex"));
+            var review = Find<Button>("Review requirements for Continue in browser") ?? Need<Button>("Review requirements");
+            await NativePress(input, review);
+            Check(Find<Control>("Connection prerequisites browser") is not null, "Core requirement is explained before browser login");
+            Check(fixture.LoginBegins == 0 && fixture.Config.RuntimeMode == (monitor ? "monitor" : "gateway"), "missing Core sends no login and preserves configured intent");
+            Capture(FlowImage(monitor ? "monitor-prerequisite" : "gateway-prerequisite"));
+            if (monitor)
+            {
+                await NativePress(input, Need<Button>("Review Gateway setup"));
+                Check(fixture.Config.RuntimeMode == "monitor" && Mutations == 0, "Gateway review navigation does not change operating mode");
+                Capture(FlowImage("gateway-review"));
+            }
+            else
+            {
+                await NativePress(input, Need<Button>("Review provider sources"));
+                Check(fixture.Config.RuntimeMode == "gateway" && Mutations == 0, "provider source navigation does not change operating mode");
+                Capture(FlowImage("provider-sources"));
+            }
+        }
     }
 
     private async Task NativeText(NativeInput input, TextBox field, string value)
@@ -183,6 +234,23 @@ internal sealed partial class Acceptance
         await NativePress(input, field);
         input.Key('a', 0xffe3); input.Type(value);
         await Wait(() => field.Text == value);
+    }
+
+    private async Task NativeBrowseFlow()
+    {
+        using var input = new NativeInput(); input.Focus(window);
+        await NativeGo(input, "Profiles");
+        await NativePress(input, Need<Button>("Select profile Daily"));
+        await NativePress(input, Need<Button>("Set up Codex client…"));
+        var folder = Need<TextBox>("Destination parent folder");
+        var before = input.FocusedWindow();
+        await NativePress(input, Need<Button>("Browse…"));
+        await Wait(() => input.FocusedWindow() != before);
+        Capture(FlowImage("picker-open"));
+        input.Key(0xff1b);
+        await Wait(() => folder.IsFocused);
+        Check(fixture.ExportCalls == 0 && fixture.ApplyCalls == 0, "native Browse Escape restores destination focus without export or Apply");
+        Capture(FlowImage("escape-focus"));
     }
 
     private async Task NativeSetupFlow()
@@ -203,6 +271,10 @@ internal sealed partial class Acceptance
         var sentinelBytes = await File.ReadAllBytesAsync(sentinel);
         var executableField = Need<TextBox>("lain command-line executable");
         var folder = Need<TextBox>("Destination parent folder");
+        await NativeText(input, executableField, Path.Combine(parent, "missing-executable"));
+        await NativeText(input, folder, parent);
+        Check(!Need<Button>("Prepare Codex files").IsEnabled && fixture.ExportCalls == 0, "invalid executable prevents export");
+        Capture(FlowImage("invalid-executable"));
         await NativeText(input, executableField, executable);
         await NativeText(input, folder, Path.Combine(parent, "missing"));
         Check(!Need<Button>("Prepare Codex files").IsEnabled && fixture.ExportCalls == 0,
@@ -227,6 +299,44 @@ internal sealed partial class Acceptance
         Capture(FlowImage("installed"));
     }
 
+    private async Task NativeLatePreviewFlow()
+    {
+        using var input = new NativeInput(); input.Focus(window);
+        await NativeGo(input, "Profiles");
+        await NativePress(input, Need<Button>("Select profile Daily"));
+        var held = fixture.Defer("GET", "/api/v1/profiles/p1/preview");
+        await NativePress(input, Need<Button>("Apply to proxy…"));
+        await Wait(() => held.Entered.Task.IsCompleted);
+        await NativePress(input, Need<Button>("Select profile Workspace 3"));
+        held.Complete(new ProfileApplyPreviewDto(1, "p1", fixture.Config.Revision, "p2", 1,
+            ["r1"], ["r2"], [], ["a1"], ["all connected clients"], "global proxy restart", true));
+        await Task.Delay(180);
+        Check(Need<TextBlock>("Selected profile status").Text?.Contains("Workspace 3") == true, "late Daily preview preserves newly selected Workspace 3");
+        Check(Find<Control>("Profile apply review") is null && fixture.ApplyCalls == 0, "late preview cannot mount or commit against a different target");
+        Capture(FlowImage("late-preview-discarded"));
+    }
+
+    private void CheckAppliedSurfaces(bool unknown)
+    {
+        var summary = (TextBlock)typeof(MainWindow).GetField("_connection", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
+        var review = Need<TextBlock>("Profile apply confirmed status").Text ?? "";
+        var inventory = Need<Button>(unknown ? "Select profile Workspace 2" : "Select profile Daily")
+            .GetVisualDescendants().OfType<TextBlock>().Select(value => value.Text).ToArray();
+        if (unknown)
+        {
+            Check(summary.Text?.Contains("Last confirmed: Workspace 2") == true && summary.Text.Contains("unknown", StringComparison.OrdinalIgnoreCase),
+                "shell retains explicitly last-confirmed Workspace 2 during unknown outcome");
+            Check(review.Contains("Last confirmed: Workspace 2") && review.Contains("Requested p1"), "review separates requested Daily from last-confirmed Workspace 2");
+            Check(inventory.Any(value => value?.Contains("Last confirmed") == true), "inventory labels Workspace 2 as last confirmed");
+        }
+        else
+        {
+            Check(summary.Text?.Contains("Daily") == true && !summary.Text.Contains("unknown", StringComparison.OrdinalIgnoreCase), "shell confirms Daily after fresh terminal status");
+            Check(review.Contains("Applied to proxy: Daily") && !review.Contains("unknown", StringComparison.OrdinalIgnoreCase), "review confirms the same Daily state");
+            Check(inventory.Any(value => value?.Contains("Applied · revision " + fixture.Config.Revision) == true), "inventory confirms Daily at matching revision");
+        }
+    }
+
     private async Task NativeApplyFlow()
     {
         using var input = new NativeInput(); input.Focus(window);
@@ -239,7 +349,7 @@ internal sealed partial class Acceptance
         Check(fixture.PreviewCalls > 0 && fixture.ApplyCalls == 0, "preview reads without commit");
         Capture(FlowImage("review"));
         await NativePress(input, Need<Button>("Cancel review"));
-        Check(trigger.IsFocused, "native Cancel returns focus to review trigger");
+        Check(Need<Button>("Apply to proxy…").IsFocused, "native Cancel returns focus to review trigger");
         Check(fixture.ApplyCalls == 0, "cancel does not commit");
         await NativePress(input, Need<Button>("Apply to proxy…"));
         await Wait(() => Find<Button>("Apply to proxy") is not null);
@@ -251,15 +361,30 @@ internal sealed partial class Acceptance
         await NativePress(input, Need<Button>("Refresh preview"));
         await Wait(() => Find<Button>("Apply to proxy")?.IsEnabled == true);
         fixture.LoseApplyResponse = true; fixture.StatusFailure = true;
-        await NativePress(input, Need<Button>("Apply to proxy"));
-        await Wait(() => fixture.ApplyCalls == 1 && Find<Button>("Check current status") is not null);
+        var confirm = Need<Button>("Apply to proxy");
+        confirm.BringIntoView(); await Task.Delay(50); input.Click(confirm); input.Click(confirm);
+        await Wait(() => fixture.ApplyCalls == 1 && Find<Button>("Check current status")?.IsEnabled == true);
         Check(fixture.ActiveProfileId == "p1", "synthetic host committed p1 before response loss");
         Check(Controls<TextBlock>().Any(value => value.Text?.Contains("Last confirmed", StringComparison.OrdinalIgnoreCase) == true), "unknown outcome labels last confirmed status");
+        CheckAppliedSurfaces(true);
         Capture(FlowImage("unknown"));
         fixture.StatusFailure = false; fixture.LoseApplyResponse = false;
+        var completed = fixture.ApplicationStatus;
+        fixture.StatusObservedAtOverride = DateTimeOffset.UtcNow.AddHours(-1);
+        await NativePress(input, Need<Button>("Check current status"));
+        await Wait(() => Need<Button>("Check current status").IsEnabled);
+        CheckAppliedSurfaces(true);
+        Capture(FlowImage("old-status-retains-unknown"));
+        fixture.StatusObservedAtOverride = null; fixture.ApplicationStatus = null;
+        await NativePress(input, Need<Button>("Check current status"));
+        await Wait(() => Need<Button>("Check current status").IsEnabled);
+        CheckAppliedSurfaces(true);
+        Capture(FlowImage("incomplete-status-retains-unknown"));
+        fixture.ApplicationStatus = completed;
         await NativePress(input, Need<Button>("Check current status"));
         await Wait(() => !Controls<TextBlock>().Any(value => value.Text?.Contains("outcome unknown", StringComparison.OrdinalIgnoreCase) == true));
-        Check(fixture.ApplyCalls == 1, "status clarification never repeats Apply");
+        Check(fixture.ApplyCalls == 1, "double-click and status clarification never repeat Apply");
+        CheckAppliedSurfaces(false);
         Capture(FlowImage("confirmed"));
     }
 }

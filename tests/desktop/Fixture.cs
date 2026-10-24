@@ -48,6 +48,7 @@ internal sealed class Fixture : HttpMessageHandler
     public readonly List<object> RequestDetails = [];
     public bool ConfigurationFailure, StatusFailure, LoseApplyResponse;
     public bool? CoreLoginOverride;
+    public DateTimeOffset? StatusObservedAtOverride;
     public ProfileApplicationStatusDto? ApplicationStatus;
     public CodexProfileArtifacts? ExportOverride;
     private readonly Dictionary<string, Queue<PendingResponse>> pending = [];
@@ -84,7 +85,7 @@ internal sealed class Fixture : HttpMessageHandler
         if (request.RequestUri.Host != "fixture.invalid" || request.Headers.Authorization is not null)
             throw UnexpectedRequest(request);
         var requestBody = request.Content is null ? null : await request.Content.ReadAsStringAsync(ct);
-        RequestDetails.Add(new { sequence = Requests.Count, method = request.Method.Method, path, body = requestBody,
+        RequestDetails.Add(new { sequence = Requests.Count, method = request.Method.Method, path, query = request.RequestUri.Query, body = requestBody,
             configurationRevision = Config.Revision, activeProfileId = ActiveProfileId, activeProfileRevision = ActiveProfileRevision });
         if (pending.TryGetValue(request.Method.Method + " " + path, out var held) && held.Count > 0)
         {
@@ -324,6 +325,8 @@ internal sealed class Fixture : HttpMessageHandler
     }
 
     // Concrete provider budgets exercise percentage, numeric balance, exhaustion and unsupported rendering.
+    public QuotaDto[] QuotaSnapshot() => Quotas();
+
     private QuotaDto[] Quotas()
     {
         if (QuotaOverride is { } quotaOverride) return quotaOverride;
@@ -381,7 +384,7 @@ internal sealed class Fixture : HttpMessageHandler
     private StatusDto Status()
     {
         StatusCalls++;
-        return new(1, "test", "ready", !MonitorMode, Config.Revision, Config.AppliedRevision, DateTimeOffset.UtcNow,
+        return new(1, "test", "ready", !MonitorMode, Config.Revision, Config.AppliedRevision, StatusObservedAtOverride ?? DateTimeOffset.UtcNow,
             ActiveProfileId: ActiveProfileId, ActiveProfileRevision: ActiveProfileRevision,
             RuntimeMode: MonitorMode ? "monitor" : "gateway",
             Capabilities: new(true, !MonitorMode, !MonitorMode, !MonitorMode || MonitorHistory, !MonitorMode, CoreLoginOverride ?? !MonitorMode), Application: ApplicationStatus);

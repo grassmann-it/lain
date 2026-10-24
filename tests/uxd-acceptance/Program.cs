@@ -64,6 +64,7 @@ internal sealed partial class Acceptance(IClassicDesktopStyleApplicationLifetime
     private readonly List<string> assertions = [];
     private readonly List<string> requests = [];
     private readonly List<string> focusTrace = [];
+    private readonly List<string> nativeInputTrace = [];
     private Fixture fixture = null!;
     private HttpClient? http;
     private MainWindow window = null!;
@@ -76,6 +77,7 @@ internal sealed partial class Acceptance(IClassicDesktopStyleApplicationLifetime
     public async Task Run()
     {
         Directory.CreateDirectory(output);
+        NativeInput.Trace = value => nativeInputTrace.Add(currentCase + ": " + value);
         await RunStateFlows();
         // Matrix renders the same production pages, changing only local presentation state.
         foreach (var information in Enum.GetValues<InformationLevel>())
@@ -401,7 +403,7 @@ internal sealed partial class Acceptance(IClassicDesktopStyleApplicationLifetime
             Check(fixture.PreviewCalls > 0 && fixture.ApplyCalls == 0, "review loads preview without applying");
             Capture($"profiles-inplace-review-{width}x{height}");
             await NativePress(input, Need<Button>("Cancel review"));
-            Check(apply.IsFocused && fixture.ApplyCalls == 0, "native Cancel restores review trigger without mutation");
+            Check(Need<Button>("Apply to proxy…").IsFocused && fixture.ApplyCalls == 0, "native Cancel restores review trigger without mutation");
         }
     }
 
@@ -516,7 +518,9 @@ internal sealed partial class Acceptance(IClassicDesktopStyleApplicationLifetime
         }
         images.Add(new { file, currentCase, page, runtimeMode = fixture.Config.RuntimeMode, informationLevel = level.ToString(),
             density = density.ToString(), width = target.ClientSize.Width, height = target.ClientSize.Height,
-            fixture = "five-accounts-45-routes-three-profiles", visualReview = "REQUIRED", nativeScreen, nativeInput = currentCase.StartsWith("native-") });
+            fixture = "five-accounts-45-routes-three-profiles", visualReview = "REQUIRED", nativeScreen, nativeInput = nativeInputTrace.Any(value => value.StartsWith(currentCase + ": ", StringComparison.Ordinal)),
+            renderScaling = target.RenderScaling, scaleMethod = "AVALONIA_GLOBAL_SCALE_FACTOR",
+            requestedScale = Environment.GetEnvironmentVariable("AVALONIA_GLOBAL_SCALE_FACTOR") });
     }
 
     private static string[] MenuCommands(ContextMenu menu) => menu.Items.OfType<MenuItem>()
@@ -569,7 +573,7 @@ internal sealed partial class Acceptance(IClassicDesktopStyleApplicationLifetime
             requestedFilter = Environment.GetEnvironmentVariable("LAIN_UXD_ONLY"),
             commit = Environment.GetEnvironmentVariable("LAIN_TEST_COMMIT"), assembly = assembly.Location,
             assemblySha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location))),
-            privateXvfb = true, cases, assertions, images, geometry, focusTrace, requests, requestDetails,
+            privateXvfb = true, cases, assertions, images, geometry, focusTrace, nativeInputTrace, requests, requestDetails,
             limitations = new[] { "Images require independent visual review", "XTEST is synthetic OS input, not a screenreader audit",
                 "No real host, providers, credentials, installed app, external browser, clipboard, or tray qualification" }
         }, new JsonSerializerOptions { WriteIndented = true }));
