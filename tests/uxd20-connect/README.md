@@ -24,6 +24,12 @@ non-Core Monitor login and source/mode-review return paths. No credential data i
 included. The central native owner should assert request logs and capture both
 sizes; these cases are inputs, not a claim of executed acceptance.
 
+Delayed chooser and reconnect responses additionally require their original
+Accounts section, mounted content, owner request and shell navigation generation.
+Leaving and returning invalidates the old operation, as does a newer connection
+request. Stale errors are discarded too. Opening connect editors uses the shell's
+`CanOpenSectionEditor` draft contract; no global navigation lock was added.
+
 Source validation: `git diff --check` passed. No build, runtime, GUI, provider,
 credential or service operation was performed in this worktree. Native/request
 qualification awaits the integrator's serial slot. Normal account settings,

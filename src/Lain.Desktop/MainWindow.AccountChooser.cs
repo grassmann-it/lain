@@ -11,18 +11,34 @@ public sealed partial class MainWindow
 {
     private ConnectionMethodCatalogDto? _connectionMethods;
     private string _connectProviderSearch = "";
+    private long _connectionPresentationRequest;
     private readonly Dictionary<string, (string Name, Dictionary<string, string> Settings)> _connectSafeDrafts = new(StringComparer.Ordinal);
+
+    private bool OwnsConnectionPresentation(long request, long navigation, object? content) => !_lifetime.IsCancellationRequested
+        && request == _connectionPresentationRequest && navigation == _workspaceNavigationGeneration
+        && _section == "Accounts" && ReferenceEquals(_page.Content, content);
 
     private async void ShowAddAccountChooser()
     {
-        _notice.Text = "";
-        _editing = true;
-        _loginVisible = false;
-        _actions.Clear();
-        _workspace.Offset = default;
-        _page.Content = Ui.Stack(Heading("Add account", "Loading available provider connections…"));
+        var request = ++_connectionPresentationRequest;
+        long navigation = -1;
+        object? ownerContent = null;
         try
         {
+            if (_section != "Accounts")
+            {
+                await NavigateToAsync(new("Accounts"));
+                if (request != _connectionPresentationRequest || _section != "Accounts" || _lifetime.IsCancellationRequested) return;
+            }
+            if (!CanOpenSectionEditor()) return;
+            _notice.Text = "";
+            _editing = true;
+            _loginVisible = false;
+            _actions.Clear();
+            _workspace.Offset = default;
+            ownerContent = Ui.Stack(Heading("Add account", "Loading available provider connections…"));
+            _page.Content = ownerContent;
+            navigation = _workspaceNavigationGeneration;
             async Task<ProviderCatalogDto?> ReadDocumentationAsync()
             {
                 try { return await _client.ProvidersAsync(_lifetime.Token); }
@@ -31,13 +47,13 @@ public sealed partial class MainWindow
             var methodTask = _client.ConnectionMethodsAsync(ct: _lifetime.Token);
             var documentationTask = ReadDocumentationAsync();
             await Task.WhenAll(methodTask, documentationTask);
-            var methods = await methodTask;
-            _providerCatalog = await documentationTask;
+            if (!OwnsConnectionPresentation(request, navigation, ownerContent)) return;
+            var methods = methodTask.Result;
+            _providerCatalog = documentationTask.Result;
             _connectionMethods = methods;
             _providers.SetConnectionMethods(methods);
             var inventory = ProviderInventory.Merge(_providerCatalog, methods);
             _providers.SetCatalog(inventory, _configuration?.Accounts);
-            if (!_editing || _section != "Accounts") return;
             var search = Ui.Input(_connectProviderSearch, "Search providers");
             AutomationProperties.SetName(search, "Choose account provider");
             var rows = Ui.Stack(); rows.Spacing = 6;
@@ -72,6 +88,7 @@ public sealed partial class MainWindow
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception error)
         {
+            if (!OwnsConnectionPresentation(request, navigation, ownerContent)) return;
             _page.Content = Ui.Stack(Heading("Connections unavailable", Friendly(error)), Ui.Button("Retry", ShowAddAccountChooser),
                 Ui.Button("Back to accounts", () => { _editing = false; Render(); }));
         }
@@ -81,20 +98,34 @@ public sealed partial class MainWindow
 
     private async Task BeginProviderConnectionAsync(string providerId, AccountDto? reconnect = null)
     {
-        _notice.Text = "";
+        var request = ++_connectionPresentationRequest;
+        long navigation = -1;
+        object? ownerContent = null;
         try
         {
-            if (_section != "Accounts") await NavigateToAsync(new("Accounts", AccountId: reconnect?.Id));
+            if (_section != "Accounts")
+            {
+                await NavigateToAsync(new("Accounts", AccountId: reconnect?.Id));
+                if (request != _connectionPresentationRequest || _section != "Accounts" || _lifetime.IsCancellationRequested) return;
+            }
+            if (!CanOpenSectionEditor()) return;
+            _notice.Text = "";
+            ownerContent = _page.Content;
+            navigation = _workspaceNavigationGeneration;
             var normalized = ProviderInventory.Canonical(providerId);
             var methodsTask = _client.ConnectionMethodsAsync(normalized, _lifetime.Token);
             var statusTask = _client.StatusAsync(_lifetime.Token);
             await Task.WhenAll(methodsTask, statusTask);
-            _connectionMethods = await methodsTask;
-            _status = await statusTask;
+            if (!OwnsConnectionPresentation(request, navigation, ownerContent)) return;
+            _connectionMethods = methodsTask.Result;
+            _status = statusTask.Result;
             ShowConnectionMethods(normalized, reconnect);
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
-        catch (Exception error) { _notice.Text = Friendly(error); }
+        catch (Exception error)
+        {
+            if (OwnsConnectionPresentation(request, navigation, ownerContent)) _notice.Text = Friendly(error);
+        }
     }
 
     private bool ConnectionMethodAvailable(ProviderConnectionMethodDto method) => ConnectionRequirement(method) is null;
@@ -119,6 +150,8 @@ public sealed partial class MainWindow
 
     private void ShowConnectionMethods(string provider, AccountDto? reconnect = null)
     {
+        if (_section != "Accounts" || !CanOpenSectionEditor()) return;
+        ++_connectionPresentationRequest;
         _notice.Text = "";
         _loginVisible = false;
         _editing = true; _workspace.Offset = default;
@@ -150,6 +183,8 @@ public sealed partial class MainWindow
 
     private void ShowConnectionPrerequisite(ProviderConnectionMethodDto method, AccountDto? reconnect, bool quotaOnly = false)
     {
+        if (_section != "Accounts" || !CanOpenSectionEditor()) return;
+        ++_connectionPresentationRequest;
         _notice.Text = "";
         _loginVisible = false; _editing = true; _actions.Clear(); _workspace.Offset = default;
         if (_configuration is { } configuration) RegisterEditor(() => ShowConnectionPrerequisite(method, reconnect, quotaOnly), configuration.Revision);
@@ -186,6 +221,8 @@ public sealed partial class MainWindow
 
     private void ShowConnectionMethod(ProviderConnectionMethodDto method, AccountDto? reconnect, bool quotaOnly = false)
     {
+        if (_section != "Accounts" || !CanOpenSectionEditor()) return;
+        ++_connectionPresentationRequest;
         if (!ConnectionMethodAvailable(method)) { ShowConnectionPrerequisite(method, reconnect, quotaOnly); return; }
         _notice.Text = "";
         _loginVisible = false;

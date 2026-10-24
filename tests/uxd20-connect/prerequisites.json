@@ -18,7 +18,11 @@
     {"id":"qualified-noncore-monitor-login","method":"quotaBrowser","configuredMode":"monitor","statusMode":"monitor","coreLogin":false,"expectedLoginPosts":1,"expectedPurposes":["quota"]},
     {"id":"inference-key-monitor","method":"inferenceKey","configuredMode":"monitor","statusMode":"monitor","coreLogin":false,"expectedConnectPosts":0,"requiredActions":["Review provider sources","Review Gateway setup"]},
     {"id":"reload-is-review-only","method":"coreBrowser","configuredMode":"gateway","statusMode":"gateway","coreLogin":false,"afterReloadCoreLogin":true,"expectedLoginPosts":0,"requiredActions":["Continue in browser"]},
-    {"id":"provider-catalog-follows-methods","method":"quotaBrowser","configuredMode":"monitor","replaceAvailability":"unavailable","expectCatalogRefresh":true,"expectExplicitUnavailable":true,"expectedLoginPosts":0}
+    {"id":"provider-catalog-follows-methods","method":"quotaBrowser","configuredMode":"monitor","replaceAvailability":"unavailable","expectCatalogRefresh":true,"expectExplicitUnavailable":true,"expectedLoginPosts":0},
+    {"id":"delayed-reconnect-leave-for-model-editor","entry":"BeginProviderConnectionAsync","delayGets":["status","connection-methods"],"navigateTo":"Models","openEditorAndEnter":"Synthetic retained model draft","releaseGets":"success","expectCurrentSection":"Models","expectSameEditorAndInputs":true,"expectedLoginPosts":0},
+    {"id":"delayed-chooser-error-leave-for-model-editor","entry":"ShowAddAccountChooser","delayGets":["connection-methods"],"navigateTo":"Models","openEditorAndEnter":"Synthetic retained model draft","releaseGets":"failure","expectCurrentSection":"Models","expectSameEditorAndInputs":true,"expectNoticeUnchanged":true,"expectedLoginPosts":0},
+    {"id":"older-reconnect-response-loses-to-new-request","entry":"BeginProviderConnectionAsync","delayGets":["status","connection-methods"],"newerEntry":"BeginProviderConnectionAsync for another account","releaseOrder":"newer then older","expectNewerConnectionIdentity":true,"expectedLoginPosts":0},
+    {"id":"leave-and-return-invalidates-request","entry":"BeginProviderConnectionAsync","delayGets":["status","connection-methods"],"navigationSequence":["Models","Accounts"],"releaseGets":"success","expectReturnedPresentationUnchanged":true,"expectedLoginPosts":0}
   ],
   "invariants": [
     "No POST accounts/login until an explicit Continue action and fresh method/status preflight succeeds.",
@@ -27,6 +31,7 @@
     "Core login unavailability preserves configured Gateway intent; it does not select Monitor.",
     "Unavailable alternative start buttons stay disabled; their separate requirement-review actions remain reachable.",
     "Reload retains the selected method, reconnect identity and quota-only scope; it never starts sign-in.",
-    "Catalog method updates render even when provider documentation and account counts are unchanged."
+    "Catalog method updates render even when provider documentation and account counts are unchanged.",
+    "Only the current Accounts request, navigation generation and mounted content may accept connection responses or errors. Navigation remains available while requests wait."
   ]
 }
