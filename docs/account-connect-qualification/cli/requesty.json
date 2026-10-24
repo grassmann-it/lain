@@ -1,0 +1,24 @@
+{
+  "provider": "requesty",
+  "status": "disabled-unqualified",
+  "release": null,
+  "sourceCommit": "21809398e99d888565178d718186b637f3de4566",
+  "source": "https://github.com/requestyai/cli/tree/21809398e99d888565178d718186b637f3de4566",
+  "artifactSha256": null,
+  "license": null,
+  "platform": "linux-x64",
+  "testedCommands": [],
+  "sourceBackedCandidateCommands": [
+    "login --profile <owned>",
+    "login --profile <owned> --force",
+    "auth token --profile <owned>"
+  ],
+  "outputSchema": "one API key followed by newline; no banner or extra JSON",
+  "isolation": "UNQUALIFIED: configPath uses os.UserHomeDir; --profile names a block in shared settings, not a separate store",
+  "owner": "lain CLI connector; shared Host owns ordinary key publication",
+  "checkedAt": "2026-10-24",
+  "executableQualified": false,
+  "isolationQualified": false,
+  "identityQualified": false,
+  "blocker": "A pinned Linux artifact/hash/version plus supported complete private storage are missing. Source config.go exposes no dedicated config directory. Do not redirect HOME or execute against the ordinary Requesty store. Confirm same key/group with Self metadata before same-account reconnect."
+}

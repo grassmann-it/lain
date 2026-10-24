@@ -1,0 +1,9 @@
+{
+  "fixtureOnly": true,
+  "release": "lain-cli-fixture 1.0",
+  "sha256": "80c28e766cd77679363b97e321bf6550196cd9aa998bf098ee285c683591ac83",
+  "source": "fixture-cli.py",
+  "license": "synthetic repository test fixture only",
+  "platform": "linux-x64",
+  "providerQualification": false
+}

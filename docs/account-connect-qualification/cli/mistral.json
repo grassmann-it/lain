@@ -1,0 +1,22 @@
+{
+  "provider": "mistral",
+  "status": "disabled-unqualified",
+  "release": null,
+  "sourceCommit": "63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477",
+  "source": "https://github.com/mistralai/mistral-vibe/tree/63d0e8f17e2c1f0d9e1d6f4399ab2dc10fbdf477",
+  "artifactSha256": null,
+  "license": null,
+  "platform": "linux-x64",
+  "testedCommands": [],
+  "sourceBackedCandidateCommands": [
+    "Vibe browser bootstrap (no qualified CLI command plan)"
+  ],
+  "outputSchema": "UNQUALIFIED private key handoff and external product/workspace authorization",
+  "isolation": "UNQUALIFIED keyring and .env isolation; config path alone is insufficient",
+  "owner": "lain CLI connector; shared Host owns ordinary key publication",
+  "checkedAt": "2026-10-24",
+  "executableQualified": false,
+  "isolationQualified": false,
+  "identityQualified": false,
+  "blocker": "Pinned artifact/license, supported complete private persistence, fresh key handoff and external Studio/Vibe rights need qualification. No ordinary keyring or .env is read. Vibe whoami is identity/plan, not remaining allowance; Enterprise Admin is a separate product."
+}

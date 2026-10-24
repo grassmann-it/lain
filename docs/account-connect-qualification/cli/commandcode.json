@@ -1,0 +1,22 @@
+{
+  "provider": "commandcode",
+  "status": "disabled-unqualified",
+  "release": null,
+  "sourceCommit": null,
+  "source": "https://commandcode.ai/docs/quickstart",
+  "artifactSha256": null,
+  "license": null,
+  "platform": "linux-x64",
+  "testedCommands": [],
+  "sourceBackedCandidateCommands": [
+    "cmd login / command-code login (documented; not qualified executable commands)"
+  ],
+  "outputSchema": "UNQUALIFIED targeted key export/cache schema",
+  "isolation": "UNQUALIFIED supported private cache path",
+  "owner": "lain CLI connector; shared Host owns ordinary key publication",
+  "checkedAt": "2026-10-24",
+  "executableQualified": false,
+  "isolationQualified": false,
+  "identityQualified": false,
+  "blocker": "Pinned version/source/artifact/license, private login storage and targeted fresh-result schema are missing. Do not inspect or import ordinary cache entries. Keep existing Studio key fallback and existing whoami quota adapter."
+}

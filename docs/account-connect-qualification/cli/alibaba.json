@@ -1,0 +1,23 @@
+{
+  "provider": "alibaba-model-studio",
+  "status": "disabled-unqualified",
+  "release": "2.5.1 (source package; published binary unqualified)",
+  "sourceCommit": "3c8031f4d994c30820eb4d145d9404ba4a0acd39",
+  "source": "https://github.com/modelstudioai/cli/tree/3c8031f4d994c30820eb4d145d9404ba4a0acd39",
+  "artifactSha256": null,
+  "license": "Apache-2.0 (pinned source)",
+  "platform": "linux-x64",
+  "testedCommands": [],
+  "sourceBackedCandidateCommands": [
+    "auth login --console --console-site international --config lain",
+    "console call --api <fixed-read> --data <nonsecret-payload> --config lain --output json"
+  ],
+  "outputSchema": "owned config.json active_config=lain; exact named block api_key/access_token/base_url/workspace_id/console_site/console_region; raw Console envelopes",
+  "isolation": "Source-supported BAILIAN_CONFIG_DIR plus explicit --config; binary/runtime identity and callback isolation still unqualified",
+  "owner": "lain CLI connector; shared Host owns ordinary key publication",
+  "checkedAt": "2026-10-24",
+  "executableQualified": false,
+  "isolationQualified": false,
+  "identityQualified": false,
+  "blocker": "No verified published artifact/hash/version or authorized callback/isolation result. Full shared publication needs independent static inference key and delegated Console reference. Mixed/quota-only login is disabled before bootstrap. Grant active-status vocabulary is unqualified; default status allowlist is empty, so no numeric allowance is claimed."
+}
