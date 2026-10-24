@@ -8,6 +8,7 @@ namespace Lain.Desktop;
 public sealed partial class MainWindow
 {
     private ConnectionMethodCatalogDto? _connectionMethods;
+    private string _connectProviderSearch = "";
     private readonly Dictionary<string, (string Name, Dictionary<string, string> Settings)> _connectSafeDrafts = new(StringComparer.Ordinal);
 
     private async void ShowAddAccountChooser()
@@ -34,7 +35,7 @@ public sealed partial class MainWindow
             var inventory = ProviderInventory.Merge(_providerCatalog, methods);
             _providers.SetCatalog(inventory, _configuration?.Accounts);
             if (!_editing || _section != "Accounts") return;
-            var search = Ui.Input(hint: "Search providers");
+            var search = Ui.Input(_connectProviderSearch, "Search providers");
             AutomationProperties.SetName(search, "Choose account provider");
             var rows = Ui.Stack();
             void Populate()
@@ -49,7 +50,7 @@ public sealed partial class MainWindow
                 }
                 if (rows.Children.Count == 0) rows.Children.Add(Ui.Text("No providers match this search.", 13, Ui.Muted));
             }
-            search.TextChanged += (_, _) => Populate(); Populate();
+            search.TextChanged += (_, _) => { _connectProviderSearch = search.Text ?? ""; Populate(); }; Populate();
             _page.Content = Ui.Stack(Heading("Add account", "Choose a provider. Models and profiles are optional later."), search, rows,
                 new Expander { Header = "Manual account or existing setup", Content = OverviewActions(Ui.Button("Manual API account", ShowAddAccount), Ui.Button("Import setup", ShowImport)) },
                 Ui.Button("Back to accounts", () => { _editing = false; Render(); }));

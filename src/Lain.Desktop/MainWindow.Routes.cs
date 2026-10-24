@@ -149,6 +149,7 @@ public sealed partial class MainWindow
             foreach (var pair in rowBorders) pair.Value.Background = pair.Key == id ? Ui.AccentSurface : Brushes.Transparent;
             detail.Child = new ScrollViewer { Content = ModelAccessDetails(cfg, id, () => {
                 _modelNarrowDetail = false; _selectedModelRouteId = null; UpdateLayout();
+                detail.Child = Ui.Stack(Ui.Text("Model configuration", 15), Ui.Text("Select a model to inspect its binding, profiles and provenance. Edit and actions are available in every row.", 12, Ui.Muted));
                 foreach (var row in rowBorders.Values) row.Background = Brushes.Transparent;
                 var offset = _modelInventoryOffset;
                 Dispatcher.UIThread.Post(() => { list.Offset = offset; if (rowOrigins.TryGetValue(id, out var origin)) origin.Focus(); }, DispatcherPriority.Loaded);

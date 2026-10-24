@@ -21,6 +21,20 @@ cannot turn the current page into a successful connection. Expiry, unsupported,
 resource selection, failure and cancellation have separate local guidance. The
 browser launcher is an injectable in-memory fixture seam; no real login is claimed.
 
+| Method family | Local executable condition | Missing prerequisite stays local |
+| --- | --- | --- |
+| Existing API key | Installed method reports available and offers the requested purposes | No quota capability is inferred from inference-only keys |
+| Dedicated monitor token | Installed quota method and its actual account/project fields | Unsupported scopes remain unavailable |
+| Codex owned browser | Host advertises available plus Core login in Gateway | Monitor without Core uses an actual supported alternative, such as an explicit snapshot |
+| Access-token snapshot | Host offers quota-only snapshot; future expiry and account identity supplied | No refresh, revoke or inference capability is added |
+| OpenRouter issued key | Host exposes the qualified browser method | User authorization remains explicit; no purchase or inference |
+| Poe browser | Host exposes available after maintainer client/callback qualification | Setup-required guidance and existing-key alternative remain visible |
+| Google/Cloudflare browser monitoring | Host exposes available after its client/scopes/callback qualification | Existing supported token-based monitoring is separate |
+| Managed/device/console paths | Only exact available methods reported by the installed host can start | Unsupported methods show their own qualification guidance; logos never enable them |
+
+This table describes admission, not live qualification. The host method catalog
+is authoritative when configuration or qualification changes.
+
 The bounded completion card groups account identity, credential presence and only
 observed capability/quota results. Credential completion is separate from quota
 observations and inference success.
