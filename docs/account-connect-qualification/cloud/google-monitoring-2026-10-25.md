@@ -88,9 +88,15 @@ the existing project picker.
 `tests/cloud-connections/Cloud.Connections.Tests.csproj` extends synthetic HTTP
 and isolated-loopback coverage for snapshot model usage/limits, latest-versus-sum
 gauges, explicit zero, stale/conflicting/foreign limits, optional project IAM,
-expired and mismatched snapshots, and exact-resource reconnect. Build/runtime
-execution is serialized by the integration owner. Local fixtures do not establish
-real consent, real project entitlement or source coverage.
+expired and mismatched snapshots, and exact-resource reconnect. The runner passed
+**77 assertions**, with a successful linux-x64 self-contained build. Execution used
+the integrator's sole heavy-test slot, capped at 1.5 CPU / 2 GiB RAM / 256 MiB swap,
+low I/O priority and SSD TMPDIR. Locked restore produced no lockfile drift. The
+initial restore reported unavailable NuGet audit data; a cached-source restore
+with audit disabled and the same build/test completed with zero warnings/errors.
+Logs are in the private qualification cache under `google-quota/test.log` and
+`google-quota/test-retry.log`. Local fixtures do not establish real consent,
+real project entitlement or source coverage.
 
 Official references:
 
