@@ -9,6 +9,11 @@ its older-Core guard. Do not change that guard or rebuild Core for this update.
 
 ## Branding
 
+The product name is **lain — Local AI Gateway**, including the Linux application
+launcher name. Its launcher comment describes the gateway's accounts, models,
+profiles, usage and live requests. The CLI command remains `lain`; installation
+paths and resource filenames retain their existing names.
+
 `Branding.Logo` supplies an `IImage` for the title bar; `Branding.WindowIcon`
 supplies the Avalonia window icon. Both decode one embedded original PNG.
 MainWindow sets its `Icon` property and places the logo beside the brand text.

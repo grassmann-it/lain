@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-Name=lain
-Comment=Accounts, models, profiles, usage and live requests
+Name=lain — Local AI Gateway
+Comment=Local AI Gateway for accounts, models, profiles, usage and live requests
 Exec=@EXEC@ ui
 Icon=@ICON@
 Terminal=false

@@ -257,7 +257,11 @@ internal sealed class Probe
     private static object? Property(object source, string name) => source.GetType().GetProperty(name)?.GetValue(source);
     private static string StableUsage(UsageSummaryDto value) => JsonSerializer.Serialize(new { value.From, value.To, value.TimeZone, value.Complete, value.Totals, value.Daily, value.Accounts, value.Models });
     private IEnumerable<T> Controls<T>() where T : Control => window!.GetVisualDescendants().OfType<T>().Where(x => x.IsVisible && x.GetVisualAncestors().OfType<Control>().All(parent => parent.IsVisible));
-    private IEnumerable<T> AllControls<T>() where T : Control => window!.GetVisualDescendants().OfType<T>().Concat(window.GetLogicalDescendants().OfType<T>()).Distinct();
+    private IEnumerable<T> AllControls<T>() where T : Control
+    {
+        var current = window ?? throw new InvalidOperationException("Probe window is not open");
+        return current.GetVisualDescendants().OfType<T>().Concat(current.GetLogicalDescendants().OfType<T>()).Distinct();
+    }
     private T Named<T>(string name) where T : Control => Controls<T>().Single(x => AutomationProperties.GetName(x) == name);
     private async Task Click(string name)
     {
@@ -281,7 +285,7 @@ internal sealed class Probe
     private void Capture(string filename)
     {
         using var bitmap = new RenderTargetBitmap(new PixelSize(Math.Max(1, (int)Math.Ceiling(window!.Bounds.Width)), Math.Max(1, (int)Math.Ceiling(window.Bounds.Height))), new Vector(96, 96));
-        bitmap.Render(window); bitmap.Save(Path.Combine(Program.Output, filename));
+        bitmap.Render(window); bitmap.Save(Path.Combine(Program.Output, filename), new PngBitmapEncoderOptions());
     }
     private void Check(bool condition, string name) { if (!condition) throw new Exception(name); checks.Add(name); Console.WriteLine("PASS " + name); }
     private async Task Wait(Func<bool> condition, string name)

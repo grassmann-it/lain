@@ -1,4 +1,4 @@
-# lain cat artwork
+# lain — Local AI Gateway cat artwork
 
 `lain-cat.png` is the exact user-supplied image selected for the application,
 window and Linux launcher logo. No resize, crop, color change or re-encoding

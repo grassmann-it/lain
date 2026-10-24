@@ -162,6 +162,8 @@ absoluten Launcher mit `ui`, unabhängig von `PATH` und Arbeitsverzeichnis.
 Exec-Argumente und Desktop-Zeichenfolgen werden nach ihrer jeweiligen Syntax
 maskiert. Das originale transparente Katzenbild wird unverändert kopiert;
 der Desktop skaliert es für Menü und Taskleiste.
+Im Anwendungsmenü erscheint **lain — Local AI Gateway**. Der CLI-Befehl heißt
+weiterhin `lain`; bestehende Installationspfade ändern sich dadurch nicht.
 `LAIN_HOME/desktop-integration.json` zeichnet die geschriebenen Desktop-/Icon-
 Pfade und Hashes auf. Vorhandene fremde Dateien, Symlinks oder nachträglich
 angepasste Desktop-Einträge/Icons werden vor jeder Installationsänderung
