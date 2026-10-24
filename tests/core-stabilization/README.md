@@ -26,8 +26,10 @@ The launcher flag `--parent-stdin` binds a child runtime to the owning Host's
 private input pipe. EOF or a read failure closes admission then cancels service
 execution. The Host must hold redirected stdin open throughout ownership.
 Standalone launch retains its previous behavior unless this flag is selected.
-Unit tests cover pipe lifetime; orphan cleanup under an actual Host crash still
-requires the integrator's separate process qualification.
+Unit tests cover pipe lifetime. The adapter3 process report additionally proves
+actual Core shutdown after stdin EOF and abrupt death of a synthetic owning
+process, including exit code 0, released listener and reaping. Host application
+publication/recovery remains a separate integration contract.
 
 ## Qualified tool boundaries
 
@@ -146,12 +148,13 @@ LAIN_JOURNAL_MEASURE=1 GOTOOLCHAIN=local GOWORK=off \
 The tests cover admission, pipeline attribution, original/final controls, sparse
 cursor boundaries and legacy bytes, unchanged corrupt originals, fresh recovery
 destinations, source/sequence failures and writer exclusion. Existing sticky
-fsync/disk-full injection tests remain. Real full-disk faults, abrupt process
-death, complete backup/restore and sustained history growth require separate
-runtime qualification before marking all of ST-04 complete.
+fsync/disk-full injection tests remain. Abrupt synthetic Core death and replay
+also pass the process regressions. Real filesystem exhaustion, complete Host
+backup/restore and sustained production growth still require separate
+qualification before marking all of ST-04 complete.
 
-The separate actual-process harness is prepared for the integrator's serialized
-runtime slot. It accepts only an explicitly supplied freshly built Core:
+The separate actual-process harness runs in the integrator's serialized runtime
+slot. It accepts only an explicitly supplied freshly built Core:
 
 ```sh
 unshare -Urn sh -c 'ip link set lo up && exec python3 \
@@ -171,3 +174,31 @@ upstream SDK starts a public npm client-version check even without that provider
 account; the private namespace gives it no external network route. This preserves
 the two existing upstream patches and does not mistake the SDK's incidental
 metadata lookup for an authorized live-provider qualification.
+
+## Executed adapter3 qualification
+
+[The checked-in evidence](evidence/adapter3/process.json) belongs to Core SHA-256
+`39c09202ca7c38c636cfb949abec3b71c6c9843dd2651cbc8bf44944c13c0629`
+and source-manifest SHA-256
+`4441b3bfb5caf5be7c5ab954303c25eac7be2bbd4a3833e4a496cd755d257750`.
+The fresh source preparation and source verifier pass. There are 66 passing
+top-level Go tests (135 test/subtest pass events), with one intentional opt-in
+measurement skip. The actual process checks all pass:
+
+| Suite | Passing checks |
+| --- | ---: |
+| New drain/dispatch/native-protocol/parent/journal scenarios | 6 |
+| Existing backend transport, tools, replay and durability regressions | 15 |
+| Independent authentication and Core crash/restart | 2 |
+| Existing native image-tool exclusion and final override guard | 2 |
+| Independent Inspector correlations, tools, cancellation and restart | 15 |
+
+All 40 final process checks ran with loopback as their only network interface.
+The parent checks exposed a normal canceled service context being returned as
+exit code 1; the own launcher now maps only its expected lifetime cancellation
+to success. Rebuilt source and artifact hashes above include that fix. Actual
+old-binary rollback and full Host backup/restore remain explicitly unclaimed.
+
+`python3 tests/core-stabilization/check-evidence.py --core /absolute/lain-proxy`
+checks that the current manifest, qualification, reports and supplied binary
+belong together. Omitting `--core` checks the repository evidence chain only.

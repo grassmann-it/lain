@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "coreSha256": "39c09202ca7c38c636cfb949abec3b71c6c9843dd2651cbc8bf44944c13c0629",
+  "passed": true,
+  "checks": [
+    {
+      "case": "management-auth-and-epoch",
+      "passed": true
+    },
+    {
+      "case": "claude-worker-parent",
+      "passed": true,
+      "requests": 1
+    },
+    {
+      "case": "codex-turn-metadata",
+      "passed": true,
+      "requests": 1
+    },
+    {
+      "case": "thread-header-precedence",
+      "passed": true,
+      "requests": 1
+    },
+    {
+      "case": "chat-singleton-tool-result",
+      "passed": true,
+      "requests": 1
+    },
+    {
+      "case": "anthropic-singleton-tool-result",
+      "passed": true,
+      "requests": 1
+    },
+    {
+      "case": "unknown-identities-common-prefix",
+      "passed": true,
+      "requests": 2
+    },
+    {
+      "case": "untrusted-header-poison",
+      "passed": true,
+      "requests": 1
+    },
+    {
+      "case": "claude-user-id-json-explicit-only",
+      "passed": true,
+      "requests": 1
+    },
+    {
+      "case": "codex-explicit-thread-spawn",
+      "passed": true,
+      "requests": 1
+    },
+    {
+      "case": "codex-ordinary-fork-is-not-worker",
+      "passed": true,
+      "requests": 1
+    },
+    {
+      "case": "tool-continuation-one-conversation-one-turn-two-requests",
+      "passed": true,
+      "toolEvents": 1
+    },
+    {
+      "case": "client-cancellation-terminal-identity",
+      "passed": true
+    },
+    {
+      "case": "credentials-absent-and-payload-not-durable",
+      "passed": true
+    },
+    {
+      "case": "new-process-epoch-no-payload-replay-durable-usage-unchanged",
+      "passed": true
+    }
+  ]
+}

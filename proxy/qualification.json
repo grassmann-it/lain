@@ -1,29 +1,37 @@
 {
   "schemaVersion": 1,
-  "sha256": "bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87",
-  "sourceManifestSha256": "5a1c17ae1b8e6fed5fae4e8ef6d5fc71f929d9d209605a58eca696511f256b3c",
-  "sourceCommit": "42e2c3db1009f9d5aed98925d401db44289b2afe",
+  "sha256": "39c09202ca7c38c636cfb949abec3b71c6c9843dd2651cbc8bf44944c13c0629",
+  "sourceManifestSha256": "4441b3bfb5caf5be7c5ab954303c25eac7be2bbd4a3833e4a496cd755d257750",
+  "sourceCommit": "164c70947d91d7601838472879d2d302ac5740e4",
   "syntheticPassed": true,
   "passed": true,
-  "scope": "Owned Core expansion synthetic qualification: stable account/request identity, durable dispatch/usage, metadata finalization, bounded inspector, protocol transports and guarded free-only enforcement. Installation and real-provider access are separate.",
+  "scope": "Adapter3 private Linux synthetic qualification: full-handler admission drain/resume, exact original/final dispatch constraints with attributed durable errors, native protocol scope, owning-parent lifetime, legacy-format journal checkpoint replay and recovered-copy continuation; plus established protocol, durability, inspector and authentication regressions. Installation, real providers and full Host backup/restore remain separate.",
   "syntheticCases": 15,
+  "stabilizationProcessCases": 6,
   "inspectorCases": 15,
   "independentAcceptanceCases": 2,
-  "consumerReplays": 10,
+  "nativeToolBoundaryCases": 2,
+  "actualProcessChecks": 40,
+  "adapterUnitTestAndSubtestPasses": 135,
+  "adapterUnitTopLevelPasses": 66,
   "newProviderLiveVerification": "not_tested",
-  "priorLiveReferenceCoreSha256": "8edf8abf666e3c15f1a04c20c841a969d35229f09e7de5265755ab704cf9dfc0",
   "ownedOAuthLiveRotationTested": false,
+  "networkIsolation": "all final process qualification commands ran inside private user/network namespaces with loopback only",
   "evidence": [
-    "tests/acceptance/evidence/expansion-core-synthetic.json",
-    "tests/acceptance/evidence/expansion-inspector-core.json",
-    "tests/acceptance/evidence/expansion-core-acceptance.json",
-    "tests/acceptance/evidence/expansion-core-consumer-replay.json",
-    "tests/acceptance/evidence/pre-expansion-core-qualification.json"
+    "tests/core-stabilization/evidence/adapter3/adapter-unit.json",
+    "tests/core-stabilization/evidence/adapter3/auth-crash.json",
+    "tests/core-stabilization/evidence/adapter3/backend.json",
+    "tests/core-stabilization/evidence/adapter3/build-manifest.json",
+    "tests/core-stabilization/evidence/adapter3/inspector.json",
+    "tests/core-stabilization/evidence/adapter3/native-tools.json",
+    "tests/core-stabilization/evidence/adapter3/process.json"
   ],
   "notes": [
-    "No new provider credentials or real inference calls used. Historical live references are bound only to their previous binary.",
-    "Unknown pending usage after abrupt process death remains explicit; tokens are never invented.",
-    "OpenRouter zero-cap execution is locally tested; actual free-call acceptance with a zero-cap key is unverified.",
-    "Package, UI, migration and installed-workflow acceptance remain separate."
+    "No installed service, existing account credentials or default product ports were operated.",
+    "The exact upstream v8.0.41 archive and existing two patch files remain unchanged.",
+    "The pinned SDK attempts a public npm client-version metadata check at startup; the final private-network qualification prevents that lookup reaching any external network. This upstream behavior was not disabled in production by these changes.",
+    "Parent EOF/owner death now exits cleanly; unknown usage after an abrupt Core kill remains explicit rather than invented.",
+    "Sparse indexing preserves the flat journal/source/cursor format; actual old-binary rollback was not tested. No automatic deletion or recovery-copy adoption is performed.",
+    "Complete configuration/credential-generation/journal/SQLite backup restoration and sustained production growth remain unqualified by these checks."
   ]
 }

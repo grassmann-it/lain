@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "sourceManifestSha256": "4441b3bfb5caf5be7c5ab954303c25eac7be2bbd4a3833e4a496cd755d257750",
+  "sourceCommit": "164c70947d91d7601838472879d2d302ac5740e4",
+  "preparedSourceManifestSha256": "7598ae53b72e2868aaf713ecc81a130bdb430786509f691dc7eca2a671781bbb",
+  "goVersion": "go1.27.2",
+  "passed": true,
+  "passedTestAndSubtestEvents": 135,
+  "passedTopLevelTests": 66,
+  "skippedTestEvents": 1,
+  "skippedReason": "bounded growth measurement is explicit opt-in and already recorded in measurements.json",
+  "packages": [
+    "lain.local/proxy/internal/freeonly",
+    "lain.local/proxy/cmd/lain-proxy",
+    "lain.local/proxy/internal/lain"
+  ],
+  "command": "GOTOOLCHAIN=local GOWORK=off go test -json ./internal/... ./cmd/lain-proxy -count=1",
+  "rawOutputSha256": "3a287df502e55a9e06780160dc3d13fa03b5cd53d30dd8127638130bd91defe7",
+  "qualification": "actual tests of freshly prepared and source-verified adapter module; no live credentials or installed service"
+}
