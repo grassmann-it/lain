@@ -43,3 +43,13 @@ automatic retention/deletion policy. File contents are flushed before atomic
 rename; sudden storage-device or filesystem failure still requires filesystem
 recovery, and the checks do not claim protection against a malicious local user
 who can replace both artifacts and all integrity metadata.
+
+## Local evidence, 2026-10-24
+
+On the ST-02 source commit, Linux x64 fixtures passed: profile-application 43,
+applied-profile 104, codex-gateway-profile 14 and client-cli 220 checks; the models
+CAS/persistence/privacy/export regression also passed. Tests ran serially. Existing
+non-RID fixture lockfiles were kept unchanged; RID qualification used temporary
+per-project lockfiles where needed. The new suite has its own checked-in lockfile.
+These results do not claim real provider calls, installed service acceptance or
+a real active stream drain; the integrated Core quiescing gate needs its own proof.
