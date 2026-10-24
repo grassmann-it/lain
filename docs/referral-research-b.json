@@ -1,0 +1,226 @@
+[
+  {
+    "provider": "Alibaba Cloud Model Studio / DashScope",
+    "id": "alibaba-model-studio",
+    "status": "public_referral",
+    "benefit": "Invite & Earn vergütet den Werbenden mit 1 Credit beim ersten Free Trial (höchstens 50 pro Monat), 10 Credits beim Erstkauf und 10 % berechtigter Folgezahlungen im festgelegten Zeitraum. 1 Credit entspricht 1 USD Couponwert; keine bestätigte Barauszahlung.",
+    "eligibility": "Gültiges Alibaba-Cloud-International-Einzelkonto mit vollständigem Profil und gültiger Zahlungsmethode; Zulassung durch Alibaba. Enterprise-Konten, Mitarbeiter und Vertriebspartner sind laut Bedingungen ausgeschlossen.",
+    "limitations": "Nur berechtigte Produkte und verknüpfte Neukunden zählen. Folgekäufe zählen für die im Programm definierten nächsten drei Abrechnungsmonate. Erstattungen und nicht bar bezahlte Anteile zählen nicht. Die konkrete Model-Studio-/DashScope-Produktberechtigung und Couponverwendung vor einer Empfehlung prüfen; nicht jede API-Rechnung ist automatisch berechtigt.",
+    "officialSources": [
+      {
+        "label": "Alibaba Cloud Invite & Earn – Programm und Bedingungen",
+        "url": "https://www.alibabacloud.com/en/referral"
+      },
+      {
+        "label": "Offizielle Model-Studio-/Token-Plan-Seite mit Invite-&-Earn-Verweis",
+        "url": "https://www.alibabacloud.com/en/campaign/ai-landing-page-token"
+      }
+    ],
+    "checkedAt": "2026-10-24T11:26:41Z",
+    "notes": "Das öffentliche Cloud-Referral ist bestätigt und wird im AI-/Model-Studio-Produktkontext beworben. Das ist kein Nachweis, dass sämtliche DashScope-PAYG-Modelle, Regionen oder Token-Pläne provisionsberechtigt sind. Programmzahlen aus offiziell indexiertem Bedingungstext; die direkte Programmseite lieferte ohne Anmeldung nur einen eingeschränkten Seiteninhalt. Keine fremden Referral-Codes übernommen."
+  },
+  {
+    "provider": "Cloudflare Workers AI",
+    "id": "cloudflare-workers-ai",
+    "status": "not_confirmed",
+    "benefit": null,
+    "eligibility": "Für ein öffentliches Workers-AI-Referral oder Affiliate-Programm wurden keine belastbaren Teilnahmebedingungen bestätigt.",
+    "limitations": "PowerUP und Technology Alliances sind allgemeine Partnerprogramme. Startup-Credits und das reguläre Workers-AI-Freikontingent sind keine bestätigte Vergütung für geworbene API-Kunden.",
+    "officialSources": [
+      {
+        "label": "Workers AI – offizielle Preise und Freikontingente",
+        "url": "https://developers.cloudflare.com/workers-ai/platform/pricing/"
+      },
+      {
+        "label": "Cloudflare – Partnerprogramme",
+        "url": "https://www.cloudflare.com/partners/"
+      },
+      {
+        "label": "Cloudflare for Startups – gesondertes Förderprogramm",
+        "url": "https://www.cloudflare.com/startups/"
+      }
+    ],
+    "checkedAt": "2026-10-24T11:26:41Z",
+    "notes": "Offizielle Produkt-, Preis-, Partner- und Startup-Seiten sowie gezielte Referral-/Affiliate-Suchen geprüft. Öffentliches AI-API-Referral nicht bestätigt; daraus folgt keine Behauptung, dass Cloudflare kein solches Programm anbietet."
+  },
+  {
+    "provider": "Google Gemini API",
+    "id": "gemini-api",
+    "status": "not_confirmed",
+    "benefit": null,
+    "eligibility": "Keine öffentlich verifizierten Teilnahmebedingungen für die Vermittlung von Gemini-API-/AI-Studio-Kunden gefunden.",
+    "limitations": "Google-Cloud-Partnerschaften, Startup-Förderung, Free Tier sowie etwaige Programme für Workspace oder Verbraucherprodukte belegen keine Referral-Berechtigung für die Gemini API. Google-Cloud-Welcome-Credits sind laut API-Abrechnungsdokumentation nicht für Gemini API/AI Studio verwendbar.",
+    "officialSources": [
+      {
+        "label": "Gemini API – Abrechnung und Credit-Abgrenzung",
+        "url": "https://ai.google.dev/gemini-api/docs/billing"
+      },
+      {
+        "label": "Gemini API – zusätzliche Nutzungsbedingungen",
+        "url": "https://ai.google.dev/gemini-api/terms"
+      },
+      {
+        "label": "Google Cloud – Partner Network",
+        "url": "https://cloud.google.com/partners"
+      }
+    ],
+    "checkedAt": "2026-10-24T11:26:41Z",
+    "notes": "Die Recherche bezieht sich auf die Entwickler-API, nicht auf Gemini-Abonnements oder Workspace. Offizielle API-, Abrechnungs- und Partnerquellen bestätigen hier kein öffentliches Referral-/Affiliate-Programm. Community-Antworten wurden nicht als Programmnachweis verwendet."
+  },
+  {
+    "provider": "Groq",
+    "id": "groq",
+    "status": "not_confirmed",
+    "benefit": null,
+    "eligibility": "Öffentliche Bedingungen für ein GroqCloud-/Groq-API-Referral konnten nicht bestätigt werden.",
+    "limitations": "Free Tier und beantragbare Hackathon-API-Credits sind keine nachgewiesenen Referral-Prämien. Programme fremder Anbieter namens GROX oder gro.co sind kein Groq-Programm. Groq und xAI/Grok sind getrennte Anbieter.",
+    "officialSources": [
+      {
+        "label": "GroqCloud – Billing FAQs",
+        "url": "https://console.groq.com/docs/billing-faqs"
+      },
+      {
+        "label": "Groq – Vertragsrahmen für Cloud- und AI-Dienste",
+        "url": "https://console.groq.com/docs/legal/services-agreement"
+      },
+      {
+        "label": "GroqCloud – gesonderte Hackathon-Credit-Bewerbung",
+        "url": "https://console.groq.com/landing/hackathon"
+      }
+    ],
+    "checkedAt": "2026-10-24T11:26:41Z",
+    "notes": "Offizielle Groq-Dokumentation und gezielte Referral-/Affiliate-Suchen geprüft. Nicht bestätigte Angaben aus Affiliate-Verzeichnissen und ähnlich benannten Fremdprodukten ausgeschlossen. Keine Aussage über nicht öffentliche Einzelvereinbarungen."
+  },
+  {
+    "provider": "Inception Mercury",
+    "id": "inception",
+    "status": "not_confirmed",
+    "benefit": null,
+    "eligibility": "Für das Inception-API-Produkt wurden keine öffentlich bestätigten Referral-/Affiliate-Bedingungen gefunden.",
+    "limitations": "Das im API-Quickstart beschriebene Startkontingent von 100 Millionen Tokens ist ein Neukundenangebot und kein belegter Werberbonus. Unternehmensangebote und das gleichnamige NVIDIA-Inception-Programm nicht mit Inception Mercury verwechseln.",
+    "officialSources": [
+      {
+        "label": "Inception Platform – offizieller API-Quickstart und Neukundenkontingent",
+        "url": "https://docs.inceptionlabs.ai/get-started"
+      },
+      {
+        "label": "Inception – Mercury-3-Produktankündigung",
+        "url": "https://www.inceptionlabs.ai/blog/introducing-mercury-3"
+      }
+    ],
+    "checkedAt": "2026-10-24T11:26:41Z",
+    "notes": "Offizielle API-Dokumentation und Anbieterankündigungen sowie gezielte Referral-/Affiliate-Suchen geprüft. Ein öffentliches API-Vermittlungsprogramm ist unbestätigt; reguläre Gratis-Tokens werden nicht als Referral-Vorteil ausgegeben."
+  },
+  {
+    "provider": "Mistral API",
+    "id": "mistral",
+    "status": "not_confirmed",
+    "benefit": null,
+    "eligibility": "Keine öffentlich bestätigten Bedingungen für ein allgemein zugängliches Mistral-API-Referral gefunden. Die Partnerseite beschreibt ausgewählte Cloud-, Technologie- und Beratungspartner mit individueller Kontaktaufnahme.",
+    "limitations": "Ein Partnerkontaktformular belegt keine veröffentlichte Affiliate-Provision. Free mode, im Plan enthaltene API-Nutzung und einlösbare Credit-Gutscheine sind nicht automatisch Referral-Boni.",
+    "officialSources": [
+      {
+        "label": "Mistral – offizielle Partner und Auswahlverfahren",
+        "url": "https://mistral.ai/partners/"
+      },
+      {
+        "label": "Mistral – Pläne, API-Nutzung und Prepaid-Abrechnung",
+        "url": "https://docs.mistral.ai/admin/billing-usage/subscriptions"
+      }
+    ],
+    "checkedAt": "2026-10-24T11:26:41Z",
+    "notes": "Für Studio/API recherchiert; aus allgemeinen Partnerschaften oder Vibe-/Le-Chat-Angeboten wird keine persönliche API-Referral-Berechtigung abgeleitet. Keine öffentlich verifizierten Prämien oder Zahlungsbedingungen vorliegend."
+  },
+  {
+    "provider": "Nebius Token Factory",
+    "id": "nebius",
+    "status": "not_confirmed",
+    "benefit": null,
+    "eligibility": "Öffentliche Referral-/Affiliate-Bedingungen speziell für Token Factory wurden nicht bestätigt.",
+    "limitations": "Der allgemeine Nebius Partner Program, Builder-Förderung, Promo-Codes und das Token-Factory-Startguthaben sind kein belegtes öffentliches API-Referral. Die offizielle Y-Data/Nebius-Academy-Studentenempfehlung betrifft einen Kurs, nicht Token-Factory-Nutzung.",
+    "officialSources": [
+      {
+        "label": "Token Factory – Billing & Consumption",
+        "url": "https://docs.tokenfactory.nebius.com/other-capabilities/billing-new"
+      },
+      {
+        "label": "Nebius – allgemeiner Partner Program",
+        "url": "https://nebius.com/nebius-partner-program"
+      },
+      {
+        "label": "Nebius Builder Program – gesonderte Förderbedingungen",
+        "url": "https://nebius.com/builders-terms-and-conditions"
+      },
+      {
+        "label": "Y-Data – ausdrücklich auf Kursanmeldungen beschränktes Referral",
+        "url": "https://docs.aifordatascience.nebius.com/referral-program/"
+      }
+    ],
+    "checkedAt": "2026-10-24T11:26:41Z",
+    "notes": "Produktbezug zu Token Factory geprüft. Offizielle Suchtreffer für Referral betreffen unter anderem Kursvermittlung oder individuelle Cloud-Kundenintegrationen. Daraus wird weder ein allgemeines Token-Factory-Partnerentgelt noch ein API-Referral-Link abgeleitet."
+  },
+  {
+    "provider": "NVIDIA Build",
+    "id": "nvidia-build",
+    "status": "not_confirmed",
+    "benefit": null,
+    "eligibility": "Keine öffentlich bestätigten Teilnahmebedingungen für ein NVIDIA-Build-/NIM-API-Referral gefunden.",
+    "limitations": "Der NVIDIA Developer Program gewährt Entwicklungs-/Prototyping-Zugang; dieser Zugang ist keine Vermittlungsprämie. NPN, Cloud-Partner, NVIDIA Connect und Startup-Inception sind gesonderte Programme und bestätigen kein persönliches Build-API-Referral.",
+    "officialSources": [
+      {
+        "label": "NVIDIA NIM – General FAQ und Entwicklungszugang",
+        "url": "https://docs.api.nvidia.com/nim/docs/product"
+      },
+      {
+        "label": "NVIDIA – Partner Network",
+        "url": "https://www.nvidia.com/en-us/about-nvidia/partners/"
+      },
+      {
+        "label": "NVIDIA – Programmübersicht",
+        "url": "https://www.nvidia.com/en-us/programs/"
+      }
+    ],
+    "checkedAt": "2026-10-24T11:26:41Z",
+    "notes": "NVIDIA Build und gehostete NIM-Endpunkte sind der geprüfte Produktumfang. Allgemeine Hardware-, Partner- oder Startup-Angebote wurden nicht als öffentliches AI-API-Affiliate-Programm klassifiziert."
+  },
+  {
+    "provider": "StepFun",
+    "id": "stepfun",
+    "status": "not_confirmed",
+    "benefit": null,
+    "eligibility": "Keine öffentlich belastbaren Referral-Bedingungen mit bestätigter API-/Step-Plan-Prämie gefunden.",
+    "limitations": "Der Builder Program belohnt qualifizierte Projektbeiträge beziehungsweise ausgewählte Demos; das ist kein belegtes Kunden-Referral. Ein invite_code-Parameter allein beweist weder eine Provision noch deren Geltung für PAYG oder Step Plan. Beide Produktbereiche getrennt prüfen.",
+    "officialSources": [
+      {
+        "label": "StepFun – offizielle API-Plattform",
+        "url": "https://platform.stepfun.ai/"
+      },
+      {
+        "label": "StepFun Builder Program – Projektbelohnungen statt bestätigter Referral-Provision",
+        "url": "https://platform.stepfun.ai/builder-program"
+      }
+    ],
+    "checkedAt": "2026-10-24T11:26:41Z",
+    "notes": "Öffentliche Anbieter-, Plattform- und Builder-Seiten sowie englische und chinesische Referral-/Einladungs-Suchen geprüft. Keine Anmeldung durchgeführt und keine in Suchtreffern vorhandenen persönlichen Einladungscodes übernommen. Einzelne chinesische Step-Plan-Dokumentseiten waren beim Abruf nicht erreichbar."
+  },
+  {
+    "provider": "xAI / Grok",
+    "id": "xai",
+    "status": "not_confirmed",
+    "benefit": null,
+    "eligibility": "Keine öffentlich bestätigten Teilnahmebedingungen für die Vermittlung von xAI-/Grok-API-Kunden gefunden.",
+    "limitations": "API-Credits, Verbraucherkonten und X-/Grok-Abonnements sind getrennt zu betrachten. Fremde Dienste wie xAIcreator und der andere Anbieter Groq sind kein Nachweis eines xAI-Referral-Programms. Geteilte Chat-Inhalte auf grok.com sind keine offiziellen Programmbedingungen.",
+    "officialSources": [
+      {
+        "label": "xAI – offizieller Grok-API-Quickstart",
+        "url": "https://docs.x.ai/developers/quickstart"
+      },
+      {
+        "label": "xAI – offizielle API-Produktseite",
+        "url": "https://x.ai/"
+      }
+    ],
+    "checkedAt": "2026-10-24T11:26:41Z",
+    "notes": "Offizielle API-Produktinformationen und Dokumentation sowie gezielte Referral-/Affiliate-Suchen geprüft. Öffentliche API-Vermittlungsprämien oder ein entsprechendes Anmeldeverfahren sind nicht bestätigt. Keine Rückschlüsse auf private Vertriebsvereinbarungen."
+  }
+]
