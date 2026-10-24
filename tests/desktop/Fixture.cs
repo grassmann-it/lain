@@ -176,7 +176,7 @@ internal sealed class Fixture : HttpMessageHandler
         InspectorEventAfters.Add(after);
         var request = query.GetValueOrDefault("requestId");
         var changed = query.GetValueOrDefault("sourceId") != InspectorSource;
-        InspectorEventDto E(long cursor, string id, string channel, string text, string? tool = null) => new(cursor, "output_delta", inspectorStarted,
+        InspectorEventDto E(long cursor, string id, string channel, string text, string? tool = null) => new(cursor, "output_delta", DateTimeOffset.UtcNow,
             id, "attempt-" + id, Dimensions: id is "request-a" or "request-b" ? ProvenDimensions(id == "request-b" ? "request-a" : null) : null,
             Channel: channel, Text: text, ToolCallId: tool is null ? null : "tool-ui", ToolName: tool, RedactionState: "none");
         var all = InspectorRestarted ? new[] { E(1, "request-new", "assistant", "New source output only.") }

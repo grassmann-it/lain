@@ -225,7 +225,10 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await CaptureBoth("usage-error");
         fixture.UsageFailure = false; fixture.NullTokens = false;
         await ClickUsageApply(); await Wait(UsageConnected, "usage recovers");
-        await Click("Local service"); await CaptureBoth("local-service");
+        await Click("Local service");
+        Check(new[] { "Start proxy", "Restart…", "Stop…" }.All(label => Controls<Button>().Any(x => Equals(x.Content, label))),
+            "global Local service keeps all existing proxy actions reachable");
+        await CaptureBoth("local-service");
         var detachedCalls = fixture.UsageCalls;
         await Task.Delay(5400);
         Check(fixture.UsageCalls == detachedCalls, "usage polling stops when detached");
