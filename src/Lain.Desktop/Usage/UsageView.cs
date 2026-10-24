@@ -119,10 +119,10 @@ public sealed partial class UsageView : UserControl, IPresentationView
             Label("25 per page · expand a row for tokens, timing, identifiers and account/model links", Muted), _attempts, paging
         } };
         _layout.Children.Add(new StackPanel { Spacing = 3, Children = { Ui.Title("Usage"), Label("Persistent activity · updates every 5 seconds", Muted) } });
-        _layout.Children.Add(UsagePanel(_filterDetails));
         _layout.Children.Add(_error);
         _layout.Children.Add(new StackPanel { Spacing = 3, Children = { _scope, _coverage, _sourceDetails } });
         _layout.Children.Add(UsagePanel(new StackPanel { Children = { _totals, _tokenDetails } }, 0));
+        _layout.Children.Add(UsagePanel(_filterDetails));
         _layout.Children.Add(BuildAnalysisSection());
         _layout.Children.Add(UsageSection("Daily activity", "Calendar days · historical errors · unknown values stay —", new StackPanel { Spacing = 6, Children = { measure, _daily, _dailyDetails } }));
         _layout.Children.Add(UsagePanel(_historyDetails));
