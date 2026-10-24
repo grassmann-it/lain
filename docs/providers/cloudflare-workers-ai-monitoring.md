@@ -75,6 +75,14 @@ partial errors, schema discovery, native units, UTC/DST boundaries, and safe
 permission diagnostics. Tests use only fixture tokens and injected HTTP handlers.
 Build/test execution is coordinated by the integrator.
 
+The prior `google-cloudflare` research sheet also records a historical official
+Cloudflare dataset reference, a third-party schema mirror exposing
+`AccountAiInferenceAdaptiveGroupsSum.totalNeurons`, and the flareclerk usage query.
+These are the candidate
+[source chain](https://pages.johnspurlock.com/graphql-schema-docs/cloudflare.html),
+not a replacement for an actual account response. The restricted Billing Usage
+v2 endpoint is not used without a qualified Workers AI metric identity.
+
 The worker did not read real credentials, invoke live provider APIs, change login
 state, or run inference. Public documentation fetching on 25 October failed with
 DNS/connector transport errors; source links and previously recorded documented
