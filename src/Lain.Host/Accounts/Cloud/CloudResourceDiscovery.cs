@@ -13,6 +13,20 @@ public sealed class CloudResourceDiscovery(CloudProviderHttp http)
     public static bool ProjectNumber(string? value) => value is { Length: > 0 and <= 30 } && value.All(char.IsAsciiDigit);
     public static bool CloudflareAccount(string? value) => value is { Length: 32 } && value.All(char.IsAsciiHexDigit);
 
+    /// <summary>Verify an explicitly selected project without enumerating unrelated projects.</summary>
+    public async Task<ResourceBindingDto> GoogleProjectAsync(string accessToken, string projectId, CancellationToken ct = default)
+    {
+        if (!ProjectId(projectId)) throw new ArgumentException("Invalid project ID.");
+        using var request = CloudProviderHttp.Get("https://cloudresourcemanager.googleapis.com/v3/projects/" + Uri.EscapeDataString(projectId), accessToken);
+        using var document = await http.ReadAsync(request, ct);
+        var root = document.RootElement;
+        var name = Text(root, "name");
+        var number = name?.StartsWith("projects/", StringComparison.Ordinal) == true ? name[9..] : null;
+        if (Text(root, "projectId") != projectId || Text(root, "state") != "ACTIVE" || !ProjectNumber(number))
+            throw new InvalidDataException("The selected Google project identity could not be verified.");
+        return new(GoogleProvider, Subject: number, Product: "generative-language", ResourceType: "project", ResourceId: projectId, Provenance: "provider-discovery");
+    }
+
     public async Task<ResourceBindingDto[]> GoogleProjectsAsync(string accessToken, CancellationToken ct = default)
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);

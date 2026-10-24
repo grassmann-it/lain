@@ -211,15 +211,73 @@ try
     Check(!CloudMaintainerConfiguration.Load(configPath).CloudflareNeuronCandidateQualified, "neuron candidate remains gated by default");
 }
 finally { File.Delete(configPath); }
+object MetricLimit(long value = 25, string project = "123456", DateTimeOffset? at = null) => new
+{
+    metric = new { type = "generativelanguage.googleapis.com/quota/" + family + "/limit", labels = new { model = "same-model", limit_name = "requests-per-minute" } },
+    resource = new { type = "generativelanguage.googleapis.com/Location", labels = new { resource_container = "projects/" + project, location = "global" } },
+    metricKind = "GAUGE", valueType = "INT64",
+    points = new[] { new { interval = new { endTime = (at ?? now.AddMinutes(-3)).ToString("O") }, value = new { int64Value = value.ToString() } } }
+};
+var metricLimits = GeminiModelQuotaAdapter.NormalizeMetricLimits([Json(new { timeSeries = new[] { MetricLimit(), MetricLimit(30, at: now.AddMinutes(-2)), MetricLimit(project: "654321") } })], "project-one", "123456", family, now);
+Check(metricLimits.Readings.Single().Limit == 30 && metricLimits.Readings.Single().DataAsOf == now.AddMinutes(-2), "latest gauge limit replaces older samples instead of summing");
+Check(metricLimits.Readings.Single().Used is null && metricLimits.Readings.Single().Remaining is null && metricLimits.Readings.Single().ResetsAt is null && metricLimits.Error is not null, "foreign limits excluded and no remaining quota fabricated");
+Check(GeminiModelQuotaAdapter.NormalizeMetricLimits([Json(new { timeSeries = new[] { MetricLimit(0) } })], "project-one", "123456", family, now).Readings.Single().Limit == 0, "explicit zero model limit preserved");
+Check(GeminiModelQuotaAdapter.NormalizeMetricLimits([Json(new { timeSeries = new[] { MetricLimit(), MetricLimit(26) } })], "project-one", "123456", family, now).Readings.Count == 0, "conflicting simultaneous model limits excluded");
+Check(GeminiModelQuotaAdapter.NormalizeMetricLimits([Json(new { timeSeries = new[] { MetricLimit(at: now.AddMinutes(-11)) } })], "project-one", "123456", family, now).Readings.Count == 0, "stale limit excluded");
+using (var http = new CloudProviderHttp(new Handler((request, _) =>
+{
+    Check(request.RequestUri!.AbsolutePath == "/v3/projects/project-one", "exact project identity read");
+    return Handler.Response(new { name = "projects/123456", projectId = "project-one", state = "ACTIVE" });
+})))
+    Check((await new CloudResourceDiscovery(http).GoogleProjectAsync("fixture-access", "project-one")).Subject == "123456", "selected project number verified");
+using (var http = new CloudProviderHttp(new Handler((request, _) => Handler.Response(new { name = "projects/654321", projectId = "project-two", state = "ACTIVE" }))))
+    await Reject(() => new CloudResourceDiscovery(http).GoogleProjectAsync("fixture-access", "project-one"), "selected project cannot resolve to a different project");
+using (var legacyHttp = new HttpClient(new Handler((r, i) => throw new Exception("model usage must not request generic fallback"))))
+using (var selector = new GeminiCloudQuotaAdapter(legacyHttp, new Handler((r, i) =>
+{
+    if (r.RequestUri!.Host == "cloudresourcemanager.googleapis.com")
+        return Handler.Response(new { name = "projects/123456", projectId = "project-one", state = "ACTIVE" });
+    Check(r.RequestUri.Host == "monitoring.googleapis.com", "monitoring model limits need no Cloud Quotas API");
+    var query = Uri.UnescapeDataString(r.RequestUri.Query);
+    if (query.Contains(family + "/usage")) return Handler.Response(new { timeSeries = new[] { Series() } });
+    if (query.Contains(family + "/limit")) return Handler.Response(new { timeSeries = new[] { MetricLimit() } });
+    return Handler.Response(new { });
+}), clock))
+{
+    var result = await selector.FetchAsync(account with { Binding = null }, new("", monitor: new("access-token-snapshot", "fixture-access", "project-one", now.AddHours(1))));
+    Check(result.Readings.Count == 2 && result.Readings.Any(r => r.Limit == 25) && result.Readings.Any(r => r.Used == 7), "existing access snapshot reads project model usage and actual limits");
+}
 using (var legacyHttp = new HttpClient(new Handler((r, i) =>
 {
-    Check(r.RequestUri!.Query.Contains("serviceruntime"), "legacy snapshot retains original request metric");
+    Check(r.RequestUri!.Query.Contains("serviceruntime"), "empty model series retains generic request fallback");
     return Handler.Response(new { });
 })))
-using (var selector = new GeminiCloudQuotaAdapter(legacyHttp, new Handler((r, i) => throw new Exception("unverified project selected model reader")), clock))
+using (var selector = new GeminiCloudQuotaAdapter(legacyHttp, new Handler((r, i) => r.RequestUri!.Host == "cloudresourcemanager.googleapis.com"
+    ? new(HttpStatusCode.Forbidden) : Handler.Response(new { })), clock))
 {
-    var result = await selector.FetchAsync(account, new("", monitor: new("access-token-snapshot", "fixture-access", "project-one", now.AddHours(1))));
-    Check(result.Readings.Count == 0 && result.Support is not null, "legacy missing series stays unknown");
+    var result = await selector.FetchAsync(account with { Binding = null }, new("", monitor: new("access-token-snapshot", "fixture-access", "project-one", now.AddHours(1))));
+    Check(result.Readings.Count == 0 && result.Error!.Contains("resourcemanager.projects.get"), "optional project IAM failure preserves generic fallback and actionable diagnostic");
+}
+using (var legacyHttp = new HttpClient(new Handler((r, i) => throw new Exception("invalid snapshot sent network request"))))
+using (var selector = new GeminiCloudQuotaAdapter(legacyHttp, new Handler((r, i) => throw new Exception("invalid snapshot sent model request")), clock))
+{
+    var result = await selector.FetchAsync(account, new("", monitor: new("access-token-snapshot", "fixture-access", "project-one", now.AddMinutes(-1))));
+    Check(result.Support?.Kind == "setup-required", "expired snapshot prompts renewal without any provider request");
+    var mismatch = await selector.FetchAsync(account, new("", settings: new Dictionary<string, string> { ["projectId"] = "project-two" }, monitor: new("access-token-snapshot", "fixture-access", "project-one", now.AddHours(1))));
+    Check(mismatch.Support?.Kind == "setup-required", "monitor and project setting mismatch fails closed");
+}
+using (var handler = new Handler((request, _) => request.RequestUri!.Host == "oauth2.googleapis.com"
+    ? Handler.Response(new { access_token = "fixture-access", refresh_token = "fixture-refresh", token_type = "Bearer", expires_in = 3600 })
+    : request.RequestUri.AbsolutePath == "/v3/projects/project-one"
+        ? Handler.Response(new { name = "projects/123456", projectId = "project-one", state = "ACTIVE" })
+        : throw new Exception("bound reconnect enumerated unrelated projects")))
+using (var adapter = new CloudOAuthAdapter(Client(), handler, clock))
+{
+    var reconnect = Context([], "bound-reconnect");
+    reconnect = reconnect with { Request = reconnect.Request with { Binding = account.Binding } };
+    await Authorize(adapter, reconnect);
+    var result = await Poll(adapter, reconnect);
+    Check(result.State == "prepared" && result.Credential!.Binding.Subject == "123456", "bound reconnect verifies exact project and preserves immutable identity");
 }
 Console.WriteLine($"PASS {checks} cloud connection and quota assertions; synthetic HTTP and isolated loopback only.");
 

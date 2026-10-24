@@ -3,7 +3,7 @@ using Lain.Host.Accounts.Cloud;
 
 namespace Lain.Host.Quota;
 
-/// <summary>Preserves legacy snapshot reporting; only discovered project-bound grants select the model reader.</summary>
+/// <summary>Model quota telemetry for browser grants and snapshots; generic usage remains a fallback.</summary>
 public sealed class GeminiCloudQuotaAdapter : IQuotaAdapter, IDisposable
 {
     private readonly GeminiMonitoringQuotaAdapter legacy;
@@ -12,14 +12,27 @@ public sealed class GeminiCloudQuotaAdapter : IQuotaAdapter, IDisposable
     { legacy = new(legacyHttp, clock); models = new(modelHandler, clock); }
     public string Source => "gemini:project-monitoring";
     public bool Supports(string provider) => provider.Equals(CloudResourceDiscovery.GoogleProvider, StringComparison.OrdinalIgnoreCase);
-    public Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
+    public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
-        var binding = account.Binding;
-        var discovered = binding is { Provider: CloudResourceDiscovery.GoogleProvider, ResourceType: "project", Provenance: "provider-discovery" }
-            && CloudResourceDiscovery.ProjectId(binding.ResourceId) && CloudResourceDiscovery.ProjectNumber(binding.Subject)
-            && credential.Settings.GetValueOrDefault("projectId") == binding.ResourceId
-            && credential.Settings.GetValueOrDefault("projectNumber") == binding.Subject;
-        return discovered ? models.FetchAsync(account, credential, ct) : legacy.FetchAsync(account, credential, ct);
+        // API keys alone cannot authorize Google Monitoring. Keep the existing actionable setup state.
+        if (credential.Monitor is null) return await legacy.FetchAsync(account, credential, ct);
+        var result = await models.FetchAsync(account, credential, ct);
+        if (result.Readings.Any(r => r.MeasurementKind == "usage") || result.Support?.Kind == "setup-required") return result;
+        // Some projects expose generic API traffic but no model metric series. Preserve that useful read,
+        // without describing request counts as remaining Gemini quota or losing separately returned limits.
+        try
+        {
+            var generic = await legacy.FetchAsync(account, credential, ct);
+            var errors = new[] { result.Error, generic.Error }.Where(e => !string.IsNullOrWhiteSpace(e)).ToArray();
+            return result with
+            {
+                Readings = result.Readings.Concat(generic.Readings).ToArray(),
+                Error = errors.Length == 0 ? null : string.Join(' ', errors),
+                Support = result.Readings.Count == 0 ? generic.Support : result.Support
+            };
+        }
+        catch (QuotaFetchException) when (result.Readings.Count > 0)
+        { return result with { Error = "Model limits were read; generic API usage is unavailable." }; }
     }
     public void Dispose() => models.Dispose();
 }

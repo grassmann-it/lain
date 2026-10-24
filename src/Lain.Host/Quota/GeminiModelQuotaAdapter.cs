@@ -33,14 +33,28 @@ public sealed class GeminiModelQuotaAdapter : IQuotaAdapter, IDisposable
         var project = credential.Settings.GetValueOrDefault("projectId") ?? credential.Monitor?.ResourceId;
         var number = credential.Settings.GetValueOrDefault("projectNumber");
         var access = credential.Monitor?.Secret;
-        if (!CloudResourceDiscovery.ProjectId(project) || string.IsNullOrWhiteSpace(access) || credential.Monitor?.ExpiresAt is null || credential.Monitor.ExpiresAt <= now
+        if (!CloudResourceDiscovery.ProjectId(project) || credential.Monitor?.Kind != "access-token-snapshot" || string.IsNullOrWhiteSpace(access)
+            || credential.Monitor.ResourceId != project || credential.Monitor?.ExpiresAt is null || credential.Monitor.ExpiresAt <= now
             || account.Binding?.ResourceId is { } pinned && pinned != project || number is not null && !CloudResourceDiscovery.ProjectNumber(number)
             || account.Binding?.Subject is { } pinnedNumber && number is not null && pinnedNumber != number)
-            return new([], Support: new("setup-required", "Connect Google monitoring to the existing Gemini project with a valid access grant and verified project identity.", GeminiMonitoringQuotaAdapter.ConsoleUrl, "quota"));
+            return new([], Support: new("setup-required", "Connect Google monitoring to the existing Gemini project, or add a Monitoring access-token snapshot with its expiry and project ID. The inference API key cannot read Monitoring.", GeminiMonitoringQuotaAdapter.ConsoleUrl, "monitor"));
         var start = PacificDayStart(now);
         var readings = new List<QuotaReading>(); var diagnostics = new List<string>();
+        if (number is null)
+        {
+            try
+            {
+                var verified = await new CloudResourceDiscovery(http).GoogleProjectAsync(access!, project!, ct);
+                number = verified.Subject;
+                if (account.Binding?.Subject is { } expected && expected != number)
+                    throw new QuotaFetchException("Google project number differs from the existing account binding.");
+            }
+            catch (CloudProviderException error) when (error.Status is HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
+            { diagnostics.Add("Project number discovery is unavailable. Grant resourcemanager.projects.get on the selected project to read numeric project metric identities."); }
+        }
         foreach (var family in Families)
         {
+            if (start >= now) break; // No completed Pacific-day interval exactly at midnight.
             var metric = "generativelanguage.googleapis.com/quota/" + family + "/usage";
             var filter = "metric.type = \"" + metric + "\" AND resource.type = \"generativelanguage.googleapis.com/Location\"";
             var endpoint = $"https://monitoring.googleapis.com/v3/projects/{Uri.EscapeDataString(project!)}/timeSeries?filter={Uri.EscapeDataString(filter)}"
@@ -57,7 +71,29 @@ public sealed class GeminiModelQuotaAdapter : IQuotaAdapter, IDisposable
             { diagnostics.Add("Model usage is unavailable for one or more metric families. Check monitoring.timeSeries.list and project metric availability."); }
             finally { foreach (var page in pages) page.Dispose(); }
         }
-        if (number is not null)
+        // Monitoring exports the effective limit for the same family/model/limit identity. Unlike
+        // Cloud Quotas this does not need an additional API or OAuth scope. It is still a separate
+        // observation: delayed DELTA usage is insufficient evidence for exact remaining capacity.
+        foreach (var family in Families)
+        {
+            var metric = "generativelanguage.googleapis.com/quota/" + family + "/limit";
+            var filter = "metric.type = \"" + metric + "\" AND resource.type = \"generativelanguage.googleapis.com/Location\"";
+            var since = now.AddMinutes(-10);
+            var endpoint = $"https://monitoring.googleapis.com/v3/projects/{Uri.EscapeDataString(project!)}/timeSeries?filter={Uri.EscapeDataString(filter)}"
+                + $"&interval.startTime={Uri.EscapeDataString(since.ToString("O", CultureInfo.InvariantCulture))}&interval.endTime={Uri.EscapeDataString(now.ToString("O", CultureInfo.InvariantCulture))}&view=FULL&pageSize=1000";
+            var pages = new List<JsonDocument>();
+            try
+            {
+                await ReadPages(endpoint, "nextPageToken", access!, pages, ct);
+                var result = NormalizeMetricLimits(pages.Select(p => p.RootElement), project!, number, family, now);
+                readings.AddRange(result.Readings);
+                if (result.Error is not null) diagnostics.Add(result.Error);
+            }
+            catch (CloudProviderException error) when (error.Status is HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
+            { diagnostics.Add("Model limit metrics are unavailable for one or more families. Check monitoring.timeSeries.list on the selected project."); }
+            finally { foreach (var page in pages) page.Dispose(); }
+        }
+        if (number is not null && !readings.Any(r => r.MeasurementKind == "limit"))
         {
             var pages = new List<JsonDocument>();
             try
@@ -69,9 +105,10 @@ public sealed class GeminiModelQuotaAdapter : IQuotaAdapter, IDisposable
             { diagnostics.Add("Effective limits are unavailable. Check cloudquotas.quotas.get and the cloud-platform OAuth grant; existing usage remains usable."); }
             finally { foreach (var page in pages) page.Dispose(); }
         }
-        else diagnostics.Add("Project number is not verified; effective quota limits were not queried.");
+        else if (number is null && !readings.Any(r => r.MeasurementKind == "limit"))
+            diagnostics.Add("Project number is not verified; Cloud Quotas limits were not queried.");
         return new(readings, diagnostics.Count == 0 ? null : string.Join(' ', diagnostics.Distinct()),
-            Support: new(readings.Count == 0 ? "unavailable" : "api", "Reported project/model usage may be delayed by 150 seconds and incomplete. Effective limits are separate; model/limit/window joins and remaining capacity require project qualification. Empty series do not mean zero usage.", GeminiMonitoringQuotaAdapter.ConsoleUrl));
+            Support: new(readings.Count == 0 ? "unavailable" : "api", "Reported project/model usage may be delayed by 150 seconds and incomplete. Effective model limits are shown separately from delayed usage; remaining capacity is unknown. Empty series do not mean zero usage.", GeminiMonitoringQuotaAdapter.ConsoleUrl));
     }
     private async Task ReadPages(string endpoint, string tokenField, string access, List<JsonDocument> pages, CancellationToken ct)
     {
@@ -149,6 +186,61 @@ public sealed class GeminiModelQuotaAdapter : IQuotaAdapter, IDisposable
         }
         return new(readings, malformed ? "Invalid, overlapping or mismatched model series were excluded; reported usage is partial." : null);
     }
+    public static QuotaFetchResult NormalizeMetricLimits(IEnumerable<JsonElement> pages, string project, string? number, string family, DateTimeOffset observed)
+    {
+        if (!Families.Contains(family, StringComparer.Ordinal) || !CloudResourceDiscovery.ProjectId(project) || number is not null && !CloudResourceDiscovery.ProjectNumber(number))
+            throw new ArgumentException("Invalid Google limit metric selection.");
+        var metricType = "generativelanguage.googleapis.com/quota/" + family + "/limit";
+        var series = new Dictionary<string, (string Model, string Limit, string Location, Dictionary<DateTimeOffset, long> Points)>(StringComparer.Ordinal);
+        var invalid = new HashSet<string>(StringComparer.Ordinal); var malformed = false; var count = 0;
+        foreach (var page in pages)
+        {
+            var rows = JsonFields.Object(page, "timeSeries");
+            if (rows.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined) continue;
+            if (rows.ValueKind != JsonValueKind.Array) throw new QuotaFetchException("Invalid model limit time series.");
+            foreach (var row in rows.EnumerateArray())
+            {
+                var metric = JsonFields.Object(row, "metric"); var labels = JsonFields.Object(metric, "labels");
+                var resource = JsonFields.Object(row, "resource"); var resourceLabels = JsonFields.Object(resource, "labels");
+                var container = JsonFields.String(resourceLabels, "resource_container");
+                var model = JsonFields.String(labels, "model"); var limit = JsonFields.String(labels, "limit_name"); var location = JsonFields.String(resourceLabels, "location");
+                if (JsonFields.String(metric, "type") != metricType || JsonFields.String(resource, "type") != "generativelanguage.googleapis.com/Location"
+                    || (container != "projects/" + project && (number is null || container != "projects/" + number))
+                    || JsonFields.String(row, "metricKind") != "GAUGE" || JsonFields.String(row, "valueType") != "INT64"
+                    || !Label(model) || !Label(limit) || !Label(location)) { malformed = true; continue; }
+                var identity = Canonical(labels) + "|" + Canonical(resourceLabels);
+                if (!series.TryGetValue(identity, out var item))
+                    series.Add(identity, item = (model!, limit!, location!, new()));
+                var points = JsonFields.Object(row, "points");
+                if (points.ValueKind != JsonValueKind.Array) { invalid.Add(identity); malformed = true; continue; }
+                foreach (var point in points.EnumerateArray())
+                {
+                    if (++count > 16000) throw new QuotaFetchException("Model limit metrics exceed the sample bound.");
+                    var end = JsonFields.Date(JsonFields.Object(point, "interval"), "endTime");
+                    var quantity = JsonFields.Object(JsonFields.Object(point, "value"), "int64Value");
+                    var raw = quantity.ValueKind == JsonValueKind.String ? quantity.GetString() : quantity.ValueKind == JsonValueKind.Number ? quantity.GetRawText() : null;
+                    if (end is null || end > observed || end < observed.AddMinutes(-10) || !long.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out var value) || value < 0 || value > 9007199254740991L)
+                    { invalid.Add(identity); malformed = true; continue; }
+                    if (item.Points.TryGetValue(end.Value, out var previous) && previous != value)
+                    { invalid.Add(identity); malformed = true; continue; }
+                    item.Points[end.Value] = value;
+                }
+            }
+        }
+        var readings = new List<QuotaReading>();
+        foreach (var (identity, item) in series)
+        {
+            if (invalid.Contains(identity) || item.Points.Count == 0) continue;
+            var latest = item.Points.MaxBy(p => p.Key);
+            readings.Add(new("gemini:cloud-monitoring:model-limit", family.Contains("token_count", StringComparison.Ordinal) ? "input-tokens" : "requests", Limit: latest.Value,
+                BudgetPoolId: "google-project:" + project, InheritAccountPool: false,
+                WindowLabel: "Reported limit · " + item.Limit + " · " + item.Location,
+                WindowId: family + ":" + Hash(identity), MeasurementKind: "limit", Scope: "project-model-limit", ScopeId: project, Model: item.Model,
+                SourceUrl: Documentation, ObservedAt: observed, DataAsOf: latest.Key));
+        }
+        return new(readings, malformed ? "Invalid, stale, conflicting or mismatched model limits were excluded." : null);
+    }
+
     private sealed class Series(string model, string limit, string method, string location)
     {
         public string Model = model, Limit = limit, Method = method, Location = location;

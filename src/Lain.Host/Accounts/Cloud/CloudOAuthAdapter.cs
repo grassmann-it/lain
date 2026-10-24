@@ -77,7 +77,7 @@ public sealed class CloudOAuthAdapter : IAccountLoginAdapter, ICredentialOwner, 
         {
             ObjectDisposedException.ThrowIf(disposed, this);
             ValidateContext(context);
-            if (!IsAvailable) return Task.FromResult(new LoginAdapterResult("failed", Error: "The maintainer OAuth client, callback, scopes and refresh flow are not yet qualified. Use existing monitoring access.", NextAction: "reconnect"));
+            if (!IsAvailable) return Task.FromResult(new LoginAdapterResult("failed", Error: "Browser monitoring requires lain's own registered OAuth client. The maintainer must configure maintainer/cloud-oauth.json with the provider-issued client ID, approved scopes and qualified callback/refresh flow. Existing monitoring access remains available.", NextAction: "reconnect"));
             if (attempts.TryGetValue(context.OperationId, out var prior))
             { EnsureSame(prior.Context, context); return Task.FromResult(prior.Result ?? new("waiting", prior.Authorization.AbsoluteUri)); }
             if (attempts.Count >= 8) throw new InvalidOperationException("Too many active cloud authorizations.");
@@ -138,7 +138,9 @@ public sealed class CloudOAuthAdapter : IAccountLoginAdapter, ICredentialOwner, 
                 return attempt.Result = new("recovery-required", Error: "The grant lacks required monitoring scopes or offline access. Reconnect with the approved consent configuration.", NextAction: "reconnect");
             if (attempt.Resources is null)
                 attempt.Resources = Provider == CloudResourceDiscovery.GoogleProvider
-                    ? await discovery.GoogleProjectsAsync(attempt.Grant.AccessToken, ct)
+                    ? context.Request.Binding?.ResourceId is { } projectId
+                        ? [await discovery.GoogleProjectAsync(attempt.Grant.AccessToken, projectId, ct)]
+                        : await discovery.GoogleProjectsAsync(attempt.Grant.AccessToken, ct)
                     : await discovery.CloudflareAccountsAsync(attempt.Grant.AccessToken, ct);
             if (attempt.Resources.Length == 0)
                 return attempt.Result = new("recovery-required", Error: "No authorized existing project or account was returned. Review resource access before reconnecting.", NextAction: "review-recovery");
