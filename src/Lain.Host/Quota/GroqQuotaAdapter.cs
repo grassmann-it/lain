@@ -62,7 +62,7 @@ public sealed class GroqQuotaAdapter(HttpClient core, TimeProvider? timeProvider
                     Limit: window.Limit, Remaining: window.Remaining, ResetsAt: window.ResetsAt,
                     InheritAccountPool: false,
                     WindowLabel: $"{model} · {(window.Window == "day" ? "Requests per day" : "Tokens per minute")}",
-                    WindowId: window.Kind, MeasurementKind: "remaining", Scope: "organization-model-observed-via-account",
+                    WindowId: window.Kind, MeasurementKind: "quota", Scope: "organization-model-observed-via-account",
                     ScopeId: accountId, Model: model, SourceUrl: Documentation, DataAsOf: observed,
                     FreshUntil: freshness, ObservedAt: observed);
             }).ToArray();
