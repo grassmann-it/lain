@@ -20,7 +20,14 @@ application journal. Startup must call `RequireCompletedRuntime()` before starti
 the Core. An incomplete journal or mismatched metadata never proves active success.
 
 The application first drains requests through the lifecycle delegate. A refused
-or canceled drain leaves the old runtime files and their commit proof intact.
+or canceled drain leaves the old runtime files and their commit proof intact only
+when the lifecycle callback has confirmed that the old Core accepts new requests
+again. Reopening requires an authenticated activity read with `draining=false`;
+a failed DELETE response alone cannot prove either success or failure. If admission
+cannot be confirmed, the callback sets its readiness diagnostic and throws
+`ProfileDrainRecoveryRequiredException`. The service retains a recovery marker,
+leaves prior runtime files byte-identical and lets active streams finish. Normal
+startup/restart cannot bypass that marker; an explicit apply can recover.
 After drain/stop, request cancellation no longer cancels publication. A later
 failure stops the new Core and records `recovery-required`. The user recovers by
 previewing the current saved profile and explicitly applying that revision again.

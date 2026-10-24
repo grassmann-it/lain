@@ -4,6 +4,10 @@ using Lain.Host.Operations;
 
 namespace Lain.Host.Models;
 
+/// <summary>The drain gate may still be closed; ordinary refusal cannot restore a success marker.</summary>
+public sealed class ProfileDrainRecoveryRequiredException() : InvalidOperationException(
+    "The previous runtime's request admission could not be confirmed. Retry profile application to recover.");
+
 /// <summary>
 /// Applies a single global runtime. The durable marker is written before touching the Core;
 /// an interrupted publication must be repaired by an explicit apply, never by starting partial files.
@@ -119,7 +123,9 @@ public sealed class ProfileApplicationService(
             Write(OperationPath, operation);
             journalWritten = true;
             Volatile.Write(ref currentOperation, operation);
-            // Drain failure leaves the old runtime files untouched. No forced stop is permitted here.
+            // Ordinary drain failure guarantees confirmed request admission on the old runtime.
+            // If reopening cannot be confirmed, the callback must throw ProfileDrainRecoveryRequiredException.
+            // No forced stop is permitted on either refusal path.
             await drainAndStop(ct);
             // After the destructive boundary a caller disconnect must not leave publication half done.
             invalidated = true;
@@ -134,7 +140,7 @@ public sealed class ProfileApplicationService(
             Write(OperationPath, operation with { State = "completed" });
             return repository.Snapshot;
         }
-        catch
+        catch (Exception error)
         {
             if (operation is not null)
             {
@@ -146,6 +152,13 @@ public sealed class ProfileApplicationService(
                     TryWrite(OperationPath, operation with { State = "recovery-required" });
                     TryWrite(RuntimePath, new { valid = false, revision, profileId = id, generationId = operation.Id });
                 }
+                else if (journalWritten && error is ProfileDrainRecoveryRequiredException)
+                {
+                    // The Core may still reject new requests. Keep the old runtime files intact,
+                    // but never restore their completed operation proof until admission is known.
+                    // Active streams are left to finish; recovery is a fresh explicit apply.
+                    TryWrite(OperationPath, operation with { State = "recovery-required" });
+                }
                 else if (journalWritten)
                 {
                     // Restore the previous transaction proof, not a new success-shaped marker.
@@ -155,7 +168,7 @@ public sealed class ProfileApplicationService(
                         if (previousOperation is null) File.Delete(OperationPath);
                         else OwnStatePaths.WritePrivate(OperationPath, previousOperation);
                     }
-                    catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+                    catch (Exception restoreError) when (restoreError is IOException or UnauthorizedAccessException) { }
                 }
             }
             throw;

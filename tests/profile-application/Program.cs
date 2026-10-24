@@ -96,7 +96,7 @@ try
         Profiles = [new("profile", "Profile", ["first", "second"], "first"), new("other", "Other", ["second"], "second")]
     });
     var models = new ModelsService(repository);
-    var starts = 0; var stops = 0; var running = false; var refuseDrain = false;
+    var starts = 0; var stops = 0; var running = false; var refuseDrain = false; var uncertainDrain = false;
     TaskCompletionSource? drainEntered = null; TaskCompletionSource? allowDrain = null;
     var service = new ProfileApplicationService(paths, repository, models,
         async ct =>
@@ -104,6 +104,7 @@ try
             drainEntered?.TrySetResult();
             if (allowDrain is not null) await allowDrain.Task.WaitAsync(ct);
             if (refuseDrain) throw new InvalidOperationException("Synthetic drain timeout");
+            if (uncertainDrain) throw new ProfileDrainRecoveryRequiredException();
             running = false;
         },
         (runtime, profile, ct) => { starts++; running = true; return Task.CompletedTask; },
@@ -158,6 +159,22 @@ try
     Directory.Delete(Path.Combine(paths.Root, "active-profile.json"));
     await service.ApplyAsync("profile", configuration.Revision);
     Check(running && service.Status.State == "completed", "explicit reapply repairs failed publication");
+
+    var preservedRuntime = File.ReadAllText(Path.Combine(paths.Proxy, "runtime.json"));
+    var preservedActive = File.ReadAllText(Path.Combine(paths.Root, "active-profile.json"));
+    var preservedStarts = starts; var preservedStops = stops;
+    uncertainDrain = true;
+    await RejectAsync(() => service.ApplyAsync("profile", configuration.Revision));
+    Check(service.Status.State == "recovery-required" && running && starts == preservedStarts && stops == preservedStops &&
+        File.ReadAllText(Path.Combine(paths.Proxy, "runtime.json")) == preservedRuntime &&
+        File.ReadAllText(Path.Combine(paths.Root, "active-profile.json")) == preservedActive,
+        "unconfirmed reopen retains prior runtime files and active streams without restoring a completed operation marker");
+    Reject(service.RequireCompletedRuntime);
+    Check(AppliedProfileStatus.Read(Path.Combine(paths.Root, "active-profile.json"), Path.Combine(paths.Proxy, "runtime.json"), configuration.Revision).Id is null,
+        "uncertain admission cannot advertise an active profile success");
+    uncertainDrain = false;
+    await service.ApplyAsync("profile", configuration.Revision);
+    Check(service.Status.State == "completed", "explicit apply can recover an uncertain drain without bypassing startup guards");
 
     var journal = Path.Combine(paths.Root, "profile-application.json");
     var completed = File.ReadAllText(journal);
