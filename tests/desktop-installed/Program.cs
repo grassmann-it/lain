@@ -68,8 +68,9 @@ internal sealed class ProbeApp : Application
         var production = new App();
         production.Initialize();
         RequestedThemeVariant = production.RequestedThemeVariant;
-        Resources = production.Resources;
+        var resources = production.Resources;
         production.Resources = new ResourceDictionary();
+        Resources = resources;
         var styles = production.Styles.ToArray(); production.Styles.Clear();
         foreach (var style in styles) Styles.Add(style);
     }

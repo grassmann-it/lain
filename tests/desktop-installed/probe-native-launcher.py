@@ -261,6 +261,10 @@ def main():
             require(number.isdigit(), 'Invalid private Xvfb display')
             env['DISPLAY'] = ':' + number
             subprocess.run(['xauth', '-f', str(authority), 'add', env['DISPLAY'], 'MIT-MAGIC-COOKIE-1', secrets.token_hex(16)], env=env, check=True, capture_output=True)
+            # ctypes uses the parent Python process's Xauthority environment.
+            # Both values are from this newly created private Xvfb, never inherited.
+            os.environ['DISPLAY'] = env['DISPLAY']
+            os.environ['XAUTHORITY'] = str(authority)
             connection = X11(env['DISPLAY'])
             env['LAIN_NATIVE_PROBE_TAG'] = nonce
             with (output / 'gio.log').open('w') as log:
