@@ -1,4 +1,3 @@
-using System.Globalization;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -6,6 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
 using Lain.Core;
+using Lain.Desktop.Presentation;
 
 namespace Lain.Desktop.Usage;
 
@@ -22,13 +22,17 @@ public sealed partial class UsageView
     private readonly ComboBox _dimension = new() { Width = 190 };
     private readonly ComboBox _dimensionOrder = new() { Width = 154, ItemsSource = new[] { "Most attempts", "Least attempts", "Most errors" }, SelectedIndex = 0 };
     private readonly Dictionary<string, TextBox> _dimensionFilters = new(StringComparer.Ordinal);
+    private readonly Expander _moreFilters = new() { Header = "More filters", HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+    private readonly Expander _performanceDetails = new() { Header = "Performance · whole filtered range", IsExpanded = true, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
     private readonly StackPanel _performance = new() { Spacing = 8 };
     private readonly StackPanel _dimensionGroups = new() { Spacing = 0 };
     private readonly StackPanel _unobservedAccounts = new() { Spacing = 5 };
     private readonly TextBlock _analysisStatus = Label("Waiting for complete-range analysis", Muted);
     private readonly HashSet<string> _configuredAccounts = new(StringComparer.Ordinal);
     private readonly HashSet<string> _expandedAnalysisGroups = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Button> _analysisButtons = new(StringComparer.Ordinal);
     private UsageAnalysisDto? _analysis;
+    private UsageQuery? _analysisQuery;
     private string? _analysisError;
 
     private Control BuildDimensionFilters()
@@ -40,8 +44,8 @@ public sealed partial class UsageView
             _dimensionFilters[key] = input;
             filters.Children.Add(Field(name, input));
         }
-        return new Expander { Header = "More filters", HorizontalAlignment = HorizontalAlignment.Stretch,
-            HorizontalContentAlignment = HorizontalAlignment.Stretch, Content = filters };
+        _moreFilters.Content = filters;
+        return _moreFilters;
     }
 
     private Control BuildAnalysisSection()
@@ -52,6 +56,7 @@ public sealed partial class UsageView
         AutomationProperties.SetName(_dimensionOrder, "Group order");
         AutomationProperties.SetName(_analysisStatus, "Usage analysis status");
         AutomationProperties.SetName(_performance, "Usage performance");
+        AutomationProperties.SetName(_performanceDetails, "Performance details");
         _dimension.SelectionChanged += async (_, _) =>
         {
             if (_lifetime is null) return;
@@ -60,10 +65,11 @@ public sealed partial class UsageView
         };
         _dimensionOrder.SelectionChanged += (_, _) => { if (_analysis is not null) RenderAnalysis(_analysis, _analysisError); };
         var controls = new WrapPanel { Children = { Field("Compare by", _dimension), Field("Group order", _dimensionOrder) } };
-        return Section("Usage & performance", "Whole filtered range · measured values and sample counts", new StackPanel
+        _performanceDetails.Content = new StackPanel { Spacing = 6, Children = { _performance,
+            Label("Output rate is reported output tokens ÷ full attempt duration, including response startup. P50/P95 use all matching stored measurements; each metric reports measured/eligible attempts. Missing measurements stay —. Costs are not reported by this source.", Muted) } };
+        return UsageSection("Breakdown", "Whole filtered range · expand a group for tokens, performance and context links", new StackPanel
         {
-            Spacing = 9, Children = { controls, _analysisStatus, _performance, _dimensionGroups, _unobservedAccounts,
-                Label("Output rate is reported output tokens ÷ full attempt duration, including response startup. P50/P95 use all matching stored measurements; missing measurements stay —. Costs are not reported by this source.", Muted) }
+            Spacing = 9, Children = { controls, _analysisStatus, _dimensionGroups, _performanceDetails, _unobservedAccounts }
         });
     }
 
@@ -101,18 +107,30 @@ public sealed partial class UsageView
         catch (Exception error) { return (null, error.Message); }
     }
 
-    private void RenderAnalysis(UsageAnalysisDto? analysis, string? error)
+    private void RenderAnalysis(UsageAnalysisDto? analysis, string? error, UsageQuery? snapshotQuery = null)
     {
         _analysisError = error;
         if (analysis is null)
         {
-            _analysisStatus.Text = "Analysis unavailable" + (error is null ? "" : " · " + error) + (_analysis is null ? "" : " · showing the last analysis snapshot");
+            // A retained snapshot is only usable for the same complete filter/group scope.
+            // Otherwise the summary's current filter labels would mislabel old group metrics.
+            var scope = (snapshotQuery ?? _query) with { Offset = 0 };
+            if (_analysisQuery != scope)
+            {
+                _analysis = null;
+                _analysisQuery = null;
+                _dimensionGroups.Children.Clear();
+                _dimensionGroups.Children.Add(Label("No analysis snapshot for the applied filters.", Muted));
+                _performance.Children.Clear();
+                _performance.Children.Add(Label("No performance snapshot for the applied filters.", Muted));
+            }
+            _analysisStatus.Text = "Analysis unavailable" + (error is null ? "" : " · " + error) + (_analysis is null ? "" : " · showing the last analysis snapshot\n" + AnalysisSnapshotLabel(_analysis));
             _analysisStatus.Foreground = Ui.Warning;
             return;
         }
         _analysis = analysis;
-        var zone = TimeZoneInfo.FindSystemTimeZoneById(analysis.TimeZone);
-        _analysisStatus.Text = $"{TimeZoneInfo.ConvertTime(analysis.From, zone):dd MMM HH:mm} → {TimeZoneInfo.ConvertTime(analysis.To, zone):dd MMM HH:mm} · {(analysis.Complete ? "Complete coverage" : "Incomplete coverage")} · observed {TimeZoneInfo.ConvertTime(analysis.ObservedAt, zone):HH:mm:ss} · {analysis.TimeZone}";
+        if (snapshotQuery is not null) _analysisQuery = snapshotQuery with { Offset = 0 };
+        _analysisStatus.Text = AnalysisSnapshotLabel(analysis);
         if (error is not null) _analysisStatus.Text = "Analysis unavailable · " + error + " · showing the last analysis snapshot · " + _analysisStatus.Text;
         _analysisStatus.Foreground = analysis.Complete && error is null ? Muted : Ui.Warning;
         _performance.Children.Clear();
@@ -122,13 +140,14 @@ public sealed partial class UsageView
         metrics.Children.Add(PerformanceMetric("Output / total time", analysis.Performance.OutputTokensPerSecond, TokenRate));
         _performance.Children.Add(metrics);
 
-        var dimensionKey = (_dimension.SelectedItem as FilterChoice)?.Key;
+        var dimensionKey = _analysisQuery?.GroupBy ?? (_dimension.SelectedItem as FilterChoice)?.Key;
         var dimension = analysis.Dimensions.FirstOrDefault(x => x.Dimension == dimensionKey);
         var focusedName = _dimensionGroups.GetVisualDescendants().OfType<Control>().Where(x => x.IsFocused).Select(AutomationProperties.GetName).FirstOrDefault();
+        _analysisButtons.Clear();
         _dimensionGroups.Children.Clear();
         if (dimension is null) { _dimensionGroups.Children.Add(Label("This grouping is not reported by the host.", Muted)); return; }
         if (dimension.Truncated) _dimensionGroups.Children.Add(Label("Only a limited set of groups was returned; ordering applies to those groups.", Ui.Warning));
-        var columns = AnalysisCells("Group", "Attempts", "Tokens", "P50 first", "P50 total", "P50 output/s", true);
+        var columns = AnalysisCells("Group", "Requests", "Attempts", "Errors", "Tokens", "Unknown", true);
         // Match the native disclosure header's content inset and trailing chevron.
         columns.Margin = new Thickness(16, 0, 40, 0);
         _dimensionGroups.Children.Add(TableRow(columns, true));
@@ -140,14 +159,14 @@ public sealed partial class UsageView
         };
         foreach (var group in groups)
         {
-            var stateKey = dimension.Dimension + "\n" + (group.Key ?? "<unknown>");
-            var name = group.Key is null ? "Unknown" : dimension.Dimension is "accountId" or "billingAccountId" ? AccountName(group.Key) : group.Key;
-            var header = AnalysisCells(name, Number(group.Totals.Attempts), Number(group.Totals.Tokens.Total),
-                Milliseconds(group.Performance.FirstOutputLatencyMs.P50), Milliseconds(group.Performance.TotalDurationMs.P50), TokenRate(group.Performance.OutputTokensPerSecond.P50));
+            var stateKey = dimension.Dimension + "\n" + (group.Key is null ? "null" : "key:" + group.Key);
+            var name = group.Key is null ? "Unknown" : dimension.Dimension == "accountId" ? AccountName(group.Key) : group.Key;
+            var header = AnalysisCells(name, Number(group.Totals.Requests), Number(group.Totals.Attempts), Errors(group.Totals), Number(group.Totals.Tokens.Total), Number(group.Totals.UnknownUsageAttempts));
             var detail = new StackPanel { Spacing = 5, Children =
             {
+                Label(group.Key is null ? "Unknown identity · no identity filter can be inferred" : $"{dimension.Dimension}: {group.Key}", Muted),
                 Label(TokenDetails(group.Totals.Tokens), Muted),
-                Label($"{ErrorRate(group.Totals)} error rate · {group.Totals.Errors:N0} of {group.Totals.Attempts:N0} attempts · {group.Totals.UnknownUsageAttempts:N0} with unknown usage", Muted),
+                Label($"{group.Totals.Requests:N0} requests · {group.Totals.Attempts:N0} attempts · completion errors {group.Totals.Errors:N0} · {ErrorRate(group.Totals)} error rate · {group.Totals.UnknownUsageAttempts:N0} with unknown usage or total", Muted),
                 Label(PerformanceDetails("First output", group.Performance.FirstOutputLatencyMs, Milliseconds), Muted),
                 Label(PerformanceDetails("Total duration", group.Performance.TotalDurationMs, Milliseconds), Muted),
                 Label(PerformanceDetails("Output / total time", group.Performance.OutputTokensPerSecond, TokenRate), Muted)
@@ -155,7 +174,9 @@ public sealed partial class UsageView
             if (group.Key is not null && dimension.Dimension != "provider")
             {
                 var filter = new Button { Content = "Filter to this group", HorizontalAlignment = HorizontalAlignment.Left };
-                AutomationProperties.SetName(filter, $"Filter {dimension.Dimension} {group.Key}");
+                var filterName = dimension.Dimension switch { "accountId" => $"Filter to account {group.Key}", "model" => $"Filter to model {group.Key}", _ => $"Filter {dimension.Dimension} {group.Key}" };
+                AutomationProperties.SetName(filter, filterName);
+                _analysisButtons[filterName] = filter;
                 filter.Click += async (_, _) =>
                 {
                     if (dimension.Dimension == "accountId") { await ApplyGroupAsync(group.Key, true); return; }
@@ -163,6 +184,24 @@ public sealed partial class UsageView
                     if (_dimensionFilters.TryGetValue(dimension.Dimension, out var input)) { input.Text = group.Key; await ApplyAsync(); }
                 };
                 detail.Children.Add(filter);
+            }
+            if (group.Key is not null)
+            {
+                WorkspaceNavigationRequest? target = dimension.Dimension switch
+                {
+                    "accountId" => new("Accounts", AccountId: group.Key),
+                    "routeId" => new("Models", RouteId: group.Key),
+                    "model" => new("Models", Model: group.Key),
+                    _ => null
+                };
+                if (target is not null)
+                {
+                    var caption = dimension.Dimension == "accountId" ? "Open account" : "Open model";
+                    var automationName = $"Open {dimension.Dimension} {group.Key}";
+                    var link = NavigationButton(caption, automationName, target);
+                    _analysisButtons[automationName] = link;
+                    detail.Children.Add(link);
+                }
             }
             var expander = new Expander { Header = header, Content = detail, IsExpanded = _expandedAnalysisGroups.Contains(stateKey),
                 HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
@@ -179,6 +218,7 @@ public sealed partial class UsageView
             _dimensionGroups.Children.Add(TableRow(expander));
         }
         if (dimension.Groups.Length == 0) _dimensionGroups.Children.Add(Label("No matching groups in this range.", Muted));
+        if (focusedName is not null && _analysisButtons.TryGetValue(focusedName, out var focusedButton)) focusedButton.Focus();
     }
 
     private void RenderUnobservedAccounts(UsageSummaryDto summary, UsageQuery query)
@@ -199,6 +239,11 @@ public sealed partial class UsageView
     }
 
     private static string TokenRate(double? value) => value is { } number && double.IsFinite(number) && number >= 0 ? $"{number:N1} tok/s" : "—";
+    private static string AnalysisSnapshotLabel(UsageAnalysisDto analysis)
+    {
+        var zone = TimeZoneInfo.FindSystemTimeZoneById(analysis.TimeZone);
+        return $"{TimeZoneInfo.ConvertTime(analysis.From, zone):dd MMM HH:mm} → {TimeZoneInfo.ConvertTime(analysis.To, zone):dd MMM HH:mm} · {(analysis.Complete ? "Complete coverage" : "Incomplete coverage")} · observed {TimeZoneInfo.ConvertTime(analysis.ObservedAt, zone):HH:mm:ss} · cursor {analysis.Cursor:N0} · {analysis.TimeZone}\nCompletion errors: {Errors(analysis.Totals)} · known completion state preferred, historical state/status used when unknown";
+    }
     private static string PerformanceDetails(string name, MetricStatisticsDto metric, Func<double?, string> format) =>
         $"{name}: P50 {format(metric.P50)} · P95 {format(metric.P95)} · {metric.Samples:N0} of {metric.Eligible:N0} eligible measured";
     private static Control PerformanceMetric(string name, MetricStatisticsDto metric, Func<double?, string> format) => new Border
@@ -208,13 +253,15 @@ public sealed partial class UsageView
             new TextBlock { Text = "P50 " + format(metric.P50), FontSize = 18, Foreground = Ui.Ink, TextWrapping = Avalonia.Media.TextWrapping.Wrap },
             Label($"P95 {format(metric.P95)}", Muted), Label($"{metric.Samples:N0} / {metric.Eligible:N0} measured", Muted) } }
     };
-    private static Grid AnalysisCells(string name, string attempts, string tokens, string first, string total, string rate, bool header = false)
+    private Grid AnalysisCells(string name, string requests, string attempts, string errors, string tokens, string unknown, bool header = false)
     {
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("2*,0.8*,1*,1.1*,1.1*,1.1*"), MinHeight = 32 };
-        var values = new[] { name, attempts, tokens, first, total, rate };
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("2*,.9*,.9*,1.3*,1*,.85*"), MinHeight = RowHeight, Classes = { "usage-row" } };
+        var values = new[] { name, requests, attempts, errors, tokens, unknown };
         for (var i = 0; i < values.Length; i++)
         {
             var cell = Cell(values[i], header ? Muted : Ui.Ink);
+            if (header && i == 3) ToolTip.SetTip(cell, "Errors prefer known completion state, then historical state/status. Percentage uses all matching attempts. This basis can differ from the whole-window cards and daily totals.");
+            if (header && i == 5) ToolTip.SetTip(cell, "Attempts with unknown usage or total. Individual token fields can also be unknown.");
             if (i > 0) cell.HorizontalAlignment = HorizontalAlignment.Right;
             Put(row, cell, i);
         }
