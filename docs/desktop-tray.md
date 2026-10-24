@@ -1,9 +1,11 @@
 # Desktop tray lifecycle
 
-The View panel has independent **Minimize to tray**, **Close to tray**, and
+The Settings page has independent **Minimize to tray**, **Close to tray**, and
 **Usage and rate-limit alerts** options. They are stored only in desktop
 preferences; defaults are on, off, and on respectively. A failed preference
 save restores the tray toggle to the stored setting and shows the save error.
+The header's settings icon opens this page. It also offers per-page density and
+About lain; the footer remains the only Barebones/Simple/Advanced selector.
 
 The desktop monitor reads existing Host snapshots every ten seconds, including
 while hidden. It does not refresh provider credentials, consume a proxy queue,

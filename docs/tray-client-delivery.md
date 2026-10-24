@@ -16,10 +16,13 @@ Host remains assembly SHA-256
 `06fe63b0c845348a7949d95afe8ba0f8eb65bc06063d0ad473c55f88f5b57cb9`.
 No Host/service restart or daemon reload is required.
 
-The new original is `/home/tomka/Downloads/00CHR/icon-review-20261024/lain-icon.png`,
-copied unchanged as `Assets/Brand/lain-cat.png`, SHA-256
-`b6d32ab02ca21965f6941f61ec209ff756c7ea9841641cf20c0f5bda4aefaba7`.
-Stage records both the prior baseline artwork hash and this new original hash.
+The current `Assets/Brand/lain-cat.png` is the contrast-adjusted photo variant
+requested after the initial replacement, SHA-256
+`6c9024b7220b6e015eeeb36aec9763fa5d804224b2b9e260caa7c4947c8436b1`.
+It is a transparent 1254 × 1254 PNG produced by the image-editing tool. The
+supplied 512 × 512 original and its historical hash remain recorded in the brand
+README; the original file was not modified.
+Stage records both the prior baseline artwork hash and the selected variant hash.
 Earlier stages from the superseded icon/source are obsolete and must be rebuilt.
 
 The current installed gate still says `releaseQualified=false`; completed older

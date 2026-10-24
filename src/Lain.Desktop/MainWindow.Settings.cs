@@ -124,7 +124,7 @@ public sealed partial class MainWindow
             "Bundled third-party license records include MIT (.NET, Avalonia, Semi, Ursa, Irihi and CLIProxyAPI Core), " +
             "Apache 2.0 (SQLitePCLRaw), and SIL Open Font License 1.1 (IBM Plex Sans Condensed and Oxanium). " +
             "Full component and runtime notices are included in the package's notices directory.\n\n" +
-            "The cat artwork was supplied by the user; its provenance records no separate license statement.", 12, Ui.Muted);
+            "The cat artwork is a contrast-adjusted variant of the user-supplied photo; its provenance records no separate license statement.", 12, Ui.Muted);
         AutomationProperties.SetName(licenses, "License information");
         var page = Ui.Stack(
             Heading("About lain", "Local AI Gateway"),

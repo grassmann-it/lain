@@ -21,8 +21,9 @@ anpassbar. Simple ist der Standard. Das Katzenlogo erscheint im Fenster und
 Linux-Launcher unter **lain — Local AI Gateway**.
 
 Barebones / Simple / Advanced wechseln direkt im Dropdown unten rechts.
-Unter **View** lassen sich Minimieren ins Tray, Schließen ins Tray und
-Kontingent-/429-Meldungen unabhängig einstellen. Das neue Katzenicon wird in
+Unter **Settings** lassen sich Dichte je Bereich, Minimieren ins Tray, Schließen
+ins Tray und Kontingent-/429-Meldungen unabhängig einstellen. **About lain** zeigt
+Version, Projektlink und Lizenzhinweise. Das kontrastreichere Katzenicon wird in
 Fenster, Tray und Launcher verwendet. Der Host läuft beim Beenden der UI weiter.
 
 `lain usage` zeigt kompakt die Kontingente aller Accounts; `lain usage --full`

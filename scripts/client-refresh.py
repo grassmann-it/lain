@@ -20,7 +20,7 @@ import tarfile
 CORE = 'bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87'
 HOST_SOURCE = 'a66cb2a19774d897702724f9f40755b74c82b2a6'
 HOST_DLL = '06fe63b0c845348a7949d95afe8ba0f8eb65bc06063d0ad473c55f88f5b57cb9'
-ARTWORK = 'b6d32ab02ca21965f6941f61ec209ff756c7ea9841641cf20c0f5bda4aefaba7'
+ARTWORK = '6c9024b7220b6e015eeeb36aec9763fa5d804224b2b9e260caa7c4947c8436b1'
 CLIENT_DOCS = ['docs/cli-usage.md', 'skills/lain-usage/SKILL.md']
 ITEMS = ['cli', 'desktop', 'notices', 'client-source-provenance', 'client-refresh.py', 'client-refresh.json', 'build-info.json', 'gate-status.json', 'delivery-assets.json', 'SHA256SUMS', *CLIENT_DOCS]
 PROJECTS = {'cli': 'Lain.Cli', 'desktop': 'Lain.Desktop'}
