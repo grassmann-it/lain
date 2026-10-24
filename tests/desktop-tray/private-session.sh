@@ -13,9 +13,15 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
+# Copy only packaged theme assets into private data; do not expose system/user
+# session data directories to the test or read a user window-manager config.
+theme_source=/usr/share/themes/Clearlooks/openbox-3
+[[ -f "$theme_source/themerc" ]] || { echo "Missing packaged Openbox theme: $theme_source" >&2; exit 2; }
+mkdir -p "$XDG_DATA_HOME/themes/LainPrivate"
+cp -R -- "$theme_source" "$XDG_DATA_HOME/themes/LainPrivate/openbox-3"
 # Explicit config avoids any inherited autostart/session manager or desktop apps.
 cat > "$XDG_CONFIG_HOME/openbox.xml" <<'XML'
-<openbox_config xmlns="http://openbox.org/3.4/rc"><desktops><number>1</number></desktops><focus><focusNew>yes</focusNew></focus></openbox_config>
+<openbox_config xmlns="http://openbox.org/3.4/rc"><theme><name>LainPrivate</name></theme><desktops><number>1</number></desktops><focus><focusNew>yes</focusNew></focus></openbox_config>
 XML
 openbox --sm-disable --config-file "$XDG_CONFIG_HOME/openbox.xml" >"$LAIN_TEST_OUTPUT/openbox.log" 2>&1 &
 wm_pid=$!

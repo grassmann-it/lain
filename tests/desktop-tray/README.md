@@ -9,7 +9,7 @@ LAIN_DESKTOP_SKIP_BUILD=1 ./tests/desktop-tray/run-private-xvfb.sh /tmp/lain-tra
 The runner first discards inherited display, Wayland and desktop D-Bus settings.
 It owns one Xvfb selected with `-displayfd`, a private Xauthority cookie, temporary
 HOME/XDG/LAIN_HOME directories, an owned Openbox window manager with readiness
-check, and a fresh `dbus-run-session`. The bus uses a minimal configuration with
+check and a private copy of packaged Clearlooks theme assets, and a fresh `dbus-run-session`. The bus uses a minimal configuration with
 no service directories, so portals and desktop services cannot autoactivate. It never connects
 to the normal desktop bus. The harness refuses startup without these markers.
 The 120-second timeout and traps terminate only the runner's Xvfb, Openbox,
@@ -39,7 +39,8 @@ not claim interoperability with every Linux panel or compositor.
 Coverage includes independent minimize/close behavior, no-host fallback, reopening
 when a tray host disappears, Reopen racing an in-flight hide/close check, quota
 menu lines, notification enable/disable, Quit UI, separately persisted View
-checkboxes, and two required screenshot sizes. MainWindow uses the existing
+checkboxes, native notification-toggle rollback when the preference lock blocks
+saving, and two required screenshot sizes. MainWindow uses the existing
 in-memory allowlisted HTTP fixture. No service command is available to the fake.
 
 IPC tests load UiInstanceOwner from the production assembly in real .NET child

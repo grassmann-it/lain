@@ -290,6 +290,22 @@ internal sealed class TrayScenario
         saved = new WorkspacePreferencesStore().Current;
         Check(!saved.MinimizeToTray && saved.CloseToTray && saved.NotificationsEnabled
             && Named<CheckBox>(window, "Usage and rate-limit alerts").IsChecked == true, "native notification toggle updates its View checkbox without changing hide preferences");
+        var preferencePath = Path.Combine(Environment.GetEnvironmentVariable("LAIN_HOME")!, "ui", "workspace-preferences.json");
+        var beforeFailedSave = File.ReadAllBytes(preferencePath);
+        var oldNotificationMenu = MenuItem("Notifications:").Header;
+        using (var blockedSave = new FileStream(preferencePath + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+        {
+            MenuClick(MenuItem("Notifications:"));
+            Check(MenuItem("Notifications:").Header == oldNotificationMenu
+                && Named<CheckBox>(window, "Usage and rate-limit alerts").IsChecked == true,
+                "failed native notification preference save restores the previous menu and View checkbox");
+            Check(window.GetVisualDescendants().OfType<TextBlock>().Any(x => x.Text?.Contains("could not be saved", StringComparison.Ordinal) == true),
+                "failed native notification preference save reports its storage failure");
+        }
+        saved = new WorkspacePreferencesStore().Current;
+        Check(File.ReadAllBytes(preferencePath).SequenceEqual(beforeFailedSave)
+            && !saved.MinimizeToTray && saved.CloseToTray && saved.NotificationsEnabled,
+            "failed native toggle leaves the preference file and independent background settings unchanged");
         Check(JsonSerializer.Serialize(fixture.Config) == config && fixture.Requests.All(x => x.StartsWith("GET ", StringComparison.Ordinal)) && fixture.Unexpected.Count == 0,
             "background preferences and native UI menu never mutate host configuration");
         tray.Dispose(); window.Close();
