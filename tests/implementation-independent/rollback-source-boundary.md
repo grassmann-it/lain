@@ -44,7 +44,49 @@ network namespace; setting the new reference-port variables alone is insufficien
 Provider quota activity must be disabled using the old supported reference flag,
 with no real credential fixtures or external network route.
 
-This candidate is not yet an implemented or executed rollback guarantee. Without
-the guarded conversion and exact-artifact process evidence, old-binary rollback
-remains blocked. A current-package backup/restore test and retained `app.previous`
-do not establish it.
+## Helper implementation follow-up
+
+Root authorized the delivery worker to implement
+`scripts/prepare-legacy-rollback.py`. The independent review inspected that helper
+and the amended package fixture in the delivery-qualification worktree without
+running them. The implementation takes a private full snapshot of CURRENT state,
+revalidates the copied v4 database and frozen legacy files, and converts only the
+staged database. It verifies pinned schema resources, unchanged original rows and
+digests, integrity/foreign keys, and absence of error-category data before dropping
+the column. Copies of checkpoint credentials never replace current grants.
+
+The review caught and the owner corrected a validation/copy race: validating the
+live source before backup alone could accept a change captured just before copying
+began. Validation now runs again on the completed staged copy before conversion.
+The checkpoint likewise validates its copied v3 database and exact old application
+before publication. Other reviewed corrections reject pending recovery storage and
+torn journal tails, use immutable read-only SQLite connections with sidecar refusal,
+recheck package hashes after copying, and compare the complete retained state.
+
+Copied YAML needs a deliberate path translation when its `auth-dir` names the
+original home. Both reviewed old/new launchers use their own `paths.Proxy` as the
+working directory. Relative `auth` already stays local; an absolute original-owned
+path requires explicit `--rebase-auth-dir`. Only that scalar changes to the final
+destination's owned auth directory. The original/current snapshot YAML remains
+unchanged, and every other retained state file must compare exactly. External,
+ambiguous and unsupported auth-path syntax must be rejected.
+
+One final source condition remains in the inspected worktree: the scalar parser
+counts only bare top-level `auth-dir` keys. Quoted/explicit duplicate key forms
+and merge syntax must be rejected for its deliberately restricted compiler-format
+contract; otherwise its stated ambiguity refusal is not enforced. This finding
+was handed to Root after the delivery agent stopped on a rate-limit error.
+
+Writer exclusion combines mandatory `--stopped`, process inspection and repeated
+source/copy inventories. It does not prove that a future or noncooperative writer
+cannot start. All original and staged state writers must remain mutually stopped.
+After an old Core runs and may rotate credentials, the archived current snapshot's
+grants can themselves be stale: re-upgrade copies only application binaries and
+keeps the active staged state's latest auth files. The amended fixture follows
+this direction and checks old→new→old→new schema 3→4→3→4 with real artifacts only
+inside a private loopback network namespace.
+
+Source review does not establish the pending exact-artifact process result.
+Without the guarded conversion and passing old/new process evidence, historical
+rollback remains unqualified. A current-package backup/restore test and retained
+`app.previous` do not establish it.
