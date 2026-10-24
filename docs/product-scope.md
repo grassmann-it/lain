@@ -1,8 +1,11 @@
 # Produktziele
 
-Stand: 23.10.2026. Grundlage sind die ausdrücklichen Nutzerwünsche und Antworten
-im Architektur-Sparring. Dieser Stand beschreibt Ziele; eine fertige Architektur
-oder Implementierung wird damit nicht behauptet.
+Grundbestand: 23.10.2026; UI-Strukturpräzisierung: 24.10.2026. Grundlage sind die
+ausdrücklichen Nutzerwünsche und Antworten im Architektur-Sparring. Dieser Stand
+beschreibt Ziele. Spätere Umsetzungsstände und Erweiterungen stehen in
+[README](../README.md) und [Erweiterungsauftrag](expansion-2026-10-24.md);
+ältere Prioritäten und offene Punkte unten sind in diesem zeitlichen Kontext
+zu lesen.
 
 ## Bestätigt
 
@@ -72,6 +75,26 @@ oder Implementierung wird damit nicht behauptet.
 
 ## Aktueller erster Zuschnitt
 
+### UI-Strukturpräzisierung vom 24.10.2026
+
+Der Nutzer bewertet das aktuelle Look and Feel positiv, beanstandet aber die
+doppelte Struktur, insbesondere die identischen Inhalte von Overview und Accounts.
+Seitenzuständigkeiten und Beschriftungen sollen gemeinsam geprüft und klarer
+gestaltet werden; die bestätigten Kontingentkacheln bleiben die Grundlage.
+**Profile werden häufig gewechselt und sollen als eigener Hauptpunkt direkt
+erreichbar bleiben.** Dies ist die ausdrückliche Antwort auf die Navigationsfrage.
+Im anschließenden Sparring bestätigt der Nutzer fünf Hauptbereiche:
+**Accounts als Startseite, Models, Profiles, Usage und Live als Inspector**.
+**Anbieter entdecken** gehört innerhalb von Accounts. Der erste Blick soll
+übersichtlich bleiben; auch Models, Profiles und Usage sollen klar gegliedert
+sein. Sinnvolle Accountreihenfolge und konfigurierbare Darstellung werden
+ausgearbeitet. Barebones/Simple/Advanced nach MeowChan sind eine eingebrachte
+Option; konkrete Stufengrenzen, Sortierregeln und Defaults sind noch nicht
+entschieden. Das Gespräch ist weiterhin Struktur-Sparring, keine bereits
+umgesetzte oder zur Veröffentlichung beauftragte UI-Änderung.
+
+### Ursprünglicher Zuschnitt
+
 Der Nutzer priorisiert zunächst Anschluss/Modellauswahl und Usage („1 und 2“,
 einschließlich `/model`). Eine automatische Verteilung nach Kontingenten kommt
 später. Den ersten benutzbaren Stand hat er nun ausdrücklich als **eigenen von
@@ -134,5 +157,7 @@ die umfassende Kontingentoptimierung ist ausdrücklich nachgelagert.
   Kontingent, Kosten, Latenz; erlaubte Modellwechsel und Fortsetzungsgrenzen.
 - Lizenz/Veröffentlichungsform des eigenen Produkts.
 
-Der aktuelle Auftrag umfasst Repositoryeinrichtung, Bestandsaufnahme und Sparring.
-Eine Produktimplementierung oder Veröffentlichung ist damit noch nicht beauftragt.
+Der ursprüngliche Auftrag umfasste Repositoryeinrichtung, Bestandsaufnahme und
+Sparring. Die danach ausdrücklich beauftragte Implementierung und Erweiterung
+sind in den oben verlinkten aktuellen Unterlagen dokumentiert. Die neue
+UI-Strukturprüfung ist zunächst Sparring, kein Auftrag zur Veröffentlichung.
