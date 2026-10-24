@@ -73,6 +73,7 @@ public sealed partial class MainWindow
         if (_configuration is not { } configuration) { _notice.Text = "Connect to the local host before adding credentials. You can still read the provider's setup guide."; return; }
         var provider = _providerCatalog?.Providers.FirstOrDefault(item => item.Id == providerId);
         if (provider is null) { _notice.Text = "Refresh the provider catalog before starting setup."; return; }
+        RegisterEditor(() => BeginProviderSetup(providerId), configuration.Revision);
         _editing = true;
         _loginVisible = false;
         _actions.Clear();

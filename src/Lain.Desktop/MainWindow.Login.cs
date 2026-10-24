@@ -32,6 +32,28 @@ public sealed partial class MainWindow
         ShowLoginPage();
     }
 
+    /// <summary>A cached sign-in page must reflect authorization that finished while it was away.</summary>
+    private void RestoreLoginPresentation()
+    {
+        if (_login is { State: "waiting" })
+        {
+            ShowLoginPage();
+            return;
+        }
+        _loginVisible = false;
+        _editing = false;
+        _section = "Accounts";
+        Render();
+        _notice.Text = _login?.State switch
+        {
+            "completed" => "Codex account connected.",
+            "cancelled" => "Codex sign-in cancelled. No new account was connected.",
+            "failed" => "Codex sign-in failed. Choose Add account to try again.",
+            "unsupported" => "Codex sign-in is unavailable on this host. Choose Add account for another connection method.",
+            _ => "This sign-in is no longer active. Choose Add account to sign in again."
+        };
+    }
+
     private void ShowLoginPage()
     {
         if (_login is not { } login) return;
