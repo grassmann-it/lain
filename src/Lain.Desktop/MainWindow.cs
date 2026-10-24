@@ -95,12 +95,12 @@ public sealed partial class MainWindow : Window
         captions.Children.Add(CaptionButton("minimize", "Minimize", () => WindowState = WindowState.Minimized));
         captions.Children.Add(CaptionButton("maximize", "Maximize or restore", ToggleMaximize));
         captions.Children.Add(CaptionButton("close", "Close window", Close));
-        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,Auto,Auto") };
-        _backButton = Ui.Button("←", GoBack);
-        _backButton.Width = 32; _backButton.Margin = new Thickness(8, 6, 0, 6);
+        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto") };
+        header.Children.Add(titleArea);
+        _backButton = Ui.Button("← Back", GoBack);
+        _backButton.Margin = new Thickness(0, 6, 8, 6);
         AutomationProperties.SetName(_backButton, "Back"); ToolTip.SetTip(_backButton, "Back to previous view");
-        header.Children.Add(_backButton);
-        Grid.SetColumn(titleArea, 1); header.Children.Add(titleArea);
+        Grid.SetColumn(_backButton, 1); header.Children.Add(_backButton);
         _viewButton = Ui.Button("View · " + _preferences.Level, ToggleViewOptions);
         _viewButton.Margin = new Thickness(0, 6, 8, 6);
         AutomationProperties.SetName(_viewButton, "View");
