@@ -17,6 +17,7 @@ try
     await ReviewRegressions();
     await LegacyPreservation();
     await ModelAttachment();
+    await PublicationGate();
     await QuotaGeneration();
     Console.WriteLine($"Account connect foundation: {assertions} assertions passed (offline synthetic state only).");
 }
@@ -434,6 +435,33 @@ async Task ModelAttachment()
         "stale account generation cannot attach model routes");
     new ProxyConfigurationWriter(f.Paths, f.Secrets).Write(configured);
     Check(File.ReadAllText(f.Paths.ProxyConfig).Contains(provider.Routes[0].Model), "later optional model compiles using selected qualified transport");
+}
+
+async Task PublicationGate()
+{
+    var f = New("publication-gate");
+    using var publication = new SemaphoreSlim(0, 1);
+    var adapter = new FakeLogin { Next = new("prepared", Credential: Key("publication-fixture-key", recovery: true)) };
+    await using var operations = new LoginOperationService(configuration: f.Repository, accounts: f.Accounts, secrets: f.Secrets,
+        accountAdapters: [adapter], publicationGate: publication);
+    var begun = await operations.BeginAsync(0, new("test", "fake", ["quota"])).WaitAsync(TimeSpan.FromSeconds(2));
+    Check(adapter.Begins == 1 && begun.State == "waiting", "provider begin remains independent of held apply publication gate");
+    var publishing = operations.StatusAsync(begun.Id);
+    Check(!publishing.IsCompleted && f.Repository.Snapshot.Accounts.Length == 0, "completed remote authorization waits before local configuration publication");
+    Check(CredentialRecoveryService.Read(f.Secrets.Generations, begun.Id).Handle is not null, "held publication gate does not delay durable credential checkpoint");
+    var cancelled = await operations.CancelAsync(begun.Id).WaitAsync(TimeSpan.FromSeconds(2));
+    Check(cancelled.State == "cancelled" && (await publishing).State == "cancelled", "cancel remains responsive while publication waits behind apply");
+    Check(publication.CurrentCount == 0 && f.Repository.Snapshot.Accounts.Length == 0, "cancelled waiter never releases another owner's gate or publishes");
+    publication.Release();
+    Check((await operations.StatusAsync(begun.Id)).State == "cancelled" && f.Repository.Snapshot.Accounts.Length == 0,
+        "later gate release cannot resurrect cancelled publication");
+    await publication.WaitAsync();
+    var next = await operations.BeginAsync(0, new("test", "fake", ["quota"]));
+    var nextPublication = operations.StatusAsync(next.Id);
+    Check(!nextPublication.IsCompleted, "uncancelled prepared result also waits for apply completion");
+    publication.Release();
+    Check((await nextPublication).State == "completed" && publication.CurrentCount == 1 && f.Repository.Snapshot.Accounts.Length == 1,
+        "final local CAS publishes after apply releases shared gate and releases its own lease");
 }
 
 sealed class Fixture

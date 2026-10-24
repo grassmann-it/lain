@@ -60,6 +60,7 @@ public sealed class LoginOperationService : IAsyncDisposable
     private readonly ConfigurationRepository? configuration;
     private readonly SecretStore? secrets;
     private readonly TimeProvider clock;
+    private readonly SemaphoreSlim? publicationGate;
     private bool disposed;
 
     private sealed class Operation(LoginDto status, LoginOperationContext? context, DateTimeOffset createdAt)
@@ -84,12 +85,14 @@ public sealed class LoginOperationService : IAsyncDisposable
 
     public LoginOperationService(IEnumerable<IQualifiedLoginAdapter>? qualifiedAdapters = null,
         ConfigurationRepository? configuration = null, AccountService? accounts = null, SecretStore? secrets = null,
-        IEnumerable<IAccountLoginAdapter>? accountAdapters = null, TimeProvider? timeProvider = null)
+        IEnumerable<IAccountLoginAdapter>? accountAdapters = null, TimeProvider? timeProvider = null,
+        SemaphoreSlim? publicationGate = null)
     {
         legacy = (qualifiedAdapters ?? []).ToDictionary(a => a.Provider, StringComparer.Ordinal);
         adapters = (accountAdapters ?? []).ToDictionary(a => (a.Provider, a.Method));
         this.configuration = configuration; this.accounts = accounts; this.secrets = secrets;
         clock = timeProvider ?? TimeProvider.System;
+        this.publicationGate = publicationGate;
     }
 
     public bool RequiresCore(string provider, string method) => adapters.TryGetValue((AccountService.CanonicalProviderId(provider), method), out var adapter) && adapter.RequiresCore;
@@ -175,7 +178,7 @@ public sealed class LoginOperationService : IAsyncDisposable
                 if (!adapters.TryGetValue((context.Request.Provider, context.Request.Method), out var adapter))
                     return Finish(operation, "unsupported", "This connection method is not qualified.");
                 CredentialRecoveryService.SaveStarted(secrets!.Generations, context);
-                return Accept(operation, await adapter.BeginAsync(context, linked.Token));
+                return await AcceptAsync(operation, await adapter.BeginAsync(context, linked.Token), linked.Token);
             }
             if (!legacy.TryGetValue(operation.Status.Provider, out var old)) return Finish(operation, "unsupported", "This connection method is not qualified.");
             return AcceptLegacy(operation, await old.BeginAsync(operation.Status.Id, linked.Token));
@@ -205,7 +208,7 @@ public sealed class LoginOperationService : IAsyncDisposable
             if (Terminal(operation.Status.State)) return operation.Status;
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, operation.Cancellation.Token);
             if (operation.Context is { } context)
-                return Accept(operation, await adapters[(context.Request.Provider, context.Request.Method)].StatusAsync(context, linked.Token));
+                return await AcceptAsync(operation, await adapters[(context.Request.Provider, context.Request.Method)].StatusAsync(context, linked.Token), linked.Token);
             return AcceptLegacy(operation, await legacy[operation.Status.Provider].StatusAsync(id, linked.Token));
         }
         catch (OperationCanceledException) when (operation.Invalidated) { return operation.Status; }
@@ -253,7 +256,7 @@ public sealed class LoginOperationService : IAsyncDisposable
         return operation.Status;
     }
 
-    private LoginDto Accept(Operation operation, LoginAdapterResult result)
+    private async Task<LoginDto> AcceptAsync(Operation operation, LoginAdapterResult result, CancellationToken ct)
     {
         ValidateUrl(result.Url);
         if (result.State is not ("waiting" or "authorizing" or "resource-required" or "prepared" or "failed" or "cancelled" or "recovery-required"))
@@ -266,41 +269,65 @@ public sealed class LoginOperationService : IAsyncDisposable
             catch (IOException)
             { return Finish(operation, "recovery-required", "Private credential storage is unavailable. Keep the host running and retry local recovery; do not repeat provider issuance."); }
         }
-        lock (operation.PublicationGate)
+        var publicationAcquired = false;
+        if (result.State == "prepared" && publicationGate is not null)
         {
-            if (operation.Invalidated || context.ExpiresAt <= clock.GetUtcNow())
-                return Finish(operation, operation.Status.State == "cancelled" ? "cancelled" : "expired");
-            if (result.State == "prepared")
+            // Runtime apply holds this host-wide gate through drain and MarkApplied. Only the final
+            // local reference publication waits here; provider work and durable checkpoints stay independent.
+            try
             {
-                if (operation.Prepared is null) throw new InvalidDataException("Completed authorization did not provide a credential.");
-                try
+                await publicationGate.WaitAsync(ct);
+                publicationAcquired = true;
+            }
+            catch (OperationCanceledException)
+            {
+                lock (operation.PublicationGate)
                 {
-                    accounts!.CommitPrepared(context, operation.Prepared, () => !operation.Invalidated && clock.GetUtcNow() < context.ExpiresAt);
-                    try { CredentialRecoveryService.MarkPublished(secrets!.Generations, context.OperationId); }
-                    catch (IOException) { } // Published configuration is authoritative; recovery reconciles its matching handle.
-                    return Finish(operation, "completed");
-                }
-                catch (Exception error) when (error is RevisionConflictException or IOException or InvalidOperationException or ArgumentException)
-                {
-                    // Never repeat remote key creation or rotation to resolve a local CAS conflict.
-                    CredentialRecoveryService.SavePrepared(secrets!.Generations, context, operation.Prepared, result.Credential?.RemoteId);
-                    return Finish(operation, "recovery-required", "Authorization succeeded but local state changed. Review and adopt the saved result.");
+                    if (operation.Invalidated || context.ExpiresAt <= clock.GetUtcNow())
+                        return Finish(operation, operation.Status.State == "cancelled" ? "cancelled" : "expired");
+                    return Finish(operation, "recovery-required", "Authorization succeeded and is saved privately. Review and adopt the saved result.");
                 }
             }
-            if (Terminal(result.State))
+        }
+        try
+        {
+            lock (operation.PublicationGate)
             {
-                var status = Finish(operation, result.State, result.Error ?? (result.State == "failed" ? "Provider authorization failed." : null));
-                if (result.NextAction is "review-provider-keys" or "reconnect" or "review-recovery")
-                    operation.Status = status with { NextAction = result.NextAction };
+                if (operation.Invalidated || context.ExpiresAt <= clock.GetUtcNow())
+                    return Finish(operation, operation.Status.State == "cancelled" ? "cancelled" : "expired");
+                if (result.State == "prepared")
+                {
+                    if (operation.Prepared is null) throw new InvalidDataException("Completed authorization did not provide a credential.");
+                    try
+                    {
+                        accounts!.CommitPrepared(context, operation.Prepared, () => !operation.Invalidated && clock.GetUtcNow() < context.ExpiresAt);
+                        try { CredentialRecoveryService.MarkPublished(secrets!.Generations, context.OperationId); }
+                        catch (IOException) { } // Published configuration is authoritative; recovery reconciles its matching handle.
+                        return Finish(operation, "completed");
+                    }
+                    catch (Exception error) when (error is RevisionConflictException or IOException or InvalidOperationException or ArgumentException)
+                    {
+                        // Never repeat remote key creation or rotation to resolve a local CAS conflict.
+                        CredentialRecoveryService.SavePrepared(secrets!.Generations, context, operation.Prepared, result.Credential?.RemoteId);
+                        return Finish(operation, "recovery-required", "Authorization succeeded but local state changed. Review and adopt the saved result.");
+                    }
+                }
+                if (Terminal(result.State))
+                {
+                    var status = Finish(operation, result.State, result.Error ?? (result.State == "failed" ? "Provider authorization failed." : null));
+                    if (result.NextAction is "review-provider-keys" or "reconnect" or "review-recovery")
+                        operation.Status = status with { NextAction = result.NextAction };
+                    return operation.Status;
+                }
+                var resources = result.Resources;
+                if (resources is { Length: > 64 } || resources?.Any(r => AccountService.CanonicalProviderId(r.Provider) != context.Request.Provider) == true)
+                    throw new InvalidDataException("Invalid discovered resource list.");
+                operation.Status = operation.Status with { State = result.State, Url = result.Url, Error = null,
+                    Resources = resources, NextAction = result.State == "resource-required" ? "select-resource" : "authorize" };
                 return operation.Status;
             }
-            var resources = result.Resources;
-            if (resources is { Length: > 64 } || resources?.Any(r => AccountService.CanonicalProviderId(r.Provider) != context.Request.Provider) == true)
-                throw new InvalidDataException("Invalid discovered resource list.");
-            operation.Status = operation.Status with { State = result.State, Url = result.Url, Error = null,
-                Resources = resources, NextAction = result.State == "resource-required" ? "select-resource" : "authorize" };
-            return operation.Status;
         }
+        finally { if (publicationAcquired) publicationGate!.Release(); }
     }
 
     private void PrepareResult(Operation operation, PreparedLoginCredential credential)
