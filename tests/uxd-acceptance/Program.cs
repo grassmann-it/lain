@@ -403,10 +403,18 @@ internal sealed class Acceptance(IClassicDesktopStyleApplicationLifetime lifetim
         Check(Find<Button>("Back to profiles") is not null && Find<Button>("Select profile Daily") is null,
             "explicit profile selection opens a separate narrow detail task with Back");
         Capture("profiles-selected-daily-narrow");
-        input.Focus(window); input.Click(Controls<Button>().Single(button => Equals(button.Content, "Apply to proxy…")));
+        var narrowApply = Controls<Button>().Single(button => Equals(button.Content, "Apply to proxy…"));
+        input.Focus(window); input.Click(narrowApply);
         await Wait(() => lifetime.Windows.Any(candidate => candidate != window && candidate.IsVisible));
         dialog = lifetime.Windows.Single(candidate => candidate != window && candidate.IsVisible);
         Capture("profiles-apply-dialog-narrow", dialog); input.Focus(dialog); input.Key(0xff1b); await Task.Delay(80);
+        Check(!dialog.IsVisible && narrowApply.IsFocused && fixture.ApplyCalls == 0,
+            "narrow Apply Escape returns trigger focus without applying");
+        input.Focus(window); input.Click(Need<Button>("Back to profiles"));
+        await Wait(() => Find<Button>("Select profile Daily")?.IsFocused == true);
+        Check(Find<TextBlock>("Selected profile status") is null,
+            "native narrow Back restores the selected inventory action and one-pane layout");
+        Capture("profiles-narrow-return");
     }
 
     private async Task UsageStates()
