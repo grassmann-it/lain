@@ -75,7 +75,7 @@ internal sealed partial class Scenario
         Check(live.RefreshRequests[0] == a.Id && !Named<Button>("Refresh quota for " + a.Name).IsEnabled
             && Named<Button>("Refresh quota for " + b.Name).IsEnabled && Named<Button>("Models").IsEnabled,
             "UXD18 only A refresh action is locked; B and main navigation remain available");
-        Check(bars.All(bar => bar.Value == 37 && bar.GetVisualRoot() is not null) && aCard.Bounds == tileBounds
+        Check(bars.All(bar => bar.Value == 37 && TopLevel.GetTopLevel(bar) is not null) && aCard.Bounds == tileBounds
             && inventory.Offset == listOffset && HasText("63 of 100% left"),
             "UXD18 Busy preserves mounted bars, last values, tile geometry and inventory scroll");
         await CaptureBoth("uxd18-accounts-refresh-busy");

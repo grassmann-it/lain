@@ -152,9 +152,47 @@ public sealed partial class MainWindow
 
     private static Grid BudgetWindowCells(params Control[] cells)
     {
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("0.85*,1.6*,0.9*"), ColumnSpacing = 14 };
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("0.85*,1.6*,0.9*"), ColumnSpacing = 14, RowSpacing = 5 };
         for (var i = 0; i < cells.Length; i++) { Grid.SetColumn(cells[i], i); grid.Children.Add(cells[i]); }
+        bool? stacked = null;
+        grid.SizeChanged += (_, _) =>
+        {
+            if (grid.Bounds.Width <= 0) return;
+            var narrow = grid.Bounds.Width < 500;
+            if (stacked == narrow) return;
+            stacked = narrow;
+            // The selected 340-px inventory keeps its neighboring inspector.
+            // Give numbers and the long bar a whole row instead of shortening
+            // the bar to an inline indicator or clipping reset/scope facts.
+            grid.ColumnDefinitions = new ColumnDefinitions(narrow ? "*" : "0.85*,1.6*,0.9*");
+            grid.RowDefinitions = new RowDefinitions(narrow ? "Auto,Auto,Auto" : "Auto");
+            for (var i = 0; i < cells.Length; i++)
+            {
+                Grid.SetColumn(cells[i], narrow ? 0 : i);
+                Grid.SetRow(cells[i], narrow ? i : 0);
+            }
+        };
         return grid;
+    }
+
+    private static Control MonitorBudgetTableHeader()
+    {
+        var columns = new Grid { ColumnDefinitions = new ColumnDefinitions("0.85*,1.6*,0.9*"), ColumnSpacing = 14 };
+        columns.Children.Add(Ui.Text("Window", 11, Ui.Muted));
+        var consumption = Ui.Text("Consumption / remaining", 11, Ui.Muted);
+        Grid.SetColumn(consumption, 1); columns.Children.Add(consumption);
+        var reset = Ui.Text("Reset · local time", 11, Ui.Muted);
+        Grid.SetColumn(reset, 2); columns.Children.Add(reset);
+        var narrow = Ui.Text("Quota windows · consumption / remaining · reset", 11, Ui.Muted);
+        var header = new Grid { Children = { columns, narrow } };
+        header.SizeChanged += (_, _) =>
+        {
+            var stacked = header.Bounds.Width < 500;
+            columns.IsVisible = !stacked; narrow.IsVisible = stacked;
+        };
+        AutomationProperties.SetName(header, "Monitor quota table columns");
+        return new Border { Padding = new Thickness(10, 6), Background = Ui.Surface,
+            BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Child = header };
     }
 
     private static Grid BudgetAccountCells(Control identity, Control windows)
@@ -196,14 +234,13 @@ public sealed partial class MainWindow
         else if (context is not null) label.Children.Add(Ui.Text(context, 11, Ui.Muted));
 
         var consumption = new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
+        var percent = unavailable ? null : QuotaUsedPercent(quota);
         if (quota?.MeasurementKind == "rate")
         {
             consumption.Children.Add(Ui.Text(quota.Used is { } rate && double.IsFinite(rate)
                 ? BudgetAmount(rate, quota.Unit) + " observed" : "Rate not supplied", 12));
-            return BudgetWindowCells(label, consumption, Ui.Text("Sample " + Ui.When(quota.DataAsOf ?? quota.ObservedAt), 11, Ui.Muted));
         }
-        var percent = unavailable ? null : QuotaUsedPercent(quota);
-        if (percent is { } usedPercent && quota is not null)
+        else if (percent is { } usedPercent && quota is not null)
         {
             var knownRemaining = ReportedRemaining(quota);
             var remaining = knownRemaining is { } amount
@@ -244,12 +281,25 @@ public sealed partial class MainWindow
         }
         else
         {
-            consumption.Children.Add(Ui.Text(unavailable ? QuotaSupportMessage(quota) : quota?.State is "error" or "unavailable" ? "Could not load budget" : "Usage not supplied", 12, Ui.Muted));
+            consumption.Children.Add(Ui.Text(unavailable ? QuotaSupportMessage(quota) : quota is null
+                ? "No quota snapshot reported · refresh this account"
+                : quota.State is "error" or "unavailable" ? "Could not load budget" : "Usage not supplied", 12, Ui.Muted));
             consumption.Children.Add(QuotaAccessActions(account, quota));
         }
 
+        if (account.SharedWithLegacy || quota?.SharedWithLegacy == true)
+            consumption.Children.Add(Ui.Text("Shared provider budget · do not add balances", 11, Ui.Muted));
+        else if (account.BudgetPoolId is not null || quota?.BudgetPoolId is not null)
+            consumption.Children.Add(Ui.Text("Provider budget pool · do not add balances", 11, Ui.Muted));
+        if (quota is not null && new[] { quota.Scope, quota.ScopeId, quota.Model }.Any(value => !string.IsNullOrWhiteSpace(value)))
+            consumption.Children.Add(Ui.Text("Scope: " + string.Join(" · ", new[] { quota.Scope, quota.ScopeId, quota.Model }
+                .Where(value => !string.IsNullOrWhiteSpace(value))), 11, Ui.Muted));
+        if (!string.IsNullOrWhiteSpace(quota?.Error)) consumption.Children.Add(Ui.Text(quota.Error, 11, Ui.Warning));
+
         var reset = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
-        if (!unavailable && quota?.ResetsAt is { } resetsAt)
+        if (quota?.MeasurementKind == "rate")
+            reset.Children.Add(Ui.Text("Sample " + Ui.When(quota.DataAsOf ?? quota.ObservedAt), 11, Ui.Muted));
+        else if (!unavailable && quota?.ResetsAt is { } resetsAt)
         {
             reset.Children.Add(Ui.Text(resetsAt.ToLocalTime().ToString("dd MMM · HH:mm", CultureInfo.CurrentCulture), 12, Ui.Muted));
             if (resetsAt <= DateTimeOffset.UtcNow) reset.Children.Add(Ui.Text("Reset due · refresh to check", 11, Ui.Warning));
@@ -265,6 +315,7 @@ public sealed partial class MainWindow
         }
         var row = BudgetWindowCells(label, consumption, reset);
         row.MinHeight = 38;
+        AutomationProperties.SetName(row, $"Monitor quota window for {account.Name} · {QuotaWindowLabel(quota)}");
         return row;
     }
 

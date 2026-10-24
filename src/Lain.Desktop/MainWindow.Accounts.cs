@@ -199,6 +199,7 @@ public sealed partial class MainWindow
         var count = Ui.Text("", 12, Ui.Muted);
         var inventory = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch };
         panel.Children.Add(count);
+        if (IsMonitorMode) panel.Children.Add(MonitorBudgetTableHeader());
         panel.Children.Add(inventory);
         var previousInventoryActions = new List<Button>();
 
@@ -241,19 +242,19 @@ public sealed partial class MainWindow
             }
             if (!_preferences.GroupAccountsByProvider)
             {
-                inventory.Content = AccountTiles(cfg, found, Populate);
+                inventory.Content = AccountInventoryRows(cfg, found, Populate);
                 previousInventoryActions.AddRange(_actions.Where(action => !actionsBefore.Contains(action)));
                 return;
             }
             var groups = new StackPanel { Spacing = options.Density == ViewDensity.Compact ? 12 : 18 };
             var pinned = _preferences.AccountSort == "favorites" ? found.Where(IsAccountPinned).ToArray() : [];
-            if (pinned.Length > 0) groups.Children.Add(Ui.Section("Pinned", AccountTiles(cfg, pinned, Populate)));
+            if (pinned.Length > 0) groups.Children.Add(Ui.Section("Pinned", AccountInventoryRows(cfg, pinned, Populate)));
             var providerGroups = found.Where(account => !pinned.Contains(account)).GroupBy(ProviderName);
             // In 5h mode, the first account supplies the group's highest ranked
             // actual 5h window. Shared or separate budgets are never summed.
             if (_preferences.AccountSort != "five-hour") providerGroups = providerGroups.OrderBy(providerGroup => providerGroup.Key, StringComparer.OrdinalIgnoreCase);
             foreach (var accounts in providerGroups)
-                groups.Children.Add(Ui.Section(accounts.Key, AccountTiles(cfg, accounts.ToArray(), Populate)));
+                groups.Children.Add(Ui.Section(accounts.Key, AccountInventoryRows(cfg, accounts.ToArray(), Populate)));
             inventory.Content = groups;
             previousInventoryActions.AddRange(_actions.Where(action => !actionsBefore.Contains(action)));
         }
