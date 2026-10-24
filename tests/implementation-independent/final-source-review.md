@@ -1,7 +1,9 @@
 # Final integration source review, 24 October 2026
 
 Reviewed Main `87c9b5b` and final wiring `1206cb7`, including the owner refresh
-implementation introduced by `460dd09`. This pass performed no build, process
+implementation introduced by `460dd09`. A targeted follow-up inspected A12 fixes
+`41cd70a`, `7d7c1ce`, `f33f3bc` and renewal preflight fix `eaf9d6d` in Main.
+These passes performed no build, process
 launch, provider request, real credential access or installed-service change.
 Unrelated provider research changes in Main were not modified. Root owns the
 next frozen-artifact verification and delivery decision.
@@ -25,6 +27,10 @@ This is a source conclusion, not complete AC-10/ST-01–05 acceptance.
   Their final commit shares the Apply gate and rechecks account generation,
   enabled state, selected generation and purposes. Rebasing an unrelated revision
   follows these target checks. Concurrent refreshes share a per-credential gate.
+  The `eaf9d6d` follow-up also takes the publication gate around the initial
+  snapshot and `ReserveConnect`, preventing an unrelated renewal publication
+  from staling that preflight revision. It releases the gate before provider work
+  and retains the final target-generation/selection checks.
 - `1206cb7` wires bounded automatic renewal and exempts the explicit refresh
   endpoint from the outer mutation lock through `OwnsPublicationGate`; its inner
   publication lock therefore does not reacquire a semaphore already held by the
@@ -71,19 +77,31 @@ durable output was not located. The independently authored fixture remains
 pending exact latest-Host rerun and recorded hash. It checks Host launch and
 proof preservation; it does not qualify real Core OAuth.
 
+The targeted A12 source recheck confirms independent cached metadata values and
+observations. A failed Pass/Self read retains the previous value and original
+observation, success and freshness timestamps; a successful wallet/usage read
+keeps its own current timestamp. A successful explicit `subscription:null` clears
+old Pass data, while malformed/unknown envelopes retain stale data. Repeated
+failures do not refresh metadata timestamps, and account generation or credential
+binding changes invalidate both caches. Shared CLI/Desktop facts display the
+independent metadata state and last success. The 21 metadata assertions were
+read, not executed by this reviewer. Root reports 73 passing reader checks
+including those assertions; exact final integrated artifact evidence remains
+pending inspection. The previously identified A12 source gap is closed.
+
 ## Residual acceptance gates
 
 | Scope | Concrete remaining requirement or limit |
 | --- | --- |
 | AC-01/10 current integration | Execute the final Host renewal/publication integration and restored Gateway regression against recorded final artifacts. Earlier source/library results do not prove the final middleware wiring. |
 | AC-10 / ST-05 delivery | No fresh exact Monitor/Gateway package, isolated fresh install/update and schema-compatible full-state rollback evidence was supplied for this implementation. Synthetic installer packages and older release reports do not close this gate. |
-| AC-10 A12 metadata freshness | Fresh wallet data plus unavailable Kilo Pass/Requesty metadata now drops missing metadata instead of presenting it as fresh. Metadata-specific last successful value with its original timestamp is still not retained; full A12 is therefore not met. |
+| AC-10 A12 metadata freshness | Prior source gap closed by independent metadata observations and stale-value retention. Retain the reported 73 reader/21 metadata checks and verify shared projections against the final integrated artifact; source review alone does not certify all A12 cases. |
 | ST-01 compatibility | Actual Core proves the specifically qualified tool rules. Source-scoped context window facts are not request context enforcement; no tokenizer/context-size check is claimed. Do not advertise all known model facts as enforced dispatch limits. |
 | ST-04 recovery/scale | Sparse index and bounded 1,000/10,000-event measurements preserve flat journal format. Complete Host/config/credentials/SQLite restore, actual filesystem exhaustion and sustained growth remain unqualified. Live segmentation/archive replay is explicitly deferred. |
 | Product method scope | Unqualified official CLI, managed and console methods remain unavailable/setup-required. They cannot be counted as delivered methods merely because contracts/fakes or catalog entries exist. Live qualification remains separately untested. |
 
-The Kilo/Requesty retention gap and deferred ST-01/ST-04 items require an explicit
-scope/limitation in a bounded release report. They are not grounds to rewrite
+The deferred ST-01/ST-04 items require an explicit scope/limitation in a bounded
+release report. They are not grounds to rewrite
 passing tests or silently mark the complete work packages accepted. UI/native
 acceptance is owned by the separately running acceptance work and is not claimed
 by this source review.
