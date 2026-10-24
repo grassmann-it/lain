@@ -81,3 +81,24 @@ return and discard, plus original-revision conflict handling separately.
 Static `git diff --check` and JSON parsing passed. Compilation/native verification
 remain with Root's serial capped slot, after Accounts and Profiles contracts have
 been integrated; this shell commit intentionally references those owner helpers.
+
+## Accounts narrow-layout correction
+
+Follow-up source review found the older narrow detail-only branch contradicted
+Accounts A. Accounts now reserves both columns at both agreed sizes: at 800 px,
+a 340 px inventory region and the remaining 460 px detail region; at 1120 px,
+the existing expanding inventory and 400 px detail region. Density-dependent
+inventory margins remain unchanged (300 px actual inventory content in Normal,
+312 px in Compact at 800 px). No window size is changed.
+
+The Accounts inventory header alone reflows its title above its native actions
+when its own width is below 440 px. This handles the real constraint introduced
+by the narrow inventory column; changing only the inspector threshold would
+leave the former horizontal title/Discover/Add row wider than its pane. Account
+filters and detail actions already wrap, and the inventory masonry uses one
+column at these widths. Other pages and shared styles are unaffected.
+
+The former detail-page swapping fields and branches were removed. Opening,
+closing or resizing Accounts keeps the same mounted inventory and separate
+inventory/detail scroll surfaces. Close/Escape returns focus to its original
+visible account trigger. Native geometry/focus evidence is still pending UXD-22.

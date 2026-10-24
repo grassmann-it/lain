@@ -1,8 +1,20 @@
 {
   "package": "UXD-17",
   "kind": "synthetic acceptance input matrix; not execution evidence",
-  "choices": { "draftNavigation": "B", "simpleLive": "A" },
-  "viewports": [{ "width": 1120, "height": 780 }, { "width": 800, "height": 560 }],
+  "choices": {
+    "draftNavigation": "B",
+    "simpleLive": "A"
+  },
+  "viewports": [
+    {
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "width": 800,
+      "height": 560
+    }
+  ],
   "identity": {
     "model": "gpt-lain-01",
     "viewedProfile": "Daily",
@@ -52,6 +64,17 @@
         "Select Advanced and Simple again. Expect unchanged buffer, filters and a visible footer."
       ],
       "requests": "Display changes never switch Monitor/Gateway or invoke Apply."
+    },
+    {
+      "id": "accounts-a-side-by-side",
+      "steps": [
+        "At 800×560 and 1120×780 open a visible account by pointer and keyboard in separate runs.",
+        "Expect inventory and account detail simultaneously visible, with independent nonzero scroll regions; the inventory control remains the same mounted instance.",
+        "At 800px expect the Accounts title above Discover providers/Add account, with both actions contained in its 340px inventory region.",
+        "Scroll each pane separately; switch accounts without moving inventory scroll; Close/Escape returns focus to the visible account trigger.",
+        "Resize between agreed viewports and change density: both panes remain mounted, no forced window resizing and no detail-only page replacement."
+      ],
+      "requests": "Geometry, opening, closing and scrolling send no host mutation."
     }
   ]
 }

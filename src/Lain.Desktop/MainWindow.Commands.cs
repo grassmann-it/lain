@@ -13,7 +13,6 @@ namespace Lain.Desktop;
 public sealed partial class MainWindow
 {
     private readonly Grid _workspaceRegion = new() { ColumnDefinitions = new ColumnDefinitions("*,0") };
-    private Control? _accountInventoryPage;
     private Control? _accountInspectorDetails;
     private ScrollViewer? _accountListScroll;
     private ScrollViewer? _accountInspectorScroll;
@@ -27,7 +26,6 @@ public sealed partial class MainWindow
     private Button? _accountInspectorClose;
     private bool _accountRemovalVisible;
     private Vector _accountInventoryOffset;
-    private bool _accountDetailPage;
     private bool _updatingAccountInspectorLayout;
     private readonly Border _accountInspector = new()
     {
@@ -57,6 +55,27 @@ public sealed partial class MainWindow
     private Control AccountInventoryViewport(Control content)
     {
         var scroll = new ScrollViewer { HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        // The narrow inventory remains beside details. Its own heading must fit
+        // that column rather than forcing the two top-level actions offscreen.
+        if (content is StackPanel { Children.Count: > 0 } page && page.Children[0] is Grid { Children.Count: 2 } header)
+        {
+            var toolbar = header.Children[1];
+            bool? stacked = null;
+            void ReflowHeader()
+            {
+                if (header.Bounds.Width <= 0) return;
+                var narrow = header.Bounds.Width < 440;
+                if (stacked == narrow) return;
+                stacked = narrow;
+                header.ColumnDefinitions = new ColumnDefinitions(narrow ? "*" : "*,Auto");
+                header.RowDefinitions = new RowDefinitions(narrow ? "Auto,Auto" : "Auto");
+                header.ColumnSpacing = narrow ? 0 : 18;
+                header.RowSpacing = narrow ? 8 : 0;
+                Grid.SetColumn(toolbar, narrow ? 0 : 1);
+                Grid.SetRow(toolbar, narrow ? 1 : 0);
+            }
+            header.SizeChanged += (_, _) => ReflowHeader();
+        }
         Control viewport = scroll;
         if (content is StackPanel panel && panel.Children.LastOrDefault() is ContentControl inventory)
         {
@@ -70,7 +89,7 @@ public sealed partial class MainWindow
         else scroll.Content = content;
         AutomationProperties.SetName(scroll, "Account inventory");
         _accountListScroll = scroll;
-        scroll.ScrollChanged += (_, _) => { if (!_accountDetailPage) _accountInventoryOffset = scroll.Offset; };
+        scroll.ScrollChanged += (_, _) => _accountInventoryOffset = scroll.Offset;
         var offset = _accountInventoryOffset;
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
@@ -211,18 +230,13 @@ public sealed partial class MainWindow
         try
         {
             var accountPage = _section == "Accounts" && !_editing;
-            var adjacent = (Bounds.Width > 0 ? Bounds.Width : Width) >= 1000 && accountPage;
-            _workspaceRegion.ColumnDefinitions = new ColumnDefinitions(adjacent ? "*,400" : "*,0");
-            if (_accountInspectorClose is { } close) close.Content = adjacent ? "Close" : "← Back";
-            if (adjacent)
+            var narrow = (Bounds.Width > 0 ? Bounds.Width : Width) < 1000;
+            // Accounts A keeps inventory and detail mounted side by side at both
+            // agreed sizes. Each pane retains its own independent scroll surface.
+            _workspaceRegion.ColumnDefinitions = new ColumnDefinitions(!accountPage ? "*,0" : narrow ? "340,*" : "*,400");
+            if (_accountInspectorClose is { } close) close.Content = "Close";
+            if (accountPage)
             {
-                if (_accountDetailPage)
-                {
-                    _page.Content = null;
-                    _accountDetailPage = false;
-                    _page.Content = _accountInventoryPage;
-                    _accountInventoryPage = null;
-                }
                 if (!ReferenceEquals(_accountInspector.Child, _accountInspectorDetails) || _accountInspector.Child is null)
                 {
                     DetachInspectorContent();
@@ -235,16 +249,6 @@ public sealed partial class MainWindow
             {
                 DetachInspectorContent();
                 _accountInspector.IsVisible = false;
-                if (accountPage && _inspectedAccountId is not null && _accountInspectorDetails is not null)
-                {
-                    if (!_accountDetailPage)
-                    {
-                        _accountInventoryPage = _page.Content as Control;
-                        _accountInventoryOffset = _accountListScroll?.Offset ?? _accountInventoryOffset;
-                        _accountDetailPage = true;
-                    }
-                    _page.Content = _accountInspectorDetails;
-                }
             }
         }
         finally { _updatingAccountInspectorLayout = false; }
@@ -264,13 +268,6 @@ public sealed partial class MainWindow
         _accountInspectorClose = null;
         _inspectedAccountId = null;
         _accountRemovalVisible = false;
-        if (_accountDetailPage)
-        {
-            _accountDetailPage = false;
-            _page.Content = _accountInventoryPage;
-            _accountInventoryPage = null;
-            if (_accountListScroll is { } list) list.Offset = _accountInventoryOffset;
-        }
         UpdateAccountInspectorLayout();
         UpdateAccountSelection();
         if (restoreFocus) Dispatcher.UIThread.Post(() =>
