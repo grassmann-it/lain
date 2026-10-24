@@ -87,7 +87,10 @@ public sealed partial class MainWindow
             ?? rows.FirstOrDefault();
     }
 
-    private bool LastKnownQuota(QuotaDto quota) => !_hostAvailable || _quotaError is not null || quota.State is "stale" or "error" or "unavailable";
+    private static bool QuotaResetOverdue(QuotaDto quota) => quota.ResetsAt is { } reset && reset <= DateTimeOffset.UtcNow;
+
+    private bool LastKnownQuota(QuotaDto quota) => !_hostAvailable || _quotaError is not null
+        || quota.State is "stale" or "error" or "unavailable" || QuotaResetOverdue(quota);
 
     private string QuotaStateLabel(QuotaDto? quota)
     {
@@ -194,7 +197,7 @@ public sealed partial class MainWindow
         }
         else
         {
-            consumption.Children.Add(Ui.Text(unavailable ? "Not available" : quota?.State is "error" or "unavailable" ? "Could not load budget" : "No usage data", 12, Ui.Muted));
+            consumption.Children.Add(Ui.Text(unavailable ? "Not available" : quota?.State is "error" or "unavailable" ? "Could not load budget" : "Usage not supplied", 12, Ui.Muted));
             if (unavailable) consumption.Children.Add(Ui.Text("Quota API not supported", 11, Ui.Muted));
         }
 

@@ -21,6 +21,8 @@ public sealed partial class MainWindow
         panel.Children.Add(QuotaTechnicalField("Snapshot", $"{quota.State} · observed {Ui.When(quota.ObservedAt)} · last success {Ui.When(quota.LastSuccessAt)}"));
         string Amount(double? value) => ValidAmount(value) is { } amount ? BudgetAmount(amount, quota.Unit) : "Not supplied";
         panel.Children.Add(QuotaTechnicalField("Amounts", $"Used: {Amount(quota.Used)} · limit: {Amount(quota.Limit)} · remaining: {Amount(quota.Remaining)}"));
+        panel.Children.Add(QuotaTechnicalField("Consumption", QuotaUsedPercent(quota) is { } percent ? $"{BudgetNumber(percent)}% used" : "Percentage not available"));
+        panel.Children.Add(QuotaTechnicalField("Reset", QuotaResetText(quota, QuotaUnavailable(quota))));
         if (!string.IsNullOrWhiteSpace(quota.BudgetPoolId)) panel.Children.Add(QuotaTechnicalField("Window pool", quota.BudgetPoolId));
         if (quota.SharedWithLegacy) panel.Children.Add(Ui.Text("Shared with the imported connection; this is the same provider budget.", 11, Ui.Muted));
         if (!string.IsNullOrWhiteSpace(quota.Error)) panel.Children.Add(Ui.Text(quota.Error, 11, QuotaUnavailable(quota) ? Ui.Muted : Ui.Warning));
