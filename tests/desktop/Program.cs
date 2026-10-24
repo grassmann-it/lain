@@ -387,7 +387,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(Named<TextBox>("Search accounts").Text == "Kimi" && QuotaTile("Kimi Coding").IsExpanded,
             "contextual Back restores account search and expanded source tile");
         await Click("Models for this account");
-        await Wait(() => Controls<Button>().Any(x => AutomationProperties.GetName(x)?.StartsWith("Edit model access ", StringComparison.Ordinal) == true),
+        await Wait(() => Controls<Expander>().Any(x => AutomationProperties.GetName(x)?.StartsWith("Details for model access ", StringComparison.Ordinal) == true),
             "account drillthrough reaches the configured model-access inventory");
         await Click("Back");
         Check(Named<TextBox>("Search accounts").Text == "Kimi", "model drillthrough Back restores account filter context");
@@ -791,9 +791,16 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     private bool HasGroup(string key) => Controls<Button>().Any(button => AutomationProperties.GetName(button) == "Inspect group " + key);
 
 
+    private async Task OpenModelDetails(string alias)
+    {
+        Named<Expander>("Details for model access " + alias).IsExpanded = true;
+        await Task.Delay(80);
+    }
+
     private async Task CheckPolicyPreservation()
     {
         var original = fixture.Config.Routes.Single(route => route.Id == "r1");
+        await OpenModelDetails(original.Alias);
         await Click("Edit model access " + original.Alias);
         Input("client-facing-model").Text = "policy-preservation-fixture";
         await Click("Save model access");
@@ -801,6 +808,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         var renamed = fixture.Config.Routes.Single(route => route.Id == "r1");
         Check(renamed.ProviderRouteId == original.ProviderRouteId && JsonSerializer.Serialize(renamed.Policy) == JsonSerializer.Serialize(original.Policy),
             "unrelated route edits preserve concrete catalog provenance fallback targets and paid fallback consent");
+        await OpenModelDetails(renamed.Alias);
         await Click("Edit model access " + renamed.Alias);
         Input("client-facing-model").Text = original.Alias;
         Named<ComboBox>("Spending policy").SelectedIndex = 1;
