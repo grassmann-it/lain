@@ -86,6 +86,7 @@ public sealed class InspectorView : UserControl, IPresentationView
     private bool _adjustingScroll;
     private bool _restoreRequestOffset;
     private bool _sourceDetailsExpanded;
+    private Vector _inventoryOffset;
     private string? _lastDetachedSource;
     private string? _lastDetachedRequest;
     private string? _lastDetachedGroup;
@@ -277,7 +278,8 @@ public sealed class InspectorView : UserControl, IPresentationView
     private void ArrangeInspector()
     {
         var narrow = Bounds.Width > 0 && Bounds.Width < 900;
-        if (narrow && !_narrow && _selectedRequest is not null) _narrowDetails = true;
+        if (narrow && !_narrow && _selectedRequest is not null)
+        { _inventoryOffset = _groupsScroll.Offset; _narrowDetails = true; }
         _narrow = narrow;
         _search.Width = narrow ? 155 : 200;
         _activity.Width = narrow ? 140 : 160;
@@ -308,6 +310,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         UpdatePaneVisibility();
         Dispatcher.UIThread.Post(() =>
         {
+            _groupsScroll.Offset = _inventoryOffset;
             if (_selectedGroup is { } key && _groupButtons.TryGetValue(key, out var button) && button.IsVisible) button.Focus();
         }, DispatcherPriority.Loaded);
     }
@@ -599,7 +602,11 @@ public sealed class InspectorView : UserControl, IPresentationView
         _conversation.SelectedItem = group; _updatingChoices = false;
         foreach (var pair in _groupButtons) { pair.Value.Background = pair.Key == key ? Ui.AccentSurface : Ui.Surface; pair.Value.BorderBrush = pair.Key == key ? Ui.Accent : Ui.Edge; }
         if (selected is not null) SelectRequest(selected.Id);
-        if (openDetails) { _narrowDetails = true; UpdatePaneVisibility(); }
+        if (openDetails)
+        {
+            if (_sidebar.IsVisible) _inventoryOffset = _groupsScroll.Offset;
+            _narrowDetails = true; UpdatePaneVisibility();
+        }
     }
 
     private void SelectRequest(string id)
