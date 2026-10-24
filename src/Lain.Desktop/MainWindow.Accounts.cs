@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Lain.Client;
@@ -35,13 +36,12 @@ public sealed partial class MainWindow
     private Control AccountsPage()
     {
         var options = PresentationFor("Accounts");
-        var panel = Ui.Stack(Ui.PageHeader("Accounts", "Provider budgets and account controls.",
+        var panel = Ui.Stack(Ui.PageHeader("Accounts", null,
+            Ui.Button("Discover providers", ShowProviderCatalog),
             Ui.PrimaryButton("Add account", ShowAddAccountChooser)));
         panel.Spacing = options.Density == ViewDensity.Compact ? 8 : 12;
-        var entryPoints = OverviewActions(Ui.Button("Discover providers", ShowProviderCatalog));
-        if (_login is { State: "waiting" }) entryPoints.Children.Add(Action("Continue Codex sign-in", StartCodexLoginAsync,
+        if (_login is { State: "waiting" }) panel.Children.Add(Action("Continue Codex sign-in", StartCodexLoginAsync,
             "Complete sign-in in your browser.", stayOnPage: true));
-        panel.Children.Add(entryPoints);
         if (_configuration is not { } cfg)
         {
             panel.Children.Add(Empty("Connect to the local host to load or add accounts. You can discover providers without an account."));
@@ -71,18 +71,23 @@ public sealed partial class MainWindow
         var group = new CheckBox { Content = "Group by provider", IsChecked = _preferences.GroupAccountsByProvider, VerticalAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(group, "Group accounts by provider");
         var clear = Ui.Button("Clear filters", () => { search.Text = ""; provider.SelectedIndex = 0; status.SelectedIndex = 0; });
-        panel.Children.Add(search);
-        var filterOptions = new Expander
+        var filterToggle = new ToggleButton
         {
-            Header = "Filters and order", IsExpanded = _accountFiltersExpanded,
-            HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
-            Content = OverviewActions(provider, status, order, group, clear)
+            Content = "Filters and order", IsChecked = _accountFiltersExpanded,
+            VerticalAlignment = VerticalAlignment.Stretch, Padding = new Thickness(10, 5)
         };
-        AutomationProperties.SetName(filterOptions, "Account filters and order");
-        AutomationProperties.SetHelpText(filterOptions, "Filter by provider or account state, change ordering, or group accounts by provider.");
-        filterOptions.PropertyChanged += (_, args) =>
+        AutomationProperties.SetName(filterToggle, "Account filters and order");
+        AutomationProperties.SetHelpText(filterToggle, "Show or hide provider and account state filters, ordering and provider grouping.");
+        var searchRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 8 };
+        searchRow.Children.Add(search);
+        Grid.SetColumn(filterToggle, 1); searchRow.Children.Add(filterToggle);
+        panel.Children.Add(searchRow);
+        var filterOptions = OverviewActions(provider, status, order, group, clear);
+        filterOptions.IsVisible = _accountFiltersExpanded;
+        filterToggle.IsCheckedChanged += (_, _) =>
         {
-            if (args.Property == Expander.IsExpandedProperty) _accountFiltersExpanded = filterOptions.IsExpanded;
+            _accountFiltersExpanded = filterToggle.IsChecked == true;
+            filterOptions.IsVisible = _accountFiltersExpanded;
         };
         panel.Children.Add(filterOptions);
         var activeFilters = new WrapPanel { Orientation = Orientation.Horizontal, IsVisible = false };
