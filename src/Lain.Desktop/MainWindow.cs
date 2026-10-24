@@ -306,6 +306,7 @@ public sealed partial class MainWindow : Window
     {
         if (_busy) return;
         var operationSection = _section;
+        var operationEditor = _editing ? _page.Content as Control : null;
         _busy = true; _notice.Text = "Working…";
         UpdateDraftStatus();
         _refresh.IsEnabled = false;
@@ -315,7 +316,15 @@ public sealed partial class MainWindow : Window
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { return; }
         catch (Exception ex) { _notice.Text = Friendly(ex); }
         finally { _busy = false; _refresh.IsEnabled = !_refreshing; _page.IsEnabled = true; _navigation.IsEnabled = true; _settingsButton.IsEnabled = true; _backButton.IsEnabled = _history.Count > 0; foreach (var action in _actions) action.IsEnabled = true; }
-        if (!_editing) { _drafts.Remove(operationSection); await RefreshAsync(false); Render(); }
+        if (!_editing)
+        {
+            // A successful command on the inventory is not a save/discard of a
+            // different, retained editor in this section.
+            if (operationEditor is not null && _drafts.TryGetValue(operationSection, out var completedDraft)
+                && ReferenceEquals(operationEditor, completedDraft.Content)) _drafts.Remove(operationSection);
+            await RefreshAsync(false);
+            Render();
+        }
         UpdateDraftStatus();
         UpdateServiceSummary();
     }

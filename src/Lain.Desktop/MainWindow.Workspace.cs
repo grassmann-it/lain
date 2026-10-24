@@ -60,6 +60,17 @@ public sealed partial class MainWindow
     private void ConfigureTray() => _trayController?.Configure(_preferences.MinimizeToTray,
         _preferences.CloseToTray, _preferences.NotificationsEnabled);
 
+    private bool CanOpenSectionEditor()
+    {
+        if (!_drafts.TryGetValue(_section, out var retained)) return true;
+        // Explicit review rebuilds the mounted draft. A contextual jump to a
+        // different object leaves this section's existing draft protected.
+        if (_editing && _displayedDraftSection == _section && ReferenceEquals(_page.Content, retained.Content)) return true;
+        _notice.Text = $"A local draft for {_section} · {retained.Identity} is already kept. Continue editing it or explicitly discard that draft before opening another editor.";
+        UpdateDraftStatus();
+        return false;
+    }
+
     private void RegisterEditor(Action rebuild, long revision, string? identity = null)
     {
         // New task editors start at their identity. Restoring a mounted draft

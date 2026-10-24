@@ -75,6 +75,18 @@
         "Resize between agreed viewports and change density: both panes remain mounted, no forced window resizing and no detail-only page replacement."
       ],
       "requests": "Geometry, opening, closing and scrolling send no host mutation."
+    },
+    {
+      "id": "protect-retained-section-from-contextual-second-editor",
+      "steps": [
+        "Edit Models A and make local input changes; navigate to Profiles while retaining A.",
+        "Use a profile model-row contextual link to browse Models B without restoring A.",
+        "Attempt Edit B and separately Remove B: expect a clear message naming retained Models A, no editor replacement and the return/discard notice still available.",
+        "Navigate away and return explicitly to draft A: expect its original mounted controls, inputs and revision.",
+        "Repeat but run an inventory toggle on B: the successful B command must leave retained draft A intact and revision-stale if configuration advanced.",
+        "Explicitly discard A, then open editor B: B can now open as its own identified editor."
+      ],
+      "requests": "Navigation and blocked Edit/Remove issue no write; explicit B toggle may only affect B with its captured revision; A is never saved, applied or implicitly discarded."
     }
   ]
 }

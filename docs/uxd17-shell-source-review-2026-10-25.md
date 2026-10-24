@@ -102,3 +102,22 @@ The former detail-page swapping fields and branches were removed. Opening,
 closing or resizing Accounts keeps the same mounted inventory and separate
 inventory/detail scroll surfaces. Close/Escape returns focus to its original
 visible account trigger. Native geometry/focus evidence is still pending UXD-22.
+
+## Protect a retained section draft from a second editor
+
+Contextual navigation may intentionally browse a different object in a section
+without restoring its retained editor. `CanOpenSectionEditor()` now prevents a
+second editor/removal review from replacing that existing section draft. The
+message names the retained section/object and requires Continue editing or an
+explicit Discard before opening another editor. It leaves the browsed object
+unchanged and never relabels the first editor as that object. Models and Profiles
+owners call the guard before changing selection or mounting editor controls;
+explicit revision review can still rebuild its own mounted editor.
+
+A separate matching loss path was removed from `RunAsync`: success on a visible
+inventory command (for example toggling model B) no longer removes an unrelated
+retained Models A editor. Completion only removes a dictionary entry when that
+entry references the exact editor mount on which the operation started. This
+keeps the original single section-draft mechanism and does not add multi-draft
+storage. Native contextual A→Profiles→B→Edit/Remove/Toggle→Return A validation
+remains assigned to UXD-22.
