@@ -1,0 +1,1167 @@
+{
+  "result": "PASS",
+  "privateXvfb": true,
+  "display": ":2",
+  "assemblies": [
+    {
+      "name": "Lain.Desktop",
+      "source": "/tmp/lain-client-publish-e5dbaa3/desktop/Lain.Desktop.dll",
+      "loadedPath": "/tmp/lain-installed-probe.BN9UusvR/target/Lain.Desktop.dll",
+      "sha256": "75ca770d8c9cadd8a0e85bad9bf11023af7aa4b9825b7a87d574896fea26dc4c",
+      "version": "1.0.0\u002Be5dbaa3"
+    },
+    {
+      "name": "Lain.Client",
+      "source": "/tmp/lain-client-publish-e5dbaa3/desktop/Lain.Client.dll",
+      "loadedPath": "/tmp/lain-installed-probe.BN9UusvR/target/Lain.Client.dll",
+      "sha256": "58551f960b33c969c5c03d8cf1a893bf90299562f0ff9ae298f18ae6e318a555",
+      "version": "1.0.0\u002Be5dbaa3"
+    },
+    {
+      "name": "Lain.Core",
+      "source": "/tmp/lain-client-publish-e5dbaa3/desktop/Lain.Core.dll",
+      "loadedPath": "/tmp/lain-installed-probe.BN9UusvR/target/Lain.Core.dll",
+      "sha256": "3cc314c36c4b2752b814b7d4e0fd380100438b6708665c5d48c625b83e638cb5",
+      "version": "1.0.0\u002Be5dbaa3"
+    },
+    {
+      "name": "Avalonia.Controls",
+      "source": "/tmp/lain-client-publish-e5dbaa3/desktop/Avalonia.Controls.dll",
+      "loadedPath": "/tmp/lain-installed-probe.BN9UusvR/target/Avalonia.Controls.dll",
+      "sha256": "24d36a48b0033e52313d1f7a2d8b69bcc18e5504d518bf56c23916558c4f1912",
+      "version": "12.1.4\u002B2d79ba55fae1b1e71c69f93a668080c9029e6a31"
+    }
+  ],
+  "checks": [
+    "fixed historical range is valid",
+    "own host and proxy ready before opening",
+    "new production window reads own host status and configuration",
+    "Accounts inventory loaded",
+    "own host observer confirms ready after window initialization",
+    "exactly five primary destinations",
+    "Accounts is initial destination",
+    "original cat logo and native window icon are present",
+    "named quota window shown for xiaomi-mimo: Quota unavailable",
+    "remaining state is explicit for xiaomi-mimo",
+    "named quota window shown for t.grassmann@live.de: 7 days",
+    "reported consumed percentage shown for t.grassmann@live.de",
+    "remaining state is explicit for t.grassmann@live.de",
+    "named quota window shown for commandcode: Monthly credits",
+    "named quota window shown for commandcode: Purchased credits",
+    "named quota window shown for commandcode: Free credits",
+    "named quota window shown for commandcode: 5 hours",
+    "named quota window shown for commandcode: 7 days",
+    "named quota window shown for commandcode: Monthly model limits",
+    "remaining state is explicit for commandcode",
+    "named quota window shown for zai: Credits \u00B7 5 hours",
+    "reported consumed percentage shown for zai",
+    "named quota window shown for zai: Credits \u00B7 7 days",
+    "reported consumed percentage shown for zai",
+    "remaining state is explicit for zai",
+    "named quota window shown for kimi: 5 hours",
+    "reported consumed percentage shown for kimi",
+    "named quota window shown for kimi: Monthly total",
+    "reported consumed percentage shown for kimi",
+    "named quota window shown for kimi: Monthly coding",
+    "reported consumed percentage shown for kimi",
+    "remaining state is explicit for kimi",
+    "Accounts displays the complete configured inventory",
+    "accounts-simple viewport 1120x780",
+    "exact-target information-level selector fits the bottom right at 1120px",
+    "accounts-simple viewport 800x560",
+    "exact-target information-level selector fits the bottom right at 800px",
+    "Models configured inventory loaded",
+    "models-simple viewport 1120x780",
+    "models-simple viewport 800x560",
+    "Profiles reports applied state including explicit unknown",
+    "missing host profile ID remains unknown",
+    "profiles-simple viewport 1120x780",
+    "profiles-simple viewport 800x560",
+    "Usage range controls available",
+    "Usage reads persistent own-host history",
+    "Usage renders the fixed historical range",
+    "usage-simple viewport 1120x780",
+    "usage-simple viewport 800x560",
+    "Live reads the local inspector",
+    "Live reports its observed local source state",
+    "live-simple viewport 1120x780",
+    "live-simple viewport 800x560",
+    "credential-free provider discovery opens",
+    "provider catalog read from own host",
+    "real provider catalog cards loaded",
+    "discovery shows real catalog provider Alibaba Cloud Model Studio",
+    "discovery shows real catalog provider Cloudflare Workers AI",
+    "discovery shows real catalog provider Google Gemini API",
+    "discovery shows real catalog provider Groq",
+    "discovery shows real catalog provider Inception Mercury",
+    "discovery shows real catalog provider Mistral API",
+    "discovery shows real catalog provider Nebius Token Factory",
+    "discovery shows real catalog provider NVIDIA Build",
+    "discovery shows real catalog provider OpenCode Go / Go Plus",
+    "discovery shows real catalog provider OpenRouter",
+    "discovery shows real catalog provider Poe",
+    "discovery shows real catalog provider Requesty",
+    "discovery shows real catalog provider StepFun",
+    "discovery shows real catalog provider Synthetic",
+    "discovery shows real catalog provider xAI / Grok",
+    "discover-providers viewport 1120x780",
+    "discover-providers viewport 800x560",
+    "View stays closed before footer selects Barebones",
+    "footer switches to Barebones without opening View",
+    "View does not duplicate the footer selector in Barebones",
+    "presentation writes only isolated preferences",
+    "Barebones is saved in isolated preferences",
+    "Barebones keeps all five destinations",
+    "accounts-barebones viewport 1120x780",
+    "exact-target information-level selector fits the bottom right at 1120px",
+    "accounts-barebones viewport 800x560",
+    "exact-target information-level selector fits the bottom right at 800px",
+    "View stays closed before footer selects Simple",
+    "footer switches to Simple without opening View",
+    "View does not duplicate the footer selector in Simple",
+    "presentation writes only isolated preferences",
+    "Simple is saved in isolated preferences",
+    "Simple keeps all five destinations",
+    "accounts-simple viewport 1120x780",
+    "exact-target information-level selector fits the bottom right at 1120px",
+    "accounts-simple viewport 800x560",
+    "exact-target information-level selector fits the bottom right at 800px",
+    "View stays closed before footer selects Advanced",
+    "footer switches to Advanced without opening View",
+    "View does not duplicate the footer selector in Advanced",
+    "presentation writes only isolated preferences",
+    "Advanced is saved in isolated preferences",
+    "Advanced keeps all five destinations",
+    "accounts-advanced viewport 1120x780",
+    "exact-target information-level selector fits the bottom right at 1120px",
+    "accounts-advanced viewport 800x560",
+    "exact-target information-level selector fits the bottom right at 800px",
+    "Usage range controls available",
+    "Usage reads persistent own-host history",
+    "Usage renders the fixed historical range",
+    "host remains ready while window is closed",
+    "fixed historical usage unchanged while closed",
+    "new production window reads own host status and configuration",
+    "Accounts inventory loaded",
+    "own host observer confirms ready after window initialization",
+    "reopened exact-target window restores Advanced in its permanent footer with View closed",
+    "Usage range controls available",
+    "Usage reads persistent own-host history",
+    "Usage renders the fixed historical range",
+    "reopened-usage viewport 1120x780",
+    "exact-target information-level selector fits the bottom right at 1120px",
+    "reopened-usage viewport 800x560",
+    "exact-target information-level selector fits the bottom right at 800px",
+    "fixed historical usage unchanged after reopen",
+    "configuration unchanged after read-only workflow",
+    "host remains ready after GUI lifecycle",
+    "all HTTP requests passed GET-only endpoint allowlist",
+    "no browser or external-launch attempt"
+  ],
+  "screenshots": [
+    {
+      "page": "accounts-simple",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "accounts-simple-1120x780.png",
+      "sha256": "8e09f424103d99dfab4608d7f16aefb4ce664638d88ccbd80c5fbb92666615de"
+    },
+    {
+      "page": "accounts-simple",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "accounts-simple-800x560.png",
+      "sha256": "54c9cae9d77ac219cbfeb04f2253ffbf0875bdc8929800e593c89e70c62f213b"
+    },
+    {
+      "page": "models-simple",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "models-simple-1120x780.png",
+      "sha256": "1714a078b40a100208e9cf87ac476835a8d3bf8dc2cf2dc56937be361efd6643"
+    },
+    {
+      "page": "models-simple",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "models-simple-800x560.png",
+      "sha256": "298db35c6b8472fd11ca8bc93e77fbd5f5b8c61f01bf61af11420e6e77740ce4"
+    },
+    {
+      "page": "profiles-simple",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "profiles-simple-1120x780.png",
+      "sha256": "fcf9d23dad85985be3f86c91a33124fc8538c6869df0195f29e39c58fd333ee5"
+    },
+    {
+      "page": "profiles-simple",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "profiles-simple-800x560.png",
+      "sha256": "c7d4877ca5737106695bd047592e4046bbf7d91cccf563595537727ad370a343"
+    },
+    {
+      "page": "usage-simple",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "usage-simple-1120x780.png",
+      "sha256": "c4497759a0472300c97b9652b5528727e3850c97f3042ac1055c26b2b0632412"
+    },
+    {
+      "page": "usage-simple",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "usage-simple-800x560.png",
+      "sha256": "dc9bd67f227b3c1dbd493bafaa645736c0643461713b5e4db15bbb850fcad0c9"
+    },
+    {
+      "page": "live-simple",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "live-simple-1120x780.png",
+      "sha256": "a8bd21df7a60885b96f710b58cc99d454aeb9f43182afcf7c3d2de86c96b2a1a"
+    },
+    {
+      "page": "live-simple",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "live-simple-800x560.png",
+      "sha256": "7100cb9c2eaca290daf2cfdc2bb2188bf072cc1a4207f86b5c8fc9502861599b"
+    },
+    {
+      "page": "discover-providers",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "discover-providers-1120x780.png",
+      "sha256": "19a3b11b620226eda9f7061167f81d77534dd5b9c878d70021db876971386067"
+    },
+    {
+      "page": "discover-providers",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "discover-providers-800x560.png",
+      "sha256": "f21180c48dc6c1ce89651f05ce11461daaeaea51f5688491b9a3c3e56a94dfa5"
+    },
+    {
+      "page": "accounts-barebones",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "accounts-barebones-1120x780.png",
+      "sha256": "9466ffe2691552fd66722e0c385f59dcaa6835e77e9da9a6d6431cd42147a891"
+    },
+    {
+      "page": "accounts-barebones",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "accounts-barebones-800x560.png",
+      "sha256": "3365b8fba3eaa7e9d60c24bae76911d64cbcc343bac4473fb23161415b4026b4"
+    },
+    {
+      "page": "accounts-simple",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "accounts-simple-1120x780.png",
+      "sha256": "4af7f66cb531d37e0d66765c06e223a20d6da672a13e1fd0ba79d834d5ee9918"
+    },
+    {
+      "page": "accounts-simple",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "accounts-simple-800x560.png",
+      "sha256": "debfb73975a2ee27b5aba9bd2c939fceaa1e42a7f80cdcf04f40fd93fc9ee886"
+    },
+    {
+      "page": "accounts-advanced",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "accounts-advanced-1120x780.png",
+      "sha256": "b2defe18d7b0aeb79db40da7971b42a174608a978118b84ffdb9e5e00673c9b8"
+    },
+    {
+      "page": "accounts-advanced",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "accounts-advanced-800x560.png",
+      "sha256": "d3b538309a42748c9fcab7849bd8b151bc6bcafba19ae01b21bc4f593b34e951"
+    },
+    {
+      "page": "reopened-usage",
+      "width": 1120,
+      "height": 780,
+      "actualWidth": 1120,
+      "actualHeight": 780,
+      "file": "reopened-usage-1120x780.png",
+      "sha256": "b91d2a3d5c049c2694296ad0037f9660c23edf908d7d8862f53fef1a4ef1b2b8"
+    },
+    {
+      "page": "reopened-usage",
+      "width": 800,
+      "height": 560,
+      "actualWidth": 800,
+      "actualHeight": 560,
+      "file": "reopened-usage-800x560.png",
+      "sha256": "78dc71b5e2434b1e80ae40c5af603c7c460e4f56753d4e074fa5f439772a260b"
+    }
+  ],
+  "accountWindows": [
+    {
+      "accountId": "acct-3b8f7ca3a3add5fee0676e31fac70a64",
+      "Provider": "xiaomi-mimo",
+      "windowCount": 1,
+      "windows": [
+        {
+          "AccountId": "acct-3b8f7ca3a3add5fee0676e31fac70a64",
+          "BudgetPoolId": null,
+          "Source": "unavailable",
+          "State": "unsupported",
+          "ObservedAt": "2026-10-24T12:11:06.148797+00:00",
+          "LastSuccessAt": null,
+          "ResetsAt": null,
+          "Unit": "unknown",
+          "Used": null,
+          "Limit": null,
+          "Remaining": null,
+          "SharedWithLegacy": true,
+          "Error": "Direct MiMo quota is not available through a verified API-key endpoint. Check the provider console.",
+          "WindowLabel": "Quota unavailable",
+          "UsedPercent": null
+        }
+      ],
+      "displayedHeader": [
+        "Xiaomi MiMo",
+        "Xiaomi MiMo \u00B7 Enabled",
+        "Credential state: unverified. Check credential details.",
+        "Shared provider budget",
+        "Quota unavailable",
+        "Not available",
+        "Remaining not available",
+        "Reset not available",
+        "Quota lookup is not supported here yet.",
+        "Direct MiMo quota is not available through a verified API-key endpoint. Check the provider console.",
+        "Show details"
+      ]
+    },
+    {
+      "accountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+      "Provider": "codex",
+      "windowCount": 1,
+      "windows": [
+        {
+          "AccountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+          "BudgetPoolId": null,
+          "Source": "https://chatgpt.com/backend-api/wham/usage#primary_window",
+          "State": "ok",
+          "ObservedAt": "2026-10-24T12:11:06.7101548+00:00",
+          "LastSuccessAt": "2026-10-24T12:11:06.7101548+00:00",
+          "ResetsAt": "2026-10-30T17:40:52+00:00",
+          "Unit": "percent",
+          "Used": 100,
+          "Limit": 100,
+          "Remaining": 0,
+          "SharedWithLegacy": true,
+          "Error": null,
+          "WindowLabel": "7 days",
+          "UsedPercent": 100
+        }
+      ],
+      "displayedHeader": [
+        "t.grassmann@live.de",
+        "Exhausted",
+        "Codex \u00B7 Enabled",
+        "Credential state: unverified. Check credential details.",
+        "Shared provider budget",
+        "7 days",
+        "100% used",
+        "100%",
+        "0% left",
+        "Resets 30 Oct \u00B7 18:40 local time",
+        "Checked 14:11 local time",
+        "Show details"
+      ]
+    },
+    {
+      "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+      "Provider": "commandcode",
+      "windowCount": 6,
+      "windows": [
+        {
+          "AccountId": "acct-9285cf785075f27839a7ebd10550c705",
+          "BudgetPoolId": null,
+          "Source": "https://api.commandcode.ai/alpha/billing/credits#monthlyCredits",
+          "State": "ok",
+          "ObservedAt": "2026-10-24T12:11:08.2387136+00:00",
+          "LastSuccessAt": "2026-10-24T12:11:08.2387136+00:00",
+          "ResetsAt": "2026-11-22T00:36:41+00:00",
+          "Unit": "USD-Credits",
+          "Used": 67.395922455,
+          "Limit": 150,
+          "Remaining": 82.604077545,
+          "SharedWithLegacy": true,
+          "Error": null,
+          "WindowLabel": "Monthly credits",
+          "UsedPercent": null
+        },
+        {
+          "AccountId": "acct-9285cf785075f27839a7ebd10550c705",
+          "BudgetPoolId": null,
+          "Source": "https://api.commandcode.ai/alpha/billing/credits#purchasedCredits",
+          "State": "ok",
+          "ObservedAt": "2026-10-24T12:11:08.2387136+00:00",
+          "LastSuccessAt": "2026-10-24T12:11:08.2387136+00:00",
+          "ResetsAt": null,
+          "Unit": "USD-Credits",
+          "Used": null,
+          "Limit": null,
+          "Remaining": 0,
+          "SharedWithLegacy": true,
+          "Error": null,
+          "WindowLabel": "Purchased credits",
+          "UsedPercent": null
+        },
+        {
+          "AccountId": "acct-9285cf785075f27839a7ebd10550c705",
+          "BudgetPoolId": null,
+          "Source": "https://api.commandcode.ai/alpha/billing/credits#freeCredits",
+          "State": "ok",
+          "ObservedAt": "2026-10-24T12:11:08.2387136+00:00",
+          "LastSuccessAt": "2026-10-24T12:11:08.2387136+00:00",
+          "ResetsAt": null,
+          "Unit": "USD-Credits",
+          "Used": null,
+          "Limit": null,
+          "Remaining": 0,
+          "SharedWithLegacy": true,
+          "Error": null,
+          "WindowLabel": "Free credits",
+          "UsedPercent": null
+        },
+        {
+          "AccountId": "acct-9285cf785075f27839a7ebd10550c705",
+          "BudgetPoolId": null,
+          "Source": "https://api.commandcode.ai/alpha/billing/credits#fiveHour",
+          "State": "ok",
+          "ObservedAt": "2026-10-24T12:11:08.2387136+00:00",
+          "LastSuccessAt": "2026-10-24T12:11:08.2387136+00:00",
+          "ResetsAt": null,
+          "Unit": "USD-Credits",
+          "Used": 0,
+          "Limit": 45,
+          "Remaining": 45,
+          "SharedWithLegacy": true,
+          "Error": null,
+          "WindowLabel": "5 hours",
+          "UsedPercent": null
+        },
+        {
+          "AccountId": "acct-9285cf785075f27839a7ebd10550c705",
+          "BudgetPoolId": null,
+          "Source": "https://api.commandcode.ai/alpha/billing/credits#weekly",
+          "State": "ok",
+          "ObservedAt": "2026-10-24T12:11:08.2387136+00:00",
+          "LastSuccessAt": "2026-10-24T12:11:08.2387136+00:00",
+          "ResetsAt": "2026-10-29T00:57:50.672+00:00",
+          "Unit": "USD-Credits",
+          "Used": 67.395922455,
+          "Limit": 90,
+          "Remaining": 22.604077544999996,
+          "SharedWithLegacy": true,
+          "Error": null,
+          "WindowLabel": "7 days",
+          "UsedPercent": null
+        },
+        {
+          "AccountId": "acct-9285cf785075f27839a7ebd10550c705",
+          "BudgetPoolId": null,
+          "Source": "https://commandcode.ai/docs/plans#model-monthly-remaining-unknown",
+          "State": "unknown",
+          "ObservedAt": "2026-10-24T12:11:08.2387136+00:00",
+          "LastSuccessAt": null,
+          "ResetsAt": null,
+          "Unit": "USD",
+          "Used": null,
+          "Limit": null,
+          "Remaining": null,
+          "SharedWithLegacy": true,
+          "Error": null,
+          "WindowLabel": "Monthly model limits",
+          "UsedPercent": null
+        }
+      ],
+      "displayedHeader": [
+        "Command Code",
+        "Command Code \u00B7 Enabled",
+        "Credential state: unverified. Check credential details.",
+        "Shared provider budget",
+        "Monthly credits",
+        "44.93% used",
+        "45%",
+        "82.6 USD-Credits left",
+        "Resets 22 Nov \u00B7 01:36 local time",
+        "67.4 of 150 USD-Credits used",
+        "Checked 14:11 local time",
+        "Purchased credits",
+        "Percentage not available",
+        "0 USD-Credits left",
+        "Reset not supplied",
+        "Checked 14:11 local time",
+        "Free credits",
+        "Percentage not available",
+        "0 USD-Credits left",
+        "Reset not supplied",
+        "Checked 14:11 local time",
+        "5 hours",
+        "0% used",
+        "0%",
+        "45 USD-Credits left",
+        "Reset not supplied",
+        "0 of 45 USD-Credits used",
+        "Checked 14:11 local time",
+        "7 days",
+        "74.88% used",
+        "75%",
+        "22.6 USD-Credits left",
+        "Resets 29 Oct \u00B7 01:57 local time",
+        "67.4 of 90 USD-Credits used",
+        "Checked 14:11 local time",
+        "Monthly model limits",
+        "Percentage not available",
+        "Remaining not supplied",
+        "Reset not supplied",
+        "Not reported \u00B7 Check time not supplied",
+        "Show details"
+      ]
+    },
+    {
+      "accountId": "acct-ae1c396a0e93a312ac1dcfd6531bd188",
+      "Provider": "zai",
+      "windowCount": 2,
+      "windows": [
+        {
+          "AccountId": "acct-ae1c396a0e93a312ac1dcfd6531bd188",
+          "BudgetPoolId": null,
+          "Source": "https://api.z.ai/api/monitor/usage/quota/limit#CREDIT_LIMIT/unit/3/number/5",
+          "State": "ok",
+          "ObservedAt": "2026-10-24T12:11:06.6277105+00:00",
+          "LastSuccessAt": "2026-10-24T12:11:06.6277105+00:00",
+          "ResetsAt": null,
+          "Unit": "credits",
+          "Used": 0,
+          "Limit": 12000,
+          "Remaining": 12000,
+          "SharedWithLegacy": true,
+          "Error": null,
+          "WindowLabel": "Credits \u00B7 5 hours",
+          "UsedPercent": 0
+        },
+        {
+          "AccountId": "acct-ae1c396a0e93a312ac1dcfd6531bd188",
+          "BudgetPoolId": null,
+          "Source": "https://api.z.ai/api/monitor/usage/quota/limit#CREDIT_LIMIT/unit/6/number/1",
+          "State": "ok",
+          "ObservedAt": "2026-10-24T12:11:06.6277105+00:00",
+          "LastSuccessAt": "2026-10-24T12:11:06.6277105+00:00",
+          "ResetsAt": "2026-10-29T18:28:30.982+00:00",
+          "Unit": "credits",
+          "Used": 22001,
+          "Limit": 60000,
+          "Remaining": 37998,
+          "SharedWithLegacy": true,
+          "Error": null,
+          "WindowLabel": "Credits \u00B7 7 days",
+          "UsedPercent": 36
+        }
+      ],
+      "displayedHeader": [
+        "Z.ai",
+        "Z.ai \u00B7 Enabled",
+        "Credential state: unverified. Check credential details.",
+        "Shared provider budget",
+        "Credits \u00B7 5 hours",
+        "0% used",
+        "0%",
+        "12,000 credits left",
+        "Reset not supplied",
+        "0 of 12,000 credits used",
+        "Checked 14:11 local time",
+        "Credits \u00B7 7 days",
+        "36% used",
+        "36%",
+        "37,998 credits left",
+        "Resets 29 Oct \u00B7 19:28 local time",
+        "22,001 of 60,000 credits used",
+        "Checked 14:11 local time",
+        "Show details"
+      ]
+    },
+    {
+      "accountId": "acct-b2f4491f4456aa30b7debe2247df99aa",
+      "Provider": "kimi",
+      "windowCount": 3,
+      "windows": [
+        {
+          "AccountId": "acct-b2f4491f4456aa30b7debe2247df99aa",
+          "BudgetPoolId": null,
+          "Source": "https://api.kimi.com/coding/v1/usages#limit_5h",
+          "State": "ok",
+          "ObservedAt": "2026-10-24T12:11:07.1153112+00:00",
+          "LastSuccessAt": "2026-10-24T12:11:07.1153112+00:00",
+          "ResetsAt": "2026-10-24T12:59:22+00:00",
+          "Unit": "percent",
+          "Used": 0,
+          "Limit": 100,
+          "Remaining": 100,
+          "SharedWithLegacy": true,
+          "Error": null,
+          "WindowLabel": "5 hours",
+          "UsedPercent": 0
+        },
+        {
+          "AccountId": "acct-b2f4491f4456aa30b7debe2247df99aa",
+          "BudgetPoolId": null,
+          "Source": "https://api.kimi.com/coding/v1/usages#limit_month_total",
+          "State": "ok",
+          "ObservedAt": "2026-10-24T12:11:07.1153112+00:00",
+          "LastSuccessAt": "2026-10-24T12:11:07.1153112+00:00",
+          "ResetsAt": "2026-10-27T00:00:00+00:00",
+          "Unit": "percent",
+          "Used": 81.64,
+          "Limit": 100,
+          "Remaining": 18.36,
+          "SharedWithLegacy": true,
+          "Error": null,
+          "WindowLabel": "Monthly total",
+          "UsedPercent": 81.64
+        },
+        {
+          "AccountId": "acct-b2f4491f4456aa30b7debe2247df99aa",
+          "BudgetPoolId": null,
+          "Source": "https://api.kimi.com/coding/v1/usages#limit_month_code",
+          "State": "ok",
+          "ObservedAt": "2026-10-24T12:11:07.1153112+00:00",
+          "LastSuccessAt": "2026-10-24T12:11:07.1153112+00:00",
+          "ResetsAt": "2026-10-27T00:00:00+00:00",
+          "Unit": "percent",
+          "Used": 71.57,
+          "Limit": 100,
+          "Remaining": 28.430000000000007,
+          "SharedWithLegacy": true,
+          "Error": null,
+          "WindowLabel": "Monthly coding",
+          "UsedPercent": 71.57
+        }
+      ],
+      "displayedHeader": [
+        "Kimi",
+        "Kimi \u00B7 Enabled",
+        "Credential state: unverified. Check credential details.",
+        "Shared provider budget",
+        "5 hours",
+        "0% used",
+        "0%",
+        "100% left",
+        "Resets 24 Oct \u00B7 14:59 local time",
+        "Checked 14:11 local time",
+        "Monthly total",
+        "81.64% used",
+        "82%",
+        "18.36% left",
+        "Resets 27 Oct \u00B7 01:00 local time",
+        "Checked 14:11 local time",
+        "Monthly coding",
+        "71.57% used",
+        "72%",
+        "28.43% left",
+        "Resets 27 Oct \u00B7 01:00 local time",
+        "Checked 14:11 local time",
+        "Show details"
+      ]
+    }
+  ],
+  "profileStates": [
+    {
+      "hostActiveProfileId": null,
+      "hostActiveProfileRevision": null,
+      "displayed": "Applied profile not reported by the host \u00B7 Configuration: saved 4 / proxy 2"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/v1/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/configuration",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/configuration",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/configuration",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/quotas",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/models",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/quotas",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage?from=2026-10-17T22%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T22%3A00%3A00.0000000%2B00%3A00\u0026timeZone=Europe%2FBerlin\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/accounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/attempts?from=2026-10-17T22%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T22%3A00%3A00.0000000%2B00%3A00\u0026timeZone=Europe%2FBerlin\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage/analysis?from=2026-10-17T22%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T22%3A00%3A00.0000000%2B00%3A00\u0026timeZone=Europe%2FBerlin\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/accounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/attempts?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage/analysis?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/inspector?limit=256",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/providers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/providers",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/accounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/attempts?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage/analysis?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/accounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/attempts?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage/analysis?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/configuration",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/configuration",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/quotas",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/models",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/status",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/accounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage?from=2026-10-17T22%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T22%3A00%3A00.0000000%2B00%3A00\u0026timeZone=Europe%2FBerlin\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/attempts?from=2026-10-17T22%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T22%3A00%3A00.0000000%2B00%3A00\u0026timeZone=Europe%2FBerlin\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage/analysis?from=2026-10-17T22%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T22%3A00%3A00.0000000%2B00%3A00\u0026timeZone=Europe%2FBerlin\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/accounts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/attempts?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage/analysis?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=25\u0026groupBy=modelFamily\u0026groupLimit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/usage?from=2026-10-01T00%3A00%3A00.0000000%2B00%3A00\u0026to=2026-10-24T00%3A00%3A00.0000000%2B00%3A00\u0026timeZone=UTC\u0026offset=0\u0026limit=100",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/configuration",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/status",
+      "status": 200
+    }
+  ],
+  "blocked": [],
+  "historicalUsage": {
+    "from": "2026-10-01T00:00:00+00:00",
+    "to": "2026-10-24T00:00:00+00:00",
+    "before": {
+      "ContractVersion": 1,
+      "From": "2026-10-01T00:00:00+00:00",
+      "To": "2026-10-24T00:00:00+00:00",
+      "TimeZone": "UTC",
+      "ObservedAt": "2026-10-24T12:13:26.787+00:00",
+      "Cursor": 2,
+      "Complete": true,
+      "Totals": {
+        "Requests": 1,
+        "Attempts": 1,
+        "Errors": 0,
+        "Tokens": {
+          "Input": 81981,
+          "Output": 5,
+          "Cached": 3968,
+          "Reasoning": 0,
+          "Total": 81986
+        },
+        "UnknownUsageAttempts": 0
+      },
+      "Daily": [
+        {
+          "Key": "2026-10-23",
+          "Totals": {
+            "Requests": 1,
+            "Attempts": 1,
+            "Errors": 0,
+            "Tokens": {
+              "Input": 81981,
+              "Output": 5,
+              "Cached": 3968,
+              "Reasoning": 0,
+              "Total": 81986
+            },
+            "UnknownUsageAttempts": 0
+          }
+        }
+      ],
+      "Accounts": [
+        {
+          "Key": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+          "Totals": {
+            "Requests": 1,
+            "Attempts": 1,
+            "Errors": 0,
+            "Tokens": {
+              "Input": 81981,
+              "Output": 5,
+              "Cached": 3968,
+              "Reasoning": 0,
+              "Total": 81986
+            },
+            "UnknownUsageAttempts": 0
+          }
+        }
+      ],
+      "Models": [
+        {
+          "Key": "gpt-6-luna",
+          "Totals": {
+            "Requests": 1,
+            "Attempts": 1,
+            "Errors": 0,
+            "Tokens": {
+              "Input": 81981,
+              "Output": 5,
+              "Cached": 3968,
+              "Reasoning": 0,
+              "Total": 81986
+            },
+            "UnknownUsageAttempts": 0
+          }
+        }
+      ]
+    },
+    "after": {
+      "ContractVersion": 1,
+      "From": "2026-10-01T00:00:00+00:00",
+      "To": "2026-10-24T00:00:00+00:00",
+      "TimeZone": "UTC",
+      "ObservedAt": "2026-10-24T12:13:37.876+00:00",
+      "Cursor": 2,
+      "Complete": true,
+      "Totals": {
+        "Requests": 1,
+        "Attempts": 1,
+        "Errors": 0,
+        "Tokens": {
+          "Input": 81981,
+          "Output": 5,
+          "Cached": 3968,
+          "Reasoning": 0,
+          "Total": 81986
+        },
+        "UnknownUsageAttempts": 0
+      },
+      "Daily": [
+        {
+          "Key": "2026-10-23",
+          "Totals": {
+            "Requests": 1,
+            "Attempts": 1,
+            "Errors": 0,
+            "Tokens": {
+              "Input": 81981,
+              "Output": 5,
+              "Cached": 3968,
+              "Reasoning": 0,
+              "Total": 81986
+            },
+            "UnknownUsageAttempts": 0
+          }
+        }
+      ],
+      "Accounts": [
+        {
+          "Key": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+          "Totals": {
+            "Requests": 1,
+            "Attempts": 1,
+            "Errors": 0,
+            "Tokens": {
+              "Input": 81981,
+              "Output": 5,
+              "Cached": 3968,
+              "Reasoning": 0,
+              "Total": 81986
+            },
+            "UnknownUsageAttempts": 0
+          }
+        }
+      ],
+      "Models": [
+        {
+          "Key": "gpt-6-luna",
+          "Totals": {
+            "Requests": 1,
+            "Attempts": 1,
+            "Errors": 0,
+            "Tokens": {
+              "Input": 81981,
+              "Output": 5,
+              "Cached": 3968,
+              "Reasoning": 0,
+              "Total": 81986
+            },
+            "UnknownUsageAttempts": 0
+          }
+        }
+      ]
+    }
+  },
+  "configurationRevision": 4,
+  "isolatedPreferences": "/tmp/lain-installed-probe.BN9UusvR/preferences.json",
+  "hostBefore": {
+    "ContractVersion": 1,
+    "Version": "0.1.0",
+    "State": "pending-application",
+    "ProxyReady": true,
+    "Revision": 4,
+    "AppliedRevision": 2,
+    "ObservedAt": "2026-10-24T12:13:27.1045967+00:00",
+    "Error": null,
+    "ActiveProfileId": null,
+    "ActiveProfileRevision": null
+  },
+  "hostWhileClosed": {
+    "ContractVersion": 1,
+    "Version": "0.1.0",
+    "State": "pending-application",
+    "ProxyReady": true,
+    "Revision": 4,
+    "AppliedRevision": 2,
+    "ObservedAt": "2026-10-24T12:13:36.9572505+00:00",
+    "Error": null,
+    "ActiveProfileId": null,
+    "ActiveProfileRevision": null
+  },
+  "hostAfter": {
+    "ContractVersion": 1,
+    "Version": "0.1.0",
+    "State": "pending-application",
+    "ProxyReady": true,
+    "Revision": 4,
+    "AppliedRevision": 2,
+    "ObservedAt": "2026-10-24T12:13:38.1791779+00:00",
+    "Error": null,
+    "ActiveProfileId": null,
+    "ActiveProfileRevision": null
+  },
+  "runtime": {
+    "framework": ".NET 10.0.11",
+    "version": "10.0.11",
+    "os": "Manjaro Linux"
+  },
+  "scope": "Exact selected Desktop/Client/Core/Avalonia.Controls assemblies and production App/MainWindow on real own host, GET-only. Routed button events and RenderTargetBitmap captures; no OS pointer hit testing, launcher/taskbar rendering, provider refresh, inference, configuration write, login or browser. Live content is observed, never fabricated. Historical range is fixed; concurrent external host activity is not disabled or attributed to this probe. Window reopen occurs in one process; preferences are a separate temporary file."
+}

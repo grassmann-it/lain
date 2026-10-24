@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "checks": [
+    "management authentication and audience isolation",
+    "embedded provider registry and no-key onboarding",
+    "analysis null measurements and bounded inspector endpoints",
+    "revision race and stale-write rejection",
+    "desired/applied separation and public secret exclusion",
+    "bounded query validation",
+    "registered quota adapters with local synthetic enrollment and no fetch",
+    "route/profile free-only guards preserve revision and credentials",
+    "failed apply preserves applied revision and invalidates runtime",
+    "exclusive state ownership",
+    "private credential permissions"
+  ],
+  "provider_calls": 0,
+  "command": "unshare -Urn sh -c 'ip link set lo up && python3 tests/acceptance/host_probe.py -- dotnet /home/tomka/Desktop/lain/src/Lain.Host/bin/Debug/net10.0/Lain.Host.dll'",
+  "recordedAt": "2026-10-24T10:58:02.171904+00:00",
+  "assemblySha256": "d2e143b2e43f0d8799f3f964f1c9a249007ffc18c6ff48bddaaafab06227844f"
+}

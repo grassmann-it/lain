@@ -1,0 +1,13 @@
+{
+  "result": "PASS",
+  "sourceCommit": "810df67",
+  "checks": {
+    "clientCli": 157,
+    "desktopSignals": 69,
+    "nativeAdapters": 29,
+    "workspacePreferences": 94,
+    "nativeTrayAndLifecycle": 50,
+    "terminalCaptures": 47
+  },
+  "scope": "Synthetic HTTP fixtures, local unit checks, private PTY, private Xvfb/Openbox/DBus only. Provider requests and desktop notifications on the normal user session were not used."
+}

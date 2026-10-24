@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "sourceCommit": "984cf71",
+  "scope": "Private copied installation with synthetic process argv, not application runtime",
+  "checks": [
+    "active CLI guard rejects before mutation",
+    "active desktop guard allows CLI-only replacement",
+    "every installed byte equals staged package",
+    "Desktop/Host/Core/notices/delivery-assets unchanged",
+    "icon/launcher/ownership unchanged",
+    "backup transaction completed"
+  ]
+}

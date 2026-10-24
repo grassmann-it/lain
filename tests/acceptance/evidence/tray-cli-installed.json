@@ -1,0 +1,48 @@
+{
+  "passed": true,
+  "sourceCommit": "e5dbaa3142549d6d0d03799ef90ffa96a459907d",
+  "version": "1.0.0+e5dbaa3",
+  "backup": "/home/tomka/.local/share/lain/backups/clients-e5dbaa3",
+  "processesUnchanged": {
+    "/home/tomka/.local/share/lain/app/host/Lain.Host": {
+      "pid": 113587,
+      "start": "572748"
+    },
+    "/home/tomka/.local/share/lain/app/proxy/lain-proxy": {
+      "pid": 113638,
+      "start": "572887"
+    }
+  },
+  "checks": [
+    "complete installed manifest equals staged package",
+    "same live Host/Core processes; no service restart",
+    "all accounts/models/profiles retained",
+    "UI preferences unchanged",
+    "historical totals and cursor retained",
+    "new usage overview includes every configured account",
+    "legacy explicit usage history alias agrees",
+    "selected original icon installed with ownership metadata",
+    "installed usage skill updated with unchanged previous copy backed up"
+  ],
+  "history": {
+    "cursor": 2,
+    "totals": {
+      "requests": 1,
+      "attempts": 1,
+      "errors": 0,
+      "tokens": {
+        "input": 81981,
+        "output": 5,
+        "cached": 3968,
+        "reasoning": 0,
+        "total": 81986
+      },
+      "unknownUsageAttempts": 0
+    }
+  },
+  "configuration": {
+    "revision": 4,
+    "appliedRevision": 2
+  },
+  "overviewAccounts": 5
+}

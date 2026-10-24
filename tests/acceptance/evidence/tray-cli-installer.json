@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "sourceCommit": "e5dbaa3142549d6d0d03799ef90ffa96a459907d",
+  "checks": [
+    "customized icon refused before application changes",
+    "owned icon and ownership map replaced with exact original",
+    "old icon and complete ownership map retained in backup",
+    "paired desktop entry unchanged",
+    "all installed hashes equal package",
+    "Host and Core unchanged",
+    "private data sentinel retained",
+    "no service/provider/window starts"
+  ]
+}

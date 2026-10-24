@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "before": {
+    "path": "/home/tomka/.local/share/lain/ui/workspace-preferences.json",
+    "exists": false,
+    "sha256": null
+  },
+  "after": {
+    "path": "/home/tomka/.local/share/lain/ui/workspace-preferences.json",
+    "exists": false,
+    "sha256": null
+  },
+  "scope": "Installed and native probes did not change the user presentation file."
+}

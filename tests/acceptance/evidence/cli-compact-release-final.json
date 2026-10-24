@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "scope": "Compact CLI 984cf71 with byte-identical qualified Desktop e5dbaa3, retained Host a66cb2a and retained Go Core. No new provider qualification.",
+  "files": 1133,
+  "binaryHashes": {
+    "cli/Lain.Cli.dll": "5da1f9199371e18b75240245518d7d8432306c6c7eb8f950d661eb582b02c30a",
+    "desktop/Lain.Desktop.dll": "75ca770d8c9cadd8a0e85bad9bf11023af7aa4b9825b7a87d574896fea26dc4c",
+    "host/Lain.Host.dll": "06fe63b0c845348a7949d95afe8ba0f8eb65bc06063d0ad473c55f88f5b57cb9",
+    "proxy/lain-proxy": "bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87"
+  },
+  "archiveSha256": "be2f3fd016cf2d0968ce1f1b69cef7e247852d3909573a2a19507c01f259bfd0",
+  "releaseQualified": true,
+  "evidence": [
+    {
+      "path": "client-source-provenance/acceptance/cli-compact-installed.json",
+      "sha256": "7a6e690359c46b2e7a1718e4333a452e444372d6ef52ab89a498bf8e3be86c50"
+    },
+    {
+      "path": "client-source-provenance/acceptance/cli-compact-installer.json",
+      "sha256": "2ef3acb0b0cd9b4be5ed4a9c631d20205bd2173bdad4c0826c34112de0f67b92"
+    },
+    {
+      "path": "client-source-provenance/acceptance/cli-compact-terminal-fixture.json",
+      "sha256": "1caf4c86ea2b0b2ca34b8c23195de69daf7b13f5994d01a6f3977c2958986a42"
+    },
+    {
+      "path": "client-source-provenance/acceptance/tray-cli-frozen-desktop.json",
+      "sha256": "92c845257bf1e996f97f32734c40473f76ea286483f3bfe8673d6b46d253b4c1"
+    },
+    {
+      "path": "client-source-provenance/acceptance/tray-cli-installed-desktop.json",
+      "sha256": "4faccf65ae7c1f8d9ce5bd1d4eed6f392a824f4a074add204e0bba3e2f4c404e"
+    },
+    {
+      "path": "client-source-provenance/acceptance/tray-cli-native-launcher.json",
+      "sha256": "256514066f291cba488a8bd89c80a834e6ee6a1d3588a7b61257eb0825137f43"
+    },
+    {
+      "path": "client-source-provenance/acceptance/tray-cli-installed.json",
+      "sha256": "e7bd33f34f8b6e95eddd8489042d0ae8bc037db97c4701a8c84364b52920ae03"
+    }
+  ]
+}

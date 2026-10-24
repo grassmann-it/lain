@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "checks": [
+    "fresh actual-package installation with private state",
+    "actual installed host bundled Core inference and CLI from unrelated cwd",
+    "synthetic usage captured once and CLI/API totals match",
+    "actual update with preserved state and restart",
+    "actual rollback with preserved state and restart",
+    "offline CLI fails explicitly",
+    "documented staged uninstall preserves private data"
+  ],
+  "realProviderCalls": 0,
+  "syntheticProviderCalls": 1,
+  "systemdOperations": 0,
+  "sameArtifactUpdateAndRollback": true,
+  "hostExecutableSha256": "6812c2aac14c4a712574f345e500f2382481b7d535273fab47041bd8d6115595"
+}

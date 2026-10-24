@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "backup": "/home/tomka/.local/share/lain/upgrade-backups/20261024T110050Z-1b2b6bf2",
+  "package": {
+    "manifestSha256": "5f9fee7e1f4b43a899d5f1b94c8e94fc06ea419ea429d08499ea53c4869826f3",
+    "coreSha256": "bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87",
+    "releaseQualified": false
+  },
+  "revision": 4,
+  "appliedRevision": 2,
+  "historicalUsageUnchanged": true,
+  "newSchemaExercisedByAnalysis": true,
+  "attemptCount": 1,
+  "cursor": 2,
+  "protectedFilesUnchanged": true,
+  "legacyServiceUnchanged": true,
+  "legacyLogAndTempFilesExcluded": true,
+  "ownCredentialsUnchanged": true,
+  "inferenceRequestsIssued": 0,
+  "rollbackRequiresStoppedJournalAndCredentialGuard": true
+}

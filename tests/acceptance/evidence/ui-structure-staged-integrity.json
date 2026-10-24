@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "sourceCommit": "a66cb2a19774d897702724f9f40755b74c82b2a6",
+  "verifiedFiles": 1058,
+  "archiveSha256": "8cfae17f530462e19c13b39af271a465b9ce31d123f6a551b54457d4f5782b15",
+  "manifestSha256": "5f9fee7e1f4b43a899d5f1b94c8e94fc06ea419ea429d08499ea53c4869826f3",
+  "unchangedProxyFiles": 9,
+  "coreSha256": "bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87",
+  "componentsEqualFrozenPublishes": true,
+  "scope": "Unqualified staged candidate; executable and whole-proxy parity, complete listed-file inventory and independent archive-member verification."
+}

@@ -1,0 +1,120 @@
+{
+  "result": "PASS",
+  "privateXvfb": true,
+  "privateDbus": true,
+  "display": ":3",
+  "assembly": "/tmp/lain-frozen-tray-e5dbaa3/Lain.Desktop.dll",
+  "sha256": "75CA770D8C9CADD8A0E85BAD9BF11023AF7AA4B9825B7A87D574896FEA26DC4C",
+  "loadedAssemblies": [
+    {
+      "name": "Lain.Desktop",
+      "path": "/tmp/lain-frozen-tray-e5dbaa3/Lain.Desktop.dll",
+      "sha256": "75CA770D8C9CADD8A0E85BAD9BF11023AF7AA4B9825B7A87D574896FEA26DC4C"
+    },
+    {
+      "name": "Lain.Client",
+      "path": "/tmp/lain-frozen-tray-e5dbaa3/Lain.Client.dll",
+      "sha256": "58551F960B33C969C5C03D8CF1A893BF90299562F0FF9AE298F18AE6E318A555"
+    },
+    {
+      "name": "Lain.Core",
+      "path": "/tmp/lain-frozen-tray-e5dbaa3/Lain.Core.dll",
+      "sha256": "3CC314C36C4B2752B814B7D4E0FD380100438B6708665C5D48C625B83E638CB5"
+    }
+  ],
+  "checks": [
+    "a real private watcher alone does not prove this process registered a native icon",
+    "real Linux TrayAvailability finds the native Avalonia registration owned by this process",
+    "the registered native StatusNotifierItem exports its active status over private D-Bus",
+    "real Linux availability becomes false when the private tray host disappears",
+    "real Linux availability recovers with the registered native icon and restored host",
+    "the production notify-send adapter delivers to the private Notifications service",
+    "the native notification preserves the application icon, plain-text escaping, urgency and expiry",
+    "constructing the tray controller never quits the UI",
+    "enabled minimize option hides the window only after positive tray availability",
+    "tray minimize keeps the native window alive",
+    "native Open window action restores a hidden minimized window",
+    "disabled minimize option uses ordinary minimization instead of hiding the window",
+    "enabled close option hides to a reachable tray",
+    "close-to-tray cancels the native close rather than destroying the window",
+    "disabled close option performs a real close",
+    "window lifecycle operations do not poll providers or send notifications",
+    "no registered tray host never turns minimization into an invisible live window",
+    "close-to-tray falls back to a real close when no host exists",
+    "visibility change waits for the asynchronous host check",
+    "Reopen wins an in-flight minimize/hide check",
+    "visibility change waits for the asynchronous host check",
+    "Reopen wins an in-flight close check even if the host result is unavailable",
+    "tray polling fills quota status and delivers an enabled alert through the injected sink",
+    "native quota menu preserves every bounded monitor line",
+    "native UI menu exposes no host shutdown operation",
+    "native notification toggle has an independent state callback",
+    "host-loss case begins with a reachable hidden window",
+    "loss of the tray host automatically restores the hidden window",
+    "disabled notification setting remains off during later polling",
+    "restored-after-host-loss renders exact viewport 1120x780",
+    "restored-after-host-loss renders exact viewport 800x560",
+    "Quit UI requests only UI lifetime shutdown and never a host operation",
+    "production MainWindow uses only the in-memory host fixture",
+    "permanent information-level footer starts at Simple without opening View",
+    "permanent information-level selector fits the bottom right at 1120px",
+    "information-level-footer renders exact viewport 1120x780",
+    "permanent information-level selector fits the bottom right at 800px",
+    "information-level-footer renders exact viewport 800x560",
+    "footer switches and saves Barebones while View stays closed",
+    "footer switches and saves Simple while View stays closed",
+    "footer switches and saves Advanced while View stays closed",
+    "opening View never duplicates the permanent information-level selector",
+    "View exposes separate minimize close and notification defaults",
+    "all three background preferences save independently",
+    "background-view-options renders exact viewport 1120x780",
+    "background-view-options renders exact viewport 800x560",
+    "new MainWindow restores the footer level before View is opened",
+    "new MainWindow restores each independent background preference",
+    "native notification toggle updates its View checkbox without changing hide preferences",
+    "failed native notification preference save restores the previous menu and View checkbox",
+    "failed native notification preference save reports its storage failure",
+    "failed native toggle leaves the preference file and independent background settings unchanged",
+    "background preferences and native UI menu never mutate host configuration",
+    "separate process acquires the production UI owner",
+    "UI owner is held by a real separate process",
+    "second process in the same runtime requests reopen instead of owning another UI",
+    "owner receives the exact reopen protocol callback",
+    "a private XDG runtime remains independent even with the same LAIN_HOME",
+    "owner exits with its mutex released on the creating thread",
+    "a later process can own the UI after the previous owner exits"
+  ],
+  "images": [
+    {
+      "file": "restored-after-host-loss-1120x780.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "file": "restored-after-host-loss-800x560.png",
+      "width": 800,
+      "height": 560
+    },
+    {
+      "file": "information-level-footer-1120x780.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "file": "information-level-footer-800x560.png",
+      "width": 800,
+      "height": 560
+    },
+    {
+      "file": "background-view-options-1120x780.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "file": "background-view-options-800x560.png",
+      "width": 800,
+      "height": 560
+    }
+  ],
+  "scope": "Native Avalonia StatusNotifier registration/PID/property read, real Linux TrayAvailability and notify-send adapter against private D-Bus fixture; production Avalonia Window/MainWindow/TrayWorkspaceController; injected quota polls, notification sink and tray availability. UiInstanceOwner from the production assembly in real child processes, isolated XDG runtime. Private Openbox on owned Xvfb; no normal desktop bus, real credentials, providers or host/service operations. Native menu events exercise Avalonia's exporter bridge; no OS pointer hit-testing."
+}

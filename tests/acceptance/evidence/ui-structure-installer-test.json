@@ -1,0 +1,5 @@
+{
+  "passed": true,
+  "command": "python3 packaging/test-install.py",
+  "scope": "Temporary fake executables; arbitrary cwd/arguments, permissions, update backup, desktop quoting/artwork ownership and checksum rejection; no services or real user installation."
+}

@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "files": {
+    "/home/tomka/.local/share/applications/lain.desktop": "1e96909cd0fa0a404d98c199cfadaf00152357b12d112b96b20d50d52b675b1e",
+    "/home/tomka/.local/share/icons/lain.png": "d36cb05911456a363b275631ad7a3b1176770f0f052d2e9747593e33f947a6fd"
+  },
+  "ownershipManifest": "/home/tomka/.local/share/lain/desktop-integration.json",
+  "serviceOperations": 0,
+  "scope": "Only verified owned desktop entry, original artwork and ownership receipt; existing launcher and service unit unchanged."
+}

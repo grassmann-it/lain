@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "sourceCommit": "984cf7139bc01a98551c839a6c195b7ccbb14550",
+  "compactLines": 20,
+  "fullLines": 99,
+  "accounts": 5,
+  "windows": 13,
+  "checks": [
+    "exact installed package manifest",
+    "5 accounts/models/profiles retained",
+    "revision4/2 retained",
+    "historic81986 tokens and cursor2 retained",
+    "same live Host/Core PIDs and start times",
+    "preferences and native integration unchanged",
+    "compact and full presentation on real cached quotas",
+    "full/compact JSON equal",
+    "installed usage skill refreshed with previous copy backed up",
+    "desktop source/version retained"
+  ],
+  "backup": "~/.local/share/lain/backups/cli-compact-984cf71"
+}

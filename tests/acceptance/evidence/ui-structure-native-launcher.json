@@ -1,0 +1,39 @@
+{
+  "result": "PASS",
+  "desktop": "/home/tomka/.local/share/applications/lain.desktop",
+  "desktopSha256": "1e96909cd0fa0a404d98c199cfadaf00152357b12d112b96b20d50d52b675b1e",
+  "launcher": "/home/tomka/.local/bin/lain",
+  "icon": "/home/tomka/.local/share/icons/lain.png",
+  "artworkSha256": "d36cb05911456a363b275631ad7a3b1176770f0f052d2e9747593e33f947a6fd",
+  "expectedTitle": "lain \u2014 Local AI Gateway",
+  "privateXvfb": true,
+  "display": ":3",
+  "observed": {
+    "windowId": 4194316,
+    "pid": 116098,
+    "processGroup": 116093,
+    "title": "lain \u2014 Local AI Gateway",
+    "width": 1128,
+    "height": 788,
+    "mapped": true,
+    "ewmhType": "normal",
+    "nativeIcons": [
+      {
+        "width": 128,
+        "height": 128,
+        "argbSha256": "f42de7327d011dff56b17c1d6660d36b72510f454f9c1371055b406ace12a330",
+        "alphaMin": 0,
+        "alphaMax": 253
+      }
+    ]
+  },
+  "terminatedOwnedGroups": [
+    {
+      "processGroup": 116093,
+      "ownedPids": [
+        116098
+      ]
+    }
+  ],
+  "scope": "Actual owned .desktop launched by gio on private Xvfb. XQueryTree/EWMH mapped window title, tagged child PID/executable, normal window type and nonempty transparent _NET_WM_ICON inspected. Original installed icon/source PNG hashes verified. No UI input, screen capture, inference, provider refresh, service action or normal desktop session. Native icon property presence/content metadata does not independently compare every scaled pixel with the source."
+}
