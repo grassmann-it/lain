@@ -85,6 +85,7 @@ static class Checks
         var a = partial.Single(r => r.WindowId == "tokens-a");
         var b = partial.Single(r => r.WindowId == "tokens-b");
         Check(a.Remaining == 9 && a.Model == "model-a", "updated model retains its own quantity");
+        Check(a.State == "ok", "another model's partial failure must not make a freshly measured window stale");
         Check(b.Remaining == 77 && b.Model == "model-b" && b.ScopeId == "model-b", "last-good must not copy first same-source model");
         Check(b.State == "stale" && b.LastSuccessAt == T0, "partial last-good retains original age");
     }

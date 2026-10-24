@@ -10,6 +10,22 @@ Run only in Main's serialized build/test slot:
 dotnet run --project tests/providers-independent/Independent.Tests.csproj -p:BuildInParallel=false
 ```
 
+`host_probe.py` independently exercises the actual packaged Host over authenticated
+loopback HTTP. Run it only in Main's serialized slot inside a private user/network
+namespace with loopback enabled. It refuses any non-loopback network interface.
+
+```sh
+python3 tests/providers-independent/host_probe.py --host /absolute/Lain.Host.dll --proxy /absolute/proxy/lain-proxy --report /absolute/host-report.json
+```
+
+The probe uses temporary synthetic state, disables background quota polling with
+the explicit reference flags, and never starts/applies Core, refreshes quotas or
+starts OAuth. It checks 20 providers, connection-only and selected-model setup,
+invalid/revision atomicity, monitor GET/PUT/DELETE authorization and separation,
+manual Google token snapshots, and 8 default routes from a no-alias Codex snapshot
+import using the catalog actually adjacent to the packaged Core. JSON evidence
+contains artifact hashes and fixed check labels, never tokens or response bodies.
+
 The executable checks distinct gateway/monitor projections, passive observation
 age without gateway credential access, model/window identity during partial
 refreshes, metadata/unknown preservation, neutral missing capability, sanitized
