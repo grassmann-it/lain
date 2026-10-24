@@ -100,6 +100,9 @@ await using var googleCli = new GoogleGcloudLoginAdapter(Path.Combine(paths.Root
  return handle?.Owner == "google-gcloud" ? secrets.Generations.Read(accountId, handle).PrivateJson : null;
 });
 var googleCliRetention = new GoogleGcloudProfileRetention(repository, secrets, paths, googleCli);
+await mutations.WaitAsync();
+try { await googleCliRetention.StartupReconcileAsync(); }
+finally { mutations.Release(); }
 async Task CloseDetachedGoogle(AccountDto account, CancellationToken ct)
 {
  // Grant retirement must observe a stable published selection, including recovery.
