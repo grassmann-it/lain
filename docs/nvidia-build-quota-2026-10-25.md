@@ -6,16 +6,18 @@ unavailable; web search and browser access were unavailable as well. No account,
 credential store, existing browser session, login or inference call was read/run.
 This document does not claim fresh live endpoint validation.
 
-`NvidiaBuildQuotaAdapter` makes one fixed anonymous GET to the official public
+`NvidiaBuildPublicReference` holds dated product guidance and a pure parser for
+the official public
 [`content/copy.yaml`](https://build.nvidia.com/api/runtime/content/copy.yaml)
-runtime document. Despite its suffix it returns JSON. The owned HTTP client has
-no cookies, no default authentication, and no redirects; response size is bounded
-to 32 KiB and time to 20 seconds. Its current source strings are `Up to 40 rpm`
+runtime document. Despite its suffix it returns JSON. Its reviewed source strings are `Up to 40 rpm`
 and `10,000 requests per day`. The first keeps the provider's qualification.
 The official detail text says limits vary by model and other-user traffic can
 throttle requests. These are product reference values, never a hard account
 limit, observed usage, remaining credits or a reset. No numeric `QuotaReading`
-is emitted. Failure retains the concrete setup prerequisite with sanitized text.
+is emitted. The helper has no HTTP transport and cannot access credentials or
+change account state. Static product copy does not justify a background account
+refresh every five minutes. It remains a dated reference until deliberately
+revalidated from the public source; there is no successful quota timestamp.
 
 The reader deliberately does not interpret an arbitrary `remainingCredits`
 property as an account balance. No official Build remaining-credit or usage
@@ -25,9 +27,11 @@ copy, API-key inventory/provisioning, global artifact invocation/download counts
 and individual inference-response usage. The latter two are not account quota.
 See the full [MiMo/NVIDIA research](quota-auth-research/mimo-nvidia.md).
 
-`NvidiaBuildConnection.Method()` describes the precise `setup-required` reporting
-connection on the existing account. It does not ask for a second API key or claim
-a working OAuth/device flow. The official NGC CLI requires an existing key via
+`NvidiaBuildPublicReference.Support()` provides `console` guidance for the shared
+UI, with the Build console link and source date. There is no `setup-required`
+state or unusable connection method: manual credential setup is not established
+as a path to account reporting. No reporting/login capability is implemented.
+The official NGC CLI requires an existing key via
 `ngc config set`; its use of `$oauthtoken` is API-key authentication. Build's own
 website login uses the `api-catalog` application and provisions a key with
 `invoke_function`; it does not establish a public lain application identity or
@@ -42,7 +46,8 @@ key, generic NGC org membership, enterprise NVCF metrics or local request histor
 cannot establish this binding. Until that evidence exists, saving a monitor
 credential or showing a successful quota login would make a false promise.
 
-Host integration: register `NvidiaBuildQuotaAdapter` as `IQuotaAdapter` (container
-owns disposal), and include `NvidiaBuildConnection.Method()` in the connection
-catalog. It needs no secret-store or Core DTO change. Fixture checks are in
+Host integration: the existing NVIDIA unavailable/console projection can use
+`NvidiaBuildPublicReference.Support()` to expose clearly labeled product-reference
+guidance. Do not register a quota adapter or add a login method for this helper.
+It needs no secret-store or Core DTO change. Fixture checks are in
 `tests/nvidia-quota`; no builds or live requests were run by this worker.
