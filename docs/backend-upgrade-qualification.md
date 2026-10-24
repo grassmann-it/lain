@@ -67,6 +67,15 @@ bundle pinned and frozen before this single-executable gate can qualify it.
 
 ## New upstream capability evidence
 
+Native server-side `image_generation` was previously permeable but never
+qualified for the one-usage-fact-per-attempt contract: Codex may publish separate
+image usage with another reporter identity. The upgrade deliberately rejects
+explicit native image tools/tool choice before dispatch and disables automatic
+injection. This is a documented restriction of an unqualified path, not a claim
+that every formerly accepted payload remains accepted. The independent
+`tests/backend/native_tool_boundary.py` verifies the new rejection and keeps
+ordinary image-named functions and Vision `input_image` as positive controls.
+
 Claude Responses compaction, deferred tools / `tool_search`, Sign in with
 ChatGPT, Grok speech, Vertex Interactions, session-affinity rebind and the new
 v8 configuration/management API are new upstream capabilities. Retaining

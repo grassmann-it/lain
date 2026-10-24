@@ -78,6 +78,20 @@ class ProviderFixtureTests(unittest.TestCase):
             self.assertEqual(row["request_id"], "native-gemini")
             self.assertNotIn("synthetic-gemini", json.dumps(row))
 
+    def test_native_responses_observes_function_and_image_input_without_image_bytes(self):
+        image = "data:image/png;base64,c3ludGhldGljLWltYWdlLWlucHV0"
+        body = {"model": MODEL, "input": [{"role": "user", "content": [
+            {"type": "input_text", "text": marker("text", "vision-control")}, {"type": "input_image", "image_url": image}]}],
+            "tools": [{"type": "function", "name": "image_generation", "parameters": {"type": "object"}}]}
+        with urlopen(Request(self.provider.url + "/responses", json.dumps(body).encode(),
+                             {"Authorization": "Bearer lain-synthetic-a", "Content-Type": "application/json"}), timeout=10) as response:
+            self.assertEqual(response.status, 200)
+            response.read()
+        row = self.provider.snapshot()[0]
+        self.assertEqual(row["functionToolNames"], ["image_generation"])
+        self.assertTrue(row["imageInputPresent"])
+        self.assertNotIn(image, json.dumps(row))
+
     def test_sse_usage_tool_continuation(self):
         messages = [{"role": "user", "content": marker("tool", "tool-1")}]
         with request(self.provider.url, "lain-synthetic-a", "tool", "tool-1", stream=True, messages=messages) as response:

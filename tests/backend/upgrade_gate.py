@@ -63,6 +63,7 @@ def main():
             ("independent-auth-crash", "acceptance/core_probe.py", []),
             ("inspector", "inspection/core_probe.py", []),
             ("upgrade-boundaries", "backend/upgrade_boundaries.py", []),
+            ("native-tool-boundary", "backend/native_tool_boundary.py", []),
         ]
         if args.host_exporter:
             steps.append(("hostwriter-transports", "backend/host_contract_probe.py",

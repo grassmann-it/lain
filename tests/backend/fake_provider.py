@@ -111,6 +111,12 @@ class FakeProvider:
                 row = {"account": account, "case": case, "request_id": request_id, "path": path,
                        "bearerAuthorization": self.headers.get("Authorization", "").startswith("Bearer "),
                        "googleApiKeyPresent": bool(self.headers.get("x-goog-api-key")),
+                       "functionToolNames": [tool.get("function", tool).get("name") for tool in body.get("tools", [])
+                                             if isinstance(tool, dict) and tool.get("type") == "function"],
+                       "imageInputPresent": any(part.get("type") in ("image_url", "input_image", "image")
+                           for message in [*body.get("messages", []), *(body.get("input", []) if isinstance(body.get("input"), list) else [])]
+                           if isinstance(message, dict) and isinstance(message.get("content"), list)
+                           for part in message["content"] if isinstance(part, dict)),
                        "model": body.get("model"), "stream": bool(body.get("stream")),
                        "tool_result": tool_result, "disconnected": False}
                 with owner.lock:
