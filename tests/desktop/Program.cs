@@ -232,6 +232,12 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             && fixture.UsageQueries.Last().GetValueOrDefault("statusCode") == appliedStatusBeforeLink
             && Named<TextBox>("HTTP status").Text == "503" && Named<TextBox>("From · inclusive").Text == unsubmittedFilter,
             "Usage Back restores the applied query separately from unapplied status and date drafts");
+        await Click("Open model for attempt attempt-fixture");
+        await Wait(() => Controls<Expander>().Any(x => AutomationProperties.GetName(x) == "Details for model access gpt-lain-01"),
+            "Usage attempt links to its evidenced configured model access");
+        await Click("Back"); await Wait(UsageConnected, "model link Back restores Usage");
+        Check(Named<TextBox>("HTTP status").Text == "503" && fixture.UsageQueries.Last().GetValueOrDefault("statusCode") == appliedStatusBeforeLink,
+            "Usage model navigation also preserves applied scope separately from draft filters");
         Named<TextBox>("HTTP status").Text = "";
         var daily = Controls<Expander>().Single(x => Equals(x.Header, "Daily totals"));
         daily.IsExpanded = true;
@@ -1006,6 +1012,19 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         fixture.InspectorFailure = false;
         await Click("Toggle inspector updates");
         await Wait(() => HasText("Connected to the live inspector", true), "Inspector recovers from a local source outage");
+        var contextDetails = Controls<Expander>().Single(x => Equals(x.Header, "Identities & measurement sources"));
+        contextDetails.IsExpanded = true; await Task.Delay(80);
+        await Click("Account a1");
+        await Wait(() => Controls<Expander>().Any(x => AutomationProperties.GetName(x) == "Account budgets for Personal Codex updated"),
+            "Live links only its observed account identity to Accounts");
+        await Click("Back");
+        await Wait(() => HasSelectable("New source output only."), "Live Back reloads only current bounded source output");
+        Controls<Expander>().Single(x => Equals(x.Header, "Identities & measurement sources")).IsExpanded = true;
+        await Task.Delay(80); await Click("Model access r1");
+        await Wait(() => Controls<Expander>().Any(x => AutomationProperties.GetName(x) == "Details for model access gpt-lain-01"),
+            "Live links only its observed configured route identity to Models");
+        await Click("Back");
+        await Wait(() => HasSelectable("New source output only."), "Live model Back reattaches to current source without fabricating history");
         await Click("Models");
         var detached = fixture.InspectorCalls + fixture.InspectorEventCalls;
         await Task.Delay(550);
