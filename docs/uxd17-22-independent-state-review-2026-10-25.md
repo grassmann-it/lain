@@ -266,3 +266,41 @@ gebeten. Native Inputtrace und Bilder haben diese Zuordnung bereits.
 
 Kein Gesamt-PASS für UXD-22 aus diesem ersten Lauf oder den fünf Bildern.
 F07/F08 und die gezielte native Nachprüfung der Korrekturen bleiben erforderlich.
+
+## Quellabschluss der acht Ausgangsbefunde auf `a8b19ae`
+
+Auch die beiden verbliebenen bestätigten Layoutdeltas sind jetzt gelesen:
+
+- F07, Main `6bd348d`: `AccountInventoryRows` schaltet bei Monitorabsicht auf
+  `MonitorAccountTable`. Jede Accountgruppe iteriert sämtliche gelieferten
+  Fenster und verwendet die bestehenden `BudgetWindowRow`-/Quotahelper.
+  Normierbare Werte behalten einen durchgehenden 0–100-Balken unter den Zahlen;
+  unter 500 px werden Fensteridentität, Verbrauch und Reset gestapelt.
+  Ohne Nenner bzw. bei unbekannten Werten wird kein Prozentbalken erfunden.
+  Die Tabellenzeilen behalten accountlokalen Refresh, Scope, unbestätigten
+  Reset und Hinweise zu gemeinsamem Budget. F07 ist an der Quelle geschlossen.
+- F08, Main `a8b19ae`: Live behält dauerhaft zwei Spalten, links schmal 200 px
+  beziehungsweise breit 280 px. Die Sidebar bleibt sichtbar; die bisherigen
+  Listen- und Outputscrollcontrols bleiben montiert. Der getrennte Backweg
+  wurde entfernt, Request-/Source-/Retentionmechanik bleibt vorhanden.
+  F08 ist an der Quelle geschlossen.
+
+Damit sind alle acht ursprünglichen Quellenbefunde konkret adressiert.
+Das ist kein Gesamtabschluss der nativen Pflichtmatrix. Neue Tabellengeometrie,
+schmale Liveausgabe, unabhängige Scrollpositionen, Fokus, lange Inhalte und die
+geänderten Zustandsübergänge benötigen weiterhin die qualifizierte Endassembly.
+
+Weitere tatsächlich gesichtete r1-PNGs, ohne neue Fehler gegenüber den bereits
+genannten Befunden:
+
+- `native-state-apply-800x560-unknown.png`: angefragtes Daily revision 3 und
+  Last confirmed Workspace 2 revision 1 stehen sichtbar in Shell, Liste und
+  Review; kein unqualifizierter aktueller Appliedmarker für Workspace 2.
+- `native-state-apply-1120x780-stale.png`: alter Diff bleibt lesbar;
+  Ungültigkeit ist erklärt, Apply gesperrt, Refresh preview/Cancel erreichbar.
+- `native-state-first-snapshot-error-800x560-pending.png` und
+  `native-state-first-snapshot-error-800x560-error.png`: Laden und Fehler
+  unterscheiden sich sichtbar; beide Flächen bleiben reserviert.
+
+Der unabhängige Bildumfang beträgt damit neun r1-PNGs. Ein korrigierter
+Folgelauf wird eigenständig zugeordnet, nicht in den ersten Lauf eingerechnet.
