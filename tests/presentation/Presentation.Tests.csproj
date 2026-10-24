@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/Lain.Desktop/Presentation/ViewOptions.cs" Link="ViewOptions.cs" />
+    <Compile Include="../../src/Lain.Desktop/Presentation/WorkspacePreferencesStore.cs" Link="WorkspacePreferencesStore.cs" />
+  </ItemGroup>
+</Project>
