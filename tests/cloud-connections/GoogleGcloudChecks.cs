@@ -148,24 +148,50 @@ finally:
                 var oldAccount = new AccountDto("gcloud-account", "Fixture", "gemini-api", true, "gcloud-owned", "ready", Binding: credential.Binding,
                     Credentials: [handle], Capabilities: [new("quota", "ready", handle.Id)]);
                 var retention = new GoogleGcloudProfileRetention(repository, secrets, statePaths, adapter);
+                string Orphan(string operation)
+                {
+                    var directory = Path.Combine(owned, "profile-" + Guid.NewGuid().ToString("N"));
+                    OwnStatePaths.EnsurePrivateDirectory(directory);
+                    OwnStatePaths.WritePrivate(Path.Combine(directory, "lain-owner.json"), JsonSerializer.Serialize(new
+                    { localAccountId = "removed-account", operationId = operation, loginAccount = "one@example.test", loginSubject = "123456789" }));
+                    OwnStatePaths.WritePrivate(Path.Combine(directory, "credentials.db"), "synthetic-unused-profile");
+                    return directory;
+                }
+                var preCommitOrphan = Orphan("published-before-crash");
                 repository.Update(0, value => value with { Accounts = [oldAccount] });
                 await retention.DisconnectAsync(oldAccount);
                 Check(Directory.Exists(fake.Profiles[0]), "selected capability retains CLI-owned refresh profile");
+                await retention.StartupReconcileAsync();
+                Check(Directory.Exists(fake.Profiles[0]) && !Directory.Exists(preCommitOrphan), "startup keeps selected profile and retires old committed profile without oldAccount memory");
                 repository.Update(1, value => value with { Accounts = [] }); selected = null;
                 var recoveryContext = Context(now, [], "retention-operation");
                 CredentialRecoveryService.SaveStarted(secrets.Generations, recoveryContext);
                 await retention.DisconnectAsync(oldAccount);
                 Check(Directory.Exists(fake.Profiles[0]), "unknown remote recovery defers profile cleanup");
+                var pendingOrphan = Orphan("unreferenced-profile");
+                await retention.StartupReconcileAsync();
+                Check(Directory.Exists(pendingOrphan), "unknown remote result defers all startup deletions");
                 CredentialRecoveryService.SavePrepared(secrets.Generations, recoveryContext, handle);
                 await retention.DisconnectAsync(oldAccount);
                 Check(Directory.Exists(fake.Profiles[0]), "unpublished prepared recovery retains CLI profile");
+                await retention.StartupReconcileAsync();
+                Check(Directory.Exists(fake.Profiles[0]) && !Directory.Exists(pendingOrphan), "startup retains unresolved prepared generation and deletes unrelated orphan");
+                var restoreOrphan = Orphan("restore-profile");
+                var restoreMarker = Path.Combine(statePaths.Root, "restore-requires-reconnect"); OwnStatePaths.WritePrivate(restoreMarker, "fixture-restore");
+                await retention.StartupReconcileAsync();
+                Check(Directory.Exists(restoreOrphan), "restore quarantine defers startup deletion even for unselected receipts");
+                File.Delete(restoreMarker);
                 CredentialRecoveryService.MarkPublished(secrets.Generations, "retention-operation");
                 var malformed = secrets.Generations.RecoveryPath("malformed-fixture"); OwnStatePaths.WritePrivate(malformed, "{}");
                 await retention.DisconnectAsync(oldAccount);
                 Check(Directory.Exists(fake.Profiles[0]), "malformed recovery metadata fails closed");
                 File.Delete(malformed);
-                await retention.DisconnectAsync(oldAccount);
-                Check(!Directory.Exists(fake.Profiles[0]), "after removal and resolved recovery old CLI refresh profile is retired");
+                var malformedReceipt = Orphan("bad-receipt"); OwnStatePaths.WritePrivate(Path.Combine(malformedReceipt, "lain-owner.json"), "{}");
+                await retention.StartupReconcileAsync();
+                Check(Directory.Exists(fake.Profiles[0]) && Directory.Exists(restoreOrphan), "all owner receipts are validated before any startup deletion");
+                Directory.Delete(malformedReceipt, recursive: true);
+                await retention.StartupReconcileAsync();
+                Check(!Directory.Exists(fake.Profiles[0]) && !Directory.Exists(restoreOrphan), "startup retires unselected profiles after resolved recovery without replaying grants");
             }
             Check(new GoogleGcloudProcess().IsAvailable, "installed SDK sources match the qualified linux-x64 release");
         }

@@ -217,6 +217,62 @@ public sealed class GoogleGcloudLoginAdapter : IAccountLoginAdapter, ICredential
             throw new InvalidDataException("Invalid Google Cloud CLI profile reference.");
         return grant.ProfileReference;
     }
+    internal sealed record OwnedProfileReceipt(string Reference, string LocalAccountId, string OperationId, string? LoginAccount, string? LoginSubject);
+    internal OwnedProfileReceipt[] ReadOwnedProfileReceipts()
+    {
+        lock (gate)
+        {
+            CliPrivatePaths.RefuseLinks(root);
+            var directories = Directory.EnumerateDirectories(root).Take(513).ToArray();
+            if (directories.Length > 512) throw new InvalidDataException("Google Cloud CLI profile reconciliation exceeds the bound.");
+            var receipts = new List<OwnedProfileReceipt>();
+            foreach (var directory in directories)
+            {
+                var reference = Path.GetFileName(directory);
+                if (!reference.StartsWith("profile-", StringComparison.Ordinal)) continue;
+                receipts.Add(ReadProfileReceipt(reference));
+            }
+            return receipts.ToArray();
+        }
+    }
+    private OwnedProfileReceipt ReadProfileReceipt(string reference)
+    {
+        var path = Profile(reference, create: false);
+        var owner = JsonSerializer.Deserialize<ProfileOwner>(CliPrivatePaths.Read(Path.Combine(path, "lain-owner.json"), 4096), Json);
+        if (owner is null || string.IsNullOrWhiteSpace(owner.LocalAccountId) || string.IsNullOrWhiteSpace(owner.OperationId)
+            || (owner.LoginAccount is null) != (owner.LoginSubject is null)) throw new InvalidDataException("Invalid Google Cloud CLI owner receipt.");
+        CliPrivatePaths.Id(owner.LocalAccountId); CliPrivatePaths.Id(owner.OperationId);
+        if (owner.LoginAccount is not null)
+        {
+            GoogleGcloudProcess.ValidateAccount(owner.LoginAccount);
+            if (owner.LoginSubject is not { Length: > 0 and <= 128 } || !owner.LoginSubject.All(char.IsAsciiDigit))
+                throw new InvalidDataException("Invalid Google Cloud CLI identity receipt.");
+        }
+        return new(reference, owner.LocalAccountId, owner.OperationId, owner.LoginAccount, owner.LoginSubject);
+    }
+    internal Task<bool> RetireOwnedProfileAsync(OwnedProfileReceipt receipt, IReadOnlySet<string> retainedReferences, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        if (retainedReferences.Contains(receipt.Reference)) return Task.FromResult(false);
+        lock (gate)
+        {
+            if (attempts.Values.Any(a => a.Profile == receipt.Reference && (!a.Login.IsCompleted || a.Gate.CurrentCount == 0))) return Task.FromResult(false);
+            if (!Directory.Exists(Path.Combine(root, receipt.Reference))) return Task.FromResult(true);
+            if (ReadProfileReceipt(receipt.Reference) != receipt) return Task.FromResult(false);
+            var path = Profile(receipt.Reference, create: false);
+            GoogleGcloudProcessTransport.ValidateProfileTree(path);
+            var lockPath = Path.Combine(path, "lain-process.lock"); CliPrivatePaths.RefuseLinks(lockPath);
+            try
+            {
+                using var lease = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                if (ReadProfileReceipt(receipt.Reference) != receipt) return Task.FromResult(false);
+                ct.ThrowIfCancellationRequested(); Directory.Delete(path, recursive: true);
+                return Task.FromResult(true);
+            }
+            catch (IOException) { return Task.FromResult(false); }
+        }
+    }
+
     /// <summary>Call only after successful publication/removal, with all selected and recovery references retained.</summary>
     public Task<bool> DisconnectAsync(string privateJson, IReadOnlySet<string> retainedProfileReferences, CancellationToken ct = default)
     {

@@ -46,6 +46,14 @@ Google subject and account email stay private inside the owner credential.
   Remote-pending, malformed, missing, restore-quarantined, ambiguous or oversized
   metadata defers deletion. Recovery scanning is bounded to 1,024 metadata files;
   credential-generation trees are not searched. Busy/active profiles remain.
+  Also call `await googleCliRetention.StartupReconcileAsync(ct)` under the same
+  publication gate before serving requests. It uses the identical retention
+  parser, then validates at most 512 owned `profile-<32 hex>` directories and
+  their private owner receipts before retiring unreferenced profiles. This
+  closes crash-after-commit/before-cleanup without requiring an in-memory old
+  account, reading SDK grants, or reactivating credentials. An existing restore
+  quarantine marker, malformed receipt, excessive directory set or unresolved
+  recovery state defers deletion.
 - The existing Desktop/browser action consumes the returned URL. No protected
   authorization-code input endpoint is needed: the official CLI owns its native
   loopback callback and token exchange.
