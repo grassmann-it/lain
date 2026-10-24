@@ -65,7 +65,11 @@ public sealed partial class MainWindow
             var current = _configuration ?? cfg;
             status.Text = AppliedProfileDescription(current);
             while (summary.Children.Count > 1) summary.Children.RemoveAt(summary.Children.Count - 1);
-            if (current.Revision != current.AppliedRevision)
+            var reported = ProfileConfirmedStatus;
+            var pending = !ProfileApplyOutcomeUnknown && reported is not null && reported.Revision >= current.Revision
+                ? reported.Revision != reported.AppliedRevision
+                : current.Revision != current.AppliedRevision;
+            if (pending)
                 summary.Children.Add(Ui.Text("Saved changes pending · Viewing and saving do not change the proxy.", 12, Ui.Warning));
             if (_status?.Application is { State: "recovery-required" } recovery)
                 summary.Children.Add(Ui.Text("Apply needs recovery. " + recovery.RecoveryAction, 12, Ui.Warning));
@@ -206,7 +210,9 @@ public sealed partial class MainWindow
         var reported = ProfileConfirmedStatus;
         var configuration = ProfileApplyOutcomeUnknown
             ? $"Requested {_profileUnconfirmedApplyId} · revision {_profileUnconfirmedApplyRevision} · Configuration: saved {cfg.Revision}; active outcome unconfirmed"
-            : $"Configuration: saved {cfg.Revision} / proxy {cfg.AppliedRevision}";
+            : reported is not null && reported.Revision > cfg.Revision
+                ? $"Configuration: saved snapshot {cfg.Revision} / host saved {reported.Revision} / proxy {reported.AppliedRevision}"
+                : $"Configuration: saved {cfg.Revision} / proxy {(reported is not null && reported.Revision >= cfg.Revision ? reported.AppliedRevision : cfg.AppliedRevision)}";
         if (reported?.ActiveProfileId is not { } id) return ProfileApplyOutcomeUnknown
             ? $"Apply outcome unknown · Last confirmed profile not reported · {configuration}"
             : $"Applied profile not reported by the host · {configuration}";
@@ -525,6 +531,11 @@ public sealed partial class MainWindow
             else review.Message = "Apply outcome remains unknown. The returned status does not establish a new completed operation. Check current status again; no apply was repeated.";
         }
         else review.Message = "Current host status read. " + current.Application?.RecoveryAction;
+        // A lost apply response can leave only this metadata stale locally.
+        // Keep every saved object, editor revision, selection and mounted draft;
+        // the real status read supplies the confirmed applied revision alone.
+        if (!ProfileApplyOutcomeUnknown && _configuration is { } configuration)
+            _configuration = configuration with { AppliedRevision = current.AppliedRevision };
     }
 
     private async Task CheckProfileStatusAsync(ProfileReview review)
