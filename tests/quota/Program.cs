@@ -38,6 +38,7 @@ static class Test
         transport.Response = request => request.Headers.Authorization!.Parameter == "a" ? throw new HttpRequestException("secret bearer a") : """{"rate_limit":{"primary_window":{"used_percent":66}}}""";
         rows = await service.RefreshAsync();
         var stale = rows.First(r => r.AccountId == "a");
+        // AC-01 retains the original observation; a failed refresh is not a new measurement.
         Check(stale.State == "stale" && stale.Remaining == 80 && stale.LastSuccessAt == success && stale.ObservedAt == observedAt && stale.ObservedAt < clock.GetUtcNow(), "failure retains original value, observation and last success");
         Check(rows.Single(r => r.AccountId == "b").State == "ok", "one failure does not hide others");
         Check(!JsonSerializer.Serialize(rows).Contains("secret bearer"), "sanitized failures");

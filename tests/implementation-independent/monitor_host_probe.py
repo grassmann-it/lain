@@ -36,6 +36,7 @@ def main():
             "registrationQualified": True}))
         (state / "proxy/auth-owned").mkdir(parents=True, mode=0o700)
         secret = "synthetic-restored-refresh-never-use"
+        private_key = "synthetic-kilo-private-connect-never-use"
         (state / "proxy/auth-owned/synthetic.json").write_text(json.dumps({
             "type": "codex", "account_id": "synthetic-subject", "refresh_token": secret}))
         (state / "restore-requires-reconnect").write_text("synthetic-restore-epoch")
@@ -61,6 +62,7 @@ def main():
             with response:
                 body = response.read()
                 require(secret.encode() not in body, "secret leaked in Host response")
+                require(private_key.encode() not in body, "submitted key leaked in Host response")
                 return response.status, json.loads(body) if body else None
 
         with (root / "host.log").open("w+") as log:
@@ -101,6 +103,41 @@ def main():
                 require(code == 409, "Monitor accepted Core start")
                 require(request("/usage")[0] == 200, "history unavailable in restored Monitor")
                 require(request("/status")[1]["state"] == "monitoring", "unavailable actions damaged Monitor health")
+                kilo = next(m for m in methods if m["provider"] == "kilo" and m["id"] == "api-key")
+                require(kilo["availability"] == "available" and "quota" in kilo["purposes"], "Kilo monitor method unavailable")
+                connect = {"revision": 0, "value": {"connection": {"provider": "kilo",
+                    "method": kilo["id"], "purposes": ["quota"], "name": "Private Kilo fixture"},
+                    "secret": private_key, "kind": "api-key"}}
+                code, configuration = request("/accounts/connect", "POST", connect)
+                require(code == 200 and configuration["revision"] == 1, "Monitor account connect failed")
+                require(len(configuration["accounts"]) == 1 and not configuration["routes"] and not configuration["profiles"],
+                        "monitor account requires unwanted model/profile setup")
+                account = configuration["accounts"][0]
+                require(account["name"] == "Private Kilo fixture" and account["generation"] == 1 and
+                        {value["purpose"] for value in account["capabilities"]} == {"quota"}, "monitor account capabilities incorrect")
+                require(not (state / "credentials/inference.token").exists(), "quota-only connection created local inference key")
+                require(request("/accounts/connect", "POST", connect)[0] == 409, "stale connect revision accepted")
+                reconnect = {"revision": 1, "value": {**connect["value"], "connection": {
+                    **connect["value"]["connection"], "accountId": account["id"], "expectedGeneration": 1}}}
+                code, configuration = request("/accounts/connect", "POST", reconnect)
+                require(code == 200 and configuration["revision"] == 2 and len(configuration["accounts"]) == 1,
+                        "explicit reconnect duplicated the account")
+                renewed = configuration["accounts"][0]
+                require(renewed["id"] == account["id"] and renewed["name"] == account["name"] and renewed["generation"] == 2,
+                        "explicit reconnect changed identity/name or missed generation")
+                require(request("/accounts/" + account["id"] + "/models", "POST", {"revision": 2,
+                    "value": {"expectedGeneration": 2, "connectionId": "fixture", "modelRouteIds": ["fixture"]}})[0] == 409,
+                        "Monitor accepted Gateway attachment")
+                code, gateway = request("/runtime-mode", "PUT", {"revision": 2, "mode": "gateway"})
+                require(code == 200 and gateway["runtimeMode"] == "gateway" and not gateway["proxyReady"],
+                        "Gateway selection applied or inferred a running proxy")
+                require(request("/runtime-mode", "PUT", {"revision": 2, "mode": "monitor"})[0] == 409,
+                        "mode switch bypassed revision conflict")
+                require(request("/service/start", "POST")[0] == 409, "unconfigured Gateway started inference")
+                code, monitor = request("/runtime-mode", "PUT", {"revision": 3, "mode": "monitor"})
+                require(code == 200 and monitor["runtimeMode"] == "monitor", "explicit return to Monitor failed")
+                require(request("/configuration")[1]["accounts"][0]["id"] == account["id"], "mode switch lost account")
+                require(not (state / "credentials/inference.token").exists(), "mode selection created inference key")
             finally:
                 process.terminate()
                 try:
@@ -109,9 +146,10 @@ def main():
                     process.kill()
                     process.wait(timeout=5)
                 log.seek(0)
-                require(secret not in log.read(), "secret leaked in Host output")
+                output = log.read()
+                require(secret not in output and private_key not in output, "secret leaked in Host output")
     print(json.dumps({"result": "passed", "hostAssemblySha256": hashlib.sha256(assembly.read_bytes()).hexdigest(),
-                      "scope": "isolated restored Monitor, absent Core, malformed optional registration, method availability, history", "providerRequests": 0}))
+                      "scope": "isolated restored Monitor without Core, private connect/reconnect, revisions, mode switches, method availability, history", "providerRequests": 0}))
 
 
 if __name__ == "__main__":

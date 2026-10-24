@@ -69,23 +69,23 @@ UX-Pilot-Ergebnisdateien gehören der parallelen Entwurfsrunde.
 
 | Paket | Zu beweisendes Ergebnis | Stand |
 | --- | --- | --- |
-| AC-00/01 | Account-/Methoden-/Ownerverträge, verlustfreie Migration, Host ohne Core, Reconnect/Cancel/Rotation-Recovery | offen |
-| AC-02/09 | Einheitlicher privater Desktop-/CLI-Connect, optionale Modelle, echte Fähigkeiten aller 25 Anbieter | offen |
-| AC-03 | Kilo Wallet/Pass, Requesty Self, Synthetic-Erweiterung, Step-Erhalt, xAI-Metadaten | offen |
-| AC-04 | OpenRouter/Poe-Flow und Callback mit Lifecycle; Produktionsvoraussetzungen ehrlich qualifiziert | offen |
-| AC-05 | Isolierte offizielle CLI-Anschlüsse je Anbieter, gebundene Ergebnisse und passende Reader | offen |
-| AC-06 | Google/Cloudflare-Monitorquelle, Scope/Rechte und OAuthtransport separat qualifiziert | offen |
-| AC-07 | Kimi/Z.ai/Codex-Owner und Loginwege mit erhaltener Legacy-Snapshotgrenze | offen |
-| AC-08 | Begrenzte Console-Sessionintegration, MiMo zuerst, jeder Folgeanbieter separat qualifiziert | offen |
-| AC-10 | Unabhängige Offlineabnahme, Paketierung, erhaltene Installation, reale Prüfung gesondert | offen |
-| ST-01 | Versionierte Client-/Modellfähigkeiten, tatsächliche Tool-/Streaming-/Kontextgrenzen, keine stillen Kürzungen | offen |
-| ST-02 | Vorschau, gespeicherter/aktiver/exportierter Stand, Wiederherstellung und konsistente Clientartefakte | offen |
-| ST-03 | Teilmessungen und Fehlerkategorien serverseitig, gleiche CLI/UI-Zahlen und erhaltene Replaysemantik | offen |
-| ST-04 | Wachstum/Start/RAM gemessen; Datenpflege, konsistentes Backup/Restore, Fehler-/Recoveryfälle | offen |
-| ST-05 | Aktuelle Build-/Supportidentität, wiederholbarer Release, Fresh install/Update/Rollback | offen |
-| UX-01 | Stabile Accountkacheln/Details, alle Fenster und richtige Budgetzustände | offen |
-| UX-02 | Unterschiedliche Modi, kompakte Monitoransicht und gemeinsame Objektcommands | offen |
-| UX-03 | Übersichtliche Models/Profiles/Usage/Live, Settings und Navigation ohne Duplizierung | offen |
+| AC-00/01 | Account-/Methoden-/Ownerverträge, verlustfreie Migration, Host ohne Core, Reconnect/Cancel/Rotation-Recovery | Integriert; unabhängige Basis- und Hostprozesschecks bestanden. Neue automatische Erneuerung: Nebenläufigkeitsbefund in Nacharbeit. |
+| AC-02/09 | Einheitlicher privater Desktop-/CLI-Connect, optionale Modelle, echte Fähigkeiten aller 25 Anbieter | Integriert, CLI geprüft; Connect-/Modelbildabnahme mit gezielten Nachkorrekturen läuft. |
+| AC-03 | Kilo Wallet/Pass, Requesty Self, Synthetic-Erweiterung, Step-Erhalt, xAI-Metadaten | Reader und unabhängige Metadatenaktualität integriert; erweiterte synthetische Readerprüfung bestanden. |
+| AC-04 | OpenRouter/Poe-Flow und Callback mit Lifecycle; Produktionsvoraussetzungen ehrlich qualifiziert | 56 echte-Host-Assembly-Fixturechecks bestanden; Poe benötigt eigene qualifizierte Registrierung, reale Logins nicht geprüft. |
+| AC-05 | Isolierte offizielle CLI-Anschlüsse je Anbieter, gebundene Ergebnisse und passende Reader | Qualifikationsframework und Alibaba-Normalisierung lokal geprüft (65 Assertions); fünf reale Methoden bleiben wegen konkreter Binary-/Identitäts-/Isolationsvoraussetzungen deaktiviert. |
+| AC-06 | Google/Cloudflare-Monitorquelle, Scope/Rechte und OAuthtransport separat qualifiziert | Adapter und Cloudfixtures bestanden; eigene Clientzulassung, tatsächliche Rechte und Cloudflare-Datasetqualifikation bleiben methodenspezifisch offen. |
+| AC-07 | Kimi/Z.ai/Codex-Owner und Loginwege mit erhaltener Legacy-Snapshotgrenze | Lokale Parser/Verträge geprüft; unqualifizierte zusätzliche Loginwege explizit deaktiviert. Codex-Corelogin und externer Snapshot getrennt erhalten. |
+| AC-08 | Begrenzte Console-Sessionintegration, MiMo zuerst, jeder Folgeanbieter separat qualifiziert | Begrenzte Reader-/Sessionverträge und lokale Fixtures integriert; kein unbewiesener produktiver Browsertransport aktiviert. |
+| AC-10 | Unabhängige Offlineabnahme, Paketierung, erhaltene Installation, reale Prüfung gesondert | Unabhängige Backendchecks bestanden; kombinierte UI-, exakte Paket-/Update-/Restoreabnahme und Lieferung noch offen. |
+| ST-01 | Versionierte Client-/Modellfähigkeiten, tatsächliche Tool-/Streaming-/Kontextgrenzen, keine stillen Kürzungen | Transportmatrix und qualifizierte Toolgrenzen in Host/Core geprüft; kein universeller Kontext-Tokenizer oder unbelegter Providerbeweis. |
+| ST-02 | Vorschau, gespeicherter/aktiver/exportierter Stand, Wiederherstellung und konsistente Clientartefakte | Profil-/Recoveryfixtures bestanden; native Applybedienung geprüft, tatsächliche Host/Core-Drainintegration folgt. |
+| ST-03 | Teilmessungen und Fehlerkategorien serverseitig, gleiche CLI/UI-Zahlen und erhaltene Replaysemantik | Integrierte Teilmessungs- und Clientchecks bestanden; schmale Usagebildabnahme wird nach Layoutkorrektur wiederholt. |
+| ST-04 | Wachstum/Start/RAM gemessen; Datenpflege, konsistentes Backup/Restore, Fehler-/Recoveryfälle | Sparse Index, begrenzte Messung und nichtdestruktive Journalrecovery geprüft; vollständige Hostzustandswiederherstellung und echte Dateisystemerschöpfung noch zu qualifizieren. |
+| ST-05 | Aktuelle Build-/Supportidentität, wiederholbarer Release, Fresh install/Update/Rollback | Getrennte Publisher und isolierte Paketprobe vorbereitet; frische Artefakte und tatsächliche Lieferung fehlen noch. |
+| UX-01 | Stabile Accountkacheln/Details, alle Fenster und richtige Budgetzustände | UXD-01/02 integriert; Geometrie, Rückweg und native Commands geprüft; abschließende Bildmatrix läuft. |
+| UX-02 | Unterschiedliche Modi, kompakte Monitoransicht und gemeinsame Objektcommands | Modus-/Capabilitymatrix integriert; native Tastatur und Kontextmenü bestanden; vollständige Barrierefreiheit nicht behauptet. |
+| UX-03 | Übersichtliche Models/Profiles/Usage/Live, Settings und Navigation ohne Duplizierung | UXD-03–08 integriert; sichtbare Befunde aus erster Bildprüfung werden vor finalem Lauf korrigiert. |
 
 Ein Quellenbeleg, ein implementierter Adapter, lokale Fixtureprüfung, installiertes
 Paket und reales Providerergebnis bleiben verschiedene Nachweise. Fehlt eine
@@ -108,6 +108,8 @@ im gemeinsamen Host/Client angeschlossen. Erste Hostkompilation ist bestanden;
 synthetische HTTP-Gesamtabnahme steht noch aus. Modelle werden über
 `POST /accounts/{id}/models` mit Revision, Accountgeneration, exakter ConnectionId
 und mehreren Template-IDs angehängt; der private Key bleibt beim Host.
+Die [aktuelle Anschlussmatrix](uxd-integration-2026-10-24.md) enthält konkrete
+Methoden, synthetische Eingaben, Fehlersemantik und den gemeinsamen Seitenvertrag.
 
 Dateiaufteilung der Erweiterung: Shell+Accounts ein Owner; Connect+Models beim
 bestehenden Desktopowner; Profiles, Usage, Live und Settings jeweils eigene
@@ -128,3 +130,18 @@ Hostverdrahtung und Integration. Gemeinsame Shell-/Policyhelpers nur über Owner
 - AC-05–08 liefern lokale Qualifikation und explizite methodische Gates; fehlende
   eigene Clientregistrierung, stabile Identität oder Browser-/CLI-Isolation bleibt
   an der konkreten Methode sichtbar. Ein Parser ist kein funktionierender Login.
+- Core `8.0.41-lain-adapter.3`: 66 Top-Level-Go-Tests und 40 tatsächliche
+  Coreprozesschecks mit Loopback als einziger Netzwerkschnittstelle bestanden.
+  [Artefaktgebundene Evidence](../tests/core-stabilization/README.md) unterscheidet
+  diese Prüfung von der noch folgenden gesamten Hostintegration.
+- Integrierter Backendlauf unter `/tmp/lain-integrated-final-20261024/`:
+  Produktionsbuild, Cloud, zwölf unabhängige Szenarien, Profilanwendung,
+  Transport, Teilmessungen, CLI/Client, Reader und echte Monitor-/Restore-Hostproben
+  bestanden. Neue Foundation-Erneuerungsprüfung fand einen lokalen Revisionsrace;
+  Legacy-Quotaharness benötigt einen aktualisierten echten Hostprojektbezug.
+  Beide Befunde werden gezielt behoben, nicht als bestandene Gesamtprüfung gezählt.
+- UXD-09 prüft echte native Eingaben und PNGs getrennt. Der erste Lauf fand einen
+  Usage-Logical-Parent-Fehler, vorzeitige Connect-Erfolgsmeldungen und zu wenig
+  sichtbare Ergebnisfläche bei 800×560. Die Korrekturen werden anhand stärkerer
+  Lesbarkeits- und Layoutassertions erneut geprüft. Frühere Capturezahlen sind
+  kein Nachweis für die nachfolgend geänderte Assembly.

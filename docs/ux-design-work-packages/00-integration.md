@@ -1,5 +1,9 @@
 # UXD-00 – Integrationsstand, Verträge und Entscheidungen
 
+Aktueller Umsetzungsnachtrag: [integrierte Anschlussmatrix vom 24.10.2026](../uxd-integration-2026-10-24.md).
+Die folgenden Aufgaben beschreiben den ursprünglichen Paketvertrag; ausgeführte
+Nachweise und verbleibende Liefergates stehen im gemeinsamen Ausführungsledger.
+
 Ziel: Ein späterer Implementierer kennt die echte technische Basis, vorhandene
 Owner und die von offenen Designentscheidungen abhängigen Teile. Einstieg und
 gemeinsame Grenzen stehen in der [Paketübersicht](README.md).
