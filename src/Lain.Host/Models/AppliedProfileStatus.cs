@@ -62,12 +62,24 @@ public sealed record AppliedProfileStatus(string? Id = null, long? Revision = nu
             return active.RootElement.ValueKind == JsonValueKind.Object && runtime.RootElement.ValueKind == JsonValueKind.Object &&
                 !active.RootElement.TryGetProperty("generationId", out _) &&
                 !runtime.RootElement.TryGetProperty("generationId", out _) &&
+                TryLegacyIdentity(active.RootElement, "id", out var activeId) &&
+                TryLegacyIdentity(runtime.RootElement, "profileId", out var runtimeId) &&
+                (activeId is null || runtimeId is null || string.Equals(activeId, runtimeId, StringComparison.Ordinal)) &&
                 runtime.RootElement.TryGetProperty("valid", out var valid) && valid.ValueKind == JsonValueKind.True &&
                 runtime.RootElement.TryGetProperty("revision", out var runtimeRevision) && runtimeRevision.TryGetInt64(out var r) && r == appliedRevision &&
                 active.RootElement.TryGetProperty("revision", out var activeRevision) && activeRevision.TryGetInt64(out var a) && a == appliedRevision;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
         { return false; }
+    }
+
+    private static bool TryLegacyIdentity(JsonElement metadata, string property, out string? identity)
+    {
+        identity = null;
+        if (!metadata.TryGetProperty(property, out var value) || value.ValueKind == JsonValueKind.Null) return true;
+        if (value.ValueKind != JsonValueKind.String) return false;
+        identity = value.GetString();
+        return !string.IsNullOrWhiteSpace(identity) && identity.Length <= 200;
     }
 
     internal static bool MetadataEntryExists(string path)

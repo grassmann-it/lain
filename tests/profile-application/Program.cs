@@ -42,10 +42,16 @@ try
     File.WriteAllText(legacyRuntimePath, "{\"valid\":true,\"revision\":2,\"profileId\":\"legacy\"}");
     Check(legacyService.Status is { State: "legacy-preserved", ProfileId: "legacy" },
         "independently proven legacy profile identity remains available");
+    File.WriteAllText(legacyRuntimePath, "{\"valid\":true,\"revision\":2,\"profileId\":null}");
+    Check(legacyService.Status is { State: "legacy-preserved", ProfileId: null }, "explicitly unknown legacy identity stays unknown");
+    legacyService.RequireCompletedRuntime();
     File.WriteAllText(legacyRuntimePath, legacyRuntime);
     foreach (var invalidRuntime in new[]
     {
         "{\"valid\":false,\"revision\":2}", "{\"valid\":true,\"revision\":11}",
+        "{\"valid\":true,\"revision\":2,\"profileId\":\"contradictory\"}",
+        "{\"valid\":true,\"revision\":2,\"profileId\":42}",
+        "{\"valid\":true,\"revision\":2,\"profileId\":\" \"}",
         "{\"valid\":true,\"revision\":2,\"generationId\":null}",
         "{\"valid\":true,\"revision\":2,\"generationId\":\"new\"}", "null", "{broken"
     })
@@ -57,7 +63,8 @@ try
     File.WriteAllText(legacyRuntimePath, legacyRuntime);
     foreach (var invalidActive in new[]
     {
-        "{\"revision\":11}", "{\"revision\":2,\"generationId\":null}",
+        "{\"revision\":11}", "{\"revision\":2,\"id\":42}", "{\"revision\":2,\"id\":\"\"}",
+        "{\"revision\":2,\"generationId\":null}",
         "{\"revision\":2,\"generationId\":\"new\"}", "[]"
     })
     {

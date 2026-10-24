@@ -58,7 +58,9 @@ legacy metadata files, matching applied revisions, `runtime.valid=true`, no
 `generationId` property in either document, and no application marker (including
 an invalid file, directory or dangling symbolic link). It permits startup from the
 existing runtime even if the older metadata does not prove its profile identity.
-Active profile identity stays unknown until independently proven. A desired
+Active profile identity stays unknown until independently proven. Missing or null
+legacy identity fields remain unknown; contradictory explicit identities and
+non-string/blank identities are rejected. A desired
 revision newer than the applied revision remains pending; this check never
 resolves it, invokes apply or writes runtime/configuration metadata.
 
