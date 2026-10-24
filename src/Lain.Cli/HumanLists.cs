@@ -41,31 +41,6 @@ public static partial class CliApplication
             profiles.Select(profile => new HumanRow([profile.Name, profile.Id, profile.RouteIds.Length.ToString(CultureInfo.InvariantCulture), profile.DefaultRouteId ?? "none"],
                 [new("Route IDs", JoinIds(profile.RouteIds), Identifier: true)])));
 
-    private static Task WriteQuotas(TextWriter output, QuotaDto[] quotas) =>
-        HumanTable.WriteAsync(output, $"Quota windows ({quotas.Length})",
-            [new("Account", Identifier: true), new("Window"), new("State", Status: true), new("Used %", Numeric: true),
-                new("Remaining", Numeric: true), new("Reset (UTC)", Secondary: true)],
-            quotas.Select(quota =>
-            {
-                var details = new List<HumanDetail>
-                {
-                    new("Balance", $"remaining {QuotaNumber(quota.Remaining)} / {QuotaNumber(quota.Limit)} {Cell(quota.Unit)}; used {QuotaNumber(quota.Used)}"),
-                    new("Source", quota.Source, Identifier: true),
-                    new("Observed", Timestamp(quota.ObservedAt)),
-                    new("Last success", Timestamp(quota.LastSuccessAt))
-                };
-                if (quota.BudgetPoolId is { } pool) details.Add(new("Pool ID", pool, Identifier: true));
-                if (quota.SharedWithLegacy) details.Add(new("Budget", "Shared budget with legacy usage; these are the same provider funds."));
-                if (!string.IsNullOrWhiteSpace(quota.Error)) details.Add(new("Error", quota.Error));
-                var state = (quota.State is "stale" or "error" or "unavailable") && (QuotaPercentage(quota).HasValue || quota.Remaining.HasValue || quota.Used.HasValue)
-                    ? "Last known" : ReadableState(quota.State);
-                if (quota.ResetsAt is { } reset && reset <= DateTimeOffset.UtcNow) state = state == "Last known" ? "Last known; reset due" : "Reset due";
-                var used = QuotaPercentage(quota);
-                return new HumanRow([quota.AccountId, quota.WindowLabel ?? "Not reported", state,
-                    used is { } percent ? percent.ToString("0.##", CultureInfo.InvariantCulture) + "%" : "unknown",
-                    QuotaNumber(quota.Remaining) + " " + Cell(quota.Unit), Timestamp(quota.ResetsAt)], details.ToArray());
-            }));
-
     private static string JoinIds(string[] ids) => ids.Length == 0 ? "none" : string.Join(", ", ids.Select(Cell));
     private static string Timestamp(DateTimeOffset? time) => time?.UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) ?? "unknown";
     private static string QuotaNumber(double? value) => value is { } number && double.IsFinite(number) && number >= 0

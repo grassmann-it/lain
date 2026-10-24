@@ -81,8 +81,12 @@ internal static class HumanTable
         }
     }
 
-    internal static Task WriteTextAsync(TextWriter output, string text, HumanOutputContext? context = null) =>
-        WriteWrappedAsync(output, Clean(text), "", (context ?? HumanOutputContext.Detect(output)).Width);
+    internal static Task WriteTextAsync(TextWriter output, string text, HumanOutputContext? context = null,
+        string indent = "", bool subtle = false)
+    {
+        context ??= HumanOutputContext.Detect(output);
+        return WriteWrappedAsync(output, Clean(text), indent, context.Width, context, subtle ? "2" : null);
+    }
 
     private static async Task WriteFieldAsync(TextWriter output, string label, string? value, bool identifier,
         HumanOutputContext context, string indent = "  ")
@@ -95,7 +99,8 @@ internal static class HumanTable
         await WriteWrappedAsync(output, clean, prefix, context.Width);
     }
 
-    private static async Task WriteWrappedAsync(TextWriter output, string value, string prefix, int width)
+    private static async Task WriteWrappedAsync(TextWriter output, string value, string prefix, int width,
+        HumanOutputContext? context = null, string? color = null)
     {
         var line = prefix;
         var continuation = new string(' ', Math.Min(Width(prefix), Math.Max(0, width - 8)));
@@ -104,20 +109,20 @@ internal static class HumanTable
             var separator = line.Length > 0 && line != prefix && line != continuation ? " " : "";
             if (Width(line) + Width(separator) + Width(word) > width && line != prefix && line != continuation)
             {
-                await output.WriteLineAsync(line);
+                await output.WriteLineAsync(context is null ? line : Paint(line, color, context));
                 line = continuation;
                 separator = "";
             }
             line += separator + word;
         }
-        await output.WriteLineAsync(line.TrimEnd());
+        await output.WriteLineAsync(context is null ? line.TrimEnd() : Paint(line.TrimEnd(), color, context));
     }
 
     private static string Pad(string text, int width, bool right) => right
         ? new string(' ', Math.Max(0, width - Width(text))) + text
         : text + new string(' ', Math.Max(0, width - Width(text)));
 
-    private static string Paint(string value, string? color, HumanOutputContext context) =>
+    internal static string Paint(string value, string? color, HumanOutputContext context) =>
         context.Color && color is not null ? $"\u001b[{color}m{value}\u001b[0m" : value;
 
     private static string? StatusColor(string value) => value switch

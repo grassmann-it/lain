@@ -81,13 +81,44 @@ internal static class HumanRenderingChecks
                 Check(text.Contains("Available") && text.Contains("Prepared") && text.Contains("Not checked") && !text.Contains("live_not_tested"), "provider states are friendly without fabricating a live check");
                 Check(text.Contains("not verified account access or free usage") && text.Contains("provider-copyable"), "catalog eligibility is distinct from real access and provider IDs remain usable");
             }
-            if (command == "quotas") Check(text.Contains("95%") && text.Contains("Last known") && text.Contains("remaining unknown / unknown credits") && text.Contains("same provider funds"), "quota rendering retains stale percentages, unknown amounts and shared budget scope");
+            if (command == "quotas") Check(text.Contains("95% used") && text.Contains("Last known") && text.Contains("Remaining 5% (amount unknown)") && text.Contains("same provider funds"), "quota rendering retains stale percentages, unknown amounts and shared budget scope");
             output = new(); error = new();
             exit = await CliApplication.RunAsync([command, "--json"], output, error, () => new LainApiClient(http, "fixture-token"));
             Check(exit == 0 && error.ToString() == "" && output.ToString() == JsonSerializer.Serialize(value, value.GetType(), jsonOptions) + Environment.NewLine,
                 command + " JSON remains byte-for-byte unchanged by human rendering");
         }
         Check(handler.Calls == 10, "human and JSON listings issue only their existing read request");
+        foreach (var width in new[] { 60, 80, 120 })
+        {
+            var quotaOutput = new StringWriter();
+            await CliApplication.WriteQuotas(quotaOutput, CliPresentationFixtures.Quotas, new(width, false));
+            var text = quotaOutput.ToString();
+            Check(text.Split('\n').All(line => HumanTable.Width(line.TrimEnd('\r')) <= width), $"quota fixture fits {width} columns");
+            Check(text.Contains("[" + new string('#', 18)) && text.Contains("40% used") && text.Contains("96% used") && text.Split('\n').Any(line => line.TrimEnd('\r').EndsWith(" 0% used", StringComparison.Ordinal)), $"{width}-column quotas retain actual bars, percentages and known zero");
+            Check(text.Split('\n').Count(line => line.TrimStart().StartsWith("[", StringComparison.Ordinal)) == 4 && !text.Contains('\u001b'), "unknown, balance-only and unsupported windows do not become empty zero bars or emit colour to captures");
+            Check(text.Contains("Last known") && text.Contains("Reset due") && text.Contains("Percentage unknown") && text.Contains("Quota lookup not supported"), $"{width}-column quota states distinguish stale, due, unknown and unsupported");
+            Check(text.Contains("Remaining 12 USD-Credits") && text.Contains("Remaining 0 USD-Credits") && text.Contains("Reset unknown"), $"{width}-column balance-only windows retain amounts and explicit unknown resets");
+            Check(text.Split("Account ID: account-codex", StringSplitOptions.None).Length == 2 && !text.Contains("Pool ID:") && !text.Contains("https://"), "account identity is grouped and technical source noise is reduced without inventing names");
+            foreach (var command in new[] { "status", "usage", "help" })
+            {
+                var rendered = new StringWriter();
+                if (command == "status") await CliApplication.WriteStatus(rendered, CliPresentationFixtures.Status, new(width, false));
+                else if (command == "usage") await CliApplication.WriteUsage(rendered, CliPresentationFixtures.Usage, new(width, false));
+                else await CliApplication.WriteHelp(rendered, new(width, false));
+                Check(!rendered.ToString().Contains('\t') && rendered.ToString().Split('\n').All(line => HumanTable.Width(line.TrimEnd('\r')) <= width), $"{command} fits {width} columns without tabs");
+                if (command == "status") Check(rendered.ToString().Contains("4 saved / 3 applied") && rendered.ToString().Contains("changes pending"), "status preserves the saved/applied distinction");
+                if (command == "usage") Check(rendered.ToString().Contains("incomplete") && rendered.ToString().Contains("account-codex") && rendered.ToString().Contains("vendor/model") && rendered.ToString().Contains("unknown"), "usage preserves coverage, IDs and unknown token totals");
+            }
+        }
+        var quotaColour = new StringWriter();
+        await CliApplication.WriteQuotas(quotaColour, CliPresentationFixtures.Quotas, new(80, true));
+        Check(new[] { "\u001b[32m[", "\u001b[33m[", "\u001b[31m[", "\u001b[2m" }.All(quotaColour.ToString().Contains), "terminal quotas use green/yellow/red bars and subtle freshness metadata without colouring unknown values as free");
+        var fixtureJson = new StringWriter(); var fixtureError = new StringWriter();
+        Check(await CliPresentationFixtures.RunAsync(["usage", "--json"], fixtureJson, fixtureError) == 0 && fixtureError.ToString() == "" &&
+            fixtureJson.ToString() == JsonSerializer.Serialize(CliPresentationFixtures.Usage, jsonOptions) + Environment.NewLine, "usage human changes leave JSON byte-for-byte unchanged");
+        fixtureJson = new(); fixtureError = new();
+        Check(await CliPresentationFixtures.RunAsync(["status", "--json"], fixtureJson, fixtureError) == 0 && fixtureError.ToString() == "" &&
+            fixtureJson.ToString() == JsonSerializer.Serialize(CliPresentationFixtures.Status, jsonOptions) + Environment.NewLine, "status human changes leave JSON byte-for-byte unchanged");
         return checks;
     }
 

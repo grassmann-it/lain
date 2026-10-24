@@ -5,6 +5,12 @@ using Lain.Client;
 using Lain.Cli;
 using Lain.Core;
 
+if (args.FirstOrDefault() == "--render-fixture")
+{
+    Environment.ExitCode = await CliPresentationFixtures.RunAsync(args[1..], Console.Out, Console.Error);
+    return;
+}
+
 static void Require(bool condition, string message) { if (!condition) throw new Exception(message); }
 var assertions = 0;
 var handler = new FakeHandler();
@@ -203,7 +209,7 @@ handler.Handle = _ => new(HttpStatusCode.OK) { Content = JsonContent.Create(new[
     new QuotaDto("account", "shared-pool", "provider", "unavailable", null, null, null, "points", null, null, null, true) }) };
 output = new(); error = new();
 exit = await CliApplication.RunAsync(["quotas"], output, error, () => client);
-Require(exit == 0 && output.ToString().Contains("remaining unknown / unknown points") &&
+Require(exit == 0 && output.ToString().Contains("Remaining unknown points") && output.ToString().Contains("Percentage unknown") &&
     output.ToString().Contains("Shared budget with legacy"), "quota text preserves native units and shared budget scope"); assertions++;
 
 var providerRoute = new ProviderRouteDescriptorDto("route/test", "vendor/model", "Test model", "https://provider.test/v1", "openai-chat", ["trial"],

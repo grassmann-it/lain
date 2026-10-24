@@ -31,7 +31,8 @@ public static partial class CliApplication
                 await output.WriteLineAsync($"Host content lifetime {snapshot.Limits.ContentTtlSeconds}s; terminal lifetime {snapshot.Limits.TerminalTtlSeconds}s; content buffer {snapshot.Limits.ContentBytes} bytes; policy {Cell(snapshot.Limits.ContentPolicy)}");
                 foreach (var stream in snapshot.Streams)
                 {
-                    await output.WriteLineAsync($"{Cell(stream.Id)}\t{Cell(stream.Scope)}\trequest {Cell(stream.RequestId)}\tattempt {Cell(stream.AttemptId)}\t{Cell(stream.State)}{(stream.Truncated ? "; truncated" : "")}");
+                    await HumanTable.WriteTextAsync(output, $"Stream {Cell(stream.Id)} · {Cell(stream.Scope)} · {Cell(stream.State)}{(stream.Truncated ? "; truncated" : "")}");
+                    await HumanTable.WriteTextAsync(output, $"Request {Cell(stream.RequestId)}; attempt {Cell(stream.AttemptId)}", indent: "  ");
                     await output.WriteLineAsync($"  {Cell(stream.Provider)} / {Cell(stream.Model)}; requested {Cell(stream.RequestedModel)}; account {Cell(stream.AccountId)}; route {Cell(stream.RouteId)}; HTTP {Number(stream.StatusCode)}");
                     await output.WriteLineAsync($"  Started {stream.StartedAt:O}; updated {stream.UpdatedAt:O}; first output {Number(stream.Measurements?.FirstOutputLatencyMs)} ms; duration {Number(stream.Measurements?.TotalDurationMs)} ms; tokens {Number(stream.Tokens?.Total)}");
                     await WriteDimensions(output, stream.Dimensions);
@@ -43,7 +44,8 @@ public static partial class CliApplication
                 if (events.GapReason is { } gap) await output.WriteLineAsync("Gap: " + Cell(gap));
                 foreach (var item in events.Events)
                 {
-                    await output.WriteLineAsync($"{item.Cursor}\t{item.ObservedAt:O}\t{Cell(item.Kind)}\trequest {Cell(item.RequestId)}\tattempt {Cell(item.AttemptId)}\t{Cell(item.State)}{(item.Truncated ? "; truncated" : "")}");
+                    await HumanTable.WriteTextAsync(output, $"Event {item.Cursor} · {item.ObservedAt:O} · {Cell(item.Kind)} · {Cell(item.State)}{(item.Truncated ? "; truncated" : "")}");
+                    await HumanTable.WriteTextAsync(output, $"Request {Cell(item.RequestId)}; attempt {Cell(item.AttemptId)}", indent: "  ");
                     await WriteDimensions(output, item.Dimensions);
                     if (item.ToolCallId is not null || item.ToolName is not null)
                         await output.WriteLineAsync($"  Tool {Cell(item.ToolName)}; call {Cell(item.ToolCallId)}");

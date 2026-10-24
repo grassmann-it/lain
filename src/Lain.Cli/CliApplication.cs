@@ -51,7 +51,7 @@ public static partial class CliApplication
         try
         {
             if (args.Length == 0 || args[0] is "help" or "--help" or "-h")
-            { await output.WriteLineAsync(Help); return 0; }
+            { await WriteHelp(output); return 0; }
             var options = Options.Parse(args[1..]);
             var command = args[0];
             if (command == "ui")
@@ -297,7 +297,7 @@ public static partial class CliApplication
         if (json) { await output.WriteLineAsync(JsonSerializer.Serialize(value, value.GetType(), Json)); return; }
         switch (value)
         {
-            case StatusDto s: await output.WriteLineAsync($"lain {Cell(s.Version)}: {Cell(s.State)}; proxy {(s.ProxyReady ? "ready" : "unavailable")}; configuration {s.AppliedRevision}/{s.Revision}"); break;
+            case StatusDto s: await WriteStatus(output, s); break;
             case AccountDto[] accounts:
                 await WriteAccounts(output, accounts); break;
             case LoginDto login:
@@ -309,18 +309,14 @@ public static partial class CliApplication
             case ProfileDto[] profiles:
                 await WriteProfiles(output, profiles); break;
             case UsageSummaryDto u:
-                await output.WriteLineAsync($"{u.From:O} to {u.To:O} ({u.TimeZone})");
-                await output.WriteLineAsync($"Requests {u.Totals.Requests}; attempts {u.Totals.Attempts}; errors {u.Totals.Errors}; tokens {u.Totals.Tokens.Total?.ToString(CultureInfo.InvariantCulture) ?? "unknown"}");
-                await output.WriteLineAsync($"Observed {u.ObservedAt:O}; coverage {(u.Complete ? "complete" : "incomplete")}; unknown usage attempts {u.Totals.UnknownUsageAttempts}");
-                await WriteUsageGroups(output, "Account", u.Accounts);
-                await WriteUsageGroups(output, "Model", u.Models);
-                await WriteUsageGroups(output, "Day", u.Daily);
-                break;
+                await WriteUsage(output, u); break;
             case PageDto<AttemptDto> attempts:
                 await output.WriteLineAsync($"Attempts {attempts.Items.Length} of {attempts.Total}; offset {attempts.Offset}; limit {attempts.Limit}");
                 foreach (var a in attempts.Items)
                 {
-                    await output.WriteLineAsync($"{Cell(a.Id)}\t{Cell(a.AccountId)}\t{Cell(a.Provider)}\t{Cell(a.Model)}\t{Cell(a.State)}; completion {Cell(a.CompletionState)}\tHTTP {Number(a.StatusCode)}\ttokens {Number(a.Tokens.Total)}\tfirst output {Number(a.Measurements?.FirstOutputLatencyMs)} ms\tduration {Number(a.Measurements?.TotalDurationMs)} ms");
+                    await HumanTable.WriteTextAsync(output, $"Attempt {Cell(a.Id)} · {Cell(a.State)}; completion {Cell(a.CompletionState)}");
+                    await HumanTable.WriteTextAsync(output, $"Account {Cell(a.AccountId)}; provider {Cell(a.Provider)}; model {Cell(a.Model)}", indent: "  ");
+                    await HumanTable.WriteTextAsync(output, $"HTTP {Number(a.StatusCode)}; tokens {Number(a.Tokens.Total)}; first output {Number(a.Measurements?.FirstOutputLatencyMs)} ms; duration {Number(a.Measurements?.TotalDurationMs)} ms", indent: "  ");
                     if (a.FirstTokenMs is not null || a.DurationMs is not null)
                         await output.WriteLineAsync($"  Historical timing: first token {Number(a.FirstTokenMs)} ms; duration {Number(a.DurationMs)} ms");
                 }
@@ -343,15 +339,6 @@ public static partial class CliApplication
     private static string Cell(string? value) => HumanTable.Clean(value);
     private static string Number<T>(T? value) where T : struct, IFormattable =>
         value?.ToString(null, CultureInfo.InvariantCulture) ?? "unknown";
-    private static async Task WriteUsageGroups(TextWriter output, string dimension, UsageGroup[] groups)
-    {
-        foreach (var group in groups)
-        {
-            var totals = group.Totals;
-            await output.WriteLineAsync($"{dimension} {Cell(group.Key)}\trequests {totals.Requests}; attempts {totals.Attempts}; errors {totals.Errors}; tokens {Number(totals.Tokens.Total)}; unknown usage attempts {totals.UnknownUsageAttempts}");
-        }
-    }
-
     private sealed class Options
     {
         private readonly Dictionary<string, string?> values = new(StringComparer.Ordinal);
