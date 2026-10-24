@@ -21,10 +21,11 @@ try
     await Run("inference replacement retains independent quota generation", IndependentQuota);
     await Run("durable remote result recovers across recovery-record crash gap", PreparedCrashGap);
     await Run("restored rotating generation is quarantined", RestoredGrant);
+    await Run("quota-only core ownership resolves selected purpose", QuotaOnlyCore);
     await Run("historical canonical journal digest survives replay", HistoricalJournal);
 }
 finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
-Console.WriteLine($"Independent scenarios: {6 - failures.Count}/6 passed.");
+Console.WriteLine($"Independent scenarios: {7 - failures.Count}/7 passed.");
 Environment.ExitCode = failures.Count == 0 ? 0 : 1;
 
 async Task Run(string label, Func<Task> test)
@@ -106,6 +107,20 @@ Task RestoredGrant()
     try { new CredentialResolver(restarted.Repository, restarted.Secrets).Resolve(account.Id, "quota"); }
     catch (InvalidDataException) { refused = true; }
     Require(refused);
+    return Task.CompletedTask;
+}
+
+Task QuotaOnlyCore()
+{
+    var f = Fresh("quota-core");
+    OwnStatePaths.WritePrivate(Path.Combine(f.Paths.OwnedAuth, "fixture.json"),
+        "{\"type\":\"codex\",\"account_id\":\"subject-a\",\"access_token\":\"synthetic-core-access\",\"refresh_token\":\"synthetic-core-refresh\"}");
+    var state = f.Accounts.Connect(0, new("codex", "codex-owned", ["quota"]),
+        new("core", ["quota"], new("codex", Subject: "subject-a", Provenance: "verified"),
+            "{\"kind\":\"codex-owned\",\"provider\":\"codex\",\"ownedAuthFile\":\"fixture.json\",\"accountId\":\"subject-a\"}", PreserveForRecovery: true));
+    var access = new CredentialResolver(f.Repository, f.Secrets).Resolve(state.Accounts.Single().Id, "quota");
+    Require(access is not null && access.PrivateJson.Contains("synthetic-core-access") && !access.PrivateJson.Contains("synthetic-core-refresh"));
+    Require(!f.Secrets.HasAccount(state.Accounts.Single().Id));
     return Task.CompletedTask;
 }
 
