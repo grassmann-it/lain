@@ -235,3 +235,21 @@ in source. They do not newly demonstrate every concurrent shutdown ordering or
 an end-to-end Foundation-plus-gcloud cleanup failure. Other explicit limits from
 the preceding review remain unchanged, including ordinary disconnect's deferred
 retention behavior and absence of live login qualification.
+
+## MiMo malformed-receipt startup fix: `f04bed1`
+
+Root's backend runtime exposed a missed exception category: InvalidDataException
+does not derive from IOException. The prior source review did not catch this.
+The exact one-line fix explicitly adds InvalidDataException to ReconcileAsync's
+per-candidate catch (`MiMoConsoleBrowser.cs:187`). Invalid ownership/schema receipts
+now increment Failed and remain untouched while the scan continues, rather than
+escaping through Program's awaited startup reconciliation.
+
+Source-level fix confirmed. The existing fixture's wrong-owner receipt exercises
+this category; its failure-count and preservation assertions also cover oversized
+and symlink candidates (`MiMoProfileCleanupChecks.cs:34-54`). Cancellation remains
+propagated, and root-directory setup/enumeration failures outside the candidate
+try block are not silently swallowed. No broader startup-success guarantee is
+inferred. No reviewer build/test executed; Root is rerunning the backend fixtures.
+Root separately reports 142 offline Google checks passed in r4; that execution
+evidence was not independently inspected here.
