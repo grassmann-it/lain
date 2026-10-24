@@ -89,6 +89,29 @@ public sealed partial class MainWindow
 
     private static bool QuotaResetOverdue(QuotaDto quota) => quota.ResetsAt is { } reset && reset <= DateTimeOffset.UtcNow;
 
+    private static bool IsFiveHourWindow(QuotaDto quota)
+    {
+        // These are the semantic labels emitted by CodexQuotaAdapter (18000
+        // seconds), CommandCodeQuotaAdapter (fiveHour), KimiQuotaAdapter
+        // (limit_5h), and ZaiQuotaAdapter (unit 3 / number 5). A primary Codex
+        // window without its duration is deliberately not assumed to be 5h.
+        if (quota.WindowLabel is { Length: > 0 } label)
+        {
+            if (label == "5 hours") return true;
+            var parts = label.Split(" · ", StringSplitOptions.None);
+            return (parts.Length is 2 or 3) && (parts[0] is "Credits" or "Tokens") && parts[1] == "5 hours"
+                && (parts.Length == 2 || int.TryParse(parts[2], NumberStyles.None, CultureInfo.InvariantCulture, out var occurrence) && occurrence > 1);
+        }
+        var separator = quota.Source.LastIndexOf('#');
+        return separator >= 0 && (quota.Source[(separator + 1)..] is "fiveHour" or "limit_5h");
+    }
+
+    private bool CurrentFiveHourWindow(QuotaDto quota) => !LastKnownQuota(quota) && (quota.State is "ok" or "available");
+
+    private QuotaDto? FiveHourWindow(string accountId) => _quotas.Where(quota => quota.AccountId == accountId && IsFiveHourWindow(quota))
+        .OrderBy(quota => QuotaUsedPercent(quota).HasValue ? CurrentFiveHourWindow(quota) ? 0 : 1 : 2)
+        .ThenByDescending(QuotaUsedPercent).ThenBy(quota => quota.Source, StringComparer.Ordinal).FirstOrDefault();
+
     private bool LastKnownQuota(QuotaDto quota) => !_hostAvailable || _quotaError is not null
         || quota.State is "stale" or "error" or "unavailable" || QuotaResetOverdue(quota);
 

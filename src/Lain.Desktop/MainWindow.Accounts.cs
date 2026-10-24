@@ -16,6 +16,7 @@ public sealed partial class MainWindow
     private string _accountProvider = "All providers";
     private string _accountStatus = "All states";
     private bool _accountFiltersExpanded;
+    private string[]? _fiveHourAccountOrder;
 
     private Action CaptureAccountsNavigation()
     {
@@ -64,13 +65,16 @@ public sealed partial class MainWindow
         if (!providerNames.Contains(_accountProvider, StringComparer.OrdinalIgnoreCase)) _accountProvider = providerNames[0];
         var provider = new ComboBox { ItemsSource = providerNames, SelectedItem = _accountProvider, MinWidth = 145 };
         var status = new ComboBox { ItemsSource = new[] { "All states", "Enabled", "Disabled", "Needs attention", "Pinned" }, SelectedItem = _accountStatus, MinWidth = 140 };
-        var order = new ComboBox { ItemsSource = new[] { "Pinned first", "Provider then name", "Name" }, SelectedIndex = _preferences.AccountSort switch { "provider" => 1, "name" => 2, _ => 0 }, MinWidth = 155 };
+        var order = new ComboBox { ItemsSource = new[] { "Pinned first", "Provider then name", "Name", "5h usage" }, SelectedIndex = _preferences.AccountSort switch { "provider" => 1, "name" => 2, "five-hour" => 3, _ => 0 }, MinWidth = 155 };
         AutomationProperties.SetName(provider, "Filter accounts by provider");
         AutomationProperties.SetName(status, "Filter accounts by state");
         AutomationProperties.SetName(order, "Account order");
         var group = new CheckBox { Content = "Group by provider", IsChecked = _preferences.GroupAccountsByProvider, VerticalAlignment = VerticalAlignment.Center };
         AutomationProperties.SetName(group, "Group accounts by provider");
         var clear = Ui.Button("Clear filters", () => { search.Text = ""; provider.SelectedIndex = 0; status.SelectedIndex = 0; });
+        var updateFiveHourOrder = new Button { Content = "Update 5h order" };
+        AutomationProperties.SetName(updateFiveHourOrder, "Update 5h order");
+        ToolTip.SetTip(updateFiveHourOrder, "Sort by highest current 5h consumption. Last known and unknown follow; polling keeps the chosen order.");
         var filterToggle = new ToggleButton
         {
             Content = "Filters and order", IsChecked = _accountFiltersExpanded,
@@ -82,7 +86,7 @@ public sealed partial class MainWindow
         searchRow.Children.Add(search);
         Grid.SetColumn(filterToggle, 1); searchRow.Children.Add(filterToggle);
         panel.Children.Add(searchRow);
-        var filterOptions = OverviewActions(provider, status, order, group, clear);
+        var filterOptions = OverviewActions(provider, status, order, updateFiveHourOrder, group, clear);
         filterOptions.IsVisible = _accountFiltersExpanded;
         filterToggle.IsCheckedChanged += (_, _) =>
         {
@@ -104,6 +108,7 @@ public sealed partial class MainWindow
             foreach (var action in previousInventoryActions) _actions.Remove(action);
             previousInventoryActions.Clear();
             var actionsBefore = _actions.ToHashSet();
+            updateFiveHourOrder.IsVisible = _preferences.AccountSort == "five-hour";
             var found = OrderedAccounts(cfg.Accounts).Where(account =>
                 (_accountProvider == "All providers" || ProviderName(account).Equals(_accountProvider, StringComparison.OrdinalIgnoreCase))
                 && AccountMatchesStatus(account)
@@ -122,7 +127,7 @@ public sealed partial class MainWindow
             if (_accountStatus != "All states") AddFilterChip(_accountStatus, "Clear account state filter", () => status.SelectedIndex = 0);
             activeFilters.IsVisible = activeFilters.Children.Count > 0;
             count.Text = $"{found.Length} of {cfg.Accounts.Length} accounts · {cfg.Accounts.Count(account => account.Enabled)} enabled"
-                + " · " + (_preferences.AccountSort switch { "name" => "Ordered by name", "provider" => "Ordered by provider and name", _ => "Pinned first, then provider and name" });
+                + " · " + (_preferences.AccountSort switch { "name" => "Ordered by name", "provider" => "Ordered by provider and name", "five-hour" => "5h usage · order held until updated", _ => "Pinned first, then provider and name" });
             if (found.Length == 0)
             {
                 inventory.Content = Empty("No accounts match these filters. Clear filters to see the full inventory.");
@@ -137,15 +142,25 @@ public sealed partial class MainWindow
             var groups = new StackPanel { Spacing = options.Density == ViewDensity.Compact ? 12 : 18 };
             var pinned = _preferences.AccountSort == "favorites" ? found.Where(IsAccountPinned).ToArray() : [];
             if (pinned.Length > 0) groups.Children.Add(Ui.Section("Pinned", AccountTiles(cfg, pinned, Populate)));
-            foreach (var accounts in found.Where(account => !pinned.Contains(account)).GroupBy(ProviderName).OrderBy(providerGroup => providerGroup.Key, StringComparer.OrdinalIgnoreCase))
+            var providerGroups = found.Where(account => !pinned.Contains(account)).GroupBy(ProviderName);
+            // In 5h mode, the first account supplies the group's highest ranked
+            // actual 5h window. Shared or separate budgets are never summed.
+            if (_preferences.AccountSort != "five-hour") providerGroups = providerGroups.OrderBy(providerGroup => providerGroup.Key, StringComparer.OrdinalIgnoreCase);
+            foreach (var accounts in providerGroups)
                 groups.Children.Add(Ui.Section(accounts.Key, AccountTiles(cfg, accounts.ToArray(), Populate)));
             inventory.Content = groups;
             previousInventoryActions.AddRange(_actions.Where(action => !actionsBefore.Contains(action)));
         }
         search.TextChanged += (_, _) => { _accountSearch = search.Text ?? ""; Populate(); };
+        updateFiveHourOrder.Click += (_, _) => { CaptureFiveHourOrder(cfg.Accounts); Populate(); };
         provider.SelectionChanged += (_, _) => { _accountProvider = provider.SelectedItem as string ?? "All providers"; Populate(); };
         status.SelectionChanged += (_, _) => { _accountStatus = status.SelectedItem as string ?? "All states"; Populate(); };
-        order.SelectionChanged += (_, _) => { SavePreferences(current => current with { AccountSort = order.SelectedIndex switch { 1 => "provider", 2 => "name", _ => "favorites" } }, render: false); Populate(); };
+        order.SelectionChanged += (_, _) =>
+        {
+            SavePreferences(current => current with { AccountSort = order.SelectedIndex switch { 1 => "provider", 2 => "name", 3 => "five-hour", _ => "favorites" } }, render: false);
+            if (_preferences.AccountSort == "five-hour") CaptureFiveHourOrder(cfg.Accounts);
+            Populate();
+        };
         group.IsCheckedChanged += (_, _) => { SavePreferences(current => current with { GroupAccountsByProvider = group.IsChecked == true }, render: false); Populate(); };
         Populate();
         return panel;
@@ -153,6 +168,17 @@ public sealed partial class MainWindow
 
     private IEnumerable<AccountDto> OrderedAccounts(IEnumerable<AccountDto> accounts)
     {
+        if (_preferences.AccountSort == "five-hour")
+        {
+            var rows = accounts.ToArray();
+            if (_fiveHourAccountOrder is null) CaptureFiveHourOrder(rows);
+            var positions = _fiveHourAccountOrder!.Select((id, index) => (id, index)).ToDictionary(item => item.id, item => item.index, StringComparer.Ordinal);
+            // New accounts append stably until the user explicitly updates the
+            // snapshot. Polling never promotes or moves an existing account.
+            return rows.OrderBy(account => positions.GetValueOrDefault(account.Id, int.MaxValue))
+                .ThenBy(ProviderName, StringComparer.OrdinalIgnoreCase).ThenBy(AccountDisplayName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(account => account.Id, StringComparer.Ordinal);
+        }
         if (_preferences.AccountSort == "name") return accounts.OrderBy(AccountDisplayName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(ProviderName, StringComparer.OrdinalIgnoreCase).ThenBy(account => account.Id, StringComparer.Ordinal);
         if (_preferences.AccountSort == "provider") return accounts.OrderBy(ProviderName, StringComparer.OrdinalIgnoreCase)
@@ -164,6 +190,18 @@ public sealed partial class MainWindow
             .ThenBy(ProviderName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(AccountDisplayName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(account => account.Id, StringComparer.Ordinal);
+    }
+
+    private void CaptureFiveHourOrder(IEnumerable<AccountDto> accounts)
+    {
+        _fiveHourAccountOrder = accounts.Select(account => (Account: account, Window: FiveHourWindow(account.Id)))
+            .OrderBy(row => row.Window is not null && QuotaUsedPercent(row.Window).HasValue
+                ? CurrentFiveHourWindow(row.Window) ? 0 : 1 : 2)
+            .ThenByDescending(row => QuotaUsedPercent(row.Window))
+            .ThenBy(row => ProviderName(row.Account), StringComparer.OrdinalIgnoreCase)
+            .ThenBy(row => AccountDisplayName(row.Account), StringComparer.OrdinalIgnoreCase)
+            .ThenBy(row => row.Account.Id, StringComparer.Ordinal)
+            .Select(row => row.Account.Id).ToArray();
     }
 
     private bool IsAccountPinned(AccountDto account) => _preferences.PinnedAccountIds.Contains(account.Id, StringComparer.Ordinal);

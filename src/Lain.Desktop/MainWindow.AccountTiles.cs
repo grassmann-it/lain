@@ -55,6 +55,20 @@ public sealed partial class MainWindow
             var provider = ProviderName(account) + (account.Enabled ? " · Enabled" : " · Disabled") + (IsAccountPinned(account) ? " · Pinned" : "");
             var heading = new StackPanel { Spacing = 3, Children = { identity, TileText(provider, 11, Ui.Muted) } };
             header.Children.Add(heading);
+            if (_preferences.AccountSort == "five-hour")
+            {
+                var fiveHour = FiveHourWindow(account.Id);
+                var fiveHourPercent = QuotaUsedPercent(fiveHour);
+                var current = fiveHour is not null && CurrentFiveHourWindow(fiveHour);
+                var fiveHourStatus = fiveHourPercent is { } used
+                    ? $"5h usage · {(current ? "" : "Last known · ")}{BudgetNumber(used)}% used"
+                    : fiveHour is null ? "5h usage · Window not reported" : "5h usage · Percentage unknown";
+                var fiveHourColor = fiveHourPercent is null ? Ui.Muted : !current ? Ui.Warning
+                    : fiveHourPercent >= 95 ? Ui.Danger : fiveHourPercent >= 80 ? Ui.Warning : Ui.Accent;
+                var summary = TileText(fiveHourStatus, 11, fiveHourColor);
+                AutomationProperties.SetName(summary, $"5h usage for {account.Name}");
+                header.Children.Add(summary);
+            }
             if (AccountCredentialWarning(account) is { } credentialWarning) header.Children.Add(TileText(credentialWarning, 11, Ui.Warning));
             if (account.SharedWithLegacy || quotas.Any(quota => quota.SharedWithLegacy))
                 header.Children.Add(TileText("Shared provider budget", 11, Ui.Warning));
