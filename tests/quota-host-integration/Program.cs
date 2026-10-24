@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.Json;
 using Lain.Core;
 using Lain.Host.Accounts;
+using Lain.Host.Accounts.Cloud;
 using Lain.Host.Accounts.ConsoleConnections;
 using Lain.Host.Accounts.ConsoleConnections.MiMo;
 using Lain.Host.Accounts.Credentials;
@@ -242,6 +243,26 @@ try
     Check(nvidia.Support == NvidiaBuildPublicReference.Support() && nvidia.Used is null && nvidia.Limit is null && nvidia.Remaining is null && nvidia.LastSuccessAt is null,
         "NVIDIA public reference remains dated guidance with no fake measured quantities");
     Check(methods.Snapshot("nvidia-build").Methods.All(m => m.Kind == "api-key"), "NVIDIA has no fabricated monitoring login");
+    Check(methods.Snapshot("gemini-api").Methods.Single(m => m.Id == "official-cli").Availability == "setup-required",
+        "unqualified or missing Google CLI stays unavailable without starting a process");
+    var googleMethods = new ConnectionMethodCatalog(new ProviderCatalogRegistry(), () => false, () => false, () => false,
+        googleCliAvailable: () => true);
+    var googleMethod = googleMethods.RequireAvailable(new("gemini-api", "official-cli", ["quota"]), false);
+    Check(googleMethod is { Kind: "cli", RequiresCore: false, SecretRequired: false } &&
+        googleMethod.Description!.Contains("Cloud SQL", StringComparison.Ordinal), "Google CLI is quota-only and discloses its standard broad grant");
+    var googleExpiry = DateTimeOffset.UtcNow.AddMinutes(30);
+    var googleBinding = new ResourceBindingDto("gemini-api", "123456789012", ResourceType: "project", ResourceId: "fixture-project");
+    var googleState = accounts.Connect(repository.Snapshot.Revision, new("gemini-api", "official-cli", ["quota"], Name: "Google fixture"),
+        new("google-gcloud", ["quota"], googleBinding, JsonSerializer.Serialize(new {
+            kind = "gcloud-owned", accessToken = "fixture-google-access", settings = new { quotaProjectId = "fixture-project" }
+        }), googleExpiry, PreserveForRecovery: true));
+    var googleAccount = googleState.Accounts.Single(a => a.Provider == "gemini-api");
+    var googleAccess = await source.GetCredentialAsync(googleAccount.Id);
+    Check(googleAccess?.Monitor is { Kind: "access-token-snapshot", ResourceId: "fixture-project", Secret: "fixture-google-access" }
+        && googleAccess.ExpiresAt == googleExpiry && googleAccess.Settings["quotaProjectId"] == "fixture-project",
+        "selected CLI generation projects only its actual access token, expiry and pinned project into monitoring");
+    Check(monitors.Get(googleAccount.Id).Guidance.Contains("Google Cloud CLI", StringComparison.Ordinal),
+        "CLI-owned monitoring is distinguished from an externally managed snapshot");
     await browser.OpenAsync("fixture-host-stop", CancellationToken.None);
     await browser.DisposeAsync();
     Check(browser.Active.Count == 0 && browser.Disposed, "Host-owned browser lifetime closes remaining owned windows");

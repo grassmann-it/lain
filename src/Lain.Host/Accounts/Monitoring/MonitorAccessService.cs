@@ -37,7 +37,7 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
         var expired = stored.ExpiresAt <= clock.GetUtcNow();
         var selectedId = account.Capabilities?.SingleOrDefault(c => c.Purpose == "quota")?.CredentialId;
         var owner = account.Credentials?.SingleOrDefault(h => h.Id == selectedId)?.Owner;
-        var managedName = owner switch { "google-oauth" => "Google OAuth", "cloudflare-oauth" => "Cloudflare OAuth", _ => null };
+        var managedName = owner switch { "google-oauth" => "Google OAuth", "google-gcloud" => "Google Cloud CLI", "cloudflare-oauth" => "Cloudflare OAuth", _ => null };
         var guidance = managedName is not null
             ? expired
                 ? $"{managedName} monitor access expired. Refresh this connection or reconnect; its registered owner manages token rotation."

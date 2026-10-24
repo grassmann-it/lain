@@ -8,7 +8,7 @@ namespace Lain.Host.Accounts;
 /// <summary>Installed connection capabilities. Documentation never enables an unimplemented login.</summary>
 public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Func<bool> gateway,
     Func<bool> coreAvailable, Func<bool> poeAvailable, Func<string, bool>? cloudAvailable = null,
-    Func<bool>? mimoAvailable = null)
+    Func<bool>? mimoAvailable = null, Func<bool>? googleCliAvailable = null)
 {
     private static readonly HashSet<string> DirectQuota = new(StringComparer.Ordinal)
         { "kilo", "requesty", "synthetic", "stepfun", "openrouter", "poe", "fireworks", "commandcode", "kimi", "zai" };
@@ -68,6 +68,11 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
         foreach (var id in new[] { "requesty", "alibaba-model-studio", "commandcode", "fireworks", "mistral" })
             result.Add(new(id, "official-cli", "Connect with official CLI", "cli", ["inference", "models"], "unavailable", false, false,
                 Guidance: "This provider's executable, isolated credential storage and identity handoff are not yet fully qualified. Use the existing key method; lain does not inspect another CLI's credentials."));
+        result.Add(new("gemini-api", "official-cli", "Connect with Google Cloud CLI", "cli", ["quota"],
+            googleCliAvailable?.Invoke() == true ? "available" : "setup-required", false, false,
+            Description: "Sign in through the installed Google Cloud CLI with its standard Cloud Platform, Compute, App Engine and Cloud SQL permissions, account identity and reauthentication. Lain reads account, project and Monitoring data using a separate private CLI profile.",
+            Guidance: "Install the qualified Google Cloud CLI version 584.0.0. This is the CLI's standard Google Cloud grant, not a read-only OAuth grant. Choose the project and ensure its Monitoring permissions are available.",
+            DocumentationUrl: "https://cloud.google.com/sdk/gcloud/reference/auth/login", Recommended: true));
         result.Add(new("xiaomi-mimo", "console-browser", "Connect MiMo monitoring", "browser", ["quota"],
             mimoAvailable?.Invoke() == true ? "available" : "setup-required", false, false,
             Description: "Read Individual Token Plan credits through a separate lain-owned MiMo console window. Select the verified CN/EU identity before attaching monitoring.",

@@ -50,7 +50,7 @@ public sealed class MonitorCredentialStore
                 {
                     var generation = secrets.Generations.Read(account.Id, handle);
                     using var document = JsonDocument.Parse(generation.PrivateJson);
-                    if (document.RootElement.TryGetProperty("kind", out var kind) && kind.GetString() == "cloud-oauth")
+                    if (document.RootElement.TryGetProperty("kind", out var kind) && kind.GetString() is "cloud-oauth" or "gcloud-owned")
                     {
                         var token = document.RootElement.TryGetProperty("accessToken", out var accessToken) ? accessToken.GetString() : null;
                         var cloud = new StoredMonitorAccess(account.Id, account.Provider,

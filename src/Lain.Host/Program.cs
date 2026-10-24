@@ -88,10 +88,26 @@ using var poeLogin = CreatePoeLogin();
 // Availability checks only local paths/display state. Constructing the browser or
 // polling quota never opens a window; only the explicit console-browser login does.
 await using var mimoBrowser = new MiMoConsoleBrowser(paths);
+await mimoBrowser.ReconcileAsync();
 var mimoLogin = new MiMoConsoleLoginAdapter(mimoBrowser);
 var mimoQuota = new MiMoQuotaAdapter(mimoBrowser, secrets, repository);
 var mimoSessions = new MiMoSessionCleanup(mimoBrowser, secrets, repository);
-var quotaConnectionCleanup = new QuotaConnectionCleanup(repository, [mimoSessions.CloseDetachedAsync]);
+await using var googleCli = new GoogleGcloudLoginAdapter(Path.Combine(paths.Root, "accounts", "google-gcloud"), accountId =>
+{
+ var account = repository.Snapshot.Accounts.SingleOrDefault(a => a.Id == accountId);
+ if (account is null || AccountService.CanonicalProviderId(account.Provider) != "gemini-api") return null;
+ var handle = QuotaConnectionCleanup.SelectedQuota(account);
+ return handle?.Owner == "google-gcloud" ? secrets.Generations.Read(accountId, handle).PrivateJson : null;
+});
+var googleCliRetention = new GoogleGcloudProfileRetention(repository, secrets, paths, googleCli);
+async Task CloseDetachedGoogle(AccountDto account, CancellationToken ct)
+{
+ // Grant retirement must observe a stable published selection, including recovery.
+ await mutations.WaitAsync(ct);
+ try { await googleCliRetention.DisconnectAsync(account, ct); }
+ finally { mutations.Release(); }
+}
+var quotaConnectionCleanup = new QuotaConnectionCleanup(repository, [mimoSessions.CloseDetachedAsync, CloseDetachedGoogle]);
 CloudMaintainerOptions cloudOptions;
 try
 {
@@ -102,17 +118,18 @@ try
 catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException)
 { cloudOptions = new([]); }
 var cloudLogins = cloudOptions.Clients.Where(c => c.Qualified).Select(c => new CloudOAuthAdapter(c)).ToArray();
-IAccountLoginAdapter[] accountLogins = [loginAdapter, openRouterLogin, mimoLogin, .. (poeLogin.IsAvailable ? new IAccountLoginAdapter[] { poeLogin } : []), .. cloudLogins];
+IAccountLoginAdapter[] accountLogins = [loginAdapter, openRouterLogin, mimoLogin, googleCli, .. (poeLogin.IsAvailable ? new IAccountLoginAdapter[] { poeLogin } : []), .. cloudLogins];
+ICredentialOwner[] credentialOwners = [.. cloudLogins, googleCli];
 builder.Services.AddSingleton(sp => new LoginOperationService(configuration: repository,
  accounts: sp.GetRequiredService<AccountService>(), secrets: secrets,
  accountAdapters: accountLogins, publicationGate: mutations));
 builder.Services.AddSingleton(sp => new CredentialRecoveryService(repository, sp.GetRequiredService<AccountService>(), secrets.Generations));
-builder.Services.AddSingleton(sp => new CredentialOwnerService(repository, sp.GetRequiredService<AccountService>(), secrets.Generations, cloudLogins, mutations));
-builder.Services.AddSingleton(sp => new OwnedCredentialRefreshService(repository, sp.GetRequiredService<CredentialOwnerService>(), secrets.Generations, cloudLogins));
+builder.Services.AddSingleton(sp => new CredentialOwnerService(repository, sp.GetRequiredService<AccountService>(), secrets.Generations, credentialOwners, mutations));
+builder.Services.AddSingleton(sp => new OwnedCredentialRefreshService(repository, sp.GetRequiredService<CredentialOwnerService>(), secrets.Generations, credentialOwners));
 builder.Services.AddSingleton(sp => new ConnectionMethodCatalog(sp.GetRequiredService<ProviderCatalogRegistry>(),
  GatewayMode, () => restoreReady && File.Exists(binary), () => poeLogin.IsAvailable,
  provider => cloudLogins.Any(login => login.Provider == provider && login.IsAvailable),
- () => mimoLogin.IsAvailable));
+ () => mimoLogin.IsAvailable, () => googleCli.IsAvailable));
 builder.Services.AddSingleton<ModelsService>();
 builder.Services.AddSingleton<CodexProfileAdapter>();
 builder.Services.AddSingleton<ProxyConfigurationWriter>();
