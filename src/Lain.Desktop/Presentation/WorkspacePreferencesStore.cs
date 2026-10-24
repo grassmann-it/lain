@@ -95,7 +95,7 @@ public sealed class WorkspacePreferencesStore
         if (value.Densities is null || value.Densities.Any(pair =>
                 !Sections.Contains(pair.Key, StringComparer.Ordinal) || !Enum.IsDefined(pair.Value)))
             throw new InvalidDataException("Unknown section or density.");
-        if (value.AccountSort is not ("favorites" or "provider" or "name"))
+        if (value.AccountSort is not ("favorites" or "provider" or "name" or "five-hour"))
             throw new InvalidDataException("Unknown account sort order.");
         if (value.PinnedAccountIds is null || value.PinnedAccountIds.Length > MaximumPins ||
             value.PinnedAccountIds.Any(id => id is null || id.Length is < 1 or > 100 ||

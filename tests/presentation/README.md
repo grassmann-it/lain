@@ -18,3 +18,7 @@ own last snapshot; edits to the same scalar setting or pin list use the last sav
 Density changes merge per primary destination. Missing density entries mean
 Normal. Pins retain their explicit order and are bounded to 512 unique account
 IDs (1–100 ASCII letters, digits, hyphen or underscore each).
+
+Account sort keys are `favorites` (default), `provider`, `name` and the explicit
+`five-hour` option. The store persists the user's choice only; quota polling and
+the moment at which a five-hour order is calculated belong to the Accounts view.

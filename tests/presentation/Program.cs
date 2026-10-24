@@ -51,6 +51,7 @@ try
         store.Current with { Densities = new() { ["Accounts"] = (ViewDensity)7 } },
         store.Current with { Densities = null! },
         store.Current with { AccountSort = "remaining-quota" },
+        store.Current with { AccountSort = "Five-hour" },
         store.Current with { PinnedAccountIds = ["duplicate", "duplicate"] },
         store.Current with { PinnedAccountIds = [""] },
         store.Current with { PinnedAccountIds = ["../outside"] },
@@ -116,6 +117,19 @@ try
     var merged = new WorkspacePreferencesStore(sharedPath).Current;
     Check(merged.GroupAccountsByProvider && merged.AccountSort == "name" && merged.PinnedAccountIds[0] == "saved-pin" &&
           merged.Densities.Count == 2, "unmodified sort, pins and densities are retained from the latest disk version");
+
+    var fiveHourPath = Path.Combine(root, "five-hour.json");
+    var sortWindow = new WorkspacePreferencesStore(fiveHourPath);
+    var densityWindow = new WorkspacePreferencesStore(fiveHourPath);
+    Check(sortWindow.Save(sortWindow.Current with { AccountSort = "five-hour" }), "explicit five-hour account order saves");
+    Check(new WorkspacePreferencesStore(fiveHourPath).Current.AccountSort == "five-hour",
+        "five-hour account order survives restart without changing the default order");
+    Check(densityWindow.Save(densityWindow.Current with { Densities = new() { ["Accounts"] = ViewDensity.Compact } }) &&
+          densityWindow.Current.AccountSort == "five-hour", "a stale density edit preserves the explicit five-hour order");
+    Check(sortWindow.Save(sortWindow.Current with { AccountSort = "provider" }) &&
+          sortWindow.Current.Densities["Accounts"] == ViewDensity.Compact &&
+          new WorkspacePreferencesStore(fiveHourPath).Current.AccountSort == "provider",
+        "changing away from five-hour order persists and retains independent presentation edits");
 
     if (!OperatingSystem.IsWindows())
     {
