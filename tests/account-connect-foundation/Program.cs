@@ -492,10 +492,15 @@ async Task AutomaticRenewal()
     Add(f, "static-key", ["quota"], clock.GetUtcNow().AddMinutes(1));
     Add(f, "external-snapshot", ["quota"], clock.GetUtcNow().AddMinutes(1));
     Add(f, "core", ["quota"], clock.GetUtcNow().AddMinutes(1));
+    var oldUnselected = Add(f, owner.Owner, ["inference", "quota"], clock.GetUtcNow().AddMinutes(-1));
+    f.Accounts.Connect(f.Repository.Snapshot.Revision, new("test", "fresh-quota", ["quota"], AccountId: oldUnselected.Id),
+        Key("fresh-selected-quota", owner: owner.Owner, recovery: true) with { ExpiresAt = clock.GetUtcNow().AddHours(1) });
     var ownerService = new CredentialOwnerService(f.Repository, f.Accounts, f.Secrets.Generations, [owner]);
     var automatic = new OwnedCredentialRefreshService(f.Repository, ownerService, f.Secrets.Generations, [owner], clock);
     var observations = await automatic.RefreshDueAsync();
     Check(owner.Calls == 1 && observations.Single().State == "renewed", "automatic renewal selects only near-expiry enabled quota capability with registered owner");
+    Check(f.Repository.Snapshot.Accounts.Single(a => a.Id == oldUnselected.Id).Credentials!.Any(h => h.ExpiresAt < clock.GetUtcNow()),
+        "expired nonselected inference owner remains untouched while selected quota is fresh");
     Check(f.Repository.Snapshot.Accounts.Single(a => a.Id == due.Id).Credentials!.Single().Generation == 2, "automatic owner publishes renewed immutable generation");
     await automatic.RefreshDueAsync();
     Check(owner.Calls == 1, "fresh renewed credential is not renewed again on next pass");
@@ -511,6 +516,11 @@ async Task AutomaticRenewal()
     await restartedLoop.RefreshDueAsync();
     Check(failingOwner.Calls == 1 && failedStatus.Single().State == "recovery-required", "failed generation is not blindly rotated again across ticks or helper restart");
     Check(!JsonSerializer.Serialize(failedStatus).Contains("synthetic-private-response-must-not-leak"), "automatic renewal diagnostics never contain raw provider exceptions");
+    var failedAccount = failed.Repository.Snapshot.Accounts.Single();
+    failed.Accounts.Connect(failed.Repository.Snapshot.Revision, new("test", "explicit-reconnect", ["quota"], AccountId: failedAccount.Id),
+        Key("explicit-new-grant", owner: failingOwner.Owner, recovery: true) with { ExpiresAt = clock.GetUtcNow() });
+    await failedLoop.RefreshDueAsync();
+    Check(failingOwner.Calls == 2, "failure suppression is generation-scoped and permits an explicitly reconnected new grant");
 
     var bounded = New("automatic-bounds");
     var firstTwo = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -533,6 +543,23 @@ async Task AutomaticRenewal()
     Check(boundedOwner.Calls == 8 && maximumActive == 2 && completed.All(o => o.State == "renewed"), "one pass is bounded and unrelated account commits revalidate safely");
     await boundedLoop.RefreshDueAsync();
     Check(boundedOwner.Calls == 10, "later pass handles remaining due accounts without repeating completed generations");
+
+    var changed = New("automatic-selection-change");
+    var firstSelection = Add(changed, "changing-oauth", ["quota"], clock.GetUtcNow());
+    Add(changed, "changing-oauth", ["quota"], clock.GetUtcNow());
+    var superseded = Add(changed, "changing-oauth", ["quota"], clock.GetUtcNow());
+    var changingOwner = new ScheduledOwner("changing-oauth", (context, _) =>
+    {
+        if (context.AccountId == firstSelection.Id)
+            changed.Accounts.Connect(changed.Repository.Snapshot.Revision, new("test", "replace-selection", ["quota"], AccountId: superseded.Id),
+                Key("new-static-quota"));
+        return Task.FromResult(Renewed(context));
+    });
+    var changedOwners = new CredentialOwnerService(changed.Repository, changed.Accounts, changed.Secrets.Generations, [changingOwner]);
+    var changedLoop = new OwnedCredentialRefreshService(changed.Repository, changedOwners, changed.Secrets.Generations, [changingOwner], clock);
+    var changedStatus = await changedLoop.RefreshDueAsync();
+    Check(changingOwner.Calls == 2 && changedStatus.Single(status => status.AccountId == superseded.Id).State == "superseded",
+        "stale pass selection cannot renew a credential that lost its quota capability");
 
     var blocked = New("owner-publication-gate");
     var blockedAccount = Add(blocked, owner.Owner, ["quota"], clock.GetUtcNow());

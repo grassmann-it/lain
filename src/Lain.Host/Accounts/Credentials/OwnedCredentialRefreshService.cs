@@ -73,6 +73,14 @@ public sealed class OwnedCredentialRefreshService(ConfigurationRepository config
                     lock (gate) if (!attempted.Add(key)) return;
                     try
                     {
+                        var currentAccount = configuration.Snapshot.Accounts.SingleOrDefault(account => account.Id == candidate.Account.Id);
+                        if (currentAccount is not { Enabled: true } || currentAccount.Generation != candidate.Account.Generation ||
+                            !AccountService.EffectiveCapabilities(currentAccount).Any(value => value.Purpose == "quota" && value.CredentialId == candidate.Handle.Id))
+                        {
+                            lock (gate) attempted.Remove(key);
+                            Record(key, "superseded");
+                            return;
+                        }
                         if (generations.IsRetired(candidate.Handle))
                         {
                             Record(key, "recovery-required", "This credential generation was already consumed. Review its saved recovery result.");
@@ -82,8 +90,12 @@ public sealed class OwnedCredentialRefreshService(ConfigurationRepository config
                         generations.Read(candidate.Account.Id, candidate.Handle);
                         using var timeout = new CancellationTokenSource(MaximumRefreshDuration, clock);
                         using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(token, timeout.Token);
-                        await owners.RefreshAsync(candidate.Account.Id, candidate.Handle.Id, lifetime.Token);
-                        Record(key, "renewed");
+                        var result = await owners.RefreshSelectedQuotaAsync(candidate.Account.Id, candidate.Handle.Id,
+                            candidate.Account.Generation, candidate.Handle.Generation, lifetime.Token);
+                        var selected = result.Accounts.SingleOrDefault(account => account.Id == candidate.Account.Id);
+                        var renewed = selected?.Credentials?.Any(value => value.Id == candidate.Handle.Id && value.Generation > candidate.Handle.Generation) == true;
+                        if (!renewed) lock (gate) attempted.Remove(key);
+                        Record(key, renewed ? "renewed" : "superseded");
                     }
                     catch (OperationCanceledException) when (token.IsCancellationRequested)
                     {

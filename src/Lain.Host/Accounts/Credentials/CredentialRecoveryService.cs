@@ -109,16 +109,34 @@ public sealed class CredentialOwnerService(ConfigurationRepository configuration
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> gates = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim localPublicationGate = new(1, 1);
 
-    public async Task<ConfigurationDto> RefreshAsync(string accountId, string credentialId, CancellationToken ct = default)
+    public Task<ConfigurationDto> RefreshAsync(string accountId, string credentialId, CancellationToken ct = default) =>
+        RefreshCoreAsync(accountId, credentialId, null, ct);
+
+    internal Task<ConfigurationDto> RefreshSelectedQuotaAsync(string accountId, string credentialId, long accountGeneration,
+        long credentialGeneration, CancellationToken ct) =>
+        RefreshCoreAsync(accountId, credentialId, new(accountGeneration, credentialGeneration), ct);
+
+    private sealed record QuotaSelection(long AccountGeneration, long CredentialGeneration);
+    private static bool MatchesSelection(AccountDto? account, string credentialId, QuotaSelection selection) =>
+        account is { Enabled: true } && account.Generation == selection.AccountGeneration &&
+        AccountService.EffectiveCapabilities(account).Any(value => value.Purpose == "quota" && value.CredentialId == credentialId) &&
+        account.Credentials?.Any(value => value.Id == credentialId && value.Generation == selection.CredentialGeneration && value.Purposes.Contains("quota")) == true;
+
+    private async Task<ConfigurationDto> RefreshCoreAsync(string accountId, string credentialId, QuotaSelection? selection, CancellationToken ct)
     {
-        var requested = configuration.Snapshot.Accounts.SingleOrDefault(a => a.Id == accountId)?.Credentials?.SingleOrDefault(h => h.Id == credentialId)
+        var initial = configuration.Snapshot;
+        var requestedAccount = initial.Accounts.SingleOrDefault(a => a.Id == accountId);
+        if (selection is not null && !MatchesSelection(requestedAccount, credentialId, selection)) return initial;
+        var requested = requestedAccount?.Credentials?.SingleOrDefault(h => h.Id == credentialId)
             ?? throw new KeyNotFoundException("Credential not found.");
         var gate = gates.GetOrAdd(credentialId, _ => new(1, 1));
         await gate.WaitAsync(ct);
         try
         {
             var snapshot = configuration.Snapshot;
-            var account = snapshot.Accounts.SingleOrDefault(a => a.Id == accountId) ?? throw new KeyNotFoundException("Account not found.");
+            var currentAccount = snapshot.Accounts.SingleOrDefault(a => a.Id == accountId);
+            if (selection is not null && !MatchesSelection(currentAccount, credentialId, selection)) return snapshot;
+            var account = currentAccount ?? throw new KeyNotFoundException("Account not found.");
             var handle = account.Credentials?.SingleOrDefault(h => h.Id == credentialId) ?? throw new KeyNotFoundException("Credential not found.");
             if (handle.Generation != requested.Generation) return snapshot; // A concurrent owner already rotated this generation.
             if (handle.Owner is "static-key" or "external-snapshot" or "core")
