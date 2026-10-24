@@ -13,6 +13,7 @@ public sealed class OwnStatePaths
     public const int ProxyPort = 18417;
     public const int HostPort = 18418;
     public string Root { get; }
+    public int GatewayPort { get; }
     public string Credentials => Path.Combine(Root, "credentials");
     public string Imports => Path.Combine(Root, "imports");
     public string Proxy => Path.Combine(Root, "proxy");
@@ -28,6 +29,15 @@ public sealed class OwnStatePaths
     {
         Root = Path.GetFullPath(root ?? Environment.GetEnvironmentVariable("LAIN_HOME") ??
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "lain"));
+        GatewayPort = ProxyPort;
+        if (Environment.GetEnvironmentVariable("LAIN_REFERENCE_QUALIFICATION") == "1" &&
+            Root.StartsWith(Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.Ordinal) &&
+            Environment.GetEnvironmentVariable("LAIN_REFERENCE_PROXY_PORT") is { } referencePort)
+        {
+            if (!int.TryParse(referencePort, out var port) || port is < 1024 or > 65535 || port == HostPort)
+                throw new InvalidOperationException("Invalid isolated reference Gateway port.");
+            GatewayPort = port;
+        }
         foreach (var path in new[] { Root, Credentials, Imports, Proxy, ProxyAuth, OwnedAuth }) EnsurePrivateDirectory(path);
     }
 

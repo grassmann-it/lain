@@ -142,9 +142,10 @@ public sealed class CloudOAuthAdapter : IAccountLoginAdapter, ICredentialOwner, 
                     : await discovery.CloudflareAccountsAsync(attempt.Grant.AccessToken, ct);
             if (attempt.Resources.Length == 0)
                 return attempt.Result = new("recovery-required", Error: "No authorized existing project or account was returned. Review resource access before reconnecting.", NextAction: "review-recovery");
-            if (context.Request.Binding is not { } selected)
-                return new("resource-required", Resources: attempt.Resources);
-            var binding = attempt.Resources.SingleOrDefault(b => Matches(selected, b));
+            var selected = context.Request.Binding;
+            var candidates = selected is null ? attempt.Resources : attempt.Resources.Where(b => Matches(selected, b)).ToArray();
+            if (candidates.Length > 1) return new("resource-required", Resources: candidates);
+            var binding = candidates.SingleOrDefault();
             if (binding is null) return attempt.Result = new("recovery-required", Error: "The previously selected resource is not authorized by this grant. Existing account binding was preserved.", NextAction: "review-recovery");
             var grant = attempt.Grant with { Settings = Settings(binding) };
             return attempt.Result = new("prepared", Credential: Credential(grant, binding, ["quota"]));

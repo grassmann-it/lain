@@ -19,6 +19,7 @@ public sealed record ProxyTransportDescription(
 /// <summary>Compiles only private lain snapshots into the isolated proxy configuration.</summary>
 public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore secrets, ProviderCostPolicy? costPolicy = null)
 {
+    public string InferenceBaseUrl => $"http://127.0.0.1:{paths.GatewayPort}/v1";
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> RouteCredentials { get; private set; } = new Dictionary<string, IReadOnlyDictionary<string, string>>();
     public IReadOnlySet<string> QualifiedProviderRouteIds { get; private set; } = new HashSet<string>();
     public IReadOnlyDictionary<string, ModelCompatibilityTransportBinding> TransportBindings { get; private set; } = new Dictionary<string, ModelCompatibilityTransportBinding>();
@@ -72,7 +73,7 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
         }
         var config = new YamlMappingNode
         {
-            { "host", "127.0.0.1" }, { "port", OwnStatePaths.ProxyPort.ToString() }, { "auth-dir", paths.ProxyAuth },
+            { "host", "127.0.0.1" }, { "port", paths.GatewayPort.ToString() }, { "auth-dir", paths.ProxyAuth },
             { "debug", "false" }, { "logging-to-file", "false" }, { "request-log", "false" },
             { "usage-statistics-enabled", "false" }
         };

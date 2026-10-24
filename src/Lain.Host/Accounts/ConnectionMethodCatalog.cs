@@ -64,6 +64,12 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
             Description: "Authorize a dedicated Poe API key using the registered lain client.",
             Guidance: "The application maintainer must first qualify the Poe client and callback registration. An existing API key remains usable."));
         result.AddRange(Lain.Host.Accounts.Managed.ManagedLoginQualifications.Methods());
+        foreach (var id in new[] { "requesty", "alibaba-model-studio", "commandcode", "fireworks", "mistral" })
+            result.Add(new(id, "official-cli", "Connect with official CLI", "cli", ["inference", "models"], "unavailable", false, false,
+                Guidance: "This provider's executable, isolated credential storage and identity handoff are not yet fully qualified. Use the existing key method; lain does not inspect another CLI's credentials."));
+        foreach (var id in new[] { "xiaomi-mimo", "sambanova", "upstage", "cohere" })
+            result.Add(new(id, "console", "Connect provider console", "browser", ["quota"], "unavailable", false, false,
+                Guidance: "A supported, identity-bound console session and its reporting scope are not yet qualified. No browser cookies or existing profiles are imported."));
         foreach (var id in new[] { "gemini-api", "cloudflare-workers-ai" })
             result.Add(new(id, "browser", "Connect monitoring in browser", "browser", ["quota"], cloudAvailable?.Invoke(id) == true ? "available" : "setup-required", false, false,
                 Description: "A separate provider grant for project or account monitoring.",

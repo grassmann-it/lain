@@ -5,7 +5,9 @@ using Lain.Host.Operations;
 using Lain.Host.Providers;
 using YamlDotNet.RepresentationModel;
 
-var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
+var directory = new DirectoryInfo(AppContext.BaseDirectory);
+while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "src/Lain.Host/Providers/Catalog"))) directory = directory.Parent;
+var root = directory?.FullName ?? throw new InvalidOperationException("Provider test source root is missing.");
 var catalog = new ProviderCatalogRegistry(Directory.GetFiles(Path.Combine(root, "src/Lain.Host/Providers/Catalog"), "*.json").Select(p => ProviderCatalogRegistry.Parse(File.ReadAllText(p))));
 var assertions = 0;
 void Check(bool condition) { assertions++; if (!condition) throw new Exception("Provider transport assertion failed."); }

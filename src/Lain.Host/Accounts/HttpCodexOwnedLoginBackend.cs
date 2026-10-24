@@ -11,7 +11,7 @@ public sealed class HttpCodexOwnedLoginBackend : ICodexOwnedLoginBackend, IDispo
     public HttpCodexOwnedLoginBackend(OwnStatePaths paths, SecretStore secrets, HttpMessageHandler? handler = null)
     {
         http = new HttpClient(handler ?? new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false });
-        http.BaseAddress = new Uri($"http://127.0.0.1:{OwnStatePaths.ProxyPort}");
+        http.BaseAddress = new Uri($"http://127.0.0.1:{paths.GatewayPort}");
         http.Timeout = TimeSpan.FromSeconds(15);
         http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", secrets.GetOrCreateToken(paths.ManagementToken));
     }

@@ -6,7 +6,8 @@ using System.Security.Cryptography;
 namespace Lain.Host.Operations;
 
 public sealed record ProxyLaunchOptions(string BinaryPath, string Sha256, bool Qualified = false);
-public sealed record ProxyProcessStatus(string State, bool Ready, int? Pid, string? Error);
+public sealed record ProxyProcessStatus(string State, bool Ready, int? Pid, string? Error, bool LoginOnly = false, bool ManagementReady = false);
+public sealed record ProxyRuntimeInputs(string Configuration, string Bindings, string Journal);
 
 /// <summary>Owns exactly the child started here; it never discovers or signals other proxies.</summary>
 public sealed class OwnedProxyLifecycle(OwnStatePaths paths, SecretStore secrets, ProxyLaunchOptions options,
@@ -17,27 +18,45 @@ public sealed class OwnedProxyLifecycle(OwnStatePaths paths, SecretStore secrets
     private bool ready;
     private string? startupError;
     private bool admissionRecoveryRequired;
+    private bool loginOnly;
     public ProxyProcessStatus Status => process is { HasExited: false }
-        ? new(admissionRecoveryRequired ? "drain-recovery-required" : ready ? "running" : "starting", ready, process.Id, startupError)
+        ? new(admissionRecoveryRequired ? "drain-recovery-required" : ready ? loginOnly ? "login-only" : "running" : "starting",
+            ready && !loginOnly, process.Id, startupError, loginOnly, ready)
         : new("stopped", false, null, startupError);
 
     // Startup metadata checks happen before StartAsync; expose a bounded reason
     // without forwarding exception messages, paths or Core output.
     public void ReportStartupValidationFailure() => startupError ??= "Saved proxy runtime metadata is inconsistent. Review the applied profile.";
 
-    public async Task<ProxyProcessStatus> StartAsync(CancellationToken ct = default)
+    public Task<ProxyProcessStatus> StartAsync(CancellationToken ct = default) => StartCoreAsync(null, ct);
+
+    public Task<ProxyProcessStatus> StartLoginRuntimeAsync(ProxyRuntimeInputs inputs, CancellationToken ct = default)
+    {
+        foreach (var path in new[] { inputs.Configuration, inputs.Bindings, inputs.Journal })
+            if (!Path.GetFullPath(path).StartsWith(paths.Proxy + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+                throw new ArgumentException("Login runtime files must remain in the owned proxy directory.");
+        return StartCoreAsync(inputs, ct);
+    }
+
+    private async Task<ProxyProcessStatus> StartCoreAsync(ProxyRuntimeInputs? inputs, CancellationToken ct)
     {
         await gate.WaitAsync(ct);
-        var stage = "qualification";
+        var stage = "existing-process";
         try
         {
-            if (process is { HasExited: false }) return Status;
+            if (process is { HasExited: false })
+            {
+                if (inputs is null && loginOnly) throw new InvalidOperationException("A login-only runtime is active; explicitly apply a profile before inference.");
+                if (!ready) throw new InvalidOperationException("The active owned process requires recovery before another login.");
+                return Status;
+            }
             startupError = null;
             admissionRecoveryRequired = false;
+            stage = "qualification";
             var launchOptions = optionsFactory?.Invoke() ?? options;
             if (!launchOptions.Qualified) throw new InvalidOperationException("Proxy backend qualification gate has not passed.");
             stage = "configuration";
-            if (!File.Exists(paths.ProxyConfig)) throw new FileNotFoundException("Own proxy configuration is missing.");
+            if (!File.Exists(inputs?.Configuration ?? paths.ProxyConfig)) throw new FileNotFoundException("Own proxy configuration is missing.");
             stage = "integrity";
             using (var binary = File.OpenRead(launchOptions.BinaryPath))
             {
@@ -47,7 +66,7 @@ public sealed class OwnedProxyLifecycle(OwnStatePaths paths, SecretStore secrets
             stage = "port";
             try
             {
-                var listener = new TcpListener(IPAddress.Loopback, OwnStatePaths.ProxyPort);
+                var listener = new TcpListener(IPAddress.Loopback, paths.GatewayPort);
                 try { listener.Start(); } finally { listener.Stop(); }
             }
             catch (SocketException) { throw new InvalidOperationException("Own proxy port 18417 is occupied; the existing process is left untouched."); }
@@ -58,11 +77,11 @@ public sealed class OwnedProxyLifecycle(OwnStatePaths paths, SecretStore secrets
                 RedirectStandardInput = true,
                 CreateNoWindow = true
             };
-            start.ArgumentList.Add("--config"); start.ArgumentList.Add(paths.ProxyConfig);
+            start.ArgumentList.Add("--config"); start.ArgumentList.Add(inputs?.Configuration ?? paths.ProxyConfig);
             start.ArgumentList.Add("--parent-stdin");
             start.ArgumentList.Add("--owned-auth-dir"); start.ArgumentList.Add(paths.OwnedAuth);
-            start.ArgumentList.Add("--bindings"); start.ArgumentList.Add(Path.Combine(paths.Proxy, "bindings.json"));
-            start.ArgumentList.Add("--journal"); start.ArgumentList.Add(Path.Combine(paths.Proxy, "events.jsonl"));
+            start.ArgumentList.Add("--bindings"); start.ArgumentList.Add(inputs?.Bindings ?? Path.Combine(paths.Proxy, "bindings.json"));
+            start.ArgumentList.Add("--journal"); start.ArgumentList.Add(inputs?.Journal ?? Path.Combine(paths.Proxy, "events.jsonl"));
             start.ArgumentList.Add("--management-token-file"); start.ArgumentList.Add(paths.ManagementToken);
             secrets.GetOrCreateToken(paths.ManagementToken);
             process?.Dispose();
@@ -78,13 +97,14 @@ public sealed class OwnedProxyLifecycle(OwnStatePaths paths, SecretStore secrets
             catch { child.Dispose(); throw; }
             process = child;
             ready = false;
+            loginOnly = inputs is not null;
             try
             {
                 process.BeginOutputReadLine(); process.BeginErrorReadLine();
                 stage = "readiness";
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 timeout.CancelAfter(TimeSpan.FromSeconds(20));
-                using var http = new HttpClient(new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false }) { BaseAddress = new Uri($"http://127.0.0.1:{OwnStatePaths.ProxyPort}"), Timeout = TimeSpan.FromSeconds(2) };
+                using var http = new HttpClient(new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false }) { BaseAddress = new Uri($"http://127.0.0.1:{paths.GatewayPort}"), Timeout = TimeSpan.FromSeconds(2) };
                 http.DefaultRequestHeaders.Authorization = new("Bearer", secrets.GetOrCreateToken(paths.ManagementToken));
                 while (!process.HasExited)
                 {
@@ -109,7 +129,7 @@ public sealed class OwnedProxyLifecycle(OwnStatePaths paths, SecretStore secrets
             }
             catch { await StopOwnedProcessAsync(); throw; }
         }
-        catch (Exception) when (!ct.IsCancellationRequested)
+        catch (Exception) when (!ct.IsCancellationRequested && stage != "existing-process")
         {
             startupError = stage switch
             {
@@ -142,7 +162,7 @@ public sealed class OwnedProxyLifecycle(OwnStatePaths paths, SecretStore secrets
         {
             if (process is not { HasExited: false }) return;
             using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false })
-            { BaseAddress = new Uri($"http://127.0.0.1:{OwnStatePaths.ProxyPort}/"), Timeout = TimeSpan.FromSeconds(3) };
+            { BaseAddress = new Uri($"http://127.0.0.1:{paths.GatewayPort}/"), Timeout = TimeSpan.FromSeconds(3) };
             http.DefaultRequestHeaders.Authorization = new("Bearer", secrets.GetOrCreateToken(paths.ManagementToken));
             var admissionMayBeClosed = false;
             try

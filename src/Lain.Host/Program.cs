@@ -23,7 +23,7 @@ var referenceIsolation = Environment.GetEnvironmentVariable("LAIN_REFERENCE_QUAL
 var hostPort = OwnStatePaths.HostPort;
 if (referenceIsolation && Environment.GetEnvironmentVariable("LAIN_REFERENCE_HOST_PORT") is { } referencePort)
 {
- if (!int.TryParse(referencePort, out hostPort) || hostPort is < 1024 or > 65535 || hostPort == OwnStatePaths.ProxyPort)
+ if (!int.TryParse(referencePort, out hostPort) || hostPort is < 1024 or > 65535 || hostPort == paths.GatewayPort)
   throw new InvalidOperationException("Invalid isolated reference Host port.");
 }
 builder.WebHost.UseUrls($"http://127.0.0.1:{hostPort}");
@@ -32,6 +32,7 @@ var secrets = new SecretStore(paths);
 var hostToken = secrets.GetOrCreateToken(paths.ApiToken);
 var managementToken = secrets.GetOrCreateToken(paths.ManagementToken);
 var repository = new ConfigurationRepository(paths);
+using var mutations = new SemaphoreSlim(1, 1);
 var restoreReady = true;
 try { RestoredCredentialQuarantine.PrepareForRestore(paths); }
 catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
@@ -96,7 +97,7 @@ var cloudLogins = cloudOptions.Clients.Where(c => c.Qualified).Select(c => new C
 IAccountLoginAdapter[] accountLogins = [loginAdapter, openRouterLogin, .. (poeLogin.IsAvailable ? new IAccountLoginAdapter[] { poeLogin } : []), .. cloudLogins];
 builder.Services.AddSingleton(sp => new LoginOperationService(configuration: repository,
  accounts: sp.GetRequiredService<AccountService>(), secrets: secrets,
- accountAdapters: accountLogins));
+ accountAdapters: accountLogins, publicationGate: mutations));
 builder.Services.AddSingleton(sp => new CredentialRecoveryService(repository, sp.GetRequiredService<AccountService>(), secrets.Generations));
 builder.Services.AddSingleton(sp => new CredentialOwnerService(repository, sp.GetRequiredService<AccountService>(), secrets.Generations, cloudLogins));
 builder.Services.AddSingleton(sp => new ConnectionMethodCatalog(sp.GetRequiredService<ProviderCatalogRegistry>(),
@@ -119,15 +120,15 @@ builder.Services.AddSingleton<SqliteUsageStore>(_ => new(Path.Combine(paths.Root
 builder.Services.AddSingleton<IUsageStore>(sp => sp.GetRequiredService<SqliteUsageStore>());
 builder.Services.AddSingleton<IUsageAnalysisStore>(sp => sp.GetRequiredService<SqliteUsageStore>());
 builder.Services.AddSingleton<JournalUsageCollector>(sp => {
- var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false }) { BaseAddress = new Uri("http://127.0.0.1:18417"), Timeout = TimeSpan.FromSeconds(10) };
+ var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false }) { BaseAddress = new Uri($"http://127.0.0.1:{paths.GatewayPort}"), Timeout = TimeSpan.FromSeconds(10) };
  http.DefaultRequestHeaders.Authorization = new("Bearer", managementToken);
  return new(http, sp.GetRequiredService<SqliteUsageStore>(), sp.GetRequiredService<ILogger<JournalUsageCollector>>(), CollectCore);
 });
 builder.Services.AddHostedService(sp => sp.GetRequiredService<JournalUsageCollector>());
-builder.Services.AddInspector(managementToken, shouldCollect: CollectCore);
+builder.Services.AddInspector(managementToken, coreAddress: new Uri($"http://127.0.0.1:{paths.GatewayPort}/"), shouldCollect: CollectCore);
 var providerHttp = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(20) };
 using var quotaCoreHttp = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false })
- { BaseAddress = new Uri("http://127.0.0.1:18417/"), Timeout = TimeSpan.FromSeconds(10) };
+ { BaseAddress = new Uri($"http://127.0.0.1:{paths.GatewayPort}/"), Timeout = TimeSpan.FromSeconds(10) };
 quotaCoreHttp.DefaultRequestHeaders.Authorization = new("Bearer", managementToken);
 var quotaSource = new HostQuotaSource(repository, secrets, monitorAccess);
 using var geminiQuota = new GeminiCloudQuotaAdapter(providerHttp);
@@ -143,7 +144,6 @@ var quota = new QuotaService(quotaSource, quotaSource,
 builder.Services.AddSingleton(quota);
 var app = builder.Build();
 var application = app.Services.GetRequiredService<ProfileApplicationService>();
-using var mutations = new SemaphoreSlim(1, 1);
 app.Use(async (context, next) => {
  if (context.Connection.RemoteIpAddress is not { } remote || !IPAddress.IsLoopback(remote)) { context.Response.StatusCode = 403; return; }
  var supplied = context.Request.Headers.Authorization.ToString();
@@ -178,7 +178,7 @@ StatusDto Status()
  var gateway = config.RuntimeMode == "gateway";
  var applicationState = application.Status;
  var state = !restoreReady ? "credential-recovery-required" : gateway ?
-  applicationState.State == "recovery-required" ? "recovery-required" : ps.Error is not null ? ps.State :
+  ps.LoginOnly && ps.ManagementReady ? "login-only" : applicationState.State == "recovery-required" ? "recovery-required" : ps.Error is not null ? ps.State :
   config.Revision != config.AppliedRevision ? "pending-application" : ps.State : "monitoring";
  return new(Api.Version, version, state,
   ps.Ready, config.Revision, config.AppliedRevision, DateTimeOffset.UtcNow, !restoreReady ? "Restored credentials require local recovery before Gateway can start." : gateway ? ps.Error : null, active.Id, active.Revision,
@@ -219,10 +219,11 @@ app.MapPut(Api.Prefix + "/accounts/{id}/monitor", (string id, RevisionRequest<Mo
 app.MapDelete(Api.Prefix + "/accounts/{id}/monitor", (string id, long revision, MonitorAccessService svc) => svc.Remove(revision, id));
 app.MapPost(Api.Prefix + "/import", (ImportRequest request, LegacyImportService svc) => svc.Import(request));
 app.MapPost(Api.Prefix + "/accounts/login", async (LoginRequest request, LoginOperationService svc, ConnectionMethodCatalog methods,
- ProxyConfigurationWriter writer, CancellationToken ct) => {
+ ProxyConfigurationWriter writer, AccountService accounts, CancellationToken ct) => {
  var connection = new ConnectAccountRequest(request.Provider, request.Method ?? "codex-owned", request.Purposes ?? ["inference", "quota"],
   request.Name, request.AccountId, request.Binding, request.ExpectedGeneration, request.IdempotencyKey);
  methods.RequireAvailable(connection, secret: false);
+ _ = accounts.ReserveConnect(request.Revision, connection, "preflight", DateTimeOffset.UtcNow.AddMinutes(10));
  if (request.Revision != repository.Snapshot.Revision) throw new RevisionConflictException(request.Revision, repository.Snapshot.Revision);
  if (svc.RequiresCore(connection.Provider, connection.Method))
  {
@@ -230,17 +231,19 @@ app.MapPost(Api.Prefix + "/accounts/login", async (LoginRequest request, LoginOp
   try
   {
    RequireGateway();
-   if (!proxy.Status.Ready)
+   if (!proxy.Status.ManagementReady)
    {
-    if (File.Exists(runtimeManifest)) { RequireAppliedRuntime(); await proxy.StartAsync(ct); }
-    else
-    {
-     if (application.Status.State == "recovery-required") throw new InvalidOperationException("Runtime recovery is required.");
-     var empty = new ConfigurationDto(repository.Snapshot.Revision, repository.Snapshot.AppliedRevision, [], [], []);
-     var identities = writer.Write(empty);
-     new RouteBindingsWriter(paths).Write(empty, identities);
-     await proxy.StartAsync(ct);
-    }
+    if (proxy.Status.Pid is not null) throw new InvalidOperationException("Existing Gateway admission requires recovery.");
+    // A dedicated empty runtime permits reconnect after restore without touching
+    // the saved active configuration, profile proof or inference journal.
+    var loginPaths = new OwnStatePaths(Path.Combine(paths.Proxy, "login-bootstrap"));
+    OwnStatePaths.WritePrivate(loginPaths.ManagementToken, managementToken);
+    var empty = new ConfigurationDto(repository.Snapshot.Revision, repository.Snapshot.AppliedRevision, [], [], []);
+    var loginWriter = new ProxyConfigurationWriter(loginPaths, new SecretStore(loginPaths));
+    var identities = loginWriter.Write(empty);
+    var bindings = new RouteBindingsWriter(loginPaths);
+    bindings.Write(empty, identities);
+    await proxy.StartLoginRuntimeAsync(new(loginPaths.ProxyConfig, Path.Combine(loginPaths.Proxy, "bindings.json"), Path.Combine(loginPaths.Proxy, "events.jsonl")), ct);
    }
   }
   finally { mutations.Release(); }

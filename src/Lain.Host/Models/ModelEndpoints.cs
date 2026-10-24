@@ -28,7 +28,7 @@ public static class ModelEndpoints
                 var resolved = models.ResolveForApply(id, request.Revision);
                 var description = compiler.Describe(resolved.Configuration with { Routes = resolved.Routes });
                 var compatibility = new ModelCompatibilityCatalog(registry, description.QualifiedProviderRouteIds, description.TransportBindings);
-                return Results.Ok(new CodexProfileAdapter(models, compatibility).Generate(id, request.Revision, request.ExecutablePath, request.CatalogPath));
+                return Results.Ok(new CodexProfileAdapter(models, compatibility).Generate(id, request.Revision, request.ExecutablePath, request.CatalogPath, compiler.InferenceBaseUrl));
             }));
     }
 

@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <PropertyGroup Condition="'$(UseHostAssembly)' == 'true'"><NuGetLockFilePath>packages.host.lock.json</NuGetLockFilePath></PropertyGroup>
   <ItemGroup Condition="'$(UseHostAssembly)' != 'true'">
     <Compile Include="../../src/Lain.Core/ConnectionContracts.cs" Link="ConnectionContracts.cs" />
     <Compile Include="../../src/Lain.Host/Accounts/PublicLogin/*.cs" Link="PublicLogin/%(Filename)%(Extension)" />

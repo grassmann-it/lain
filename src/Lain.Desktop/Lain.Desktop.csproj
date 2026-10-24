@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="../Lain.Core/Lain.Core.csproj" />
     <ProjectReference Include="../Lain.Client/Lain.Client.csproj" />
+    <Compile Include="../Lain.Cli/CodexArtifactInstaller.cs" Link="Shared/CodexArtifactInstaller.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />

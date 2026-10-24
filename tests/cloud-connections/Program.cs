@@ -10,7 +10,7 @@ var checks = 0;
 void Check(bool condition, string name) { if (!condition) throw new Exception(name); checks++; }
 async Task Reject(Func<Task> action, string name)
 {
-    try { await action(); } catch (Exception ex) when (ex is InvalidDataException or CloudProviderException or QuotaFetchException or ArgumentException) { checks++; return; }
+    try { await action(); } catch (Exception ex) when (ex is InvalidDataException or CloudProviderException or ArgumentException || ex.GetType().FullName == "Lain.Host.Quota.QuotaFetchException") { checks++; return; }
     throw new Exception(name);
 }
 var now = DateTimeOffset.Parse("2026-03-29T16:00:00Z");
