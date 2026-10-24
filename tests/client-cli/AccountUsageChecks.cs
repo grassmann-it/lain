@@ -69,6 +69,9 @@ internal static class AccountUsageChecks
             Check(output.ToString().Split('\n').Length < detailed.ToString().Split('\n').Length / 2 &&
                 output.ToString().Contains("12 USD-Credits left") && output.ToString().Contains("Reset due") && output.ToString().Contains("Last known"),
                 $"{width}-column compact overview remains substantially shorter while retaining balances and warnings");
+            var compactLines = output.ToString().Split('\n');
+            Check(new[] { "40% used", "12 USD-Credits left", "Reset 2099-01-01 00:00Z", "Reset due", "Last known" }
+                .All(field => compactLines.Any(line => line.Contains(field))), $"{width}-column quota fields remain whole across line breaks");
         }
 
         var now = DateTimeOffset.UtcNow;
