@@ -59,7 +59,7 @@ static class SignalsTest
         Check((await monitor.PollAsync(Start.AddMinutes(30), default)).Alerts.Length == 0, "expired pending observations never replay after a long polling gap");
         Check(fixture.Requests.All(request => request.Method == "GET" && AllowedPath(request.Path)), "monitor is GET-only and uses only status/configuration/quotas/attempts");
         Check(fixture.Requests.Where(request => request.Path.EndsWith("/attempts", StringComparison.Ordinal)).All(request => request.Query["statusCode"] == "429" && request.Query["limit"] == "500"), "attempt queries explicitly select real 429 responses and bounded pages");
-        Check(snapshot.Lines.Any(line => line.Contains("journal coverage unknown")) && snapshot.Lines.Any(line => line.Contains("separate from local usage")), "hover distinguishes quota provenance and uncertified attempt coverage");
+        Check(snapshot.Lines.Any(line => line.Contains("Recent local HTTP 429 observations · may be incomplete")) && snapshot.Lines.Any(line => line.Contains("separate from local usage")), "hover distinguishes quota provenance and incomplete attempt observations");
     }
 
     private static async Task Pagination()
@@ -140,6 +140,18 @@ static class SignalsTest
         amounts.Quotas = [Quota(Start.AddSeconds(10), 20) with { UsedPercent = null, ResetsAt = null }];
         var snapshot = await byAmount.PollAsync(Start.AddSeconds(10), default);
         Check(snapshot.Alerts.Single().Body.Contains("20% remaining") && snapshot.Alerts.Single().Body.Contains("reset unknown"), "same-window reported amounts justify a percentage and never invent a reset");
+
+        using var overdue = new Fixture();
+        var resetMonitor = new DesktopSignalMonitor(overdue.Client);
+        await resetMonitor.PollAsync(Start, default);
+        var observed = Start.AddSeconds(10);
+        overdue.Quotas = [Quota(observed, 10) with { ResetsAt = Start.AddSeconds(5) }];
+        snapshot = await resetMonitor.PollAsync(observed, default);
+        var line = snapshot.Lines.Single(text => text.Contains("5 hours", StringComparison.Ordinal));
+        Check(snapshot.Alerts.Length == 0 && line.Contains("reset due · last known") && !line.Contains(" · reported · "),
+            "a recently observed quota with an overdue reset is last-known data, not a current window or alarm");
+        Check(line.Contains("reported reset " + Start.AddSeconds(5).ToLocalTime().ToString("dd MMM HH:mm", CultureInfo.CurrentCulture) + " local"),
+            "an overdue reset retains its exact reported local-time label");
     }
 
     private static async Task PoolsAndWindows()

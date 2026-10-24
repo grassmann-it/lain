@@ -56,7 +56,7 @@ public sealed class DesktopSignalMonitor(LainApiClient client)
             else AppendQuotaLines(lines, quotas, accounts, now);
             lines.Add(attempts is null ? "Local HTTP 429 observations unavailable · coverage unknown"
                 : attempts.Truncated ? "Local HTTP 429 scan limited · some attempts may be missed"
-                : "Local HTTP 429 · bounded 15 min observations; journal coverage unknown");
+                : "Recent local HTTP 429 observations · may be incomplete");
             var tooltip = connected ? status!.ProxyReady ? "lain · proxy ready" : "lain · proxy not ready" : "lain · host unavailable";
             return new TrayStatusSnapshot(tooltip, lines.ToArray(), alerts.ToArray(), connected);
         }
@@ -193,6 +193,8 @@ public sealed class DesktopSignalMonitor(LainApiClient client)
                 "unsupported" => "unsupported", "disabled" => "disabled", "refreshing" => "refreshing",
                 "stale" => "stale", _ => "unknown"
             };
+            if (quota.ResetsAt is { } reset && reset <= now && quota.LastSuccessAt is not null &&
+                state is "reported" or "stale" or "refreshing") state = "reset due · last known";
             var quantity = RemainingPercent(quota) is { } percent ? $"{percent:N0}% left" :
                 Valid(quota.Remaining) is { } remaining ? $"{ShortNumber(remaining)} {SafeLabel(quota.Unit, "units", 8)} left (% unknown)" : "remaining unknown";
             if (state is "unsupported" or "disabled" or "unknown") quantity = "remaining unknown";
