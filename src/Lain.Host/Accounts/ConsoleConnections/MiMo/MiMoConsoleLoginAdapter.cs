@@ -48,6 +48,11 @@ public sealed class MiMoConsoleLoginAdapter(IMiMoConsoleBrowser browser, TimePro
             if (context.Request.Binding?.Subject is null || context.Request.Binding?.Region is null)
                 return new("resource-required", Resources: [binding]);
             using var usage = await browser.ReadAsync(attempt.Profile, ConsoleReadOperation.MiMoIndividualUsage, ct);
+            // A visible browser can switch accounts between requests. Revalidate
+            // after usage before preparing any private credential for publication.
+            using var finalIdentity = await browser.ReadAsync(attempt.Profile, ConsoleReadOperation.MiMoIdentity, ct);
+            if (!MiMoConsoleIdentity.Matches(finalIdentity.RootElement, bound))
+                return new("failed", Error: "MiMo identity changed or the session expired during verification. Reconnect monitoring; existing access is preserved.");
             var result = MiMoConsoleQuotaReader.Individual(identity.RootElement, usage.RootElement, bound, clock.GetUtcNow());
             if (result.Readings.Count == 0) return new("failed", Error: "MiMo signed in, but Individual Token Plan usage could not be verified. The inference key is preserved.");
             attempt.Prepared = true;

@@ -39,10 +39,34 @@ internal static class MiMoConnectionChecks
             browser.FailDetail = true;
             var partial = await quota.FetchAsync(connected, new QuotaCredential(""));
             Check(partial.Readings.Count == 1 && partial.Error is not null, "detail failure keeps measured usage");
+            browser.FailDetail = false;
+            var beforeSwitchReads = browser.Reads.Count;
+            browser.OnUsage = () => browser.Identity = "switched-during-usage";
+            Check((await quota.FetchAsync(connected, new QuotaCredential(""))).Readings.Count == 0,
+                "A identity then B usage then B identity discards every quota reading");
+            Check(browser.Reads.Skip(beforeSwitchReads).SequenceEqual(new[] { ConsoleReadOperation.MiMoIdentity,
+                ConsoleReadOperation.MiMoIndividualUsage, ConsoleReadOperation.MiMoIndividualDetail, ConsoleReadOperation.MiMoIdentity }),
+                "quota identity is checked after all usage and detail reads");
+            browser.OnUsage = null; browser.Identity = "fixture-user";
+            browser.OnDetail = () => browser.Identity = "switched-during-detail";
+            Check((await quota.FetchAsync(connected, new QuotaCredential(""))).Readings.Count == 0,
+                "account switch during detail discards measured quota and validity");
+            browser.OnDetail = null; browser.Identity = "fixture-user"; browser.FailDetail = true;
+            browser.OnUsage = () => browser.Identity = "switched-before-detail-failure";
+            Check((await quota.FetchAsync(connected, new QuotaCredential(""))).Readings.Count == 0,
+                "optional detail failure still rechecks identity and discards switched-account quota");
+            browser.OnUsage = null; browser.Identity = "fixture-user"; browser.FailDetail = false;
+            var missing = await quota.FetchAsync(inference, new QuotaCredential(""));
+            Check(missing.Error is null && missing.Support?.Kind == "setup-required", "missing monitor session requests setup without an error");
+            browser.Unavailable = true;
+            var closed = await quota.FetchAsync(connected, new QuotaCredential(""));
+            Check(closed.Error is null && closed.Support?.Kind == "setup-required", "closed browser session requests reconnect without an error");
+            browser.Unavailable = false;
             browser.Identity = "other-user";
             Check((await quota.FetchAsync(connected, new QuotaCredential(""))).Readings.Count == 0, "changed console identity never publishes usage");
             browser.Identity = "fixture-user"; browser.Expired = true;
-            Check((await quota.FetchAsync(connected, new QuotaCredential(""))).Readings.Count == 0, "expired session no key fallback");
+            var expired = await quota.FetchAsync(connected, new QuotaCredential(""));
+            Check(expired.Readings.Count == 0 && expired.Error is null && expired.Support?.Kind == "setup-required", "expired session requests reconnect without key fallback or error");
             browser.Expired = false;
             var current = configuration.Snapshot;
             var pending = await operations.BeginAsync(current.Revision, request with { ExpectedGeneration = 1 });
@@ -54,6 +78,14 @@ internal static class MiMoConnectionChecks
             var mismatch = await operations.BeginAsync(current.Revision, request with { ExpectedGeneration = 1 });
             Check((await operations.StatusAsync(mismatch.Id)).State == "failed" && configuration.Snapshot.Revision == current.Revision, "wrong UID reconnect preserves account generation");
             browser.Identity = "fixture-user";
+            var privateGenerations = Directory.GetFiles(Path.Combine(paths.Credentials, "generations"), "*.json", SearchOption.AllDirectories).Length;
+            var switching = await operations.BeginAsync(current.Revision, request with { ExpectedGeneration = 1 });
+            browser.OnUsage = () => browser.Identity = "switched-during-login";
+            Check((await operations.StatusAsync(switching.Id)).State == "failed" && configuration.Snapshot.Revision == current.Revision,
+                "login A identity then B usage then B identity never publishes a credential");
+            Check(Directory.GetFiles(Path.Combine(paths.Credentials, "generations"), "*.json", SearchOption.AllDirectories).Length == privateGenerations,
+                "switched-account login never prepares a private credential generation");
+            browser.OnUsage = null; browser.Identity = "fixture-user";
             var monitor = await operations.BeginAsync(configuration.Snapshot.Revision, new("xiaomi-mimo", "console-browser", ["quota"], Name: "MiMo monitor"));
             var discovered = await operations.StatusAsync(monitor.Id);
             await operations.SelectResourceAsync(monitor.Id, discovered.Resources![0]);
@@ -68,7 +100,7 @@ internal static class MiMoConnectionChecks
             browser.OnUsage = null;
             var beforeStale = browser.Reads.Count;
             Check((await quota.FetchAsync(only, new QuotaCredential(""))).Readings.Count == 0 && browser.Reads.Count == beforeStale, "stale selected handle stops before browser access");
-            Console.WriteLine("PASS MiMo isolated-browser fake: discovery, same-account attach, monitor-only, cancellation, wrong UID, expiry, partial detail and private capability");
+            Console.WriteLine("PASS MiMo isolated-browser fake: discovery, same-account attach, monitor-only, cancellation, wrong UID, expiry, partial detail, browser identity switches and private capability");
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
     }
@@ -78,21 +110,24 @@ internal static class MiMoConnectionChecks
         public bool IsAvailable => true;
         public int Opens, Closed;
         public string Identity = "fixture-user";
-        public bool Expired, FailDetail;
+        public bool Expired, FailDetail, Unavailable;
         public List<ConsoleReadOperation> Reads = [];
-        public Action? OnUsage;
+        public Action? OnUsage, OnDetail;
         public Task<string> OpenAsync(string accountId, CancellationToken ct) { Opens++; return Task.FromResult(new string('a', 32)); }
         public Task CloseAsync(string profile, bool erase, CancellationToken ct) { Check(erase, "cancel/disconnect erases owned profile"); Closed++; return Task.CompletedTask; }
         public Task<JsonDocument> ReadAsync(string profile, ConsoleReadOperation operation, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested(); Reads.Add(operation); Check(profile == new string('a', 32), "opaque owned profile");
+            if (Unavailable) throw new MiMoConsoleSessionUnavailableException();
             if (Expired) return Task.FromResult(JsonDocument.Parse("{\"code\":401,\"data\":{}}"));
+            if (operation == ConsoleReadOperation.MiMoIndividualDetail) OnDetail?.Invoke();
             if (FailDetail && operation == ConsoleReadOperation.MiMoIndividualDetail) throw new InvalidOperationException("synthetic-failure");
             if (operation == ConsoleReadOperation.MiMoIndividualUsage) OnUsage?.Invoke();
             return Task.FromResult(JsonDocument.Parse(operation switch
             {
                 ConsoleReadOperation.MiMoIdentity => JsonSerializer.Serialize(new { code = 0, data = new { userId = Identity, idc = 310 } }),
-                ConsoleReadOperation.MiMoIndividualUsage => "{\"code\":0,\"data\":{\"usage\":{\"items\":[{\"name\":\"yearly\",\"used\":25,\"limit\":100,\"percent\":0.25}]}}}",
+                ConsoleReadOperation.MiMoIndividualUsage => JsonSerializer.Serialize(new { code = 0, data = new { usage = new { items = new[] {
+                    new { name = "yearly", used = Identity == "fixture-user" ? 25 : 90, limit = 100, percent = Identity == "fixture-user" ? 0.25 : 0.9 } } } } }),
                 ConsoleReadOperation.MiMoIndividualDetail => "{\"code\":0,\"data\":{\"currentPeriodEnd\":\"2027-10-24T12:00:00Z\"}}",
                 _ => throw new Exception("unlisted browser operation")
             }));

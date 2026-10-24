@@ -22,7 +22,7 @@ public sealed class MiMoQuotaAdapter(IMiMoConsoleBrowser browser, SecretStore se
         {
             var capability = account.Capabilities?.SingleOrDefault(c => c.Purpose == "quota");
             var handle = account.Credentials?.SingleOrDefault(c => c.Id == capability?.CredentialId && c.Owner == "console-browser" && c.Purposes.Contains("quota"));
-            if (handle is null) return new([], "Connect MiMo console monitoring on this account; the inference API key cannot read console usage.", support);
+            if (handle is null) return SetupRequired("Connect MiMo console monitoring on this account; the inference API key cannot read console usage.");
             if (!IsCurrent(account, handle) || handle.ExpiresAt <= clock.GetUtcNow() || secrets.Generations.IsRetired(handle))
                 return new([], "MiMo monitor capability changed or expired; reconnect monitoring.", support);
             using var stored = JsonDocument.Parse(secrets.Generations.Read(account.Id, handle).PrivateJson);
@@ -34,7 +34,8 @@ public sealed class MiMoQuotaAdapter(IMiMoConsoleBrowser browser, SecretStore se
             if (handle.Binding.Subject != binding.Subject || handle.Binding.Region != binding.Region || handle.Binding.Product != binding.Product)
                 throw new InvalidDataException();
             using var identity = await browser.ReadAsync(profile, ConsoleReadOperation.MiMoIdentity, ct);
-            if (!MiMoConsoleIdentity.Matches(identity.RootElement, binding)) return new([], "MiMo identity changed or the console session expired; reconnect monitoring.", support);
+            if (NeedsSignIn(identity.RootElement)) return SetupRequired("MiMo console session expired; reconnect monitoring.");
+            if (!MiMoConsoleIdentity.Matches(identity.RootElement, binding)) return new([], "MiMo identity changed; reconnect monitoring.", support);
             using var usage = await browser.ReadAsync(profile, ConsoleReadOperation.MiMoIndividualUsage, ct);
             var result = MiMoConsoleQuotaReader.Individual(identity.RootElement, usage.RootElement, binding, clock.GetUtcNow());
             // Plan validity is separate from a budget reset. Detail failure keeps usage usable.
@@ -46,12 +47,25 @@ public sealed class MiMoQuotaAdapter(IMiMoConsoleBrowser browser, SecretStore se
             }
             catch (Exception error) when (error is InvalidOperationException or IOException or JsonException or HttpRequestException or System.Net.WebSockets.WebSocketException)
             { result = result with { Error = result.Error ?? "MiMo usage measured; plan validity unavailable." }; }
+            // Recheck after every usage/detail read, including partial detail failure:
+            // local generation checks alone cannot detect a browser account switch.
+            using var finalIdentity = await browser.ReadAsync(profile, ConsoleReadOperation.MiMoIdentity, ct);
+            if (NeedsSignIn(finalIdentity.RootElement)) return SetupRequired("MiMo console session expired during the read; reconnect monitoring.");
+            if (!MiMoConsoleIdentity.Matches(finalIdentity.RootElement, binding))
+                return new([], "MiMo identity changed during the read; reconnect monitoring.", support);
             if (!IsCurrent(account, handle)) return new([], "MiMo monitor capability changed during the read; reconnect monitoring.", support);
             return result with { Support = support };
         }
+        catch (MiMoConsoleSessionUnavailableException)
+        { return SetupRequired("MiMo console session closed; reconnect monitoring."); }
         catch (Exception error) when (error is InvalidOperationException or IOException or JsonException or HttpRequestException or KeyNotFoundException or System.Net.WebSockets.WebSocketException)
         { return new([], "MiMo console session unavailable; reconnect monitoring. Existing inference access is preserved.", support); }
     }
+    private static bool NeedsSignIn(JsonElement payload) => payload.ValueKind == JsonValueKind.Object
+        && payload.TryGetProperty("code", out var code) && code.ValueKind == JsonValueKind.Number
+        && code.TryGetInt32(out var value) && value is 401 or 403;
+    private static QuotaFetchResult SetupRequired(string message) =>
+        new([], Support: new("setup-required", message, "https://platform.xiaomimimo.com/", "quota"));
     private bool IsCurrent(AccountDto account, CredentialHandleDto handle)
     {
         var current = configuration.Snapshot.Accounts.SingleOrDefault(a => a.Id == account.Id);

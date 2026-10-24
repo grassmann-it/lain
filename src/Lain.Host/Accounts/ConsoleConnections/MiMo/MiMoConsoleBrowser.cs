@@ -7,6 +7,8 @@ using Lain.Host.Operations;
 
 namespace Lain.Host.Accounts.ConsoleConnections.MiMo;
 
+public sealed class MiMoConsoleSessionUnavailableException() : InvalidOperationException("MiMo console session closed; reconnect monitoring.") { }
+
 /// <summary>Only three named GETs in an explicitly opened, lain-owned browser. No cookie/JS/URL export API.</summary>
 public interface IMiMoConsoleBrowser
 {
@@ -69,7 +71,7 @@ public sealed class MiMoConsoleBrowser(OwnStatePaths paths) : IMiMoConsoleBrowse
     {
         var route = ConsoleReadRoutes.Resolve(operation);
         if (!sessions.TryGetValue(profile, out var session) || session.Process.HasExited)
-            throw new InvalidOperationException("MiMo console session closed; reconnect monitoring.");
+            throw new MiMoConsoleSessionUnavailableException();
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, session.Lifetime.Token);
         timeout.CancelAfter(TimeSpan.FromSeconds(15));
         await session.Gate.WaitAsync(timeout.Token);
@@ -100,8 +102,10 @@ public sealed class MiMoConsoleBrowser(OwnStatePaths paths) : IMiMoConsoleBrowse
                 if (!answer.RootElement.TryGetProperty("id", out var id) || id.GetInt32() != 1) continue;
                 if (!answer.RootElement.TryGetProperty("result", out var result) || result.TryGetProperty("exceptionDetails", out _)
                     || !result.TryGetProperty("result", out var remote) || !remote.TryGetProperty("value", out var value)
-                    || !value.TryGetProperty("status", out var status) || status.GetInt32() != 200
-                    || !value.TryGetProperty("body", out var body) || body.ValueKind != JsonValueKind.String)
+                    || !value.TryGetProperty("status", out var status) || status.ValueKind != JsonValueKind.Number || !status.TryGetInt32(out var httpStatus))
+                    throw new InvalidOperationException("MiMo console read denied or unavailable; reconnect monitoring if the session expired.");
+                if (httpStatus is 401 or 403) throw new MiMoConsoleSessionUnavailableException();
+                if (httpStatus != 200 || !value.TryGetProperty("body", out var body) || body.ValueKind != JsonValueKind.String)
                     throw new InvalidOperationException("MiMo console read denied or unavailable; reconnect monitoring if the session expired.");
                 var bytes = Encoding.UTF8.GetBytes(body.GetString()!);
                 if (bytes.Length > 256 * 1024) throw new InvalidOperationException("MiMo console response too large.");
