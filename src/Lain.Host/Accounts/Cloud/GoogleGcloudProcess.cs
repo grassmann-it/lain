@@ -30,6 +30,7 @@ public sealed class GoogleGcloudProcess : IGoogleGcloudProcess
     private static readonly Dictionary<string, string> Sources = new()
     {
         ["lib/googlecloudsdk/core/config.py"] = "fc06f07045d0a8054355f904fa4aac12151a1d1e08c6c366620b405c4ee98f52",
+        ["lib/googlecloudsdk/core/credentials/gce_cache.py"] = "1ff225abebe9a546320e140f6a317beda3ae612d6387b2f3ce956a506821decb",
         ["lib/googlecloudsdk/core/metrics.py"] = "045019bf8cd4739e12f106529e87760a2a4d192920b1331ba968db00e8448724",
         ["bin/gcloud"] = "8628b9f971d07c5e52fd2c6d469ee4a0940c75eb51820d628c3dd068981bd260",
         ["lib/gcloud.py"] = "d223bce54ff2e1441268e73b06eec4830032dd7b4b17b8fa9e2638d4f6d8d39d",
@@ -151,6 +152,10 @@ public static class GoogleGcloudProcessTransport
         var lockPath = Path.Combine(profile, "lain-process.lock"); CliPrivatePaths.RefuseLinks(lockPath);
         using var lease = new FileStream(lockPath, new FileStreamOptions { Mode = FileMode.OpenOrCreate, Access = FileAccess.ReadWrite, Share = FileShare.None,
             UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite });
+        // This is an explicit user-only login profile. Seed the SDK's documented local residency
+        // cache so even auth/login's separate GCE check cannot inspect ambient VM credentials.
+        var gceCache = Path.Combine(profile, "gce"); CliPrivatePaths.RefuseLinks(gceCache);
+        OwnStatePaths.WritePrivate(gceCache, "False");
         var bridge = Path.Combine(profile, "lain-browser");
         var marker = "LAIN_GCLOUD_BROWSER_" + Guid.NewGuid().ToString("N") + ":";
         CliPrivatePaths.RefuseLinks(bridge);

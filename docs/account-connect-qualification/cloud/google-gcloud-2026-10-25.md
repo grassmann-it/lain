@@ -37,7 +37,11 @@ Google subject and account email stay private inside the owner credential.
   `CredentialOwnerService` and `OwnedCredentialRefreshService`.
 - After successful replacement/removal, under the foundation publication gate,
   invoke `googleCliRetention.DisconnectAsync(oldAccount, ct)`. Never invoke cleanup
-  as rollback before a successful commit. The helper retains all currently
+  as rollback before a successful commit. The adapter also implements the
+  additive `TargetRemovedAsync(context, preparedCredential, ct)` hook: after the
+  foundation makes an operation non-adoptable it cancels and deletes that exact
+  unpublished operation profile. Recovery state `target-removed` no longer pins
+  retired profiles. No provider revocation is performed. The helper retains all currently
   capability-selected profiles and non-published prepared recovery profiles.
   Remote-pending, malformed, missing, restore-quarantined, ambiguous or oversized
   metadata defers deletion. Recovery scanning is bounded to 1,024 metadata files;
@@ -85,7 +89,10 @@ callback. The SDK's native server remains responsible for callback/state/code
 handling. A DISPLAY marker selects that SDK path; the bridge never contacts the
 user's display server. Fallback to a copy-code or remote-bootstrap flow is not
 accepted. CLI logs/usage reporting are disabled. An explicit metrics environment
-also prevents the SDK's otherwise independent GCE environment probe.
+also prevents the SDK's otherwise independent metrics GCE environment probe.
+The isolated user-only profile additionally seeds the hash-qualified SDK's local
+`gce` residency cache with `False` before each command, so auth/login's separate
+GCE check cannot read ambient VM metadata/credentials either.
 
 Login/renewal results come from the official `config config-helper --format=json
 --force-auth-refresh` command, whose installed source expressly supports external

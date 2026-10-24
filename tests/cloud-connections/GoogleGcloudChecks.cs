@@ -59,6 +59,8 @@ sys.path.insert(0, '/opt/google-cloud-cli/lib/third_party')
 from googlecloudsdk.command_lib.util import check_browser
 from googlecloudsdk.core.credentials.flow import FullWebFlow
 from googlecloudsdk.core import config
+from googlecloudsdk.core.credentials import gce_cache
+assert not gce_cache.GetOnGCE()
 assert check_browser.ShouldLaunchBrowser(True)
 flow = FullWebFlow.from_client_config({'installed': {'client_id': config.CLOUDSDK_CLIENT_ID, 'client_secret': 'fixture-only', 'auth_uri': 'https://accounts.google.com/o/oauth2/auth', 'token_uri': 'https://oauth2.googleapis.com/token'}}, config.CLOUDSDK_SCOPES + (config.REAUTH_SCOPE,), autogenerate_code_verifier=True)
 try:
@@ -136,6 +138,8 @@ finally:
                 Check(fake.ExpectedAccount == "one@example.test" && fake.Profiles.Distinct().Count() == 2, "reconnect pins Google user and creates a distinct isolated profile");
                 await adapter.CancelAsync(reconnect, default);
                 Check((await adapter.StatusAsync(reconnect, default)).State == "cancelled", "cancelled CLI operation cannot publish late result");
+                await adapter.TargetRemovedAsync(reconnect, null, default);
+                Check(!Directory.Exists(fake.Profiles[1]), "target removal retires cancelled unpublished CLI profile without remote revocation");
                 var reference = GoogleGcloudLoginAdapter.GetProfileReference(credential.PrivateJson);
                 Check(!await adapter.DisconnectAsync(credential.PrivateJson, new HashSet<string> { reference }), "explicit retained recovery reference prevents profile retirement");
                 var statePaths = new OwnStatePaths(Path.Combine(temporary, "retention-state"));

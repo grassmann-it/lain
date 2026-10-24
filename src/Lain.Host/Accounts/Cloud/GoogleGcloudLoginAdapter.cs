@@ -242,6 +242,37 @@ public sealed class GoogleGcloudLoginAdapter : IAccountLoginAdapter, ICredential
         }
     }
 
+    /// <summary>Foundation hook after target removal: this operation can no longer publish or be adopted.</summary>
+    public async Task TargetRemovedAsync(LoginOperationContext context, PreparedLoginCredential? credential, CancellationToken ct)
+    {
+        Attempt? attempt; lock (gate) { attempts.TryGetValue(context.OperationId, out attempt); if (attempt is not null) Same(attempt.Context, context); }
+        await CancelAsync(context, ct);
+        if (attempt is not null && !attempt.Login.IsCompleted) return;
+        var reference = attempt?.Profile;
+        if (reference is null && credential is { Owner: "google-gcloud" })
+        {
+            var grant = JsonSerializer.Deserialize<GoogleGcloudGrant>(credential.PrivateJson, Json);
+            if (grant?.LocalAccountId != context.AccountId) return;
+            reference = GetProfileReference(credential.PrivateJson);
+        }
+        if (reference is null) return;
+        lock (gate)
+        {
+            if (!Directory.Exists(Path.Combine(root, reference))) return;
+            var path = Profile(reference, create: false);
+            var owner = JsonSerializer.Deserialize<ProfileOwner>(CliPrivatePaths.Read(Path.Combine(path, "lain-owner.json"), 4096), Json);
+            if (owner?.LocalAccountId != context.AccountId || owner.OperationId != context.OperationId) return;
+            GoogleGcloudProcessTransport.ValidateProfileTree(path);
+            var lockPath = Path.Combine(path, "lain-process.lock"); CliPrivatePaths.RefuseLinks(lockPath);
+            try
+            {
+                using var lease = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                ct.ThrowIfCancellationRequested(); Directory.Delete(path, recursive: true);
+            }
+            catch (IOException) { } // Another owned process keeps its profile until a later cleanup pass.
+        }
+    }
+
     public async Task CancelAsync(LoginOperationContext context, CancellationToken ct)
     {
         Attempt? attempt;

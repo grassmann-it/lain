@@ -46,8 +46,10 @@ public sealed class GoogleGcloudProfileRetention(ConfigurationRepository configu
                         continue;
                     }
                     var record = document.RootElement.Deserialize<CredentialRecoveryRecord>();
-                    if (record is null || record.OperationId != Path.GetFileNameWithoutExtension(file)) return;
-                    if (record.State == "published") continue;
+                    if (record is null || record.OperationId != Path.GetFileNameWithoutExtension(file) || string.IsNullOrWhiteSpace(record.AccountId)
+                        || record.Request is null || string.IsNullOrWhiteSpace(record.Request.Provider) || record.Revision < 0 || record.AccountGeneration < 0) return;
+                    if (record.State == "target-removed") continue;
+                    if (record.State == "published") { if (record.Handle is null) return; continue; }
                     if (record.State != "prepared" || record.Handle is null) return;
                     if (record.Handle.Owner == "google-gcloud")
                         retained.Add(GoogleGcloudLoginAdapter.GetProfileReference(secrets.Generations.Read(record.AccountId, record.Handle).PrivateJson));
