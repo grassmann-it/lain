@@ -14,6 +14,7 @@ using Microsoft.Data.Sqlite;
 // Independently authored adversarial checks. All material is synthetic and all HTTP is in-memory.
 var directory = Path.Combine(Path.GetTempPath(), "lain-independent-" + Guid.NewGuid().ToString("N"));
 var failures = new List<string>();
+Console.WriteLine("Host assembly SHA256: " + Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(typeof(AccountService).Assembly.Location))).ToLowerInvariant());
 try
 {
     await Run("bound Requesty cannot use usage after failed identity read", RequestyBinding);
