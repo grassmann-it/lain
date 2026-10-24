@@ -1,0 +1,147 @@
+{
+  "id": "fireworks",
+  "name": "Fireworks",
+  "summary": "Serverless inference with your own API key. Account quotas are separate from prepaid credit balance; starter credit and model access need account verification.",
+  "accountUrl": "https://app.fireworks.ai/settings/users/api-keys",
+  "documentationUrl": "https://docs.fireworks.ai/getting-started/quickstart",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "Fireworks API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true,
+      "help": "Create your own Fireworks API key. This serverless route does not use Fire Pass keys."
+    },
+    {
+      "id": "accountId",
+      "label": "Fireworks account ID (quota monitor)",
+      "kind": "text",
+      "required": false,
+      "secret": false,
+      "help": "For quota monitoring, copy the account ID from the Fireworks account settings; do not enter a user ID, display name, or model owner account."
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Create an API key",
+      "description": "Create a key in your own account and enter it privately in lain.",
+      "url": "https://app.fireworks.ai/settings/users/api-keys"
+    },
+    {
+      "title": "Check the available credit",
+      "description": "Check starter-credit eligibility, expiry, and billing before inference. No dedicated deployment or purchase is required by this connector.",
+      "url": "https://fireworks.ai/billing"
+    },
+    {
+      "title": "Optional quota monitor",
+      "description": "Enter the Fireworks account ID. The key must be allowed to list that account’s quotas; if necessary, configure a separate authorized API key for the monitor.",
+      "url": "https://docs.fireworks.ai/api-reference/list-quotas"
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "starter",
+      "name": "Starter credit (if granted)",
+      "kind": "trial",
+      "scope": "account",
+      "unit": "USD",
+      "notes": "The FAQ describes $1 starter credit. Actual allocation, balance and expiry are unverified; this is not a recurring free tier."
+    },
+    {
+      "id": "payg",
+      "name": "Serverless pay as you go",
+      "kind": "payg",
+      "scope": "account",
+      "unit": "USD",
+      "notes": "Uses account credits or the existing billing arrangement. No purchase, Auto Reload or paid fallback is enabled by lain."
+    }
+  ],
+  "routes": [
+    {
+      "id": "fireworks:glm-5p3-flash:serverless:chat",
+      "model": "accounts/fireworks/models/glm-5p3-flash",
+      "name": "GLM 5.3 Flash · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true
+      },
+      "modelFamily": "glm",
+      "manufacturer": "Z.ai",
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Current official quickstart documents this serverless model; availability on this account is unverified.",
+        "Starter credit is not an enforceable free-only route. No automatic fallback to another model or budget.",
+        "Tools and model context/output limits have not been qualified for this route."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://docs.fireworks.ai/getting-started/quickstart",
+      "title": "Serverless quickstart and API key setup",
+      "checkedAt": "2026-10-24T00:00:00Z"
+    },
+    {
+      "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+      "title": "OpenAI-compatible chat and streaming usage",
+      "checkedAt": "2026-10-24T00:00:00Z"
+    },
+    {
+      "url": "https://docs.fireworks.ai/api-reference/list-quotas",
+      "title": "Official account quota list API",
+      "checkedAt": "2026-10-24T00:00:00Z"
+    },
+    {
+      "url": "https://docs.fireworks.ai/api-reference/get-quota",
+      "title": "Official quota schema",
+      "checkedAt": "2026-10-24T00:00:00Z"
+    },
+    {
+      "url": "https://docs.fireworks.ai/guides/quotas_usage/account-quotas",
+      "title": "Quota types and monthly spend scope",
+      "checkedAt": "2026-10-24T00:00:00Z"
+    },
+    {
+      "url": "https://docs.fireworks.ai/accounts/users",
+      "title": "Account roles",
+      "checkedAt": "2026-10-24T00:00:00Z"
+    },
+    {
+      "url": "https://docs.fireworks.ai/faq-new/billing-pricing/what-happens-when-i-finish-my-1-dollar-credit",
+      "title": "Starter credit and service suspension",
+      "checkedAt": "2026-10-24T00:00:00Z"
+    }
+  ],
+  "restrictions": [
+    "Gateway and quota access are separate capabilities; a quota permission error does not invalidate inference access.",
+    "The quota API reports account constraints, not remaining prepaid credit. Unknown quota units remain unknown.",
+    "Monthly spend usage can lag; no quota reset is inferred from updateTime.",
+    "Fire Pass, dedicated deployments, purchases and external billing-history import are outside this connector.",
+    "Local fixtures do not prove live provider access."
+  ],
+  "adapterState": "available",
+  "liveVerification": "not_tested",
+  "quotaSupport": "partial"
+}

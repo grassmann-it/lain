@@ -1,0 +1,7 @@
+{
+  "quotas": [
+    {"name":"accounts/demo/quotas/monthly-spend-usd","value":"50","maxValue":"500","usage":12.5,"updateTime":"2026-10-01T09:00:00Z"},
+    {"name":"accounts/demo/quotas/h100-us-iowa-1","value":"16","maxValue":"32","usage":0,"updateTime":"2026-09-01T12:00:00Z"},
+    {"name":"accounts/demo/quotas/unmapped-request-limit","value":"6000","maxValue":"12000"}
+  ]
+}
