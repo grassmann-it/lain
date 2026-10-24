@@ -47,6 +47,34 @@ with tempfile.TemporaryDirectory(prefix='lain-core-delivery-test-') as temporary
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT / 'scripts' / name, target)
     api = module(repo / 'scripts/core-refresh.py')
+    catalog_path = Path('proxy/codex-model-catalog.json')
+    catalog_bytes = (ROOT / catalog_path).read_bytes()
+    (repo / catalog_path).parent.mkdir(parents=True, exist_ok=True)
+    (repo / catalog_path).write_bytes(catalog_bytes)
+    catalog = api.check_codex_catalog(repo / catalog_path)
+    assert catalog['modelCount'] > 0 and catalog['qualification'] == 'static-catalog-not-provider-entitlement'
+    assert catalog['snapshotVersion'].startswith('7.'), 'Retain the historical static catalog provenance'
+    # Malformed model lists must not turn successful onboarding into zero routes.
+    invalid_catalog = folder / 'invalid-catalog.json'
+    original_catalog = json.loads(catalog_bytes)
+    invalid_values = [
+        ({**original_catalog, 'models': []}, 'must contain models'),
+        ({**original_catalog, 'models': {}}, 'must contain models'),
+        ({**original_catalog, 'models': [{'id': 'duplicate'}, {'id': 'duplicate'}]}, 'duplicate model IDs'),
+        ({**original_catalog, 'models': [{'id': 'Duplicate'}, {'id': 'duplicate'}]}, 'duplicate model IDs'),
+        ({**original_catalog, 'qualification': 'provider-entitlement'}, 'static source provenance'),
+        ({**original_catalog, 'sourceSha256': ''}, 'static source provenance'),
+        ({**original_catalog, 'schemaVersion': True}, 'Unsupported Codex'),
+    ]
+    for invalid_id in ('', ' ', 'gpt\nunsafe', '../model', 'model/path', '"quoted"', 'm' * 201, None, 42):
+        invalid_values.append(({**original_catalog, 'models': [{'id': invalid_id}]}, 'unsafe or empty model ID'))
+    for invalid, message in invalid_values:
+        write(invalid_catalog, invalid)
+        try:
+            api.check_codex_catalog(invalid_catalog)
+            raise AssertionError('Invalid catalog accepted')
+        except RuntimeError as error:
+            assert message in str(error), str(error)
     for name in ('build-core.sh', 'build-core-verify.py'):
         write(repo / 'scripts' / name, '# fixture: never builds\n')
     write(repo / 'proxy/LICENSE.upstream', 'Fixture upstream MIT license\n')
@@ -85,6 +113,7 @@ f=d/'prepared-manifest.json';f.write_text(json.dumps(record));print(json.dumps({
                  'proxy/build-manifest.json', 'proxy/source-manifest.json', 'proxy/qualification.json',
                  'notices/go/inventory.json', 'core-source-provenance/old/nested.txt'):
         write(base / name, {'historical': True})
+    (base / catalog_path).write_bytes(catalog_bytes)
     info = {'format': 1, 'componentSourceCommits': {'cli': '416fe13', 'host': 'a66cb2a', 'desktop': '416fe13'},
             'componentInformationalVersions': {'cli': '1.0+416fe13', 'host': '1.0+a66cb2a', 'desktop': '1.0+416fe13'},
             'components': {name: {'assemblySha256': sha(base / name / (project + '.dll'))} for name, project in
@@ -133,6 +162,12 @@ else: raise SystemExit('Unexpected fake Go invocation')
     assert target_info['components'] == info['components']
     assert target_info['coreBuild']['upstreamVersion'] == 'v8.0.41'
     assert target_info['coreRefresh']['previousCore']['coreBuild'] == info['coreBuild']
+    assert target_info['codexModelCatalog'] == catalog
+    assert (target / catalog_path).read_bytes() == catalog_bytes
+    assert updated[str(catalog_path)] == catalog['sha256']
+    assert (target / 'core-source-provenance/source' / catalog_path).read_bytes() == catalog_bytes
+    provenance = api.load(target / 'core-source-provenance/inventory.json')
+    assert any(entry['sourcePath'] == str(catalog_path) and entry['sha256'] == catalog['sha256'] for entry in provenance['files'])
     assert api.load(target / 'core-source-provenance/baseline-gate-status.json')['releaseQualified'] is True
     assert api.load(target / 'gate-status.json')['releaseQualified'] is False
     assert not (target / 'core-source-provenance/old').exists()
@@ -142,39 +177,86 @@ else: raise SystemExit('Unexpected fake Go invocation')
     shutil.copytree(target, tampered)
     write(tampered / 'cli/Lain.Cli.dll', 'tampered client\n')
     api.manifest(tampered)
-    def home(name):
+    def home(name, baseline=base):
         result = folder / name
-        shutil.copytree(base, result / 'app')
+        shutil.copytree(baseline, result / 'app')
         return result
     home_bad = home('home-bad')
     run([sys.executable, str(tampered / 'core-refresh.py'), 'install', '--package', str(tampered), '--home', str(home_bad),
          '--backup', str(home_bad / 'backup')], expected=False, contains='protected application')
     assert api.verify(home_bad / 'app') == original
+    # A regenerated checksum inventory cannot make a missing/invalid target
+    # catalog acceptable. It must fail before any package replacement or backup.
+    for name, payload, message in [
+        ('missing-catalog', None, 'Codex model catalog is missing'),
+        ('empty-catalog', {**original_catalog, 'models': []}, 'must contain models'),
+        ('duplicate-catalog', {**original_catalog, 'models': [{'id': 'gpt'}, {'id': 'gpt'}]}, 'duplicate model IDs'),
+        ('unsafe-catalog', {**original_catalog, 'models': [{'id': 'gpt\nunsafe'}]}, 'unsafe or empty model ID'),
+        ('changed-catalog', {**original_catalog, 'models': [{'id': 'different-safe-model'}]}, 'frozen package provenance'),
+    ]:
+        altered = folder / name
+        shutil.copytree(target, altered)
+        if payload is None:
+            (altered / catalog_path).unlink()
+        else:
+            write(altered / catalog_path, payload)
+        api.manifest(altered)
+        api.verify(altered)
+        untouched = home('home-' + name)
+        run([sys.executable, str(altered / 'core-refresh.py'), 'install', '--package', str(altered), '--home', str(untouched),
+             '--backup', str(untouched / 'backup')], expected=False, contains=message)
+        assert api.verify(untouched / 'app') == original and not (untouched / 'backup').exists()
     # Inject a journal failure after two successful swaps: every old byte returns.
+    def check_rollback(package, destination, expected):
+        installed_api = module(package / 'core-refresh.py')
+        real_write, tripped = installed_api.write, []
+        def fail_once(path, value):
+            if path.name == 'transaction.json' and value.get('status') == 'replacing' and len(value.get('completed', [])) == 2 and not tripped:
+                tripped.append(True)
+                raise RuntimeError('injected journal failure')
+            real_write(path, value)
+        installed_api.write = fail_once
+        try:
+            installed_api.install(argparse.Namespace(package=package, home=destination, backup=destination / 'backup'))
+            raise AssertionError('Injected failure did not fire')
+        except RuntimeError as error:
+            assert str(error) == 'injected journal failure', str(error)
+        assert tripped and api.verify(destination / 'app') == expected
+        assert api.load(destination / 'backup/transaction.json')['status'] == 'rolled-back-after-error'
     home_rollback = home('home-rollback')
-    installed_api = module(target / 'core-refresh.py')
-    real_write, tripped = installed_api.write, []
-    def fail_once(path, value):
-        if path.name == 'transaction.json' and value.get('status') == 'replacing' and len(value.get('completed', [])) == 2 and not tripped:
-            tripped.append(True)
-            raise RuntimeError('injected journal failure')
-        real_write(path, value)
-    installed_api.write = fail_once
-    try:
-        installed_api.install(argparse.Namespace(package=target, home=home_rollback, backup=home_rollback / 'backup'))
-        raise AssertionError('Injected failure did not fire')
-    except RuntimeError as error:
-        assert str(error) == 'injected journal failure', str(error)
-    assert tripped and api.verify(home_rollback / 'app') == original
-    assert api.load(home_rollback / 'backup/transaction.json')['status'] == 'rolled-back-after-error'
+    check_rollback(target, home_rollback, original)
+    assert (home_rollback / 'app' / catalog_path).read_bytes() == catalog_bytes
     # Exact success changes only the permitted paths and retains app source pins.
     home_success = home('home-success')
     run([sys.executable, str(target / 'core-refresh.py'), 'install', '--package', str(target), '--home', str(home_success),
          '--backup', str(home_success / 'backup')])
     assert api.verify(home_success / 'app') == updated
+    assert (home_success / 'app' / catalog_path).read_bytes() == catalog_bytes
+    # The exact catalog-less v8 package is a valid migration baseline. Its
+    # historical checksums stay authoritative, while the replacement repairs it.
+    missing_base = folder / 'catalog-less-base'
+    shutil.copytree(base, missing_base)
+    (missing_base / catalog_path).unlink()
+    api.manifest(missing_base)
+    missing_original = api.verify(missing_base)
+    repaired = folder / 'repaired'
+    repair_command = list(command)
+    repair_command[repair_command.index('--base') + 1] = str(missing_base)
+    repair_command[-1] = str(repaired)
+    run(repair_command, env=env)
+    assert (repaired / catalog_path).read_bytes() == catalog_bytes
+    repair_rollback = home('home-repair-rollback', missing_base)
+    check_rollback(repaired, repair_rollback, missing_original)
+    assert not (repair_rollback / 'app' / catalog_path).exists()
+    repaired_home = home('home-repaired', missing_base)
+    run([sys.executable, str(repaired / 'core-refresh.py'), 'install', '--package', str(repaired), '--home', str(repaired_home),
+         '--backup', str(repaired_home / 'backup')])
+    assert api.verify(repaired_home / 'app') == api.verify(repaired)
+    assert (repaired_home / 'app' / catalog_path).read_bytes() == catalog_bytes
+    assert api.verify(missing_base) == missing_original
     # A mismatched binary/qualification must never become an accepted package.
     write(folder / 'qualification.json', {**qualification, 'sha256': '0' * 64})
     command[-1] = str(folder / 'bad-qualification')
     run(command, env=env, expected=False, contains='Independent qualification')
     assert api.verify(base) == original
-print('Core refresh synthetic staging/protected-file rejection/rollback/exact install/qualification checks passed.')
+print('Core refresh staging/catalog validation and provenance/catalog-less baseline repair/rejection/rollback/exact install checks passed.')

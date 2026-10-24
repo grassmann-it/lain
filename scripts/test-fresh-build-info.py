@@ -2,6 +2,7 @@
 """Exercise fresh publish metadata blocks with fake bytes; no builds/apps/services."""
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import runpy
@@ -49,10 +50,19 @@ with tempfile.TemporaryDirectory(prefix='lain-fresh-metadata-') as temporary:
     for name in ('publish-linux.sh', 'build-core.sh', 'prepare-core.py', 'build-core-verify.py', 'collect-notices.py', 'collect-go-notices.py'):
         write(repo / 'scripts' / name, '# fixture tool source\n')
     shutil.copyfile(ROOT / 'scripts/stage-component-refresh.py', repo / 'scripts/stage-component-refresh.py')
+    shutil.copyfile(ROOT / 'scripts/core-refresh.py', repo / 'scripts/core-refresh.py')
+    write(repo / 'proxy/source-manifest.json', {'schemaVersion': 2, 'fixture': True, 'buildInputs': {}})
+    write(repo / 'proxy/upstream.json', {'fixture': True})
+    write(repo / 'proxy/toolchain.json', {'goVersion': 'go1.27.2'})
+    write(repo / 'proxy/LICENSE.upstream', 'Fixture license\n')
+    catalog_source = repo / 'proxy/codex-model-catalog.json'
+    shutil.copyfile(ROOT / 'proxy/codex-model-catalog.json', catalog_source)
+    catalog_bytes = catalog_source.read_bytes()
     run(['git', 'init', '-q', str(repo)])
     run(['git', 'add', '.'], cwd=repo)
     run(['git', '-c', 'user.name=Fixture', '-c', 'user.email=tom@grassmann-it.de', 'commit', '-qm', 'Fixture'], cwd=repo)
     revision = run(['git', 'rev-parse', 'HEAD'], cwd=repo)
+    run([sys.executable, '-c', block('PYCATALOG')], cwd=repo)
     serialized = runpy.run_path(str(repo / 'scripts/stage-component-refresh.py'))['serialized_version']
     versions = {'cli': '1.2.3', 'host': '1.2.4-rc.2', 'desktop': '1.2.5+custom'}
     actual_versions = {}
@@ -71,13 +81,20 @@ with tempfile.TemporaryDirectory(prefix='lain-fresh-metadata-') as temporary:
         assembly.write_bytes(b'fake assembly bytes\0' + serialized(version))
         (out / name / 'Lain.Core.dll').write_bytes(('distinct shared ' + name).encode())
     write(out / 'proxy/lain-proxy', 'fake Core bytes never executed\n')
-    write(out / 'proxy/source-manifest.json', {'schemaVersion': 2, 'fixture': True})
+    write(out / 'proxy/source-manifest.json', json.loads((repo / 'proxy/source-manifest.json').read_text()))
     write(out / 'proxy/qualification.json', {'passed': True, 'sha256': digest(out / 'proxy/lain-proxy'), 'scope': 'Fixture only'})
     build = {'binarySha256': digest(out / 'proxy/lain-proxy'), 'sourceManifestSha256': digest(out / 'proxy/source-manifest.json'),
              'goVersion': 'go version go1.27.2 linux/amd64', 'snapshotVersion': '8.0.41', 'lainPatchVersion': 1,
              'upstreamVersion': 'v8.0.41', 'upstreamCommit': 'a' * 40, 'upstreamSourceModified': True,
              'upstreamArchiveSha256': 'b' * 64, 'patchSetSha256': 'c' * 64}
-    write(out / 'proxy/build-manifest.json', build)
+    write(out / 'proxy/lain-proxy.manifest.json', build)
+    # Execute the publisher's real static payload copy block. Testing metadata
+    # with a manually seeded target catalog would miss the original omission.
+    copies = SHELL.split('scripts/build-core.sh "$out/proxy/lain-proxy"\n', 1)[1].split('python3 scripts/prepare-core.py ', 1)[0]
+    run(['bash', '-eu', '-c', copies], cwd=repo, env=dict(os.environ, out=str(out)))
+    assert (out / 'proxy/codex-model-catalog.json').read_bytes() == catalog_bytes
+    run([sys.executable, '-c', block('PYSOURCE'), str(out / 'core-source-provenance')], cwd=repo)
+    assert (out / 'core-source-provenance/proxy/codex-model-catalog.json').read_bytes() == catalog_bytes
     command = [sys.executable, '-c', block('PYBUILDINFO'), str(out), '10.0.111', revision, str(properties)]
     run(command, cwd=repo)
     info = json.loads((out / 'build-info.json').read_text())
@@ -87,6 +104,11 @@ with tempfile.TemporaryDirectory(prefix='lain-fresh-metadata-') as temporary:
     assert info['coreSourceCommit'] == revision and info['proxySha256'] == build['binarySha256']
     assert info['coreBuild']['upstreamVersion'] == 'v8.0.41'
     assert info['qualificationSha256'] == digest(out / 'proxy/qualification.json')
+    check_catalog = runpy.run_path(str(repo / 'scripts/core-refresh.py'))['check_codex_catalog']
+    assert info['codexModelCatalog'] == check_catalog(catalog_source)
+    assert info['codexModelCatalog']['snapshotVersion'].startswith('7.')
+    assert info['codexModelCatalog']['qualification'] == 'static-catalog-not-provider-entitlement'
+    assert info['packagingToolSha256']['core-refresh.py'] == digest(repo / 'scripts/core-refresh.py')
     for name, project in projects.items():
         component = info['components'][name]
         assert component['assemblySha256'] == digest(out / name / (project + '.dll'))
@@ -98,6 +120,20 @@ with tempfile.TemporaryDirectory(prefix='lain-fresh-metadata-') as temporary:
     assert all(digest(out / entry['path']) == entry['sha256'] for entry in inventory['files'])
     # Existing custom version metadata is preserved, not replaced with a guessed default.
     assert info['componentInformationalVersions']['desktop'] == '1.2.5+custom.' + revision
+    # Fresh metadata must not seal a missing, empty, or changed catalog even if
+    # the rest of the payload and component provenance remain self-consistent.
+    target_catalog = out / 'proxy/codex-model-catalog.json'
+    target_catalog.unlink()
+    run(command, cwd=repo, expected=False, contains='Codex model catalog is missing')
+    write(target_catalog, {**json.loads(catalog_bytes), 'models': []})
+    run(command, cwd=repo, expected=False, contains='must contain models')
+    write(target_catalog, {**json.loads(catalog_bytes), 'models': [{'id': 'different-safe-model'}]})
+    run(command, cwd=repo, expected=False, contains='differs from frozen source')
+    target_catalog.write_bytes(catalog_bytes)
+    # Missing source is detected before any restore/build in the real publisher.
+    catalog_source.unlink()
+    run([sys.executable, '-c', block('PYCATALOG')], cwd=repo, expected=False, contains='Codex model catalog is missing')
+    catalog_source.write_bytes(catalog_bytes)
     # A claimed version absent from the actual assembly must fail.
     original = (out / 'host/Lain.Host.dll').read_bytes()
     (out / 'host/Lain.Host.dll').write_bytes(b'wrong version')
@@ -109,4 +145,4 @@ with tempfile.TemporaryDirectory(prefix='lain-fresh-metadata-') as temporary:
     write(properties / 'unsafe.json', {'Properties': {'Version': '1.2.3', 'InformationalVersion': '1.2.3;Unsafe=1'}})
     run([sys.executable, '-c', block('PYPUBLISHVERSION'), str(properties / 'unsafe.json'), str(properties / 'unsafe.out.json'), revision, 'Lain.Cli'],
         expected=False, contains='informational version or frozen revision is invalid')
-print('Fresh build-info exact publish-version, component/Core provenance and mismatch checks passed.')
+print('Fresh payload catalog copy/static provenance/omission rejection and exact component/Core build-info checks passed.')

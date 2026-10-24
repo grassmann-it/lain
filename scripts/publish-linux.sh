@@ -15,6 +15,10 @@ verify_frozen_inputs() {
     [[ -z "$(git ls-files --others --exclude-standard -- "${frozen_inputs[@]}")" ]] || { echo 'Untracked compile/packaging inputs must be committed before publishing' >&2; exit 2; }
 }
 verify_frozen_inputs
+python3 - <<'PYCATALOG'
+import pathlib, runpy
+runpy.run_path('scripts/core-refresh.py')['check_codex_catalog'](pathlib.Path('proxy/codex-model-catalog.json'))
+PYCATALOG
 publish_parent=$(mktemp -d "${TMPDIR:-/tmp}/lain-publish.XXXXXXXX")
 trap 'rm -rf -- "$publish_parent"' EXIT
 mkdir -p "$publish_parent/properties"
@@ -56,7 +60,7 @@ PYPUBLISHVERSION
 done
 scripts/build-core.sh "$out/proxy/lain-proxy"
 cp proxy/LICENSE.upstream "$out/proxy/LICENSE"
-cp proxy/upstream.json proxy/source-manifest.json proxy/toolchain.json "$out/proxy/"
+cp proxy/upstream.json proxy/source-manifest.json proxy/toolchain.json proxy/codex-model-catalog.json "$out/proxy/"
 cp "$out/proxy/lain-proxy.manifest.json" "$out/proxy/build-manifest.json"
 python3 scripts/prepare-core.py --destination "$publish_parent/prepared" > "$publish_parent/paths.json"
 # Ship own adapter, explicit patchset and archive pin as bounded source evidence.
@@ -65,7 +69,7 @@ import json, pathlib, shutil, sys
 root = pathlib.Path.cwd()
 out = pathlib.Path(sys.argv[1])
 manifest = json.loads((root / 'proxy/source-manifest.json').read_text())
-paths = sorted(set([*manifest['buildInputs'], 'proxy/source-manifest.json']))
+paths = sorted(set([*manifest['buildInputs'], 'proxy/source-manifest.json', 'proxy/codex-model-catalog.json', 'scripts/core-refresh.py']))
 for name in paths:
     relative = pathlib.Path(name)
     if relative.is_absolute() or '..' in relative.parts:
@@ -152,6 +156,11 @@ proxy = out / 'proxy'
 build = json.loads((proxy / 'build-manifest.json').read_text())
 if build['binarySha256'] != digest(proxy / 'lain-proxy') or build['sourceManifestSha256'] != digest(proxy / 'source-manifest.json'):
     raise SystemExit('Core build provenance changed before build-info generation')
+check_catalog = runpy.run_path(str(root / 'scripts/core-refresh.py'))['check_codex_catalog']
+catalog = check_catalog(proxy / 'codex-model-catalog.json')
+if (catalog != check_catalog(root / 'proxy/codex-model-catalog.json') or
+        catalog != check_catalog(out / 'core-source-provenance/proxy/codex-model-catalog.json')):
+    raise SystemExit('Codex model catalog differs from frozen source')
 dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], text=True).strip())
 info = {'format': 1, 'runtime': 'linux-x64', 'sdk': sdk, 'commit': revision, 'sourceDirty': dirty,
     'packagingCommit': revision, 'packagingSourceDirty': dirty, 'compileInputsFrozen': True,
@@ -159,10 +168,11 @@ info = {'format': 1, 'runtime': 'linux-x64', 'sdk': sdk, 'commit': revision, 'so
     'components': components, 'coreSourceCommit': revision, 'proxySha256': build['binarySha256'],
     'sourceManifestSha256': build['sourceManifestSha256'], 'coreBuildManifestSha256': digest(proxy / 'build-manifest.json'),
     'sourceProvenanceInventorySha256': digest(provenance_path),
+    'codexModelCatalog': catalog,
     'coreBuild': {key: build[key] for key in ('goVersion', 'snapshotVersion', 'lainPatchVersion', 'upstreamVersion',
         'upstreamCommit', 'upstreamSourceModified', 'upstreamArchiveSha256', 'patchSetSha256')},
     'packagingToolSha256': {name: digest(root / 'scripts' / name) for name in
-        ('publish-linux.sh', 'build-core.sh', 'prepare-core.py', 'build-core-verify.py', 'collect-notices.py', 'collect-go-notices.py')}}
+        ('publish-linux.sh', 'build-core.sh', 'prepare-core.py', 'build-core-verify.py', 'collect-notices.py', 'collect-go-notices.py', 'core-refresh.py')}}
 if (proxy / 'qualification.json').is_file():
     info['qualificationSha256'] = digest(proxy / 'qualification.json')
 (out / 'build-info.json').write_text(json.dumps(info, indent=2) + '\n')

@@ -21,6 +21,7 @@ import tempfile
 
 ITEMS = ['proxy', 'notices/go', 'core-source-provenance', 'core-refresh.py', 'core-refresh.json',
          'build-info.json', 'gate-status.json', 'SHA256SUMS']
+CODEX_CATALOG = 'proxy/codex-model-catalog.json'
 
 
 def require(condition, message):
@@ -38,6 +39,35 @@ def digest(path):
 
 def load(path):
     return json.loads(path.read_text())
+
+
+def check_codex_catalog(path):
+    """Validate the Host's static onboarding asset without claiming entitlement."""
+    require(path.is_file() and not path.is_symlink(), 'Codex model catalog is missing or not a regular file')
+    require(path.stat().st_size <= 1024 * 1024, 'Codex model catalog exceeds the size limit')
+    try:
+        catalog = load(path)
+    except (ValueError, UnicodeError) as error:
+        raise RuntimeError('Codex model catalog is not valid JSON') from error
+    require(isinstance(catalog, dict) and type(catalog.get('schemaVersion')) is int
+            and catalog['schemaVersion'] == 1, 'Unsupported Codex model catalog schema')
+    require(all(isinstance(catalog.get(key), str) and catalog[key].strip() == catalog[key] and catalog[key]
+                for key in ('source', 'sourceSha256', 'snapshotVersion', 'qualification'))
+            and re.fullmatch('[0-9a-f]{64}', catalog['sourceSha256'])
+            and catalog['qualification'] == 'static-catalog-not-provider-entitlement',
+            'Codex model catalog must retain its static source provenance')
+    models = catalog.get('models')
+    require(isinstance(models, list) and models, 'Codex model catalog must contain models')
+    ids = []
+    for model in models:
+        model_id = model.get('id') if isinstance(model, dict) else None
+        require(isinstance(model_id, str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,199}', model_id),
+                'Codex model catalog contains an unsafe or empty model ID')
+        ids.append(model_id.casefold())
+    # Host route aliases are unique without regard to case.
+    require(len(ids) == len(set(ids)), 'Codex model catalog contains duplicate model IDs')
+    return {'path': CODEX_CATALOG, 'sha256': digest(path), 'modelCount': len(ids),
+            **{key: catalog[key] for key in ('source', 'sourceSha256', 'snapshotVersion', 'qualification')}}
 
 
 def sync_directory(path):
@@ -106,6 +136,7 @@ def protected(base, target):
 
 def check_core(package):
     proxy = package / 'proxy'
+    check_codex_catalog(package / CODEX_CATALOG)
     source, build, qualification = (load(proxy / name) for name in ('source-manifest.json', 'build-manifest.json', 'qualification.json'))
     require(source.get('schemaVersion') == 2, 'Core refresh requires source-manifest schema 2')
     upstream = source['upstreamDependency']
@@ -147,6 +178,7 @@ def stage(args):
     require(source_manifest.get('schemaVersion') == 2, 'Use source-manifest schema 2 for Core-only refresh')
     require(all((root / name).is_file() and digest(root / name) == sha for name, sha in source_manifest['buildInputs'].items()),
             'Frozen Core build-input inventory mismatch')
+    check_codex_catalog(root / CODEX_CATALOG)
     base = args.base.resolve(strict=True)
     require(args.output.is_absolute(), 'Output must be absolute')
     out = args.output.resolve()
@@ -154,6 +186,8 @@ def stage(args):
     require(not any(path.exists() or path.is_symlink() for path in (out, archive, checksum)), 'Output/archive/checksum must not exist')
     inputs = [root, base, args.core.resolve(strict=True), args.core_build_manifest.resolve(strict=True), args.qualification.resolve(strict=True)]
     require(not any(out == path or out in path.parents or path in out.parents for path in inputs), 'Output overlaps source/input')
+    # Historical exact baselines may lack the catalog because of the v8 packaging
+    # regression. Validate their inventory as shipped; only the new target requires it.
     base_files = verify(base)
     info, gate = load(base / 'build-info.json'), load(base / 'gate-status.json')
     for component, project in [('cli', 'Lain.Cli'), ('host', 'Lain.Host'), ('desktop', 'Lain.Desktop')]:
@@ -171,7 +205,7 @@ def stage(args):
     shutil.copy2(args.core, proxy / 'lain-proxy')
     (proxy / 'build-manifest.json').write_bytes(build_bytes)
     (proxy / 'qualification.json').write_bytes(qualification_bytes)
-    for name in ('source-manifest.json', 'upstream.json', 'toolchain.json'):
+    for name in ('source-manifest.json', 'upstream.json', 'toolchain.json', 'codex-model-catalog.json'):
         (proxy / name).write_bytes(source('proxy/' + name))
     (proxy / 'LICENSE').write_bytes(source('proxy/LICENSE.upstream'))
     build = load(proxy / 'build-manifest.json')
@@ -194,7 +228,7 @@ def stage(args):
                         '--build-manifest', str(proxy / 'build-manifest.json')], env=env, check=True)
     source_manifest, build, qualification = check_core(out)
     provenance = out / 'core-source-provenance'
-    paths = sorted(set([*source_manifest['buildInputs'], 'proxy/source-manifest.json', 'scripts/prepare-core.py',
+    paths = sorted(set([*source_manifest['buildInputs'], 'proxy/source-manifest.json', CODEX_CATALOG, 'scripts/prepare-core.py',
                         'scripts/build-core.sh', 'scripts/build-core-verify.py', 'scripts/collect-go-notices.py', 'scripts/core-refresh.py']))
     records = []
     for name in paths:
@@ -204,14 +238,16 @@ def stage(args):
         destination.write_bytes(source(name))
         records.append({'sourcePath': name, 'path': str(destination.relative_to(out)), 'sha256': digest(destination)})
     write(provenance / 'inventory.json', {'format': 1, 'sourceCommit': revision, 'files': records,
-          'scope': 'Own adapter, explicit patches, upstream archive lock, toolchain and packaging source; upstream source is external and is not vendored'})
+          'scope': 'Own adapter, explicit patches, upstream archive lock, toolchain, static Host Codex catalog and packaging source; upstream source is external and is not vendored'})
     for name in ('build-info.json', 'gate-status.json'):
         shutil.copyfile(base / name, provenance / ('baseline-' + name))
     for name in ('build-manifest.json', 'source-manifest.json', 'qualification.json'):
         shutil.copyfile(base / 'proxy' / name, provenance / ('baseline-core-' + name))
     shutil.copy2(root / 'scripts/core-refresh.py', out / 'core-refresh.py')
-    old_core = {key: info.get(key) for key in ('coreSourceCommit', 'proxySha256', 'sourceManifestSha256', 'coreBuildManifestSha256', 'qualificationSha256', 'coreBuild')}
+    catalog = check_codex_catalog(out / CODEX_CATALOG)
+    old_core = {key: info.get(key) for key in ('coreSourceCommit', 'proxySha256', 'sourceManifestSha256', 'coreBuildManifestSha256', 'qualificationSha256', 'coreBuild', 'codexModelCatalog')}
     info.update(corePackagingCommit=revision, coreSourceCommit=revision, proxySha256=binary_hash,
+                codexModelCatalog=catalog,
                 coreBuild={key: build[key] for key in ('goVersion', 'snapshotVersion', 'lainPatchVersion', 'upstreamVersion',
                     'upstreamCommit', 'upstreamSourceModified', 'upstreamArchiveSha256', 'patchSetSha256')},
                 coreBuildManifestSha256=digest(proxy / 'build-manifest.json'), sourceManifestSha256=digest(proxy / 'source-manifest.json'),
@@ -234,6 +270,7 @@ def stage(args):
     write(out / 'gate-status.json', new_gate)
     write(out / 'core-refresh.json', {'format': 1, 'kind': 'schema2-core-only', 'installItems': ITEMS, 'sourceCommit': revision,
           'baseFiles': base_files, 'proxySha256': binary_hash, 'sourceManifestSha256': digest(proxy / 'source-manifest.json'),
+          'codexModelCatalogSha256': catalog['sha256'],
           'baseManifestSha256': base_files['SHA256SUMS'], 'retainedComponentSourceCommits': info['componentSourceCommits']})
     require(verify(base) == base_files, 'Baseline changed during staging')
     require(digest(args.core) == binary_hash and args.core_build_manifest.read_bytes() == build_bytes and
@@ -296,6 +333,10 @@ def install(args):
         require(delta.get('proxySha256') == build['binarySha256'] and delta.get('sourceManifestSha256') == build['sourceManifestSha256'],
                 'Refresh delta differs from Core evidence')
         previous, current = load(app / 'build-info.json'), load(package / 'build-info.json')
+        catalog = check_codex_catalog(package / CODEX_CATALOG)
+        require(current.get('codexModelCatalog') == catalog and delta.get('codexModelCatalogSha256') == catalog['sha256']
+                and digest(package / 'core-source-provenance/source' / CODEX_CATALOG) == catalog['sha256'],
+                'Codex model catalog differs from frozen package provenance')
         for key in ('componentSourceCommits', 'componentInformationalVersions', 'components'):
             require(previous[key] == current[key], 'Retained application provenance changed: ' + key)
         require(delta.get('retainedComponentSourceCommits') == previous['componentSourceCommits'], 'Retained component manifest differs')
