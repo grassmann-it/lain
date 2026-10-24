@@ -25,6 +25,8 @@ public sealed class InspectorView : UserControl, IPresentationView
     private readonly TextBlock _status = Ui.Text("Waiting for the live inspector", 12, Ui.Muted);
     private readonly TextBlock _empty = Ui.Text("No observed streams yet. Send a request through lain to inspect it.", 14, Ui.Muted);
     private readonly WrapPanel _navigation = new() { Orientation = Orientation.Horizontal };
+    private readonly ContentControl _identityFacts = new();
+    private readonly ScrollViewer _identityScroll = new() { MaxHeight = 140, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private readonly List<TextBlock> _eventTimes = [];
     private readonly List<Expander> _eventDetails = [];
     private readonly List<Border> _eventSurfaces = [];
@@ -117,16 +119,18 @@ public sealed class InspectorView : UserControl, IPresentationView
         Grid.SetRow(groupsScroll, 1); sidebarContent.Children.Add(groupsScroll);
         _sidebar = Surface(sidebarContent);
         _layout.Children.Add(_sidebar);
+        _identityScroll.Content = new StackPanel { Spacing = 7, Children = { _navigation, _identityFacts } };
+        _identity.Content = _identityScroll;
+        ToolTip.SetTip(_identity, "Request identities, measurement sources and related Account, Models and Usage views.");
         _eventScroll = new ScrollViewer { Content = _eventList, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-        _details = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,*,Auto"), RowSpacing = 8 };
+        _details = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*,Auto"), RowSpacing = 8 };
         _details.Children.Add(_selection);
         _requestField = Ui.Field("Request within this group", _request);
         _pickers.Children.Add(_conversationField); _pickers.Children.Add(_requestField);
         Grid.SetRow(_pickers, 1); _details.Children.Add(_pickers);
-        Grid.SetRow(_navigation, 2); _details.Children.Add(_navigation);
-        Grid.SetRow(_contentStatus, 3); _details.Children.Add(_contentStatus);
-        Grid.SetRow(_eventScroll, 4); _details.Children.Add(_eventScroll);
-        Grid.SetRow(_identity, 5); _details.Children.Add(_identity);
+        Grid.SetRow(_contentStatus, 2); _details.Children.Add(_contentStatus);
+        Grid.SetRow(_eventScroll, 3); _details.Children.Add(_eventScroll);
+        Grid.SetRow(_identity, 4); _details.Children.Add(_identity);
         Grid.SetColumn(_details, 1); _layout.Children.Add(_details);
         Grid.SetColumn(_empty, 1); _layout.Children.Add(_empty); _details.IsVisible = false;
         _requestField.IsVisible = false;
@@ -184,8 +188,9 @@ public sealed class InspectorView : UserControl, IPresentationView
     private void ApplyPresentation()
     {
         var compact = _presentation.Density == ViewDensity.Compact;
+        var narrow = Bounds.Width > 0 && Bounds.Width < 900;
         _layout.ColumnSpacing = compact ? 8 : 12;
-        _details.RowSpacing = compact ? 5 : 8;
+        _details.RowSpacing = narrow ? 4 : compact ? 5 : 8;
         _groupList.Spacing = compact ? 3 : 5;
         _eventList.Spacing = compact ? 4 : 8;
         foreach (var button in _groupButtons.Values) button.Padding = new Thickness(compact ? 6 : 10);
@@ -226,6 +231,11 @@ public sealed class InspectorView : UserControl, IPresentationView
     private void ArrangeInspector()
     {
         var narrow = Bounds.Width > 0 && Bounds.Width < 900;
+        // Keep the display controls on one line at the minimum window width;
+        // wrapped controls otherwise consume the output pane's usable height.
+        _search.Width = narrow ? 155 : 200;
+        _activity.Width = narrow ? 140 : 160;
+        _details.RowSpacing = narrow ? 4 : _presentation.Density == ViewDensity.Compact ? 5 : 8;
         _sidebar.IsVisible = !narrow;
         _conversationField.IsVisible = narrow;
         _layout.ColumnDefinitions = new ColumnDefinitions(narrow ? "*" : "260,*");
@@ -241,8 +251,17 @@ public sealed class InspectorView : UserControl, IPresentationView
     {
         var viewport = this.GetVisualAncestors().OfType<ScrollViewer>().FirstOrDefault()?.Viewport.Height ?? 0;
         if (viewport <= 0 || _layout.TranslatePoint(default, this) is not { } origin) return;
-        var height = Math.Max(180, viewport - origin.Y);
+        // The output owns the inner scroll. A minimum layout height here would
+        // force a second outer scroll when the shell has less vertical room.
+        var height = Math.Max(0, viewport - origin.Y);
         if (Math.Abs(_layout.Height - height) > 1) _layout.Height = height;
+        // Expanding technical details must still leave readable output above
+        // them. Their own scroll handles identities and context links.
+        var identityHeader = Math.Max(40, _identity.Bounds.Height - (_identity.IsExpanded ? _identityScroll.Bounds.Height : 0));
+        var detailRoom = height - _selection.Bounds.Height - _pickers.Bounds.Height - _contentStatus.Bounds.Height
+            - _details.RowSpacing * 4 - identityHeader - 64;
+        var detailHeight = Math.Clamp(detailRoom, 0, 140);
+        if (Math.Abs(_identityScroll.MaxHeight - detailHeight) > 1) _identityScroll.MaxHeight = detailHeight;
     }
 
     private async Task PollAsync(CancellationToken token)
@@ -472,7 +491,7 @@ public sealed class InspectorView : UserControl, IPresentationView
     {
         if (_snapshot is null || _selectedRequest is null) return;
         var streams = _snapshot.Streams.Where(x => x.RequestId == _selectedRequest).ToArray();
-        if (streams.Length == 0) { _selection.Text = "Selected request is no longer described in the live buffer"; _navigation.Children.Clear(); _navigationKey = null; _identity.Content = null; return; }
+        if (streams.Length == 0) { _selection.Text = "Selected request is no longer described in the live buffer"; _navigation.Children.Clear(); _navigationKey = null; _identityFacts.Content = null; return; }
         var active = streams.Any(IsActive);
         var stateLabel = active ? _connected ? "Active" : "Active state unknown" : streams.All(IsTerminal) ? "Retained result" : "State unknown";
         _selection.Text = $"{streams.First().Model ?? streams.First().RequestedModel ?? "Model unknown"} · {stateLabel} · {streams.Length} observed streams";
@@ -496,7 +515,7 @@ public sealed class InspectorView : UserControl, IPresentationView
             else facts.Children.Add(Ui.Text("Conversation, turn and worker identities are unknown.", 11, Ui.Muted));
             if (stream.Truncated) facts.Children.Add(Ui.Text("This stream is incomplete in the live buffer.", 11, Ui.Warning));
         }
-        _identity.Content = new ScrollViewer { Content = facts, MaxHeight = 140, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        _identityFacts.Content = facts;
     }
 
     private void PruneEvents()
@@ -586,7 +605,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         _updatingChoices = true;
         _conversation.ItemsSource = Array.Empty<GroupChoice>(); _request.ItemsSource = Array.Empty<RequestChoice>();
         _updatingChoices = false;
-        _navigation.Children.Clear(); _navigationKey = null; _identity.Content = null;
+        _navigation.Children.Clear(); _navigationKey = null; _identityFacts.Content = null;
         _sourceNotice = null; _contentGap = "Live content cleared when Live was closed.";
         _buffer.Text = "No live buffer received"; _selection.Text = "Choose a conversation or request";
         _details.IsVisible = false; _empty.IsVisible = true;
@@ -598,7 +617,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         ClearEvents(); _groups.Clear(); _groupButtons.Clear(); _groupList.Children.Clear();
         _navigation.Children.Clear(); _navigationKey = null;
         _updatingChoices = true; _conversation.ItemsSource = Array.Empty<GroupChoice>(); _request.ItemsSource = Array.Empty<RequestChoice>(); _updatingChoices = false;
-        _identity.Content = Ui.Text("Waiting for identities from the new live source", 12, Ui.Muted);
+        _identityFacts.Content = Ui.Text("Waiting for identities from the new live source", 12, Ui.Muted);
         _sourceNotice = "Live source restarted; previous content and relationships were cleared.";
         _contentGap = _sourceNotice;
         RenderEvents();
