@@ -24,9 +24,12 @@ public sealed partial class MainWindow
     private void ApplyModelsNavigation(WorkspaceNavigationRequest target)
     {
         if (target.AccountId is null && target.RouteId is null && target.Model is null) return;
-        _routeAccountId = target.AccountId;
+        // A recorded route ID identifies configured model access even when the
+        // observed provider model or the current account binding has changed.
+        // Those observation fields are fallback filters, not extra identity checks.
         _routeContextId = target.RouteId;
-        _routeModel = target.Model;
+        _routeAccountId = target.RouteId is null ? target.AccountId : null;
+        _routeModel = target.RouteId is null ? target.Model : null;
         _routeSearch = "";
         _routeProvider = "All providers";
         _routeVisibility = "All visibility";
