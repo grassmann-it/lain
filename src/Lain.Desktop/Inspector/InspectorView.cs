@@ -717,6 +717,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         if (_restoreRequestOffset && _events.Count > 0 && _selectedRequest is { } request && _requestOffsets.TryGetValue(request, out var offset))
         { viewport = new(_sourceId, request, offset, null, 0); _restoreRequestOffset = false; }
         _renderPending = false;
+        CloseEventMenus();
         _eventList.Children.Clear(); _eventAnchors.Clear();
         _lastOutput = null;
         _eventTimes.Clear(); _eventDetails.Clear(); _eventSurfaces.Clear();
@@ -770,7 +771,9 @@ public sealed class InspectorView : UserControl, IPresentationView
                 // Content remains above; every constituent event retains its complete typed metadata.
                 technical.Children.Add(Selectable(EventMetadata(sourceEvent)));
                 technical.Children.Add(Ui.Text($"Event {sourceEvent.Cursor:N0} · {sourceEvent.Text?.Length ?? 0:N0} text characters shown above", 10, Ui.Muted));
-                technical.Children.Add(Ui.Button("Copy complete event " + sourceEvent.Cursor, () => CopyText(JsonSerializer.Serialize(sourceEvent, TechnicalJson))));
+                var sourceKey = EventKey(sourceEvent);
+                technical.Children.Add(Ui.Button("Copy complete event " + sourceEvent.Cursor,
+                    () => CopyRetainedText(sourceKey, () => JsonSerializer.Serialize(sourceEvent, TechnicalJson))));
             }
             var detailKey = EventKey(entry);
             var details = new Expander { Header = "Event details", Content = technical,
@@ -784,10 +787,10 @@ public sealed class InspectorView : UserControl, IPresentationView
                     _eventDetailOverrides[detailKey] = details.IsExpanded;
             };
             var identities = $"Request {entry.RequestId} · attempt {entry.AttemptId ?? "unknown"} · event {entry.Cursor}";
-            void CopyIdentities() => CopyText(identities);
+            void CopyIdentities() => CopyRetainedText(detailKey, () => identities);
             technical.Children.Add(Ui.Button("Copy full identities", CopyIdentities));
             ObjectCommand[] commands = [new("details", "Event details", () => details.IsExpanded = !details.IsExpanded),
-                new("copy", "Copy full identities", CopyIdentities), new("copy-output", "Copy displayed output", () => CopyText(block.Text), block.Text.Length > 0)];
+                new("copy", "Copy full identities", CopyIdentities), new("copy-output", "Copy displayed output", () => CopyRetainedText(detailKey, () => block.Text), block.Text.Length > 0)];
             var commandMenu = ObjectCommands.Menu(commands);
             var more = Ui.Button("⋯", () => commandMenu.Open());
             more.ContextMenu = commandMenu;
@@ -811,6 +814,16 @@ public sealed class InspectorView : UserControl, IPresentationView
         return metadata.ToJsonString(TechnicalJson);
     }
 
+    private void CloseEventMenus()
+    {
+        foreach (var control in _eventList.GetVisualDescendants().OfType<Control>()) control.ContextMenu?.Close();
+    }
+
+    private void CopyRetainedText(EventDetailKey key, Func<string> text)
+    {
+        if (key.SourceId == _sourceId && key.RequestId == _selectedRequest && _eventReceived.ContainsKey(key.Cursor)) CopyText(text());
+    }
+
     private void CopyText(string text)
     { if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard) _ = clipboard.SetTextAsync(text); }
 
@@ -829,7 +842,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         foreach (var key in _eventDetailOverrides.Keys.Where(key => !retained.Contains(key)).ToArray())
             _eventDetailOverrides.Remove(key);
     }
-    private void ClearEvents() { _events.Clear(); _eventReceived.Clear(); _eventDetailOverrides.Clear(); }
+    private void ClearEvents() { CloseEventMenus(); _events.Clear(); _eventReceived.Clear(); _eventDetailOverrides.Clear(); }
     private void ResetDetachedState()
     {
         _lastDetachedSource = _sourceId; _lastDetachedRequest = _selectedRequest; _lastDetachedGroup = _selectedGroup;
