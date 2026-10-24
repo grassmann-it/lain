@@ -187,13 +187,14 @@ async Task QuotaGeneration()
     var release = new TaskCompletionSource<QuotaFetchResult>(TaskCreationOptions.RunContinuationsAsynchronously);
     var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
     var adapter = new FakeQuota("test", (_, _, _) => { entered.SetResult(); return release.Task; });
-    var service = new QuotaService(f.Source, f.Source, [adapter]);
+    var quotaClock = new FakeClock();
+    var service = new QuotaService(f.Source, f.Source, [adapter], quotaClock);
     var read = service.RefreshAsync();
     await entered.Task;
     f.Accounts.Connect(f.Repository.Snapshot.Revision, new("test", "key", ["quota"], AccountId: account.Id), Key("quota-b"));
     release.SetResult(new([new("fixture", "USD", Remaining: 99, ObservedAt: DateTimeOffset.UtcNow.AddHours(-1))]));
     Check((await read).All(q => q.Remaining is null), "late quota for replaced generation discarded");
-    var timestamp = DateTimeOffset.UtcNow.AddMinutes(-2);
+    var timestamp = quotaClock.GetUtcNow().AddMinutes(-2);
     adapter.Fetch = (_, _, _) => Task.FromResult(new QuotaFetchResult([new("fixture", "USD", Remaining: 8, ObservedAt: timestamp)]));
     Check((await service.RefreshAsync()).Single().Remaining == 8, "current generation quota published");
     adapter.Fetch = (_, _, _) => throw new IOException("raw synthetic secret must not leak");
@@ -204,8 +205,20 @@ async Task QuotaGeneration()
         KiloPass: new("active", "plus", null, null, null, null, null, true)));
     var precise = (await service.RefreshAsync()).Single();
     Check(precise.ExactRemaining == "123456789.123456789123456789" && precise.KiloPass?.Status == "active", "precise decimals and subscription metadata survive projection");
+    var passObservation = precise.KiloPassObservation;
+    Check(passObservation is { State: "ok" } && passObservation.ObservedAt == quotaClock.GetUtcNow() && passObservation.LastSuccessAt == quotaClock.GetUtcNow(),
+        "successful Pass read has its own observed and successful timestamps");
+    quotaClock.Advance(TimeSpan.FromMinutes(1));
     adapter.Fetch = (_, _, _) => Task.FromResult(new QuotaFetchResult([new("fixture", "USD", Remaining: 5)], Error: "Pass metadata unavailable."));
-    Check((await service.RefreshAsync()).Single().KiloPass is null, "partial wallet read cannot relabel old Pass metadata as fresh");
+    var partial = (await service.RefreshAsync()).Single();
+    Check(partial.Remaining == 5 && partial.State == "ok" && partial.ObservedAt == quotaClock.GetUtcNow() && partial.LastSuccessAt == quotaClock.GetUtcNow(),
+        "independent wallet read advances its own successful observation while Pass fails");
+    Check(partial.KiloPass == precise.KiloPass && partial.KiloPassObservation is { State: "stale", Error: "Pass metadata unavailable." },
+        "partial wallet read retains prior Pass value with its independent stale state");
+    Check(partial.KiloPassObservation!.ObservedAt == passObservation!.ObservedAt &&
+        partial.KiloPassObservation.LastSuccessAt == passObservation.LastSuccessAt &&
+        partial.KiloPassObservation.FreshUntil == passObservation.FreshUntil && partial.KiloPassObservation.ObservedAt < partial.ObservedAt,
+        "fresh wallet observation cannot relabel retained Pass timestamps or extend its freshness");
     adapter.Fetch = (_, _, _) => Task.FromResult(new QuotaFetchResult([], KiloPass: new("active", "plus", null, null, null, null, null, true)));
     Check((await service.RefreshAsync()).Single().State == "ok", "pass-only observation is useful without fake wallet quota");
     f.Accounts.Remove(f.Repository.Snapshot.Revision, account.Id);
