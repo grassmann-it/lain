@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Lain.Desktop/Lain.Desktop.csproj" />
+    <Compile Include="../desktop/Fixture.cs" Link="Fixture.cs" />
+    <EmbeddedResource Include="../desktop/fixtures/inspection-providers.json" LogicalName="Lain.Desktop.Smoke.fixtures.inspection-providers.json" />
+  </ItemGroup>
+</Project>
