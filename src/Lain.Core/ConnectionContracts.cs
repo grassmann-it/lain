@@ -29,3 +29,15 @@ public sealed record HostCapabilitiesDto(bool QuotaMonitoring, bool Inference, b
     bool LocalHistory, bool LiveInspector, bool CoreLogin);
 
 public sealed record RuntimeModeRequest(long Revision, string Mode);
+
+public sealed record ConnectionResourceFieldDto(string Id, string Label, bool Required = true,
+    string[]? Choices = null, string? Help = null);
+
+/// <summary>Availability describes the installed method, not a successful login or provider entitlement.</summary>
+public sealed record ProviderConnectionMethodDto(string Provider, string Id, string Title, string Kind,
+    string[] Purposes, string Availability, bool RequiresCore, bool SecretRequired,
+    string? SecretKind = null, string? Description = null, string? DefaultBaseUrl = null,
+    ConnectionResourceFieldDto[]? RequiredSettings = null, string? DocumentationUrl = null,
+    string? Guidance = null, bool Recommended = false);
+
+public sealed record ConnectionMethodCatalogDto(int ContractVersion, ProviderConnectionMethodDto[] Methods);

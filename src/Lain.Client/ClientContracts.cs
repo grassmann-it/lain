@@ -8,7 +8,9 @@ public sealed record AddApiAccountRequest(string Name, string Provider, string A
 {
     public override string ToString() => "AddApiAccountRequest [redacted]";
 }
-public sealed record LoginRequest(long Revision, string Provider);
+public sealed record LoginRequest(long Revision, string Provider, string? Method = null,
+    string[]? Purposes = null, string? AccountId = null, ResourceBindingDto? Binding = null,
+    long? ExpectedGeneration = null, string? Name = null, string? IdempotencyKey = null);
 public sealed record QuotaRefreshRequest(string? AccountId = null);
 public sealed record TokenResponse(string Token);
 public sealed record ModelCatalogDto(int ContractVersion, long Revision, ModelEntryDto[] Models);
