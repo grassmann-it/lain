@@ -27,6 +27,9 @@ func main() {
 	}
 }
 func run() error {
+	if len(os.Args) > 1 && (os.Args[1] == "journal-inspect" || os.Args[1] == "journal-recover-copy") {
+		return runJournalMaintenance(os.Args[1:], os.Stdout)
+	}
 	configPath := flag.String("config", "", "isolated core YAML path")
 	bindingsPath := flag.String("bindings", "", "account and model route bindings JSON")
 	journalPath := flag.String("journal", "", "durable event journal path")

@@ -31,6 +31,13 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 				return
 			}
 			switch path {
+			case "/lain/journal/storage":
+				if c.Request.Method != "GET" {
+					c.AbortWithStatus(405)
+					return
+				}
+				c.Header("Cache-Control", "no-store")
+				c.AbortWithStatusJSON(200, i.Journal.Storage())
 			case "/lain/activity", "/lain/drain":
 				if path == "/lain/activity" && c.Request.Method != "GET" || path == "/lain/drain" && c.Request.Method != "POST" && c.Request.Method != "DELETE" {
 					c.AbortWithStatus(405)

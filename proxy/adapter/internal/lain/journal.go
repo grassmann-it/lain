@@ -58,9 +58,40 @@ type Journal struct {
 	file     *os.File
 	sourceID string
 	offsets  []int64
+	count    int64
 	end      int64
 	fault    error
 	syncFile func() error
+}
+
+// Sparse in-memory checkpoints leave the existing file/source/cursor format
+// unchanged, including rollback to binaries that index every event.
+const journalIndexStride int64 = 256
+
+type JournalStorage struct {
+	SourceID                 string  `json:"sourceId"`
+	Events                   int64   `json:"events"`
+	Bytes                    int64   `json:"bytes"`
+	IndexEntries             int     `json:"indexEntries"`
+	IndexCapacityBytes       int     `json:"indexCapacityBytes"`
+	IndexStride              int64   `json:"indexStride"`
+	Healthy                  bool    `json:"healthy"`
+	OnDiskBytes              *int64  `json:"onDiskBytes,omitempty"`
+	FilesystemAvailableBytes *uint64 `json:"filesystemAvailableBytes,omitempty"`
+}
+
+func (j *Journal) Storage() JournalStorage {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	storage := JournalStorage{SourceID: j.sourceID, Events: j.count, Bytes: j.end, IndexEntries: len(j.offsets), IndexCapacityBytes: cap(j.offsets) * 8, IndexStride: journalIndexStride, Healthy: j.fault == nil}
+	if info, err := j.file.Stat(); err == nil {
+		storage.OnDiskBytes = ptr(info.Size())
+	}
+	var fs syscall.Statfs_t
+	if syscall.Fstatfs(int(j.file.Fd()), &fs) == nil {
+		storage.FilesystemAvailableBytes = ptr(fs.Bavail * uint64(fs.Bsize))
+	}
+	return storage
 }
 
 func OpenJournal(path string) (*Journal, error) {
@@ -140,11 +171,14 @@ func OpenJournal(path string) (*Journal, error) {
 		if err = json.Unmarshal(line, &event); err != nil {
 			return nil, fmt.Errorf("journal invalid at byte %d: %w", j.end, err)
 		}
-		expected := int64(len(j.offsets)) + 1
+		expected := j.count + 1
 		if event.SourceID != j.sourceID || event.Sequence != expected || event.EventID != fmt.Sprintf("%s:%d", j.sourceID, expected) {
 			return nil, errors.New("journal identity/sequence mismatch")
 		}
-		j.offsets = append(j.offsets, j.end)
+		if j.count%journalIndexStride == 0 {
+			j.offsets = append(j.offsets, j.end)
+		}
+		j.count++
 		j.end += int64(len(line))
 	}
 	success = true
@@ -165,7 +199,7 @@ func (j *Journal) Append(event Event) error {
 	}
 	event.SchemaVersion = 1
 	event.SourceID = j.sourceID
-	event.Sequence = int64(len(j.offsets)) + 1
+	event.Sequence = j.count + 1
 	event.EventID = fmt.Sprintf("%s:%d", j.sourceID, event.Sequence)
 	if event.ObservedAt.IsZero() {
 		event.ObservedAt = time.Now().UTC()
@@ -185,26 +219,33 @@ func (j *Journal) Append(event Event) error {
 	if err = j.syncFile(); err != nil {
 		return j.fail(err)
 	}
-	j.offsets = append(j.offsets, j.end)
+	if j.count%journalIndexStride == 0 {
+		j.offsets = append(j.offsets, j.end)
+	}
+	j.count++
 	j.end += int64(len(data))
 	return nil
 }
 func (j *Journal) Read(after int64, limit int) (Batch, error) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	b := Batch{SourceID: j.sourceID, Events: []Event{}, NextCursor: after, HighWatermark: int64(len(j.offsets))}
+	b := Batch{SourceID: j.sourceID, Events: []Event{}, NextCursor: after, HighWatermark: j.count}
 	if after < 0 || after > b.HighWatermark || limit < 1 || limit > 1000 {
 		return b, errors.New("invalid cursor or limit")
 	}
-	for index := after; index < b.HighWatermark && len(b.Events) < limit; index++ {
-		start := j.offsets[index]
-		end := j.end
-		if index+1 < b.HighWatermark {
-			end = j.offsets[index+1]
-		}
-		data := make([]byte, end-start)
-		if _, err := j.file.ReadAt(data, start); err != nil {
+	if after == b.HighWatermark {
+		return b, nil
+	}
+	checkpoint := after / journalIndexStride
+	start := j.offsets[checkpoint]
+	reader := bufio.NewReader(io.NewSectionReader(j.file, start, j.end-start))
+	for index := checkpoint * journalIndexStride; index < b.HighWatermark && len(b.Events) < limit; index++ {
+		data, err := reader.ReadBytes('\n')
+		if err != nil {
 			return b, err
+		}
+		if index < after {
+			continue
 		}
 		var e Event
 		if err := json.Unmarshal(data, &e); err != nil {

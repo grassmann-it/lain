@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-24",
+  "qualification": "bounded synthetic unit fixture; cached filesystem; no providers or installed runtime; not long-term load certification",
+  "goVersion": "go1.27.2",
+  "baselineJournalCommit": "1fa836f",
+  "baselineJournalSha256": "af021978854ea518dfaae11b173fba31a564348041155774cfb68f005e08c177",
+  "measurement": "LAIN_JOURNAL_MEASURE=1 go test ./internal/lain -run TestJournalBoundedGrowthMeasurement -count=1 -v",
+  "indexStride": 256,
+  "baseline": [
+    {
+      "events": 1000,
+      "fileBytes": 654679,
+      "heapDeltaBytes": -13776,
+      "indexCapacityBytes": 10240,
+      "indexEntries": 1000,
+      "qualification": "bounded_synthetic_cached_filesystem_not_long_term_load",
+      "startupMilliseconds": 3.934208,
+      "tailReadMilliseconds": 0.035919
+    },
+    {
+      "events": 10000,
+      "fileBytes": 6576682,
+      "heapDeltaBytes": 137336,
+      "indexCapacityBytes": 98304,
+      "indexEntries": 10000,
+      "qualification": "bounded_synthetic_cached_filesystem_not_long_term_load",
+      "startupMilliseconds": 33.509741,
+      "tailReadMilliseconds": 0.034075
+    }
+  ],
+  "sparse": [
+    {
+      "events": 1000,
+      "fileBytes": 654679,
+      "heapDeltaBytes": -24360,
+      "indexCapacityBytes": 32,
+      "indexEntries": 4,
+      "qualification": "bounded_synthetic_cached_filesystem_not_long_term_load",
+      "startupMilliseconds": 3.37751,
+      "tailReadMilliseconds": 0.083316
+    },
+    {
+      "events": 10000,
+      "fileBytes": 6576682,
+      "heapDeltaBytes": 26608,
+      "indexCapacityBytes": 512,
+      "indexEntries": 40,
+      "qualification": "bounded_synthetic_cached_filesystem_not_long_term_load",
+      "startupMilliseconds": 43.208833,
+      "tailReadMilliseconds": 0.053326
+    }
+  ],
+  "limitations": [
+    "Single bounded run per size; no claimed startup speed improvement.",
+    "Total heap delta includes GC/cache noise; exact index capacity is the deterministic index allocation measure.",
+    "Flat append-only journal still grows; startup still validates every record.",
+    "No full config/credentials/SQLite backup or actual full-disk/crash process qualification in this unit run."
+  ]
+}
