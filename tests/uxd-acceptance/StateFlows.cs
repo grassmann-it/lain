@@ -28,7 +28,9 @@ internal sealed partial class Acceptance
                 ("native-state-connect-late", NativeLateConnectionFlow),
                 ("native-state-status-late", NativeLateStatusFlow),
                 ("native-state-setup", NativeSetupFlow),
-                ("native-state-browse", NativeBrowseFlow)
+                ("native-state-browse", NativeBrowseFlow),
+                ("native-layout-monitor-table", NativeMonitorTableFlow),
+                ("native-layout-live-left", NativeLiveLeftFlow)
             ];
             foreach (var (name, action) in flows)
             {
@@ -70,6 +72,69 @@ internal sealed partial class Acceptance
             held!.Complete(fixture.Config);
             await Close();
         }
+    }
+
+    private async Task NativeMonitorTableFlow()
+    {
+        using var input = new NativeInput(); input.Focus(window);
+        fixture.SetMonitor(true);
+        await NativePress(input, Need<Button>("Reload status"));
+        await Wait(() => Find<StackPanel>("Monitor quota table") is not null);
+        var table = Need<StackPanel>("Monitor quota table");
+        var rows = table.GetVisualDescendants().OfType<Grid>().Where(value =>
+            AutomationProperties.GetName(value)?.StartsWith("Monitor quota window for ") == true).ToArray();
+        Check(rows.Length == fixture.QuotaSnapshot().Length, "Monitor table includes every reported quota window");
+        var bar = table.GetVisualDescendants().OfType<ProgressBar>().First();
+        Check(bar.Bounds.Width >= 250, "Monitor uses long consumption bar below numeric values");
+        Capture(FlowImage("inventory"));
+        await NativePress(input, Need<Button>("Open account details for Personal Codex"));
+        var detail = Need<ScrollViewer>("Account detail content for Personal Codex");
+        Check(Fits(Need<Button>("Open account details for Personal Codex")) && Fits(Need<Button>("Close account details for Personal Codex")),
+            "Monitor inventory and selected detail remain simultaneously reachable");
+        Check(Bounds(table).Right <= Bounds(detail).Left && detail.Bounds.Width >= 300, "Monitor selection preserves adjacent independent panes");
+        Capture(FlowImage("selected"));
+        input.Key(0xff1b); await Task.Delay(100);
+        Check(Need<Button>("Open account details for Personal Codex").IsFocused, "native Escape returns Monitor focus to selected account");
+        Check(Mutations == 0, "Monitor table browsing is read-only");
+    }
+
+    private async Task NativeLiveLeftFlow()
+    {
+        using var input = new NativeInput(); input.Focus(window);
+        await NativeGo(input, "Live");
+        await Wait(() => Find<Button>("Inspect group conversation:conversation-ui") is not null);
+        var inventory = Need<ScrollViewer>("Live request inventory");
+        Check(Fits(inventory), "Live inventory is visible in initial layout");
+        Capture(FlowImage("initial"));
+        var group = Need<Button>("Inspect group conversation:conversation-ui");
+        await NativePress(input, group);
+        var outputView = Need<ScrollViewer>("Live output viewport");
+        Check(Fits(inventory) && Fits(outputView) && Bounds(inventory).Right < Bounds(outputView).Left,
+            "Live keeps persistent narrow left list beside selected output");
+        Check(outputView.Bounds.Height >= 64 && outputView.Bounds.Width >= 300, "Live output has useful initial viewport");
+        foreach (var name in new[] { "Toggle inspector updates", "Refresh inspector", "Clear displayed events" })
+            Check(Fits(Need<Button>(name)), "Live action fits: " + name);
+        Check(Fits(Need<CheckBox>("Follow live output")) && Fits(Need<ComboBox>("Information level")), "Follow and footer remain reachable");
+        Capture(FlowImage("selected"));
+        await NativePress(input, Need<Button>("Toggle inspector updates"));
+        await NativePress(input, Need<CheckBox>("Follow live output"));
+        fixture.InspectorAdditionalEvent = true;
+        var reads = fixture.InspectorCalls;
+        await NativePress(input, Need<Button>("Refresh inspector"));
+        await Wait(() => fixture.InspectorCalls > reads);
+        Check(ReferenceEquals(inventory, Need<ScrollViewer>("Live request inventory")) && ReferenceEquals(outputView, Need<ScrollViewer>("Live output viewport")),
+            "manual Live poll preserves both scroll controls");
+        await NativePress(input, Need<ComboBox>("Information level")); input.Key(0xff57); input.Key(0xff0d); await Task.Delay(100); level = InformationLevel.Advanced;
+        Check(ReferenceEquals(outputView, Need<ScrollViewer>("Live output viewport")) && Fits(inventory), "information-level change preserves Live list and output context");
+        input.Key(0xff09); await Task.Delay(80);
+        var focused = Avalonia.Controls.TopLevel.GetTopLevel(window)?.FocusManager?.GetFocusedElement() as Control;
+        Check(focused is not null, "native Tab remains in reachable Live window controls");
+        focusTrace.Add("Live after level change: " + (focused is null ? "none" : AutomationProperties.GetName(focused) ?? focused.GetType().Name));
+        Capture(FlowImage("polled-level-change"));
+        await NativePress(input, Need<Button>("Clear displayed events"));
+        Check(Mutations == 0, "Live Pause, Follow, Refresh and Clear send no mutations or inference");
+        Check(Fits(Need<ScrollViewer>("Live request inventory")), "Clear retains persistent left list surface");
+        Capture(FlowImage("cleared"));
     }
 
     private async Task NativePress(NativeInput input, Control control)

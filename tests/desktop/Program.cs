@@ -37,17 +37,19 @@ internal static class Program
             Console.Error.WriteLine("Refusing GUI startup: use tests/desktop/run-private-xvfb.sh (private Xvfb required).");
             return 2;
         }
+        SmokeApp.MonitorTableOnly = args.Contains("--monitor-table-smoke", StringComparer.Ordinal);
         SmokeApp.AccountSnapshotsOnly = args.Contains("--account-snapshots-smoke", StringComparer.Ordinal);
         SmokeApp.ModelIdentityOnly = args.Contains("--model-identity-smoke", StringComparer.Ordinal);
         SmokeApp.AccountSortOnly = args.Contains("--account-sort-smoke", StringComparer.Ordinal);
         SmokeApp.ProviderSetupOnly = args.Contains("--provider-setup-smoke", StringComparer.Ordinal);
         return AppBuilder.Configure<SmokeApp>().UsePlatformDetect().WithInterFont()
-            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--model-identity-smoke")).ToArray());
+            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--model-identity-smoke" or "--monitor-table-smoke")).ToArray());
     }
 }
 
 internal sealed class SmokeApp : Application
 {
+    public static bool MonitorTableOnly { get; set; }
     public static bool AccountSnapshotsOnly { get; set; }
     public static bool ModelIdentityOnly { get; set; }
     public static bool AccountSortOnly { get; set; }
@@ -76,7 +78,8 @@ internal sealed class SmokeApp : Application
             var scenario = new Scenario(lifetime);
             try
             {
-                if (AccountSnapshotsOnly) await scenario.RunAccountSnapshotsSmoke();
+                if (MonitorTableOnly) await scenario.RunMonitorTableSmoke();
+                else if (AccountSnapshotsOnly) await scenario.RunAccountSnapshotsSmoke();
                 else if (ModelIdentityOnly) await scenario.RunModelIdentitySmoke();
                 else if (ProviderSetupOnly) await scenario.RunProviderSetupSmoke();
                 else if (AccountSortOnly) await scenario.RunAccountSortSmoke();
