@@ -38,7 +38,8 @@ TRAY_PACKAGE="/tmp/lain-client-release-$TRAY_SHORT/lain-linux-x64-tray-cli"
 
 Use fresh publish directories. Restore the exact locked linux-x64 self-contained
 CLI/Desktop graphs. Restore Host's unchanged graph solely for notice inventory;
-do not publish or rebuild Host/Core:
+do not publish/rebuild Host or build the Go Core. The CLI/Desktop publishes may
+build their local .NET Client/Core project references:
 
 ```sh
 dotnet restore src/Lain.Cli/Lain.Cli.csproj --locked-mode -r linux-x64 -p:SelfContained=true -m:1 -p:BuildInParallel=false -nr:false
