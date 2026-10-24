@@ -318,7 +318,8 @@ public sealed class LoginOperationService : IAsyncDisposable
         var context = operation.Context!;
         if (result.Credential is { } credential)
         {
-            // A late remote result remains recoverable even when cancellation removed publication rights.
+            // Preserve late remote evidence privately. Target-removal markers still
+            // prevent adoption; ordinary cancellation may retain a recoverable result.
             try { PrepareResult(operation, credential); }
             catch (IOException)
             { return Finish(operation, "recovery-required", "Private credential storage is unavailable. Keep the host running and retry local recovery; do not repeat provider issuance."); }

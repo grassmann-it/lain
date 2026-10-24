@@ -48,7 +48,7 @@ public sealed class CredentialRecoveryService(ConfigurationRepository configurat
     {
         lock (store)
         {
-            var record = File.Exists(store.RecoveryPath(context.OperationId)) ? Read(store, context.OperationId)
+            CredentialRecoveryRecord record = File.Exists(store.RecoveryPath(context.OperationId)) ? Read(store, context.OperationId)
                 : new(context.OperationId, context.AccountId, context.Revision, context.AccountGeneration, context.Request, "remote-pending");
             if (record.AccountId != context.AccountId || record.Request.AccountId != context.Request.AccountId)
                 throw new InvalidDataException("Recovery target identity changed.");
