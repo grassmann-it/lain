@@ -59,8 +59,8 @@ public sealed class OpenRouterLoginAdapter(HttpMessageHandler? handler = null, T
                 using var document = await ReadJsonAsync(metadataResponse, ct);
                 if (document.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object)
                 {
-                    var user = String(data, "creator_user_id");
-                    var workspace = String(data, "workspace_id");
+                    var user = Identity(data, "creator_user_id");
+                    var workspace = Identity(data, "workspace_id");
                     binding = binding with { Subject = user, ResourceType = workspace is null ? null : "workspace", ResourceId = workspace,
                         Provenance = user is not null || workspace is not null ? "observed" : "unverified" };
                     if (DateTimeOffset.TryParse(String(data, "expires_at"), out var expiry)) expires = expiry;
@@ -73,4 +73,10 @@ public sealed class OpenRouterLoginAdapter(HttpMessageHandler? handler = null, T
             ? new("prepared", Credential: credential)
             : new("recovery-required", Error: "Issued key identity does not confirm the selected account or workspace. Review the saved result.", Credential: credential, NextAction: "review-recovery");
     }
+    private static string? Identity(JsonElement data, string name)
+    {
+        var value = String(data, name);
+        return string.IsNullOrWhiteSpace(value) || value.Length > 512 || value.Any(char.IsControl) ? null : value;
+    }
+
 }
