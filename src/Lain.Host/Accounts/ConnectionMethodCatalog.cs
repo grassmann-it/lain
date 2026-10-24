@@ -7,7 +7,8 @@ namespace Lain.Host.Accounts;
 
 /// <summary>Installed connection capabilities. Documentation never enables an unimplemented login.</summary>
 public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Func<bool> gateway,
-    Func<bool> coreAvailable, Func<bool> poeAvailable, Func<string, bool>? cloudAvailable = null)
+    Func<bool> coreAvailable, Func<bool> poeAvailable, Func<string, bool>? cloudAvailable = null,
+    Func<bool>? mimoAvailable = null)
 {
     private static readonly HashSet<string> DirectQuota = new(StringComparer.Ordinal)
         { "kilo", "requesty", "synthetic", "stepfun", "openrouter", "poe", "fireworks", "commandcode", "kimi", "zai" };
@@ -37,7 +38,7 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
             }
             foreach (var option in MonitorAccessCatalog.Options(descriptor.Id).Where(o => o.SecretRequired))
             {
-                var project = descriptor.Id == "gemini-api";
+                var project = descriptor.Id is "gemini-api" or "groq";
                 result.Add(new(descriptor.Id, "monitor-" + option.Kind, option.Name, "monitor-token", ["quota"], "available",
                     false, true, option.Kind, option.Description, RequiredSettings:
                     [new(project ? "projectId" : "accountId", option.ResourceLabel, Help: option.ResourceHelp)],
@@ -67,7 +68,12 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
         foreach (var id in new[] { "requesty", "alibaba-model-studio", "commandcode", "fireworks", "mistral" })
             result.Add(new(id, "official-cli", "Connect with official CLI", "cli", ["inference", "models"], "unavailable", false, false,
                 Guidance: "This provider's executable, isolated credential storage and identity handoff are not yet fully qualified. Use the existing key method; lain does not inspect another CLI's credentials."));
-        foreach (var id in new[] { "xiaomi-mimo", "sambanova", "upstage", "cohere" })
+        result.Add(new("xiaomi-mimo", "console-browser", "Connect MiMo monitoring", "browser", ["quota"],
+            mimoAvailable?.Invoke() == true ? "available" : "setup-required", false, false,
+            Description: "Read Individual Token Plan credits through a separate lain-owned MiMo console window. Select the verified CN/EU identity before attaching monitoring.",
+            Guidance: "MiMo monitoring requires Linux, an installed Chromium or Chrome browser, and a desktop session. Reconnect after the browser closes or lain restarts.",
+            DocumentationUrl: "https://platform.xiaomimimo.com/"));
+        foreach (var id in new[] { "sambanova", "upstage", "cohere" })
             result.Add(new(id, "console", "Connect provider console", "browser", ["quota"], "unavailable", false, false,
                 Guidance: "A supported, identity-bound console session and its reporting scope are not yet qualified. No browser cookies or existing profiles are imported."));
         foreach (var id in new[] { "gemini-api", "cloudflare-workers-ai" })

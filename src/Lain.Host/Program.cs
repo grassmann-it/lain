@@ -7,6 +7,7 @@ using Lain.Core;
 using Lain.Host.Accounts;
 using Lain.Host.Accounts.Credentials;
 using Lain.Host.Accounts.Cloud;
+using Lain.Host.Accounts.ConsoleConnections.MiMo;
 using Lain.Host.Accounts.Monitoring;
 using Lain.Host.Inspector;
 using Lain.Host.Models;
@@ -84,6 +85,13 @@ PoeLoginAdapter CreatePoeLogin()
  { return new PoeLoginAdapter(); }
 }
 using var poeLogin = CreatePoeLogin();
+// Availability checks only local paths/display state. Constructing the browser or
+// polling quota never opens a window; only the explicit console-browser login does.
+await using var mimoBrowser = new MiMoConsoleBrowser(paths);
+var mimoLogin = new MiMoConsoleLoginAdapter(mimoBrowser);
+var mimoQuota = new MiMoQuotaAdapter(mimoBrowser, secrets, repository);
+var mimoSessions = new MiMoSessionCleanup(mimoBrowser, secrets, repository);
+var quotaConnectionCleanup = new QuotaConnectionCleanup(repository, [mimoSessions.CloseDetachedAsync]);
 CloudMaintainerOptions cloudOptions;
 try
 {
@@ -94,7 +102,7 @@ try
 catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException)
 { cloudOptions = new([]); }
 var cloudLogins = cloudOptions.Clients.Where(c => c.Qualified).Select(c => new CloudOAuthAdapter(c)).ToArray();
-IAccountLoginAdapter[] accountLogins = [loginAdapter, openRouterLogin, .. (poeLogin.IsAvailable ? new IAccountLoginAdapter[] { poeLogin } : []), .. cloudLogins];
+IAccountLoginAdapter[] accountLogins = [loginAdapter, openRouterLogin, mimoLogin, .. (poeLogin.IsAvailable ? new IAccountLoginAdapter[] { poeLogin } : []), .. cloudLogins];
 builder.Services.AddSingleton(sp => new LoginOperationService(configuration: repository,
  accounts: sp.GetRequiredService<AccountService>(), secrets: secrets,
  accountAdapters: accountLogins, publicationGate: mutations));
@@ -103,7 +111,8 @@ builder.Services.AddSingleton(sp => new CredentialOwnerService(repository, sp.Ge
 builder.Services.AddSingleton(sp => new OwnedCredentialRefreshService(repository, sp.GetRequiredService<CredentialOwnerService>(), secrets.Generations, cloudLogins));
 builder.Services.AddSingleton(sp => new ConnectionMethodCatalog(sp.GetRequiredService<ProviderCatalogRegistry>(),
  GatewayMode, () => restoreReady && File.Exists(binary), () => poeLogin.IsAvailable,
- provider => cloudLogins.Any(login => login.Provider == provider && login.IsAvailable)));
+ provider => cloudLogins.Any(login => login.Provider == provider && login.IsAvailable),
+ () => mimoLogin.IsAvailable));
 builder.Services.AddSingleton<ModelsService>();
 builder.Services.AddSingleton<CodexProfileAdapter>();
 builder.Services.AddSingleton<ProxyConfigurationWriter>();
@@ -140,8 +149,9 @@ var quota = new QuotaService(quotaSource, quotaSource,
   new StepFunQuotaAdapter(providerHttp), new PoeQuotaAdapter(providerHttp),
   new OpenRouterQuotaAdapter(providerHttp), new SyntheticQuotaAdapter(providerHttp),
   new KiloQuotaAdapter(providerHttp), new RequestyQuotaAdapter(providerHttp),
-  new FireworksQuotaAdapter(providerHttp), geminiQuota, cloudflareQuota,
-  new CoreDependentQuotaAdapter(new GroqQuotaAdapter(quotaCoreHttp), CollectCore)]);
+  new FireworksQuotaAdapter(providerHttp), geminiQuota, cloudflareQuota, mimoQuota,
+  new GroqAccountQuotaAdapter(new CoreDependentQuotaAdapter(new GroqQuotaAdapter(quotaCoreHttp), CollectCore),
+   new GroqEnterpriseUsageReader(providerHttp))]);
 builder.Services.AddSingleton(quota);
 var app = builder.Build();
 var application = app.Services.GetRequiredService<ProfileApplicationService>();
@@ -157,6 +167,7 @@ app.Use(async (context, next) => {
   !context.Request.Path.StartsWithSegments(Api.Prefix + "/accounts/login") &&
   context.GetEndpoint()?.Metadata.GetMetadata<OwnsPublicationGate>() is null;
  if (mutation) await mutations.WaitAsync(context.RequestAborted);
+ var beforeAccounts = context.Request.Path.StartsWithSegments(Api.Prefix + "/accounts") ? repository.Snapshot : null;
  try { await next(context); }
  catch (RevisionConflictException) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError("revision_conflict", "Configuration changed; reload and retry.")); }
  catch (KeyNotFoundException) { context.Response.StatusCode = 404; await context.Response.WriteAsJsonAsync(new ApiError("not_found", "The requested item does not exist.")); }
@@ -165,7 +176,13 @@ app.Use(async (context, next) => {
  catch (ProfileDrainRecoveryRequiredException ex) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError("runtime_recovery_required", ex.Message)); }
  catch (InvalidOperationException) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError("operation_unavailable", "Operation unavailable; check backend qualification, configuration and port availability.")); }
  catch (Exception) { context.Response.StatusCode = 500; await context.Response.WriteAsJsonAsync(new ApiError("operation_failed", "The operation failed. Check lain paths, credentials and service readiness.")); }
- finally { if (mutation) mutations.Release(); }
+ finally
+ {
+  if (mutation) mutations.Release();
+  // Includes successful login polling/resource selection and recovery publication.
+  // Browser/owner cleanup happens after persistence and outside the shared CAS gate.
+  if (beforeAccounts is not null) await quotaConnectionCleanup.AfterPublicationAsync(beforeAccounts);
+ }
 });
 var runtimeManifest = Path.Combine(paths.Proxy, "runtime.json");
 void RequireAppliedRuntime()
