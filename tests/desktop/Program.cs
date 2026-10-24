@@ -347,6 +347,15 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         }
         Check(JsonSerializer.Serialize(fixture.Config) == config && MutatingRequestCount() == mutations,
             "all three presentation presets preserve host configuration and never invoke provider mutations");
+        foreach (var section in new[] { "Models", "Profiles", "Usage", "Live" })
+        {
+            await Click(section);
+            await SelectPresentation(InformationLevel.Advanced, ViewDensity.Normal);
+            if (section == "Usage") await Wait(UsageConnected, "Advanced Usage retains its applied range");
+            if (section == "Live") await Wait(() => HasSelectable("New source output only."), "Advanced Live retains readable output");
+            await CaptureBoth(section.ToLowerInvariant() + "-advanced-normal");
+        }
+        await Click("Accounts");
         await SelectPresentation(InformationLevel.Advanced, ViewDensity.Compact);
         await ExpandTile(QuotaTile("Kimi Coding"), true);
         await Click("Pin account Kimi Coding");
