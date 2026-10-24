@@ -96,3 +96,6 @@ Ordinary function tools named `image_generation` or `generate_image`, and Vision
 `input_image`, remain accepted and reach the fake provider. This check is included
 in `upgrade_gate.py`; it is not an assertion that the old binary already enforced
 the exclusion. No image generation or real provider is involved.
+An injected post-translation payload override is also blocked at the final HTTP
+boundary; that later rejection retains one failed durable attempt with unknown
+usage, leaves the journal healthy and allows an ordinary second route to dispatch.

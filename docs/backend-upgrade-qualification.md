@@ -75,6 +75,10 @@ injection. This is a documented restriction of an unqualified path, not a claim
 that every formerly accepted payload remains accepted. The independent
 `tests/backend/native_tool_boundary.py` verifies the new rejection and keeps
 ordinary image-named functions and Vision `input_image` as positive controls.
+It also injects the native tool through an actual configured payload override
+after the client boundary: the final HTTP guard prevents any upstream request,
+retains the already registered attempt as failed with unknown usage, and leaves
+ordinary routes and the journal operational.
 
 Claude Responses compaction, deferred tools / `tool_search`, Sign in with
 ChatGPT, Grok speech, Vertex Interactions, session-affinity rebind and the new

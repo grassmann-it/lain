@@ -27,6 +27,7 @@ def probe(core):
         for name, fields in [
             ("native-tool", {"tools": [{"type": "image_generation"}]}),
             ("native-tool-choice", {"tool_choice": {"type": "image_generation"}}),
+            ("native-tool-choice-string", {"tool_choice": "image_generation"}),
             ("native-tool-and-choice", {"tools": [{"type": "image_generation"}], "tool_choice": {"type": "image_generation"}}),
         ]:
             try:
@@ -65,6 +66,50 @@ def probe(core):
                 "scope": "new explicit image_generation exclusion; no image output or real provider used"}
 
 
+def override_probe(core):
+    run = Run(core)
+    try:
+        config = run.root / "core.yaml"
+        config.write_text(config.read_text() + '''payload:
+  override-raw:
+    - models:
+        - name: "fixture-a"
+          protocol: "openai"
+      params:
+        tools: '[{"type":"image_generation"}]'
+''')
+        run.start()
+        # The client body is ordinary. Only the configured, post-translation
+        # override introduces a server-side tool at the final send boundary.
+        try:
+            with run.responses({"model": "fixture-a", "input": marker("text", "final-override-injection")}) as response:
+                response.read()
+            raise AssertionError("payload override injected a native image tool into upstream")
+        except HTTPError as error:
+            status = error.code
+            detail = error.read().decode(errors="replace")
+            expect(400 <= status <= 599 and "image_generation" in detail, "final guard rejection was not a clear HTTP error")
+            error.close()
+        expect(not run.provider.snapshot(), "final payload override reached the fake provider")
+        _, usages = assert_complete(run.events()["events"], 1)
+        failed = usages[0]
+        expect(failed["outcome"] == "failed" and failed["usageReported"] is False,
+               "final guard failure did not retain a failed unknown-usage attempt")
+        for field in ("inputTokens", "outputTokens", "totalTokens", "cacheReadTokens", "cacheCreationTokens", "reasoningTokens"):
+            expect(failed.get(field) is None, "final guard failure invented consumed tokens")
+        with run.post("text", "ordinary-route-after-rejection", route="fixture-b") as response:
+            response.read()
+        assert_complete(run.events()["events"], 2)
+        expect(len(run.provider.snapshot()) == 1 and run.provider.snapshot()[0]["account"] == "account-b",
+               "ordinary route could not recover after the blocked final payload")
+        expect(run.get("/lain/health")["journalHealthy"] is True, "final guard rejection poisoned the durable journal")
+        return {"payloadOverrideAppliedAfterClientBoundary": True, "injectedNativeToolUpstreamAttempts": 0,
+                "rejectedStatus": status, "failedDurableAttemptRetained": True, "usageUnknown": True,
+                "ordinaryRouteStillDispatches": True, "journalHealthy": True}
+    finally:
+        run.__exit__()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--core", required=True)
@@ -77,12 +122,13 @@ def main():
         frozen = Path(temporary) / "lain-proxy"
         frozen.write_bytes(data)
         frozen.chmod(0o700)
-        try:
-            report["checks"].append({"name": "native-image-generation-exclusion-and-positive-controls", "passed": True,
-                                      "evidence": probe(frozen)})
-            report["passed"] = True
-        except Exception as error:
-            report["checks"].append({"name": "native-image-generation-exclusion-and-positive-controls", "passed": False, "error": str(error)})
+        for name, function in [("native-image-generation-exclusion-and-positive-controls", probe),
+                               ("final-payload-override-exclusion-and-recovery", override_probe)]:
+            try:
+                report["checks"].append({"name": name, "passed": True, "evidence": function(frozen)})
+            except Exception as error:
+                report["checks"].append({"name": name, "passed": False, "error": str(error)})
+        report["passed"] = all(check["passed"] for check in report["checks"])
     Path(args.report).write_text(json.dumps(report, indent=2) + "\n")
     print(f"{'PASS' if report['passed'] else 'FAIL'} native image-generation boundary", flush=True)
     return 0 if report["passed"] else 1
