@@ -1,0 +1,32 @@
+{
+  "scope": "UXD-20 Connect; synthetic method/status inputs for the central native acceptance owner",
+  "sizes": [[1120, 780], [800, 560]],
+  "methods": {
+    "coreBrowser": {"Provider":"codex","Id":"codex-owned","Title":"Sign in with ChatGPT","Kind":"browser","Purposes":["inference","quota"],"Availability":"available","RequiresCore":true,"SecretRequired":false,"Recommended":true},
+    "quotaBrowser": {"Provider":"fixture-cloud","Id":"qualified-browser","Title":"Connect monitoring in browser","Kind":"browser","Purposes":["quota"],"Availability":"available","RequiresCore":false,"SecretRequired":false},
+    "unavailableBrowser": {"Provider":"fixture-cloud","Id":"unqualified-browser","Title":"Connect monitoring in browser","Kind":"browser","Purposes":["quota"],"Availability":"unavailable","RequiresCore":false,"SecretRequired":false,"Guidance":"Synthetic adapter is not qualified."},
+    "inferenceKey": {"Provider":"fixture-key","Id":"api-key","Title":"API key","Kind":"api-key","Purposes":["inference","models"],"Availability":"available","RequiresCore":false,"SecretRequired":true,"SecretKind":"api-key"}
+  },
+  "cases": [
+    {"id":"monitor-core-browser","method":"coreBrowser","configuredMode":"monitor","statusMode":"monitor","coreLogin":false,"expectedLoginPosts":0,"expectedPage":"Connection prerequisites codex-owned","requiredActions":["Review provider sources","Review Gateway setup","Reload connection methods","Back to accounts"]},
+    {"id":"gateway-core-missing","method":"coreBrowser","configuredMode":"gateway","statusMode":"gateway","coreLogin":false,"expectedLoginPosts":0,"expectedPage":"Connection prerequisites codex-owned"},
+    {"id":"gateway-capability-unknown","method":"coreBrowser","configuredMode":"gateway","statusMode":"gateway","coreLogin":null,"expectedLoginPosts":0,"expectedPage":"Connection prerequisites codex-owned"},
+    {"id":"stale-gateway-status-monitor","method":"coreBrowser","configuredMode":"gateway","statusMode":"monitor","coreLogin":false,"expectedLoginPosts":0},
+    {"id":"unavailable-direct-login-entry","method":"unavailableBrowser","configuredMode":"gateway","statusMode":"gateway","coreLogin":true,"entry":"StartConnectionLoginAsync","expectedLoginPosts":0},
+    {"id":"available-form-becomes-unavailable","method":"quotaBrowser","configuredMode":"monitor","statusMode":"monitor","coreLogin":false,"beforeContinueAvailability":"unavailable","expectedLoginPosts":0,"safeInputsPreserved":true},
+    {"id":"method-removed-before-continue","method":"quotaBrowser","configuredMode":"monitor","statusMode":"monitor","coreLogin":false,"removeMethodBeforeContinue":true,"expectedLoginPosts":0},
+    {"id":"qualified-noncore-monitor-login","method":"quotaBrowser","configuredMode":"monitor","statusMode":"monitor","coreLogin":false,"expectedLoginPosts":1,"expectedPurposes":["quota"]},
+    {"id":"inference-key-monitor","method":"inferenceKey","configuredMode":"monitor","statusMode":"monitor","coreLogin":false,"expectedConnectPosts":0,"requiredActions":["Review provider sources","Review Gateway setup"]},
+    {"id":"reload-is-review-only","method":"coreBrowser","configuredMode":"gateway","statusMode":"gateway","coreLogin":false,"afterReloadCoreLogin":true,"expectedLoginPosts":0,"requiredActions":["Continue in browser"]},
+    {"id":"provider-catalog-follows-methods","method":"quotaBrowser","configuredMode":"monitor","replaceAvailability":"unavailable","expectCatalogRefresh":true,"expectExplicitUnavailable":true,"expectedLoginPosts":0}
+  ],
+  "invariants": [
+    "No POST accounts/login until an explicit Continue action and fresh method/status preflight succeeds.",
+    "Provider sources and Gateway setup review send no runtime-mode mutation, Apply, inference or service request.",
+    "Existing account credentials, monitoring settings and quota observations are unchanged by prerequisite review.",
+    "Core login unavailability preserves configured Gateway intent; it does not select Monitor.",
+    "Unavailable alternative start buttons stay disabled; their separate requirement-review actions remain reachable.",
+    "Reload retains the selected method, reconnect identity and quota-only scope; it never starts sign-in.",
+    "Catalog method updates render even when provider documentation and account counts are unchanged."
+  ]
+}

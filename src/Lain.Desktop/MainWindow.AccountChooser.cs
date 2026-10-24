@@ -85,19 +85,35 @@ public sealed partial class MainWindow
         try
         {
             if (_section != "Accounts") await NavigateToAsync(new("Accounts", AccountId: reconnect?.Id));
-            var normalized = providerId switch { "command-code" => "commandcode", "mimo" => "xiaomi-mimo", _ => providerId };
-            _connectionMethods = await _client.ConnectionMethodsAsync(normalized, _lifetime.Token);
+            var normalized = ProviderInventory.Canonical(providerId);
+            var methodsTask = _client.ConnectionMethodsAsync(normalized, _lifetime.Token);
+            var statusTask = _client.StatusAsync(_lifetime.Token);
+            await Task.WhenAll(methodsTask, statusTask);
+            _connectionMethods = await methodsTask;
+            _status = await statusTask;
             ShowConnectionMethods(normalized, reconnect);
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception error) { _notice.Text = Friendly(error); }
     }
 
-    private bool ConnectionMethodAvailable(ProviderConnectionMethodDto method) => method.Availability == "available"
-        && (!method.RequiresCore || (_status?.Capabilities?.CoreLogin ?? !IsMonitorMode))
-        && (!IsMonitorMode || method.Purposes.Any(purpose => purpose is "quota" or "cost"));
+    private bool ConnectionMethodAvailable(ProviderConnectionMethodDto method) => ConnectionRequirement(method) is null;
+    private bool ConnectionMonitorIntent => IsMonitorMode || _status?.RuntimeMode == "monitor";
 
-    private string[] ConnectionPurposes(ProviderConnectionMethodDto method) => IsMonitorMode
+    private string? ConnectionRequirement(ProviderConnectionMethodDto method)
+    {
+        if (method.RequiresCore && ConnectionMonitorIntent)
+            return "This sign-in needs the Gateway Core. This host is configured as an Account Monitor; choosing a login does not change that operating mode. Review Gateway setup deliberately, or choose another available quota method.";
+        if (method.RequiresCore && _status?.Capabilities?.CoreLogin != true)
+            return "The required Gateway Core is missing or its login capability has not been confirmed. No authorization request has been started. Review the installed Gateway requirements, then reload the available methods.";
+        if (method.Availability != "available")
+            return method.Guidance ?? "This connection method is not available on the installed host. Review its official requirements or choose another available method.";
+        if (ConnectionMonitorIntent && !method.Purposes.Any(purpose => purpose is "quota" or "cost"))
+            return "This method provides no qualified quota or cost access for Account Monitor. Review the provider's sources or deliberately review Gateway setup for model access.";
+        return null;
+    }
+
+    private string[] ConnectionPurposes(ProviderConnectionMethodDto method) => ConnectionMonitorIntent
         ? method.Purposes.Where(purpose => purpose is "quota" or "cost").ToArray() : method.Purposes;
     private string ConnectProviderName(string id) => _providerCatalog?.Providers.FirstOrDefault(p => p.Id == id)?.Name ?? Lain.Client.ProviderDisplayNames.Get(id);
 
@@ -121,15 +137,56 @@ public sealed partial class MainWindow
             choose.IsEnabled = ConnectionMethodAvailable(method);
             AutomationProperties.SetName(choose, "Connection method " + method.Id);
             var card = Ui.Stack(choose, Ui.Text(method.Description ?? string.Join(" · ", method.Purposes), 13, Ui.Muted));
-            if (!choose.IsEnabled) card.Children.Add(Ui.Text(method.Guidance ?? "This method is not available in the installed host. Choose another listed method.", 12, Ui.Warning));
+            if (!choose.IsEnabled)
+            {
+                card.Children.Add(Ui.Text(ConnectionRequirement(method)!, 12, Ui.Warning));
+                card.Children.Add(Ui.Button("Review requirements", () => ShowConnectionPrerequisite(method, reconnect)));
+            }
             content.Children.Add(Ui.Card(card));
         }
         content.Children.Add(Ui.Button("Back to providers", ShowAddAccountChooser));
         _page.Content = content;
     }
 
+    private void ShowConnectionPrerequisite(ProviderConnectionMethodDto method, AccountDto? reconnect, bool quotaOnly = false)
+    {
+        _notice.Text = "";
+        _loginVisible = false; _editing = true; _actions.Clear(); _workspace.Offset = default;
+        if (_configuration is { } configuration) RegisterEditor(() => ShowConnectionPrerequisite(method, reconnect, quotaOnly), configuration.Revision);
+        var details = Ui.Stack(Ui.Text(ConnectionRequirement(method) ?? "Review the selected method before continuing.", 13, Ui.Warning),
+            Ui.Text("This step has not started a new sign-in. Existing accounts, quota access and host operating mode are preserved.", 12, Ui.Muted));
+        if (!string.IsNullOrWhiteSpace(method.Guidance)) details.Children.Add(Ui.Text(method.Guidance, 12, Ui.Muted));
+        if (method.DocumentationUrl is { } url && Uri.TryCreate(url, UriKind.Absolute, out var link) && link.Scheme == Uri.UriSchemeHttps)
+            details.Children.Add(Ui.Button("Official connection guidance", async () => await OpenProviderLinkAsync(link)));
+        details.Children.Add(Ui.Button("Review provider sources", ShowProviderCatalog));
+        if (method.RequiresCore || ConnectionMonitorIntent && !method.Purposes.Any(purpose => purpose is "quota" or "cost"))
+            details.Children.Add(Ui.Button("Review Gateway setup", async () =>
+            {
+                await NavigateToAsync(new("Settings"));
+                if (_section == "Settings") ShowRuntimeModeSettings();
+            }));
+        foreach (var alternative in _connectionMethods?.Methods.Where(candidate => candidate.Provider == method.Provider && candidate.Id != method.Id
+            && ConnectionMethodAvailable(candidate) && (!quotaOnly || candidate.Purposes.Any(purpose => purpose is "quota" or "cost"))) ?? [])
+        {
+            var choose = Ui.Button(alternative.Title, () => ShowConnectionMethod(alternative, reconnect, quotaOnly));
+            AutomationProperties.SetName(choose, "Connection method " + alternative.Id);
+            details.Children.Add(choose);
+        }
+        details.Children.Add(OverviewActions(Action("Reload connection methods", async () =>
+            {
+                if (await CheckConnectionPrerequisitesAsync(method.Provider, method.Id, reconnect, quotaOnly))
+                    ShowConnectionMethod(_connectionMethods!.Methods.Single(candidate => candidate.Provider == method.Provider && candidate.Id == method.Id), reconnect, quotaOnly);
+            }, "Connection methods refreshed. Review before connecting.", stayOnPage: true),
+            Ui.Button("Back to providers", ShowAddAccountChooser), Ui.Button("Back to accounts", () => { _editing = false; Render(); })));
+        var content = Ui.Stack(Heading("Connection requirements", ConnectProviderName(method.Provider) + " · " + method.Title), Ui.Card(details));
+        content.MaxWidth = 720;
+        AutomationProperties.SetName(content, "Connection prerequisites " + method.Id);
+        _page.Content = content;
+    }
+
     private void ShowConnectionMethod(ProviderConnectionMethodDto method, AccountDto? reconnect, bool quotaOnly = false)
     {
+        if (!ConnectionMethodAvailable(method)) { ShowConnectionPrerequisite(method, reconnect, quotaOnly); return; }
         _notice.Text = "";
         _loginVisible = false;
         if (_configuration is not { } cfg) return;
@@ -165,6 +222,17 @@ public sealed partial class MainWindow
         }
         var connect = Action(method.SecretRequired ? "Connect account" : method.Kind == "browser" ? "Continue in browser" : "Continue sign-in", async () => {
             SaveSafeDraft();
+            if (method.SecretRequired && !await CheckConnectionPrerequisitesAsync(method.Provider, method.Id, reconnect, quotaOnly))
+            {
+                secret.Text = "";
+                return;
+            }
+            if (method.SecretRequired)
+            {
+                var current = _connectionMethods!.Methods.Single(candidate => candidate.Provider == method.Provider && candidate.Id == method.Id);
+                if (!current.SecretRequired || current.SecretKind != method.SecretKind || purposes.Any(purpose => !ConnectionPurposes(current).Contains(purpose, StringComparer.Ordinal)))
+                    throw new InvalidOperationException("The selected credential access changed. Your inputs are kept. Review this provider's current connection method before connecting.");
+            }
             if (string.IsNullOrWhiteSpace(name.Text)) throw new InvalidOperationException("Enter an account name.");
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var field in method.RequiredSettings ?? [])
@@ -217,7 +285,12 @@ public sealed partial class MainWindow
             AutomationProperties.SetName(choose, "Connection method " + alternative.Id);
             alternatives.Children.Add(choose);
             alternatives.Children.Add(Ui.Text(choose.IsEnabled ? alternative.Description ?? string.Join(" · ", alternative.Purposes)
-                : alternative.Guidance ?? "This method is not available on the installed host. Use the current method or review its official prerequisites.", 12, choose.IsEnabled ? Ui.Muted : Ui.Warning));
+                : ConnectionRequirement(alternative)!, 12, choose.IsEnabled ? Ui.Muted : Ui.Warning));
+            if (!choose.IsEnabled) alternatives.Children.Add(Ui.Button("Review requirements for " + alternative.Title, () =>
+            {
+                SaveSafeDraft(); secret.Text = "";
+                ShowConnectionPrerequisite(alternative, reconnect, quotaOnly);
+            }));
         }
         if (alternatives.Children.Count > 0) form.Children.Add(new Expander { Header = "Other connection methods", Content = alternatives });
         form.Children.Add(Ui.Text("Connecting does not choose models, apply a profile, purchase credits or test inference.", 12, Ui.Muted));

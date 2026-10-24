@@ -87,7 +87,8 @@ public sealed partial class MainWindow
         var unavailableMethods = methods.Where(method => !ConnectionMethodAvailable(method)).ToArray();
         if (unavailableMethods.Length > 0)
             form.Children.Add(new Expander { Header = "Other connection requirements", Content = Ui.Stack(unavailableMethods.Select(method =>
-                (Control)Ui.Text(method.Title + " · " + (method.Guidance ?? "This connection is not available on the installed host."), 12, Ui.Muted)).ToArray()) });
+                (Control)Ui.Stack(Ui.Text(method.Title + " · " + ConnectionRequirement(method), 12, Ui.Muted),
+                    Ui.Button("Review requirements for " + method.Title, () => ShowConnectionPrerequisite(method, account, quotaOnly: true)))).ToArray()) });
         if (options.Length == 0)
         {
             form.Children.Add(Ui.Text(methods.Any(ConnectionMethodAvailable)

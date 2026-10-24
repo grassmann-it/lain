@@ -18,16 +18,55 @@ public sealed partial class MainWindow
     private Task<bool> OpenConnectionBrowserAsync(Uri uri) => _connectionBrowser?.Invoke(uri) ?? Launcher.LaunchUriAsync(uri);
     private static bool LoginPending(LoginDto? login) => login?.State is "waiting" or "pending" or "resource-required" or "awaiting-resource";
 
-    private Task StartCodexLoginAsync()
+    private Task StartCodexLoginAsync() => BeginProviderConnectionAsync("codex");
+
+    private async Task<bool> CheckConnectionPrerequisitesAsync(string provider, string methodId, AccountDto? reconnect, bool quotaOnly = false)
     {
-        if (_configuration is not { } cfg) throw new InvalidOperationException("Connect to the host first.");
-        return StartConnectionLoginAsync(new LoginRequest(cfg.Revision, "codex"));
+        // Recheck the installed method before a new operation. A mounted form is
+        // not proof that its Core or independently running host is still available.
+        var statusTask = _client.StatusAsync(_lifetime.Token);
+        var methodsTask = _client.ConnectionMethodsAsync(provider, _lifetime.Token);
+        await Task.WhenAll(statusTask, methodsTask);
+        _status = await statusTask;
+        _connectionMethods = await methodsTask;
+        var method = _connectionMethods.Methods.FirstOrDefault(candidate => candidate.Provider == provider && candidate.Id == methodId);
+        if (method is null)
+        {
+            ShowConnectionMethods(provider, reconnect);
+            _notice.Text = "The selected connection method is no longer installed. Review the current methods; no connection request was sent.";
+            return false;
+        }
+        if (ConnectionMethodAvailable(method)) return true;
+        ShowConnectionPrerequisite(method, reconnect, quotaOnly);
+        return false;
     }
 
     private async Task StartConnectionLoginAsync(LoginRequest request)
     {
         if (!LoginPending(_login))
         {
+            var provider = Providers.ProviderInventory.Canonical(request.Provider);
+            var reconnect = _configuration?.Accounts.FirstOrDefault(account => account.Id == request.AccountId);
+            var methodId = request.Method;
+            if (methodId is null)
+            {
+                _connectionMethods = await _client.ConnectionMethodsAsync(provider, _lifetime.Token);
+                methodId = _connectionMethods.Methods.Where(method => method.Provider == provider && !method.SecretRequired)
+                    .OrderByDescending(method => method.Recommended).FirstOrDefault()?.Id;
+                if (methodId is null)
+                {
+                    ShowConnectionMethods(provider, reconnect);
+                    _notice.Text = "No installed sign-in method is available. No authorization request was sent.";
+                    return;
+                }
+            }
+            var quotaOnly = request.Purposes is { Length: > 0 } requestedPurposes && requestedPurposes.All(purpose => purpose is "quota" or "cost");
+            if (!await CheckConnectionPrerequisitesAsync(provider, methodId, reconnect, quotaOnly)) return;
+            var method = _connectionMethods!.Methods.Single(method => method.Provider == provider && method.Id == methodId);
+            var purposes = request.Purposes ?? ConnectionPurposes(method);
+            if (method.SecretRequired || purposes.Length == 0 || purposes.Any(purpose => !ConnectionPurposes(method).Contains(purpose, StringComparer.Ordinal)))
+                throw new InvalidOperationException("The selected sign-in access changed. Review this provider's current connection method before continuing.");
+            request = request with { Provider = provider, Method = method.Id, Purposes = purposes };
             _loginPolling?.Cancel();
             _login = await _client.LoginAsync(request, _lifetime.Token);
             _loginError = null;

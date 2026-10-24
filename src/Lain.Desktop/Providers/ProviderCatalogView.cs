@@ -139,14 +139,17 @@ public sealed partial class ProviderCatalogView : UserControl, IPresentationView
         var actions = new WrapPanel { Orientation = Orientation.Horizontal };
         AddLink(actions, provider, new CatalogLink("Official account / keys", provider.AccountUrl), primary: false);
         AddLink(actions, provider, new CatalogLink("Official documentation", provider.DocumentationUrl));
-        var setup = Ui.Button("Add this provider account", () => _beginSetup?.Invoke(provider.Id));
+        var setup = Ui.Button("Review connection methods", () => _beginSetup?.Invoke(provider.Id));
         setup.IsEnabled = _beginSetup is not null;
         setup.Margin = new Thickness(0, 0, 8, 6);
         AutomationProperties.SetName(setup, $"Add {provider.Name} account");
-        ToolTip.SetTip(setup, "Choose an available provider connection. Models follow optionally; saving is separate from live access.");
+        ToolTip.SetTip(setup, "Review the installed methods and their prerequisites before connecting. Browsing does not start sign-in.");
         setup.Classes.Add("primary");
         actions.Children.Insert(0, setup);
         var details = new StackPanel { Spacing = 15 };
+        details.Children.Add(Ui.Section("Installed connection methods", provider.Methods.Length == 0
+            ? Ui.Text("No installed connection method has been reported. Documentation alone does not enable sign-in or quota access.", 12, Ui.Muted)
+            : FactRows(provider.Methods)));
         details.Children.Add(Facts("Access and credentials", provider.Access));
         details.Children.Add(Facts("Billing and budgets", provider.Budgets));
         details.Children.Add(Facts("Limits and scope", provider.Limits));
@@ -244,7 +247,7 @@ public sealed partial class ProviderCatalogView : UserControl, IPresentationView
 
     private sealed record CatalogCard(string Id, string Name, string Summary, string SearchText, int AccountCount,
         string AccountUrl, string DocumentationUrl, string Readiness, bool LiveVerified, string[] AccessTypes, string[] Protocols, CatalogFact[] Access, CatalogFact[] Budgets, CatalogFact[] Limits,
-        CatalogRoute[] Routes, string[] Steps, string[] Notes, CatalogLink[] Links, string Verification);
+        CatalogRoute[] Routes, CatalogFact[] Methods, string[] Steps, string[] Notes, CatalogLink[] Links, string Verification);
     private sealed record CatalogFact(string Label, string Value);
     private sealed record CatalogRoute(string Name, CatalogFact[] Facts);
     private sealed record CatalogLink(string Label, string Url);

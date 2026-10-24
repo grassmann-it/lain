@@ -21,14 +21,18 @@ public sealed partial class ProviderCatalogView
             .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
         // The source observation time can change without changing the documentation.
         // Keep focused controls and expanded cards on identical passive refreshes.
-        var snapshot = JsonSerializer.Serialize(new { catalog.Providers, Accounts = counts.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase) });
+        var snapshot = JsonSerializer.Serialize(new { catalog.Providers, Methods = _installedMethods?.Methods, Accounts = counts.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase) });
         if (_loaded && snapshot == _snapshot) return;
         _snapshot = snapshot;
         ApplyCatalog(catalog.Providers.Select(provider => Present(provider, counts.GetValueOrDefault(provider.Id))).ToArray());
     }
 
-    private static CatalogCard Present(ProviderDescriptorDto provider, int accountCount)
+    private CatalogCard Present(ProviderDescriptorDto provider, int accountCount)
     {
+        var methods = (_installedMethods?.Methods ?? []).Where(method => method.Provider == provider.Id).Select(method => new CatalogFact(method.Title,
+            Join(method.Availability == "available" ? "Installed method available; account access not verified" : "Unavailable on this host",
+                "Purposes: " + string.Join(", ", method.Purposes), method.RequiresCore ? "Requires Gateway Core" : null,
+                method.Availability == "available" ? method.Description : method.Guidance))).ToArray();
         var access = new List<CatalogFact>
         {
             new("Account setup", accountCount == 0 ? "No account configured. You can review requirements before adding credentials." : $"{accountCount} account{(accountCount == 1 ? "" : "s")} configured; connection status is shown separately."),
@@ -85,7 +89,7 @@ public sealed partial class ProviderCatalogView
             .Concat(protocols).Concat(accessTypes).Concat(provider.Routes.Select(route => $"{route.Model} {route.Name} {route.ModelFamily} {route.Manufacturer} {route.InferenceProvider} {route.Gateway}")));
         return new(provider.Id, provider.Name, provider.Summary, search, accountCount,
             provider.AccountUrl, provider.DocumentationUrl, Readiness(provider), IsLiveVerified(provider.LiveVerification), accessTypes, protocols,
-            access.ToArray(), budgets.ToArray(), limits, routes,
+            access.ToArray(), budgets.ToArray(), limits, routes, methods,
             provider.SetupSteps.Select(step => Join(step.Title, step.Description)).ToArray(), provider.Restrictions,
             links.DistinctBy(link => link.Url).ToArray(), verification);
     }
