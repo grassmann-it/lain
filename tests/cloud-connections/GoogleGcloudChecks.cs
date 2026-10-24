@@ -171,7 +171,7 @@ finally:
                 var pendingOrphan = Orphan("unreferenced-profile");
                 await retention.StartupReconcileAsync();
                 Check(Directory.Exists(pendingOrphan), "unknown remote result defers all startup deletions");
-                CredentialRecoveryService.SavePrepared(secrets.Generations, recoveryContext, handle);
+                CredentialRecoveryService.SavePrepared(secrets.Generations, recoveryContext, handle, remoteId: null); // CLI profile has no remote revocation ID.
                 await retention.DisconnectAsync(oldAccount);
                 Check(Directory.Exists(fake.Profiles[0]), "unpublished prepared recovery retains CLI profile");
                 await retention.StartupReconcileAsync();
