@@ -15,13 +15,10 @@ public sealed partial class MainWindow
         var kind = quota?.Support?.Kind;
         if (kind is not ("console" or "unsupported" or "unimplemented"))
         {
-            var refresh = Action(kind == "awaiting-observation" ? "Reload saved observations" : "Refresh quota", async () =>
-            {
-                if (!_hostAvailable) throw new InvalidOperationException("The local host is offline. Reload status before refreshing quota.");
-                _quotas = await _client.RefreshQuotasAsync(account.Id, _lifetime.Token);
-            }, "Quota refresh finished. Review the reported result.");
+            var refresh = Ui.Button(kind == "awaiting-observation" ? "Reload saved observations" : "Refresh quota",
+                () => _ = RefreshAccountQuotaAsync(account.Id));
             AutomationProperties.SetName(refresh, "Refresh quota for " + account.Name);
-            refresh.IsEnabled = _hostAvailable;
+            BindAccountQuotaRefreshButton(refresh, account.Id);
             actions.Children.Add(refresh);
         }
         if (kind == "setup-required" || quota is null || quota.State is "error" or "stale" || quota.Error is not null)
