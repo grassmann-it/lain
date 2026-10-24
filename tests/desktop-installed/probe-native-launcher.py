@@ -15,7 +15,7 @@ import subprocess
 import tempfile
 import time
 
-ARTWORK = 'd36cb05911456a363b275631ad7a3b1176770f0f052d2e9747593e33f947a6fd'
+ARTWORK = 'b6d32ab02ca21965f6941f61ec209ff756c7ea9841641cf20c0f5bda4aefaba7'
 TITLE = 'lain — Local AI Gateway'
 
 

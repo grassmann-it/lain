@@ -25,7 +25,7 @@ for filename in required:
     if not (desktop / filename).is_file():
         parser.error('missing target file: ' + filename)
 artwork = desktop / 'Assets/Brand/lain-cat.png'
-expected_artwork = 'd36cb05911456a363b275631ad7a3b1176770f0f052d2e9747593e33f947a6fd'
+expected_artwork = 'b6d32ab02ca21965f6941f61ec209ff756c7ea9841641cf20c0f5bda4aefaba7'
 if not artwork.is_file() or hashlib.sha256(artwork.read_bytes()).hexdigest() != expected_artwork:
     parser.error('target must contain unchanged original cat artwork')
 shutil.copytree(desktop, target)

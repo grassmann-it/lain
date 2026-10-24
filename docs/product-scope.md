@@ -92,6 +92,11 @@ sein. Sinnvolle Accountreihenfolge und konfigurierbare Darstellung werden
 ausgearbeitet. Barebones/Simple/Advanced nach MeowChan sind eine eingebrachte
 Option und sind inzwischen zur Umsetzung freigegeben: Simple als Standard,
 unabhängige Dichte und stabile Sortierung sowie lokal aufklappbare Details.
+Der Moduswechsel liegt nach weiterer ausdrücklicher Präzisierung dauerhaft
+als Dropdown **unten rechts**, ähnlich MeowChan. Das View-Panel enthält Dichte
+und zusätzliche Einstellungen, keinen zweiten Modusschalter. Die am 24.10.
+erneut gelieferte 512×512-Katze ersetzt das bisherige Logo bytegetreu als Quelle
+für Fenster, Tray und Linux-Launcher.
 Der Auftrag „baue bis fertig“ umfasst Implementierung, Prüfung und Installation;
 der verbindliche Zuschnitt steht in [UI-Umsetzung](ui-structure-implementation.md).
 
