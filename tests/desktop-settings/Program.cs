@@ -62,6 +62,21 @@ internal sealed class SettingsScenario(IClassicDesktopStyleApplicationLifetime l
         var button = window.GetVisualDescendants().OfType<Button>().First(b => AutomationProperties.GetName(b) == name || Equals(b.Content, name));
         Check(button.IsEnabled, name + " enabled"); button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Task.Delay(180);
     }
+    private async Task<TextBlock?> VisibleText(string text)
+    {
+        // A collapsed notice creates its ScrollViewer presenter on the next layout pass.
+        // Wait for the real visible control, not just the synchronously updated backing text.
+        for (var attempt = 0; attempt < 100; attempt++)
+        {
+            window.UpdateLayout();
+            var found = window.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(t =>
+                t.Text?.Contains(text, StringComparison.Ordinal) == true && t.IsEffectivelyVisible
+                && t.Bounds.Width > 0 && t.Bounds.Height > 0);
+            if (found is not null) return found;
+            await Task.Delay(20);
+        }
+        return null;
+    }
     private async Task Open()
     {
         window = new MainWindow(new LainApiClient(new HttpClient(fixture, false) { BaseAddress = new Uri("http://fixture.invalid") })) { Width = 1120, Height = 780 };
@@ -121,14 +136,25 @@ internal sealed class SettingsScenario(IClassicDesktopStyleApplicationLifetime l
             "local settings and cancelled host review make no host mutation");
         // A real filesystem error against this runner's synthetic state only.
         var file = Path.Combine(Environment.GetEnvironmentVariable("LAIN_HOME")!, "ui/workspace-preferences.json");
+        var savedBytes = File.ReadAllBytes(file);
         File.Move(file, file + ".saved"); Directory.CreateDirectory(file);
         try {
             Named<CheckBox>("Usage and rate-limit alerts").IsChecked = true;
             Check(Named<CheckBox>("Usage and rate-limit alerts").IsChecked == false, "failed save restores authoritative checkbox value");
-            Check(window.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text?.Contains("could not be saved") == true), "save failure visible");
+            var errorNotice = await VisibleText("could not be saved");
+            Check(errorNotice is not null, "save failure visible");
+            var noticePosition = errorNotice!.TranslatePoint(default, window)!.Value;
+            Check(noticePosition.Y >= 0 && noticePosition.Y + errorNotice.Bounds.Height <= window.Bounds.Height,
+                "save failure notice is inside the actual viewport");
+            Check(File.ReadAllBytes(file + ".saved").SequenceEqual(savedBytes) && Directory.Exists(file)
+                && !Directory.EnumerateFiles(Path.GetDirectoryName(file)!, Path.GetFileName(file) + ".*.tmp").Any(),
+                "failed save preserves stored bytes and cleans incomplete writes");
+            Check(JsonSerializer.Serialize(fixture.Config) == initialHost && fixture.Requests.Count(x => !x.StartsWith("GET ", StringComparison.Ordinal)) == mutations,
+                "failed preference save makes no host mutation");
             Capture("settings-save-failure");
         }
         finally { Directory.Delete(file); File.Move(file + ".saved", file); }
+        Check(File.ReadAllBytes(file).SequenceEqual(savedBytes), "original preference file restored byte-for-byte for restart");
         window.Close(); await Open();
         Check(Named<CheckBox>("Close to tray").IsChecked == true && Named<CheckBox>("Minimize to tray").IsChecked == false
             && Named<CheckBox>("Usage and rate-limit alerts").IsChecked == false, "fresh window reloads independent flags");
