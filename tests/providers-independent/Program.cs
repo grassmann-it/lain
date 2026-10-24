@@ -15,7 +15,8 @@ var cases = new (string Name, Func<Task> Run)[]
     ("metadata and unknown quantities survive projection", Checks.Metadata),
     ("unsupported capability is neutral", Checks.NeutralCapability),
     ("actual refresh failures retain stale last-good", Checks.RealFailure),
-    ("one connection supports independent model routes", Checks.Connections)
+    ("one connection supports independent model routes", Checks.Connections),
+    ("neutral presentation versus genuine failure", PresentationChecks.Run)
 };
 var failures = 0;
 foreach (var (name, run) in cases)
@@ -168,6 +169,14 @@ static class Checks
             state = accounts.ReplaceApiCredential(state.Revision, account.Id, "synthetic-replacement");
             Check(state.Accounts.Single().Id == account.Id && state.Routes.All(r => r.AccountIds.Single() == account.Id), "key replacement preserves account and route identities");
             Check(state.AppliedRevision == 0, "setup and route edits never auto-apply profile");
+            // The account ID originally derives from key-A, but replacement must
+            // preserve it. Re-adding key-A must never overwrite key-B on that ID,
+            // even if public duplicate-identity validation rejects the new add.
+            var replacement = secrets.ReadAccount(account.Id);
+            var publicBeforeCollision = JsonSerializer.Serialize(repository.Snapshot);
+            Reject<ArgumentException>(() => accounts.AddApi(state.Revision, input), "re-adding the old key must reject an existing stable-ID collision");
+            Check(secrets.ReadAccount(account.Id) == replacement, "re-adding the old key after rotation must not overwrite the existing account secret");
+            Check(JsonSerializer.Serialize(repository.Snapshot) == publicBeforeCollision, "rejected old-key re-add preserves exact revision, accounts, routes and profiles");
         }
         finally { if (Directory.Exists(temporary)) Directory.Delete(temporary, true); }
         return Task.CompletedTask;

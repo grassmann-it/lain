@@ -32,5 +32,8 @@ Pending integrated review supplements (not claimed by these fixtures):
   original data freshness, spend-cap labels and absence of fabricated percentages.
 - Fresh installed Codex onboarding catalog artifact and Main's private live evidence.
 
-Contract pin for authorship: `7e9837a`. Written before the product implementation;
-no build or run has been performed at this stage.
+Contract pin for initial authorship: `7e9837a`. Source review at `aefcd78` added
+old-key re-add after credential replacement and headless presentation predicates
+(unverified versus actual failure; successful empty Monitoring response versus
+error and last-good data). These checks load presentation types but create no UI,
+window, service or network client. No build or run has been performed at this stage.

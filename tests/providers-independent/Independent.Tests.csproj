@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
-  <ItemGroup><ProjectReference Include="../../src/Lain.Host/Lain.Host.csproj" /></ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Lain.Host/Lain.Host.csproj" />
+    <ProjectReference Include="../../src/Lain.Cli/Lain.Cli.csproj" />
+    <ProjectReference Include="../../src/Lain.Desktop/Lain.Desktop.csproj" />
+  </ItemGroup>
 </Project>
