@@ -14,7 +14,7 @@ The 120-second timeout and traps terminate only the runner's Xvfb/private bus.
 
 The actual production App theme, MainWindow and TrayWorkspaceController are used.
 Window show/hide/close/minimize events are native Avalonia lifecycle operations on
-the private display. A fake application lifetime captures Quit UI, while an
+the private display. An injected exit callback captures Quit UI, while an
 injected quota poll, notification sink and controllable availability check keep
 real host/provider services and notifications untouched. Native menu commands
 use Avalonia's exporter event bridge, not OS pointer hit-testing. This validates

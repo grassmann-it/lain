@@ -114,11 +114,11 @@ internal sealed class TrayScenario
 
     private async Task MinimizeAndClose()
     {
-        var input = new TrayInputs(); var life = new FakeLifetime(); var sink = new FakeSink();
-        var window = NewWindow(); life.MainWindow = window; var closed = false; window.Closed += (_, _) => closed = true;
-        using var tray = new TrayWorkspaceController(window, life, input.Poll, sink, input.Availability);
+        var input = new TrayInputs(); var life = new UiExitProbe(); var sink = new FakeSink();
+        var window = NewWindow(); var closed = false; window.Closed += (_, _) => closed = true;
+        using var tray = new TrayWorkspaceController(window, life.Quit, input.Poll, sink, input.Availability);
         tray.Configure(true, false, false);
-        Check(life.ShutdownMode == ShutdownMode.OnMainWindowClose, "controller makes a real main-window close terminate only its UI lifetime");
+        Check(life.ShutdownCalls == 0, "constructing the tray controller never quits the UI");
         window.WindowState = WindowState.Minimized;
         await Wait(() => !window.IsVisible, "enabled minimize option hides the window only after positive tray availability");
         Check(!closed && tray.TrayAvailable, "tray minimize keeps the native window alive");
@@ -140,7 +140,7 @@ internal sealed class TrayScenario
     {
         var input = new TrayInputs { Available = false }; var window = NewWindow(); var closed = false;
         window.Closed += (_, _) => closed = true;
-        using var tray = new TrayWorkspaceController(window, new FakeLifetime { MainWindow = window }, input.Poll, new FakeSink(), input.Availability);
+        using var tray = new TrayWorkspaceController(window, new UiExitProbe().Quit, input.Poll, new FakeSink(), input.Availability);
         tray.Configure(true, true, false);
         window.WindowState = WindowState.Minimized; await Task.Delay(150);
         Check(window.IsVisible && !closed && !tray.TrayAvailable, "no registered tray host never turns minimization into an invisible live window");
@@ -155,7 +155,7 @@ internal sealed class TrayScenario
             var gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var input = new TrayInputs { AvailabilityGate = gate }; var window = NewWindow(); var closed = false;
             window.Closed += (_, _) => closed = true;
-            using var tray = new TrayWorkspaceController(window, new FakeLifetime { MainWindow = window }, input.Poll, new FakeSink(), input.Availability);
+            using var tray = new TrayWorkspaceController(window, new UiExitProbe().Quit, input.Poll, new FakeSink(), input.Availability);
             tray.Configure(true, true, false);
             if (closing) window.Close(); else window.WindowState = WindowState.Minimized;
             await Wait(() => input.Probes > 0, "visibility change waits for the asynchronous host check");
@@ -169,8 +169,8 @@ internal sealed class TrayScenario
     private async Task HostLossAndMenu()
     {
         var input = new TrayInputs { Lines = Enumerable.Range(1, 10).Select(x => $"Fixture account {x} · 5h usage {x * 7}%").ToArray(), Alert = new("fixture-alert", "Fixture quota warning", "Fixture account 1 · 5h usage 90%") };
-        var sink = new FakeSink(); var life = new FakeLifetime(); var window = NewWindow(); life.MainWindow = window;
-        using var tray = new TrayWorkspaceController(window, life, input.Poll, sink, input.Availability);
+        var sink = new FakeSink(); var life = new UiExitProbe(); var window = NewWindow();
+        using var tray = new TrayWorkspaceController(window, life.Quit, input.Poll, sink, input.Availability);
         tray.Configure(true, true, true); tray.Start();
         await Wait(() => input.PollCalls > 0 && sink.Attempts > 0 && tray.TrayAvailable, "tray polling fills quota status and delivers an enabled alert through the injected sink");
         var quota = MenuItem("Quota summary").Menu!;
@@ -199,7 +199,7 @@ internal sealed class TrayScenario
         MainWindow Create(out TrayWorkspaceController controller)
         {
             var result = new MainWindow(new LainApiClient(http)) { Width = 1120, Height = 780 }; visible = result;
-            controller = new TrayWorkspaceController(result, new FakeLifetime { MainWindow = result }, input.Poll, sink, input.Availability);
+            controller = new TrayWorkspaceController(result, new UiExitProbe().Quit, input.Poll, sink, input.Availability);
             result.AttachTrayController(controller); result.Show(); return result;
         }
         static T Named<T>(Window window, string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(x => AutomationProperties.GetName(x) == name);
@@ -334,18 +334,10 @@ internal sealed class FakeSink : IDesktopNotificationSink
     public int Attempts;
     public Task<bool> SendAsync(DesktopAlert alert, CancellationToken token = default) { token.ThrowIfCancellationRequested(); Attempts++; return Task.FromResult(true); }
 }
-internal sealed class FakeLifetime : IClassicDesktopStyleApplicationLifetime
+internal sealed class UiExitProbe
 {
     public int ShutdownCalls;
-    public string[]? Args { get; set; }
-    public ShutdownMode ShutdownMode { get; set; }
-    public Window? MainWindow { get; set; }
-    public IReadOnlyList<Window> Windows => MainWindow is { } window ? [window] : [];
-    public event EventHandler<ControlledApplicationLifetimeStartupEventArgs>? Startup { add { } remove { } }
-    public event EventHandler<ControlledApplicationLifetimeExitEventArgs>? Exit { add { } remove { } }
-    public event EventHandler<ShutdownRequestedEventArgs>? ShutdownRequested { add { } remove { } }
-    public void Shutdown(int exitCode = 0) => ShutdownCalls++;
-    public bool TryShutdown(int exitCode = 0) { Shutdown(exitCode); return true; }
+    public void Quit() => ShutdownCalls++;
 }
 
 internal sealed record IpcResult(bool Owner, bool Reopened);
