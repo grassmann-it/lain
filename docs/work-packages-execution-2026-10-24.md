@@ -69,7 +69,7 @@ UX-Pilot-Ergebnisdateien gehören der parallelen Entwurfsrunde.
 
 | Paket | Zu beweisendes Ergebnis | Stand |
 | --- | --- | --- |
-| AC-00/01 | Account-/Methoden-/Ownerverträge, verlustfreie Migration, Host ohne Core, Reconnect/Cancel/Rotation-Recovery | Integriert; unabhängige Basis- und Hostprozesschecks bestanden. Neue automatische Erneuerung: Nebenläufigkeitsbefund in Nacharbeit. |
+| AC-00/01 | Account-/Methoden-/Ownerverträge, verlustfreie Migration, Host ohne Core, Reconnect/Cancel/Rotation-Recovery | Integriert; 139 Foundationprüfungen, unabhängige Szenarien und echte Hostprozesschecks bestanden, einschließlich korrigierter paralleler Erneuerung. |
 | AC-02/09 | Einheitlicher privater Desktop-/CLI-Connect, optionale Modelle, echte Fähigkeiten aller 25 Anbieter | Integriert, CLI geprüft; Connect-/Modelbildabnahme mit gezielten Nachkorrekturen läuft. |
 | AC-03 | Kilo Wallet/Pass, Requesty Self, Synthetic-Erweiterung, Step-Erhalt, xAI-Metadaten | Reader und unabhängige Metadatenaktualität integriert; erweiterte synthetische Readerprüfung bestanden. |
 | AC-04 | OpenRouter/Poe-Flow und Callback mit Lifecycle; Produktionsvoraussetzungen ehrlich qualifiziert | 56 echte-Host-Assembly-Fixturechecks bestanden; Poe benötigt eigene qualifizierte Registrierung, reale Logins nicht geprüft. |
@@ -77,15 +77,15 @@ UX-Pilot-Ergebnisdateien gehören der parallelen Entwurfsrunde.
 | AC-06 | Google/Cloudflare-Monitorquelle, Scope/Rechte und OAuthtransport separat qualifiziert | Adapter und Cloudfixtures bestanden; eigene Clientzulassung, tatsächliche Rechte und Cloudflare-Datasetqualifikation bleiben methodenspezifisch offen. |
 | AC-07 | Kimi/Z.ai/Codex-Owner und Loginwege mit erhaltener Legacy-Snapshotgrenze | Lokale Parser/Verträge geprüft; unqualifizierte zusätzliche Loginwege explizit deaktiviert. Codex-Corelogin und externer Snapshot getrennt erhalten. |
 | AC-08 | Begrenzte Console-Sessionintegration, MiMo zuerst, jeder Folgeanbieter separat qualifiziert | Begrenzte Reader-/Sessionverträge und lokale Fixtures integriert; kein unbewiesener produktiver Browsertransport aktiviert. |
-| AC-10 | Unabhängige Offlineabnahme, Paketierung, erhaltene Installation, reale Prüfung gesondert | Unabhängige Backendchecks bestanden; kombinierte UI-, exakte Paket-/Update-/Restoreabnahme und Lieferung noch offen. |
+| AC-10 | Unabhängige Offlineabnahme, Paketierung, erhaltene Installation, reale Prüfung gesondert | Unabhängige Backend- und kombinierte UI-Prüfungen bestanden; exakte Paket-/Update-/Restoreabnahme und Lieferung folgen. |
 | ST-01 | Versionierte Client-/Modellfähigkeiten, tatsächliche Tool-/Streaming-/Kontextgrenzen, keine stillen Kürzungen | Transportmatrix und qualifizierte Toolgrenzen in Host/Core geprüft; kein universeller Kontext-Tokenizer oder unbelegter Providerbeweis. |
-| ST-02 | Vorschau, gespeicherter/aktiver/exportierter Stand, Wiederherstellung und konsistente Clientartefakte | Profil-/Recoveryfixtures bestanden; native Applybedienung geprüft, tatsächliche Host/Core-Drainintegration folgt. |
+| ST-02 | Vorschau, gespeicherter/aktiver/exportierter Stand, Wiederherstellung und konsistente Clientartefakte | 92 Profil-/Recoverychecks und echte Host/Core-Drainintegration bestanden. Laufende Requests verweigern Apply mit erklärendem HTTP 409; alte Runtime, Stream und Beweisdateien bleiben erhalten. |
 | ST-03 | Teilmessungen und Fehlerkategorien serverseitig, gleiche CLI/UI-Zahlen und erhaltene Replaysemantik | Integrierte Teilmessungs- und Clientchecks bestanden; schmale Usagebildabnahme wird nach Layoutkorrektur wiederholt. |
-| ST-04 | Wachstum/Start/RAM gemessen; Datenpflege, konsistentes Backup/Restore, Fehler-/Recoveryfälle | Sparse Index, begrenzte Messung und nichtdestruktive Journalrecovery geprüft; vollständige Hostzustandswiederherstellung und echte Dateisystemerschöpfung noch zu qualifizieren. |
+| ST-04 | Wachstum/Start/RAM gemessen; Datenpflege, konsistentes Backup/Restore, Fehler-/Recoveryfälle | Sparse Index, begrenzte Messung, nichtdestruktive Journalrecovery und echte ENOSPC auf isoliertem 1-MiB-tmpfs bestanden; vollständige Paket-/Hostzustandswiederherstellung folgt. |
 | ST-05 | Aktuelle Build-/Supportidentität, wiederholbarer Release, Fresh install/Update/Rollback | Getrennte Publisher und isolierte Paketprobe vorbereitet; frische Artefakte und tatsächliche Lieferung fehlen noch. |
 | UX-01 | Stabile Accountkacheln/Details, alle Fenster und richtige Budgetzustände | UXD-01/02 integriert; Geometrie, Rückweg und native Commands geprüft; abschließende Bildmatrix läuft. |
 | UX-02 | Unterschiedliche Modi, kompakte Monitoransicht und gemeinsame Objektcommands | Modus-/Capabilitymatrix integriert; native Tastatur und Kontextmenü bestanden; vollständige Barrierefreiheit nicht behauptet. |
-| UX-03 | Übersichtliche Models/Profiles/Usage/Live, Settings und Navigation ohne Duplizierung | UXD-03–08 integriert; sichtbare Befunde aus erster Bildprüfung werden vor finalem Lauf korrigiert. |
+| UX-03 | Übersichtliche Models/Profiles/Usage/Live, Settings und Navigation ohne Duplizierung | UXD-03–08 integriert und sichtbare Befunde korrigiert; zusätzlich 50 Connect-/Modelchecks, 15 Profilchecks und 29 Settingschecks bestanden. |
 
 Ein Quellenbeleg, ein implementierter Adapter, lokale Fixtureprüfung, installiertes
 Paket und reales Providerergebnis bleiben verschiedene Nachweise. Fehlt eine
@@ -145,3 +145,36 @@ Hostverdrahtung und Integration. Gemeinsame Shell-/Policyhelpers nur über Owner
   sichtbare Ergebnisfläche bei 800×560. Die Korrekturen werden anhand stärkerer
   Lesbarkeits- und Layoutassertions erneut geprüft. Frühere Capturezahlen sind
   kein Nachweis für die nachfolgend geänderte Assembly.
+
+## Abschluss der integrierten Quellenprüfung
+
+Die genannten Zwischenbefunde sind inzwischen gezielt behoben: 139 Foundation-,
+98 Quota-, 73 Reader- und 55 Cloudprüfungen bestanden; 218 CLI-/Clientverträge
+bleiben grün. Der ältere Quotatest verlangt jetzt wie AC-01 den ursprünglichen
+Beobachtungszeitpunkt. Passmetadaten werden mit eigener alter Aktualität erhalten,
+während das Wallet eine neue erfolgreiche Messung bekommen kann.
+
+UXD-09 bewahrt den fehlgeschlagenen breiten Zwischenlauf und ergänzt den
+gezielten Abschluss mit 8/8 Fällen und 141 Assertions. Das
+[geprüfte Bild-/Eingabeprotokoll](../tests/uxd-acceptance/review.md) enthält alle
+14 Referenzzuordnungen, Quellen-/Assemblyhashes und tatsächlich gesichtete PNGs.
+Die anschließend ausgeführten speziellen Connect-, Profil- und Settingsfixtures
+decken Modellattachment, vollständige Policybearbeitung, Clientartefakte,
+Dateifehler und Neustart zusätzlich ab. Die Laufprotokolle enthalten auch die
+anfänglichen Harnessfehler und deren Korrekturen.
+
+Am 24.10. meldete der Nutzer Speicher-/I/O-Druck. Der Integrator beendete die
+laufende Testserie und löschte auf ausdrücklichen Wunsch rund 6,3 GiB nicht mehr
+benötigter, inaktiver temporärer Build-/Installationsdateien. `/tmp` sank von
+7,3 GiB auf etwa 1 GiB. Bestehende Dienste und Proxy wurden dabei nicht verändert.
+Nach ausdrücklicher Fortsetzungsfreigabe laufen weitere Builds/Prüfungen seriell
+in eigener systemd-Scope mit 1,5 CPU, 1,5 GiB MemoryHigh, 2 GiB MemoryMax und
+256 MiB Swaplimit, niedriger CPU-/I/O-Priorität. Temporäre Buildarbeit verwendet
+einen eigenen SSD-Ordner; unbenötigte Zwischenstände werden gelöscht.
+
+Evidenzverzeichnisse: `/tmp/lain-integrated-final-20261024/` für die ersten
+Integrationsläufe und `/home/tomka/.cache/lain-qualification-20261024/` für
+folgende Kandidatenprüfungen. Ein durch die Ressourcenunterbrechung abgebrochener
+Lauf bleibt abgebrochen. Der erneute echte Host/Core-Draincheck bestand mit
+HTTP 409 und unverändertem altem Betrieb. Paketierung/Installation sowie reale
+Anbieterprüfungen bleiben getrennte noch folgende Nachweise.
