@@ -21,7 +21,7 @@
   "adapterFiles": {
     "cmd/lain-proxy/journal.go": "cf1cf3cab998808d5a372e0f8533ba8e7fb6b74f2fb9510442f8a626f1b842bd",
     "cmd/lain-proxy/journal_test.go": "308966cb1f4bb4618c0ae3393906a6252e5c632e87daa8dbd47f49f4c2f2466e",
-    "cmd/lain-proxy/main.go": "d02345f124f5d4d4a98452868d448bff4140c8cc6af99bac16697c5ec1b9252c",
+    "cmd/lain-proxy/main.go": "bcedf153210fc5222b1477f2906cd18da65175a6cbce99c8a0ad617f7c7075d1",
     "cmd/lain-proxy/main_test.go": "c69dff705747c2f78f5cc938167583560663e89af10630d44b0e10dfd133f378",
     "go.mod": "836b559c3fa1de49d9179399a5ef12a75d2702284cff6d7bed4235395c28b5af",
     "go.sum": "419dd171e18aeab06bbe158bcdb1346c216da63a51e203eab127ca9a510d4fe8",
@@ -94,7 +94,7 @@
     "proxy/LICENSE.upstream": "879792e89cf1bdd6a8d446033ec87e30496f97dcafc4656dc53f641509b346a6",
     "proxy/adapter/cmd/lain-proxy/journal.go": "cf1cf3cab998808d5a372e0f8533ba8e7fb6b74f2fb9510442f8a626f1b842bd",
     "proxy/adapter/cmd/lain-proxy/journal_test.go": "308966cb1f4bb4618c0ae3393906a6252e5c632e87daa8dbd47f49f4c2f2466e",
-    "proxy/adapter/cmd/lain-proxy/main.go": "d02345f124f5d4d4a98452868d448bff4140c8cc6af99bac16697c5ec1b9252c",
+    "proxy/adapter/cmd/lain-proxy/main.go": "bcedf153210fc5222b1477f2906cd18da65175a6cbce99c8a0ad617f7c7075d1",
     "proxy/adapter/cmd/lain-proxy/main_test.go": "c69dff705747c2f78f5cc938167583560663e89af10630d44b0e10dfd133f378",
     "proxy/adapter/go.mod": "836b559c3fa1de49d9179399a5ef12a75d2702284cff6d7bed4235395c28b5af",
     "proxy/adapter/go.sum": "419dd171e18aeab06bbe158bcdb1346c216da63a51e203eab127ca9a510d4fe8",

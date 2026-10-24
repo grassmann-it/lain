@@ -295,6 +295,7 @@ def parent_death_probe(core):
             except ProcessLookupError:
                 pass
         run.__exit__()
+        libc.prctl(36, 0, 0, 0, 0)
 
 
 def journal_probe(core):
@@ -355,6 +356,8 @@ def main():
     parser.add_argument("--core", required=True, type=Path)
     parser.add_argument("--report", required=True, type=Path)
     args = parser.parse_args()
+    expect([name for _, name in socket.if_nameindex()] == ["lo"],
+           "run this harness in a private network namespace with only loopback enabled")
     core = str(args.core.resolve(strict=True))
     before = hashlib.sha256(Path(core).read_bytes()).hexdigest()
     checks = []
@@ -369,6 +372,7 @@ def main():
         print(json.dumps(checks[-1]), flush=True)
     unchanged = before == hashlib.sha256(Path(core).read_bytes()).hexdigest()
     report = {"schemaVersion": 1, "syntheticOnly": True, "actualCoreProcesses": True, "coreSha256": before,
+              "networkIsolation": "private_network_namespace_loopback_only",
               "binaryUnchanged": unchanged, "sourceManifestSha256": hashlib.sha256((ROOT / "proxy/source-manifest.json").read_bytes()).hexdigest(),
               "passed": unchanged and all(check["passed"] for check in checks), "checks": checks,
               "notQualified": ["live provider inference", "installed service", "old-binary rollback", "full Host config/credentials/SQLite backup restore", "sustained production growth"]}

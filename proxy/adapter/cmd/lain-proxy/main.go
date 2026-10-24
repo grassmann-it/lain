@@ -144,7 +144,13 @@ func run() error {
 			cancel()
 		})
 	}
-	return service.Run(ctx)
+	err = service.Run(ctx)
+	// EOF from the owning Host and termination signals are expected lifetime
+	// cancellation, not startup failures. Preserve all unrelated service errors.
+	if errors.Is(err, context.Canceled) && ctx.Err() != nil {
+		return nil
+	}
+	return err
 }
 
 // A private inherited pipe ties this runtime to its owning Host. Do not retain

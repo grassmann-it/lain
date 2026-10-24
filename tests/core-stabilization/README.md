@@ -154,9 +154,10 @@ The separate actual-process harness is prepared for the integrator's serialized
 runtime slot. It accepts only an explicitly supplied freshly built Core:
 
 ```sh
-python3 tests/core-stabilization/process_probe.py \
+unshare -Urn sh -c 'ip link set lo up && exec python3 \
+  tests/core-stabilization/process_probe.py \
   --core /absolute/private-build/lain-proxy \
-  --report /absolute/private-evidence/core-stabilization-process.json
+  --report /absolute/private-evidence/core-stabilization-process.json'
 ```
 
 Its assertions cover gated SSE/drain/reopen, original and final tool constraints,
@@ -164,3 +165,9 @@ native executor protocol scope, actual stdin EOF, abrupt synthetic owner death,
 legacy-format checkpoint replay, startup refusal of torn tails and adoption of
 a recovered copy into a temporary fixture. Only a passing report bound to the
 binary and source-manifest hashes counts as executed process evidence.
+
+The harness refuses a network namespace with non-loopback interfaces. The pinned
+upstream SDK starts a public npm client-version check even without that provider's
+account; the private namespace gives it no external network route. This preserves
+the two existing upstream patches and does not mistake the SDK's incidental
+metadata lookup for an authorized live-provider qualification.
