@@ -14,6 +14,7 @@ public sealed partial class MainWindow
     private string _accountSearch = "";
     private string _accountProvider = "All providers";
     private string _accountStatus = "All states";
+    private bool _accountFiltersExpanded;
 
     private Control AccountsPage()
     {
@@ -55,7 +56,22 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(group, "Group accounts by provider");
         var clear = Ui.Button("Clear filters", () => { search.Text = ""; provider.SelectedIndex = 0; status.SelectedIndex = 0; });
         panel.Children.Add(search);
-        panel.Children.Add(OverviewActions(provider, status, order, group, clear));
+        var filterOptions = new Expander
+        {
+            Header = "Filters and order", IsExpanded = _accountFiltersExpanded,
+            HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Content = OverviewActions(provider, status, order, group, clear)
+        };
+        AutomationProperties.SetName(filterOptions, "Account filters and order");
+        AutomationProperties.SetHelpText(filterOptions, "Filter by provider or account state, change ordering, or group accounts by provider.");
+        filterOptions.PropertyChanged += (_, args) =>
+        {
+            if (args.Property == Expander.IsExpandedProperty) _accountFiltersExpanded = filterOptions.IsExpanded;
+        };
+        panel.Children.Add(filterOptions);
+        var activeFilters = new WrapPanel { Orientation = Orientation.Horizontal, IsVisible = false };
+        AutomationProperties.SetName(activeFilters, "Active account filters");
+        panel.Children.Add(activeFilters);
         var count = Ui.Text("", 12, Ui.Muted);
         var inventory = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch };
         panel.Children.Add(count);
@@ -71,12 +87,21 @@ public sealed partial class MainWindow
                 (_accountProvider == "All providers" || ProviderName(account).Equals(_accountProvider, StringComparison.OrdinalIgnoreCase))
                 && AccountMatchesStatus(account)
                 && $"{account.Name} {account.Provider} {ProviderName(account)} {account.Id}".Contains(_accountSearch.Trim(), StringComparison.OrdinalIgnoreCase)).ToArray();
-            var filter = new List<string>();
-            if (!string.IsNullOrWhiteSpace(_accountSearch)) filter.Add($"search: {_accountSearch.Trim()}");
-            if (_accountProvider != "All providers") filter.Add(_accountProvider);
-            if (_accountStatus != "All states") filter.Add(_accountStatus);
+            activeFilters.Children.Clear();
+            void AddFilterChip(string label, string action, Action remove)
+            {
+                var chip = Ui.Button(label + " ×", remove);
+                chip.Margin = new Thickness(0, 0, 6, 4);
+                chip.Padding = new Thickness(8, 3);
+                AutomationProperties.SetName(chip, action);
+                activeFilters.Children.Add(chip);
+            }
+            if (!string.IsNullOrWhiteSpace(_accountSearch)) AddFilterChip("Search: " + _accountSearch.Trim(), "Clear account search", () => search.Text = "");
+            if (_accountProvider != "All providers") AddFilterChip(_accountProvider, "Clear account provider filter", () => provider.SelectedIndex = 0);
+            if (_accountStatus != "All states") AddFilterChip(_accountStatus, "Clear account state filter", () => status.SelectedIndex = 0);
+            activeFilters.IsVisible = activeFilters.Children.Count > 0;
             count.Text = $"{found.Length} of {cfg.Accounts.Length} accounts · {cfg.Accounts.Count(account => account.Enabled)} enabled"
-                + (filter.Count > 0 ? " · " + string.Join(" · ", filter) : " · " + (_preferences.AccountSort switch { "name" => "Ordered by name", "provider" => "Ordered by provider and name", _ => "Pinned first, then provider and name" }));
+                + " · " + (_preferences.AccountSort switch { "name" => "Ordered by name", "provider" => "Ordered by provider and name", _ => "Pinned first, then provider and name" });
             if (found.Length == 0)
             {
                 inventory.Content = Empty("No accounts match these filters. Clear filters to see the full inventory.");
