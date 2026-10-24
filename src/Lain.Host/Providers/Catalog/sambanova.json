@@ -1,0 +1,194 @@
+{
+  "id": "sambanova",
+  "name": "SambaNova",
+  "summary": "Llama 3.3 70B on SambaNova through the standard Chat transport. Own private API key required; account access and budget remain unverified.",
+  "accountUrl": "https://cloud.sambanova.ai/apis",
+  "documentationUrl": "https://docs.sambanova.ai/docs/en/get-started/quickstart",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "SambaNova API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true,
+      "help": "Create a key for the intended account or organization in the official console. Enter it privately in lain; never in chat, logs or route settings."
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Create the intended SambaCloud key",
+      "description": "Open API keys and use the personal Cloud account, not SambaStack or SambaStudio credentials.",
+      "url": "https://cloud.sambanova.ai/apis"
+    },
+    {
+      "title": "Confirm the current tier",
+      "description": "For a free probe, confirm no linked payment method and that the selected model has free access. Do not add a payment method or upgrade for testing.",
+      "url": "https://docs.sambanova.ai/docs/en/models/rate-limits"
+    },
+    {
+      "title": "Save privately in lain",
+      "description": "Select the pinned Llama route and enter the key in lain. Saving is not a live inference or quota check.",
+      "url": null
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "free",
+      "name": "SambaCloud Free Tier",
+      "kind": "free",
+      "scope": "user",
+      "unit": "unknown",
+      "includedAmount": null,
+      "resetDescription": null,
+      "expiresAt": null,
+      "limits": [
+        {
+          "kind": "requests",
+          "value": 20,
+          "unit": "requests",
+          "window": "minute",
+          "scope": "user/model",
+          "notes": "Published for this concrete model; not an observed remaining value."
+        },
+        {
+          "kind": "requests",
+          "value": 20,
+          "unit": "requests",
+          "window": "day",
+          "scope": "user/model",
+          "notes": "Published for this concrete model; not an observed remaining value."
+        },
+        {
+          "kind": "tokens",
+          "value": 200000,
+          "unit": "tokens",
+          "window": "day",
+          "scope": "user/model",
+          "notes": "Free-tier published allowance; no remaining token endpoint qualified."
+        }
+      ],
+      "notes": "No linked payment method. Published per-model rate limits are offer limits, not observed remaining quota. Individual account/tier unverified."
+    },
+    {
+      "id": "developer",
+      "name": "SambaCloud Developer Tier",
+      "kind": "payg",
+      "scope": "user",
+      "unit": "unknown",
+      "includedAmount": null,
+      "resetDescription": null,
+      "expiresAt": null,
+      "limits": [],
+      "notes": "A linked payment method changes the tier. Not a free overflow route; no purchase or upgrade is performed."
+    }
+  ],
+  "routes": [
+    {
+      "id": "sambanova/Meta-Llama-3.3-70B-Instruct",
+      "model": "Meta-Llama-3.3-70B-Instruct",
+      "name": "Llama 3.3 70B on SambaNova",
+      "baseUrl": "https://api.sambanova.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "developer"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": true,
+        "streaming": true,
+        "reasoning": null,
+        "images": false,
+        "structuredOutput": null,
+        "reasoningModes": null
+      },
+      "modelFamily": "llama-3.3",
+      "manufacturer": "Meta",
+      "inferenceProvider": "SambaNova",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.sambanova.ai/docs/en/get-started/api-keys-urls",
+          "title": "SambaCloud keys and exact API URLs",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/models/sambacloud-models",
+          "title": "Current SambaCloud model IDs and context",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "Meta-Llama-3.3-70B-Instruct is a production text model with published 128k context; this is a catalog limit, not guaranteed account capacity."
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/features/function-calling",
+          "title": "Model-specific function calling",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "Explicitly lists Meta-Llama-3.3-70B-Instruct; function and tool-result example provided."
+        }
+      ],
+      "restrictions": [
+        "Pinned text-only model Meta-Llama-3.3-70B-Instruct; published context is 128k. Exact context token integer and maximum output remain unverified.",
+        "Tools and streaming are documented for this model; no general Responses, reasoning, image or structured-output guarantee is made by this route.",
+        "Same endpoint can be free or paid according to the account tier. Confirm no linked payment method and actual remaining access before a free live probe.",
+        "No standalone quota polling endpoint qualified; documented RPM/RPD response headers are not collected by this package. Local history covers only requests observed by lain.",
+        "Follow current SambaCloud terms; API compatibility does not establish redistribution or high-volume production rights."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://docs.sambanova.ai/docs/en/get-started/api-keys-urls",
+      "title": "SambaCloud keys and exact API URLs",
+      "checkedAt": "2026-10-24T15:49:15Z",
+      "notes": null
+    },
+    {
+      "url": "https://docs.sambanova.ai/docs/en/models/sambacloud-models",
+      "title": "Current SambaCloud model IDs and context",
+      "checkedAt": "2026-10-24T15:49:15Z",
+      "notes": "Meta-Llama-3.3-70B-Instruct is a production text model with published 128k context; this is a catalog limit, not guaranteed account capacity."
+    },
+    {
+      "url": "https://docs.sambanova.ai/docs/en/features/function-calling",
+      "title": "Model-specific function calling",
+      "checkedAt": "2026-10-24T15:49:15Z",
+      "notes": "Explicitly lists Meta-Llama-3.3-70B-Instruct; function and tool-result example provided."
+    },
+    {
+      "url": "https://docs.sambanova.ai/docs/en/get-started/quickstart",
+      "title": "Streaming Chat example with usage",
+      "checkedAt": "2026-10-24T15:49:15Z",
+      "notes": "Documents stream=true and stream_options.include_usage for this exact model."
+    },
+    {
+      "url": "https://docs.sambanova.ai/docs/en/models/rate-limits",
+      "title": "Free versus Developer tiers and rate headers",
+      "checkedAt": "2026-10-24T15:49:15Z",
+      "notes": "Free Tier means no linked payment method. RPM/RPD request headers are not remaining token credits. Header collection is not implemented for SambaNova in lain."
+    },
+    {
+      "url": "https://sambanova.ai/cloud-end-user-license-agreement",
+      "title": "SambaCloud terms",
+      "checkedAt": "2026-10-24T15:49:15Z",
+      "notes": "Personal API client guidance is not blanket authorization for resale or competing services."
+    }
+  ],
+  "restrictions": [
+    "Pinned text-only model Meta-Llama-3.3-70B-Instruct; context is documented as 128k, maximum output remains unverified.",
+    "Tools and streaming are documented for this model; no general Responses, reasoning, image or structured-output guarantee is made by this route.",
+    "Same endpoint can be free or paid according to the account tier. Confirm no linked payment method and actual remaining access before a free live probe.",
+    "No standalone quota polling endpoint qualified; documented RPM/RPD response headers are not collected by this package. Local history covers only requests observed by lain.",
+    "Follow current SambaCloud terms; API compatibility does not establish redistribution or high-volume production rights.",
+    "No live credentials, inference or individual account entitlement tested.",
+    "No automatic purchase, payment-method setup, auto-recharge or paid fallback.",
+    "Free-only routing is not eligible without qualified runtime prevention of paid usage."
+  ],
+  "adapterState": "available",
+  "liveVerification": "not_tested",
+  "quotaSupport": "unsupported"
+}

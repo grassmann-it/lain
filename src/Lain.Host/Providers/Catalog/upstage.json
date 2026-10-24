@@ -1,0 +1,165 @@
+{
+  "id": "upstage",
+  "name": "Upstage",
+  "summary": "Solar Mini 4 (2026-09-22) through the standard Chat transport. Own private API key required; account access and budget remain unverified.",
+  "accountUrl": "https://console.upstage.ai/api-keys",
+  "documentationUrl": "https://console.upstage.ai/api/chat",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "Upstage API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true,
+      "help": "Create a key for the intended account or organization in the official console. Enter it privately in lain; never in chat, logs or route settings."
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Select the intended organization and key",
+      "description": "Create or choose an API key in the Upstage organization that owns the intended credits. Enter it privately in lain.",
+      "url": "https://console.upstage.ai/api-keys"
+    },
+    {
+      "title": "Confirm trial and billing state",
+      "description": "Inspect credits and expiry privately in Console. A payment method can cause paid usage after credits run out. No purchase, card addition or auto-recharge is needed for preparation.",
+      "url": "https://console.upstage.ai/billing/credit"
+    },
+    {
+      "title": "Save a pinned model route",
+      "description": "Use solar-mini4-260922 at the global https://api.upstage.ai/v1 endpoint. Saving does not spend credits or prove live access.",
+      "url": null
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "signup-trial",
+      "name": "Upstage introductory credits",
+      "kind": "trial",
+      "scope": "organization",
+      "unit": "unknown",
+      "includedAmount": null,
+      "resetDescription": null,
+      "expiresAt": null,
+      "limits": [],
+      "notes": "Official signup offer advertises $10. Granted amount, current balance, expiry and card requirement are unverified; no recurring free API allowance is claimed."
+    }
+  ],
+  "routes": [
+    {
+      "id": "upstage/solar-mini4-260922",
+      "model": "solar-mini4-260922",
+      "name": "Solar Mini 4 (2026-09-22)",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": 131072,
+        "tools": true,
+        "streaming": true,
+        "reasoning": null,
+        "images": false,
+        "structuredOutput": null,
+        "reasoningModes": null
+      },
+      "modelFamily": "solar-mini-4",
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        }
+      ],
+      "restrictions": [
+        "Pinned dated snapshot solar-mini4-260922, avoiding a silently moving model alias. Global API endpoint only; Korean regional and marketplace endpoints are separate configurations.",
+        "Published context is 512K; the exact context token integer remains unverified rather than assuming a decimal or binary K convention.",
+        "Text input/output only on this prepared route. Tools and streaming are explicitly documented for Solar Mini 4, not inferred from OpenAI compatibility.",
+        "Reasoning modes and structured output are documented upstream but not qualified end-to-end by this package; those route fields remain unknown.",
+        "Signup credit offer is not observed balance. Actual credit grant, expiry, card requirement and no-charge entitlement must be confirmed privately before a live probe.",
+        "A registered payment method can be charged after credits expire or run out. This package does not configure billing, auto-recharge, purchase or a paid fallback.",
+        "No suitable public quota/credit polling endpoint qualified or implemented. Organization usage in Console and lain-only local history do not imply full API account quota."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+      "title": "Solar Mini 4 model and dated snapshot",
+      "checkedAt": "2026-10-24T15:49:15Z",
+      "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+    },
+    {
+      "url": "https://console.upstage.ai/api/chat",
+      "title": "Upstage Chat API and supported parameters",
+      "checkedAt": "2026-10-24T15:49:15Z",
+      "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+    },
+    {
+      "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+      "title": "Solar model tool-calling guide",
+      "checkedAt": "2026-10-24T15:49:15Z",
+      "notes": null
+    },
+    {
+      "url": "https://console.upstage.ai/docs/getting-started",
+      "title": "Private key setup and introductory credit offer",
+      "checkedAt": "2026-10-24T15:49:15Z",
+      "notes": "Advertises $10 signup credits; this does not establish individual grant, balance, expiry or card requirement."
+    },
+    {
+      "url": "https://console.upstage.ai/docs/resources/faq",
+      "title": "Organization keys, credits and payment fallback",
+      "checkedAt": "2026-10-24T15:49:15Z",
+      "notes": "Keys belong to an organization. With a payment method registered, exhausted credits can lead to charges. Console budget enforcement may permit minor overages."
+    },
+    {
+      "url": "https://console.upstage.ai/docs/guides/rate-limits",
+      "title": "Tier-dependent rate limits",
+      "checkedAt": "2026-10-24T15:49:15Z",
+      "notes": "Published tier limits are not an observed remaining quota or a polling API."
+    },
+    {
+      "url": "https://console.upstage.ai/api/responses",
+      "title": "Output token validation bound for the same Solar Mini 4 model",
+      "checkedAt": "2026-10-24T15:49:15Z",
+      "notes": "Documents max_output_tokens maximum 131,072 including reasoning; Chat model specification separately states 128K output. Native Responses is not configured by this package."
+    }
+  ],
+  "restrictions": [
+    "Pinned dated snapshot solar-mini4-260922, avoiding a silently moving model alias. Global API endpoint only; Korean regional and marketplace endpoints are separate configurations.",
+    "Text input/output only on this prepared route. Tools and streaming are explicitly documented for Solar Mini 4, not inferred from OpenAI compatibility.",
+    "Reasoning modes and structured output are documented upstream but not qualified end-to-end by this package; those route fields remain unknown.",
+    "Signup credit offer is not observed balance. Actual credit grant, expiry, card requirement and no-charge entitlement must be confirmed privately before a live probe.",
+    "A registered payment method can be charged after credits expire or run out. This package does not configure billing, auto-recharge, purchase or a paid fallback.",
+    "No suitable public quota/credit polling endpoint qualified or implemented. Organization usage in Console and lain-only local history do not imply full API account quota.",
+    "No live credentials, inference or individual account entitlement tested.",
+    "No automatic purchase, payment-method setup, auto-recharge or paid fallback.",
+    "Free-only routing is not eligible without qualified runtime prevention of paid usage."
+  ],
+  "adapterState": "available",
+  "liveVerification": "not_tested",
+  "quotaSupport": "unsupported"
+}
