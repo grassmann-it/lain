@@ -150,7 +150,7 @@ internal sealed class Probe
         var image = Controls<Image>().Single(x => AutomationProperties.GetName(x) == "Application logo");
         Check(image.Source is not null && image.Bounds.Width > 0 && image.Bounds.Height > 0 && window!.Icon is not null, "original cat logo and native window icon are present");
         await ReadAccountWindows(observer, config);
-        await CaptureBoth("accounts-simple");
+        await CaptureBoth("accounts-simple", verifyFooter: true);
         foreach (var destination in Destinations.Skip(1))
         {
             await Click(destination);
@@ -180,16 +180,20 @@ internal sealed class Probe
             Check(AllControls<TextBlock>().Any(x => x.Text == provider.Name), "discovery shows real catalog provider " + provider.Name);
         await CaptureBoth("discover-providers");
         await Click("Accounts");
-        foreach (var preset in new[] { "Barebones", "Advanced", "Simple" })
+        foreach (var preset in new[] { "Barebones", "Simple", "Advanced" })
         {
+            Check(!Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "View density"), "View stays closed before footer selects " + preset);
+            Named<ComboBox>("Information level").SelectedItem = preset;
+            await Task.Delay(100);
+            Check(!Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "View density"), "footer switches to " + preset + " without opening View");
             await Click("View");
-            Named<ComboBox>("Information level").SelectedIndex = Array.IndexOf(new[] { "Barebones", "Simple", "Advanced" }, preset);
+            Check(AllControls<ComboBox>().Count(x => AutomationProperties.GetName(x) == "Information level") == 1, "View does not duplicate the footer selector in " + preset);
             Named<ComboBox>("View density").SelectedIndex = preset == "Barebones" ? 1 : 0;
             await Click("Close view options");
             await Wait(() => File.Exists(Program.Preferences), "presentation writes only isolated preferences");
             Check(File.ReadAllText(Program.Preferences).Contains(preset, StringComparison.Ordinal), preset + " is saved in isolated preferences");
             Check(Controls<Button>().Count(x => x.Classes.Contains("nav")) == 5, preset + " keeps all five destinations");
-            await CaptureBoth("accounts-" + preset.ToLowerInvariant());
+            await CaptureBoth("accounts-" + preset.ToLowerInvariant(), verifyFooter: true);
         }
         await Click("Usage"); await HistoricalUsage();
         window!.Close();
@@ -197,7 +201,11 @@ internal sealed class Probe
         var closedStatus = await observer.StatusAsync();
         Check(closedStatus.ProxyReady, "host remains ready while window is closed");
         Check(StableUsage(await observer.UsageAsync(query)) == before, "fixed historical usage unchanged while closed");
-        await Open(); await Click("Usage"); await HistoricalUsage(); await CaptureBoth("reopened-usage");
+        await Open();
+        Check(Equals(Named<ComboBox>("Information level").SelectedItem, "Advanced")
+            && !Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "View density"),
+            "reopened exact-target window restores Advanced in its permanent footer with View closed");
+        await Click("Usage"); await HistoricalUsage(); await CaptureBoth("reopened-usage", verifyFooter: true);
         window!.Close(); await Task.Delay(200);
         var final = await observer.UsageAsync(query);
         var finalConfig = await observer.GetConfigurationAsync();
@@ -281,13 +289,26 @@ internal sealed class Probe
         var button = Controls<Button>().First(x => x.IsEnabled && (AutomationProperties.GetName(x) == name || Equals(x.Content, name)));
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Task.Delay(180);
     }
-    private async Task CaptureBoth(string page)
+    private void CheckInformationFooter()
+    {
+        var mode = Named<ComboBox>("Information level");
+        var point = mode.TranslatePoint(default, window!) ?? throw new Exception("Footer selector is detached");
+        Check(mode.Bounds.Width > 0 && mode.Bounds.Height > 0 && point.X > window!.Bounds.Width / 2
+            && point.Y > window.Bounds.Height * .75 && point.X + mode.Bounds.Width <= window.Bounds.Width + 1
+            && point.Y + mode.Bounds.Height <= window.Bounds.Height + 1
+            && window.Bounds.Width - point.X - mode.Bounds.Width <= 40
+            && window.Bounds.Height - point.Y - mode.Bounds.Height <= 40,
+            $"exact-target information-level selector fits the bottom right at {window.Bounds.Width:0}px");
+    }
+
+    private async Task CaptureBoth(string page, bool verifyFooter = false)
     {
         foreach (var (width, height) in new[] { (1120, 780), (800, 560) })
         {
             window!.Width = width; window.Height = height;
             await Wait(() => Math.Abs(window.Bounds.Width - width) < 2 && Math.Abs(window.Bounds.Height - height) < 2, page + " viewport " + width + "x" + height);
             await Task.Delay(120); window.UpdateLayout();
+            if (verifyFooter) CheckInformationFooter();
             var file = page + "-" + width + "x" + height + ".png";
             Capture(file);
             screenshots.Add(new { page, width, height, actualWidth = window.Bounds.Width, actualHeight = window.Bounds.Height, file, sha256 = Program.Hash(Path.Combine(Program.Output, file)) });

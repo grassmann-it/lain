@@ -289,7 +289,20 @@ internal sealed class TrayScenario
         static void Click(Window window, string name) => Named<Button>(window, name).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         var window = Create(out var tray);
         await Wait(() => fixture.StatusCalls > 0, "production MainWindow uses only the in-memory host fixture");
+        Check(Named<ComboBox>(window, "Information level").SelectedIndex == (int)InformationLevel.Simple,
+            "permanent information-level footer starts at Simple without opening View");
+        await CaptureBoth(window, "information-level-footer", () => CheckInformationFooter(window));
+        foreach (var level in new[] { InformationLevel.Barebones, InformationLevel.Simple, InformationLevel.Advanced })
+        {
+            Named<ComboBox>(window, "Information level").SelectedIndex = (int)level;
+            await Task.Delay(100);
+            Check(new WorkspacePreferencesStore().Current.Level == level
+                && !window.GetVisualDescendants().OfType<ComboBox>().Any(x => AutomationProperties.GetName(x) == "View density" && IsShown(x)),
+                $"footer switches and saves {level} while View stays closed");
+        }
         Click(window, "View"); await Task.Delay(100);
+        Check(window.GetVisualDescendants().OfType<ComboBox>().Count(x => AutomationProperties.GetName(x) == "Information level") == 1,
+            "opening View never duplicates the permanent information-level selector");
         Check(Named<CheckBox>(window, "Minimize to tray").IsChecked == true && Named<CheckBox>(window, "Close to tray").IsChecked == false
             && Named<CheckBox>(window, "Usage and rate-limit alerts").IsChecked == true, "View exposes separate minimize close and notification defaults");
         Named<CheckBox>(window, "Minimize to tray").IsChecked = false;
@@ -299,7 +312,10 @@ internal sealed class TrayScenario
         Check(!saved.MinimizeToTray && saved.CloseToTray && !saved.NotificationsEnabled, "all three background preferences save independently");
         await CaptureBoth(window, "background-view-options");
         tray.Dispose(); window.Close();
-        window = Create(out tray); Click(window, "View"); await Task.Delay(100);
+        window = Create(out tray);
+        Check(Named<ComboBox>(window, "Information level").SelectedIndex == (int)InformationLevel.Advanced,
+            "new MainWindow restores the footer level before View is opened");
+        Click(window, "View"); await Task.Delay(100);
         Check(Named<CheckBox>(window, "Minimize to tray").IsChecked == false && Named<CheckBox>(window, "Close to tray").IsChecked == true
             && Named<CheckBox>(window, "Usage and rate-limit alerts").IsChecked == false, "new MainWindow restores each independent background preference");
         MenuClick(MenuItem("Notifications:")); await Task.Delay(100);
@@ -376,11 +392,26 @@ internal sealed class TrayScenario
         return JsonSerializer.Deserialize<IpcResult>(await File.ReadAllTextAsync(result))!;
     }
 
-    private async Task CaptureBoth(Window window, string page)
+    private static bool IsShown(Control control) => control.IsVisible && control.GetVisualAncestors().OfType<Control>().All(x => x.IsVisible);
+
+    private void CheckInformationFooter(Window window)
+    {
+        var mode = window.GetVisualDescendants().OfType<ComboBox>().Single(x => AutomationProperties.GetName(x) == "Information level");
+        var point = mode.TranslatePoint(default, window) ?? throw new Exception("Footer selector is detached");
+        Check(IsShown(mode) && mode.Bounds.Width > 0 && mode.Bounds.Height > 0 && point.X > window.Bounds.Width / 2
+            && point.Y > window.Bounds.Height * .75 && point.X + mode.Bounds.Width <= window.Bounds.Width + 1
+            && point.Y + mode.Bounds.Height <= window.Bounds.Height + 1
+            && window.Bounds.Width - point.X - mode.Bounds.Width <= 40
+            && window.Bounds.Height - point.Y - mode.Bounds.Height <= 40,
+            $"permanent information-level selector fits the bottom right at {window.Bounds.Width:0}px");
+    }
+
+    private async Task CaptureBoth(Window window, string page, Action? verify = null)
     {
         foreach (var (width, height) in new[] { (1120, 780), (800, 560) })
         {
             window.Width = width; window.Height = height; await Task.Delay(200); window.UpdateLayout();
+            verify?.Invoke();
             var file = $"{page}-{width}x{height}.png";
             using var bitmap = new RenderTargetBitmap(new PixelSize((int)window.Bounds.Width, (int)window.Bounds.Height), new Vector(96, 96));
             bitmap.Render(window); bitmap.Save(Path.Combine(Output, file), new PngBitmapEncoderOptions());

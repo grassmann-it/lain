@@ -196,7 +196,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         CheckPrimaryNavigation();
         CheckBundledFonts();
         if (Environment.GetEnvironmentVariable("LAIN_DESKTOP_FONT_PROBE_ONLY") == "1") { window.Close(); return; }
-        await CaptureBoth("accounts-initial");
+        await CaptureBoth("accounts-initial", verify: CheckInformationFooter);
         await Click("Accounts");
         await CaptureBoth("accounts-closed");
         await CheckQuotaAccounts();
@@ -401,9 +401,22 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(window.Title == "lain — Local AI Gateway" && HasText("Local AI Gateway"), "window title and shell identify lain as the Local AI Gateway");
     }
 
+    private void CheckInformationFooter()
+    {
+        var mode = Named<ComboBox>("Information level");
+        var point = mode.TranslatePoint(default, window) ?? throw new Exception("Footer selector is detached");
+        Check(mode.Bounds.Width > 0 && mode.Bounds.Height > 0 && point.X > window.Bounds.Width / 2
+            && point.Y > window.Bounds.Height * .75 && point.X + mode.Bounds.Width <= window.Bounds.Width + 1
+            && point.Y + mode.Bounds.Height <= window.Bounds.Height + 1
+            && window.Bounds.Width - point.X - mode.Bounds.Width <= 40
+            && window.Bounds.Height - point.Y - mode.Bounds.Height <= 40,
+            $"Information level stays visible at the bottom right at {window.Bounds.Width:0}px");
+    }
+
     private async Task SelectPresentation(InformationLevel level, ViewDensity? density = null)
     {
-        if (!Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Information level")) await Click("View");
+        Check(Controls<ComboBox>().Count(x => AutomationProperties.GetName(x) == "Information level") == 1,
+            "one permanent Information level selector is available without opening View");
         var mode = Named<ComboBox>("Information level");
         mode.SelectedIndex = (int)level;
         await Task.Delay(100);
@@ -414,7 +427,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             await Task.Delay(100);
         }
         // The View panel is a toggle; leave the workspace ready for ordinary interaction.
-        if (Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Information level")) await Click("View");
+        if (Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "View density")) await Click("Close view options");
     }
 
     private async Task CheckEditorPreservation(string placeholder, string value)
