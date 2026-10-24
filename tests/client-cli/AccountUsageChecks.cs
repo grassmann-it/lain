@@ -28,12 +28,21 @@ internal static class AccountUsageChecks
         var human = await Run("usage");
         Check(human.Exit == 0 && human.Error == "" && human.Output.Contains("Account usage (6 accounts)"), "bare usage is the current all-account quota overview");
         Check(handler.Requests.SequenceEqual(new[] { "/api/v1/accounts", "/api/v1/quotas" }), "overview reads accounts and cached quotas on the same client, without historical/configuration/provider calls");
-        Check(human.Output.Contains("Personal Codex · codex · Enabled") && human.Output.Contains("Coding credits · command-code · Disabled") &&
-            human.Output.Contains("Missing credential") && human.Output.Contains("Credential state: Missing"), "overview uses actual account names/providers and retains disabled or missing-credential accounts");
+        Check(human.Output.Contains("Personal Codex · codex · shared") && human.Output.Contains("Coding credits · command-code · Disabled") &&
+            human.Output.Contains("Missing credential · zai · Missing"), "overview uses actual account names/providers and retains disabled or missing-credential accounts");
         Check(human.Output.Contains("40% used") && human.Output.Contains("7 days") && human.Output.Contains("96% used") &&
             human.Output.Contains("Quota not reported") && human.Output.Contains("Quota lookup not supported"), "all named windows and unavailable accounts remain visible without invented quotas");
+        Check(!human.Output.Contains("ID:") && !human.Output.Contains("source ") && !human.Output.Contains("Checked ") &&
+            !human.Output.Contains("same provider funds"), "compact overview omits repeated diagnostic details");
+        var full = await Run("usage", "--full");
+        Check(full.Exit == 0 && full.Error == "" && full.Output.Contains("ID: account-codex") && full.Output.Contains("Checked ") &&
+            full.Output.Contains("source ") && full.Output.Contains("same provider funds") && full.Output.Contains("Used 18 USD-Credits / 20 USD-Credits"),
+            "usage --full retains the detailed account and quota rendering");
 
         var structured = await Run("usage", "--json");
+        var fullStructured = await Run("usage", "--full", "--json");
+        Check(fullStructured.Exit == 0 && fullStructured.Error == "" && fullStructured.Output == structured.Output &&
+            handler.Requests.SequenceEqual(new[] { "/api/v1/accounts", "/api/v1/quotas" }), "--full is presentation-only and preserves overview JSON bytes and requests");
         using (var document = JsonDocument.Parse(structured.Output))
         {
             var root = document.RootElement;
@@ -53,7 +62,53 @@ internal static class AccountUsageChecks
         {
             var output = new StringWriter();
             await CliApplication.WriteAccountUsage(output, overview, new(width, false));
-            Check(output.ToString().Split('\n').All(line => HumanTable.Width(line.TrimEnd('\r')) <= width), $"named all-account overview fits {width} columns");
+            var detailed = new StringWriter();
+            await CliApplication.WriteAccountUsage(detailed, overview, new(width, false), full: true);
+            Check(output.ToString().Split('\n').All(line => HumanTable.Width(line.TrimEnd('\r')) <= width) &&
+                detailed.ToString().Split('\n').All(line => HumanTable.Width(line.TrimEnd('\r')) <= width), $"compact and full all-account overview fit {width} columns");
+            Check(output.ToString().Split('\n').Length < detailed.ToString().Split('\n').Length / 2 &&
+                output.ToString().Contains("12 USD-Credits left") && output.ToString().Contains("Reset due") && output.ToString().Contains("Last known"),
+                $"{width}-column compact overview remains substantially shorter while retaining balances and warnings");
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var freshness = new AccountUsageOverview(1, "account-usage", [new(
+            CliPresentationFixtures.Accounts[0] with { State = "unverified", ExpiresAt = now.AddMinutes(-1) },
+            [CliPresentationFixtures.Quotas[0] with { LastSuccessAt = now.AddMinutes(-6), ResetsAt = now.AddHours(2), WindowLabel = "Old snapshot" },
+             CliPresentationFixtures.Quotas[0] with { LastSuccessAt = now, ResetsAt = now.AddHours(2), WindowLabel = "Fresh snapshot" },
+             CliPresentationFixtures.Quotas[5] with { WindowLabel = "Unknown snapshot" }])]);
+        var ageOutput = new StringWriter();
+        await CliApplication.WriteAccountUsage(ageOutput, freshness, new(120, true));
+        var ageLines = ageOutput.ToString().Split('\n');
+        Check(ageLines.Single(line => line.Contains("Old snapshot")).Contains("Last known") &&
+            ageLines.Single(line => line.Contains("Old snapshot")).Contains("\u001b[33m") &&
+            ageLines.Single(line => line.Contains("Fresh snapshot")).Contains("\u001b[32m"), "successful snapshots older than five minutes are last-known warnings while fresh readings may be green");
+        Check(ageOutput.ToString().Contains("Expired") && !ageOutput.ToString().Contains("Unverified") &&
+            !ageLines.Single(line => line.Contains("Unknown snapshot")).Contains("[") &&
+            ageLines.Single(line => line.Contains("Unknown snapshot")).Contains("Percentage unknown"), "compact output retains expiry and unknown state without generic unverified verbosity or unknown zero bars");
+        var ageFull = new StringWriter();
+        await CliApplication.WriteAccountUsage(ageFull, freshness, new(120, false), full: true);
+        Check(ageFull.ToString().Contains("Credential state: Unverified") && ageFull.ToString().Contains("Last known"), "full output retains credential details and age warnings");
+
+        var fifteenWindows = new AccountUsageOverview(1, "account-usage", Enumerable.Range(0, 6).Select(index =>
+            new AccountUsageItem(new("compact-" + index, "Account " + index, "fixture", true, "api-key", "unverified"),
+                Enumerable.Range(0, index < 3 ? 3 : 2).Select(window => CliPresentationFixtures.Quotas[0] with
+                { LastSuccessAt = now, ResetsAt = now.AddHours(2), WindowLabel = "Window " + window }).ToArray())).ToArray());
+        var budgetOutput = new StringWriter();
+        await CliApplication.WriteAccountUsage(budgetOutput, fifteenWindows, new(100, false));
+        Check(budgetOutput.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Length <= 25 &&
+            budgetOutput.ToString().Split('\n').Count(line => line.Contains("40% used")) == 15,
+            "fifteen quota windows across six accounts fit within twenty-five lines at 100 columns");
+        foreach (var args in new[]
+        {
+            new[] { "usage", "--full", "--today", "--json" },
+            new[] { "usage", "analysis", "--full" },
+            new[] { "history", "--full" }
+        })
+        {
+            var rejected = await Run(args);
+            Check(rejected.Exit == 2 && rejected.Output == "" && rejected.Error.Contains("--full") && handler.Requests.Count == 0,
+                string.Join(' ', args) + " rejects overview-only --full before host access");
         }
 
         var expectedHistory = JsonSerializer.Serialize(CliPresentationFixtures.Usage, jsonOptions) + Environment.NewLine;

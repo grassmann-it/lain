@@ -26,14 +26,16 @@ public static partial class CliApplication
         await HumanTable.WriteTextAsync(output, "Full source and pool IDs: lain quotas --json", context, subtle: true);
     }
 
-    private static async Task WriteQuotaWindows(TextWriter output, IEnumerable<QuotaDto> quotas, HumanOutputContext context, bool disabled = false)
+    private static async Task WriteQuotaWindows(TextWriter output, IEnumerable<QuotaDto> quotas, HumanOutputContext context,
+        bool disabled = false, bool checkAge = false)
     {
         foreach (var quota in quotas)
         {
             var percent = QuotaPercentage(quota);
             var unsupported = quota.State is "unsupported" or "not-supported";
             var due = quota.ResetsAt is { } reset && reset <= DateTimeOffset.UtcNow;
-            var stale = !unsupported && (due || quota.State is "stale" or "error" or "unavailable" or "refreshing");
+            var stale = !unsupported && (due || quota.State is "stale" or "error" or "unavailable" or "refreshing"
+                || (checkAge && QuotaCheckIsOld(quota, DateTimeOffset.UtcNow)));
             var state = stale && (percent.HasValue || quota.Remaining.HasValue || quota.Used.HasValue)
                 ? "Last known" : quota.State is "ok" or "available" ? "" : ReadableState(quota.State);
             await HumanTable.WriteTextAsync(output, QuotaWindowName(quota) + (state.Length > 0 ? " · " + state : ""), context, "  ");

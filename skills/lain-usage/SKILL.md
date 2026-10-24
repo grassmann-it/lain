@@ -18,6 +18,7 @@ lain accounts --json
 lain models --json
 lain profiles --json
 lain usage --json
+lain usage --full
 lain quotas --json
 lain history --today --timezone Europe/Berlin --json
 lain history --from 2026-10-22T00:00:00Z --to 2026-10-23T00:00:00Z --timezone UTC --json
@@ -35,10 +36,17 @@ lain providers check-free CONFIGURED_ROUTE_ID --json
 
 Bare `lain usage` shows current quota snapshots for every configured account,
 including actual account names/providers, disabled accounts and unavailable
-quotas. `lain usage --json` returns a CLI envelope with `version: 1`,
+quotas. Its compact view keeps a short account header and a line per window when
+space allows, with native remaining units, reset times and concise shared/state
+warnings. Numbers older than five minutes since the last successful check, or
+with unknown check time, stay last known. Use `lain usage --full` for IDs,
+credential diagnostics, source/check times and full quota details.
+`lain usage --json` returns a CLI envelope with `version: 1`,
 `kind: "account-usage"` and `accounts`, each containing the full `account` DTO
 and its `quotas` array. Missing snapshots remain empty arrays. It reads accounts
 and cached quotas through the Host; it does not refresh providers.
+`--full --json` returns the same envelope and bytes; `--full` cannot be combined
+with historical arguments or the `history` command.
 `lain quotas --json` remains the raw quota DTO array from a single GET.
 Use `lain history` for proxy request/token history and performance. Explicit
 historical `usage` arguments, such as `usage --today`, `usage --from ...` and

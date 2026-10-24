@@ -9,7 +9,7 @@ internal sealed record AccountUsageItem(AccountDto Account, QuotaDto[] Quotas);
 
 public static partial class CliApplication
 {
-    private static bool IsAccountUsage(Options options) => options.Positionals.Count == 0 && !options.HasAnyExcept("json");
+    private static bool IsAccountUsage(Options options) => options.Positionals.Count == 0 && !options.HasAnyExcept("json", "full");
 
     private static async Task<AccountUsageOverview> AccountUsage(LainApiClient client, CancellationToken ct)
     {
@@ -19,7 +19,10 @@ public static partial class CliApplication
             quotas.Where(quota => quota.AccountId == account.Id).ToArray())).ToArray());
     }
 
-    internal static async Task WriteAccountUsage(TextWriter output, AccountUsageOverview overview, HumanOutputContext? context = null)
+    internal static Task WriteAccountUsage(TextWriter output, AccountUsageOverview overview, HumanOutputContext? context = null, bool full = false) =>
+        full ? WriteFullAccountUsage(output, overview, context) : WriteCompactAccountUsage(output, overview, context);
+
+    private static async Task WriteFullAccountUsage(TextWriter output, AccountUsageOverview overview, HumanOutputContext? context)
     {
         context ??= HumanOutputContext.Detect(output);
         await HumanTable.WriteTextAsync(output, $"Account usage ({overview.Accounts.Length} accounts)", context);
@@ -43,7 +46,7 @@ public static partial class CliApplication
                 await HumanTable.WriteTextAsync(output, "Quota not reported · percentage unknown", context, "  ");
                 await WriteQuotaPair(output, "Remaining unknown", "Reset unknown", context);
             }
-            else await WriteQuotaWindows(output, item.Quotas, context, disabled: !account.Enabled);
+            else await WriteQuotaWindows(output, item.Quotas, context, disabled: !account.Enabled, checkAge: true);
         }
     }
 }

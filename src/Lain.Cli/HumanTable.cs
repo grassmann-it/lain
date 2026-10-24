@@ -82,10 +82,10 @@ internal static class HumanTable
     }
 
     internal static Task WriteTextAsync(TextWriter output, string text, HumanOutputContext? context = null,
-        string indent = "", bool subtle = false)
+        string indent = "", bool subtle = false, string? color = null)
     {
         context ??= HumanOutputContext.Detect(output);
-        return WriteWrappedAsync(output, Clean(text), indent, context.Width, context, subtle ? "2" : null);
+        return WriteWrappedAsync(output, Clean(text), indent, context.Width, context, subtle ? "2" : color);
     }
 
     private static async Task WriteFieldAsync(TextWriter output, string label, string? value, bool identifier,

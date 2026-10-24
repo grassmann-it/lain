@@ -13,11 +13,14 @@ Quota, status, usage, history and help fixtures additionally cover 60/80/120 col
 
 `AccountUsageChecks.cs` verifies that bare `usage` and `usage --json` compose only `GET /api/v1/accounts` and `GET /api/v1/quotas`, retaining every configured account, disabled states and empty quota arrays. `history` uses the original proxy-history contract; explicit historical `usage` arguments remain aliases. Checks preserve historical JSON bytes, aggregate endpoints, raw `quotas --json` and the existing failure exit/diagnostic path with empty stdout. See [CLI usage and history](../../docs/cli-usage.md).
 
+Default `usage` is compact; `usage --full` retains the detailed account/quota view. Checks compare both at 60/80/120 columns, preserve native balances and stale/overdue/unknown states, mark successful observations older than five minutes as last known, retain real disabled/missing/expired states and put generic unverified credential details under `--full`. A fifteen-window/six-account fixture fits within twenty-five lines at 100 columns. `--full --json` must be byte-identical to the existing overview JSON; historical uses of `--full` fail before Host discovery.
+
 After building, the test executable has a fixture-only preview entry point. It uses fake HTTP or local help and never discovers a real host:
 
 ```sh
 dotnet tests/client-cli/bin/Debug/net10.0/ClientCli.Tests.dll --render-fixture quotas
 dotnet tests/client-cli/bin/Debug/net10.0/ClientCli.Tests.dll --render-fixture usage
+dotnet tests/client-cli/bin/Debug/net10.0/ClientCli.Tests.dll --render-fixture usage --full
 dotnet tests/client-cli/bin/Debug/net10.0/ClientCli.Tests.dll --render-fixture history --json
 dotnet tests/client-cli/bin/Debug/net10.0/ClientCli.Tests.dll --render-fixture providers
 dotnet tests/client-cli/bin/Debug/net10.0/ClientCli.Tests.dll --render-fixture status --json
@@ -26,7 +29,7 @@ python3 tests/client-cli/render-pty.py \
   --output /tmp/lain-cli-private-pty
 ```
 
-`render-pty.py` creates its own private PTYs at 60/80/120 columns for quotas, providers, status, usage, history and help, checks normal colour and `NO_COLOR`, and separately checks redirected and JSON output. It writes plain/ANSI captures and `checks.json` under the requested output directory. The harness removes only the known initial .NET keypad-mode prefix before checking application terminal controls. It does not build, use a real terminal session, call services or contact providers. This entry point belongs only to the test executable; production commands and flags are unchanged.
+`render-pty.py` creates its own private PTYs at 60/80/120 columns for quotas, providers, status, compact/full usage, history and help, checks normal colour and `NO_COLOR`, and separately checks redirected and JSON output. It compares compact/full line counts and overview JSON bytes. It writes plain/ANSI captures and `checks.json` under the requested output directory. The harness removes only the known initial .NET keypad-mode prefix before checking application terminal controls. It does not build, use a real terminal session, call services or contact providers. This entry point belongs only to the test executable; production commands and flags are unchanged.
 
 Expansion checks cover the typed usage analysis, inspector snapshot/events and provider APIs. They verify exact dimension filters, bounded groups and pages, server-owned statistics and sample counts, unknown measurements, retained null identities, source-bound cursors, gaps and evidence, keyless onboarding, route capability uncertainty and read-only free-only evaluation. Invalid grouping, pagination and inspector cursor options fail before host discovery. Text previews neutralize terminal control characters and preserve native quota units and shared-budget scope.
 

@@ -5,16 +5,25 @@ Run `lain --help` to check the installed version's command contract.
 
 ```sh
 lain usage
+lain usage --full
 lain usage --json
 ```
 
-The human overview shows actual account names and providers, enabled/disabled
-state, quota windows, consumed-percentage bars, remaining balances and reset
-times. Disabled accounts retain their reported values. Missing credentials,
+The default human overview is compact: one short account name/provider header
+and one line per quota window when it fits the terminal width. Narrow terminals
+wrap only as needed. Short consumed-percentage bars, native remaining balances,
+reset times and concise shared-budget tags remain visible. Disabled accounts
+retain their reported values. Missing credentials, expiry,
 unsupported quota APIs, missing snapshots and unknown measurements stay visible.
 Only known consumed percentages produce bars; a known zero is a valid reading.
-Stale values are marked as last known, balances retain their native units and
-shared budgets remain identified as shared.
+Stale/overdue values are marked as last known. Successful snapshots older than
+five minutes, or numerical snapshots without a successful check time, are also
+last known.
+
+`lain usage --full` shows the detailed account and quota view, including full
+account IDs, credential diagnostics, used/limit amounts, source/check times and
+shared-budget explanations. `lain usage --full --json` returns exactly the same
+overview JSON as `lain usage --json`; the flag only changes human presentation.
 
 The overview makes `GET /api/v1/accounts`, then `GET /api/v1/quotas` through the
 existing authenticated client. These reads use Host snapshots and do not trigger
@@ -70,5 +79,7 @@ performance and coverage semantics.
 
 Explicit historical invocations under `usage` remain aliases, including
 `lain usage --today --json`, `lain usage --from ... --to ...`, account/model
-filters and `lain usage analysis|aggregate|performance`. Only `usage` with no
-arguments or with `--json` alone selects the all-account quota overview.
+filters and `lain usage analysis|aggregate|performance`. `usage` with only the
+optional `--full` and `--json` flags selects the all-account quota overview.
+Combining `--full` with historical arguments or `history` is rejected before
+Host discovery.

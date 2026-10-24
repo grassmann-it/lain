@@ -13,7 +13,8 @@ public static partial class CliApplication
     private const string Help = """
         Usage: lain <command> [options]
           status | accounts | models | profiles | quotas [--json]
-          usage [--json]  Current quotas for every configured account
+          usage [--full] [--json]  Current quotas for every configured account
+                Compact by default; --full includes IDs, sources and check times.
           accounts login codex [--revision N] [--json]
           accounts login-status|login-cancel|check ID [--json]
           accounts enable|disable|remove ID [--revision N] [--json]
@@ -140,7 +141,7 @@ public static partial class CliApplication
                     return 0;
                 default: throw new ArgumentException("Unsupported command.");
             }
-            await Write(output, result, options.Json);
+            await Write(output, result, options.Json, options.Has("full"));
             if (!options.Json && result is ImportResult imported)
                 foreach (var warning in imported.Warnings) await error.WriteLineAsync("lain: warning: " + warning);
             if (!options.Json && result is LoginDto { Error: { } loginError }) await error.WriteLineAsync("lain: " + loginError);
@@ -196,8 +197,10 @@ public static partial class CliApplication
             if (options.Get("revision") is { } revision) _ = ParseLong(revision, "revision");
             return;
         }
+        if ((command is "usage" or "history") && options.Has("full") && (command != "usage" || !IsAccountUsage(options)))
+            throw new ArgumentException("--full is only valid for the current account usage overview.");
         if (command == "usage" && IsAccountUsage(options))
-        { options.RequireOnly("json"); options.RequirePositionals(0); return; }
+        { options.RequireOnly("json", "full"); options.RequirePositionals(0); return; }
         if (command is "usage" or "history" or "attempts")
         {
             ValidateUsage(command, options); return;
@@ -299,12 +302,12 @@ public static partial class CliApplication
     private static long ParseLong(string value, string name) => long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed)
         ? parsed : throw new ArgumentException($"--{name} must be a nonnegative integer.");
 
-    private static async Task Write(TextWriter output, object value, bool json)
+    private static async Task Write(TextWriter output, object value, bool json, bool full = false)
     {
         if (json) { await output.WriteLineAsync(JsonSerializer.Serialize(value, value.GetType(), Json)); return; }
         switch (value)
         {
-            case AccountUsageOverview overview: await WriteAccountUsage(output, overview); break;
+            case AccountUsageOverview overview: await WriteAccountUsage(output, overview, full: full); break;
             case StatusDto s: await WriteStatus(output, s); break;
             case AccountDto[] accounts:
                 await WriteAccounts(output, accounts); break;
@@ -354,7 +357,7 @@ public static partial class CliApplication
         public List<string> Settings { get; } = [];
         public bool Json => Has("json");
         public bool Has(string name) => values.ContainsKey(name);
-        public bool HasAnyExcept(string name) => values.Keys.Any(key => key != name);
+        public bool HasAnyExcept(params string[] names) => values.Keys.Any(key => !names.Contains(key, StringComparer.Ordinal));
         public string? Get(string name) => values.GetValueOrDefault(name);
         public static Options Parse(string[] args)
         {
@@ -367,7 +370,7 @@ public static partial class CliApplication
                 if (name.Length == 0 || name.Contains('=')) throw new ArgumentException("Use options as '--name value'.");
                 if (options.values.ContainsKey(name) && name != "setting") throw new ArgumentException($"Duplicate option --{name}.");
                 string? value = null;
-                if (name is not ("json" or "today" or "key-stdin"))
+                if (name is not ("json" or "full" or "today" or "key-stdin"))
                 {
                     if (++i >= args.Length || args[i].StartsWith("--", StringComparison.Ordinal)) throw new ArgumentException($"--{name} requires a value.");
                     value = args[i];
