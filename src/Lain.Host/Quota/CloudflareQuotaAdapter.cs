@@ -45,6 +45,7 @@ public sealed class CloudflareQuotaAdapter : IQuotaAdapter, IDisposable
         }
         catch (CloudProviderException error) when (error.Status is HttpStatusCode.Forbidden or HttpStatusCode.NotFound)
         { return Unavailable("Workers AI analytics is not permitted or available for this account. Review the dataset grant; no new token or broader permission is requested automatically."); }
+        catch (CloudProviderException error) { throw new QuotaFetchException(error.Message); }
     }
     public static QuotaFetchResult Normalize(JsonElement root, string accountId, DateTimeOffset start, DateTimeOffset observed)
     {

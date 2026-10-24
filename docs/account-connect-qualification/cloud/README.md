@@ -41,8 +41,12 @@ inference, resource creation, installation or service operation was performed.
   multiple aggregates yield no numeric usage. No 10,000-neuron denominator,
   remaining balance, source timestamp or freshness deadline is invented.
 
-Existing Gemini snapshot monitoring remains unchanged. The new model reader is
-an additional source and must consume the foundation's access-only projection.
+Existing Gemini snapshot monitoring remains unchanged. Register one
+`GeminiCloudQuotaAdapter(providerHttp)`: verified provider-discovered project ID
+and number select the new model reader, while existing snapshots retain the
+legacy reader. QuotaService takes only the first provider match, so registering
+both leaf adapters does not combine their results. The new reader must consume
+the foundation's access-only projection.
 No quota adapter receives or refreshes a refresh token.
 
 ## Maintainer prerequisites and integration
@@ -75,7 +79,16 @@ handle resource/expiry. Recoverable empty-purpose grants can be stored but canno
 be published by CommitPrepared or adopted through recovery. Root owns registry,
 Program, credential projection and method-catalog integration.
 
-`new GeminiModelQuotaAdapter()` is the documented source reader; it is not a live
+`CloudMaintainerConfiguration.Load(Path.Combine(stateRoot,
+CloudMaintainerConfiguration.RelativePath))` reads the optional
+`<own state root>/maintainer/cloud-oauth.json`. Missing file returns no clients
+and a disabled neuron candidate. Unknown fields (including secrets/tokens),
+symlinks, oversized files and duplicate providers are rejected. No file is
+created by this package. `clients` contains the public CloudOAuthClient fields;
+`cloudflareNeuronCandidateQualified` defaults false. Root may load this only as
+explicit maintainer configuration; there is no registered client in this delivery.
+
+`new GeminiModelQuotaAdapter()` is the documented leaf source reader; it is not a live
 qualification claim. `new CloudflareQuotaAdapter()` returns explicit unavailable
 support without any HTTP call. Only a maintainer's separately qualified dataset
 configuration may pass `candidateQualified:true`. Fresh introspection, actual

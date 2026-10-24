@@ -22,6 +22,11 @@ public sealed class GeminiModelQuotaAdapter : IQuotaAdapter, IDisposable
 
     public async Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
+        try { return await FetchCoreAsync(account, credential, ct); }
+        catch (CloudProviderException error) { throw new QuotaFetchException(error.Message); }
+    }
+    private async Task<QuotaFetchResult> FetchCoreAsync(AccountDto account, QuotaCredential credential, CancellationToken ct)
+    {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
         deadline.CancelAfter(TimeSpan.FromSeconds(60)); ct = deadline.Token;
         var now = clock.GetUtcNow();

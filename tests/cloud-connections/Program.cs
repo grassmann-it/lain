@@ -174,6 +174,26 @@ using (var adapter = new CloudOAuthAdapter(Client(), handler, clock))
     var result = await Poll(adapter, denied);
     Check(result.State == "recovery-required" && handler.Calls == 1 && deniedCheckpoint.Single().Purposes.Length == 0, "narrowed initial grant safely checkpointed without discovery");
 }
+var configPath = Path.Combine(Path.GetTempPath(), "lain-cloud-maintainer-" + Guid.NewGuid().ToString("N") + ".json");
+try
+{
+    Check(CloudMaintainerConfiguration.Load(configPath).Clients.Length == 0, "missing maintainer file keeps clients unavailable");
+    File.WriteAllText(configPath, "{\"clients\":[],\"clientSecret\":\"fixture\"}");
+    await Reject(() => Task.FromResult(CloudMaintainerConfiguration.Load(configPath)), "maintainer configuration rejects secret fields");
+    File.WriteAllText(configPath, "{\"clients\":[]}");
+    Check(!CloudMaintainerConfiguration.Load(configPath).CloudflareNeuronCandidateQualified, "neuron candidate remains gated by default");
+}
+finally { File.Delete(configPath); }
+using (var legacyHttp = new HttpClient(new Handler((r, i) =>
+{
+    Check(r.RequestUri!.Query.Contains("serviceruntime"), "legacy snapshot retains original request metric");
+    return Handler.Response(new { });
+})))
+using (var selector = new GeminiCloudQuotaAdapter(legacyHttp, new Handler((r, i) => throw new Exception("unverified project selected model reader")), clock))
+{
+    var result = await selector.FetchAsync(account, new("", monitor: new("access-token-snapshot", "fixture-access", "project-one", now.AddHours(1))));
+    Check(result.Readings.Count == 0 && result.Support is not null, "legacy missing series stays unknown");
+}
 Console.WriteLine($"PASS {checks} cloud connection and quota assertions; synthetic HTTP and isolated loopback only.");
 
 static Dictionary<string, string> Query(string query) => query.TrimStart('?').Split('&').Select(p => p.Split('=', 2)).ToDictionary(p => Uri.UnescapeDataString(p[0]), p => Uri.UnescapeDataString(p[1]));
