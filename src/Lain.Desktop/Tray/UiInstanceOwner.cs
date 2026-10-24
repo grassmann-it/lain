@@ -4,7 +4,10 @@ using System.Text;
 
 namespace Lain.Desktop.Tray;
 
-/// <summary>Owns one UI per local state directory; a second launch only requests reopening.</summary>
+/// <summary>
+/// Owns one UI per user, normalized state directory and desktop runtime directory.
+/// Private XDG_RUNTIME_DIR sessions have independent UI owners and never reopen the normal desktop.
+/// </summary>
 internal sealed class UiInstanceOwner : IDisposable
 {
     private readonly Mutex _mutex;
@@ -16,7 +19,12 @@ internal sealed class UiInstanceOwner : IDisposable
     public UiInstanceOwner(string stateDirectory)
     {
         var identity = Path.TrimEndingDirectorySeparator(Path.GetFullPath(stateDirectory));
-        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Environment.UserName + "\n" + identity))).ToLowerInvariant();
+        var runtimeDirectory = Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR");
+        if (string.IsNullOrWhiteSpace(runtimeDirectory))
+            runtimeDirectory = Path.Combine(Path.GetTempPath(), "lain-ui-" + Environment.UserName);
+        var runtimeIdentity = Path.TrimEndingDirectorySeparator(Path.GetFullPath(runtimeDirectory));
+        var scope = Environment.UserName + "\n" + identity + "\n" + runtimeIdentity;
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(scope))).ToLowerInvariant();
         _pipeName = $"lain-ui-{hash}";
         _mutex = new Mutex(false, _pipeName);
         try { IsOwner = _mutex.WaitOne(0); }
