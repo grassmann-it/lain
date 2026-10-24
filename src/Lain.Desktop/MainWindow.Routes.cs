@@ -3,7 +3,9 @@ using Avalonia.Controls;
 using Avalonia.Automation;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
+using Avalonia.Input;
 using Avalonia.Input.Platform;
+using Avalonia.VisualTree;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Lain.Client;
@@ -149,7 +151,7 @@ public sealed partial class MainWindow
         {
             _selectedModelRouteId = id; _modelNarrowDetail = true;
             foreach (var pair in rowBorders) pair.Value.Background = pair.Key == id ? Ui.AccentSurface : Brushes.Transparent;
-            detail.Child = new ScrollViewer { Content = ModelAccessDetails(cfg, id, () => {
+            detail.Child = new ScrollViewer { Content = ModelAccessDetails(_configuration ?? cfg, id, () => {
                 _modelNarrowDetail = false; _selectedModelRouteId = null; UpdateLayout();
                 detail.Child = Ui.Stack(Ui.Text("Model configuration", 15), Ui.Text("Select a model to inspect its binding, profiles and provenance. Edit and actions are available in every row.", 12, Ui.Muted));
                 foreach (var row in rowBorders.Values) row.Background = Brushes.Transparent;
@@ -200,17 +202,45 @@ public sealed partial class MainWindow
                 ToolTip.SetTip(menuState, "Hidden removes the alias from client model menus; direct requests remain possible.");
                 Grid.SetColumn(menuState, 3); grid.Children.Add(menuState);
                 var edit = CompactRouteButton("Edit", () => EditRoute(route)); AutomationProperties.SetName(edit, "Edit model access " + route.Alias);
-                var commands = ModelAccessCommands(cfg, route, () => ShowDetails(route.Id));
-                var moreMenu = ObjectCommandMenu(commands);
-                var more = CompactRouteButton("⋯", () => moreMenu.Open()); more.ContextMenu = moreMenu;
+                Button more = null!;
+                var moreMenu = ModelAccessCommandMenu(route.Id, () => ShowDetails(route.Id), () => more);
+                more = CompactRouteButton("⋯", () => moreMenu.Open(more)); more.ContextMenu = moreMenu;
                 AutomationProperties.SetName(more, "Actions for model access " + route.Alias);
                 var actions = new WrapPanel { Orientation = Orientation.Horizontal, ItemSpacing = 3, Children = { edit, more } };
                 Grid.SetColumn(actions, 4); grid.Children.Add(actions);
                 var row = new Border { Child = grid, Padding = new Thickness(9, dense ? 4 : 7), BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Background = route.Id == _selectedModelRouteId ? Ui.AccentSurface : Brushes.Transparent };
                 AutomationProperties.SetName(row, "Model row " + route.Id);
-                row.ContextMenu = ObjectCommandMenu(commands); rowBorders[route.Id] = row; rows.Children.Add(row);
+                Control menuOrigin = title;
+                row.ContextMenu = ModelAccessCommandMenu(route.Id, () => ShowDetails(route.Id), () => menuOrigin);
+                row.PointerPressed += (_, args) => {
+                    if (args.GetCurrentPoint(row).Properties.IsRightButtonPressed)
+                        menuOrigin = args.Source is Button button ? button : (args.Source as Control)?.GetVisualAncestors().OfType<Button>().FirstOrDefault() ?? title;
+                };
+                row.KeyDown += (_, args) => {
+                    if ((args.Key == Key.F10 && args.KeyModifiers.HasFlag(KeyModifiers.Shift)) || args.Key == Key.Apps)
+                    {
+                        menuOrigin = args.Source as Control ?? title;
+                        row.ContextMenu.Open(row); args.Handled = true;
+                    }
+                };
+                rowBorders[route.Id] = row; rows.Children.Add(row);
             }
-            if (found.Length == 0) rows.Children.Add(Empty(cfg.Routes.Length == 0 ? "No model access yet. Choose provider models from an account or add model access manually." : "No model access matches these filters. Clear the context or adjust the filters."));
+            if (found.Length == 0)
+            {
+                var empty = Ui.Stack(Empty(cfg.Routes.Length == 0
+                    ? "No model access yet. Choose provider models from an account or add model access manually."
+                    : "No model access matches these filters."));
+                if (cfg.Routes.Length > 0)
+                {
+                    empty.Children.Add(Ui.Text("Search query: " + (string.IsNullOrWhiteSpace(_routeSearch) ? "(empty)" : _routeSearch), 12, Ui.Muted));
+                    empty.Children.Add(Ui.Button("Clear filters", () => {
+                        _routeSearch = ""; _routeProvider = "All providers"; _routeVisibility = "All visibility"; _routeState = "All states";
+                        _routeAccountId = _routeContextId = _routeModel = null;
+                        Render();
+                    }));
+                }
+                rows.Children.Add(empty);
+            }
         }
         search.TextChanged += (_, _) => { _routeSearch = search.Text ?? ""; Populate(); };
         provider.SelectionChanged += (_, _) => { _routeProvider = provider.SelectedItem as string ?? "All providers"; Populate(); };
@@ -226,27 +256,77 @@ public sealed partial class MainWindow
         return Ui.Viewport(root);
     }
 
+    // Bind on opening, then keep that ID and revision for the lifetime of the
+    // menu. Polling or selection changes must never retarget an existing action.
+    private ContextMenu ModelAccessCommandMenu(string routeId, Action showDetails, Func<Control?> origin)
+    {
+        var menu = ObjectCommandMenu([]);
+        menu.Opening += (_, _) =>
+        {
+            ObjectCommand[] commands = _configuration is { } cfg && cfg.Routes.FirstOrDefault(r => r.Id == routeId) is { } route
+                ? ModelAccessCommands(cfg, route, showDetails)
+                : [new ObjectCommand("missing", "Model access no longer exists", () => { }, false, "Return to the inventory and choose an existing stable ID.")];
+            var populated = ObjectCommands.Menu(commands);
+            var items = populated.Items.ToArray();
+            populated.Items.Clear(); menu.Items.Clear();
+            foreach (var item in items) menu.Items.Add(item);
+        };
+        menu.Closed += (_, _) => Dispatcher.UIThread.Post(() => {
+            if (_section == "Models" && !_editing && origin() is { } control && control.GetVisualRoot() == this)
+                control.Focus();
+        }, DispatcherPriority.Loaded);
+        return menu;
+    }
+
+    private bool CurrentModelCommand(long revision, string routeId)
+    {
+        if (_busy) return false;
+        var current = _configuration;
+        if (current is null || !current.Routes.Any(r => r.Id == routeId))
+        {
+            _notice.Text = "This model access no longer exists. No other model was selected in its place. Return to the inventory; any draft inputs are kept.";
+            return false;
+        }
+        if (current.Revision != revision)
+        {
+            _notice.Text = "The saved configuration changed after these actions were opened. Reopen actions for this model access and review its current state.";
+            return false;
+        }
+        return true;
+    }
+
+    private void RequireCurrentModelDraft(long revision, string? routeId)
+    {
+        if (_configuration is not { } current) throw new InvalidOperationException("Connect to the host before saving this draft.");
+        if (routeId is not null && !current.Routes.Any(r => r.Id == routeId))
+            throw new InvalidOperationException("This model access was removed. Your draft is kept for review and cannot recreate it or save to another model. Return to Models or discard this draft explicitly.");
+        if (current.Revision != revision)
+            throw new InvalidOperationException("The saved configuration changed. Your inputs are kept. Review the latest configuration before saving this model access.");
+    }
+
     private ObjectCommand[] ModelAccessCommands(ConfigurationDto cfg, RouteDto route, Action showDetails)
     {
+        Action Guard(Action execute) => () => { if (CurrentModelCommand(cfg.Revision, route.Id)) execute(); };
         void Save(RouteDto updated) => _ = RunAsync(async () => {
+            RequireCurrentModelDraft(cfg.Revision, route.Id);
             _configuration = await _client.SaveRouteAsync(cfg.Revision, updated, _lifetime.Token);
             _modelPendingRevisions[route.Id] = _configuration.Revision;
         }, "Model access saved. Changes take effect at the next global profile Apply.");
         var commands = new List<ObjectCommand>
         {
-            new("detail", "Model details", showDetails),
-            new("edit", "Edit model access", () => EditRoute(route)),
-            new("enabled", route.Enabled ? "Disable at next Apply" : "Enable at next Apply", () => Save(route with { Enabled = !route.Enabled })),
-            new("visibility", route.Visible ? "Hide from model menu" : "Show in model menu", () => Save(route with { Visible = !route.Visible })),
-            new("usage", "Recorded usage", () => NavigateTo(new("Usage", RouteId: route.Id)), HasHistory, "No recorded history source."),
-            new("profiles", "Profile uses", showDetails),
-            new("copy", "Copy client model name", () => { if (Clipboard is { } clipboard) _ = clipboard.SetTextAsync(route.Alias); }),
-            new("remove", "Remove model access…", () => ShowModelRemoval(cfg, route))
+            new("detail", "Model details", Guard(showDetails)),
+            new("edit", "Edit model access", Guard(() => EditRoute(route))),
+            new("enabled", route.Enabled ? "Disable at next Apply" : "Enable at next Apply", Guard(() => Save(route with { Enabled = !route.Enabled }))),
+            new("visibility", route.Visible ? "Hide from model menu" : "Show in model menu", Guard(() => Save(route with { Visible = !route.Visible }))),
+            new("usage", "Recorded usage", Guard(() => { if (HasHistory) NavigateTo(new("Usage", RouteId: route.Id)); }), HasHistory, "No recorded history source."),
+            new("profiles", "Profile uses", Guard(showDetails)),
+            new("copy", "Copy client model name", Guard(() => { if (Clipboard is { } clipboard) _ = clipboard.SetTextAsync(route.Alias); })),
+            new("remove", "Remove model access…", Guard(() => ShowModelRemoval(cfg, route)))
         };
         foreach (var id in route.AccountIds)
         {
             var name = cfg.Accounts.FirstOrDefault(a => a.Id == id)?.Name ?? id;
-            commands.Insert(commands.Count - 2, new("account-" + id, "Open account " + name, () => NavigateTo(new("Accounts", AccountId: id))));
+            commands.Insert(commands.Count - 2, new("account-" + id, "Open account " + name, Guard(() => NavigateTo(new("Accounts", AccountId: id)))));
         }
         return commands.ToArray();
     }
@@ -257,8 +337,9 @@ public sealed partial class MainWindow
             return Ui.Stack(Ui.Text("Model access no longer exists", 16), Ui.Text("The selected stable ID was removed. No other model has been selected in its place.", 12, Ui.Muted), Ui.Button("Back to inventory", close));
         var edit = CompactRouteButton("Edit", () => EditRoute(route));
         AutomationProperties.SetName(edit, "Edit selected model access " + route.Alias);
-        var moreMenu = ObjectCommandMenu(ModelAccessCommands(cfg, route, () => { }));
-        var more = CompactRouteButton("⋯", () => moreMenu.Open()); more.ContextMenu = moreMenu;
+        Button more = null!;
+        var moreMenu = ModelAccessCommandMenu(route.Id, () => { }, () => more);
+        more = CompactRouteButton("⋯", () => moreMenu.Open(more)); more.ContextMenu = moreMenu;
         AutomationProperties.SetName(more, "Selected model actions " + route.Alias);
         var done = CompactRouteButton("Close", close); AutomationProperties.SetName(done, "Close model details " + route.Alias);
         var body = Ui.Stack(Ui.PageHeader(route.Alias, "Model configuration", edit, more, done),
@@ -274,21 +355,38 @@ public sealed partial class MainWindow
         body.Children.Add(Ui.Text($"Used by {profiles.Length} profiles", 13, Ui.Muted));
         foreach (var profile in profiles)
             body.Children.Add(Ui.Button(profile.Name + (profile.DefaultRouteId == route.Id ? " · default" : ""), () => NavigateTo(new("Profiles", ProfileId: profile.Id))));
+        var fallbackProfiles = cfg.Profiles.Where(p => p.Policy?.FallbackRouteIds?.Contains(route.Id, StringComparer.Ordinal) == true).ToArray();
+        foreach (var profile in fallbackProfiles)
+            body.Children.Add(Ui.Button("Fallback in profile: " + profile.Name, () => NavigateTo(new("Profiles", ProfileId: profile.Id))));
+        foreach (var source in cfg.Routes.Where(r => r.Id != route.Id && r.Policy?.FallbackRouteIds?.Contains(route.Id, StringComparer.Ordinal) == true))
+            body.Children.Add(Ui.Button("Fallback from model: " + source.Alias, () => NavigateTo(new("Models", RouteId: source.Id))));
         body.Children.Add(Ui.Text("Spending policy: " + (route.Policy?.CostPolicy ?? "Not supplied"), 12));
         if (route.Policy?.FallbackRouteIds is { Length: > 0 } fallbacks)
             body.Children.Add(Ui.Text("Saved fallback order: " + string.Join(" → ", fallbacks.Select(f => cfg.Routes.FirstOrDefault(r => r.Id == f)?.Alias ?? f)), 12));
         body.Children.Add(new Expander { Header = "Provenance and technical", Content = Ui.Stack(
             Ui.Text("Model access ID: " + route.Id, 11, Ui.Muted), Ui.Text("Provider route: " + (route.ProviderRouteId ?? "Not supplied"), 11, Ui.Muted),
             Ui.Text("Unit price, quota and tool capabilities: Not supplied by configured model access.", 11, Ui.Muted)) });
+        Control detailMenuOrigin = more;
+        body.ContextMenu = ModelAccessCommandMenu(route.Id, () => { }, () => detailMenuOrigin);
+        body.PointerPressed += (_, args) => {
+            if (args.GetCurrentPoint(body).Properties.IsRightButtonPressed)
+                detailMenuOrigin = args.Source is Button button ? button : (args.Source as Control)?.GetVisualAncestors().OfType<Button>().FirstOrDefault() ?? more;
+        };
+        body.KeyDown += (_, args) => {
+            if ((args.Key == Key.F10 && args.KeyModifiers.HasFlag(KeyModifiers.Shift)) || args.Key == Key.Apps)
+            { detailMenuOrigin = args.Source as Control ?? more; body.ContextMenu.Open(body); args.Handled = true; }
+        };
         return body;
     }
 
     private void ShowModelRemoval(ConfigurationDto cfg, RouteDto route)
     {
         _editing = true;
-        var references = cfg.Profiles.Where(p => p.RouteIds.Contains(route.Id, StringComparer.Ordinal) || p.Policy?.FallbackRouteIds?.Contains(route.Id, StringComparer.Ordinal) == true)
-            .Select(p => "Profile: " + p.Name).Concat(cfg.Routes.Where(r => r.Id != route.Id && r.Policy?.FallbackRouteIds?.Contains(route.Id, StringComparer.Ordinal) == true).Select(r => "Fallback from: " + r.Alias)).ToArray();
+        var references = ModelRouteReferences(cfg, route.Id);
         var remove = Action("Remove model access", async () => {
+            RequireCurrentModelDraft(cfg.Revision, route.Id);
+            var currentReferences = ModelRouteReferences(_configuration!, route.Id);
+            if (currentReferences.Length > 0) throw new InvalidOperationException("Remove the saved references first: " + string.Join(", ", currentReferences));
             _configuration = await _client.RemoveRouteAsync(cfg.Revision, route.Id, _lifetime.Token);
             if (_selectedModelRouteId == route.Id) { _selectedModelRouteId = null; _modelNarrowDetail = false; }
         }, "Model access removed. Historical usage remains available.");
@@ -300,6 +398,11 @@ public sealed partial class MainWindow
             OverviewActions(remove, Ui.Button("Cancel", () => { _editing = false; Render(); })));
     }
 
+    private static string[] ModelRouteReferences(ConfigurationDto cfg, string routeId) =>
+        cfg.Profiles.Where(p => p.RouteIds.Contains(routeId, StringComparer.Ordinal)).Select(p => "Profile member: " + p.Name)
+            .Concat(cfg.Profiles.Where(p => p.Policy?.FallbackRouteIds?.Contains(routeId, StringComparer.Ordinal) == true).Select(p => "Profile fallback: " + p.Name))
+            .Concat(cfg.Routes.Where(r => r.Id != routeId && r.Policy?.FallbackRouteIds?.Contains(routeId, StringComparer.Ordinal) == true).Select(r => "Fallback from model: " + r.Alias)).ToArray();
+
     private static Button CompactRouteButton(string label, Action click)
     {
         var button = Ui.Button(label, click);
@@ -310,7 +413,15 @@ public sealed partial class MainWindow
     private void EditRoute(RouteDto? route, ModelEntryDto? catalogModel = null)
     {
         if (_configuration is not { } cfg) return;
-        if (route is not null) _selectedModelRouteId = route.Id;
+        if (route is not null)
+        {
+            if (cfg.Routes.FirstOrDefault(r => r.Id == route.Id) is not { } current)
+            {
+                _notice.Text = "This model access no longer exists. Return to the inventory and select an existing stable ID.";
+                return;
+            }
+            route = current; _selectedModelRouteId = route.Id;
+        }
         var routeId = route?.Id;
         RegisterEditor(() =>
         {
@@ -318,7 +429,7 @@ public sealed partial class MainWindow
             var latest = _configuration?.Routes.FirstOrDefault(item => item.Id == routeId)
                 ?? throw new InvalidOperationException("This model access was removed from the latest configuration. Cancel this draft and review Models.");
             EditRoute(latest);
-        }, cfg.Revision);
+        }, cfg.Revision, route?.Alias ?? "New model access");
         _editing = true;
         var contextAccount = route is null ? cfg.Accounts.FirstOrDefault(a => a.Id == _routeAccountId) : null;
         var alias = Ui.Input(route?.Alias ?? catalogModel?.Id ?? _routeModel, "client-facing-model");
@@ -404,6 +515,7 @@ public sealed partial class MainWindow
         var form = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), ColumnSpacing = 24 };
         form.Children.Add(identity); Grid.SetColumn(binding, 1); form.Children.Add(binding);
         var save = Action("Save model access", async () => {
+            RequireCurrentModelDraft(cfg.Revision, routeId);
             var ids = choices.Where(x => x.Box.IsChecked == true).Select(x => x.Account.Id).ToArray();
             if (string.IsNullOrWhiteSpace(alias.Text) || string.IsNullOrWhiteSpace(model.Text) || string.IsNullOrWhiteSpace(provider.Text) || ids.Length == 0) throw new InvalidOperationException("Enter a client name, provider model, provider and at least one account.");
             if (ids.Length > 1 && pooled.IsChecked != true) throw new InvalidOperationException("Select one account or explicitly enable the pool.");
