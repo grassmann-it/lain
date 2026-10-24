@@ -56,3 +56,4 @@ Reject(() => large.Accept(Reply(large, body: new string('x', 256 * 1024 + 1)), 7
 Reject(() => ConsoleReadRoutes.Resolve((ConsoleReadOperation)999), "unlisted operation forbidden");
 Check(!lease.ToString().Contains(lease.Nonce) && !Reply(lease).ToString().Contains(lease.Nonce), "private envelopes redacted");
 Console.WriteLine("PASS console boundary and MiMo synthetic identity/normalization fixtures; no browser or provider qualification implied");
+await MiMoConnectionChecks.RunAsync();

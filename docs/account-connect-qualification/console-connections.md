@@ -1,5 +1,8 @@
 # AC-08: bounded Console qualification
 
+**Historical source-only stage.** The 2026-10-25 MiMo implementation and its
+remaining live-qualification limits are documented in [mimo.md](mimo.md).
+
 Date: 2026-10-24. Source base `de4ed85`. This is local source/fixture work, not
 provider login or a production connector. No browser sign-in, provider API,
 credential, key creation/reveal or installed session was used. Public static

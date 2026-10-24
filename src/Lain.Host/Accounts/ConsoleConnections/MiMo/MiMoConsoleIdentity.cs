@@ -22,6 +22,18 @@ public static class MiMoConsoleIdentity
         var region = cluster switch { 310 => "CN", 314 => "EU", _ => null };
         return region is not null && region == expected.Region;
     }
+    public static ConsoleResourceBinding? Discover(JsonElement payload)
+    {
+        if (!TrySuccessData(payload, out var data)) return null;
+        var subject = Identifier(data, "userId") ?? Identifier(data, "id");
+        if (subject is null) return null;
+        foreach (var region in new[] { "CN", "EU" })
+        {
+            var binding = new ConsoleResourceBinding(subject, region, "individual-token-plan");
+            if (Matches(payload, binding)) return binding;
+        }
+        return null; // Never interpret an unknown idc as Singapore.
+    }
     public static bool TrySuccessData(JsonElement payload, out JsonElement data)
     {
         data = default;
