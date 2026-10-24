@@ -35,12 +35,12 @@ def expect(condition, message):
 
 
 class Run:
-    def __init__(self, core, retry=0):
+    def __init__(self, core, retry=0, *, provider=None):
         self.core = str(Path(core).resolve(strict=True))
         self.temp = tempfile.TemporaryDirectory(prefix="lain-backend-")
         self.root = Path(self.temp.name)
         os.chmod(self.root, 0o700)
-        self.provider = FakeProvider().__enter__()
+        self.provider = (provider or FakeProvider()).__enter__()
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", 0))
             self.port = probe.getsockname()[1]

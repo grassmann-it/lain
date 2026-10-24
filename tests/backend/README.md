@@ -37,3 +37,42 @@ rejects the resulting partial journal without changing it, and explicitly
 restores the fixture's known empty journal before recovery. It never truncates
 a journal containing a dispatched attempt. The hard-crash test separately
 preserves an unresolved registered attempt and proves replay after restart.
+
+## Upstream upgrade qualification
+
+The original fifteen binary checks remain the acceptance boundary. Additional
+startup probes reject refresh-bearing snapshots (including null/empty tokens),
+foreign OAuth providers and symlinks, and verify that a route reference cannot
+promote a copied credential into owned status. They also reject unqualified
+free-only routes and check native Gemini Bearer override versus the default
+API-key header using only synthetic credentials and the loopback fixture:
+
+```sh
+python3 tests/backend/upgrade_boundaries.py --core /absolute/lain-proxy \
+  --report /tmp/lain-upgrade-boundaries.json
+```
+
+`upgrade_gate.py` runs the original checks, independent auth/crash and Inspector
+probes, the additional boundaries, and ten actual SQLite store replay/reopen
+cycles over the complete 600-event source batch. It requires an already built
+`Lain.Usage.Tests.dll`; it performs no build, install or service operation. The
+output directory must be new or empty. On success it preserves the exact frozen
+launcher and all reports. Adapter-owned unit gates remain separately required.
+
+```sh
+python3 tests/backend/upgrade_gate.py --core /absolute/lain-proxy \
+  --consumer /absolute/Lain.Usage.Tests.dll --output /tmp/lain-v8-qualification
+```
+
+See [the upgrade acceptance matrix](../../docs/backend-upgrade-qualification.md)
+for required behavior, evidence limits and the distinction between existing lain
+behavior and newly available upstream capabilities.
+
+With an already built `HostCoreContract.Tests.dll`, add `--host-exporter /path/to/DLL`
+to include the actual Host YAML/bindings writer in that gate. The separate
+`host_contract_probe.py --core ... --exporter ... --report ...` checks strict and
+pool aliases, hidden-but-callable aliases, stable generated credential IDs and
+both Chat and native Responses outgoing endpoints. It invokes only the synthetic
+exporter and local fake provider. The fake provider now accepts native Responses
+SSE/tool continuations as well as Chat and Messages; observed endpoint paths
+allow a silently dropped `upstream-protocol` to fail qualification.

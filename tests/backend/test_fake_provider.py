@@ -43,6 +43,41 @@ class ProviderFixtureTests(unittest.TestCase):
         for key in KEYS:
             self.assertNotIn(key, serialized)
 
+    def test_native_responses_tool_continuation_and_endpoint_observation(self):
+        def send(body):
+            return urlopen(Request(self.provider.url + "/responses", json.dumps(body).encode(),
+                                   {"Authorization": "Bearer lain-synthetic-a", "Content-Type": "application/json"}), timeout=10)
+        inputs = [{"role": "user", "content": [{"type": "input_text", "text": marker("tool", "native-tool")}]}]
+        with send({"model": MODEL, "input": inputs, "stream": True}) as response:
+            events = [json.loads(line[6:]) for line in response.read().decode().splitlines() if line.startswith("data: {")]
+        self.assertEqual([event["sequence_number"] for event in events], list(range(len(events))))
+        self.assertEqual(events[-1]["type"], "response.completed")
+        call = events[-1]["response"]["output"][0]
+        self.assertEqual(call["type"], "function_call")
+        self.assertEqual(json.loads(call["arguments"]), {"value": "safe"})
+        inputs.extend([call, {"type": "function_call_output", "call_id": call["call_id"], "output": "safe"}])
+        with send({"model": MODEL, "input": inputs}) as response:
+            completed = json.load(response)
+        self.assertEqual(completed["output"][0]["content"][0]["text"], "synthetic tool result accepted")
+        self.assertEqual(completed["usage"]["total_tokens"], 18)
+        rows = self.provider.snapshot()
+        self.assertTrue(rows[-1]["tool_result"])
+        self.assertTrue(all(row["path"] == "/v1/responses" for row in rows))
+
+    def test_native_gemini_reports_header_presence_without_recording_key(self):
+        with FakeProvider(keys={"synthetic-gemini": "gemini-account"}) as provider:
+            body = {"contents": [{"role": "user", "parts": [{"text": marker("text", "native-gemini")}]}]}
+            endpoint = provider.url.removesuffix("/v1") + "/v1beta/models/fixture-gemini:generateContent"
+            with urlopen(Request(endpoint, json.dumps(body).encode(),
+                                 {"Authorization": "Bearer synthetic-gemini", "Content-Type": "application/json"}), timeout=10) as response:
+                result = json.load(response)
+            self.assertEqual(result["usageMetadata"]["totalTokenCount"], 18)
+            row = provider.snapshot()[0]
+            self.assertTrue(row["bearerAuthorization"])
+            self.assertFalse(row["googleApiKeyPresent"])
+            self.assertEqual(row["request_id"], "native-gemini")
+            self.assertNotIn("synthetic-gemini", json.dumps(row))
+
     def test_sse_usage_tool_continuation(self):
         messages = [{"role": "user", "content": marker("tool", "tool-1")}]
         with request(self.provider.url, "lain-synthetic-a", "tool", "tool-1", stream=True, messages=messages) as response:

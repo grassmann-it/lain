@@ -24,7 +24,14 @@ def marker(case: str, request_id: str) -> str:
 
 
 def scenario(body: dict) -> tuple[str, str]:
-    for message in body.get("messages", []):
+    inputs = body.get("input", [])
+    if isinstance(inputs, str):
+        inputs = [{"role": "user", "content": inputs}]
+    if not isinstance(inputs, list):
+        inputs = []
+    gemini = [{"content": "".join(part.get("text", "") for part in message.get("parts", []) if isinstance(part, dict))}
+              for message in body.get("contents", []) if isinstance(message, dict)]
+    for message in [*body.get("messages", []), *inputs, *gemini]:
         content = message.get("content", "")
         if isinstance(content, list):
             content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
@@ -35,7 +42,8 @@ def scenario(body: dict) -> tuple[str, str]:
 
 
 class FakeProvider:
-    def __init__(self):
+    def __init__(self, *, keys=None):
+        self.keys = dict(ALL_KEYS if keys is None else keys)
         self.lock = threading.Lock()
         self.usage_gate = threading.Event()
         self.observations: list[dict] = []
@@ -86,10 +94,11 @@ class FakeProvider:
             def do_POST(self):
                 path = self.path.split("?", 1)[0]
                 anthropic = path == "/v1/messages"
-                if path not in ("/v1/chat/completions", "/chat/completions", "/v1/messages"):
+                gemini = path.startswith("/v1beta/models/") and path.endswith(":generateContent")
+                if not gemini and path not in ("/v1/chat/completions", "/chat/completions", "/v1/messages", "/v1/responses", "/responses"):
                     return self.reply(404, {"error": {"message": "fixture endpoint not found"}})
-                key = self.headers.get("x-api-key") or self.headers.get("Authorization", "").removeprefix("Bearer ")
-                account = ALL_KEYS.get(key)
+                key = self.headers.get("x-api-key") or self.headers.get("x-goog-api-key") or self.headers.get("Authorization", "").removeprefix("Bearer ")
+                account = owner.keys.get(key)
                 if account is None:
                     return self.reply(401, {"error": {"message": "synthetic key required"}})
                 try:
@@ -97,9 +106,11 @@ class FakeProvider:
                     case, request_id = scenario(body)
                 except (ValueError, KeyError, TypeError):
                     return self.reply(400, {"error": {"message": "invalid fixture input"}})
-                tool_result = any(m.get("role") == "tool" or (isinstance(m.get("content"), list) and any(
+                tool_result = any(m.get("type") == "function_call_output" for m in body.get("input", []) if isinstance(m, dict)) or any(m.get("role") == "tool" or (isinstance(m.get("content"), list) and any(
                     part.get("type") == "tool_result" for part in m["content"] if isinstance(part, dict))) for m in body.get("messages", []))
-                row = {"account": account, "case": case, "request_id": request_id,
+                row = {"account": account, "case": case, "request_id": request_id, "path": path,
+                       "bearerAuthorization": self.headers.get("Authorization", "").startswith("Bearer "),
+                       "googleApiKeyPresent": bool(self.headers.get("x-goog-api-key")),
                        "model": body.get("model"), "stream": bool(body.get("stream")),
                        "tool_result": tool_result, "disconnected": False}
                 with owner.lock:
@@ -110,8 +121,13 @@ class FakeProvider:
                     row["status"] = 429
                     return self.reply(429, {"error": {"message": "synthetic quota exceeded", "type": "rate_limit_error", "code": "rate_limit_exceeded"}})
                 row["status"] = 200
+                if gemini:
+                    return self.reply(200, {"candidates": [{"content": {"role": "model", "parts": [{"text": "synthetic response"}]}, "finishReason": "STOP", "index": 0}],
+                        "modelVersion": "fixture-gemini", "usageMetadata": {"promptTokenCount": 11, "candidatesTokenCount": 7, "totalTokenCount": 18}})
                 if anthropic:
                     return self.anthropic(body, row, tool_result)
+                if path in ("/v1/responses", "/responses"):
+                    return self.native_responses(body, row, tool_result)
                 usage = dict(USAGE)
                 if case == "partial_usage":
                     usage.pop("total_tokens")
@@ -156,6 +172,47 @@ class FakeProvider:
                     event({}, usage=usage)
                     self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
+                except (BrokenPipeError, ConnectionResetError):
+                    row["disconnected"] = True
+
+            def native_responses(self, body, row, tool_result):
+                tool = row["case"] == "tool" and not tool_result
+                text = "synthetic tool result accepted" if tool_result else "synthetic response"
+                output = {"type": "function_call", "id": "fc_fixture_1", "call_id": "call_fixture_1", "name": "fixture_echo", "arguments": '{"value":"safe"}', "status": "completed"} if tool else {
+                    "type": "message", "id": "msg_fixture_1", "role": "assistant", "status": "completed",
+                    "content": [{"type": "output_text", "text": text, "annotations": []}]}
+                response = {"id": "resp_" + row["request_id"], "object": "response", "created_at": 1700000000,
+                            "status": "completed", "model": MODEL, "output": [output],
+                            "usage": {"input_tokens": 11, "output_tokens": 7, "total_tokens": 18}}
+                if not body.get("stream"):
+                    return self.reply(200, response)
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.close_connection = True
+                sequence = 0
+
+                def event(kind, **fields):
+                    nonlocal sequence
+                    data = {"type": kind, "sequence_number": sequence, **fields}
+                    sequence += 1
+                    self.wfile.write(("event: " + kind + "\ndata: " + json.dumps(data) + "\n\n").encode())
+                    self.wfile.flush()
+                try:
+                    event("response.created", response={**response, "status": "in_progress", "output": [], "usage": None})
+                    initial = {**output, "status": "in_progress", **({"arguments": ""} if tool else {"content": []})}
+                    event("response.output_item.added", output_index=0, item=initial)
+                    if tool:
+                        event("response.function_call_arguments.delta", item_id=output["id"], output_index=0, delta=output["arguments"])
+                        event("response.function_call_arguments.done", item_id=output["id"], output_index=0, arguments=output["arguments"])
+                    else:
+                        event("response.content_part.added", item_id=output["id"], output_index=0, content_index=0, part={"type": "output_text", "text": "", "annotations": []})
+                        event("response.output_text.delta", item_id=output["id"], output_index=0, content_index=0, delta=text)
+                        event("response.output_text.done", item_id=output["id"], output_index=0, content_index=0, text=text)
+                        event("response.content_part.done", item_id=output["id"], output_index=0, content_index=0, part=output["content"][0])
+                    event("response.output_item.done", output_index=0, item=output)
+                    event("response.completed", response=response)
                 except (BrokenPipeError, ConnectionResetError):
                     row["disconnected"] = True
 
