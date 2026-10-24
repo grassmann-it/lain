@@ -136,3 +136,23 @@ qualify arbitrary new-version activity, app-only schema4 rollback, real OAuth,
 the user installation or final UI acceptance. The report still records the new
 Gateway package's overall `releaseQualified:false`; overall release qualification
 remains Root's separate integration decision.
+
+## Installed-update orchestrator review
+
+Before Root's actual update, the reviewer read only the private update script
+source and public installer source, not backup contents, credentials or private
+CLI baselines. The review caught an additive DTO comparison bug (new
+`CacheCreation` versus the old token object), a missing pre-migration schema3
+failure branch, and reliance on the mutable installed launcher during recovery.
+Root corrected these before execution: comparisons use shared legacy components;
+schema3 failure retains its exact checkpoint-matching CURRENT database and
+replaces only the app, while schema4 uses the qualified conversion; fixed
+`systemctl --user ... lain.service` control works even between installer renames.
+The initial stop is inside recovery handling. Current grants stay untouched.
+
+Installer environment paths are explicitly pinned to the same own launcher/unit/
+desktop paths that were backed up. The reviewer inspected these final pins.
+There is no remaining source blocker within the bounded procedure. Actual
+installed results are to be assessed from Root's sanitized report separately;
+this source review does not claim the private runtime comparison was executed
+by the reviewer.
