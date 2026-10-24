@@ -10,6 +10,7 @@ cat > "$temp/ReaderTests.csproj" <<XML
     <Compile Include="$root/src/Lain.Core/*.cs" />
     <Compile Include="$root/src/Lain.Host/Quota/QuotaContracts.cs" />
     <Compile Include="$root/src/Lain.Host/Quota/QuotaHttp.cs" />
+    <Compile Include="$root/src/Lain.Host/Quota/QuotaService.cs" />
     <Compile Include="$root/src/Lain.Host/Quota/KiloQuotaAdapter.cs" />
     <Compile Include="$root/src/Lain.Host/Quota/KiloPassReader.cs" />
     <Compile Include="$root/src/Lain.Host/Quota/RequestyQuotaAdapter.cs" />
@@ -17,6 +18,7 @@ cat > "$temp/ReaderTests.csproj" <<XML
     <Compile Include="$root/src/Lain.Host/Quota/StepFunQuotaAdapter.cs" />
     <Compile Include="$root/src/Lain.Host/Providers/Xai/XaiKeyMetadataReader.cs" />
     <Compile Include="$root/tests/account-connect-readers/Program.cs" />
+    <Compile Include="$root/tests/account-connect-readers/MetadataRetention.cs" />
   </ItemGroup>
 </Project>
 XML

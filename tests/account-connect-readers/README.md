@@ -8,9 +8,15 @@ and removed after the run; shared project files remain untouched.
 Qualified offline semantics:
 
 - Kilo direct USD wallet zero, separate Pass credits/status/dates, independent
-  wallet/Pass failure, no Pass-to-wallet arithmetic or inferred tier.
+  wallet/Pass failure, no Pass-to-wallet arithmetic or inferred tier. Actual
+  QuotaService regressions retain failed metadata with its original observation,
+  success and freshness bound; repeated wallet success cannot refresh failed Pass.
+  Explicit no-subscription clears Pass while schema drift retains stale values.
 - Requesty Self permissions and group metadata; zero monthly limit is uncapped;
   monthly spend and explicitly bounded period usage are separate observations.
+  Self failure retains metadata alongside fresh independent usage; usage failure
+  leaves successful Self metadata fresh. Generation/credential binding invalidation
+  and separate account partitions prevent cross-binding metadata retention.
 - Synthetic current weekly percentage preferred over legacy weekly credits;
   reported rolling constraint stays separate; decimal strings are exact and
   regeneration never becomes a full reset. Legacy subscription remains fallback.

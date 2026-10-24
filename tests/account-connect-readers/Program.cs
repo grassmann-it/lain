@@ -132,6 +132,7 @@ using (var client = new HttpClient(new FakeHandler((_, _) => throw new Exception
     await Denied(() => new RequestyQuotaAdapter(client).FetchAsync(Account("requesty"), new(secret, baseUrl: "https://router.requesty.ai.evil.invalid/v1")), "Wrong Requesty host rejected");
     await Denied(() => new XaiKeyMetadataReader(client).ReadAsync(Account("xai"), new(secret, baseUrl: "https://api.x.ai/v1?key=private")), "Wrong xAI target rejected");
 }
+checks += await MetadataRetention.RunAsync();
 Console.WriteLine($"PASS: {checks} account-connect reader checks");
 
 async Task Denied(Func<Task> action, string message)

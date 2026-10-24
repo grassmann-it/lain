@@ -27,6 +27,7 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
         var rows = new List<QuotaReading>();
         var errors = new List<string>();
         RequestyKeyMetadata? metadata = null;
+        string? metadataError = null;
         var resourceMismatch = false;
         var resourceVerified = false;
         try
@@ -40,16 +41,18 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
             { metadata = null; resourceMismatch = true; throw new QuotaFetchException("Requesty Self resource does not match the bound account."); }
             resourceVerified = metadata is not null;
             rows.AddRange(Normalize(doc.RootElement, start));
-            if (metadata is null) errors.Add("Requesty key metadata unknown.");
+            if (metadata is null) { metadataError = "Requesty key metadata unknown."; errors.Add(metadataError); }
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { errors.Add("Requesty Self request timed out."); }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { metadataError = "Requesty Self request timed out."; errors.Add(metadataError); }
         catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
-        { errors.Add("Requesty Self response unavailable or invalid."); }
-        if (resourceMismatch) return new([], "Requesty Self resource does not match the bound account.");
+        { metadataError = "Requesty Self response unavailable or invalid."; errors.Add(metadataError); }
+        if (resourceMismatch) return new([], "Requesty Self resource does not match the bound account.",
+            RequestyKeyOutcome: new(false, "Requesty Self resource does not match the bound account."));
         // A bound identity requires a successful Self read. Transport/schema failure
         // must not let independent usage bypass that identity check with a null ID.
         if (account.Binding?.ResourceId is not null && !resourceVerified)
-            return new([], "Requesty Self identity could not be verified for the bound resource.");
+            return new([], "Requesty Self identity could not be verified for the bound resource.",
+                RequestyKeyOutcome: new(false, "Requesty Self identity could not be verified for the bound resource."));
         // Explicit month-to-observation bounds; no all-time spend compared with a monthly cap.
         var usageUrl = Endpoint + "/usage?start=" + Uri.EscapeDataString(start.ToString("O", CultureInfo.InvariantCulture))
             + "&end=" + Uri.EscapeDataString(now.ToString("O", CultureInfo.InvariantCulture));
@@ -62,7 +65,8 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
         catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
         { errors.Add("Requesty Self usage response unavailable or invalid."); }
         if (rows.Count == 0 && metadata is null && errors.Count == 0) errors.Add("Requesty Self quota unknown.");
-        return new(rows, errors.Count == 0 ? null : string.Join(" ", errors), RequestyKey: metadata);
+        return new(rows, errors.Count == 0 ? null : string.Join(" ", errors), RequestyKey: metadata,
+            RequestyKeyOutcome: new(metadata is not null, metadataError));
     }
 
     public static RequestyKeyMetadata? NormalizeMetadata(JsonElement root)

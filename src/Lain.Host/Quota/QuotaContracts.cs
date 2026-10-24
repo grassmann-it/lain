@@ -74,9 +74,13 @@ public record QuotaReading(string Source, string Unit, double? Used = null, doub
     string? ExactUsed = null, string? ExactLimit = null, string? ExactRemaining = null,
     DateTimeOffset? NextRegenerationAt = null, double? NextRegenerationPercent = null, string? ExactNextRegeneration = null);
 
+// A successful empty metadata read clears the previous value; a failed read retains it.
+public sealed record QuotaPartOutcome(bool Succeeded, string? Error = null);
+
 // A partial response may contain usable readings and a sanitized diagnostic.
 public record QuotaFetchResult(IReadOnlyList<QuotaReading> Readings, string? Error = null, QuotaSupportDto? Support = null,
-    KiloPassState? KiloPass = null, RequestyKeyMetadata? RequestyKey = null);
+    KiloPassState? KiloPass = null, RequestyKeyMetadata? RequestyKey = null,
+    QuotaPartOutcome? KiloPassOutcome = null, QuotaPartOutcome? RequestyKeyOutcome = null);
 
 public interface IQuotaAdapter
 {

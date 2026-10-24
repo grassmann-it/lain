@@ -31,6 +31,7 @@ public sealed class KiloQuotaAdapter(HttpClient client) : IQuotaAdapter
             throw new QuotaFetchException("Kilo quota requires its personal Gateway resource binding.");
         IReadOnlyList<QuotaReading> rows = [];
         KiloPassState? pass = null;
+        string? passError = null;
         var errors = new List<string>();
         try
         {
@@ -42,10 +43,11 @@ public sealed class KiloQuotaAdapter(HttpClient client) : IQuotaAdapter
         catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
         { errors.Add("Kilo wallet response unavailable or invalid."); }
         try { pass = await new KiloPassReader(client).ReadAsync(credential, ct); }
-        catch (QuotaFetchException) { errors.Add("Kilo Pass response unavailable or invalid."); }
+        catch (QuotaFetchException) { passError = "Kilo Pass response unavailable or invalid."; errors.Add(passError); }
         // Independent failures preserve a valid wallet or Pass. No bonus addition or
         // subtraction of Pass usage from the independent wallet balance.
-        return new(rows, errors.Count == 0 ? null : string.Join(" ", errors), KiloPass: pass);
+        return new(rows, errors.Count == 0 ? null : string.Join(" ", errors), KiloPass: pass,
+            KiloPassOutcome: new(passError is null, passError));
     }
 
     public static IReadOnlyList<QuotaReading> Normalize(JsonElement root)

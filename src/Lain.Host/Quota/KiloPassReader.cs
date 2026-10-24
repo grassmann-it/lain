@@ -15,19 +15,29 @@ public sealed class KiloPassReader(HttpClient client)
         try
         {
             using var doc = await QuotaHttp.GetAsync(client, Endpoint, credential, ct, userAgent: "lain/1.0");
-            return Normalize(doc.RootElement);
+            var root = SubscriptionRoot(doc.RootElement);
+            // Only an explicit absent subscription is a successful empty observation.
+            // An unknown envelope/schema must not erase the last successful Pass.
+            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("subscription", out var subscription)
+                && subscription.ValueKind == JsonValueKind.Null) return null;
+            return Normalize(doc.RootElement) ?? throw new QuotaFetchException("Kilo Pass response unavailable or invalid.");
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { throw new QuotaFetchException("Kilo Pass request timed out."); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
         { throw new QuotaFetchException("Kilo Pass response unavailable or invalid."); }
     }
 
-    public static KiloPassState? Normalize(JsonElement value)
+    private static JsonElement SubscriptionRoot(JsonElement value)
     {
         var item = value.ValueKind == JsonValueKind.Array ? (value.GetArrayLength() == 1 ? value[0] : default) : value;
         var data = JsonFields.Object(JsonFields.Object(item, "result"), "data");
         var root = JsonFields.Object(data, "json");
-        if (root.ValueKind != JsonValueKind.Object) root = data.ValueKind == JsonValueKind.Object ? data : item;
+        return root.ValueKind == JsonValueKind.Object ? root : data.ValueKind == JsonValueKind.Object ? data : item;
+    }
+
+    public static KiloPassState? Normalize(JsonElement value)
+    {
+        var root = SubscriptionRoot(value);
         var sub = JsonFields.Object(root, "subscription");
         if (sub.ValueKind != JsonValueKind.Object) return null;
         var rawStatus = JsonFields.String(sub, "status");

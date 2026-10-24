@@ -87,9 +87,11 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
                 adapter.RequiresCredential ? "Provider quota source." : "Previously observed provider response.");
             if (!result.Readings.Any(HasQuantity) && result.KiloPass is null && result.RequestyKey is null && result.Error is null && IsUnavailable(support))
             { SaveUnavailable(account.Id, previous, support); return; }
+            // A successful explicit absence is still a completed metadata read.
+            var metadataSucceeded = result.KiloPassOutcome?.Succeeded == true || result.RequestyKeyOutcome?.Succeeded == true;
             // An unknown placeholder is not evidence of a successful quota read.
-            if (!result.Readings.Any(HasQuantity) && result.KiloPass is null && result.RequestyKey is null)
-            { SaveFailure(account.Id, previous, result.Error ?? "Remaining budget unknown.", result.Readings, support); return; }
+            if (!result.Readings.Any(HasQuantity) && result.KiloPass is null && result.RequestyKey is null && !metadataSucceeded)
+            { SaveFailure(account.Id, previous, result.Error ?? "Remaining budget unknown.", result.Readings, support, result); return; }
             var readings = result.Readings.Select(r => new CachedReading(r, r.ObservedAt ?? now,
                 HasQuantity(r) ? r.ObservedAt ?? now : null, null)).ToList();
             for (var index = 0; index < readings.Count; index++)
@@ -103,7 +105,9 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
                 readings.AddRange(previous.Readings.Where(old => !result.Readings.Any(r => Identity(r) == Identity(old.Reading)))
                     .Select(old => old with { Error = result.Error }));
             lock (gate) snapshots[account.Id] = new(now, now, readings, result.Error, false, support, bindingVersion,
-                accountVersion, result.KiloPass, result.RequestyKey);
+                accountVersion,
+                MergeMetadata(previous.KiloPass, result.KiloPass, result.KiloPassOutcome, result.Error, now),
+                MergeMetadata(previous.RequestyKey, result.RequestyKey, result.RequestyKeyOutcome, result.Error, now));
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -123,10 +127,14 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
             Readings = previous.Readings.Select(r => r with { Error = null }).ToArray() };
     }
 
-    private void SaveFailure(string id, AccountSnapshot previous, string error, IReadOnlyList<QuotaReading>? unknown = null, QuotaSupportDto? support = null)
+    private void SaveFailure(string id, AccountSnapshot previous, string error, IReadOnlyList<QuotaReading>? unknown = null, QuotaSupportDto? support = null, QuotaFetchResult? metadataResult = null)
     {
         lock (gate) snapshots[id] = previous with { ObservedAt = clock.GetUtcNow(), Error = error, Refreshing = false,
             Support = support ?? previous.Support,
+            KiloPass = metadataResult is null ? FailMetadata(previous.KiloPass, error)
+                : MergeMetadata(previous.KiloPass, metadataResult.KiloPass, metadataResult.KiloPassOutcome, error, clock.GetUtcNow()),
+            RequestyKey = metadataResult is null ? FailMetadata(previous.RequestyKey, error)
+                : MergeMetadata(previous.RequestyKey, metadataResult.RequestyKey, metadataResult.RequestyKeyOutcome, error, clock.GetUtcNow()),
             Readings = previous.Readings.Count > 0 ? previous.Readings.Select(r => r with { Error = error }).ToArray()
                 : (unknown ?? []).Select(r => new CachedReading(r, r.ObservedAt ?? clock.GetUtcNow(), null, error)).ToArray() };
     }
@@ -143,7 +151,7 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
             yield break;
         }
         var unavailable = IsUnavailable(snapshot?.Support);
-        var rows = snapshot?.Readings.Count > 0 ? snapshot.Readings : [new CachedReading(new QuotaReading(providers.FirstOrDefault(a => a.Supports(account.Provider))?.Source ?? "unavailable", "unknown"), snapshot?.ObservedAt, snapshot?.KiloPass is not null || snapshot?.RequestyKey is not null ? snapshot?.LastSuccessAt : null, snapshot?.Error)];
+        var rows = snapshot?.Readings.Count > 0 ? snapshot.Readings : [new CachedReading(new QuotaReading(providers.FirstOrDefault(a => a.Supports(account.Provider))?.Source ?? "unavailable", "unknown"), snapshot?.ObservedAt, snapshot?.KiloPass?.Value is not null || snapshot?.RequestyKey?.Value is not null ? snapshot?.LastSuccessAt : null, snapshot?.Error)];
         foreach (var cached in rows)
         {
             var row = cached.Reading;
@@ -157,8 +165,35 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
                 row.WindowId, row.MeasurementKind, row.Scope, row.ScopeId, row.Model, row.SourceUrl,
                 row.DataAsOf, row.WindowStart, row.WindowEnd, row.FreshUntil, row.ProviderUpdatedAt, row.ApprovedLimit,
                 row.ExactUsed, row.ExactLimit, row.ExactRemaining, row.NextRegenerationAt, row.NextRegenerationPercent,
-                row.ExactNextRegeneration, snapshot?.KiloPass, snapshot?.RequestyKey);
+                row.ExactNextRegeneration, snapshot?.KiloPass?.Value, snapshot?.RequestyKey?.Value,
+                ProjectMetadata(snapshot?.KiloPass, account, snapshot), ProjectMetadata(snapshot?.RequestyKey, account, snapshot));
         }
+    }
+
+    private static CachedMetadata<T>? MergeMetadata<T>(CachedMetadata<T>? previous, T? value,
+        QuotaPartOutcome? outcome, string? aggregateError, DateTimeOffset now) where T : class
+    {
+        // Legacy adapters with a value imply successful metadata observation even
+        // when an independent numeric request failed. Explicit outcomes also cover absence.
+        if (outcome?.Succeeded == true || outcome is null && value is not null)
+            return new(value, now, now, null);
+        if (outcome is null && previous is null) return null;
+        var error = outcome?.Error ?? aggregateError ?? "Metadata unavailable; previous observation retained.";
+        return previous is null ? new(null, null, null, error) : previous with { Error = error };
+    }
+
+    private static CachedMetadata<T>? FailMetadata<T>(CachedMetadata<T>? previous, string error) where T : class =>
+        previous is null ? null : previous with { Error = error };
+
+    private QuotaMetadataObservationDto? ProjectMetadata<T>(CachedMetadata<T>? metadata, AccountDto account,
+        AccountSnapshot? snapshot) where T : class
+    {
+        if (metadata is null) return null;
+        var freshUntil = metadata.LastSuccessAt + RefreshInterval;
+        var state = !account.Enabled ? "disabled" : snapshot?.Refreshing == true ? "refreshing"
+            : metadata.LastSuccessAt is null ? metadata.Error is not null ? "error" : "unknown"
+            : metadata.Error is not null || IsUnavailable(snapshot?.Support) || clock.GetUtcNow() >= freshUntil ? "stale" : "ok";
+        return new(state, metadata.ObservedAt, metadata.LastSuccessAt, freshUntil, metadata.Error);
     }
 
     private static bool IsUnavailable(QuotaSupportDto? support) => support?.Kind is
@@ -216,7 +251,8 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
             foreach (var removed in snapshots.Keys.Except(current.Select(a => a.Id)).ToArray()) snapshots.Remove(removed);
     }
     private sealed record CachedReading(QuotaReading Reading, DateTimeOffset? ObservedAt, DateTimeOffset? LastSuccessAt, string? Error);
+    private sealed record CachedMetadata<T>(T? Value, DateTimeOffset? ObservedAt, DateTimeOffset? LastSuccessAt, string? Error) where T : class;
     private sealed record AccountSnapshot(DateTimeOffset? ObservedAt, DateTimeOffset? LastSuccessAt,
         IReadOnlyList<CachedReading> Readings, string? Error, bool Refreshing, QuotaSupportDto? Support = null,
-        string? BindingVersion = null, string? AccountVersion = null, KiloPassState? KiloPass = null, RequestyKeyMetadata? RequestyKey = null);
+        string? BindingVersion = null, string? AccountVersion = null, CachedMetadata<KiloPassState>? KiloPass = null, CachedMetadata<RequestyKeyMetadata>? RequestyKey = null);
 }
