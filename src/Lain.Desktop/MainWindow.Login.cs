@@ -14,7 +14,8 @@ namespace Lain.Desktop;
 
 public sealed partial class MainWindow
 {
-    private Func<Uri, Task<bool>> _connectionBrowser = uri => Launcher.LaunchUriAsync(uri);
+    private Func<Uri, Task<bool>>? _connectionBrowser;
+    private Task<bool> OpenConnectionBrowserAsync(Uri uri) => _connectionBrowser?.Invoke(uri) ?? Launcher.LaunchUriAsync(uri);
     private static bool LoginPending(LoginDto? login) => login?.State is "waiting" or "pending" or "resource-required" or "awaiting-resource";
 
     private Task StartCodexLoginAsync()
@@ -39,7 +40,7 @@ public sealed partial class MainWindow
                 {
                     try
                     {
-                        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http") || !await _connectionBrowser(uri))
+                        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http") || !await OpenConnectionBrowserAsync(uri))
                             _loginError = "The browser could not be opened. Use Reopen browser or the private authorization link.";
                     }
                     catch (Exception) { _loginError = "The browser could not be opened. Use Reopen browser or the private authorization link."; }
@@ -118,7 +119,7 @@ public sealed partial class MainWindow
             {
                 var open = Action("Reopen browser", async () => {
                     if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http")) throw new InvalidOperationException("The host returned an invalid authorization URL.");
-                    if (!await _connectionBrowser(uri)) throw new InvalidOperationException("The browser could not be opened. Check your default browser and try again.");
+                    if (!await OpenConnectionBrowserAsync(uri)) throw new InvalidOperationException("The browser could not be opened. Check your default browser and try again.");
                 }, "Finish signing in in your browser. This page checks automatically.", stayOnPage: true);
                 open.Classes.Add("primary");
                 open.HorizontalAlignment = HorizontalAlignment.Left;

@@ -120,7 +120,7 @@ public sealed partial class MainWindow
         var templates = CompactRouteButton("Choose provider models…", () => { if (_routeAccountId is { } id) _ = ShowAccountModelsAsync(id); });
         context.Children.Add(ProfileWrap(templates, CompactRouteButton("Clear model context", () => {
             _routeAccountId = _routeContextId = _routeModel = null;
-            Populate();
+            Render();
         })));
         summary.Children.Add(context); Grid.SetRow(summary, 2); inventory.Children.Add(summary);
         var rows = new StackPanel { Spacing = 0 };
