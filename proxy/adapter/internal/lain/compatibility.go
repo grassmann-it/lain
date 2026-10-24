@@ -125,6 +125,9 @@ func (p compatibilityPolicy) validate(body []byte, final bool) error {
 	if final && p.beam && len(tools) > 128 {
 		return &compatibilityError{"tool_limit_exceeded", "tool_limit", "this bound model accepts at most 128 transmitted top-level tools"}
 	}
+	if p.beam {
+		return nil
+	}
 	for _, tool := range tools {
 		if err := p.validateTool(tool, 0); err != nil {
 			return err
@@ -186,6 +189,9 @@ func (p compatibilityPolicy) validateKind(kind string) error {
 func (p compatibilityPolicy) validateFinal(req *http.Request) error {
 	if !p.active() {
 		return nil
+	}
+	if req.Method != http.MethodPost || !strings.HasSuffix(req.URL.Path, "/chat/completions") {
+		return closed(errors.New("final transport differs from bound compatibility protocol"))
 	}
 	if req.GetBody == nil {
 		return closed(errors.New("final compatibility request cannot be validated"))

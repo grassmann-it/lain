@@ -197,6 +197,10 @@ func TestCompatibilityScopeAndDuplicateControlsFailClosed(t *testing.T) {
 	if err := p.validate([]byte(`{"model":"other","tools":[]}`), true); err == nil {
 		t.Fatal("final model changed")
 	}
+	wrongProtocol, _ := http.NewRequest("POST", "https://fixture.invalid/v1/responses", strings.NewReader(`{"model":"stealth/glyph-cluster:free","tools":[]}`))
+	if err := p.validateFinal(wrongProtocol); err == nil {
+		t.Fatal("final HTTP protocol changed")
+	}
 	wire, _ := json.Marshal(Event{Kind: "usage"})
 	if strings.Contains(string(wire), "errorCategory") {
 		t.Fatal("null category must be omitted")
