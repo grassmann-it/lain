@@ -10,11 +10,20 @@ shown here. Use `--json` for structured inspection, stdout for results and stder
 for diagnostics. Never scrape the GUI, read the SQLite database directly, consume
 a proxy usage queue or start an alternative collector.
 
+The current source implements explicit Monitor/Gateway operation; the installed
+version may be older. Inspect installed help first. `lain mode --json` reads the
+configured operating intent when available; never infer Monitor solely from an
+unready proxy. Monitor does not start Core/inference or apply/export profiles,
+but can read available saved history. Missing Gateway features are not a Monitor
+health failure. Keep operating mode separate from UI information level/density.
+
 Supported read operations:
 
 ```sh
 lain status --json
 lain accounts --json
+lain mode --json
+lain accounts methods --json
 lain models --json
 lain profiles --json
 lain usage --json
@@ -159,6 +168,22 @@ Optional Contributor training routes require the declared nonsecret
 `allowTrainingData=true` workspace privacy permission; never supply that opt-in
 without the user's authorization. It does not authorize paid usage or bypass
 free-only controls.
+
+An explicitly requested operating-mode change uses `lain mode monitor --revision N
+--json` or `lain mode gateway --revision N --json`, after reading status/current
+configuration. It may stop/start Core or interrupt active requests; it preserves
+accounts/history/routes and is not a profile Apply. Re-read/review on conflict,
+never retry blindly using a newer revision. An inspection request authorizes no
+mode change, provider login or purchase. These commands require installed help
+support; the source contract alone is not installed-version evidence.
+
+Backup/restore and package changes are maintenance tasks, not read operations.
+Do not invoke historical upgrade scripts against default real user paths merely
+to inspect usage. Full stopped-state restore creates a recovery epoch; rotating
+grants may be spent and require explicit recovery/reconnect. Do not remove the
+marker or resurrect a previous refresh token. Current static accounts/history
+can remain usable. Ordinary Codex config and other proxy installations stay
+outside the maintenance scope unless explicitly authorized.
 
 Configuration mutations require a user request for that action. A request to
 inspect usage does not authorize importing accounts or changing routes. Imports

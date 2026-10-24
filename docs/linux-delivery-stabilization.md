@@ -124,3 +124,28 @@ Host recovery, journal torn-write/full-disk, X11/Wayland or provider acceptance.
 Actual Monitor/Gateway publishes and isolated execution of exact binaries,
 schema-specific rollback and credential quarantine/reconnect must be recorded
 separately with source/artifact identity and test results before release approval.
+
+## Current package qualification preparation (2026-10-24)
+
+The source-only preparation based on `1fe52ca` adds a plan-default real-package
+probe, `tests/delivery-stabilization/actual_packages.py`. It reuses the existing
+controlled upgrade package checks/fingerprints and shipped installer/maintenance
+helpers. Its isolated execution contract, required artifact pins and time budget
+are in that directory's README. The default is `not_run`; source review and
+syntax checking do not establish actual package behavior.
+
+The probe must package a source revision containing guarded reference-port CLI
+discovery (integrator change `1206cb7`) and the same guarded Host/Core ports. It
+uses a synthetic old-schema SQLite history and desired11/applied2 legacy state,
+not the user's real installation. It verifies current-package restore and
+rotation quarantine. Old-binary downgrade remains a separate compatibility gate;
+no restored stale OAuthgrant may be activated by a historical unguarded Host.
+
+The older `tests/acceptance/package_probe.py` is a Gateway inference fixture on
+fixed ports; it is not the fresh no-Core Monitor evidence. The older
+`upgrade_probe.py --execute` controls an actual service and enumerates a bounded
+historical state set. Do not invoke that default-path workflow for the new
+isolated qualification or treat its old state list as a full new-schema snapshot.
+Private full-home snapshots preserve new operation/generation/UI data without
+having to guess their file names. Actual publication/installation remains with
+the integrator after integrated UI/Host acceptance.

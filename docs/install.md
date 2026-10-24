@@ -10,7 +10,33 @@ Der gebündelte Proxy ist der verifizierte eigene Build aus dem externen, in
 `proxy/adapter` und den expliziten Hooks in `proxy/patches`, kein
 installierter Bestandsproxy. Seine Herkunft und Hashes liegen im Paket.
 
-## Paket bauen
+## Monitor und Gateway im aktuellen Quellstand
+
+Die folgenden historischen Gateway-/Desktopabläufe sind kein Nachweis für eine
+neu installierte Version. Der aktuelle Publisher bietet explizite Pakete:
+
+```sh
+./scripts/publish-linux.sh --mode monitor /absolute/new/lain-monitor
+./scripts/publish-linux.sh --mode gateway /absolute/new/lain-gateway
+```
+
+Monitor enthält Host/CLI/Desktop und Anwendungsnotices, aber keinen Core,
+Corekatalog, Go-Build oder Go-Notice-Inventar. Gateway erhält sämtliche
+Core-Integritäts-/Quell-/Abnahmegarantien. `package-metadata.json` und
+`build-info.json` nennen die Betriebsart; `source-provenance/publish-properties`
+zeichnet `LainRuntimeMode` pro Komponente auf. Ein frischer Installer setzt nur
+den Initialwert, Bestandskonfiguration dominiert. Dienste werden nicht gestartet.
+
+Der neue vollständige Ablauf einschließlich gesichertem Update, gestopptem
+Snapshot, rotierenden Credentials und Grenzen alter Hosts steht in
+[Linux-Delivery-Stabilisierung](linux-delivery-stabilization.md). Die tatsächliche
+Paketprobe unter `tests/delivery-stabilization/actual_packages.py` ist standardmäßig
+planend, benutzt bei expliziter Ausführung nur neue temporäre XDG-/LAIN_HOME-Pfade
+und niemals systemd oder bestehende Daten. Alle Build-/Runtimeslots koordiniert
+der Integrator. Erst die exakten geprüften Artefakte können eine neue Installation
+begründen.
+
+## Gatewaypaket bauen (bisheriger Ablauf)
 
 Vom Checkout aus, mit .NET SDK und der vom Proxy-Build geforderten Go-Version:
 

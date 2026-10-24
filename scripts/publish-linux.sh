@@ -48,10 +48,11 @@ for spec in 'Lain.Cli cli' 'Lain.Host host' 'Lain.Desktop desktop'; do
         -getProperty:Version,InformationalVersion -p:Configuration=Release -p:RuntimeIdentifier=linux-x64 \
         -p:SelfContained=true -p:LainRuntimeMode="$mode" -p:IncludeSourceRevisionInInformationalVersion=false \
         > "$publish_parent/properties/$directory.evaluated.json"
-    python3 - "$publish_parent/properties/$directory.evaluated.json" "$publish_parent/properties/$directory.json" "$revision" "$project" <<'PYPUBLISHVERSION'
+    python3 - "$publish_parent/properties/$directory.evaluated.json" "$publish_parent/properties/$directory.json" "$revision" "$project" "$mode" <<'PYPUBLISHVERSION'
 import json, pathlib, re, sys
 source, output = map(pathlib.Path, sys.argv[1:3])
 revision, project = sys.argv[3:5]
+mode = sys.argv[5]
 evaluated = json.loads(source.read_text())['Properties']
 version = evaluated['InformationalVersion']
 if not re.fullmatch(r'[0-9A-Za-z.+_-]+', version) or not re.fullmatch('[0-9a-f]{40}', revision):
@@ -59,7 +60,8 @@ if not re.fullmatch(r'[0-9A-Za-z.+_-]+', version) or not re.fullmatch('[0-9a-f]{
 version += ('.' if '+' in version else '+') + revision
 output.write_text(json.dumps({'project': project, 'sourceCommit': revision, 'evaluatedProperties': evaluated,
     'publishProperties': {'InformationalVersion': version, 'IncludeSourceRevisionInInformationalVersion': 'false',
-        'SourceRevisionId': revision, 'Configuration': 'Release', 'RuntimeIdentifier': 'linux-x64', 'SelfContained': 'true'}}, indent=2) + '\n')
+        'SourceRevisionId': revision, 'Configuration': 'Release', 'RuntimeIdentifier': 'linux-x64', 'SelfContained': 'true',
+        'LainRuntimeMode': mode}}, indent=2) + '\n')
 PYPUBLISHVERSION
     informational_version=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["publishProperties"]["InformationalVersion"])' "$publish_parent/properties/$directory.json")
     dotnet publish "src/$project/$project.csproj" --no-restore -m:1 -p:BuildInParallel=false -nr:false -c Release -r linux-x64 --self-contained true -o "$out/$directory" \
