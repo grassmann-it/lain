@@ -56,7 +56,7 @@ public sealed partial class MainWindow
         if (ValidAmount(quota.Limit) is not { } limit || limit <= 0) return null;
         if (ValidAmount(quota.Used) is { } used)
             return used <= limit ? used / limit * 100 : null;
-        if (ReportedRemaining(quota) is { } remaining && remaining <= limit)
+        if (ReportedRemaining(quota) is { } remaining && remaining >= 0 && remaining <= limit)
             return (limit - remaining) / limit * 100;
         return null;
     }

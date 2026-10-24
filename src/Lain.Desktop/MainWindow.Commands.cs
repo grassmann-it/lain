@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Lain.Core;
 using Lain.Desktop.Presentation;
@@ -70,7 +71,7 @@ public sealed partial class MainWindow
             scroll.Offset = offset;
             if (_pendingAccountInspection is not { } id) { _restoringAccountNavigation = false; return; }
             _pendingAccountInspection = null;
-            if (!_visibleAccountIds.Contains(id))
+            if (!_visibleAccountIds.Contains(id) || _configuration?.Accounts.Any(a => a.Id == id) != true)
             {
                 _notice.Text = "The previous account is no longer visible. Clear filters or select another account.";
                 _restoringAccountNavigation = false;
@@ -115,7 +116,7 @@ public sealed partial class MainWindow
     private ObjectCommand[] AccountCommands(AccountDto account, long revision, System.Action? inventoryChanged)
     {
         void Run(Func<Task> action, string success, bool stay = false)
-        { _ = RunAsync(action, success, stay); }
+        { if (stay) CloseAccountInspector(false); _ = RunAsync(action, success, stay); }
         var canModel = !IsMonitorMode && (_status?.Capabilities?.Inference ?? true);
         ObjectCommand[] commands =
         [
@@ -262,7 +263,12 @@ public sealed partial class MainWindow
         }
         UpdateAccountInspectorLayout();
         UpdateAccountSelection();
-        if (restoreFocus) Dispatcher.UIThread.Post(() => origin?.Focus(), DispatcherPriority.Loaded);
+        if (restoreFocus) Dispatcher.UIThread.Post(() =>
+        {
+            if (_configuration?.Accounts.Any(a => a.Id == id) == true) origin?.Focus();
+            else if (_page.Content is Control current)
+                current.GetLogicalDescendants().OfType<Control>().FirstOrDefault(c => c is Button or TextBox && c.IsVisible && c.IsEnabled)?.Focus();
+        }, DispatcherPriority.Loaded);
     }
 
     private void ShowAccountRemoval(string id, long revision)

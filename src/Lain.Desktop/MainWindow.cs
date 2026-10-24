@@ -313,7 +313,7 @@ public sealed partial class MainWindow : Window
             CloseAccountInspector();
             _notice.Text = "The selected account is no longer configured. Historical usage remains available.";
         }
-        if (_editing || _openObjectMenus > 0 || _section is "Usage" or "Live" or "Providers" or "Settings" or "About") return;
+        if (_editing || _accountRemovalVisible || _openObjectMenus > 0 || _section is "Usage" or "Live" or "Providers" or "Settings" or "About") return;
         if (_inspectedAccountId is not null && !explicitRefresh && _accountInspector.IsKeyboardFocusWithin) return;
         // Polling updates the shell immediately, but must not remove the control being
         // used with the keyboard. A changed snapshot remains pending until focus leaves

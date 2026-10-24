@@ -145,6 +145,7 @@ public sealed partial class MainWindow
         var unavailable = QuotaUnavailable(quota);
         if (unavailable)
         {
+            panel.Children.Add(TileText(QuotaWindowLabel(quota), 12));
             panel.Children.Add(TileText(QuotaSupportMessage(quota), 12, Ui.Muted));
             if (Uri.TryCreate(quota?.Support?.ActionUrl, UriKind.Absolute, out var actionUri) && actionUri.Scheme == Uri.UriSchemeHttps)
                 panel.Children.Add(Ui.Button("View quota access guidance", async () => await OpenProviderLinkAsync(actionUri)));
