@@ -1,61 +1,126 @@
 {
-  "checkedAt": "2026-10-24T11:43:46.374Z",
+  "checkedAt": "2026-10-24T12:09:23.554Z",
   "file": "docs/provider-referrals.html",
-  "sha256": "a789c376c265ab3d859e7fe1970128a03caa2fc9d67f0ad96db9cd32391b7296",
+  "sha256": "1bdd17f42bc877f6d98af9fa7a453c8d642db45d9010c0e91dbe60172cc57ebd",
   "browser": "Chromium 153.0.8010.36",
   "mode": "Headless, offline, all HTTP(S) intercepted and aborted; no provider pages loaded",
-  "providers": 20,
-  "states": {
-    "confirmed": 6,
-    "notConfirmed": 13,
-    "ended": 1
+  "generator": "scripts/build-referral-overview.py",
+  "generatorDeterministic": true,
+  "scope": "Embedded replacement PNG only. The full functional suite was not rerun for this image update; its original file hash and results are retained under functionalBaseline.",
+  "image": {
+    "source": "src/Lain.Desktop/Assets/Brand/lain-cat.png",
+    "sha256": "b6d32ab02ca21965f6941f61ec209ff756c7ea9841641cf20c0f5bda4aefaba7",
+    "width": 512,
+    "height": 512,
+    "mode": "RGBA",
+    "embeddedBytesMatchSource": true
   },
+  "unchangedOutsideEmbeddedImage": true,
   "checks": [
-    "20 providers, 6 confirmed / 13 unconfirmed / 1 ended; offline initial load",
-    "Embedded fonts/logo and no external runtime assets",
-    "All status/own-link filters, provider search, German ß search and no-result state",
-    "Official source link opens a separate tab with expected HTTPS target; intercepted before network",
-    "Invalid schemes/credentials rejected; valid own link saved and restored",
-    "Own-link opening uses entered URL; intercepted before network",
-    "JSON export exact, self-contained HTML export/reopen in clean context, filters reset, script-ending text safely round-trips",
-    "Deleting an embedded own link persists across reopen",
-    "Corrupted local storage safely falls back to embedded links",
-    "Storage failure is accurately labelled; HTML export still preserves session links",
-    "Desktop/tablet/mobile layouts at 1440, 800, 390 and 320 pixels: cards and expanded details stay within viewport",
-    "No JavaScript errors; only two deliberate link-test requests, both blocked"
+    "Embedded PNG bytes exactly match the supplied replacement asset and expected SHA256",
+    "Generated HTML differs from the functional baseline only in the embedded PNG",
+    "Generator produces byte-identical output on regeneration",
+    "Logo loads at natural 512x512 and renders at 46x46 on desktop and mobile",
+    "Desktop 1440x1000 and mobile 390x844 screenshots visually reviewed; no horizontal overflow",
+    "20 providers and 6 confirmed / 13 not confirmed / 1 ended remain visible",
+    "No HTTP(S) requests and no JavaScript errors during the offline visual checks"
   ],
   "layouts": [
     {
       "width": 1440,
       "height": 1000,
-      "noHorizontalOverflow": true
-    },
-    {
-      "width": 800,
-      "height": 800,
-      "noHorizontalOverflow": true
+      "naturalWidth": 512,
+      "naturalHeight": 512,
+      "renderedWidth": 46,
+      "renderedHeight": 46,
+      "noHorizontalOverflow": true,
+      "providers": 20,
+      "states": [
+        "6",
+        "13",
+        "1"
+      ],
+      "screenshot": "/tmp/lain-referral-html-review/new-logo-1440x1000.png"
     },
     {
       "width": 390,
       "height": 844,
-      "noHorizontalOverflow": true
-    },
-    {
-      "width": 320,
-      "height": 720,
-      "noHorizontalOverflow": true
+      "naturalWidth": 512,
+      "naturalHeight": 512,
+      "renderedWidth": 46,
+      "renderedHeight": 46,
+      "noHorizontalOverflow": true,
+      "providers": 20,
+      "states": [
+        "6",
+        "13",
+        "1"
+      ],
+      "screenshot": "/tmp/lain-referral-html-review/new-logo-390x844.png"
     }
   ],
-  "expectedBlockedLinks": [
-    "https://www.alibabacloud.com/en/referral",
-    "https://example.invalid/ref?code=offline-review"
-  ],
+  "httpRequests": [],
   "consoleErrors": [],
-  "screenshots": [
-    "/tmp/lain-referral-html-review/desktop-1440x1000.png",
-    "/tmp/lain-referral-html-review/mobile-390x844.png"
-  ],
-  "generator": "scripts/build-referral-overview.py",
-  "generatorDeterministic": true,
-  "screenshotsNote": "Local visual review artifacts; not required runtime resources or committed repository files."
+  "screenshotsNote": "Local visual review artifacts; not required runtime resources or committed repository files.",
+  "functionalBaseline": {
+    "checkedAt": "2026-10-24T11:43:46.374Z",
+    "file": "docs/provider-referrals.html",
+    "sha256": "a789c376c265ab3d859e7fe1970128a03caa2fc9d67f0ad96db9cd32391b7296",
+    "browser": "Chromium 153.0.8010.36",
+    "mode": "Headless, offline, all HTTP(S) intercepted and aborted; no provider pages loaded",
+    "providers": 20,
+    "states": {
+      "confirmed": 6,
+      "notConfirmed": 13,
+      "ended": 1
+    },
+    "checks": [
+      "20 providers, 6 confirmed / 13 unconfirmed / 1 ended; offline initial load",
+      "Embedded fonts/logo and no external runtime assets",
+      "All status/own-link filters, provider search, German ß search and no-result state",
+      "Official source link opens a separate tab with expected HTTPS target; intercepted before network",
+      "Invalid schemes/credentials rejected; valid own link saved and restored",
+      "Own-link opening uses entered URL; intercepted before network",
+      "JSON export exact, self-contained HTML export/reopen in clean context, filters reset, script-ending text safely round-trips",
+      "Deleting an embedded own link persists across reopen",
+      "Corrupted local storage safely falls back to embedded links",
+      "Storage failure is accurately labelled; HTML export still preserves session links",
+      "Desktop/tablet/mobile layouts at 1440, 800, 390 and 320 pixels: cards and expanded details stay within viewport",
+      "No JavaScript errors; only two deliberate link-test requests, both blocked"
+    ],
+    "layouts": [
+      {
+        "width": 1440,
+        "height": 1000,
+        "noHorizontalOverflow": true
+      },
+      {
+        "width": 800,
+        "height": 800,
+        "noHorizontalOverflow": true
+      },
+      {
+        "width": 390,
+        "height": 844,
+        "noHorizontalOverflow": true
+      },
+      {
+        "width": 320,
+        "height": 720,
+        "noHorizontalOverflow": true
+      }
+    ],
+    "expectedBlockedLinks": [
+      "https://www.alibabacloud.com/en/referral",
+      "https://example.invalid/ref?code=offline-review"
+    ],
+    "consoleErrors": [],
+    "screenshots": [
+      "/tmp/lain-referral-html-review/desktop-1440x1000.png",
+      "/tmp/lain-referral-html-review/mobile-390x844.png"
+    ],
+    "generator": "scripts/build-referral-overview.py",
+    "generatorDeterministic": true,
+    "screenshotsNote": "Local visual review artifacts; not required runtime resources or committed repository files."
+  }
 }
