@@ -96,6 +96,11 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         return configuration.Update(revision, state =>
         {
             var duplicate = FindDuplicate(state, provider, input.ApiKey, null);
+            // Key replacement preserves account IDs, so an old key's derived ID
+            // can still be occupied by a different current key. Retained private
+            // credentials also remain reserved after public account removal.
+            if (duplicate is null && (state.Accounts.Any(a => a.Id == id) || secrets.HasAccount(id)))
+                throw new ArgumentException("The derived account identity is already in use. Existing credentials were not changed.");
             var account = duplicate ?? new AccountDto(id, input.Name.Trim(), provider, true, "api-key", "unverified");
             var privateJson = duplicate is null ? credential : MergeCredential(secrets.ReadAccount(account.Id), credential, plan, input.ProviderConnectionId is not null);
             var next = state with { Accounts = duplicate is null ? [.. state.Accounts, account]
