@@ -203,15 +203,15 @@ public sealed partial class MainWindow
                 Grid.SetColumn(menuState, 3); grid.Children.Add(menuState);
                 var edit = CompactRouteButton("Edit", () => EditRoute(route)); AutomationProperties.SetName(edit, "Edit model access " + route.Alias);
                 Button more = null!;
-                var moreMenu = ModelAccessCommandMenu(route.Id, () => ShowDetails(route.Id), () => more);
-                more = CompactRouteButton("⋯", () => moreMenu.Open(more)); more.ContextMenu = moreMenu;
+                var moreMenu = ModelAccessCommandMenu(route.Id, () => ShowDetails(route.Id), () => more, out var openMoreMenu);
+                more = CompactRouteButton("⋯", () => openMoreMenu(more)); more.ContextMenu = moreMenu;
                 AutomationProperties.SetName(more, "Actions for model access " + route.Alias);
                 var actions = new WrapPanel { Orientation = Orientation.Horizontal, ItemSpacing = 3, Children = { edit, more } };
                 Grid.SetColumn(actions, 4); grid.Children.Add(actions);
                 var row = new Border { Child = grid, Padding = new Thickness(9, dense ? 4 : 7), BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Background = route.Id == _selectedModelRouteId ? Ui.AccentSurface : Brushes.Transparent };
                 AutomationProperties.SetName(row, "Model row " + route.Id);
                 Control menuOrigin = title;
-                row.ContextMenu = ModelAccessCommandMenu(route.Id, () => ShowDetails(route.Id), () => menuOrigin);
+                row.ContextMenu = ModelAccessCommandMenu(route.Id, () => ShowDetails(route.Id), () => menuOrigin, out var openRowMenu);
                 row.PointerPressed += (_, args) => {
                     if (args.GetCurrentPoint(row).Properties.IsRightButtonPressed)
                         menuOrigin = args.Source is Button button ? button : (args.Source as Control)?.GetVisualAncestors().OfType<Button>().FirstOrDefault() ?? title;
@@ -220,7 +220,7 @@ public sealed partial class MainWindow
                     if ((args.Key == Key.F10 && args.KeyModifiers.HasFlag(KeyModifiers.Shift)) || args.Key == Key.Apps)
                     {
                         menuOrigin = args.Source as Control ?? title;
-                        row.ContextMenu.Open(row); args.Handled = true;
+                        openRowMenu(row); args.Handled = true;
                     }
                 };
                 rowBorders[route.Id] = row; rows.Children.Add(row);
@@ -258,10 +258,10 @@ public sealed partial class MainWindow
 
     // Bind on opening, then keep that ID and revision for the lifetime of the
     // menu. Polling or selection changes must never retarget an existing action.
-    private ContextMenu ModelAccessCommandMenu(string routeId, Action showDetails, Func<Control?> origin)
+    private ContextMenu ModelAccessCommandMenu(string routeId, Action showDetails, Func<Control?> origin, out Action<Control> open)
     {
         var menu = ObjectCommandMenu([]);
-        menu.Opening += (_, _) =>
+        void Bind()
         {
             ObjectCommand[] commands = _configuration is { } cfg && cfg.Routes.FirstOrDefault(r => r.Id == routeId) is { } route
                 ? ModelAccessCommands(cfg, route, showDetails)
@@ -270,7 +270,11 @@ public sealed partial class MainWindow
             var items = populated.Items.ToArray();
             populated.Items.Clear(); menu.Items.Clear();
             foreach (var item in items) menu.Items.Add(item);
-        };
+        }
+        // Avalonia raises Opening for native context requests, but Open(target)
+        // can bypass it. Both paths must bind before the popup is measured.
+        menu.Opening += (_, _) => Bind();
+        open = target => { Bind(); menu.Open(target); };
         menu.Closed += (_, _) => Dispatcher.UIThread.Post(() => {
             if (_section == "Models" && !_editing && origin() is { } control && TopLevel.GetTopLevel(control) == this)
                 control.Focus();
@@ -338,8 +342,8 @@ public sealed partial class MainWindow
         var edit = CompactRouteButton("Edit", () => EditRoute(route));
         AutomationProperties.SetName(edit, "Edit selected model access " + route.Alias);
         Button more = null!;
-        var moreMenu = ModelAccessCommandMenu(route.Id, () => { }, () => more);
-        more = CompactRouteButton("⋯", () => moreMenu.Open(more)); more.ContextMenu = moreMenu;
+        var moreMenu = ModelAccessCommandMenu(route.Id, () => { }, () => more, out var openMoreMenu);
+        more = CompactRouteButton("⋯", () => openMoreMenu(more)); more.ContextMenu = moreMenu;
         AutomationProperties.SetName(more, "Selected model actions " + route.Alias);
         var done = CompactRouteButton("Close", close); AutomationProperties.SetName(done, "Close model details " + route.Alias);
         var body = Ui.Stack(Ui.PageHeader(route.Alias, "Model configuration", edit, more, done),
@@ -367,14 +371,14 @@ public sealed partial class MainWindow
             Ui.Text("Model access ID: " + route.Id, 11, Ui.Muted), Ui.Text("Provider route: " + (route.ProviderRouteId ?? "Not supplied"), 11, Ui.Muted),
             Ui.Text("Unit price, quota and tool capabilities: Not supplied by configured model access.", 11, Ui.Muted)) });
         Control detailMenuOrigin = more;
-        body.ContextMenu = ModelAccessCommandMenu(route.Id, () => { }, () => detailMenuOrigin);
+        body.ContextMenu = ModelAccessCommandMenu(route.Id, () => { }, () => detailMenuOrigin, out var openDetailMenu);
         body.PointerPressed += (_, args) => {
             if (args.GetCurrentPoint(body).Properties.IsRightButtonPressed)
                 detailMenuOrigin = args.Source is Button button ? button : (args.Source as Control)?.GetVisualAncestors().OfType<Button>().FirstOrDefault() ?? more;
         };
         body.KeyDown += (_, args) => {
             if ((args.Key == Key.F10 && args.KeyModifiers.HasFlag(KeyModifiers.Shift)) || args.Key == Key.Apps)
-            { detailMenuOrigin = args.Source as Control ?? more; body.ContextMenu.Open(body); args.Handled = true; }
+            { detailMenuOrigin = args.Source as Control ?? more; openDetailMenu(body); args.Handled = true; }
         };
         return body;
     }
