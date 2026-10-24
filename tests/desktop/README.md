@@ -57,7 +57,10 @@ viewport sizes.
 PNGs require independent visual review for clipping, density and theme
 acceptance. This fixture cannot establish real host/provider behavior.
 
-The UI structure regression checks verify exactly five primary destinations and
+The UI structure navigation checks use the capability/information-level matrix:
+Gateway Barebones has Accounts/Profiles/Usage, Simple adds Models, and Advanced
+adds Live; other allowed destinations remain in More. Monitor exposes Accounts
+and only actually available history. They also verify
 Accounts at startup; one nested provider catalog and one account-method chooser;
 all quota windows including pure balances/unknown windows in closed tiles;
 Barebones/Simple/Advanced and independent Normal/Compact section density;

@@ -23,6 +23,11 @@ internal sealed class Fixture : HttpMessageHandler
         Enumerable.Range(1, InitialProfiles).Select(i => new ProfileDto($"p{i}", i == 1 ? "Daily" : $"Workspace {i}", Enumerable.Range(1, i * 5).Select(n => $"r{n}").ToArray(), "r1", Policy: i == 1 ? new("configured", ["r2"], true) : null)).ToArray());
     public int Imports, EnableCalls, ApplyCalls, ExportCalls, LoginBegins, LoginPolls, LoginCancels, UsageCalls, StatusCalls, AnalysisCalls;
     public bool Offline, UsageFailure, NullTokens, IncompleteCoverage, AnalysisFailure, InspectorFailure;
+    public bool MonitorMode, MonitorHistory, MethodsUnavailable, PreviewConflict, ApplyFailure;
+    public bool HoldLogin;
+    public bool UxdScenario, PartialTokens;
+    public int ConnectCalls, PreviewCalls;
+    public ConnectCredentialRequest? LastConnect;
     public int ProviderCalls, InspectorCalls, InspectorEventCalls, CostPolicyCalls;
     public bool InspectorRestarted, InspectorEmpty, InspectorGap, InspectorAdditionalEvent, QuotaAvailabilityChanged;
     public bool AccountSortScenario;
@@ -75,6 +80,8 @@ internal sealed class Fixture : HttpMessageHandler
                 "/api/v1/models" => new ModelCatalogDto(1, Config.Revision, [new ModelEntryDto("gpt-model", "openai", ["a1"])]),
                 "/api/v1/quotas" => Quotas(),
                 "/api/v1/providers" => Providers(),
+                "/api/v1/connection-methods" => ConnectionMethods(),
+                var p when p.StartsWith("/api/v1/profiles/", StringComparison.Ordinal) && p.EndsWith("/preview", StringComparison.Ordinal) => Preview(p),
                 var p when p.StartsWith("/api/v1/accounts/") && p.EndsWith("/monitor") => new MonitorAccessDto(p.Split('/')[4], "nvidia-build", "not-configured"),
                 var p when p.StartsWith("/api/v1/routes/") && p.EndsWith("/cost-policy") => CostPolicy(request.RequestUri!),
                 "/api/v1/inspector" => Inspector(),
@@ -84,6 +91,20 @@ internal sealed class Fixture : HttpMessageHandler
                 "/api/v1/attempts" => new PageDto<AttemptDto>([new AttemptDto("attempt-fixture", "request-fixture", "a1", "r1", "openai", "gpt-model", DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddMinutes(-1).AddSeconds(2), 200, "completed", new TokenCounts(72000, 9986, 18000, 2000, 81986), 2000, 250)], 0, 25, 1),
                 _ => throw UnexpectedRequest(request)
             };
+        }
+        else if (request.Method == HttpMethod.Post && path == "/api/v1/accounts/connect")
+        {
+            var submission = await request.Content!.ReadFromJsonAsync<RevisionRequest<ConnectCredentialRequest>>(cancellationToken: ct)
+                ?? throw new InvalidOperationException("Missing synthetic connection");
+            Revision(submission.Revision); LastConnect = submission.Value;
+            ConnectCalls++;
+            var connection = LastConnect.Connection;
+            var id = connection.AccountId ?? "connected-fixture";
+            var account = new AccountDto(id, connection.Name ?? connection.Provider, connection.Provider, true, "api-key", "ready",
+                Generation: 1, Binding: connection.Binding,
+                Capabilities: connection.Purposes.Select(purpose => new AccountCapabilityDto(purpose, "unverified")).ToArray());
+            Config = Config with { Revision = Config.Revision + 1, Accounts = Config.Accounts.Where(a => a.Id != id).Append(account).ToArray() };
+            value = Config;
         }
         else if (request.Method == HttpMethod.Post && path == "/api/v1/accounts/login")
         {
@@ -102,6 +123,8 @@ internal sealed class Fixture : HttpMessageHandler
         }
         else if (request.Method == HttpMethod.Post && path.EndsWith("/apply"))
         {
+            if (ApplyFailure) return new(HttpStatusCode.ServiceUnavailable)
+                { Content = JsonContent.Create(new ApiError("fixture_apply_failed", "Synthetic apply failed; previous active profile is retained.")) };
             ApplyCalls++; Config = Config with { AppliedRevision = Config.Revision };
             ActiveProfileId = path.Split('/')[4]; ActiveProfileRevision = Config.Revision; value = Config;
         }
@@ -159,6 +182,52 @@ internal sealed class Fixture : HttpMessageHandler
             strict ? ["upstream_cost_controls_unavailable"] : []);
     }
     private ProviderCatalogDto Providers() { ProviderCalls++; return CatalogOverride ?? ProviderCatalog; }
+    private ConnectionMethodCatalogDto ConnectionMethods() => new(Api.Version,
+    [
+        new("codex", "browser", "Continue in browser", "browser", ["quota", "inference"],
+            MethodsUnavailable ? "unavailable" : "available", true, false, Recommended: true,
+            Guidance: "This fixture never opens an external browser."),
+        new("kilo", "api-key", "Use existing Kilo key", "api-key", ["quota", "inference"],
+            MethodsUnavailable ? "unavailable" : "available", false, true, "api-key", DefaultBaseUrl: "https://example.invalid/v1", Recommended: true),
+        new("kilo", "device", "Kilo device sign-in", "device", ["quota"], "unavailable", false, false,
+            Guidance: "Device lifecycle is not qualified in this host.")
+    ]);
+    private ProfileApplyPreviewDto Preview(string path)
+    {
+        PreviewCalls++;
+        var id = path.Split('/')[4];
+        var profile = Config.Profiles.Single(p => p.Id == id);
+        var active = Config.Profiles.SingleOrDefault(p => p.Id == ActiveProfileId);
+        var revision = Config.Revision;
+        if (PreviewConflict) { PreviewConflict = false; Config = Config with { Revision = Config.Revision + 1 }; }
+        return new(Api.Version, id, revision, ActiveProfileId, ActiveProfileRevision,
+            profile.RouteIds.Except(active?.RouteIds ?? []).ToArray(), ["r2"],
+            (active?.RouteIds ?? []).Except(profile.RouteIds).ToArray(), ["a1", "a2"], ["all connected clients"],
+            "global proxy restart", ActiveProfileId is not null && ActiveProfileRevision is not null,
+            profile.DefaultRouteId, active?.DefaultRouteId, id != ActiveProfileId);
+    }
+
+    public void SetMonitor(bool enabled, bool history = false)
+    {
+        MonitorMode = enabled; MonitorHistory = history;
+        Config = Config with { RuntimeMode = enabled ? "monitor" : "gateway" };
+    }
+
+    public void UseUxdInventory()
+    {
+        UxdScenario = true;
+        Config = Config with
+        {
+            Revision = 2,
+            Routes = Config.Routes.Select(route => route.Id switch
+            {
+                "r2" => route with { Enabled = false },
+                "r4" => route with { Visible = false },
+                "r45" => route with { Alias = "long-research-model-for-regional-comparison-and-extended-reasoning-2026" },
+                _ => route
+            }).ToArray()
+        };
+    }
     private string InspectorSource => InspectorRestarted ? "source-ui-2" : "source-ui-1";
     private static AttemptDimensionsDto ProvenDimensions(string? parent = null) => new(
         ConversationId: "conversation-ui", TurnId: "turn-ui", WorkerId: "worker-ui", ParentRequestId: parent,
@@ -267,7 +336,10 @@ internal sealed class Fixture : HttpMessageHandler
     private StatusDto Status()
     {
         StatusCalls++;
-        return new(1, "test", "ready", true, Config.Revision, Config.AppliedRevision, DateTimeOffset.UtcNow, ActiveProfileId: ActiveProfileId, ActiveProfileRevision: ActiveProfileRevision);
+        return new(1, "test", "ready", !MonitorMode, Config.Revision, Config.AppliedRevision, DateTimeOffset.UtcNow,
+            ActiveProfileId: ActiveProfileId, ActiveProfileRevision: ActiveProfileRevision,
+            RuntimeMode: MonitorMode ? "monitor" : "gateway",
+            Capabilities: new(true, !MonitorMode, !MonitorMode, !MonitorMode || MonitorHistory, !MonitorMode, !MonitorMode));
     }
     private UsageSummaryDto Usage(Uri uri)
     {
@@ -275,7 +347,7 @@ internal sealed class Fixture : HttpMessageHandler
         var query = uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)
             .Select(pair => pair.Split('=', 2)).ToDictionary(pair => Uri.UnescapeDataString(pair[0]), pair => pair.Length == 2 ? Uri.UnescapeDataString(pair[1]) : "");
         UsageQueries.Add(query);
-        var totals = new UsageTotals(128, 132, 4, NullTokens ? new(null, null, null, null, null) : new(72000, 9986, 18000, 2000, 81986), NullTokens ? 132 : 0);
+        var totals = UsageFixtureTotals();
         return new(1, DateTimeOffset.Parse(query["from"]), DateTimeOffset.Parse(query["to"]), query.GetValueOrDefault("timeZone", "UTC"), DateTimeOffset.UtcNow, 10, !IncompleteCoverage, totals,
             [new(DateTime.UtcNow.ToString("yyyy-MM-dd"), totals)], [new("a1", totals)], [new("gpt-model", totals)]);
     }
@@ -284,8 +356,7 @@ internal sealed class Fixture : HttpMessageHandler
         AnalysisCalls++;
         var query = uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)
             .Select(pair => pair.Split('=', 2)).ToDictionary(pair => Uri.UnescapeDataString(pair[0]), pair => pair.Length == 2 ? Uri.UnescapeDataString(pair[1]) : "");
-        var tokens = NullTokens ? new TokenCounts(null, null, null, null, null) : new(72000, 9986, 18000, 2000, 81986);
-        var totals = new UsageTotals(128, 132, 4, tokens, NullTokens ? 132 : 0);
+        var totals = UsageFixtureTotals();
         var first = new MetricStatisticsDto(120, 132, 40, 260, 240, 510, 890);
         var duration = new MetricStatisticsDto(129, 132, 100, 2100, 2000, 2500, 3000);
         var rate = NullTokens ? new MetricStatisticsDto(0, 132, null, null, null, null, null)
@@ -310,14 +381,28 @@ internal sealed class Fixture : HttpMessageHandler
                 new(new(40, 44, 40, 260, 240, 510, 890), new(43, 44, 100, 2100, 2000, 2500, 3000), unknownRate))
         };
         if (dimension is "accountId" or "model") grouped = [new(groupKey, totals, performance)];
+        if (UxdScenario && dimension == "accountId" && !NullTokens && !PartialTokens)
+        {
+            UsageDimensionGroupDto Account(string id, long requests, long attempts, long errors, long total) => new(id,
+                new(requests, attempts, errors, new(null, null, null, null, total), 0),
+                new(new(0, attempts, null, null, null, null, null), new(0, attempts, null, null, null, null, null), new(0, attempts, null, null, null, null, null)));
+            grouped = [Account("a1", 70, 72, 2, 43200), Account("a2", 30, 32, 1, 21000), Account("a4", 28, 28, 1, 17786)];
+        }
         return new(Api.Version, DateTimeOffset.Parse(query["from"]), DateTimeOffset.Parse(query["to"]), query.GetValueOrDefault("timeZone", "UTC"),
             DateTimeOffset.UtcNow, 10, !IncompleteCoverage, totals, performance, [new(dimension, grouped)]);
     }
 
+    private UsageTotals UsageFixtureTotals() => PartialTokens
+        ? new(128, 132, 4, new(null, null, null, null, null), 22,
+            new(new(40000, 120, 132), new(25000, 110, 132), new(1000, 10, 132),
+                new(0, 20, 132), new(null, 0, 132), new(65000, 110, 132)))
+        : new(128, 132, 4, NullTokens ? new(null, null, null, null, null) : new(72000, 9986, 18000, 2000, 81986), NullTokens ? 132 : 0);
+
     private LoginDto CompleteLogin(string path)
     {
+        if (HoldLogin) { LoginPolls++; return new(path.Split('/').Last(), "codex", "waiting", "https://example.invalid/authorize?state=fixture", Method: "browser", AccountId: "a1"); }
         LoginPolls++; Config = Config with { Revision = Config.Revision + 1 };
-        return new(path.Split('/').Last(), "codex", "completed");
+        return new(path.Split('/').Last(), "codex", "completed", AccountId: "a1");
     }
     private void Revision(long revision)
     {

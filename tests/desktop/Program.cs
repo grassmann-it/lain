@@ -492,13 +492,26 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
 
     private void CheckPrimaryNavigation()
     {
-        var expected = new[] { "Accounts", "Models", "Profiles", "Usage", "Live" };
-        var navigation = Controls<Button>().Where(b => b.Tag is string tag && expected.Contains(tag))
+        var allDestinations = new[] { "Accounts", "Models", "Profiles", "Usage", "Live" };
+        var level = (InformationLevel)Named<ComboBox>("Information level").SelectedIndex;
+        var expected = fixture.MonitorMode
+            ? fixture.MonitorHistory ? new[] { "Accounts", "Usage" } : ["Accounts"]
+            : level switch
+            {
+                InformationLevel.Barebones => ["Accounts", "Profiles", "Usage"],
+                InformationLevel.Simple => ["Accounts", "Models", "Profiles", "Usage"],
+                _ => allDestinations
+            };
+        var navigation = Controls<Button>().Where(b => b.Tag is string tag && allDestinations.Contains(tag))
             .Select(AutomationProperties.GetName).ToArray();
-        Check(navigation.SequenceEqual(expected), "exactly five primary destinations remain directly reachable in the agreed order");
+        Check(navigation.SequenceEqual(expected), "direct destinations follow the capability and information-level matrix in the agreed order");
+        var more = Named<Button>("More destinations").ContextMenu?.Items.OfType<MenuItem>().Select(item => item.Header?.ToString()).ToArray() ?? [];
+        var allowed = fixture.MonitorMode ? expected : allDestinations;
+        Check(allowed.All(destination => navigation.Contains(destination) || more.Contains(destination))
+            && !navigation.Any(destination => more.Contains(destination)), "each allowed destination is reachable exactly once through direct navigation or More");
         Check(!Controls<Button>().Any(b => b.Tag is "Overview" or "Routes" or "Providers" or "Inspector" or "Setup"),
             "provider discovery and help are contextual rather than duplicate primary inventories");
-        Check(Controls<Expander>().Any(x => AutomationProperties.GetName(x)?.StartsWith("Account budgets for ", StringComparison.Ordinal) == true),
+        Check(Controls<Border>().Any(x => AutomationProperties.GetName(x)?.StartsWith("Account budgets for ", StringComparison.Ordinal) == true),
             "Accounts is the initial workspace");
         Check(window.Icon is not null && Controls<Image>().Any(x => x.Source is not null), "application window and shell show bundled cat branding");
         Check(window.Title == "lain — Local AI Gateway" && HasText("Local AI Gateway"), "window title and shell identify lain as the Local AI Gateway");
