@@ -126,7 +126,7 @@ using (var adapter = new CloudflareQuotaAdapter(handler: handler, clock: new Clo
 {
     var result = await adapter.FetchAsync(account, credential);
     Check(handler.Calls == 2 && result.Readings.Count == 0 && result.Support!.Message.Contains("does not expose"), "schema failure diagnosed with bounded official introspection");
-    Check(!result.Support.Message.Contains("secret-upstream"), "schema diagnostics do not leak upstream messages");
+    Check(!result.Support!.Message.Contains("secret-upstream"), "schema diagnostics do not leak upstream messages");
 }
 Check(CloudflareWorkersAiReader.DatasetAvailable(Json(new { errors = new[] { new { message = "denied" } } })) is null, "failed introspection is unknown");
 Check(CloudflareWorkersAiReader.UtcDayStart(DateTimeOffset.Parse("2026-10-25T00:30:00+02:00")) == DateTimeOffset.Parse("2026-10-24T00:00:00Z"), "local day/DST cannot shift UTC quota day");

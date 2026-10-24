@@ -261,7 +261,7 @@ try
     Check(googleAccess?.Monitor is { Kind: "access-token-snapshot", ResourceId: "fixture-project", Secret: "fixture-google-access" }
         && googleAccess.ExpiresAt == googleExpiry && googleAccess.Settings["quotaProjectId"] == "fixture-project",
         "selected CLI generation projects only its actual access token, expiry and pinned project into monitoring");
-    Check(monitors.Get(googleAccount.Id).Guidance.Contains("Google Cloud CLI", StringComparison.Ordinal),
+    Check(monitors.Get(googleAccount.Id).Guidance?.Contains("Google Cloud CLI", StringComparison.Ordinal) == true,
         "CLI-owned monitoring is distinguished from an externally managed snapshot");
     await browser.OpenAsync("fixture-host-stop", CancellationToken.None);
     await browser.DisposeAsync();
