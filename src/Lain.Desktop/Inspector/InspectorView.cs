@@ -26,7 +26,10 @@ public sealed class InspectorView : UserControl, IPresentationView
         { "route_binding", "harness_header", "request_body", "provider_response", "core" };
     private readonly LainApiClient _client;
     private readonly TextBlock _status = Ui.Text("Waiting for the live inspector", 12, Ui.Muted);
-    private readonly TextBlock _empty = Ui.Text("No observed streams yet. Send a request through lain to inspect it.", 14, Ui.Muted);
+    private const string EmptyLiveExplanation = "No observed streams yet. Live output is transient and expires with the current source's retention. "
+        + "Historical Attempts are separate: a restart does not replay their output here. See Usage → Attempts for retained request records. "
+        + "New output appears here when observed through lain.";
+    private readonly TextBlock _empty = Ui.Text(EmptyLiveExplanation, 14, Ui.Muted);
     private readonly WrapPanel _navigation = new() { Orientation = Orientation.Horizontal };
     private readonly ContentControl _identityFacts = new();
     private readonly ScrollViewer _identityScroll = new() { MaxHeight = 140, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
@@ -49,7 +52,6 @@ public sealed class InspectorView : UserControl, IPresentationView
     private readonly ScrollViewer _eventScroll;
     private readonly ScrollViewer _groupsScroll;
     private readonly Grid _page = new() { RowDefinitions = new RowDefinitions("Auto,Auto,*,Auto"), RowSpacing = 8 };
-    private readonly Button _back;
     private readonly TextBlock _listStatus = Ui.Text("Requests from the current bounded source", 11, Ui.Muted);
     private readonly Dictionary<EventDetailKey, Border> _eventAnchors = [];
     private readonly Dictionary<string, Vector> _requestOffsets = new(StringComparer.Ordinal);
@@ -80,13 +82,10 @@ public sealed class InspectorView : UserControl, IPresentationView
     private bool _updatingChoices;
     private bool _renderPending;
     private bool _followScheduled;
-    private bool _narrow;
-    private bool _narrowDetails;
     private bool _selectionMatchesFilter = true;
     private bool _adjustingScroll;
     private bool _restoreRequestOffset;
     private bool _sourceDetailsExpanded;
-    private Vector _inventoryOffset;
     private string? _lastDetachedSource;
     private string? _lastDetachedRequest;
     private string? _lastDetachedGroup;
@@ -164,13 +163,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         };
         _follow.IsCheckedChanged += (_, _) => ScheduleFollowOutput();
         _details = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*,Auto"), RowSpacing = 8 };
-        _back = Ui.Button("Back to requests", ShowRequestList);
-        AutomationProperties.SetName(_back, "Back to live requests");
-        _back.IsVisible = false;
-        var selectionHeader = new DockPanel { LastChildFill = true };
-        DockPanel.SetDock(_back, Dock.Left); selectionHeader.Children.Add(_back);
-        _back.Margin = new Thickness(0, 0, 8, 0); selectionHeader.Children.Add(_selection);
-        _details.Children.Add(selectionHeader);
+        _details.Children.Add(_selection);
         _requestField = Ui.Field("Request within this group", _request);
         _pickers.Children.Add(_conversationField); _pickers.Children.Add(_requestField);
         Grid.SetRow(_pickers, 1); _details.Children.Add(_pickers);
@@ -192,8 +185,8 @@ public sealed class InspectorView : UserControl, IPresentationView
         Content = _page;
         _search.TextChanged += (_, _) => RenderGroups();
         _activity.SelectionChanged += (_, _) => RenderGroups();
-        _conversation.SelectionChanged += (_, _) => { if (!_updatingChoices && _conversation.SelectedItem is GroupChoice choice) SelectGroup(choice.Key, true); };
-        _request.SelectionChanged += (_, _) => { if (!_updatingChoices && _request.SelectedItem is RequestChoice choice) { SelectRequest(choice.Id); _narrowDetails = true; UpdatePaneVisibility(); } };
+        _conversation.SelectionChanged += (_, _) => { if (!_updatingChoices && _conversation.SelectedItem is GroupChoice choice) SelectGroup(choice.Key); };
+        _request.SelectionChanged += (_, _) => { if (!_updatingChoices && _request.SelectedItem is RequestChoice choice) SelectRequest(choice.Id); };
         SizeChanged += (_, _) => ArrangeInspector();
         LayoutUpdated += (_, _) => FitWorkspace();
         AttachedToVisualTree += (_, _) =>
@@ -235,7 +228,7 @@ public sealed class InspectorView : UserControl, IPresentationView
     {
         var compact = _presentation.Density == ViewDensity.Compact;
         var narrow = Bounds.Width > 0 && Bounds.Width < 900;
-        _layout.ColumnSpacing = compact ? 8 : 12;
+        _layout.ColumnSpacing = narrow || compact ? 8 : 12;
         _details.RowSpacing = narrow ? 4 : compact ? 5 : 8;
         _groupList.Spacing = compact ? 3 : 5;
         _eventList.Spacing = compact ? 4 : 8;
@@ -278,18 +271,16 @@ public sealed class InspectorView : UserControl, IPresentationView
     private void ArrangeInspector()
     {
         var narrow = Bounds.Width > 0 && Bounds.Width < 900;
-        if (narrow && !_narrow && _selectedRequest is not null)
-        { _inventoryOffset = _groupsScroll.Offset; _narrowDetails = true; }
-        _narrow = narrow;
         _search.Width = narrow ? 155 : 200;
         _activity.Width = narrow ? 140 : 160;
+        _layout.ColumnSpacing = narrow || _presentation.Density == ViewDensity.Compact ? 8 : 12;
         _details.RowSpacing = narrow ? 4 : _presentation.Density == ViewDensity.Compact ? 5 : 8;
         _conversationField.IsVisible = false;
-        if (_layout.ColumnDefinitions.Count != (narrow ? 1 : 2))
-            _layout.ColumnDefinitions = new ColumnDefinitions(narrow ? "*" : "280,*");
-        Grid.SetColumn(_details, narrow ? 0 : 1);
-        Grid.SetColumn(_empty, narrow ? 0 : 1);
-        _pickers.ColumnDefinitions = new ColumnDefinitions("*");
+        // Confirmed LIVE-NARROW-A: keep the same inventory and output controls
+        // mounted alongside each other, including selection and both scrollbars.
+        _layout.ColumnDefinitions[0].Width = new GridLength(narrow ? 200 : 280);
+        Grid.SetColumn(_details, 1);
+        Grid.SetColumn(_empty, 1);
         Grid.SetColumn(_requestField, 0);
         UpdatePaneVisibility();
         FitWorkspace();
@@ -298,21 +289,9 @@ public sealed class InspectorView : UserControl, IPresentationView
     private void UpdatePaneVisibility()
     {
         var hasSelection = _selectedRequest is not null && _selectionMatchesFilter;
-        _sidebar.IsVisible = !_narrow || !_narrowDetails || !hasSelection;
-        _details.IsVisible = hasSelection && (!_narrow || _narrowDetails);
-        _back.IsVisible = _narrow && _details.IsVisible;
-        _empty.IsVisible = !_narrow && !hasSelection;
-    }
-
-    private void ShowRequestList()
-    {
-        _narrowDetails = false;
-        UpdatePaneVisibility();
-        Dispatcher.UIThread.Post(() =>
-        {
-            _groupsScroll.Offset = _inventoryOffset;
-            if (_selectedGroup is { } key && _groupButtons.TryGetValue(key, out var button) && button.IsVisible) button.Focus();
-        }, DispatcherPriority.Loaded);
+        _sidebar.IsVisible = true;
+        _details.IsVisible = hasSelection;
+        _empty.IsVisible = !hasSelection;
     }
 
     private void FitWorkspace()
@@ -505,10 +484,10 @@ public sealed class InspectorView : UserControl, IPresentationView
                 button = new Button { HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
                     Padding = new Thickness(10), BorderThickness = new Thickness(1) };
                 AutomationProperties.SetName(button, "Inspect group " + group.Key);
-                button.Click += (_, _) => SelectGroup(group.Key, true);
+                button.Click += (_, _) => SelectGroup(group.Key);
                 var groupKey = group.Key;
                 button.ContextMenu = ObjectCommands.Menu([
-                    new("open", "Inspect request output", () => SelectGroup(groupKey, true)),
+                    new("open", "Inspect request output", () => SelectGroup(groupKey)),
                     new("copy", "Copy observed request identities", () =>
                     {
                         if (_groups.TryGetValue(groupKey, out var current))
@@ -537,10 +516,11 @@ public sealed class InspectorView : UserControl, IPresentationView
         var selected = visible.FirstOrDefault(group => group.Key == _selectedGroup);
         var hasFilter = search.Length > 0 || _activity.SelectedIndex > 0;
         _selectionMatchesFilter = selected is not null || !hasFilter;
-        _listStatus.Text = grouped.Length == 0 ? "No observed streams yet. Send a request through lain to inspect it."
+        _listStatus.Text = grouped.Length == 0 ? "No observed streams yet."
             : visible.Count == 0 ? "No requests match these filters. Clear the search or change activity."
             : $"{visible.Count:N0} observed groups · {_snapshot.Streams.Length:N0} streams · source bounded";
-        _empty.Text = visible.Count == 0 ? _listStatus.Text : "Choose a request to inspect its ephemeral output.";
+        _empty.Text = grouped.Length == 0 ? EmptyLiveExplanation
+            : visible.Count == 0 ? _listStatus.Text : "Choose a request to inspect its ephemeral output.";
         if (_selectedRequest is null && visible.Count > 0) SelectGroup(visible[0].Key);
         else if (selected is not null && !_request.IsKeyboardFocusWithin) SelectGroup(selected.Key);
         // Filtering never discards another request's buffer or silently changes its identity.
@@ -587,10 +567,11 @@ public sealed class InspectorView : UserControl, IPresentationView
         return "request:" + stream.RequestId;
     }
 
-    private void SelectGroup(string key, bool openDetails = false)
+    private void SelectGroup(string key)
     {
         if (!_groups.TryGetValue(key, out var group)) return;
         _selectedGroup = key;
+        _selectionMatchesFilter = true;
         var requests = group.Streams.GroupBy(x => x.RequestId).Select(streams => new RequestChoice(streams.Key,
             $"{streams.First().Model ?? streams.First().RequestedModel ?? "Model unknown"} · request {Short(streams.Key)} · {streams.Count()} streams")).ToArray();
         var selected = requests.FirstOrDefault(x => x.Id == _selectedRequest) ?? requests.FirstOrDefault();
@@ -602,11 +583,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         _conversation.SelectedItem = group; _updatingChoices = false;
         foreach (var pair in _groupButtons) { pair.Value.Background = pair.Key == key ? Ui.AccentSurface : Ui.Surface; pair.Value.BorderBrush = pair.Key == key ? Ui.Accent : Ui.Edge; }
         if (selected is not null) SelectRequest(selected.Id);
-        if (openDetails)
-        {
-            if (_sidebar.IsVisible) _inventoryOffset = _groupsScroll.Offset;
-            _narrowDetails = true; UpdatePaneVisibility();
-        }
+        UpdatePaneVisibility();
     }
 
     private void SelectRequest(string id)
@@ -883,7 +860,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         _sourceNotice = null; _contentGap = "Live content cleared when Live was closed.";
         _buffer.Text = "No live buffer received"; _selection.Text = "Choose a conversation or request";
         _details.IsVisible = false; _empty.IsVisible = true;
-        _empty.Text = "Live content was cleared when this page closed. Waiting for a new snapshot.";
+        _empty.Text = "Live content was cleared when this page closed. " + EmptyLiveExplanation;
     }
     private void ResetSource(string sourceId)
     {

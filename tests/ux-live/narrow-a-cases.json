@@ -1,0 +1,110 @@
+{
+  "package": "UXD-14",
+  "baseline": "7a6b88c",
+  "confirmedLayout": "LIVE-NARROW-A",
+  "executionState": "planned-source-only",
+  "owner": "UXD-22 central native acceptance",
+  "viewports": [
+    [
+      800,
+      560
+    ],
+    [
+      1120,
+      780
+    ]
+  ],
+  "fixtureSource": "tests/desktop/Fixture.cs six synthetic observed streams",
+  "constraints": {
+    "providerCalls": 0,
+    "serviceChanges": 0,
+    "mutationRequests": 0,
+    "privateXvfbRequired": true,
+    "retentionChanges": false,
+    "persistentTranscript": false
+  },
+  "cases": [
+    {
+      "id": "live-narrow-a-initial-and-selected",
+      "actions": [
+        "Open Live",
+        "Select a request",
+        "Switch to another evidenced request"
+      ],
+      "expect": [
+        "Live request inventory and Live output viewport are simultaneously visible",
+        "Left column is 200px at 800 width and 280px at 1120 width",
+        "No Back to live requests button replaces the inventory",
+        "Request within this group picker appears only for a group with multiple observed requests",
+        "Existing selected request output stays source-bound"
+      ]
+    },
+    {
+      "id": "live-narrow-a-controls-and-output",
+      "actions": [
+        "Open long output/tool fixture",
+        "Pause display",
+        "Refresh once",
+        "Toggle Follow output",
+        "Clear view"
+      ],
+      "expect": [
+        "Pause or Resume, Refresh, Clear view and Follow output are within the viewport",
+        "Toolbar wraps within available width; no horizontal page overflow or outer page scrolling",
+        "Selection header, request picker, output and Shell footer remain accessible",
+        "Output has a finite native viewport of at least 64px height",
+        "Long output/code lines wrap, remain selectable and can be copied",
+        "Pause does not claim stopped inference; Clear mutates no persistent Usage"
+      ]
+    },
+    {
+      "id": "live-narrow-a-scroll-focus-continuity",
+      "actions": [
+        "Scroll the left inventory",
+        "Select a request",
+        "Scroll output upward",
+        "Append a synthetic event",
+        "Change information level/density",
+        "Resize between both viewports"
+      ],
+      "expect": [
+        "Native inventory/output controls retain their identities and separate scroll positions",
+        "Chosen source/request identity is retained",
+        "Output does not force follow after deliberate upward scrolling",
+        "Keyboard input can move between inventory and output",
+        "No presentation change detaches the Inspector or creates another buffer"
+      ]
+    },
+    {
+      "id": "live-empty-after-restart-history-separate",
+      "fixture": "Historical Attempts exist, but current-source Inspector snapshot contains zero streams",
+      "actions": [
+        "Open Live",
+        "Read initial empty guidance"
+      ],
+      "expect": [
+        "Empty guidance explains transient current-source retention",
+        "Historical Attempts and Usage are identified as separate retained request records",
+        "Restart is explicitly stated not to replay historical output into Live",
+        "No historic Attempt text is synthesized as a Live event",
+        "Empty inventory and guidance remain visible side by side"
+      ]
+    },
+    {
+      "id": "live-existing-source-gap-regression",
+      "actions": [
+        "Pause through local receipt TTL",
+        "Resume with a retention gap",
+        "Restart source with a repeated request ID",
+        "Detach and reopen Live"
+      ],
+      "expect": [
+        "Source gaps, local trimming and local TTL expiry remain distinct notices",
+        "Repeated request IDs never merge content from different sources",
+        "Source-reset and detach preserve their existing buffer-clearing semantics",
+        "No missing event count or complete replay is inferred from stream count",
+        "Left request inventory remains visible throughout source transitions"
+      ]
+    }
+  ]
+}

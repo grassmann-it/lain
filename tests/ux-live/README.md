@@ -1,4 +1,4 @@
-# UXD-07 Live acceptance handoff
+# UXD-07 / UXD-14 Live acceptance handoff
 
 The production change is confined to `src/Lain.Desktop/Inspector/InspectorView.cs`.
 The shared shell must give this retained instance a finite viewport. Presentation
@@ -8,9 +8,19 @@ Use the existing six-stream synthetic source in `tests/desktop/Fixture.cs` (one
 evidenced conversation, independent unsupported claim, error, conflicting retry
 parents), with the UXD-09 harness. No private Host, provider, user screen or
 installation is needed. At 1120×780 the list and output sit alongside each other.
-At an initial 800×560 the inventory is shown first: click an `Inspect group …`
-button to open output, then use `Back to live requests` to return. A wide view
-resized with a chosen request keeps that detail visible at 800px.
+The confirmed `LIVE-NARROW-A` contract also keeps both panes visible at 800×560:
+a permanent 200px left inventory and output in the remaining column. Selecting a
+request changes only the right detail. There is no `Back to live requests`
+replacement page or selector-only narrow layout. Column definitions and controls
+stay mounted across resize, polling and presentation changes.
+
+Focused source-only delta, 25 October 2026, baseline `7a6b88c`: the empty state now
+explains that current-source Live output is transient and retention-bound, while
+historical request records belong to Usage → Attempts. A restart does not replay
+historical output into Live. No Hostcollector, retention, cursor, source-reset,
+mutation or provider behavior changes accompany this presentation change.
+Structured cases for UXD-22 are in `narrow-a-cases.json`; these are acceptance
+inputs, not recorded passes.
 
 Focused cases for the central private-Xvfb harness:
 
@@ -45,9 +55,9 @@ Focused cases for the central private-Xvfb harness:
   relationships. Actual detach stops polling and deletes all buffered content;
   only the source/request ID and pixel offset survive as navigation anchors. Back
   reloads currently retained events from that same source, never a second history.
-- In both window sizes, assert a finite output viewport (at least64px where the
-  shell provides its agreed minimum), visible Pause/Refresh/Clear and narrow Back,
+- In both window sizes, assert a finite output viewport (at least 64px where the
+  shell provides its agreed minimum), visible Pause/Refresh/Clear/Follow and simultaneous left inventory/right output,
   no outer page scrolling, and selectable/wrapped long output. Inspect screenshots.
 
-No builds or runtime evidence are claimed by this handoff. Root owns the combined
+No builds or runtime evidence are claimed for the 25 October source delta by this handoff. Root owns the combined
 Desktop build; UXD-09 owns central fixtures and private-Xvfb screenshots.
