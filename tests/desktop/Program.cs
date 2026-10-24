@@ -468,8 +468,9 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     private async Task OpenAccountOptions()
     {
         if (Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Account order")) return;
-        var options = Controls<Expander>().Single(x => Equals(x.Header, "Filters and order"));
-        options.IsExpanded = true;
+        var options = Controls<ToggleButton>().SingleOrDefault(x => AutomationProperties.GetName(x) == "Account filters and order");
+        if (options is not null) options.IsChecked = true;
+        else Controls<Expander>().Single(x => Equals(x.Header, "Filters and order")).IsExpanded = true;
         await Task.Delay(100);
     }
 
@@ -1004,6 +1005,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await CaptureBoth("live-source-empty");
         fixture.InspectorEmpty = false;
         await Click("Refresh inspector");
+        await Wait(() => HasSelectable("New source output only."), "manual refresh restores the nonempty source before outage testing");
         fixture.InspectorFailure = true;
         await Click("Refresh inspector");
         await Wait(() => HasText("Inspector disconnected · active state is unknown", true), "Inspector failures report unknown active state");
