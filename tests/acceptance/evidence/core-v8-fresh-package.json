@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "sourceCommit": "734d7471703054496e7dc0361c4990bab38f6afd",
+  "files": 1003,
+  "coreSha256": "e39e141daaca6c1946d93866e4d67e93651a07ff9664edf03078d4a9c49b6fe6",
+  "sourceManifestSha256": "c5ff7548dcf72a0dd40b9c9a389799303bd7efebb7d1d30835aec13b1349d0cb",
+  "componentInformationalVersions": {
+    "cli": "1.0.0+734d7471703054496e7dc0361c4990bab38f6afd",
+    "host": "1.0.0+734d7471703054496e7dc0361c4990bab38f6afd",
+    "desktop": "1.0.0+734d7471703054496e7dc0361c4990bab38f6afd"
+  },
+  "linkedGoModules": 59,
+  "missingGoNotices": 0,
+  "freshPackageReleaseQualified": false,
+  "scope": "Actual canonical fresh Linux publish, exact component/source/notice manifests and qualified binary; not installed and no separate fresh GUI acceptance."
+}

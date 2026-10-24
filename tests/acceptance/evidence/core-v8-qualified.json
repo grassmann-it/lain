@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 2,
+  "passed": true,
+  "sha256": "e39e141daaca6c1946d93866e4d67e93651a07ff9664edf03078d4a9c49b6fe6",
+  "sourceManifestSha256": "c5ff7548dcf72a0dd40b9c9a389799303bd7efebb7d1d30835aec13b1349d0cb",
+  "scope": "Existing lain text/tool/vision protocol and account/journal/inspector/free-only contracts against external CLIProxyAPI v8.0.41 plus explicit hook patches; independent synthetic runtime and separate unit/source gates. No installed or live-provider acceptance implied.",
+  "upstreamVersion": "v8.0.41",
+  "upstreamCommit": "8289ec4c71ad914d0612c2776352b76ba3d355a6",
+  "upstreamSourceModified": true,
+  "sourceEvidenceSha256": "1f79ef7e28bf1b5f1308d7c72adbf469c68d108fd5e055bcbd246c8f8a5f94cd",
+  "runtimeEvidenceSha256": "5212522e13746db3d30f13834fffc395cc3d0796b0de6970fa53561fca6f556d",
+  "runtimeChecks": [
+    {
+      "name": "protocol-durability",
+      "passed": true,
+      "report": "protocol-durability.json",
+      "binaryHashMatches": true,
+      "cases": 15
+    },
+    {
+      "name": "independent-auth-crash",
+      "passed": true,
+      "report": "independent-auth-crash.json",
+      "binaryHashMatches": true,
+      "cases": 2
+    },
+    {
+      "name": "inspector",
+      "passed": true,
+      "report": "inspector.json",
+      "binaryHashMatches": true,
+      "cases": 15
+    },
+    {
+      "name": "upgrade-boundaries",
+      "passed": true,
+      "report": "upgrade-boundaries.json",
+      "binaryHashMatches": true,
+      "cases": 4
+    },
+    {
+      "name": "native-tool-boundary",
+      "passed": true,
+      "report": "native-tool-boundary.json",
+      "binaryHashMatches": true,
+      "cases": 2
+    },
+    {
+      "name": "hostwriter-transports",
+      "passed": true,
+      "report": "hostwriter-transports.json",
+      "binaryHashMatches": true,
+      "cases": 2
+    },
+    {
+      "name": "version-transition",
+      "passed": true,
+      "report": "version-transition.json",
+      "binaryHashMatches": true,
+      "cases": 2
+    },
+    {
+      "name": "consumer-replay-10",
+      "passed": true,
+      "report": "consumer-replay.json"
+    }
+  ],
+  "requiredSeparateGatesSatisfiedBy": "core-v8-source.json: 69 adapter checks, 5 focused upstream test cases including subtests, reproducible builds, independent source review",
+  "behaviorChanges": [
+    "Native server-side image_generation tools are explicitly rejected; ordinary functions and Vision inputs retain their protocol path.",
+    "Terminal holding is bounded to 8 MiB/256 chunks after the first completion/choice finish."
+  ],
+  "notTested": [
+    "real provider inference",
+    "real OAuth login/refresh",
+    "new upstream capabilities",
+    "installed service workflow"
+  ]
+}

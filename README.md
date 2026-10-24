@@ -5,6 +5,12 @@ Linux x64. Ein eigenständiger .NET-10-Host betreibt den gepinnten CLIProxyAPI-C
 Avalonia und CLI verwenden dieselbe authentifizierte API und SQLite-Aggregation.
 Das Fenster kann geschlossen werden, während der Dienst weiterarbeitet.
 
+CLIProxyAPI **v8.0.41** ist als verifizierte externe Abhängigkeit eingebunden;
+der vollständige Core-Quellimport ist entfernt. Ein eigener Adapter und zwei
+explizite Hookpatches erhalten dauerhafte Usage und Accountbindungen. Es ist
+somit kein unverändertes offizielles Releasebinary. Der Core-only-Austausch ist
+installiert und geprüft: [Upgrade, Nachweise und Grenzen](docs/core-v8-upgrade.md).
+
 ```sh
 lain service start
 lain ui
@@ -48,8 +54,9 @@ CLI besteht 173 Vertragsprüfungen und 55 Terminal-/Pipe-/JSON-Captures.
 Ein echter historischer
 Request mit 81.986 Tokens, Cursor 2 und der gewünschte/aktive Stand 4/2 blieben
 beim Dienstupdate und Fensterneustart erhalten. Der native Launcher samt
-Fenstericon ist ebenfalls geprüft. Der qualifizierte Core blieb bytegleich;
-dieser Umbau fügt keine neue Live-Anbieterqualifikation hinzu.
+Fenstericon ist ebenfalls geprüft. Beim anschließenden v8-Coreupdate blieben
+Host/CLI/Desktop bytegleich; 166 UI-Prüfungen gegen den aktualisierten Dienst
+sind erneut bestanden. Neue Live-Anbieterqualifikation folgt daraus nicht.
 [Aktuelle Abnahme und Grenzen](docs/settings-about-acceptance.md) ·
 [CLI und Einrichtung](docs/observability-cli.md) ·
 [Accounts](docs/screenshots/ui-structure-accounts.png) ·
@@ -58,6 +65,7 @@ dieser Umbau fügt keine neue Live-Anbieterqualifikation hinzu.
 
 - [Installation und Betrieb](docs/install.md)
 - [Standalone-Referralübersicht](docs/provider-referrals.html)
+- [CodexBar: UI-/Featuretransfer](docs/codexbar-transfer-review.md) und [110 Providerzugänge](docs/codexbar-provider-inventory.md)
 - [Entwicklung und reproduzierbare Prüfung](docs/development.md)
 - [Backendqualifikation](docs/backend-qualification.md)
 - [Core, Journal und Authgrenzen](docs/backend-core.md)

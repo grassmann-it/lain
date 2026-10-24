@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "workingDirectory": "/tmp",
+  "accounts": 5,
+  "revision": 4,
+  "appliedRevision": 2,
+  "proxyReady": true,
+  "compactLines": 20,
+  "fullLines": 99,
+  "jsonAndFullJsonEqual": true,
+  "historyTotals": {
+    "requests": 1,
+    "attempts": 1,
+    "errors": 0,
+    "tokens": {
+      "input": 81981,
+      "output": 5,
+      "cached": 3968,
+      "reasoning": 0,
+      "total": 81986
+    },
+    "unknownUsageAttempts": 0
+  },
+  "cursor": 2,
+  "providerRefreshRequested": false
+}

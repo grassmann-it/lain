@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "scope": "Exact staged installer and full copied application; synthetic cutover failure, no service/private-state actions",
+  "files": 1179,
+  "coreSha256": "e39e141daaca6c1946d93866e4d67e93651a07ff9664edf03078d4a9c49b6fe6",
+  "baseManifestSha256": "ef31ddd218c814b98dfac4fecb696791afe712880b700cfe73f2bfe0d7c0d36b",
+  "targetManifestSha256": "cbb2808e1048dbeba6c5fb12546df078a5270d30331887beb2ad25b0188859a2",
+  "rollbackAfterTwoExchanges": true,
+  "allOriginalApplicationBytesRestored": true,
+  "subsequentExactInstall": true,
+  "protectedFilesUnchanged": true
+}

@@ -1,0 +1,32 @@
+{
+  "accounts": 5,
+  "activeModelMenuUnchanged": true,
+  "appliedRevision": 2,
+  "attemptCount": 1,
+  "backup": "/home/tomka/.local/share/lain/upgrade-backups/core-v8-20261024T142030Z",
+  "clientIntegrationAndPreferencesUnchanged": true,
+  "coreSha256": "e39e141daaca6c1946d93866e4d67e93651a07ff9664edf03078d4a9c49b6fe6",
+  "cursor": 2,
+  "historicalUsageUnchanged": true,
+  "inferenceRequestsIssued": 0,
+  "journalBytesAndSourceUnchanged": true,
+  "legacyServiceAndStableFilesUnchanged": true,
+  "modelMenuCount": 45,
+  "newHostPid": 346665,
+  "newSchemaExercisedByAnalysis": true,
+  "oldCoreSha256": "bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87",
+  "oldHostPid": 113587,
+  "ownCredentialsAndRuntimeUnchanged": true,
+  "passed": true,
+  "phase": "accepted-online",
+  "protectedApplicationFilesUnchanged": true,
+  "revision": 4,
+  "schemaMigration": false,
+  "serviceActions": [
+    "stop lain.service",
+    "start lain.service"
+  ],
+  "sourceCommit": "734d7471703054496e7dc0361c4990bab38f6afd",
+  "sourceManifestSha256": "c5ff7548dcf72a0dd40b9c9a389799303bd7efebb7d1d30835aec13b1349d0cb",
+  "stoppedConsistentBackup": true
+}

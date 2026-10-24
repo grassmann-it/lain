@@ -1,0 +1,128 @@
+{
+  "passed": true,
+  "sourceCommit": "734d7471703054496e7dc0361c4990bab38f6afd",
+  "files": 1205,
+  "coreSha256": "e39e141daaca6c1946d93866e4d67e93651a07ff9664edf03078d4a9c49b6fe6",
+  "sourceManifestSha256": "c5ff7548dcf72a0dd40b9c9a389799303bd7efebb7d1d30835aec13b1349d0cb",
+  "packageManifestSha256": "6e6254a132bfd9cd57b291b67fc28487936e83d7c5038d6c8f4869e838c86fff",
+  "archiveSha256": "76c0898f6b4a893f24654914dca0db9a3eeb3f060918e842d2904088707c6521",
+  "releaseQualified": true,
+  "coreRefreshQualified": true,
+  "applicationComponentSourceCommits": {
+    "cli": "416fe139318a94939270aab7f6489518f4487b74",
+    "host": "a66cb2a19774d897702724f9f40755b74c82b2a6",
+    "desktop": "416fe139318a94939270aab7f6489518f4487b74"
+  },
+  "applicationInformationalVersions": {
+    "cli": "1.0.0+416fe13",
+    "host": "1.0.0+a66cb2a",
+    "desktop": "1.0.0+416fe13"
+  },
+  "scope": "Installed external CLIProxyAPI v8.0.41 Core and Go notices; exact prior Host/CLI/Desktop, application notices and integration retained; synthetic Core plus installed local API/UI/CLI acceptance.",
+  "evidence": [
+    {
+      "path": "core-source-provenance/acceptance/core-v8-source.json",
+      "sha256": "1f79ef7e28bf1b5f1308d7c72adbf469c68d108fd5e055bcbd246c8f8a5f94cd"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8-qualified.json",
+      "sha256": "3189abf0389a2c5c4b51088006f1ccca98c228111e84153d7a8dca224fed3a8c"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8-fresh-package.json",
+      "sha256": "847da407798995f2a436c95cb2b3cf8f1f37511e48cab80edadb4a1b3a8ad0e6"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8-installer.json",
+      "sha256": "1b51bc6e99a56f9a3e14b0c9448693e4c40da9d88ebb46b836a47da1278ceb36"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8-installed.json",
+      "sha256": "427f8d31efa161001b0057f9522437409ea6286d430adcfa2629ebb25ea2f596"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8-installed-ui.json",
+      "sha256": "f8542e8c0aa7d9082a8f947ca1aa801f487d2061852f09ff6f0db59322d806fe"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8-cli.json",
+      "sha256": "77b910d0d8f76eb5ddf2ddff03018d12e0a163b2277169d9f790582451482a8c"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/acceptance.json",
+      "sha256": "7ffb96b0f1b5d0fc756a91347882234511f0a066c2eb99ab101c654ecf6673cb"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/adapter-unit-summary.json",
+      "sha256": "b9be3fba9aa439142730abeb6b53c64712a29b55391f98e5e0223918a37bfb52"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/artifact-manifest.json",
+      "sha256": "f1255b385bce7e318a58f702626a6e40b9d1cfd3d6f5dd8a0155462305b39d5b"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/baseline-boundaries-final.json",
+      "sha256": "8ed78e3f7414e8faa8f6c67a157896c2340042a3f9b108a7b4e8d0d24408c540"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/baseline-hostwriter-final.json",
+      "sha256": "091175e69a1cb19ca9c9981ad7f9be89c185756e28be452f5910a4411028f49e"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/consumer-replay.json",
+      "sha256": "77d2ccc7c8a87336d60fabe5d7ab3e1b6f58442b4100304d295288f89c953fd4"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/event-examples.json",
+      "sha256": "f5cbf63be6d42af94266821937cba252e09929d1fb5148b7c3c3df012ebbe007"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/fixture-selftests.json",
+      "sha256": "6387c43ff1355c2d53d67a0865c2a2dfe436e206ed22a1694bc9e0b7d3b30b3c"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/hostwriter-transports.json",
+      "sha256": "eb8972d4838ac9718a7ae8836cb570b8483449ebfb5ce40b595f6267e6e6bf6f"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/independent-auth-crash.json",
+      "sha256": "e056f9d3e6e12c73be29952080d7e15616aba86b88c263fa8692bd711acbdc7d"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/inspector.json",
+      "sha256": "ab7b83d06d19f936b7b362b42ea8b8e75949107b5db34e985404f9ba91135738"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/mixed-source-batch.json",
+      "sha256": "437cffeda06941c39bb96b05849e3b74ffab19799046646cab5d0b2c61c871f7"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/native-tool-boundary.json",
+      "sha256": "c6c52f422d36bd10e09743f6830fdd97fbc165ee7d18974cb2af1ebe705c8de0"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/protocol-durability.json",
+      "sha256": "80c40b60bc62f2eeee1ae80d022a86df255b6c18f67969e1f57b29986a19219b"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/qualification.json",
+      "sha256": "5212522e13746db3d30f13834fffc395cc3d0796b0de6970fa53561fca6f556d"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/source-batch.json",
+      "sha256": "fb6794ece88e93ef0fbeb8b4ad057e8bf479276f6fe964409aaf8b9c4ae515ab"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/upgrade-boundaries.json",
+      "sha256": "1b6ade9c4dc2fdb67203cff02846015345a91e8c66d499fb64c2c67ae73bcd48"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/upstream-hooks-unit-summary.json",
+      "sha256": "c12ea8ebd6c82d370083c96d4eb8a8d637d08ec9033eac2c247e0b4ad9d062d9"
+    },
+    {
+      "path": "core-source-provenance/acceptance/core-v8/version-transition.json",
+      "sha256": "75c39a57d1c515e4b12fe43859ebf3dd8e46f4bfdbf5eea4c792ad2a049aafff"
+    }
+  ]
+}
