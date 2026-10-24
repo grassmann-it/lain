@@ -71,3 +71,17 @@ bounded Host starts including restored state); reserve up to 5 minutes for
 readiness/failure investigation. Fresh sequential Monitor/Gateway publishes
 normally need a separate 5–12 minute warm-cache slot; cold restore/source downloads
 can take longer. These are planning allowances, not measurements.
+
+Execution now fails closed unless it is in a distinct loopback-only network
+namespace. The integrator must create the namespace and enable `lo` before
+passing `--execute`; do not add a new PID namespace for this guard. Upstream Core
+performs incidental startup metadata requests, so disabled quota polling alone
+does not establish network isolation. No fallback to the user's network is allowed.
+
+Previous `413588c` Host rejects SQLite user_version4 after current migration004.
+An app-only runtime rollback is therefore concretely blocked even with current
+credentials retained. See
+[`delivery-bounded-rollback.md`](../../docs/account-connect-qualification/delivery-bounded-rollback.md)
+for the source evidence and the separate, unqualified stopped-conversion
+candidate. The actual-package report records this blocker instead of claiming
+old-binary rollback succeeded.

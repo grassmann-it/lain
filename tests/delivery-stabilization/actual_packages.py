@@ -194,7 +194,18 @@ def state_assertions(host):
     require(usage['cursor'] == 2, 'Historical cursor changed')
 
 
+def require_loopback_namespace():
+    # Incidental upstream Core startup checks must not reach public networks.
+    # A distinct net namespace also prevents old fixed-port binaries from ever
+    # reaching the user's running localhost services.
+    require(os.readlink('/proc/self/ns/net') != os.readlink('/proc/1/ns/net'),
+            'Use a dedicated network namespace (without a new PID namespace)')
+    require({name for _, name in socket.if_nameindex()} == {'lo'},
+            'Package execution requires a loopback-only network namespace')
+
+
 def execute(args):
+    require_loopback_namespace()
     checks = []
     with tempfile.TemporaryDirectory(prefix='lain-release-qualification-') as directory:
         root = Path(directory); root.chmod(0o700)
@@ -282,7 +293,7 @@ def main():
     args.report.write_text(json.dumps({'format': 1, 'status': 'passed' if args.execute else 'not_run',
         'planOnly': not args.execute, 'packages': packages, 'checks': checks,
         'scope': 'Isolated package/install/Host/Core/stopped restore; zero inference/provider reads/systemd/real-state access',
-        'historicalBinaryDowngradeRuntime': 'not_tested: an old Host must prove marker-aware recovery first'}, indent=2) + '\n')
+        'historicalBinaryDowngradeRuntime': 'blocked: old Host rejects SQLite schema4; app-only rollback requires independently qualified schema compatibility'}, indent=2) + '\n')
     print('PASS isolated package qualification' if args.execute else 'PLANNED; no install/process has run')
 
 
