@@ -129,7 +129,7 @@ public sealed partial class MainWindow
         .OrderBy(quota => QuotaUsedPercent(quota).HasValue ? CurrentFiveHourWindow(quota) ? 0 : 1 : 2)
         .ThenByDescending(QuotaUsedPercent).ThenBy(quota => quota.Source, StringComparer.Ordinal).FirstOrDefault();
 
-    private bool LastKnownQuota(QuotaDto quota) => !QuotaUnavailable(quota) && (!_hostAvailable || _quotaError is not null
+    private bool LastKnownQuota(QuotaDto quota) => !QuotaUnavailable(quota) && (!_hostAvailable || _quotaError is not null || AccountQuotaError(quota.AccountId) is not null
         || quota.State is "stale" or "error" or "unavailable" || QuotaResetOverdue(quota)
         || quota.FreshUntil is { } freshUntil && freshUntil <= DateTimeOffset.UtcNow);
 

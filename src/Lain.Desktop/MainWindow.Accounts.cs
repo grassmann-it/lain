@@ -17,6 +17,86 @@ public sealed partial class MainWindow
     private string _accountStatus = "All states";
     private bool _accountFiltersExpanded;
     private string[]? _fiveHourAccountOrder;
+    private readonly HashSet<string> _accountQuotaRefreshes = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _accountQuotaErrors = new(StringComparer.Ordinal);
+    private long _accountQuotaRefreshGeneration;
+    private event Action<string>? AccountQuotaRefreshChanged;
+
+    private bool IsAccountQuotaRefreshing(string accountId) => _accountQuotaRefreshes.Contains(accountId);
+    private string? AccountQuotaError(string accountId) => _accountQuotaErrors.GetValueOrDefault(accountId);
+
+    // Refresh responses contain the host's full inventory. Only the requested
+    // account belongs to this operation; another concurrent account may be newer.
+    private async Task RefreshAccountQuotaAsync(string accountId)
+    {
+        if (_busy || !_hostAvailable || _configuration?.Accounts.Any(account => account.Id == accountId) != true
+            || !_accountQuotaRefreshes.Add(accountId)) return;
+        _accountQuotaRefreshGeneration++;
+        _accountQuotaErrors.Remove(accountId);
+        AccountQuotaRefreshChanged?.Invoke(accountId);
+        if (_section == "Accounts" && !_editing) _renderedPageState = PageState();
+        try
+        {
+            var response = await _client.RefreshQuotasAsync(accountId, _lifetime.Token);
+            if (_configuration?.Accounts.Any(account => account.Id == accountId) == true)
+                _quotas = _quotas.Where(quota => quota.AccountId != accountId)
+                    .Concat(response.Where(quota => quota.AccountId == accountId)).ToArray();
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (Exception error) { _accountQuotaErrors[accountId] = Friendly(error); }
+        finally
+        {
+            _accountQuotaRefreshes.Remove(accountId);
+            _accountQuotaRefreshGeneration++;
+            if (!_lifetime.IsCancellationRequested)
+            {
+                AccountQuotaRefreshChanged?.Invoke(accountId);
+                // A completion never touches the inspector now showing B, a draft,
+                // or the account removal confirmation opened while A was loading.
+                if (_section == "Accounts" && !_editing && !_accountRemovalVisible && _inspectedAccountId == accountId)
+                    ShowAccountInspector(accountId, focus: false);
+                if (_section == "Accounts" && !_editing) _renderedPageState = PageState();
+            }
+        }
+    }
+
+    private void ObserveAccountQuotaRefresh(Control owner, string accountId, Action update)
+    {
+        void Changed(string changedId) { if (changedId == accountId) update(); }
+        owner.AttachedToVisualTree += (_, _) => { AccountQuotaRefreshChanged += Changed; update(); };
+        owner.DetachedFromVisualTree += (_, _) => AccountQuotaRefreshChanged -= Changed;
+        update();
+    }
+
+    private void BindAccountQuotaRefreshButton(Button button, string accountId)
+    {
+        ObserveAccountQuotaRefresh(button, accountId, () =>
+        {
+            button.IsEnabled = !_busy && _hostAvailable && !IsAccountQuotaRefreshing(accountId);
+            ToolTip.SetTip(button, IsAccountQuotaRefreshing(accountId) ? "Refreshing quota for this account…" : "Refresh quota");
+        });
+    }
+
+    private Control AccountQuotaRefreshStatus(AccountDto account)
+    {
+        // Reserve one line through idle, busy and failure. Quota rows and their
+        // original observation/reset facts remain mounted during the request.
+        var status = AccountCell("", 11, Ui.Muted);
+        status.Height = 18;
+        AutomationProperties.SetName(status, "Quota refresh status for " + account.Name);
+        ObserveAccountQuotaRefresh(status, account.Id, () =>
+        {
+            var hasValues = _quotas.Any(quota => quota.AccountId == account.Id);
+            status.Text = IsAccountQuotaRefreshing(account.Id)
+                ? hasValues ? "Refreshing quota · showing last known values" : "Loading quota for this account…"
+                : AccountQuotaError(account.Id) is not null
+                    ? hasValues ? "Refresh failed · showing last known values" : "Quota could not be loaded · try Refresh quota"
+                    : "";
+            status.Foreground = AccountQuotaError(account.Id) is not null && !IsAccountQuotaRefreshing(account.Id) ? Ui.Warning : Ui.Muted;
+            ToolTip.SetTip(status, AccountQuotaError(account.Id) ?? status.Text);
+        });
+        return status;
+    }
 
     private Action CaptureAccountsNavigation()
     {
@@ -52,12 +132,24 @@ public sealed partial class MainWindow
             "Complete sign-in in your browser.", stayOnPage: true));
         if (_configuration is not { } cfg)
         {
-            panel.Children.Add(Empty("Connect to the local host to load or add accounts. You can discover providers without an account."));
+            var state = new StackPanel { Spacing = 10, MinHeight = 240 };
+            var failed = _configurationError is not null;
+            state.Children.Add(Ui.Text(failed ? "Account inventory could not be loaded" : "Loading account inventory…", 15));
+            state.Children.Add(Ui.Text(failed
+                ? "Reload status to try again. You can discover providers while the host is unavailable."
+                : "Waiting for the local host. Accounts and their quota windows will appear here after the first snapshot.", 13, Ui.Muted));
+            if (failed) state.Children.Add(Ui.Text(_configurationError!, 12, Ui.Warning));
+            AutomationProperties.SetName(state, failed ? "Account inventory load failed" : "Account inventory loading");
+            panel.Children.Add(Ui.Card(state));
             return AccountInventoryViewport(panel);
         }
         if (cfg.Accounts.Length == 0)
         {
-            panel.Children.Add(Empty("Connect your first account to choose models and create a client profile. Add account offers browser sign-in, an API key or an existing setup import."));
+            var empty = new StackPanel { Spacing = 10, MinHeight = 240 };
+            empty.Children.Add(Ui.Text("No accounts configured", 15));
+            empty.Children.Add(Ui.Text("Connect your first account to choose models and create a client profile. Add account offers browser sign-in, an API key or an existing setup import.", 13, Ui.Muted));
+            AutomationProperties.SetName(empty, "Account inventory empty");
+            panel.Children.Add(Ui.Card(empty));
             return AccountInventoryViewport(panel);
         }
 
@@ -231,7 +323,7 @@ public sealed partial class MainWindow
 
     private bool AccountNeedsAttention(AccountDto account)
     {
-        if (!account.Enabled || AccountCredentialWarning(account) is not null) return true;
+        if (!account.Enabled || AccountCredentialWarning(account) is not null || AccountQuotaError(account.Id) is not null) return true;
         var quotas = _quotas.Where(quota => quota.AccountId == account.Id).ToArray();
         return quotas.Any(quota => !QuotaUnavailable(quota) && (LastKnownQuota(quota) || QuotaUsedPercent(quota) >= 90
             || quota.State is "error" or "unavailable" || !string.IsNullOrWhiteSpace(quota.Error)));
@@ -272,10 +364,11 @@ public sealed partial class MainWindow
         {
             var button = Ui.Button(command.Label, command.Execute);
             button.IsEnabled = command.Available;
+            if (command.Key == "refresh") BindAccountQuotaRefreshButton(button, account.Id);
             if (!command.Available) ToolTip.SetTip(button, command.Reason);
             actions.Children.Add(button);
         }
-        var menu = ObjectCommandMenu(commands);
+        var menu = ObjectCommandMenu(() => AccountCommands(account, revision, inventoryChanged));
         var more = Ui.Button("More account actions…", () => menu.Open()); more.ContextMenu = menu;
         actions.Children.Add(more);
         content.Children.Add(actions);

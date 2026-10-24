@@ -67,13 +67,27 @@ public sealed partial class MainWindow
                 header.Children.Add(TileText("Shared provider budget", 11, Ui.Warning));
             else if (account.BudgetPoolId is not null || quotas.Any(quota => quota.BudgetPoolId is not null))
                 header.Children.Add(TileText("Provider budget pool", 11, Ui.Muted));
-            // Every reported window stays in the closed tile, including balance-only
-            // windows beside percentage windows and explicitly unknown windows.
-            if (quotas.Length == 0) header.Children.Add(AccountTileWindow(account, null));
-            foreach (var quota in quotas) header.Children.Add(AccountTileWindow(account, quota, commonFreshness: true));
-            var observations = quotas.Where(q => !QuotaUnavailable(q)).Select(q => q.LastSuccessAt).Distinct().ToArray();
-            if (observations.Length == 1 && observations[0] is { } checkedAt)
-                header.Children.Add(TileText("Checked " + checkedAt.ToLocalTime().ToString("dd MMM · HH:mm", CultureInfo.CurrentCulture) + " local time", 11, Ui.Muted));
+            var windows = new ContentControl { HorizontalContentAlignment = HorizontalAlignment.Stretch };
+            QuotaDto[]? displayedSnapshots = null;
+            void UpdateWindows()
+            {
+                // Keep existing controls and geometry through Busy. On completion
+                // only this account's windows change; inventory scroll and B stay put.
+                if (IsAccountQuotaRefreshing(account.Id) && windows.Content is not null) return;
+                var snapshots = _quotas.Where(quota => quota.AccountId == account.Id).ToArray();
+                if (displayedSnapshots is not null && snapshots.SequenceEqual(displayedSnapshots)) return;
+                displayedSnapshots = snapshots;
+                var budgets = new StackPanel { Spacing = compact ? 7 : 10 };
+                if (snapshots.Length == 0) budgets.Children.Add(AccountTileWindow(account, null));
+                foreach (var quota in snapshots) budgets.Children.Add(AccountTileWindow(account, quota, commonFreshness: true));
+                var observations = snapshots.Where(quota => !QuotaUnavailable(quota)).Select(quota => quota.LastSuccessAt).Distinct().ToArray();
+                if (observations.Length == 1 && observations[0] is { } checkedAt)
+                    budgets.Children.Add(TileText("Checked " + checkedAt.ToLocalTime().ToString("dd MMM · HH:mm", CultureInfo.CurrentCulture) + " local time", 11, Ui.Muted));
+                windows.Content = budgets;
+            }
+            ObserveAccountQuotaRefresh(windows, account.Id, UpdateWindows);
+            header.Children.Add(windows);
+            header.Children.Add(AccountQuotaRefreshStatus(account));
             var commands = AccountCommands(account, configuration.Revision, inventoryChanged);
             Button? details = null;
             details = Ui.Button("Details", () => ShowAccountInspector(account.Id, details));
@@ -81,7 +95,8 @@ public sealed partial class MainWindow
             AutomationProperties.SetName(details, $"Open account details for {account.Name}");
             var refresh = Ui.Button("Refresh quota", () => commands.First(command => command.Key == "refresh").Execute());
             AutomationProperties.SetName(refresh, $"Refresh quota for {account.Name}");
-            var menu = ObjectCommandMenu(commands);
+            BindAccountQuotaRefreshButton(refresh, account.Id);
+            var menu = ObjectCommandMenu(() => AccountCommands(account, configuration.Revision, inventoryChanged));
             var more = Ui.Button("⋯", () => menu.Open());
             more.ContextMenu = menu;
             AutomationProperties.SetName(more, $"Actions for account {account.Name}");
@@ -107,7 +122,7 @@ public sealed partial class MainWindow
             var tile = Ui.Card(header);
             tile.Classes.Add("account-tile");
             _accountCards[account.Id] = tile;
-            tile.ContextMenu = ObjectCommandMenu(commands);
+            tile.ContextMenu = ObjectCommandMenu(() => AccountCommands(account, configuration.Revision, inventoryChanged));
             tile.BorderBrush = Ui.Edge;
             tile.Focusable = true;
             AutomationProperties.SetName(tile, $"Account budgets for {account.Name}");
@@ -150,11 +165,10 @@ public sealed partial class MainWindow
                 ? BudgetAmount(rate, quota.Unit) + " observed" : "Rate not supplied", 12));
             panel.Children.Add(TileText("Sample " + Ui.When(quota.DataAsOf ?? quota.ObservedAt), 11, Ui.Muted));
             if (!string.IsNullOrWhiteSpace(quota.Error)) panel.Children.Add(TileText(quota.Error, 11, Ui.Warning));
-            if (LastKnownQuota(quota))
-            {
-                panel.Children.Add(TileText("Last known", 11, Ui.Warning));
-                panel.Children.Add(QuotaAccessActions(account, quota));
-            }
+            var rateState = TileText(LastKnownQuota(quota) ? "Last known" : "", 11, Ui.Warning);
+            rateState.Height = 18;
+            panel.Children.Add(rateState);
+            if (LastKnownQuota(quota)) panel.Children.Add(QuotaAccessActions(account, quota));
             return panel;
         }
         if (unavailable)
@@ -211,9 +225,11 @@ public sealed partial class MainWindow
         if (quota is not null && !unavailable)
         {
             var state = QuotaStateLabel(quota);
-            if (QuotaExhausted(quota))
-                panel.Children.Add(TileText(QuotaWindowLabel(quota) + (lastKnown ? " empty · last known" : " empty"), 11, lastKnown ? Ui.Warning : Ui.Danger));
-            else if (!string.IsNullOrWhiteSpace(state)) panel.Children.Add(TileText(state, 11, lastKnown ? Ui.Warning : Ui.Muted));
+            var stateLabel = TileText(QuotaExhausted(quota)
+                ? QuotaWindowLabel(quota) + (lastKnown ? " empty · last known" : " empty") : state, 11,
+                QuotaExhausted(quota) && !lastKnown ? Ui.Danger : lastKnown ? Ui.Warning : Ui.Muted);
+            stateLabel.Height = 18;
+            panel.Children.Add(stateLabel);
             var differentFreshness = _quotas.Where(q => q.AccountId == account.Id && !QuotaUnavailable(q)).Select(q => q.LastSuccessAt).Distinct().Count() > 1;
             if (!commonFreshness || differentFreshness)
                 panel.Children.Add(TileText(quota.LastSuccessAt is { } success
@@ -225,7 +241,11 @@ public sealed partial class MainWindow
         }
         if (quota is not null && !string.IsNullOrWhiteSpace(quota.Error))
             panel.Children.Add(TileText(quota.Error, 11, unavailable ? Ui.Muted : Ui.Warning));
-        if (quota is null) panel.Children.Add(TileText("Quota has not been loaded. Refresh quota from account details.", 11, Ui.Muted));
+        if (quota is null) panel.Children.Add(TileText(IsAccountQuotaRefreshing(account.Id)
+            ? "Waiting for this account’s first quota snapshot."
+            : AccountQuotaError(account.Id) is not null || _quotaError is not null
+                ? "Quota could not be loaded. Refresh quota to try again."
+                : "No quota snapshot has been reported for this account. Refresh quota from account details.", 11, Ui.Muted));
         if (quota is null || lastKnown || quota.State is "error" or "unavailable") panel.Children.Add(QuotaAccessActions(account, quota));
         return panel;
     }
