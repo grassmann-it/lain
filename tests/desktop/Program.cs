@@ -353,6 +353,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await ExpandTile(QuotaTile("Command Code Pro"), true);
         await Click("Pin account Command Code Pro");
         await Click("Move pinned account Command Code Pro earlier");
+        await OpenAccountOptions();
         var grouping = Named<CheckBox>("Group accounts by provider");
         grouping.IsChecked = true;
         await Task.Delay(120);
@@ -406,6 +407,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             "information level and independent per-section densities survive a new window");
         Check(restarted.PinnedAccountIds.Take(2).SequenceEqual(new[] { "a2", "a4" }) && restarted.GroupAccountsByProvider && restarted.AccountSort == "name",
             "pins pin order explicit sort and grouping survive a new window");
+        await OpenAccountOptions();
         Named<ComboBox>("Account order").SelectedIndex = 0;
         Check(Named<TextBox>("Search accounts").Text is null or "", "fresh window reveals accounts without a stale search filter");
         fixture.AddDensityAccounts(35);
@@ -425,6 +427,14 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Wait(() => HasText("NVIDIA Build"), "credential-free discovery uses the same provider catalog");
         fixture.Config = savedInventory;
         await Click("Accounts"); await Click("Reload status");
+    }
+
+    private async Task OpenAccountOptions()
+    {
+        if (Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Account order")) return;
+        var options = Controls<Expander>().Single(x => Equals(x.Header, "Filters and order"));
+        options.IsExpanded = true;
+        await Task.Delay(100);
     }
 
     private string[] AccountTileNames() => Controls<Expander>().Select(AutomationProperties.GetName)
@@ -656,7 +666,11 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             foreach (var (label, percent) in windows) CheckQuotaBar(name, label, percent);
             if (name == "Command Code Pro")
             {
-                Check(HasText("Last known"), "stale Command window is labelled as last known");
+                var weeklyLabel = ((Control)tile.Header!).GetVisualDescendants().OfType<TextBlock>().Single(x => x.Text == "Weekly");
+                var weeklyWindow = weeklyLabel.GetVisualAncestors().OfType<StackPanel>().First();
+                Check(weeklyWindow.GetVisualDescendants().OfType<TextBlock>().Any(x => IsShown(x)
+                    && x.Text?.StartsWith("Last known · Checked ", StringComparison.Ordinal) == true),
+                    "stale Command weekly window visibly retains last-known status and observation provenance in its header");
                 var lastWindow = tile.GetVisualDescendants().OfType<TextBlock>().Single(x => x.Text == "Model allowance" && IsShown(x));
                 Check(!Controls<ProgressBar>().Any(x => AutomationProperties.GetName(x) == "Command Code Pro · Model allowance · consumed"), "unknown model allowance has no invented progress bar");
                 await CaptureBoth("accounts-command", () => TileHeader(tile).BringIntoView());
@@ -677,8 +691,9 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
                 var values = technical.GetVisualDescendants().OfType<SelectableTextBlock>().ToArray();
                 Check(values.Any(x => x.Text?.Contains("https://api.z.ai/", StringComparison.Ordinal) == true)
                     && values.Any(x => x.Text?.Contains("observed", StringComparison.Ordinal) == true && x.Text.Contains("last success", StringComparison.Ordinal)), "expanded quota details expose source and snapshot freshness");
-                var percentOnly = values.Single(x => x.Text == "Used: Not supplied · limit: Not supplied · remaining: Not supplied");
-                Check(percentOnly is not null, "percentage-only Z.ai quota does not invent absolute counts");
+                var percentOnly = values.SingleOrDefault(x => x.Text == "Used: Not supplied · limit: Not supplied · remaining: Not supplied")
+                    ?? throw new Exception("Percentage-only Z.ai quota must not invent absolute counts");
+                Check(percentOnly.Text == "Used: Not supplied · limit: Not supplied · remaining: Not supplied", "percentage-only Z.ai quota does not invent absolute counts");
                 await CaptureBoth("accounts-zai-technical", () => percentOnly.BringIntoView());
                 technical.IsExpanded = false;
             }
@@ -1093,7 +1108,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         var width = Math.Max(1, (int)Math.Ceiling(window.Bounds.Width));
         var height = Math.Max(1, (int)Math.Ceiling(window.Bounds.Height));
         using var bitmap = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96, 96));
-        bitmap.Render(window); bitmap.Save(Path.Combine(Output, file));
+        bitmap.Render(window); bitmap.Save(Path.Combine(Output, file), new PngBitmapEncoderOptions());
     }
 
     public async Task SaveFailureEvidence(Exception error)
