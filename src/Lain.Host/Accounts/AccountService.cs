@@ -7,7 +7,8 @@ using Lain.Host.Providers;
 
 namespace Lain.Host.Accounts;
 
-public sealed record AddApiAccountRequest(string Name, string Provider, string ApiKey, string BaseUrl, string? ProviderRouteId = null, Dictionary<string, string>? Settings = null);
+public sealed record AddApiAccountRequest(string Name, string Provider, string ApiKey, string BaseUrl, string? ProviderRouteId = null, Dictionary<string, string>? Settings = null,
+    string? ProviderConnectionId = null, string[]? SelectedModelRouteIds = null);
 
 public sealed class AccountService(ConfigurationRepository configuration, SecretStore secrets, ProviderCatalogRegistry? catalog = null)
 {

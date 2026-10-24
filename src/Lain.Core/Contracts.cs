@@ -24,7 +24,12 @@ public record UsageSummaryDto(int ContractVersion, DateTimeOffset From, DateTime
 public record AttemptDto(string Id, string RequestId, string AccountId, string? RouteId, string Provider, string Model, DateTimeOffset StartedAt, DateTimeOffset? FinishedAt, int? StatusCode, string State, TokenCounts Tokens, double? DurationMs = null, double? FirstTokenMs = null, string? Error = null,
     AttemptDimensionsDto? Dimensions = null, AttemptMeasurementsDto? Measurements = null,
     string? SourceId = null, string? RequestedModel = null, string? CompletionState = null);
-public record QuotaDto(string AccountId, string? BudgetPoolId, string Source, string State, DateTimeOffset? ObservedAt, DateTimeOffset? LastSuccessAt, DateTimeOffset? ResetsAt, string Unit, double? Used, double? Limit, double? Remaining, bool SharedWithLegacy, string? Error = null, string? WindowLabel = null, double? UsedPercent = null);
+public record QuotaSupportDto(string Kind, string Message, string? ActionUrl = null, string? CredentialPurpose = null);
+public record QuotaDto(string AccountId, string? BudgetPoolId, string Source, string State, DateTimeOffset? ObservedAt, DateTimeOffset? LastSuccessAt, DateTimeOffset? ResetsAt, string Unit, double? Used, double? Limit, double? Remaining, bool SharedWithLegacy, string? Error = null, string? WindowLabel = null, double? UsedPercent = null,
+    QuotaSupportDto? Support = null, string? WindowId = null, string? MeasurementKind = null,
+    string? Scope = null, string? ScopeId = null, string? Model = null, string? SourceUrl = null,
+    DateTimeOffset? DataAsOf = null, DateTimeOffset? WindowStart = null, DateTimeOffset? WindowEnd = null,
+    DateTimeOffset? FreshUntil = null, DateTimeOffset? ProviderUpdatedAt = null, double? ApprovedLimit = null);
 public record LoginDto(string Id, string Provider, string State, string? Url = null, string? Error = null);
 public record ImportRequest(long Revision, string ConfigPath, string? AuthDirectory = null);
 public record ImportResult(long Revision, int Added, int Updated, string[] Warnings);

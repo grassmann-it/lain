@@ -9,7 +9,12 @@ public sealed record ProviderDescriptorDto(
     ProviderBillingPlanDto[] BillingPlans, ProviderRouteDescriptorDto[] Routes,
     ProviderSourceDto[] Sources, string[] Restrictions,
     string AdapterState = "prepared", string LiveVerification = "not_tested",
-    string QuotaSupport = "unsupported");
+    string QuotaSupport = "unsupported", ProviderConnectionDto[]? Connections = null,
+    MonitorAccessOptionDto[]? MonitorAccessOptions = null, string? DefaultAccountName = null);
+
+/// <summary>A credential/endpoint scope can serve multiple model templates. It is not a model route.</summary>
+public sealed record ProviderConnectionDto(string Id, string Name, string BaseUrl, string Protocol,
+    string[] BillingPlanIds, string[] ProviderRouteIds);
 
 public sealed record ProviderSourceDto(string Url, string Title, DateTimeOffset? CheckedAt = null, string? Notes = null);
 public sealed record ProviderCredentialFieldDto(string Id, string Label, string Kind, bool Required = true, bool Secret = true, string? Help = null);

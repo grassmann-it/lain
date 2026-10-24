@@ -3,7 +3,8 @@ using Lain.Core;
 namespace Lain.Client;
 
 public sealed record AddApiAccountRequest(string Name, string Provider, string ApiKey, string BaseUrl,
-    string? ProviderRouteId = null, Dictionary<string, string>? Settings = null);
+    string? ProviderRouteId = null, Dictionary<string, string>? Settings = null,
+    string? ProviderConnectionId = null, string[]? SelectedModelRouteIds = null);
 public sealed record LoginRequest(long Revision, string Provider);
 public sealed record QuotaRefreshRequest(string? AccountId = null);
 public sealed record TokenResponse(string Token);
