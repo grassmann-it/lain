@@ -37,6 +37,8 @@ public sealed partial class UsageView : UserControl, IPresentationView
     private readonly Expander _historyDetails = new() { Header = "Attempt history & errors", IsExpanded = true, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
     private readonly StackPanel _layout = new() { Spacing = 12 };
     private readonly List<Border> _sections = [];
+    private readonly Dictionary<Expander, bool> _detailOverrides = [];
+    private bool _settingDetails;
     private PresentationOptions _presentation = new();
     private readonly HashSet<string> _expandedAttempts = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Button> _attemptToggles = new(StringComparer.Ordinal);
@@ -130,6 +132,7 @@ public sealed partial class UsageView : UserControl, IPresentationView
             Content = Label("— means unknown. Cached and reasoning tokens are included in total tokens. Whole-window cards and daily totals count historical failed/canceled attempts or HTTP ≥400. The breakdown prefers the known completion state, then falls back to historical state/status; its error count can differ. Error percentages use attempts. Performance always includes measured/eligible counts. Dates and times use the selected zone. Costs are not reported by this source.", Muted)
         });
         Content = _layout;
+        TrackDetailOverrides();
         SetPresentation(_presentation);
         _apply.Click += async (_, _) => await ApplyAsync();
         _previous.Click += async (_, _) => await MovePageAsync(-1);
@@ -164,22 +167,22 @@ public sealed partial class UsageView : UserControl, IPresentationView
     public async Task FilterToAccountAsync(string id)
     {
         UpdateChoices(_account, "All accounts", _knownAccounts, id, AccountName);
-        _filterDetails.IsExpanded = true;
+        SetAutomaticDetails(_filterDetails, true);
         await ApplyContextAsync(query => query with { AccountId = id, Offset = 0 });
     }
 
     public async Task FilterToRouteAsync(string id)
     {
         _dimensionFilters["routeId"].Text = id;
-        _filterDetails.IsExpanded = true;
-        _moreFilters.IsExpanded = true;
+        SetAutomaticDetails(_filterDetails, true);
+        SetAutomaticDetails(_moreFilters, true);
         await ApplyContextAsync(query => query with { RouteId = id, Offset = 0 });
     }
 
     public async Task FilterToModelAsync(string model)
     {
         UpdateChoices(_model, "All models", _knownModels, model, x => x);
-        _filterDetails.IsExpanded = true;
+        SetAutomaticDetails(_filterDetails, true);
         await ApplyContextAsync(query => query with { Model = model, Offset = 0 });
     }
 
@@ -202,8 +205,8 @@ public sealed partial class UsageView : UserControl, IPresentationView
         var filterErrorVisible = _filterError.IsVisible;
         var attempts = _expandedAttempts.ToArray();
         var groups = _expandedAnalysisGroups.ToArray();
-        var disclosures = new[] { _filterDetails, _moreFilters, _sourceDetails, _tokenDetails, _performanceDetails, _dailyDetails, _historyDetails }
-            .Select(details => details.IsExpanded).ToArray();
+        var disclosures = DetailSections.Select(details => details.IsExpanded).ToArray();
+        var detailOverrides = DetailSections.Select(details => _detailOverrides.TryGetValue(details, out var expanded) ? (bool?)expanded : null).ToArray();
         return () =>
         {
             _generation++;
@@ -227,8 +230,13 @@ public sealed partial class UsageView : UserControl, IPresentationView
                 _expandedAttempts.UnionWith(attempts);
                 _expandedAnalysisGroups.Clear();
                 _expandedAnalysisGroups.UnionWith(groups);
-                var details = new[] { _filterDetails, _moreFilters, _sourceDetails, _tokenDetails, _performanceDetails, _dailyDetails, _historyDetails };
-                for (var index = 0; index < details.Length; index++) details[index].IsExpanded = disclosures[index];
+                var details = DetailSections;
+                _detailOverrides.Clear();
+                for (var index = 0; index < details.Length; index++)
+                {
+                    details[index].IsExpanded = disclosures[index];
+                    if (detailOverrides[index] is { } expanded) _detailOverrides[details[index]] = expanded;
+                }
                 _filterError.Text = filterError;
                 _filterError.IsVisible = filterErrorVisible;
                 ResetRestoredSnapshot();
@@ -388,7 +396,7 @@ public sealed partial class UsageView : UserControl, IPresentationView
     {
         _filterError.Text = error is TimeZoneNotFoundException ? "Unknown time zone. Use an IANA name such as Europe/Berlin or UTC." : error.Message;
         _filterError.IsVisible = true;
-        _filterDetails.IsExpanded = true;
+        SetAutomaticDetails(_filterDetails, true);
     }
 
     private static DateTimeOffset ParseDate(string? text, TimeZoneInfo zone)
@@ -809,10 +817,32 @@ public sealed partial class UsageView : UserControl, IPresentationView
             tile.Padding = StatPadding;
     }
 
-    private static void PresentDetails(Expander details, bool expanded)
+    private Expander[] DetailSections => [_filterDetails, _moreFilters, _sourceDetails, _tokenDetails, _performanceDetails, _dailyDetails, _historyDetails];
+
+    private void TrackDetailOverrides()
     {
+        foreach (var details in DetailSections)
+            details.PropertyChanged += (_, args) =>
+            {
+                if (args.Property == Expander.IsExpandedProperty && !_settingDetails && !_restoringNavigation)
+                    _detailOverrides[details] = details.IsExpanded;
+            };
+    }
+
+    private void PresentDetails(Expander details, bool expanded)
+    {
+        // Explicit local choices survive presets, independent of temporary focus protection.
+        var chosen = _detailOverrides.GetValueOrDefault(details, expanded);
         // A preset must not close the disclosure containing the active keyboard control.
-        details.IsExpanded = expanded || details.GetLogicalDescendants().OfType<Control>().Any(x => x.IsFocused);
+        SetAutomaticDetails(details, chosen || details.GetLogicalDescendants().OfType<Control>().Any(x => x.IsFocused));
+    }
+
+    private void SetAutomaticDetails(Expander details, bool expanded)
+    {
+        var settingDetails = _settingDetails;
+        _settingDetails = true;
+        try { details.IsExpanded = expanded; }
+        finally { _settingDetails = settingDetails; }
     }
 
     private Button NavigationButton(string caption, string automationName, WorkspaceNavigationRequest target)
