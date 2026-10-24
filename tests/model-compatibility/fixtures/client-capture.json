@@ -1,0 +1,197 @@
+{
+  "contractVersion": 1,
+  "observedAt": "2026-10-24T19:39:05.756178+00:00",
+  "client": "codex",
+  "clientVersion": "codex-cli 0.164.0",
+  "resolvedExecutableSha256": "b93f6811d3f653f0fb83be4050d857fb9abbb111dfa2ce160563327daff7f306",
+  "qualification": "local_fixture",
+  "syntheticOnly": true,
+  "personalStateRead": false,
+  "providerInference": false,
+  "cases": [
+    {
+      "apply_patch_tool_type": "freeform",
+      "multi_agent": true,
+      "exitCode": 0,
+      "requests": [
+        {
+          "path": "/v1/responses",
+          "count": 9,
+          "tools": [
+            {
+              "type": "function",
+              "name": "exec_command"
+            },
+            {
+              "type": "function",
+              "name": "write_stdin"
+            },
+            {
+              "type": "function",
+              "name": "request_user_input"
+            },
+            {
+              "type": "custom",
+              "name": "apply_patch"
+            },
+            {
+              "type": "function",
+              "name": "view_image"
+            },
+            {
+              "type": "namespace",
+              "name": "multi_agent_v1"
+            },
+            {
+              "type": "function",
+              "name": "get_goal"
+            },
+            {
+              "type": "function",
+              "name": "create_goal"
+            },
+            {
+              "type": "function",
+              "name": "update_goal"
+            }
+          ]
+        }
+      ],
+      "clientError": null
+    },
+    {
+      "apply_patch_tool_type": null,
+      "multi_agent": true,
+      "exitCode": 0,
+      "requests": [
+        {
+          "path": "/v1/responses",
+          "count": 8,
+          "tools": [
+            {
+              "type": "function",
+              "name": "exec_command"
+            },
+            {
+              "type": "function",
+              "name": "write_stdin"
+            },
+            {
+              "type": "function",
+              "name": "request_user_input"
+            },
+            {
+              "type": "function",
+              "name": "view_image"
+            },
+            {
+              "type": "namespace",
+              "name": "multi_agent_v1"
+            },
+            {
+              "type": "function",
+              "name": "get_goal"
+            },
+            {
+              "type": "function",
+              "name": "create_goal"
+            },
+            {
+              "type": "function",
+              "name": "update_goal"
+            }
+          ]
+        }
+      ],
+      "clientError": null
+    },
+    {
+      "apply_patch_tool_type": "omitted",
+      "multi_agent": true,
+      "exitCode": 0,
+      "requests": [
+        {
+          "path": "/v1/responses",
+          "count": 8,
+          "tools": [
+            {
+              "type": "function",
+              "name": "exec_command"
+            },
+            {
+              "type": "function",
+              "name": "write_stdin"
+            },
+            {
+              "type": "function",
+              "name": "request_user_input"
+            },
+            {
+              "type": "function",
+              "name": "view_image"
+            },
+            {
+              "type": "namespace",
+              "name": "multi_agent_v1"
+            },
+            {
+              "type": "function",
+              "name": "get_goal"
+            },
+            {
+              "type": "function",
+              "name": "create_goal"
+            },
+            {
+              "type": "function",
+              "name": "update_goal"
+            }
+          ]
+        }
+      ],
+      "clientError": null
+    },
+    {
+      "apply_patch_tool_type": null,
+      "multi_agent": false,
+      "exitCode": 0,
+      "requests": [
+        {
+          "path": "/v1/responses",
+          "count": 7,
+          "tools": [
+            {
+              "type": "function",
+              "name": "exec_command"
+            },
+            {
+              "type": "function",
+              "name": "write_stdin"
+            },
+            {
+              "type": "function",
+              "name": "request_user_input"
+            },
+            {
+              "type": "function",
+              "name": "view_image"
+            },
+            {
+              "type": "function",
+              "name": "get_goal"
+            },
+            {
+              "type": "function",
+              "name": "create_goal"
+            },
+            {
+              "type": "function",
+              "name": "update_goal"
+            }
+          ]
+        }
+      ],
+      "clientError": null
+    }
+  ]
+}

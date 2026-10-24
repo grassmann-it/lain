@@ -1,0 +1,41 @@
+{
+  "contractVersion": 1,
+  "sourceBaseline": "7a58b01",
+  "sharedContracts": "643f626",
+  "syntheticHostAssertions": {
+    "state": "passed",
+    "count": 49,
+    "command": "dotnet run --project tests/model-compatibility/ModelCompatibility.Tests.csproj"
+  },
+  "exportRegressionAssertions": {
+    "state": "passed",
+    "count": 14,
+    "command": "dotnet run --project tests/codex-gateway-profile/CodexGatewayProfile.Tests.csproj"
+  },
+  "installedClientCapture": {
+    "state": "passed",
+    "clientVersion": "0.164.0",
+    "cases": 4,
+    "toolCounts": [
+      9,
+      8,
+      8,
+      7
+    ],
+    "artifact": "fixtures/client-capture.json",
+    "sha256": "86eb03e45349af1ab0d5046f452003c2a9fb4d361631dfa07a3ccad806cf8e7a"
+  },
+  "coreDispatch": {
+    "state": "separate_worker_required",
+    "scope": "Original controls after durable Before; final transmitted body guard; journal categories unsupported_tool/tool_limit"
+  },
+  "remainingQualification": [
+    "Root must inject actual compiled transport facts for configured imports into exporter.",
+    "Core dispatch synthetic streaming/tool-continuation/type/count integration is separate and must pass.",
+    "Context windows are source-scoped documented facts; no tokenizer/byte-based request context validation is claimed.",
+    "Real provider acceptance, personal MCP/plugin toolset, installation and live inference remain untested."
+  ],
+  "providerInference": false,
+  "personalStateRead": false,
+  "installedConfigWrites": false
+}
