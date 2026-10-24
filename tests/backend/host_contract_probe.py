@@ -59,6 +59,10 @@ class HostRun(Run):
 
 def check_protocol(core, exporter, dotnet, protocol):
     with HostRun(core, exporter, dotnet, protocol) as run:
+        registered = run.get("/lain/accounts")
+        expect({account["credentialId"] for account in registered} == set(run.manifest["accounts"].values()),
+               "disabled, unselected or foreign credential was registered")
+        expect(all(account["disabled"] is False for account in registered), "Hostwriter registered a disabled credential")
         with run.request("/v1/models") as response:
             visible = {model["id"] for model in json.load(response)["data"]}
         expect(visible == {"fixture-strict-a", "fixture-strict-b", "fixture-pool"}, "Host alias visibility changed")
