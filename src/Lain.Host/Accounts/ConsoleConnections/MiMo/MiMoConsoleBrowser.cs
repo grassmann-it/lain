@@ -184,7 +184,7 @@ public sealed class MiMoConsoleBrowser(OwnStatePaths paths) : IMiMoConsoleBrowse
                 if (sessions.ContainsKey(profile)) { retained++; continue; }
                 await CloseAsync(profile, true, ct); removed++;
             }
-            catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+            catch (Exception error) when (error is IOException or InvalidDataException or JsonException or InvalidOperationException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
             { failed++; }
         }
         return new(examined, removed, retained, failed, directories.Length > MaximumReconciliationProfiles);
