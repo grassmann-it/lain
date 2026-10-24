@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -89,7 +90,9 @@ internal sealed class ProbeApp : Application
 internal sealed class ReadOnlyHost : DelegatingHandler
 {
     private static readonly HashSet<string> Allowed = ["status", "configuration", "accounts", "models", "routes", "profiles", "quotas", "providers", "usage", "usage/analysis", "attempts", "inspector", "inspector/events"];
-    internal readonly ConcurrentQueue<object> Requests = new();
+    internal sealed record Observation([property: JsonPropertyName("method")] string Method,
+        [property: JsonPropertyName("path")] string Path, [property: JsonPropertyName("status")] int Status);
+    internal readonly ConcurrentQueue<Observation> Requests = new();
     internal readonly ConcurrentQueue<string> Blocked = new();
     internal ReadOnlyHost() : base(new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false }) { }
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
@@ -103,7 +106,7 @@ internal sealed class ReadOnlyHost : DelegatingHandler
             throw new InvalidOperationException("Blocked non-allowlisted host request");
         }
         var response = await base.SendAsync(request, ct);
-        Requests.Enqueue(new { method = "GET", path = uri.PathAndQuery, status = (int)response.StatusCode });
+        Requests.Enqueue(new Observation("GET", uri.PathAndQuery, (int)response.StatusCode));
         return response;
     }
 }
@@ -161,7 +164,7 @@ internal sealed class Probe
             }
             if (destination == "Live")
             {
-                await Wait(() => guard.Requests.Any(x => JsonSerializer.Serialize(x).Contains("/inspector")), "Live reads the local inspector");
+                await Wait(() => guard.Requests.Any(x => x.Path.StartsWith(Api.Prefix + "/inspector", StringComparison.Ordinal) && x.Status == 200), "Live reads the local inspector");
                 await Wait(() => Controls<TextBlock>().Any(x => AutomationProperties.GetName(x) == "Inspector status" &&
                     (x.Text?.Contains("Connected", StringComparison.Ordinal) == true || x.Text?.Contains("Waiting", StringComparison.Ordinal) == true)), "Live reports its observed local source state");
             }
@@ -169,8 +172,9 @@ internal sealed class Probe
         }
         await Click("Accounts"); await Click("Discover providers");
         await Wait(() => Controls<TextBox>().Any(x => AutomationProperties.GetName(x) == "Search providers"), "credential-free provider discovery opens");
-        await Wait(() => guard.Requests.Any(x => JsonSerializer.Serialize(x).Contains("/providers")), "provider catalog read from own host");
+        await Wait(() => guard.Requests.Any(x => x.Path == Api.Prefix + "/providers" && x.Status == 200), "provider catalog read from own host");
         var catalog = await observer.ProvidersAsync();
+        await Wait(() => catalog.Providers.All(provider => AllControls<TextBlock>().Any(x => x.Text == provider.Name)), "real provider catalog cards loaded");
         foreach (var provider in catalog.Providers)
             Check(AllControls<TextBlock>().Any(x => x.Text == provider.Name), "discovery shows real catalog provider " + provider.Name);
         await CaptureBoth("discover-providers");
@@ -218,10 +222,17 @@ internal sealed class Probe
     {
         var constructor = typeof(MainWindow).GetConstructor([typeof(LainApiClient), typeof(string)])
             ?? throw new Exception("Target must expose MainWindow(client, preferencesPath); refusing installed preference fallback");
+        using var observer = Client();
+        var expectedConfiguration = await observer.GetConfigurationAsync();
+        var firstUiRead = guard.Requests.Count;
         window = (MainWindow)constructor.Invoke([Client(), Program.Preferences]);
         window.Show();
-        await Wait(() => Controls<TextBlock>().Any(x => x.Text?.Contains("Local host", StringComparison.Ordinal) == true), "production window connects to own host");
-        await Wait(() => Controls<TextBox>().Any(x => AutomationProperties.GetName(x) == "Search accounts"), "Accounts inventory loaded");
+        await Wait(() => guard.Requests.Skip(firstUiRead).Any(x => x.Path == Api.Prefix + "/status" && x.Status == 200)
+            && guard.Requests.Skip(firstUiRead).Any(x => x.Path == Api.Prefix + "/configuration" && x.Status == 200), "new production window reads own host status and configuration");
+        await Wait(() => expectedConfiguration.Accounts.Length == 0
+            ? Controls<Button>().Any(x => Equals(x.Content, "Discover providers"))
+            : Controls<TextBox>().Any(x => AutomationProperties.GetName(x) == "Search accounts"), "Accounts inventory loaded");
+        Check((await observer.StatusAsync()).ProxyReady, "own host observer confirms ready after window initialization");
     }
     private async Task ReadAccountWindows(LainApiClient observer, ConfigurationDto config)
     {

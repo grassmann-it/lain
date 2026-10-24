@@ -67,6 +67,10 @@ catalog names, persistent Usage and the observed Live source state. Screenshots
 cover each area and Accounts in Barebones/Advanced/Simple with independent density.
 Presentation writes only the explicit temporary preferences path; its final JSON
 is copied to `preferences-observed.json`, never to installed preferences.
+Opening waits for successful status/configuration GETs from the new window and
+the named Accounts inventory control (or credential-free empty inventory), then
+checks readiness with an independent own-host observer. Footer wording and error
+messages are not readiness signals.
 
 The same historical Usage range is read before the GUI, while closed and after
 reopening. Range, totals, groups and coverage must remain equal; observed timestamps
