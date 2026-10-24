@@ -74,7 +74,9 @@ existing lain behavior does not qualify them. Record each separately as exposed,
 not exposed, synthetically exercised or live verified. Do not count an endpoint
 blocked by the established lain allowlist as a newly introduced regression.
 
-The upgrade is blocked if an existing required behavior cannot be implemented
-using public upstream hooks without modifying upstream. Report the concrete hook
-and failed gate instead of weakening the acceptance boundary or marking it
-passed from static source inspection.
+An unchanged-dependency approach is blocked if an existing required behavior
+cannot be implemented using public upstream hooks. Record that concrete hook
+gap and any required minimal build patch separately from the verified official
+download. A patched prepared build must identify its patch hashes and affected
+upstream paths. Keep the same acceptance boundary; static source inspection
+cannot replace a passing behavioral gate.
