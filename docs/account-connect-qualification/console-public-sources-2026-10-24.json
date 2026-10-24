@@ -1,0 +1,78 @@
+{
+  "retrievedOn": "2026-10-24",
+  "scope": "Unauthenticated static assets and browser-vendor documentation only; no API calls, sessions or provider login",
+  "sources": [
+    {
+      "name": "mimo-main",
+      "url": "https://platform.xiaomimimo.com/static/main.569e3e15e1d2bea2.chunk.js",
+      "finalUrl": "https://platform.xiaomimimo.com/static/main.569e3e15e1d2bea2.chunk.js",
+      "status": 200,
+      "bytes": 501729,
+      "sha256": "435a4c673843ecd21998e2d186d3be68974476ea1c15d4936e8a647019f27547"
+    },
+    {
+      "name": "mimo-plan",
+      "url": "https://platform.xiaomimimo.com/static/279.17edd5ab4b3a18cd.chunk.js",
+      "finalUrl": "https://platform.xiaomimimo.com/static/279.17edd5ab4b3a18cd.chunk.js",
+      "status": 200,
+      "bytes": 149153,
+      "sha256": "8c690f1dbd00c5ba2600230699095742c9cd58db77e2d464faf109669e9012ce"
+    },
+    {
+      "name": "chrome-native",
+      "url": "https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging",
+      "finalUrl": "https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging",
+      "status": 200,
+      "bytes": 159047,
+      "sha256": "59f9f29690cde3bbad3b7711334bbadcad7c97ce9ef1944c92528de5579e4fb6"
+    },
+    {
+      "name": "chrome-content",
+      "url": "https://developer.chrome.com/docs/extensions/develop/concepts/network-requests",
+      "finalUrl": "https://developer.chrome.com/docs/extensions/develop/concepts/network-requests",
+      "status": 200,
+      "bytes": 157538,
+      "sha256": "7374bd5b0284c130e399d710010d61dd6ca5328a4690a30ab233273a6c2c4b23"
+    },
+    {
+      "name": "playwright-context",
+      "url": "https://playwright.dev/docs/api/class-browsertype#browser-type-launch-persistent-context",
+      "finalUrl": "https://playwright.dev/docs/api/class-browsertype#browser-type-launch-persistent-context",
+      "status": 200,
+      "bytes": 167791,
+      "sha256": "fc6f6fb986305614673cc0c4f2c899e947c8c2b76a05400fb2be673fd5599a61"
+    },
+    {
+      "name": "cohere-cli",
+      "url": "https://dashboard.cohere.com/_next/static/chunks/pages/welcome/auth-cli-bd07116a0aa4d76a.js",
+      "finalUrl": "https://dashboard.cohere.com/_next/static/chunks/pages/welcome/auth-cli-bd07116a0aa4d76a.js",
+      "status": 200,
+      "bytes": 2695,
+      "sha256": "778dc681a07ef459da771c6f9201ad2c594f910a5af559c77e90394a2c87b0e2"
+    },
+    {
+      "name": "samba-billing",
+      "url": "https://cloud.sambanova.ai/_next/static/chunks/59468-13418f0de96abfb8.js",
+      "finalUrl": "https://cloud.sambanova.ai/_next/static/chunks/59468-13418f0de96abfb8.js",
+      "status": 200,
+      "bytes": 28870,
+      "sha256": "289beb62a47680b10fa2c186c958b1ed5b51273753f76ab5cb61e73686d0c0c8"
+    },
+    {
+      "name": "upstage-bff",
+      "url": "https://console.upstage.ai/_next/static/chunks/7157-768d821a4d850f5c.js",
+      "finalUrl": "https://console.upstage.ai/_next/static/chunks/7157-768d821a4d850f5c.js",
+      "status": 200,
+      "bytes": 23180,
+      "sha256": "7b0fb293fe3ca9105416b17902a089ce1f7e49bcf954dc4924fe0a532b4b0357"
+    },
+    {
+      "name": "cohere-shared",
+      "url": "https://dashboard.cohere.com/_next/static/chunks/2287-f24b553c0a1e8c1a.js",
+      "finalUrl": "https://dashboard.cohere.com/_next/static/chunks/2287-f24b553c0a1e8c1a.js",
+      "status": 200,
+      "bytes": 38468,
+      "sha256": "2c333cde07bcddf8a773f46be5384f5ee2a5ce82ebe5251d9798b1120d80b96a"
+    }
+  ]
+}
