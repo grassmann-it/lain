@@ -1,0 +1,544 @@
+{
+  "description": "Synthetic UXD06 frame12; only total tokens are fully measured. Cache/reasoning/input/output are intentionally unknown.",
+  "accountNames": {
+    "personal-codex": "Personal Codex",
+    "command-code": "Command Code Pro",
+    "kimi": "Kimi Coding"
+  },
+  "summary": {
+    "contractVersion": 1,
+    "to": "2026-10-24T22:00:00Z",
+    "timeZone": "Europe/Berlin",
+    "observedAt": "2026-10-24T19:00:00Z",
+    "cursor": 264,
+    "complete": true,
+    "from": "2026-10-17T22:00:00Z",
+    "totals": {
+      "requests": 128,
+      "attempts": 132,
+      "errors": 4,
+      "tokens": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "total": 81986,
+        "cacheCreation": null
+      },
+      "unknownUsageAttempts": 0,
+      "measurements": {
+        "input": {
+          "knownReported": null,
+          "samples": 0,
+          "eligible": 132
+        },
+        "output": {
+          "knownReported": null,
+          "samples": 0,
+          "eligible": 132
+        },
+        "cached": {
+          "knownReported": null,
+          "samples": 0,
+          "eligible": 132
+        },
+        "cacheCreation": {
+          "knownReported": null,
+          "samples": 0,
+          "eligible": 132
+        },
+        "reasoning": {
+          "knownReported": null,
+          "samples": 0,
+          "eligible": 132
+        },
+        "total": {
+          "knownReported": 81986,
+          "samples": 132,
+          "eligible": 132
+        }
+      }
+    },
+    "daily": [],
+    "accounts": [
+      {
+        "key": "personal-codex",
+        "totals": {
+          "requests": 70,
+          "attempts": 72,
+          "errors": 2,
+          "tokens": {
+            "input": null,
+            "output": null,
+            "cached": null,
+            "reasoning": null,
+            "total": 43200,
+            "cacheCreation": null
+          },
+          "unknownUsageAttempts": 0,
+          "measurements": {
+            "input": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 72
+            },
+            "output": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 72
+            },
+            "cached": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 72
+            },
+            "cacheCreation": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 72
+            },
+            "reasoning": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 72
+            },
+            "total": {
+              "knownReported": 43200,
+              "samples": 72,
+              "eligible": 72
+            }
+          }
+        }
+      },
+      {
+        "key": "command-code",
+        "totals": {
+          "requests": 30,
+          "attempts": 32,
+          "errors": 1,
+          "tokens": {
+            "input": null,
+            "output": null,
+            "cached": null,
+            "reasoning": null,
+            "total": 21000,
+            "cacheCreation": null
+          },
+          "unknownUsageAttempts": 0,
+          "measurements": {
+            "input": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 32
+            },
+            "output": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 32
+            },
+            "cached": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 32
+            },
+            "cacheCreation": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 32
+            },
+            "reasoning": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 32
+            },
+            "total": {
+              "knownReported": 21000,
+              "samples": 32,
+              "eligible": 32
+            }
+          }
+        }
+      },
+      {
+        "key": "kimi",
+        "totals": {
+          "requests": 28,
+          "attempts": 28,
+          "errors": 1,
+          "tokens": {
+            "input": null,
+            "output": null,
+            "cached": null,
+            "reasoning": null,
+            "total": 17786,
+            "cacheCreation": null
+          },
+          "unknownUsageAttempts": 0,
+          "measurements": {
+            "input": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 28
+            },
+            "output": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 28
+            },
+            "cached": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 28
+            },
+            "cacheCreation": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 28
+            },
+            "reasoning": {
+              "knownReported": null,
+              "samples": 0,
+              "eligible": 28
+            },
+            "total": {
+              "knownReported": 17786,
+              "samples": 28,
+              "eligible": 28
+            }
+          }
+        }
+      }
+    ],
+    "models": []
+  },
+  "analysis": {
+    "contractVersion": 1,
+    "to": "2026-10-24T22:00:00Z",
+    "timeZone": "Europe/Berlin",
+    "observedAt": "2026-10-24T19:00:00Z",
+    "cursor": 264,
+    "complete": true,
+    "from": "2026-10-17T22:00:00Z",
+    "totals": {
+      "requests": 128,
+      "attempts": 132,
+      "errors": 4,
+      "tokens": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "total": 81986,
+        "cacheCreation": null
+      },
+      "unknownUsageAttempts": 0,
+      "measurements": {
+        "input": {
+          "knownReported": null,
+          "samples": 0,
+          "eligible": 132
+        },
+        "output": {
+          "knownReported": null,
+          "samples": 0,
+          "eligible": 132
+        },
+        "cached": {
+          "knownReported": null,
+          "samples": 0,
+          "eligible": 132
+        },
+        "cacheCreation": {
+          "knownReported": null,
+          "samples": 0,
+          "eligible": 132
+        },
+        "reasoning": {
+          "knownReported": null,
+          "samples": 0,
+          "eligible": 132
+        },
+        "total": {
+          "knownReported": 81986,
+          "samples": 132,
+          "eligible": 132
+        }
+      }
+    },
+    "performance": {
+      "firstOutputLatencyMs": {
+        "samples": 120,
+        "eligible": 132,
+        "minimum": null,
+        "mean": null,
+        "p50": 240,
+        "p95": 510,
+        "maximum": null
+      },
+      "totalDurationMs": {
+        "samples": 0,
+        "eligible": 132,
+        "minimum": null,
+        "mean": null,
+        "p50": null,
+        "p95": null,
+        "maximum": null
+      },
+      "outputTokensPerSecond": {
+        "samples": 0,
+        "eligible": 132,
+        "minimum": null,
+        "mean": null,
+        "p50": null,
+        "p95": null,
+        "maximum": null
+      },
+      "rateBasis": "reported_output_tokens_per_total_duration_second"
+    },
+    "dimensions": [
+      {
+        "dimension": "accountId",
+        "groups": [
+          {
+            "key": "personal-codex",
+            "totals": {
+              "requests": 70,
+              "attempts": 72,
+              "errors": 2,
+              "tokens": {
+                "input": null,
+                "output": null,
+                "cached": null,
+                "reasoning": null,
+                "total": 43200,
+                "cacheCreation": null
+              },
+              "unknownUsageAttempts": 0,
+              "measurements": {
+                "input": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 72
+                },
+                "output": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 72
+                },
+                "cached": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 72
+                },
+                "cacheCreation": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 72
+                },
+                "reasoning": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 72
+                },
+                "total": {
+                  "knownReported": 43200,
+                  "samples": 72,
+                  "eligible": 72
+                }
+              }
+            },
+            "performance": {
+              "firstOutputLatencyMs": {
+                "samples": 0,
+                "eligible": 72,
+                "minimum": null,
+                "mean": null,
+                "p50": null,
+                "p95": null,
+                "maximum": null
+              },
+              "totalDurationMs": {
+                "samples": 0,
+                "eligible": 72,
+                "minimum": null,
+                "mean": null,
+                "p50": null,
+                "p95": null,
+                "maximum": null
+              },
+              "outputTokensPerSecond": {
+                "samples": 0,
+                "eligible": 72,
+                "minimum": null,
+                "mean": null,
+                "p50": null,
+                "p95": null,
+                "maximum": null
+              },
+              "rateBasis": "reported_output_tokens_per_total_duration_second"
+            }
+          },
+          {
+            "key": "command-code",
+            "totals": {
+              "requests": 30,
+              "attempts": 32,
+              "errors": 1,
+              "tokens": {
+                "input": null,
+                "output": null,
+                "cached": null,
+                "reasoning": null,
+                "total": 21000,
+                "cacheCreation": null
+              },
+              "unknownUsageAttempts": 0,
+              "measurements": {
+                "input": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 32
+                },
+                "output": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 32
+                },
+                "cached": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 32
+                },
+                "cacheCreation": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 32
+                },
+                "reasoning": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 32
+                },
+                "total": {
+                  "knownReported": 21000,
+                  "samples": 32,
+                  "eligible": 32
+                }
+              }
+            },
+            "performance": {
+              "firstOutputLatencyMs": {
+                "samples": 0,
+                "eligible": 32,
+                "minimum": null,
+                "mean": null,
+                "p50": null,
+                "p95": null,
+                "maximum": null
+              },
+              "totalDurationMs": {
+                "samples": 0,
+                "eligible": 32,
+                "minimum": null,
+                "mean": null,
+                "p50": null,
+                "p95": null,
+                "maximum": null
+              },
+              "outputTokensPerSecond": {
+                "samples": 0,
+                "eligible": 32,
+                "minimum": null,
+                "mean": null,
+                "p50": null,
+                "p95": null,
+                "maximum": null
+              },
+              "rateBasis": "reported_output_tokens_per_total_duration_second"
+            }
+          },
+          {
+            "key": "kimi",
+            "totals": {
+              "requests": 28,
+              "attempts": 28,
+              "errors": 1,
+              "tokens": {
+                "input": null,
+                "output": null,
+                "cached": null,
+                "reasoning": null,
+                "total": 17786,
+                "cacheCreation": null
+              },
+              "unknownUsageAttempts": 0,
+              "measurements": {
+                "input": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 28
+                },
+                "output": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 28
+                },
+                "cached": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 28
+                },
+                "cacheCreation": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 28
+                },
+                "reasoning": {
+                  "knownReported": null,
+                  "samples": 0,
+                  "eligible": 28
+                },
+                "total": {
+                  "knownReported": 17786,
+                  "samples": 28,
+                  "eligible": 28
+                }
+              }
+            },
+            "performance": {
+              "firstOutputLatencyMs": {
+                "samples": 0,
+                "eligible": 28,
+                "minimum": null,
+                "mean": null,
+                "p50": null,
+                "p95": null,
+                "maximum": null
+              },
+              "totalDurationMs": {
+                "samples": 0,
+                "eligible": 28,
+                "minimum": null,
+                "mean": null,
+                "p50": null,
+                "p95": null,
+                "maximum": null
+              },
+              "outputTokensPerSecond": {
+                "samples": 0,
+                "eligible": 28,
+                "minimum": null,
+                "mean": null,
+                "p50": null,
+                "p95": null,
+                "maximum": null
+              },
+              "rateBasis": "reported_output_tokens_per_total_duration_second"
+            }
+          }
+        ],
+        "truncated": false
+      }
+    ]
+  }
+}

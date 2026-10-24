@@ -1,0 +1,57 @@
+{
+  "description": "Synthetic complete journal with partial token measurement. Not a full-consumption total.",
+  "totals": {
+    "requests": 128,
+    "attempts": 132,
+    "errors": 4,
+    "tokens": {
+      "input": null,
+      "output": null,
+      "cached": null,
+      "reasoning": null,
+      "total": null,
+      "cacheCreation": null
+    },
+    "unknownUsageAttempts": 22,
+    "measurements": {
+      "input": {
+        "knownReported": 40000,
+        "samples": 120,
+        "eligible": 132
+      },
+      "output": {
+        "knownReported": 25000,
+        "samples": 110,
+        "eligible": 132
+      },
+      "cached": {
+        "knownReported": 1000,
+        "samples": 10,
+        "eligible": 132
+      },
+      "cacheCreation": {
+        "knownReported": 0,
+        "samples": 20,
+        "eligible": 132
+      },
+      "reasoning": {
+        "knownReported": null,
+        "samples": 0,
+        "eligible": 132
+      },
+      "total": {
+        "knownReported": 65000,
+        "samples": 110,
+        "eligible": 132
+      }
+    }
+  },
+  "journalComplete": true,
+  "expect": {
+    "mainReportedTokens": 65000,
+    "mainHint": "Partial \u00b7 full total unknown",
+    "totalCoverage": "110/132",
+    "reasoning": "unknown",
+    "cacheCreationKnown": 0
+  }
+}
