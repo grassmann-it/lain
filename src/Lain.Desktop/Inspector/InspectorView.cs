@@ -10,11 +10,12 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Lain.Client;
 using Lain.Core;
+using Lain.Desktop.Presentation;
 
 namespace Lain.Desktop.Inspector;
 
 /// <summary>Bounded, read-only live inspection. Content is never written to disk by this view.</summary>
-public sealed class InspectorView : UserControl
+public sealed class InspectorView : UserControl, IPresentationView
 {
     private const int DisplayEventLimit = 500;
     private const int DisplayCharacterLimit = 262144;
@@ -22,6 +23,11 @@ public sealed class InspectorView : UserControl
         { "route_binding", "harness_header", "request_body", "provider_response", "core" };
     private readonly LainApiClient _client;
     private readonly TextBlock _status = Ui.Text("Waiting for the live inspector", 12, Ui.Muted);
+    private readonly TextBlock _empty = Ui.Text("No observed streams yet. Send a request through lain to inspect it.", 14, Ui.Muted);
+    private readonly WrapPanel _navigation = new() { Orientation = Orientation.Horizontal };
+    private readonly List<TextBlock> _eventTimes = [];
+    private readonly List<Expander> _eventDetails = [];
+    private readonly List<Border> _eventSurfaces = [];
     private readonly TextBlock _buffer = Ui.Text("No live buffer received", 11, Ui.Muted);
     private readonly TextBlock _selection = Ui.Text("Choose a conversation or request", 14);
     private readonly TextBlock _contentStatus = Ui.Text("", 11, Ui.Muted);
@@ -30,7 +36,7 @@ public sealed class InspectorView : UserControl
     private readonly ComboBox _conversation = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly ComboBox _request = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly CheckBox _follow = new() { Content = "Follow output", IsChecked = true };
-    private readonly Button _pause = new() { Content = "Pause" };
+    private readonly Button _pause = new() { Content = "Pause display" };
     private readonly StackPanel _groupList = new() { Spacing = 5 };
     private readonly StackPanel _eventList = new() { Spacing = 8 };
     private readonly Expander _identity = new() { Header = "Identities & measurement sources", HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
@@ -57,8 +63,13 @@ public sealed class InspectorView : UserControl
     private bool _refreshOnce;
     private bool _connected;
     private bool _updatingChoices;
+    private bool _renderPending;
     private string? _contentGap;
     private string? _sourceNotice;
+    private string? _navigationKey;
+    private PresentationOptions _presentation = new();
+
+    public Action<WorkspaceNavigationRequest>? NavigateRequested { get; set; }
 
     public InspectorView(LainApiClient client)
     {
@@ -73,7 +84,7 @@ public sealed class InspectorView : UserControl
         _pause.Click += (_, _) =>
         {
             _paused = !_paused;
-            _pause.Content = _paused ? "Resume" : "Pause";
+            _pause.Content = _paused ? "Resume display" : "Pause display";
             _nextSnapshot = 0;
             UpdateStatus();
         };
@@ -87,7 +98,7 @@ public sealed class InspectorView : UserControl
         AutomationProperties.SetName(_request, "Inspector request");
         AutomationProperties.SetName(_follow, "Follow live output");
         AutomationProperties.SetName(_eventList, "Inspector events");
-        ToolTip.SetTip(_pause, "Pause or resume automatic live updates.");
+        ToolTip.SetTip(_pause, "Pause or resume live updates. Content still expires while paused.");
         ToolTip.SetTip(refresh, "Refresh the Inspector once, including while paused.");
         ToolTip.SetTip(clear, "Clears this view. The host's bounded live buffer expires automatically.");
         ToolTip.SetTip(_follow, "Turn off to read earlier output while new events arrive.");
@@ -106,20 +117,24 @@ public sealed class InspectorView : UserControl
         Grid.SetRow(groupsScroll, 1); sidebarContent.Children.Add(groupsScroll);
         _sidebar = Surface(sidebarContent);
         _layout.Children.Add(_sidebar);
-        var eventContent = new StackPanel { Spacing = 9, Children = { _identity, _eventList } };
-        _eventScroll = new ScrollViewer { Content = eventContent, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-        _details = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*"), RowSpacing = 8 };
+        _eventScroll = new ScrollViewer { Content = _eventList, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        _details = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,*,Auto"), RowSpacing = 8 };
         _details.Children.Add(_selection);
         _requestField = Ui.Field("Request within this group", _request);
         _pickers.Children.Add(_conversationField); _pickers.Children.Add(_requestField);
         Grid.SetRow(_pickers, 1); _details.Children.Add(_pickers);
-        Grid.SetRow(_contentStatus, 2); _details.Children.Add(_contentStatus);
-        Grid.SetRow(_eventScroll, 3); _details.Children.Add(_eventScroll);
+        Grid.SetRow(_navigation, 2); _details.Children.Add(_navigation);
+        Grid.SetRow(_contentStatus, 3); _details.Children.Add(_contentStatus);
+        Grid.SetRow(_eventScroll, 4); _details.Children.Add(_eventScroll);
+        Grid.SetRow(_identity, 5); _details.Children.Add(_identity);
         Grid.SetColumn(_details, 1); _layout.Children.Add(_details);
+        Grid.SetColumn(_empty, 1); _layout.Children.Add(_empty); _details.IsVisible = false;
+        _requestField.IsVisible = false;
+        AutomationProperties.SetName(_empty, "Live empty state");
         Content = new StackPanel { Spacing = 10, Children =
         {
-            Ui.PageHeader("Inspector", "Live output, attempts and tool continuations grouped by proven identities."),
-            toolbar, new StackPanel { Spacing = 3, Children = { _status, _buffer } }, _layout
+            Ui.PageHeader("Live", "Inspector · output, attempts and tool continuations grouped by proven identities."),
+            new StackPanel { Spacing = 3, Children = { _status, _buffer } }, toolbar, _layout
         } };
         _search.TextChanged += (_, _) => RenderGroups();
         _activity.SelectionChanged += (_, _) => RenderGroups();
@@ -142,14 +157,70 @@ public sealed class InspectorView : UserControl
             _lifetime?.Cancel(); _lifetime?.Dispose(); _lifetime = null;
             if (_topLevel is not null) _topLevel.PropertyChanged -= TopLevelChanged;
             _topLevel = null; _connected = false;
-            ClearEvents(); _eventList.Children.Clear(); _after = 0;
-            _contentGap = "Live content cleared when Inspector was closed.";
+            ResetDetachedState();
         };
     }
 
     private void TopLevelChanged(object? sender, AvaloniaPropertyChangedEventArgs args)
     {
         if (args.Property.Name == "ClientSize") ArrangeInspector();
+    }
+
+    public void SetPresentation(PresentationOptions options)
+    {
+        var levelChanged = options.Level != _presentation.Level;
+        _presentation = options;
+        // Presentation never re-fetches content, changes its receipt time or
+        // resets selection. Expiry also continues while updates are paused.
+        PruneEvents();
+        if (levelChanged)
+        {
+            foreach (var details in _eventDetails.Where(x => !x.IsKeyboardFocusWithin))
+                details.IsExpanded = options.Level == InformationLevel.Advanced;
+        }
+        ApplyPresentation();
+    }
+
+    private void ApplyPresentation()
+    {
+        var compact = _presentation.Density == ViewDensity.Compact;
+        _layout.ColumnSpacing = compact ? 8 : 12;
+        _details.RowSpacing = compact ? 5 : 8;
+        _groupList.Spacing = compact ? 3 : 5;
+        _eventList.Spacing = compact ? 4 : 8;
+        foreach (var button in _groupButtons.Values) button.Padding = new Thickness(compact ? 6 : 10);
+        foreach (var surface in _eventSurfaces) surface.Padding = new Thickness(compact ? 6 : 10);
+        foreach (var time in _eventTimes) time.IsVisible = _presentation.Level != InformationLevel.Barebones;
+        FitWorkspace();
+    }
+
+    private void RenderNavigation(InspectorStreamDto[] streams)
+    {
+        var accounts = streams.Select(x => x.AccountId).Where(x => !string.IsNullOrWhiteSpace(x)).OfType<string>().Distinct(StringComparer.Ordinal).ToArray();
+        var routes = streams.Select(x => x.RouteId).Where(x => !string.IsNullOrWhiteSpace(x)).OfType<string>().Distinct(StringComparer.Ordinal).ToArray();
+        var key = string.Join("\n", accounts.Select(x => "account:" + x).Concat(routes.Select(x => "route:" + x)));
+        if (_navigationKey == key) return;
+        _navigationKey = key;
+        _navigation.Children.Clear();
+        void Link(string label, WorkspaceNavigationRequest target)
+        {
+            var button = Ui.Button(label, () => NavigateRequested?.Invoke(target));
+            button.Margin = new Thickness(0, 0, 6, 3);
+            AutomationProperties.SetName(button, label);
+            _navigation.Children.Add(button);
+        }
+        foreach (var id in accounts)
+        {
+            Link("Account " + Short(id), new WorkspaceNavigationRequest("Accounts", AccountId: id));
+            Link("Usage for account " + Short(id), new WorkspaceNavigationRequest("Usage", AccountId: id));
+        }
+        foreach (var id in routes)
+        {
+            Link("Model access " + Short(id), new WorkspaceNavigationRequest("Models", RouteId: id));
+            Link("Usage for model access " + Short(id), new WorkspaceNavigationRequest("Usage", RouteId: id));
+        }
+        // A displayed model name or conversation identifier does not establish
+        // a configured model-access identity or durable Usage relationship.
     }
 
     private void ArrangeInspector()
@@ -159,8 +230,10 @@ public sealed class InspectorView : UserControl
         _conversationField.IsVisible = narrow;
         _layout.ColumnDefinitions = new ColumnDefinitions(narrow ? "*" : "260,*");
         Grid.SetColumn(_details, narrow ? 0 : 1);
-        _pickers.ColumnDefinitions = new ColumnDefinitions(narrow ? "*,*" : "*");
-        Grid.SetColumn(_requestField, narrow ? 1 : 0);
+        Grid.SetColumn(_empty, narrow ? 0 : 1);
+        var twoPickers = narrow && _requestField.IsVisible;
+        _pickers.ColumnDefinitions = new ColumnDefinitions(twoPickers ? "*,*" : "*");
+        Grid.SetColumn(_requestField, twoPickers ? 1 : 0);
         FitWorkspace();
     }
 
@@ -180,6 +253,7 @@ public sealed class InspectorView : UserControl
             do
             {
                 PruneEvents();
+                if (_renderPending && !_eventList.IsKeyboardFocusWithin) RenderEvents();
                 if (_paused && !_refreshOnce) continue;
                 _refreshOnce = false;
                 if (Stopwatch.GetTimestamp() >= _nextSnapshot)
@@ -187,7 +261,7 @@ public sealed class InspectorView : UserControl
                     _nextSnapshot = Stopwatch.GetTimestamp() + Stopwatch.Frequency;
                     await RefreshSnapshotAsync(token);
                 }
-                if (_connected && _selectedRequest is not null) await RefreshEventsAsync(token);
+                if (_connected && _selectedRequest is not null && _details.IsVisible) await RefreshEventsAsync(token);
             } while (await timer.WaitForNextTickAsync(token));
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
@@ -243,12 +317,14 @@ public sealed class InspectorView : UserControl
                 if (!_events.Any(existing => existing.Cursor == entry.Cursor)) { _events.Add(entry); _eventReceived[entry.Cursor] = Stopwatch.GetTimestamp(); }
             _after = Math.Max(_after, page.NextCursor);
             var characters = _events.Sum(e => e.Text?.Length ?? 0);
+            var trimmed = false;
             while (_events.Count > DisplayEventLimit || characters > DisplayCharacterLimit)
             {
+                trimmed = true;
                 characters -= _events[0].Text?.Length ?? 0; _eventReceived.Remove(_events[0].Cursor); _events.RemoveAt(0);
                 _contentGap = "Earlier displayed events were trimmed to keep this view bounded.";
             }
-            if (page.Events.Length > 0 || page.Truncated || page.GapReason is not null) RenderEvents();
+            if (page.Events.Length > 0 || page.Truncated || page.GapReason is not null) RenderEvents(preserveFocusedOutput: !trimmed);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch (Exception error)
@@ -322,9 +398,20 @@ public sealed class InspectorView : UserControl
             _conversation.SelectedItem = visible.FirstOrDefault(x => x.Key == _selectedGroup);
             _updatingChoices = false;
         }
-        if (_selectedGroup is null && visible.Count > 0) SelectGroup(visible[0].Key);
-        else if (_selectedGroup is not null && _groups.ContainsKey(_selectedGroup) && !_request.IsKeyboardFocusWithin) SelectGroup(_selectedGroup);
-        if (grouped.Length == 0) _selection.Text = "No observed streams yet. Send a request through lain to inspect it.";
+        _details.IsVisible = visible.Count > 0;
+        _empty.IsVisible = visible.Count == 0;
+        _empty.Text = grouped.Length == 0
+            ? "No observed streams yet. Send a request through lain to inspect it."
+            : "No requests match these filters. Clear the search or change activity to see observed requests.";
+        // A hidden selection may stay in memory until its ordinary expiry, but
+        // never present its output as a result of the current filters.
+        if (visible.Count > 0)
+        {
+            var selected = visible.FirstOrDefault(x => x.Key == _selectedGroup);
+            if (selected is null) SelectGroup(visible[0].Key);
+            else if (!_request.IsKeyboardFocusWithin) SelectGroup(selected.Key);
+        }
+        ApplyPresentation();
     }
 
     private string GroupKey(InspectorStreamDto stream)
@@ -364,6 +451,8 @@ public sealed class InspectorView : UserControl
         var requests = group.Streams.GroupBy(x => x.RequestId).Select(streams => new RequestChoice(streams.Key,
             $"{streams.First().Model ?? streams.First().RequestedModel ?? "Model unknown"} · request {Short(streams.Key)} · {streams.Count()} streams")).ToArray();
         var selected = requests.FirstOrDefault(x => x.Id == _selectedRequest) ?? requests.FirstOrDefault();
+        _requestField.IsVisible = requests.Length > 1;
+        ArrangeInspector();
         _updatingChoices = true; _request.ItemsSource = requests; _request.SelectedItem = selected; _conversation.SelectedItem = group; _updatingChoices = false;
         foreach (var pair in _groupButtons) { pair.Value.Background = pair.Key == key ? Ui.AccentSurface : Ui.Surface; pair.Value.BorderBrush = pair.Key == key ? Ui.Accent : Ui.Edge; }
         if (selected is not null) SelectRequest(selected.Id);
@@ -383,10 +472,12 @@ public sealed class InspectorView : UserControl
     {
         if (_snapshot is null || _selectedRequest is null) return;
         var streams = _snapshot.Streams.Where(x => x.RequestId == _selectedRequest).ToArray();
-        if (streams.Length == 0) { _selection.Text = "Selected request is no longer described in the live buffer"; return; }
+        if (streams.Length == 0) { _selection.Text = "Selected request is no longer described in the live buffer"; _navigation.Children.Clear(); _navigationKey = null; _identity.Content = null; return; }
         var active = streams.Any(IsActive);
         var stateLabel = active ? _connected ? "Active" : "Active state unknown" : streams.All(IsTerminal) ? "Retained result" : "State unknown";
         _selection.Text = $"{streams.First().Model ?? streams.First().RequestedModel ?? "Model unknown"} · {stateLabel} · {streams.Length} observed streams";
+        RenderNavigation(streams);
+        if (_identity.IsKeyboardFocusWithin) return;
         var facts = new StackPanel { Spacing = 7 };
         foreach (var stream in streams)
         {
@@ -405,7 +496,7 @@ public sealed class InspectorView : UserControl
             else facts.Children.Add(Ui.Text("Conversation, turn and worker identities are unknown.", 11, Ui.Muted));
             if (stream.Truncated) facts.Children.Add(Ui.Text("This stream is incomplete in the live buffer.", 11, Ui.Warning));
         }
-        _identity.Content = facts;
+        _identity.Content = new ScrollViewer { Content = facts, MaxHeight = 140, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     }
 
     private void PruneEvents()
@@ -420,9 +511,17 @@ public sealed class InspectorView : UserControl
         RenderEvents();
     }
 
-    private void RenderEvents()
+    private void RenderEvents(bool preserveFocusedOutput = false)
     {
+        if (preserveFocusedOutput && _eventList.IsKeyboardFocusWithin)
+        {
+            _renderPending = true;
+            _contentStatus.Text = (_contentGap is null ? "" : _contentGap + " · ") + "New live output is ready; leave the focused output to display it. Content still expires.";
+            return;
+        }
+        _renderPending = false;
         _eventList.Children.Clear();
+        _eventTimes.Clear(); _eventDetails.Clear(); _eventSurfaces.Clear();
         _contentStatus.Text = _contentGap ?? (_selectedRequest is null ? "Select a request to read its live events." : "Retained live events · text and tool chunks stay within this request");
         _contentStatus.Foreground = _contentGap is null ? Ui.Muted : Ui.Warning;
         var blocks = new List<EventBlock>();
@@ -447,14 +546,25 @@ public sealed class InspectorView : UserControl
             if (entry.AttemptId is not null) metadata.Add("attempt " + Short(entry.AttemptId));
             if (KnownIdentity(entry.Dimensions, "turnId", entry.Dimensions?.TurnId) is { } turn) metadata.Add("turn " + Short(turn));
             if (KnownIdentity(entry.Dimensions, "workerId", entry.Dimensions?.WorkerId) is { } worker) metadata.Add("worker " + Short(worker));
-            var content = new StackPanel { Spacing = 5, Children = { Ui.Text(label, 13), Ui.Text(string.Join(" · ", metadata), 10, Ui.Muted) } };
+            var time = Ui.Text(metadata[0], 10, Ui.Muted);
+            _eventTimes.Add(time);
+            var content = new StackPanel { Spacing = 5, Children = { Ui.Text(label, 13), time } };
             if (!string.IsNullOrEmpty(block.Text)) content.Children.Add(Selectable(block.Text, 13));
             else content.Children.Add(Ui.Text(entry.State ?? entry.GapReason ?? "Metadata event", 12, Ui.Muted));
             if (entry.Truncated || entry.GapReason is not null) content.Children.Add(Ui.Text("Partial event · " + (entry.GapReason ?? "content truncated"), 11, Ui.Warning));
             if (entry.RedactionState is not null and not "none") content.Children.Add(Ui.Text("Content policy: " + entry.RedactionState, 10, Ui.Muted));
-            _eventList.Children.Add(Surface(content));
+            var technical = new StackPanel { Spacing = 3, Children =
+            {
+                Selectable(string.Join(" · ", metadata)),
+                Selectable($"Request {entry.RequestId} · attempt {entry.AttemptId ?? "unknown"} · event {entry.Cursor:N0}")
+            } };
+            var details = new Expander { Header = "Event details", Content = technical,
+                HorizontalAlignment = HorizontalAlignment.Stretch, IsExpanded = _presentation.Level == InformationLevel.Advanced };
+            content.Children.Add(details); _eventDetails.Add(details);
+            var surface = Surface(content); _eventSurfaces.Add(surface); _eventList.Children.Add(surface);
         }
         if (blocks.Count == 0) _eventList.Children.Add(Ui.Text("No retained content for this request. Metadata may be available before the first output or after content expires.", 12, Ui.Muted));
+        ApplyPresentation();
         if (_follow.IsChecked == true) Dispatcher.UIThread.Post(() => _eventScroll.ScrollToEnd());
     }
 
@@ -467,10 +577,26 @@ public sealed class InspectorView : UserControl
     private static bool IsActive(InspectorStreamDto stream) => stream.State is "active" or "pending" or "streaming" or "started";
     private static bool IsTerminal(InspectorStreamDto stream) => stream.State is "success" or "completed" or "succeeded" or "failed" or "error" or "canceled" or "cancelled" or "finished";
     private void ClearEvents() { _events.Clear(); _eventReceived.Clear(); }
+    private void ResetDetachedState()
+    {
+        _snapshot = null; _sourceId = null; _selectedGroup = null; _selectedRequest = null;
+        _after = 0; _nextSnapshot = 0; _refreshOnce = false; _renderPending = false;
+        ClearEvents(); _eventList.Children.Clear(); _eventTimes.Clear(); _eventDetails.Clear(); _eventSurfaces.Clear();
+        _groups.Clear(); _groupButtons.Clear(); _groupList.Children.Clear();
+        _updatingChoices = true;
+        _conversation.ItemsSource = Array.Empty<GroupChoice>(); _request.ItemsSource = Array.Empty<RequestChoice>();
+        _updatingChoices = false;
+        _navigation.Children.Clear(); _navigationKey = null; _identity.Content = null;
+        _sourceNotice = null; _contentGap = "Live content cleared when Live was closed.";
+        _buffer.Text = "No live buffer received"; _selection.Text = "Choose a conversation or request";
+        _details.IsVisible = false; _empty.IsVisible = true;
+        _empty.Text = "Live content was cleared when this page closed. Waiting for a new snapshot.";
+    }
     private void ResetSource(string sourceId)
     {
         _sourceId = sourceId; _selectedGroup = null; _selectedRequest = null; _after = 0;
         ClearEvents(); _groups.Clear(); _groupButtons.Clear(); _groupList.Children.Clear();
+        _navigation.Children.Clear(); _navigationKey = null;
         _updatingChoices = true; _conversation.ItemsSource = Array.Empty<GroupChoice>(); _request.ItemsSource = Array.Empty<RequestChoice>(); _updatingChoices = false;
         _identity.Content = Ui.Text("Waiting for identities from the new live source", 12, Ui.Muted);
         _sourceNotice = "Live source restarted; previous content and relationships were cleared.";
