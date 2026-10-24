@@ -68,6 +68,13 @@ Task VerifiedReconnect()
     try { f.Accounts.ConnectCredential(before.Revision, new(new("test", "manual-key", ["quota"], AccountId: account.Id), "synthetic-b")); }
     catch (Exception error) when (error is ArgumentException or InvalidDataException or InvalidOperationException) { refused = true; }
     Require(refused && f.Repository.Snapshot.Revision == before.Revision && f.Repository.Snapshot.Accounts.Single().Generation == account.Generation);
+    var direct = Fresh("direct-identity");
+    var directState = direct.Accounts.Connect(0, new("test", "qualified-fixture", ["inference", "quota"]),
+        Credential("static-key", binding) with { Purposes = ["inference", "quota"] });
+    refused = false;
+    try { direct.Accounts.ReplaceApiCredential(directState.Revision, directState.Accounts.Single().Id, "synthetic-replacement"); }
+    catch (Exception error) when (error is ArgumentException or InvalidDataException or InvalidOperationException) { refused = true; }
+    Require(refused && direct.Repository.Snapshot.Revision == directState.Revision);
     return Task.CompletedTask;
 }
 
@@ -94,6 +101,16 @@ Task PreparedCrashGap()
     var restarted = new Fixture(f.Paths.Root);
     var recovered = new CredentialRecoveryService(restarted.Repository, restarted.Accounts, restarted.Secrets.Generations).Adopt(0, context.OperationId);
     Require(recovered.Accounts.Single().Credentials!.Single().Id == handle.Id);
+
+    var next = Fresh("crash-newer-generation");
+    context = next.Accounts.ReserveConnect(0, new("test", "qualified-fixture", ["quota"]), "fixture-newer-operation", DateTimeOffset.UtcNow.AddMinutes(1));
+    CredentialRecoveryService.SaveStarted(next.Secrets.Generations, context);
+    var initial = next.Secrets.Generations.Prepare(context.AccountId, Credential("static-key", new("test")), context.OperationId);
+    CredentialRecoveryService.SavePrepared(next.Secrets.Generations, context, initial, null);
+    var updated = next.Secrets.Generations.Prepare(context.AccountId, Credential("static-key", new("test", Subject: "subject-a", Provenance: "observed")), context.OperationId, initial.Id, 2);
+    // The metadata-complete generation was durable; pointer still names the first checkpoint.
+    var reconciled = CredentialRecoveryService.Read(new Fixture(next.Paths.Root).Secrets.Generations, context.OperationId);
+    Require(reconciled.Handle?.Id == updated.Id && reconciled.Handle.Generation == 2);
     return Task.CompletedTask;
 }
 
