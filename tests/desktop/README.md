@@ -22,13 +22,13 @@ XDG_RUNTIME_DIR and LAIN_HOME prevent real local credential discovery. The
 harness refuses to initialize Avalonia unless the runner's live Xvfb PID and
 display marker are present. There is no native desktop fallback. EXIT/INT/TERM
 cleanup terminates only the child Xvfb and removes its private temporary files;
-a 150-second timeout bounds the harness.
+a 360-second timeout bounds the harness.
 
 Production `App.Initialize()` supplies theme resources/styles; its framework
 startup is deliberately not invoked because it constructs the real local API
 client. The test's MainWindow, UsageView, ProviderCatalogView and InspectorView are the actual production classes.
 Every HTTP request goes to an in-memory handler with an explicit allowlist and
-no Authorization header. Five accounts, 45 routes, three profiles and persistent
+no Authorization header. Five baseline accounts plus a 35-account density scenario, 45 routes, three profiles and persistent
 usage totals provide realistic density. All account/import/route/profile/login
 mutations affect that handler alone. Codex export writes fixture content only
 inside the chosen evidence directory, without launching anything.
@@ -56,3 +56,18 @@ viewport sizes.
 
 PNGs require independent visual review for clipping, density and theme
 acceptance. This fixture cannot establish real host/provider behavior.
+
+The UI structure regression checks verify exactly five primary destinations and
+Accounts at startup; one nested provider catalog and one account-method chooser;
+all quota windows including pure balances/unknown windows in closed tiles;
+Barebones/Simple/Advanced and independent Normal/Compact section density;
+unsaved account/model/profile controls and focus across reload/view changes;
+authoritative applied profile metadata; one Usage breakdown with unchanged
+measurement coverage; contextual drillthrough/Back; and singleton, no-match,
+empty-source and retention-gap Live states. Pins, order, sort, grouping, mode and
+density are reloaded by a new production window. Search/status filters survive
+navigation/reload/mode changes in one window and intentionally reset for a fresh
+window. A quota availability change verifies stable inventory ordering. The
+35-account scenario includes disabled accounts and captures both required sizes.
+These view changes are also checked against unchanged configuration/revision and
+an unchanged in-memory mutation request count.

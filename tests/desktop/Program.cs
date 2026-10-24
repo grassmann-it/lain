@@ -9,6 +9,7 @@ using Avalonia.Automation;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -18,6 +19,7 @@ using Lain.Core;
 using Lain.Desktop;
 using Lain.Desktop.Usage;
 using Lain.Desktop.Providers;
+using Lain.Desktop.Presentation;
 
 internal static class Program
 {
@@ -91,12 +93,13 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     {
         Directory.CreateDirectory(Output);
         await Open();
-        await CheckQuotaOverview();
+        Check(new WorkspacePreferencesStore().Current.Level == InformationLevel.Simple, "fresh workspace defaults to Simple presentation");
+        await CheckClosedQuotaTiles("accounts-initial");
+        CheckPrimaryNavigation();
         CheckBundledFonts();
         if (Environment.GetEnvironmentVariable("LAIN_DESKTOP_FONT_PROBE_ONLY") == "1") { window.Close(); return; }
-        await CaptureBoth("overview");
+        await CaptureBoth("accounts-initial");
         await Click("Accounts");
-        await CheckClosedQuotaTiles("accounts");
         await CaptureBoth("accounts-closed");
         await CheckQuotaAccounts();
         await CaptureBoth("accounts");
@@ -111,54 +114,69 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             && accountTile.GetVisualDescendants().Contains(accountHeader), "account tile focus expansion and identity survive passive refresh");
         fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1,
             Accounts = fixture.Config.Accounts.Select(a => a.Id == "a1" ? a with { Name = "Personal Codex updated" } : a).ToArray() };
-        await Click("Refresh");
+        await Click("Reload status");
         await Wait(() => HasText("Personal Codex updated"), "explicit refresh displays changed configuration");
-        await Click("Connect Codex");
+        await Click("Accounts"); await Click("Add account"); await Click("Sign in to Codex (browser)");
         await Wait(() => HasText("Waiting for authorization"), "login waiting");
         await CaptureBoth("login");
         await Wait(() => HasText("Codex account connected."), "login completion", 6000);
         Check(fixture.LoginPolls > 0, "login polled fake provider");
-        await Click("Connect Codex"); await Click("Cancel sign-in");
+        await Click("Accounts"); await Click("Add account"); await Click("Sign in to Codex (browser)"); await Click("Cancel sign-in");
         Check(fixture.LoginCancels == 1, "login cancellation");
 
-        await Click("Add API account");
+        await Click("Accounts"); await Click("Add account"); await Click("Manual API account");
         var accountName = Input("My API account");
         accountName.Focus();
         Check(accountName.IsFocused, "account input accepts keyboard focus");
         accountName.Text = "Command account";
+        var revisionBeforePresentation = fixture.Config.Revision;
+        var mutationCountBeforePresentation = MutatingRequestCount();
+        await Click("Reload status");
+        await SelectPresentation(InformationLevel.Advanced);
+        Check(ReferenceEquals(accountName, Input("My API account")) && accountName.Text == "Command account" && accountName.IsFocused,
+            "account form values control identity and focus survive reload and presentation changes");
+        Check(fixture.Config.Revision == revisionBeforePresentation && MutatingRequestCount() == mutationCountBeforePresentation,
+            "presentation changes never mutate host configuration or start provider operations");
+        await SelectPresentation(InformationLevel.Simple);
         Input("e.g. command-code").Text = "command-code";
         Input("https://…/v1").Text = "https://example.invalid/v1";
         Input("API key").Text = "fake-test-key-never-a-secret";
         await Click("Add account");
         await Wait(() => fixture.Config.Accounts.Length == Fixture.InitialAccounts + 1, "account added");
         await Click("Disable"); Check(fixture.EnableCalls == 1, "account disabled");
-        await Click("Import setup…"); Input("/path/to/config.yaml").Text = "/fixture/config.yaml";
+        await Click("Accounts"); await Click("Add account"); await Click("Import setup"); Input("/path/to/config.yaml").Text = "/fixture/config.yaml";
         await Click("Import");
         Check(fixture.Imports == 1 && HasText("snapshot warning", true), "import and warning preserved");
 
         await CheckProviderCatalog();
         await CheckInspector();
 
-        await Click("Routes"); await CaptureBoth("routes"); await Click("Create route");
-        Controls<ComboBox>().First().SelectedIndex = 1;
+        await Click("Models"); await CaptureBoth("routes"); await Click("Add model access");
+        var suggestions = Controls<Expander>().Single(x => Equals(x.Header, "Known model suggestions (optional)"));
+        suggestions.IsExpanded = true; await Task.Delay(80);
+        suggestions.GetVisualDescendants().OfType<ComboBox>().Single().SelectedIndex = 1;
         Input("client-facing-model").Text = "test-route";
+        await CheckEditorPreservation("client-facing-model", "test-route");
         Input("Upstream model ID").Text = "test-model";
         Input("Provider identifier").Text = "openai";
-        Controls<CheckBox>().First(x => x.Content?.ToString()?.StartsWith("Personal") == true).IsChecked = true;
-        await CaptureBoth("route-editor"); await Click("Save route");
+        Controls<CheckBox>().First(x => x.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text?.StartsWith("Personal", StringComparison.Ordinal) == true)).IsChecked = true;
+        await CaptureBoth("route-editor"); await Click("Save model access");
         await Wait(() => fixture.Config.Routes.Length == Fixture.InitialRoutes + 1, "revisioned route saved");
 
         await CheckPolicyPreservation();
 
-        await Click("Profiles"); await Click("Create profile");
+        await Click("Profiles");
+        await CheckAppliedProfileAuthority();
+        await Click("Create profile");
         Input("Profile name").Text = "Focus";
+        await CheckEditorPreservation("Profile name", "Focus");
         Controls<CheckBox>().First().IsChecked = true;
         await CaptureBoth("profile-editor");
         await Click("Save profile");
         await Wait(() => fixture.Config.Profiles.Length == Fixture.InitialProfiles + 1, "revisioned profile saved");
-        await CaptureBoth("profiles"); await Click("Apply profile");
+        await CaptureBoth("profiles"); await Click("Apply to proxy…"); await Click("Apply to proxy");
         Check(fixture.ApplyCalls == 1, "profile applied");
-        await Click("Connect Codex…");
+        await Click("Set up Codex client…");
         Input("/absolute/path/to/lain").Text = "/usr/bin/true";
         var export = Path.Combine(Output, "export"); Directory.CreateDirectory(export);
         Input("Choose or enter an existing parent folder").Text = export;
@@ -179,8 +197,8 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Task.Delay(5300);
         Check(fixture.UsageCalls > pollStart && UsageConnected(), "usage refreshes after five seconds");
         Check(usageInput.IsFocused && usageInput.Text == unsubmittedFilter, "usage input focus and filter survive polling");
-        Check(Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Filter to account a1" && b.GetVisualAncestors().OfType<Control>().All(parent => parent.IsVisible))
-            && Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Filter to model gpt-model" && b.GetVisualAncestors().OfType<Control>().All(parent => parent.IsVisible)), "account and model detail expansion survive polling");
+        Check(Controls<Expander>().Any(b => AutomationProperties.GetName(b) == "Analysis group modelFamily fixture-family" && b.IsExpanded),
+            "selected usage breakdown detail expansion survives polling");
         await Click("Details for attempt attempt-fixture");
         var details = Controls<Button>().Single(b => AutomationProperties.GetName(b) == "Details for attempt attempt-fixture");
         details.Focus();
@@ -188,6 +206,12 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         var attemptPollStart = fixture.UsageCalls;
         await Task.Delay(5300);
         Check(fixture.UsageCalls > attemptPollStart && Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Details for attempt attempt-fixture" && b.IsFocused), "attempt detail focus survives polling");
+        var accountScopeBeforeLink = fixture.UsageQueries.Last().GetValueOrDefault("accountId");
+        await Click("Open account for attempt attempt-fixture");
+        await Wait(() => Controls<Expander>().Any(x => AutomationProperties.GetName(x) == "Account budgets for Personal Codex updated"), "usage attempt links to its configured account");
+        await Click("Back");
+        await Wait(UsageConnected, "Back restores loaded Usage");
+        Check(fixture.UsageQueries.Last().GetValueOrDefault("accountId") == accountScopeBeforeLink, "Usage account navigation retains loaded filter context on Back");
         var daily = Controls<Expander>().Single(x => Equals(x.Header, "Daily totals"));
         daily.IsExpanded = true;
         await CaptureBoth("usage-details");
@@ -201,15 +225,15 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await CaptureBoth("usage-error");
         fixture.UsageFailure = false; fixture.NullTokens = false;
         await ClickUsageApply(); await Wait(UsageConnected, "usage recovers");
-        await Click("Setup"); await CaptureBoth("setup");
+        await Click("Local service"); await CaptureBoth("local-service");
         var detachedCalls = fixture.UsageCalls;
         await Task.Delay(5400);
         Check(fixture.UsageCalls == detachedCalls, "usage polling stops when detached");
 
-        fixture.Offline = true; await Click("Refresh");
+        fixture.Offline = true; await Click("Reload status");
         await Wait(() => HasText("Local host unavailable", true), "offline host state visible");
         await CaptureBoth("offline");
-        fixture.Offline = false; await Click("Refresh");
+        fixture.Offline = false; await Click("Reload status");
         await Click("Usage"); await Wait(UsageConnected, "usage reattaches");
         window.Close();
         var closedCalls = fixture.UsageCalls;
@@ -217,6 +241,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(!window.IsVisible && fixture.UsageCalls == closedCalls, "window close stops usage polling");
         await Open(); await Click("Usage"); await Wait(UsageConnected, "reopened window gets usage");
         await CaptureBoth("reopened-usage");
+        await CheckPresentationAndInventoryPersistence();
         window.Close();
         Check(fixture.Unexpected.Count == 0, "all requests matched fixture allowlist");
         foreach (var transport in transports) transport.Dispose();
@@ -229,6 +254,202 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             scope = "Production MainWindow, UsageView, ProviderCatalogView, InspectorView and App theme initialization; in-memory HTTP only. Button Click routed events exercise handlers, not OS pointer hit-testing. No real credentials, host, authorization browser, inference or service mutation."
         }, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"PASS desktop smoke: {checks.Count} checks, {screenshots.Count} screenshots. {Output}/evidence.json");
+    }
+
+    private int MutatingRequestCount() => fixture.Requests.Count(x => !x.StartsWith("GET ", StringComparison.Ordinal));
+
+    private void CheckPrimaryNavigation()
+    {
+        var expected = new[] { "Accounts", "Models", "Profiles", "Usage", "Live" };
+        var navigation = Controls<Button>().Where(b => b.Tag is string tag && expected.Contains(tag))
+            .Select(AutomationProperties.GetName).ToArray();
+        Check(navigation.SequenceEqual(expected), "exactly five primary destinations remain directly reachable in the agreed order");
+        Check(!Controls<Button>().Any(b => b.Tag is "Overview" or "Routes" or "Providers" or "Inspector" or "Setup"),
+            "provider discovery and help are contextual rather than duplicate primary inventories");
+        Check(Controls<Expander>().Any(x => AutomationProperties.GetName(x)?.StartsWith("Account budgets for ", StringComparison.Ordinal) == true),
+            "Accounts is the initial workspace");
+        Check(window.Icon is not null && Controls<Image>().Any(x => x.Source is not null), "application window and shell show bundled cat branding");
+    }
+
+    private async Task SelectPresentation(InformationLevel level, ViewDensity? density = null)
+    {
+        if (!Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Information level")) await Click("View");
+        var mode = Named<ComboBox>("Information level");
+        mode.SelectedIndex = (int)level;
+        await Task.Delay(100);
+        if (density is { } value)
+        {
+            if (!Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "View density")) await Click("View");
+            Named<ComboBox>("View density").SelectedIndex = (int)value;
+            await Task.Delay(100);
+        }
+        // The View panel is a toggle; leave the workspace ready for ordinary interaction.
+        if (Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Information level")) await Click("View");
+    }
+
+    private async Task CheckEditorPreservation(string placeholder, string value)
+    {
+        var input = Input(placeholder);
+        input.Focus();
+        var config = JsonSerializer.Serialize(fixture.Config);
+        var mutations = MutatingRequestCount();
+        await Click("Reload status");
+        await SelectPresentation(InformationLevel.Barebones, ViewDensity.Compact);
+        Check(ReferenceEquals(input, Input(placeholder)) && input.Text == value && input.IsFocused,
+            $"{placeholder} draft and focused control survive status reload and mode/density changes");
+        Check(JsonSerializer.Serialize(fixture.Config) == config && MutatingRequestCount() == mutations,
+            $"{placeholder} view changes neither save configuration nor apply a profile");
+        await SelectPresentation(InformationLevel.Simple, ViewDensity.Normal);
+    }
+
+    private async Task SelectUsageBreakdown(string label, string dimension, string key)
+    {
+        var compare = Named<ComboBox>("Compare by");
+        var choices = compare.Items.Cast<object>().ToArray();
+        compare.SelectedIndex = Array.FindIndex(choices, x => x.ToString() == label);
+        Check(compare.SelectedIndex >= 0, $"usage offers {label} in its single breakdown selector");
+        await Wait(() => Controls<Expander>().Any(x => AutomationProperties.GetName(x) == $"Analysis group {dimension} {key}"),
+            $"usage loads the {label} breakdown");
+        Check(Controls<ComboBox>().Count(x => AutomationProperties.GetName(x) == "Compare by") == 1,
+            "usage exposes one main configurable breakdown");
+        Check(!Controls<Button>().Any(x => AutomationProperties.GetName(x) is "Details for account a1" or "Details for model gpt-model"),
+            "usage no longer repeats account/model summary tables alongside the selected breakdown");
+    }
+
+    private async Task CheckPresentationAndInventoryPersistence()
+    {
+        await Click("Accounts");
+        await SelectPresentation(InformationLevel.Simple, ViewDensity.Normal);
+        var store = new WorkspacePreferencesStore();
+        Check(store.Current.Level == InformationLevel.Simple, "Simple presentation is the persisted working default");
+        var config = JsonSerializer.Serialize(fixture.Config);
+        var mutations = MutatingRequestCount();
+        foreach (var level in Enum.GetValues<InformationLevel>())
+        {
+            await SelectPresentation(level);
+            CheckPrimaryNavigation();
+            await CaptureBoth($"accounts-{level.ToString().ToLowerInvariant()}-normal");
+            var commandHeader = (Control)QuotaTile("Command Code Pro").Header!;
+            Check(new[] { "Purchased credits", "Free credits", "Model allowance" }.All(label => commandHeader.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == label)),
+                $"{level} preserves mixed percentage remaining-only and unknown windows in the closed inventory");
+            foreach (var (account, windows) in ExpectedProviderWindows)
+                foreach (var (label, percent) in windows)
+                {
+                    var name = account == "Personal Codex" ? "Personal Codex updated" : account;
+                    if (level != InformationLevel.Barebones) CheckQuotaBar(name, label, percent);
+                    else Check(((Control)QuotaTile(name).Header!).GetVisualDescendants().OfType<TextBlock>()
+                        .Any(t => t.Text == percent.ToString("0.#", System.Globalization.CultureInfo.CurrentCulture) + "% used"),
+                        $"Barebones preserves {name} {label} consumed percentage text");
+                }
+        }
+        Check(JsonSerializer.Serialize(fixture.Config) == config && MutatingRequestCount() == mutations,
+            "all three presentation presets preserve host configuration and never invoke provider mutations");
+        await SelectPresentation(InformationLevel.Advanced, ViewDensity.Compact);
+        await ExpandTile(QuotaTile("Kimi Coding"), true);
+        await Click("Pin account Kimi Coding");
+        await ExpandTile(QuotaTile("Command Code Pro"), true);
+        await Click("Pin account Command Code Pro");
+        await Click("Move pinned account Command Code Pro earlier");
+        var grouping = Named<CheckBox>("Group accounts by provider");
+        grouping.IsChecked = true;
+        await Task.Delay(120);
+        var saved = new WorkspacePreferencesStore().Current;
+        Check(saved.PinnedAccountIds.Take(2).SequenceEqual(new[] { "a2", "a4" }) && saved.GroupAccountsByProvider,
+            "pin actions reorder favorites and persist explicit grouping independently of quota values");
+        var search = Named<TextBox>("Search accounts");
+        search.Text = "Kimi";
+        Named<ComboBox>("Filter accounts by state").SelectedIndex = 1;
+        await Task.Delay(100);
+        var filteredTiles = Controls<Expander>().Where(x => AutomationProperties.GetName(x)?.StartsWith("Account budgets for ", StringComparison.Ordinal) == true).ToArray();
+        Check(filteredTiles.Length == 1 && AutomationProperties.GetName(filteredTiles[0]) == "Account budgets for Kimi Coding",
+            "account search and explicit enabled filter combine without changing account enablement");
+        await SelectPresentation(InformationLevel.Barebones);
+        await Click("Reload status"); await Click("Models"); await Click("Accounts");
+        Check(Named<TextBox>("Search accounts").Text == "Kimi" && Named<ComboBox>("Filter accounts by state").SelectedIndex == 1,
+            "search and status filters survive presentation reload and workspace navigation");
+        await ExpandTile(QuotaTile("Kimi Coding"), true);
+        await Click("Recorded usage");
+        await Wait(() => UsageConnected() && fixture.UsageQueries.Last().GetValueOrDefault("accountId") == "a4", "account drillthrough loads Usage with its stable account ID");
+        await Click("Back");
+        Check(Named<TextBox>("Search accounts").Text == "Kimi" && QuotaTile("Kimi Coding").IsExpanded,
+            "contextual Back restores account search and expanded source tile");
+        await Click("Models for this account");
+        await Wait(() => Controls<Button>().Any(x => AutomationProperties.GetName(x)?.StartsWith("Edit model access ", StringComparison.Ordinal) == true),
+            "account drillthrough reaches the configured model-access inventory");
+        await Click("Back");
+        Check(Named<TextBox>("Search accounts").Text == "Kimi", "model drillthrough Back restores account filter context");
+        await Click("Clear filters");
+        Named<ComboBox>("Account order").SelectedIndex = 2;
+        await Task.Delay(80);
+        Check(new WorkspacePreferencesStore().Current.AccountSort == "name", "explicit account sort is stored independently from presentation");
+        var beforePollOrder = AccountTileNames();
+        fixture.QuotaAvailabilityChanged = true;
+        await Click("Reload status");
+        Check(AccountTileNames().SequenceEqual(beforePollOrder), "polling refresh preserves explicit pinned/provider/name account order");
+        await Click("Models");
+        await SelectPresentation(InformationLevel.Barebones, ViewDensity.Normal);
+        await CaptureBoth("models-barebones-normal");
+        await Click("Profiles"); await CaptureBoth("profiles-barebones-normal");
+        await Click("Usage"); await Wait(UsageConnected, "usage survives compact presentation navigation");
+        await CaptureBoth("usage-barebones-normal");
+        await Click("Live"); await Wait(() => HasSelectable("New source output only."), "live survives presentation navigation");
+        await CaptureBoth("live-barebones-normal");
+        Check(JsonSerializer.Serialize(fixture.Config) == config && MutatingRequestCount() == mutations,
+            "pins order grouping density and context navigation never mutate the host configuration");
+        window.Close(); await Open();
+        var restarted = new WorkspacePreferencesStore().Current;
+        Check(restarted.Level == InformationLevel.Barebones && restarted.Densities.GetValueOrDefault("Accounts") == ViewDensity.Compact
+            && restarted.Densities.GetValueOrDefault("Models") == ViewDensity.Normal,
+            "information level and independent per-section densities survive a new window");
+        Check(restarted.PinnedAccountIds.Take(2).SequenceEqual(new[] { "a2", "a4" }) && restarted.GroupAccountsByProvider && restarted.AccountSort == "name",
+            "pins pin order explicit sort and grouping survive a new window");
+        Named<ComboBox>("Account order").SelectedIndex = 0;
+        Check(Named<TextBox>("Search accounts").Text is null or "", "fresh window reveals accounts without a stale search filter");
+        fixture.AddDensityAccounts(35);
+        await Click("Reload status");
+        await Wait(() => AccountTileNames().Length >= 35, "synthetic inventory exercises at least 35 accounts");
+        await CaptureBoth("accounts-35-compact", verify: CheckAllAccountTileBounds);
+        await SelectPresentation(InformationLevel.Simple, ViewDensity.Normal);
+        await CaptureBoth("accounts-35-simple-normal", verify: CheckAllAccountTileBounds);
+        Check(fixture.Config.Accounts.Count(x => !x.Enabled) > 0 && AccountTileNames().Contains("Account budgets for Density account 30"),
+            "disabled accounts remain included by default in a large inventory");
+        var savedInventory = fixture.Config;
+        fixture.Config = fixture.Config with { Accounts = [] };
+        await Click("Reload status");
+        Check(Controls<Button>().Any(x => Equals(x.Content, "Discover providers")), "provider discovery is reachable in Accounts without credentials");
+        await CaptureBoth("accounts-empty-onboarding");
+        await Click("Discover providers");
+        await Wait(() => HasText("NVIDIA Build"), "credential-free discovery uses the same provider catalog");
+        fixture.Config = savedInventory;
+        await Click("Accounts"); await Click("Reload status");
+    }
+
+    private string[] AccountTileNames() => Controls<Expander>().Select(AutomationProperties.GetName)
+        .Where(x => x?.StartsWith("Account budgets for ", StringComparison.Ordinal) == true).Cast<string>().ToArray();
+
+    private void CheckAllAccountTileBounds()
+    {
+        var tiles = Controls<Expander>().Where(x => AutomationProperties.GetName(x)?.StartsWith("Account budgets for ", StringComparison.Ordinal) == true)
+            .Select(x => new Rect(x.TranslatePoint(default, window)!.Value, x.Bounds.Size)).ToArray();
+        Check(tiles.Length >= 35 && tiles.All(x => x.Width >= 200 && x.Height > 0), "large inventory retains readable realized account tiles");
+        Check(!tiles.SelectMany((x, i) => tiles.Skip(i + 1).Select(y => (x, y)))
+            .Any(p => Math.Min(p.x.Right, p.y.Right) - Math.Max(p.x.Left, p.y.Left) > 1 && Math.Min(p.x.Bottom, p.y.Bottom) - Math.Max(p.x.Top, p.y.Top) > 1),
+            "large inventory account tiles never overlap");
+    }
+
+    private async Task CheckAppliedProfileAuthority()
+    {
+        var before = fixture.ApplyCalls;
+        Check(HasText("Applied to proxy: Workspace 2", true), "applied profile identity comes from Host status rather than saved or selected profile");
+        await Click("Select profile Daily");
+        Check(HasText("Selected profile: Daily") && HasText("Applied to proxy: Workspace 2", true) && fixture.ApplyCalls == before,
+            "selecting a saved profile leaves the authoritative applied profile and global proxy unchanged");
+        fixture.ActiveProfileId = null; fixture.ActiveProfileRevision = null;
+        await Click("Reload status");
+        Check(HasText("Applied profile not reported by the host.", true) && !HasText("Applied to proxy: Daily", true),
+            "missing applied metadata remains unknown instead of being inferred from selection");
+        fixture.ActiveProfileId = "p2"; fixture.ActiveProfileRevision = 1;
+        await Click("Reload status");
     }
 
     private async Task CheckUsageControls()
@@ -262,12 +483,16 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             Check(DateTimeOffset.Parse(query["from"]).UtcDateTime == start && DateTimeOffset.Parse(query["to"]).UtcDateTime == today.AddDays(1)
                 && query["timeZone"] == "UTC" && query["offset"] == "0" && query["statusCode"] == "200", $"{label} applies its UTC calendar range and preserves the status filter");
         }
-        await Click("Details for account a1");
-        await Click("Details for model gpt-model");
+        await SelectUsageBreakdown("Account", "accountId", "Personal Codex updated");
+        Named<Expander>("Analysis group accountId Personal Codex updated").IsExpanded = true;
+        await Task.Delay(80);
         var errorRate = (400d / 132).ToString("N1", System.Globalization.CultureInfo.CurrentCulture) + "% error rate";
         Check(HasText(errorRate, true) && HasText("Tokens:", true), "account and model details show token fields and errors per attempt");
         await Click("Filter to account a1");
         Check(fixture.UsageQueries.Last().GetValueOrDefault("accountId") == "a1", "account drilldown applies its stable account ID");
+        await SelectUsageBreakdown("Actual model", "model", "gpt-model");
+        Named<Expander>("Analysis group model gpt-model").IsExpanded = true;
+        await Task.Delay(80);
         await Click("Filter to model gpt-model");
         var scoped = fixture.UsageQueries.Last();
         Check(scoped.GetValueOrDefault("accountId") == "a1" && scoped.GetValueOrDefault("model") == "gpt-model" && scoped.GetValueOrDefault("statusCode") == "200", "model drilldown preserves account and status filters");
@@ -284,6 +509,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Named<TextBox>("HTTP status").Text = "";
         await Click("Last 7 days");
         Named<TextBox>("From · inclusive").BringIntoView();
+        await SelectUsageBreakdown("Model family", "modelFamily", "fixture-family");
     }
 
     private async Task CheckUsageAnalysis()
@@ -350,6 +576,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         more.IsExpanded = false;
         compare.SelectedIndex = 0;
         await Wait(() => Controls<Expander>().Any(x => AutomationProperties.GetName(x) == "Analysis group modelFamily fixture-family"), "usage analysis recovers its initial grouping");
+        Named<Expander>("Analysis group modelFamily fixture-family").IsExpanded = true;
     }
 
     private static readonly (string Account, (string Label, double Percent)[] Windows)[] ExpectedProviderWindows =
@@ -398,6 +625,12 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
             }
             Check(tile.GetVisualDescendants().OfType<ProgressBar>().Count() == windows.Length, $"{page} {account} closed tile includes every known percentage window exactly once");
         }
+        var commandHeader = (Control)QuotaTile("Command Code Pro").Header!;
+        var namedWindows = commandHeader.GetVisualDescendants().OfType<TextBlock>().Select(x => x.Text).ToArray();
+        Check(new[] { "Purchased credits", "Free credits", "Model allowance" }.All(namedWindows.Contains),
+            $"{page} closed tile exposes pure remaining balances and unknown windows alongside percentages");
+        Check(commandHeader.GetVisualDescendants().OfType<TextBlock>().Any(x => x.Text?.Contains("12", StringComparison.Ordinal) == true),
+            $"{page} closed purchased-credit window includes its remaining balance");
         var mimo = QuotaTile("MiMo API");
         Check(!mimo.IsExpanded && HasText("Not available", true), $"{page} explains unsupported MiMo quota in its closed tile");
         Check(!mimo.GetVisualDescendants().OfType<ProgressBar>().Any(), $"{page} unsupported provider has no invented progress");
@@ -409,7 +642,6 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await ResizeViewport(1120, 780);
     }
 
-    private Task CheckQuotaOverview() => CheckClosedQuotaTiles("overview");
 
     private async Task CheckQuotaAccounts()
     {
@@ -475,21 +707,17 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
 
     private void CheckCompactTileLayout(string page)
     {
-        var codex = TileBounds("Personal Codex");
-        var command = TileBounds("Command Code Pro");
-        var zai = TileBounds("Z.ai Coding");
-        // The short first card must release its own column instead of reserving a tall shared grid row.
-        Check(command.Height > codex.Height + 24 && Math.Abs(codex.Top - command.Top) < 2 && command.Left > codex.Right,
-            $"{page} fixture provides short and tall neighboring quota tiles at {window.Bounds.Width:0}px");
-        Check(Math.Abs(zai.Left - codex.Left) < 2 && Math.Abs(zai.Top - codex.Bottom - 12) < 2 && zai.Top < command.Bottom - 12,
-            $"{page} next left tile starts 12px after short Codex card before its taller peer ends");
-        tileLayouts.Add(new
+        var tiles = ExpectedProviderWindows.Select(x => TileBounds(x.Account)).Append(TileBounds("MiMo API")).ToArray();
+        var columns = tiles.GroupBy(x => Math.Round(x.Left)).OrderBy(x => x.Key).ToArray();
+        Check(columns.Length == (window.Bounds.Width < 900 ? 1 : 2), $"{page} uses readable responsive quota columns at {window.Bounds.Width:0}px");
+        foreach (var column in columns)
         {
-            page, width = window.Bounds.Width, height = window.Bounds.Height,
-            codex = new { codex.X, codex.Y, codex.Width, codex.Height },
-            command = new { command.X, command.Y, command.Width, command.Height },
-            zai = new { zai.X, zai.Y, zai.Width, zai.Height }, gap = zai.Top - codex.Bottom
-        });
+            var ordered = column.OrderBy(x => x.Top).ToArray();
+            Check(ordered.Zip(ordered.Skip(1)).All(pair => pair.Second.Top >= pair.First.Bottom + 7),
+                $"{page} cards have independent nonoverlapping column spacing at {window.Bounds.Width:0}px");
+        }
+        tileLayouts.Add(new { page, width = window.Bounds.Width, height = window.Bounds.Height,
+            tiles = tiles.Select(x => new { x.X, x.Y, x.Width, x.Height }).ToArray() });
         CheckTileBoundsDoNotOverlap($"{page} closed {window.Bounds.Width:0}px");
     }
 
@@ -539,14 +767,14 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     private async Task CheckPolicyPreservation()
     {
         var original = fixture.Config.Routes.Single(route => route.Id == "r1");
-        await Click("Edit route " + original.Alias);
+        await Click("Edit model access " + original.Alias);
         Input("client-facing-model").Text = "policy-preservation-fixture";
-        await Click("Save route");
+        await Click("Save model access");
         await Wait(() => fixture.Config.Routes.Single(route => route.Id == "r1").Alias == "policy-preservation-fixture", "existing route rename saves through the production editor");
         var renamed = fixture.Config.Routes.Single(route => route.Id == "r1");
         Check(renamed.ProviderRouteId == original.ProviderRouteId && JsonSerializer.Serialize(renamed.Policy) == JsonSerializer.Serialize(original.Policy),
             "unrelated route edits preserve concrete catalog provenance fallback targets and paid fallback consent");
-        await Click("Edit route " + renamed.Alias);
+        await Click("Edit model access " + renamed.Alias);
         Input("client-facing-model").Text = original.Alias;
         Named<ComboBox>("Spending policy").SelectedIndex = 1;
         await Click("Check spending policy");
@@ -554,7 +782,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(!HasText("Configuration is eligible for guarded free-only routing", true) && fixture.CostPolicyCalls == 1,
             "a failed policy check cannot claim a fulfilled spending cap or live access");
         await CaptureBoth("route-spending-policy");
-        await Click("Save route");
+        await Click("Save model access");
         await Wait(() => fixture.Config.Routes.Single(route => route.Id == "r1").Policy?.CostPolicy == "free_only", "explicit free-only route selection is saved");
         var strictRoute = fixture.Config.Routes.Single(route => route.Id == "r1");
         Check(strictRoute.ProviderRouteId == original.ProviderRouteId && strictRoute.Policy?.AllowPaidFallback == false
@@ -563,7 +791,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
 
         await Click("Profiles");
         var profile = fixture.Config.Profiles.Single(item => item.Id == "p1");
-        await Click($"{profile.Name}, {profile.RouteIds.Length} routes");
+        await Click($"Select profile {profile.Name}");
         await Click("Edit selection");
         Input("Profile name").Text = "Profile policy preservation fixture";
         await Click("Save profile");
@@ -583,7 +811,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     private async Task CheckProviderCatalog()
     {
         var before = fixture.ProviderCalls;
-        await Click("Providers");
+        await Click("Accounts"); await Click("Discover providers");
         await Wait(() => fixture.ProviderCalls > before && HasText("NVIDIA Build"), "Providers loads its local descriptor endpoint on navigation");
         Check(HasText("No account configured") && !HasText("Connection verified"), "catalog is useful with no account and does not invent verification");
         await CaptureBoth("providers");
@@ -604,12 +832,12 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await CaptureBoth("provider-capabilities", () => route.BringIntoView());
         var header = card.GetVisualDescendants().OfType<ToggleButton>().Single(control => AutomationProperties.GetName(control) == "NVIDIA Build setup and capabilities");
         header.BringIntoView(); header.Focus();
-        await Click("Refresh");
+        await Click("Reload status");
         Check(card.IsExpanded && route.IsExpanded && header.IsFocused && Controls<Expander>().Contains(card), "identical catalog refresh preserves card identity expansion and focus");
-        await Click("Set up NVIDIA Build in lain");
-        Check(HasText("Set up NVIDIA Build") && Named<ComboBox>("Provider route").SelectedIndex == -1 && Named<ComboBox>("Billing plan").SelectedIndex == -1,
+        await Click("Add NVIDIA Build account");
+        Check(HasText("Set up NVIDIA Build") && Named<ComboBox>("Connection / API endpoint").SelectedIndex == -1 && Named<ComboBox>("Billing plan").SelectedIndex == -1,
             "assisted provider setup requires an explicit route and billing choice");
-        Named<ComboBox>("Provider route").SelectedIndex = 0;
+        Named<ComboBox>("Connection / API endpoint").SelectedIndex = 0;
         Check(Named<ComboBox>("Billing plan").SelectedIndex == -1 && Named<TextBox>("Base URL").IsReadOnly
             && Named<TextBox>("Base URL").Text == "https://integrate.api.nvidia.com/v1" && Named<TextBox>("Own API key").PasswordChar == '●',
             "setup derives a read-only official endpoint and masks the private credential");
@@ -624,7 +852,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         Check(opened.Count == 0 && setups.Count == 0, "rendering provider guidance never opens links or starts account setup");
         var buttons = view.GetVisualDescendants().OfType<Button>().ToArray();
         buttons.Single(button => AutomationProperties.GetName(button) == "NVIDIA Build: Official account / keys").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        buttons.Single(button => AutomationProperties.GetName(button) == "Set up NVIDIA Build in lain").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        buttons.Single(button => AutomationProperties.GetName(button) == "Add NVIDIA Build account").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Check(opened.Count == 1 && opened[0].AbsoluteUri == "https://build.nvidia.com/stepfun-ai/step-5-preview" && setups.SequenceEqual(["nvidia-build"]), "explicit catalog actions invoke only their supplied callbacks");
         view.ShowUnavailable("Fixture catalog outage");
         Check(view.GetVisualDescendants().OfType<TextBlock>().Any(block => block.Text == "Provider catalog unavailable")
@@ -635,7 +863,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
 
     private async Task CheckInspector()
     {
-        await Click("Inspector");
+        await Click("Live");
         await Wait(() => HasText("Connected to the live inspector", true) && HasSelectable("First answer continued."), "Inspector loads and assembles live output chunks");
         Check(HasGroup("conversation:conversation-ui") && HasGroup("request:request-unknown") && HasGroup("request:request-error")
             && HasGroup("request:request-conflict") && !HasGroup("request:request-a") && !HasGroup("request:request-b"),
@@ -667,11 +895,20 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await CaptureBoth("inspector-tool", verify: () => CheckInspectorViewport("inspector-tool"));
         Named<TextBox>("Search live requests").Text = "request-unknown";
         await Wait(() => HasGroup("request:request-unknown") && !HasGroup("conversation:conversation-ui"), "Inspector search filters observed groups locally");
+        Check(!Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Request within this group"),
+            "singleton live group hides its redundant request picker");
+        Named<TextBox>("Search live requests").Text = "no-fixture-request-matches";
+        await Wait(() => HasText("No requests match these filters.", true), "live filters have a distinct empty result state");
+        Check(!HasSelectable("First answer") && !HasSelectable("Independent output."), "filtered-out retained output is never displayed as a current match");
+        await CaptureBoth("live-filter-empty");
         Named<TextBox>("Search live requests").Text = "";
         await Wait(() => HasGroup("request:request-unknown") && HasGroup("conversation:conversation-ui"), "clearing Inspector search restores observed groups");
         Named<ComboBox>("Inspector activity").SelectedIndex = 2;
         Check(HasGroup("request:request-error") && !HasGroup("conversation:conversation-ui"), "Inspector error filter uses observed failed status");
         Named<ComboBox>("Inspector activity").SelectedIndex = 0;
+        await Click("Inspect group conversation:conversation-ui");
+        Named<ComboBox>("Request within this group").SelectedIndex = 1;
+        await Wait(() => HasSelectable("Answer after tool."), "returning from filters restores the selected observed request output");
         await Click("Toggle inspector updates"); await Task.Delay(300);
         var paused = fixture.InspectorCalls + fixture.InspectorEventCalls;
         await Task.Delay(550);
@@ -688,12 +925,23 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         await Wait(() => fixture.InspectorEventCalls > beforeClearRefresh, "cleared Inspector can refresh while its snapshot cursor trails events");
         Check(fixture.InspectorEventAfters[^1] == 13 && !HasSelectable("Ahead-of-snapshot output.") && HasText("Displayed events cleared.", true),
             "clear never regresses the event cursor or replays output ahead of the snapshot");
+        fixture.InspectorGap = true;
+        await Click("Refresh inspector");
+        Check(HasText("Content gap · retention_limit", true), "live retention gaps stay visible even when no new output arrives");
+        fixture.InspectorGap = false;
         fixture.InspectorRestarted = true;
         await Click("Refresh inspector");
         await Wait(() => HasSelectable("New source output only."), "Inspector attaches to the new live source");
         Check(!HasGroup("conversation:conversation-ui") && !HasSelectable("First answer") && !HasSelectable("Fixture tool result.")
             && HasText("Live source restarted; previous content and relationships were cleared.", true), "source restart purges prior content and relationships");
         await CaptureBoth("inspector-source-restarted", verify: () => CheckInspectorViewport("inspector-source-restarted"));
+        Check(!Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Request within this group"), "restarted singleton live source uses only one picker");
+        fixture.InspectorEmpty = true;
+        await Click("Refresh inspector");
+        await Wait(() => HasText("No observed streams yet.", true), "empty live source explains how to get an observed stream");
+        await CaptureBoth("live-source-empty");
+        fixture.InspectorEmpty = false;
+        await Click("Refresh inspector");
         fixture.InspectorFailure = true;
         await Click("Refresh inspector");
         await Wait(() => HasText("Inspector disconnected · active state is unknown", true), "Inspector failures report unknown active state");
@@ -702,7 +950,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
         fixture.InspectorFailure = false;
         await Click("Toggle inspector updates");
         await Wait(() => HasText("Connected to the live inspector", true), "Inspector recovers from a local source outage");
-        await Click("Routes");
+        await Click("Models");
         var detached = fixture.InspectorCalls + fixture.InspectorEventCalls;
         await Task.Delay(550);
         Check(fixture.InspectorCalls + fixture.InspectorEventCalls == detached, "Inspector polling stops when detached");
@@ -746,7 +994,7 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
 
     private void CheckBundledFonts()
     {
-        foreach (var label in new[] { "Overview", "Provider budgets", "Personal Codex", "lain" })
+        foreach (var label in new[] { "Accounts", "Personal Codex", "lain" })
         {
             var block = Controls<TextBlock>().Where(x => x.Text == label).OrderByDescending(x => x.FontSize).First();
             var found = FontManager.Current.TryGetGlyphTypeface(new Typeface(block.FontFamily, block.FontStyle, block.FontWeight, block.FontStretch), out var actual);
@@ -777,7 +1025,8 @@ internal sealed class Scenario(IClassicDesktopStyleApplicationLifetime lifetime)
     private T[] Controls<T>() where T : Control => window.GetVisualDescendants().OfType<T>().Where(IsShown).ToArray();
     private TextBox Input(string watermark) => Controls<TextBox>().Single(x => Equals(x.PlaceholderText, watermark));
     private bool HasText(string value, bool contains = false) => Controls<TextBlock>().Any(t => contains ? t.Text?.Contains(value, StringComparison.OrdinalIgnoreCase) == true : t.Text == value);
-    private bool UsageConnected() => HasText("Connected · source: lain host / persistent usage API");
+    private bool UsageConnected() => Controls<UsageView>().Any(view => view.GetLogicalDescendants().OfType<TextBlock>()
+        .Any(x => x.Text == "Connected · source: lain host / persistent usage API"));
     private Task ClickUsageApply() => Click("Apply");
     private async Task Click(string label)
     {

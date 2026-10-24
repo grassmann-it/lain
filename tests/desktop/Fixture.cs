@@ -24,13 +24,22 @@ internal sealed class Fixture : HttpMessageHandler
     public int Imports, EnableCalls, ApplyCalls, ExportCalls, LoginBegins, LoginPolls, LoginCancels, UsageCalls, StatusCalls, AnalysisCalls;
     public bool Offline, UsageFailure, NullTokens, IncompleteCoverage, AnalysisFailure, InspectorFailure;
     public int ProviderCalls, InspectorCalls, InspectorEventCalls, CostPolicyCalls;
-    public bool InspectorRestarted;
+    public bool InspectorRestarted, InspectorEmpty, InspectorGap, QuotaAvailabilityChanged;
+    public string? ActiveProfileId = "p2";
+    public long? ActiveProfileRevision = 1;
     private readonly DateTimeOffset inspectorStarted = DateTimeOffset.UtcNow;
     public static readonly ProviderCatalogDto ProviderCatalog = LoadProviders();
     public readonly List<string> Requests = [];
     public readonly List<long> InspectorEventAfters = [];
     public readonly List<string> Unexpected = [];
     public readonly List<Dictionary<string, string>> UsageQueries = [];
+
+    public void AddDensityAccounts(int total)
+    {
+        var extra = Enumerable.Range(InitialAccounts + 1, Math.Max(0, total - Config.Accounts.Length))
+            .Select(i => new AccountDto($"density-{i}", $"Density account {i:00}", i % 2 == 0 ? "zai" : "codex", i % 6 != 0, "api-key", "ready"));
+        Config = Config with { Revision = Config.Revision + 1, Accounts = Config.Accounts.Concat(extra).ToArray() };
+    }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
@@ -84,7 +93,8 @@ internal sealed class Fixture : HttpMessageHandler
         }
         else if (request.Method == HttpMethod.Post && path.EndsWith("/apply"))
         {
-            ApplyCalls++; Config = Config with { AppliedRevision = Config.Revision }; value = Config;
+            ApplyCalls++; Config = Config with { AppliedRevision = Config.Revision };
+            ActiveProfileId = path.Split('/')[4]; ActiveProfileRevision = Config.Revision; value = Config;
         }
         else if (request.Method == HttpMethod.Post && path.EndsWith("/codex/export"))
         {
@@ -155,7 +165,7 @@ internal sealed class Fixture : HttpMessageHandler
                 Stream("request-error", "failed", 9, 9, status: 503),
                 Stream("request-conflict", "active", 10, 10, new(ParentRequestId: "request-unknown", Evidence: [new("parentRequestId", "request_body")])),
                 Stream("request-conflict", "active", 11, 11, new(ParentRequestId: "request-error", Evidence: [new("parentRequestId", "request_body")])) with { Id = "stream-request-conflict-retry", AttemptId = "attempt-conflict-retry" } };
-        return new(Api.Version, InspectorSource, now, "live", true, InspectorRestarted ? 1 : 11, 1, 0, new(), streams);
+        return new(Api.Version, InspectorSource, now, "live", true, InspectorRestarted ? 1 : 11, 1, 0, new(), InspectorEmpty ? [] : streams);
     }
     private InspectorEventPageDto InspectorEvents(Uri uri)
     {
@@ -179,11 +189,11 @@ internal sealed class Fixture : HttpMessageHandler
                 E(12, "request-b", "assistant", " Ahead-of-snapshot output."), E(13, "request-b", "assistant", " Still retained.") };
         var high = InspectorRestarted ? 1 : 13;
         return new(InspectorSource, all.Where(e => e.Cursor > (changed ? 0 : after) && e.RequestId == request).ToArray(), high, high, 1, 0,
-            Truncated: changed && after > 0, GapReason: changed && after > 0 ? "source_changed" : null);
+            Truncated: InspectorGap || changed && after > 0, GapReason: InspectorGap ? "retention_limit" : changed && after > 0 ? "source_changed" : null);
     }
 
     // Concrete provider budgets exercise percentage, numeric balance, exhaustion and unsupported rendering.
-    private static QuotaDto[] Quotas()
+    private QuotaDto[] Quotas()
     {
         var observed = DateTimeOffset.Parse("2026-10-23T12:00:00Z");
         QuotaDto Reading(string id, string source, string label, double used, double limit, string unit, double percent, bool shared = false)
@@ -211,7 +221,8 @@ internal sealed class Fixture : HttpMessageHandler
             Reading("a4", "https://api.kimi.com/coding/v1/usages#limit_month_total", "Monthly total", 62, 100, "%", 62)
                 with { Used = null, Limit = null, Remaining = null },
             Reading("a4", "https://api.kimi.com/coding/v1/usages#limit_month_code", "Monthly coding", 18, 100, "%", 18),
-            new("a5", null, "unavailable", "unsupported", observed, null, null, "unknown", null, null, null, false,
+            QuotaAvailabilityChanged ? Reading("a5", "fixture-quota-recovery", "Recovered quota", 10, 100, "%", 10)
+                : new("a5", null, "unavailable", "unsupported", observed, null, null, "unknown", null, null, null, false,
                 "Provider quota is not available.", "Provider quota")
         ];
     }
@@ -219,7 +230,7 @@ internal sealed class Fixture : HttpMessageHandler
     private StatusDto Status()
     {
         StatusCalls++;
-        return new(1, "test", "ready", true, Config.Revision, Config.AppliedRevision, DateTimeOffset.UtcNow);
+        return new(1, "test", "ready", true, Config.Revision, Config.AppliedRevision, DateTimeOffset.UtcNow, ActiveProfileId: ActiveProfileId, ActiveProfileRevision: ActiveProfileRevision);
     }
     private UsageSummaryDto Usage(Uri uri)
     {
@@ -261,6 +272,7 @@ internal sealed class Fixture : HttpMessageHandler
             new UsageDimensionGroupDto(null, new(43, 44, 1, halfTokens, NullTokens ? 44 : 0),
                 new(new(40, 44, 40, 260, 240, 510, 890), new(43, 44, 100, 2100, 2000, 2500, 3000), unknownRate))
         };
+        if (dimension is "accountId" or "model") grouped = [new(groupKey, totals, performance)];
         return new(Api.Version, DateTimeOffset.Parse(query["from"]), DateTimeOffset.Parse(query["to"]), query.GetValueOrDefault("timeZone", "UTC"),
             DateTimeOffset.UtcNow, 10, !IncompleteCoverage, totals, performance, [new(dimension, grouped)]);
     }
