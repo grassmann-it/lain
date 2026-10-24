@@ -47,7 +47,7 @@ Verified locally on 2026-10-24 against shared contracts 643f626:
 
 | Suite | Assertions |
 | --- | ---: |
-| account-connect-readers | 45 |
+| account-connect-readers | 52 |
 | providers-synthetic-xai | 41 |
 | providers-nvidia-step | 40 |
 | quota | 98 |
@@ -62,3 +62,12 @@ therefore compiled in a disposable linux-x64 project referencing the real Host;
 its locked restore/build and 43 checks passed. No repository lock files changed.
 Disabling lockfile generation while existing locks are present was rejected by
 NuGet (NU1005) and was not used for successful verification.
+
+Independent review identified a Requesty identity bypass after Self HTTP/schema
+failure on a resource-bound account. Commit 1ac7bbc requires matching Self metadata
+before reading usage for that binding. Six fake key/group HTTP/malformed/unknown
+schema cases now prove no usage request or observation escapes this check; one
+unbound legacy case proves independent partial usage remains available. The narrow
+52-case suite passed after this fix with zero warnings/errors under the same
+linux-x64/no-node-reuse setup. Other provider suites above are unchanged by this
+Requesty-only fix and were not repeated.
