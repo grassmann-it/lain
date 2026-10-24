@@ -281,11 +281,24 @@ def execute(args):
         require((gateway_home / 'configuration.json').read_bytes() == old_config, 'Gateway startup changed saved configuration')
         require(all((gateway_home / p).read_bytes() == data for p, data in runtime_files.items()), 'Legacy runtime metadata changed')
         checks.append('actual Gateway update starts updated Core preserving desired11/applied2 and historical81986/cursor2')
+        # Exercise retaining a newer grant rather than accidentally resurrecting
+        # the pre-update checkpoint's refresh material. No provider is contacted.
+        write(gateway_home, 'proxy/auth-owned/synthetic-owned.json', dict(type='codex', account_id='fixture-subject',
+            access_token='synthetic-current-access', refresh_token='synthetic-current-refresh', expired='2099-01-01T00:00:00Z'))
+        require((gateway_home / 'proxy/auth-owned/synthetic-owned.json').read_bytes() !=
+                (checkpoint / 'state/proxy/auth-owned/synthetic-owned.json').read_bytes(), 'Grant-rotation fixture did not change current material')
+        grants = {name: upgrade.fingerprint(gateway_home / name) for name in ('credentials', 'proxy/auth-owned')}
         prepared = root / 'legacy-prepared'
         command(['python3', str(rollback_helper), 'prepare', '--state', str(gateway_home),
                  '--checkpoint', str(checkpoint), '--destination', str(prepared), '--rebase-auth-dir'] + pins, environment(root, gateway_home))
         staged = prepared / 'rollback-state'
-        grants = {name: upgrade.fingerprint(staged / name) for name in ('credentials', 'proxy/auth-owned')}
+        require(all(upgrade.fingerprint(staged / name) == value for name, value in grants.items()), 'Preparation did not retain current grants')
+        # Keep pristine converted artifacts for the original-home return probe.
+        # Its existing service/launcher paths and absolute auth-dir stay valid.
+        pristine_old = root / 'pristine-rollback-app'
+        pristine_v3 = root / 'pristine-rollback-v3.db'
+        shutil.copytree(staged / 'app', pristine_old)
+        shutil.copy2(staged / 'usage.db', pristine_v3)
         with Host(root / 'legacy-run', staged, legacy_ports=True) as old_host:
             require(old_host.status['proxyReady'], 'Pinned legacy Core not ready')
             state_assertions(old_host)
@@ -305,6 +318,40 @@ def execute(args):
         expected_yaml = runtime_files['proxy/config.yaml'].replace(str(gateway_home / 'proxy/auth').encode(), str(staged / 'proxy/auth').encode())
         require((staged / 'proxy/config.yaml').read_bytes() == expected_yaml, 'YAML differs beyond exact own auth-dir rebase')
         checks.append('bounded pinned old-new-old-new staged rollback; schema4-to3-to4; complete current grants preserved')
+
+        retained_original = {name: upgrade.fingerprint(gateway_home / name) for name in ('credentials', 'proxy/auth-owned', 'proxy/auth')}
+        frozen_original = {name: (gateway_home / name).read_bytes() for name in
+                           ('configuration.json', 'active-profile.json', 'proxy/runtime.json', 'proxy/config.yaml',
+                            'proxy/bindings.json', 'proxy/events.jsonl', 'proxy/events.jsonl.source')}
+        def assert_original_retained():
+            require(all(upgrade.fingerprint(gateway_home / name) == value for name, value in retained_original.items()),
+                    'Original-home rollback changed current credentials/auth')
+            require(all((gateway_home / name).read_bytes() == value for name, value in frozen_original.items()),
+                    'Original-home rollback changed config/runtime/journal')
+            with closing(sqlite3.connect(gateway_home / 'usage.db')) as db:
+                before = sqlite3.connect((prepared / 'current-snapshot/state/usage.db').as_uri() + '?mode=ro&immutable=1', uri=True)
+                try:
+                    require(db.execute('SELECT * FROM journal_events ORDER BY source_id,sequence').fetchall() ==
+                            before.execute('SELECT * FROM journal_events ORDER BY source_id,sequence').fetchall(),
+                            'Original-home rollback changed canonical journal digests')
+                finally: before.close()
+        (gateway_home / 'app').rename(root / 'retained-original-current-app')
+        (gateway_home / 'usage.db').rename(root / 'retained-original-current-v4.db')
+        shutil.copytree(pristine_old, gateway_home / 'app')
+        shutil.copy2(pristine_v3, gateway_home / 'usage.db')
+        with Host(gateway_root, gateway_home, legacy_ports=True) as original_old:
+            require(original_old.status['proxyReady'], 'Original-home legacy Core not ready')
+            state_assertions(original_old)
+        assert_original_retained()
+        (gateway_home / 'app').rename(root / 'retained-original-returned-old-app')
+        (root / 'retained-original-current-app').rename(gateway_home / 'app')
+        with Host(gateway_root, gateway_home, legacy_ports=True) as original_current:
+            require(original_current.status['proxyReady'], 'Original-home forward Core not ready')
+            state_assertions(original_current)
+        assert_original_retained()
+        with closing(sqlite3.connect(gateway_home / 'usage.db')) as db:
+            require(db.execute('PRAGMA user_version').fetchone()[0] == 4, 'Original-home forward schema not4')
+        checks.append('original-home return promotes only prepared old app and schema3DB; original YAML/current grants/journal retained; app-only reupgrade restores schema4')
 
         # A current marker-aware Monitor package contains both old owned and static grants.
         recovery_root, recovery_home = root / 'recovery', root / 'recovery/state'
