@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/Lain.Core/ConnectionContracts.cs" Link="ConnectionContracts.cs" />
+    <Compile Include="../../src/Lain.Host/Accounts/PublicLogin/*.cs" Link="PublicLogin/%(Filename)%(Extension)" />
+    <Compile Include="../../src/Lain.Host/Accounts/OpenRouterLoginAdapter.cs" Link="OpenRouterLoginAdapter.cs" />
+    <Compile Include="../../src/Lain.Host/Accounts/PoeLoginAdapter.cs" Link="PoeLoginAdapter.cs" />
+    <Compile Include="../../src/Lain.Host/Providers/Poe/PoeOAuth.cs" Link="PoeOAuth.cs" />
+  </ItemGroup>
+</Project>
