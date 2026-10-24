@@ -192,6 +192,30 @@ finally:
                 Directory.Delete(malformedReceipt, recursive: true);
                 await retention.StartupReconcileAsync();
                 Check(!Directory.Exists(fake.Profiles[0]) && !Directory.Exists(restoreOrphan), "startup retires unselected profiles after resolved recovery without replaying grants");
+                for (var i = 0; i < 9; i++)
+                {
+                    var removed = Context(now, [], "removed-slot-" + i);
+                    Check((await adapter.BeginAsync(removed, default)).State == "waiting", "removed-target operation slot is reusable beyond the eight-operation bound");
+                    var removedProfile = fake.Profiles[^1];
+                    await adapter.TargetRemovedAsync(removed, null, default);
+                    Check(!Directory.Exists(removedProfile), "removed-target profile is retired before operation release");
+                    await adapter.TargetRemovedAsync(removed, null, default); // Completion is idempotent.
+                }
+                var busyContext = Context(now, [], "busy-target-cleanup");
+                await adapter.BeginAsync(busyContext, default);
+                var busyProfile = fake.Profiles[^1]; var loginCallsBeforeRetry = fake.LoginCalls;
+                using (var busyLease = new FileStream(Path.Combine(busyProfile, "lain-process.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+                {
+                    await Reject(() => adapter.TargetRemovedAsync(busyContext, null, default), "busy profile cleanup throws so foundation can retry");
+                    Check(Directory.Exists(busyProfile), "busy target profile remains available for cleanup retry");
+                    Check((await adapter.BeginAsync(busyContext, default)).State == "cancelled" && fake.LoginCalls == loginCallsBeforeRetry,
+                        "failed cleanup preserves the exact cancelled attempt instead of starting another login");
+                }
+                await adapter.TargetRemovedAsync(busyContext, null, default);
+                Check(!Directory.Exists(busyProfile), "retry retires profile after lease is released");
+                var afterCleanup = Context(now, [], "after-target-cleanup");
+                Check((await adapter.BeginAsync(afterCleanup, default)).State == "waiting", "new browser login remains available after target cleanup retries");
+                await adapter.TargetRemovedAsync(afterCleanup, null, default);
             }
             Check(new GoogleGcloudProcess().IsAvailable, "installed SDK sources match the qualified linux-x64 release");
         }

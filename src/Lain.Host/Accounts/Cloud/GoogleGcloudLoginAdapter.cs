@@ -25,6 +25,7 @@ public sealed class GoogleGcloudLoginAdapter : IAccountLoginAdapter, ICredential
     private readonly object gate = new();
     private readonly Dictionary<string, Attempt> attempts = new(StringComparer.Ordinal);
     private bool disposed;
+    private bool stopping;
     public string Provider => CloudResourceDiscovery.GoogleProvider;
     public string Method => "official-cli";
     public string Owner => "google-gcloud";
@@ -64,7 +65,7 @@ public sealed class GoogleGcloudLoginAdapter : IAccountLoginAdapter, ICredential
         Validate(context); ct.ThrowIfCancellationRequested();
         lock (gate)
         {
-            ObjectDisposedException.ThrowIf(disposed, this);
+            ObjectDisposedException.ThrowIf(disposed || stopping, this);
             if (!IsAvailable) return Task.FromResult(new LoginAdapterResult("failed", Error: "The qualified Google Cloud CLI is not installed or its version changed. Install the supported CLI or use the registered Google browser connection.", NextAction: "configure-cli"));
             if (attempts.TryGetValue(context.OperationId, out var existing))
             { Same(existing.Context, context); return Task.FromResult(existing.Result ?? new("waiting", existing.BrowserUrl)); }
@@ -303,30 +304,47 @@ public sealed class GoogleGcloudLoginAdapter : IAccountLoginAdapter, ICredential
     {
         Attempt? attempt; lock (gate) { attempts.TryGetValue(context.OperationId, out attempt); if (attempt is not null) Same(attempt.Context, context); }
         await CancelAsync(context, ct);
-        if (attempt is not null && !attempt.Login.IsCompleted) return;
+        if (attempt is not null && !attempt.Login.IsCompleted)
+            throw new IOException("Google Cloud CLI process cleanup is still pending. Retry target cleanup.");
         var reference = attempt?.Profile;
-        if (reference is null && credential is { Owner: "google-gcloud" })
+        if (reference is null && credential is not null)
         {
+            if (credential.Owner != Owner) throw new InvalidDataException("Removed Google Cloud CLI credential owner does not match.");
             var grant = JsonSerializer.Deserialize<GoogleGcloudGrant>(credential.PrivateJson, Json);
-            if (grant?.LocalAccountId != context.AccountId) return;
+            if (grant?.LocalAccountId != context.AccountId) throw new InvalidDataException("Removed Google Cloud CLI credential account does not match.");
             reference = GetProfileReference(credential.PrivateJson);
         }
-        if (reference is null) return;
+        if (reference is null) return; // Already released, with no prepared profile to retire.
         lock (gate)
         {
-            if (!Directory.Exists(Path.Combine(root, reference))) return;
-            var path = Profile(reference, create: false);
-            var owner = JsonSerializer.Deserialize<ProfileOwner>(CliPrivatePaths.Read(Path.Combine(path, "lain-owner.json"), 4096), Json);
-            if (owner?.LocalAccountId != context.AccountId || owner.OperationId != context.OperationId) return;
-            GoogleGcloudProcessTransport.ValidateProfileTree(path);
-            var lockPath = Path.Combine(path, "lain-process.lock"); CliPrivatePaths.RefuseLinks(lockPath);
-            try
+            ct.ThrowIfCancellationRequested();
+            var candidate = Path.Combine(root, reference); CliPrivatePaths.RefuseLinks(candidate);
+            FileAttributes? attributes;
+            try { attributes = File.GetAttributes(candidate); }
+            catch (FileNotFoundException) { attributes = null; }
+            catch (DirectoryNotFoundException) { attributes = null; }
+            if (attributes is not null)
             {
+                if ((attributes.Value & FileAttributes.Directory) == 0) throw new InvalidDataException("Removed Google Cloud CLI profile is not a directory.");
+                var path = Profile(reference, create: false);
+                var owner = JsonSerializer.Deserialize<ProfileOwner>(CliPrivatePaths.Read(Path.Combine(path, "lain-owner.json"), 4096), Json);
+                if (owner?.LocalAccountId != context.AccountId || owner.OperationId != context.OperationId)
+                    throw new InvalidDataException("Removed Google Cloud CLI profile ownership does not match.");
+                GoogleGcloudProcessTransport.ValidateProfileTree(path);
+                var lockPath = Path.Combine(path, "lain-process.lock"); CliPrivatePaths.RefuseLinks(lockPath);
+                // Busy or failed deletion must propagate. The foundation retains its retry slot on failure.
                 using var lease = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
                 ct.ThrowIfCancellationRequested(); Directory.Delete(path, recursive: true);
             }
-            catch (IOException) { } // Another owned process keeps its profile until a later cleanup pass.
+            CompleteAttempt(context.OperationId, attempt);
         }
+    }
+
+    // Caller holds gate. A concurrent release must never remove/dispose a different attempt.
+    private void CompleteAttempt(string operationId, Attempt? expected)
+    {
+        if (expected is not null && attempts.TryGetValue(operationId, out var current) && ReferenceEquals(current, expected))
+        { attempts.Remove(operationId); current.Cancellation.Dispose(); }
     }
 
     public async Task CancelAsync(LoginOperationContext context, CancellationToken ct)
@@ -345,12 +363,21 @@ public sealed class GoogleGcloudLoginAdapter : IAccountLoginAdapter, ICredential
     {
         Attempt? attempt; lock (gate) { if (!attempts.TryGetValue(context.OperationId, out attempt)) return; Same(attempt.Context, context); }
         await CancelAsync(context, ct);
-        lock (gate) { attempts.Remove(context.OperationId); attempt.Cancellation.Dispose(); }
+        if (!attempt.Login.IsCompleted) throw new IOException("Google Cloud CLI process cleanup is still pending. Retry release.");
+        lock (gate) CompleteAttempt(context.OperationId, attempt);
     }
     public async ValueTask DisposeAsync()
     {
-        Attempt[] pending; lock (gate) { if (disposed) return; pending = attempts.Values.ToArray(); }
-        foreach (var attempt in pending) await ReleaseAsync(attempt.Context, CancellationToken.None);
-        lock (gate) { disposed = true; http.Dispose(); }
+        Attempt[] pending; lock (gate) { if (disposed) return; stopping = true; pending = attempts.Values.ToArray(); }
+        foreach (var attempt in pending)
+        {
+            try { await ReleaseAsync(attempt.Context, CancellationToken.None); }
+            catch (IOException) { } // Continue stopping peers, retaining unfinished attempts for a later Dispose retry.
+        }
+        lock (gate)
+        {
+            if (attempts.Count != 0) throw new IOException("Google Cloud CLI shutdown is still pending. Retry disposal.");
+            disposed = true; http.Dispose();
+        }
     }
 }
