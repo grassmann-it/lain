@@ -10,7 +10,7 @@ internal static class QuotaSourceHttp
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(20));
         using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-        if (!response.IsSuccessStatusCode) throw new QuotaFetchException($"Quota HTTP {(int)response.StatusCode}.");
+        if (!response.IsSuccessStatusCode) throw QuotaFetchException.Http(response.StatusCode);
         const int maximumBytes = 1024 * 1024;
         if (response.Content.Headers.ContentLength > maximumBytes) throw new QuotaFetchException("Quota response too large.");
         await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);

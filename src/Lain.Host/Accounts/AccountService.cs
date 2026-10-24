@@ -478,11 +478,25 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         }
         return provider;
     }
-    public static string CanonicalProviderId(string provider) => provider switch
+    // Boundary aliases only: existing account IDs, stored provider names and route identities
+    // remain unchanged. Do not infer a provider from an arbitrary compatible gateway name.
+    public static string CanonicalProviderId(string provider) => provider.ToLowerInvariant() switch
     {
-        "command-code" => "commandcode",
-        "mimo" => "xiaomi-mimo",
-        _ => provider
+        "command-code" or "commandcode.ai" or "api.commandcode.ai" => "commandcode",
+        "kimi-coding" or "api.kimi.com" or "api.kimi.ai" => "kimi",
+        "z.ai" or "z-ai" or "glm" or "api.z.ai" => "zai",
+        "mimo" or "xiaomi" or "api.xiaomimimo.com" => "xiaomi-mimo",
+        "gemini" or "generativelanguage.googleapis.com" => "gemini-api",
+        "cloudflare" or "api.cloudflare.com" => "cloudflare-workers-ai",
+        "fireworks-ai" or "api.fireworks.ai" => "fireworks",
+        "openrouter.ai" => "openrouter",
+        "ai-gateway.kilo.ai" => "kilo",
+        "router.requesty.ai" => "requesty",
+        "api.synthetic.new" => "synthetic",
+        "api.stepfun.com" => "stepfun",
+        "api.groq.com" => "groq",
+        "gpt" => "codex",
+        _ => provider.ToLowerInvariant()
     };
     internal static string CredentialId(string provider, string credential) => "acct-" +
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(provider + "\0" + credential))).ToLowerInvariant()[..32];

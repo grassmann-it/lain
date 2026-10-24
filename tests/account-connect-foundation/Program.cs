@@ -20,6 +20,7 @@ try
     await PublicationGate();
     await AutomaticRenewal();
     await QuotaGeneration();
+    await QuotaBoundaryRegressions();
     Console.WriteLine($"Account connect foundation: {assertions} assertions passed (offline synthetic state only).");
 }
 finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
@@ -200,7 +201,7 @@ async Task QuotaGeneration()
     adapter.Fetch = (_, _, _) => throw new IOException("raw synthetic secret must not leak");
     var stale = (await service.RefreshAsync()).Single();
     Check(stale.Remaining == 8 && stale.ObservedAt == timestamp && stale.LastSuccessAt == timestamp, "failed read retains original observation time");
-    Check(stale.Error == "Quota refresh failed.", "exception text never exposes private material");
+    Check(stale.Error == "Quota refresh failed (unavailable).", "exception text never exposes private material");
     adapter.Fetch = (_, _, _) => Task.FromResult(new QuotaFetchResult([new("fixture", "USD", ExactRemaining: "123456789.123456789123456789")],
         KiloPass: new("active", "plus", null, null, null, null, null, true)));
     var precise = (await service.RefreshAsync()).Single();
@@ -618,6 +619,113 @@ async Task AutomaticRenewal()
     Check(blocked.Repository.Snapshot.Accounts.Single().Credentials!.Single().Generation == 2, "saved cancelled owner result remains explicitly recoverable");
 }
 
+async Task QuotaBoundaryRegressions()
+{
+    var f = New("quota-boundaries");
+    var account = new AccountDto("legacy-stable", "Chosen name", "api.kimi.com", true, "api-key", "unverified", Binding: new("api.kimi.com"));
+    f.Repository.Update(0, state => state with { Accounts = [account] });
+    string Descriptor(string endpoint, string key = "saved-fixture-key", string? accountId = null, bool enabled = true) =>
+        JsonSerializer.Serialize(new { kind = "api-key", provider = "kimi", apiKey = key, baseUrl = endpoint,
+            settings = accountId is null ? new Dictionary<string, string>() : new Dictionary<string, string> { ["accountId"] = accountId }, sourceEnabled = enabled });
+    void SaveTransports(params string[] transports)
+    {
+        var rootJson = System.Text.Json.Nodes.JsonNode.Parse(Descriptor("https://gateway.example.test/v1"))!.AsObject();
+        rootJson["transports"] = new System.Text.Json.Nodes.JsonArray(transports.Select(s => System.Text.Json.Nodes.JsonNode.Parse(s)).ToArray());
+        f.Secrets.WriteAccount(account.Id, rootJson.ToJsonString());
+    }
+    SaveTransports(Descriptor("https://gateway.example.test/v1"), Descriptor("https://api.kimi.com/coding/v1"));
+    var lease = await f.Source.GetCredentialAsync(account.Id);
+    Check(lease is { BaseUrl: "https://api.kimi.com/coding/v1", CredentialKind: "api-key", BearerToken: "saved-fixture-key" },
+        "legacy selected credential reuses its own qualified official transport");
+    Check(f.Secrets.ReadAccount(account.Id).Contains("gateway.example.test"), "quota transport projection does not rewrite saved descriptors");
+    SaveTransports(Descriptor("https://api.kimi.com/coding/v1"), Descriptor("https://gateway.example.test/v1"));
+    Check((await f.Source.GetCredentialAsync(account.Id))?.BaseUrl == lease!.BaseUrl, "transport qualification is independent of import order");
+    SaveTransports(Descriptor("https://api.kimi.com/coding/v1", key: "other-fixture-key"));
+    Check((await f.Source.GetCredentialAsync(account.Id))?.BaseUrl == "https://gateway.example.test/v1", "quota cannot borrow another transport credential");
+    SaveTransports(Descriptor("https://api.kimi.com/coding/v1", enabled: false));
+    Check((await f.Source.GetCredentialAsync(account.Id))?.BaseUrl == "https://gateway.example.test/v1", "disabled official transport is not selected");
+    SaveTransports(Descriptor("https://api.kimi.com/coding/v1", accountId: "scope-a"), Descriptor("https://api.kimi.ai/coding/v1", accountId: "scope-b"));
+    Check((await f.Source.GetCredentialAsync(account.Id))?.BaseUrl == "https://gateway.example.test/v1", "ambiguous saved resource scopes are not selected by order");
+    SaveTransports(Descriptor("https://api.kimi.com.evil.test/coding/v1"));
+    Check((await f.Source.GetCredentialAsync(account.Id))?.BaseUrl == "https://gateway.example.test/v1", "lookalike origin never qualifies");
+    f.Repository.Update(f.Repository.Snapshot.Revision, state => state with { Accounts = [account with { Binding = new(account.Provider, ResourceType: "account", ResourceId: "scope-a") }] });
+    SaveTransports(Descriptor("https://api.kimi.com/coding/v1", accountId: "scope-b"));
+    Check((await f.Source.GetCredentialAsync(account.Id))?.BaseUrl == "https://gateway.example.test/v1", "transport cannot cross the account's pinned resource binding");
+    f.Repository.Update(f.Repository.Snapshot.Revision, state => state with { Accounts = [account] });
+    SaveTransports(Descriptor("https://api.kimi.com/coding/v1"));
+    var calls = 0;
+    var reader = new FakeQuota("kimi", (a, c, _) =>
+    {
+        calls++;
+        Check(a.Id == account.Id && a.Provider == "kimi" && a.Binding?.Provider == "kimi", "reader receives canonical boundary view with unchanged identity");
+        return Task.FromResult(new QuotaFetchResult([new("fixture", "units", Remaining: 7)]));
+    });
+    var service = new QuotaService(f.Source, f.Source, [reader]);
+    Check((await service.RefreshAsync()).Single().Remaining == 7, "official host alias dispatches existing reader");
+    Check(f.Repository.Snapshot.Accounts.Single().Provider == "api.kimi.com", "dispatch preserves persisted provider and account ID");
+    f.Repository.Update(f.Repository.Snapshot.Revision, state => state with { Accounts = [state.Accounts.Single() with { Capabilities = [new("inference", "unverified")] }] });
+    Check(await f.Source.GetCredentialAsync(account.Id) is null, "explicit quota denial cannot reuse legacy inference access");
+    await service.RefreshAsync();
+    Check(calls == 1, "denied quota purpose never reaches direct reader");
+    var reconnected = f.Accounts.ConnectCredential(f.Repository.Snapshot.Revision,
+        new(new("KIMI", "api-key", ["quota"], AccountId: account.Id), "reconnected-fixture-key", BaseUrl: "https://api.kimi.com/coding/v1")).Accounts.Single();
+    Check(reconnected.Id == account.Id && reconnected.Name == account.Name && reconnected.Provider == account.Provider,
+        "canonical reconnect preserves legacy identity and chosen name");
+
+    var aliasMonitor = New("monitor-host-alias");
+    var monitorAccount = new AccountDto("monitor-legacy-stable", "Fireworks", "api.fireworks.ai", true, "api-key", "unverified");
+    aliasMonitor.Repository.Update(0, state => state with { Accounts = [monitorAccount] });
+    aliasMonitor.Secrets.WriteAccount(monitorAccount.Id, "{\"kind\":\"api-key\",\"apiKey\":\"legacy-inference\",\"baseUrl\":\"https://api.fireworks.ai/inference/v1\"}");
+    aliasMonitor.Monitor.Set(1, monitorAccount.Id, new("api-token", "separate-monitor", "fixture-account"));
+    var monitorLease = await aliasMonitor.Source.GetCredentialAsync(monitorAccount.Id);
+    Check(monitorLease is { BearerToken: "", CredentialKind: "api-token", MonitorBearerToken: "separate-monitor" }, "host-alias reconnect retains selected independent monitor metadata");
+    var created = New("new-monitor-alias");
+    Check(created.Monitor.Create(0, "Google", "generativelanguage.googleapis.com", new("access-token-snapshot", "snapshot", "my-project", DateTimeOffset.UtcNow.AddHours(1))).Accounts.Single().Provider == "gemini-api",
+        "new monitor alias uses consistent public and private provider identity");
+
+    var diagnostics = New("quota-safe-diagnostics");
+    diagnostics.Accounts.ConnectCredential(0, new(new("kimi", "api-key", ["quota"]), "diagnostic-private-key", BaseUrl: "https://api.kimi.com/coding/v1"));
+    using var handler = new QuotaStatusHandler();
+    using var client = new HttpClient(handler);
+    var diagnosticService = new QuotaService(diagnostics.Source, diagnostics.Source, [new KimiQuotaAdapter(client)]);
+    Check((await diagnosticService.RefreshAsync()).Single().UsedPercent == 20, "diagnostic fixture starts with provider quantity");
+    foreach (var (status, category) in new[] { (401, "authentication"), (403, "permission"), (429, "rate-limit"), (503, "provider-unavailable") })
+    {
+        handler.Status = (System.Net.HttpStatusCode)status;
+        var row = (await diagnosticService.RefreshAsync()).Single();
+        Check(row.State == "stale" && row.UsedPercent == 20 && row.Error == $"Quota HTTP {status} ({category}).", "safe HTTP status retains stale provider quantities");
+        Check(!JsonSerializer.Serialize(row).Contains("sensitive-fixture"), "provider body and reason phrase never enter diagnostics");
+    }
+
+    var optional = New("optional-passive-access");
+    var passiveAccount = optional.Accounts.Connect(0, new("groq", "key", ["inference"]), Key("inference-only", "groq", ["inference"])).Accounts.Single();
+    var passiveReader = new FakeQuota("groq", (_, c, _) =>
+    {
+        Check(c.BearerToken == "" && c.Monitor is null && c.ProviderAccountId is null, "optional fallback carries no direct credential or resource identity");
+        return Task.FromResult(new QuotaFetchResult([new("passive", "requests", Remaining: 4)]));
+    }) { AllowsMissingCredential = true };
+    var passiveService = new QuotaService(optional.Source, optional.Source, [passiveReader]);
+    Check((await passiveService.RefreshAsync()).Single().Remaining == 4, "passive composite works with explicitly absent quota purpose");
+    optional.Accounts.Connect(optional.Repository.Snapshot.Revision, new("groq", "expired", ["quota"], AccountId: passiveAccount.Id),
+        new("static-key", ["quota"], new("groq"), JsonSerializer.Serialize(new { kind = "api-key", apiKey = "expired-private", expiresAt = DateTimeOffset.UtcNow.AddMinutes(-1) })));
+    var expired = (await passiveService.RefreshAsync()).Single();
+    Check(expired.Remaining == 4 && expired.Error == "Access snapshot expired; reconnect account.", "expired optional access preserves passive observation and expiry diagnosis");
+    optional.Repository.Update(optional.Repository.Snapshot.Revision, state => state with { Accounts = [state.Accounts.Single() with { Capabilities = [new("quota", "unverified", "missing-generation")] }] });
+    var unreadable = (await passiveService.RefreshAsync()).Single();
+    Check(unreadable.Remaining == 4 && unreadable.Error == "Quota access unavailable (credential).", "unreadable optional generation preserves passive observation with safe diagnosis");
+    Check((await passiveService.GetSnapshotsAsync()).Single().Remaining == 4, "passive fallback cache survives unavailable direct generation");
+}
+
+sealed class QuotaStatusHandler : HttpMessageHandler
+{
+    public System.Net.HttpStatusCode Status = System.Net.HttpStatusCode.OK;
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) => Task.FromResult(new HttpResponseMessage(Status)
+    {
+        ReasonPhrase = "sensitive-fixture-reason",
+        Content = new StringContent(Status == System.Net.HttpStatusCode.OK ? "{\"usages\":{\"limit_5h\":{\"used_ratio\":0.2}}}" : "sensitive-fixture-body")
+    });
+}
+
 sealed class Fixture
 {
     public OwnStatePaths Paths { get; }
@@ -662,6 +770,7 @@ sealed class ScheduledOwner(string owner, Func<CredentialRefreshContext, Cancell
 sealed class FakeQuota(string provider, Func<AccountDto, QuotaCredential, CancellationToken, Task<QuotaFetchResult>> fetch) : IQuotaAdapter
 {
     public string Source => "fixture";
+    public bool AllowsMissingCredential { get; init; }
     public Func<AccountDto, QuotaCredential, CancellationToken, Task<QuotaFetchResult>> Fetch = fetch;
     public bool Supports(string value) => value == provider;
     public Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct) => Fetch(account, credential, ct);

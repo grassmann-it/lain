@@ -17,7 +17,7 @@ internal static class QuotaHttp
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(20));
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-        if (!response.IsSuccessStatusCode) throw new QuotaFetchException($"Quota HTTP {(int)response.StatusCode}.");
+        if (!response.IsSuccessStatusCode) throw QuotaFetchException.Http(response.StatusCode);
         // Bounded response; arbitrary provider text is never included in diagnostics.
         const int maximumBytes = 1024 * 1024;
         if (response.Content.Headers.ContentLength > maximumBytes) throw new QuotaFetchException("Quota response too large.");
@@ -34,4 +34,29 @@ internal static class QuotaHttp
     }
 }
 
-internal sealed class QuotaFetchException(string message) : Exception(message);
+internal sealed class QuotaFetchException(string message) : Exception(message)
+{
+    // Only fixed text and a numeric status leave the provider boundary. Never include
+    // response bodies, reason phrases, request URLs, headers or arbitrary exception text.
+    public static QuotaFetchException Http(System.Net.HttpStatusCode status)
+    {
+        var code = (int)status;
+        var category = code switch
+        {
+            401 => "authentication", 403 => "permission", 408 or 504 => "timeout", 429 => "rate-limit",
+            >= 500 and <= 599 => "provider-unavailable", _ => "http-error"
+        };
+        return new($"Quota HTTP {code} ({category}).");
+    }
+
+    public static string SafeDiagnostic(Exception error) => error switch
+    {
+        QuotaFetchException safe => safe.Message,
+        HttpRequestException { StatusCode: { } status } => Http(status).Message,
+        OperationCanceledException or TimeoutException => "Quota request failed (timeout).",
+        HttpRequestException => "Quota request failed (transport).",
+        JsonException or FormatException => "Quota response failed (invalid-response).",
+        InvalidDataException or FileNotFoundException => "Quota access unavailable (credential).",
+        _ => "Quota refresh failed (unavailable)."
+    };
+}

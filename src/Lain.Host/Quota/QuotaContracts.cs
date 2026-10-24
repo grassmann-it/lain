@@ -87,6 +87,9 @@ public interface IQuotaAdapter
     bool Supports(string provider);
     string Source { get; }
     bool RequiresCredential => true;
+    // A composite may read already captured observations when direct access is absent.
+    // Empty credentials never authorize an upstream request or a different identity.
+    bool AllowsMissingCredential => false;
     string CredentialPurpose => "quota";
     Task<QuotaFetchResult> FetchAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default);
 }

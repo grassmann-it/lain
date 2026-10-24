@@ -17,3 +17,8 @@ no modern identity merge by key/email, deduplicated private key material, scope-
 provider-specific cloud owners, restore quarantine, checkpoint storage failures and exact-account
 optional model attachment. A storage failure retains received material in the bounded operation until
 local persistence can retry; durable success is never claimed while the filesystem remains unavailable.
+
+Quota boundary regressions cover canonical reader/reconnect aliases without persisted identity changes,
+same-key official transport selection with scope and purpose fences, selected monitor-kind metadata,
+fixed HTTP status/category diagnostics without provider text, and optional passive fallback when direct
+access is absent, expired or unreadable. These additions await the coordinated build slot.

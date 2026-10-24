@@ -71,6 +71,7 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
 
     public ConfigurationDto Create(long revision, string name, string provider, MonitorAccessRequest request)
     {
+        provider = AccountService.CanonicalProviderId(provider);
         if (request.Kind == "inference-key") throw new ArgumentException("Create a monitor account with its own access token first.");
         var accounts = new AccountService(configuration, secrets);
         var resourceType = MonitorAccessCatalog.Provider(provider) == "gemini-api" ? "project" : "account";
