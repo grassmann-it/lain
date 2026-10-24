@@ -147,14 +147,17 @@ public sealed partial class UsageView : UserControl, IPresentationView
         var coreFilters = new WrapPanel();
         foreach (var (caption, days) in new[] { ("7 days", 7), ("30 days", 30) })
         {
-            var shortcut = new Button { Content = caption, Margin = new Thickness(0, 20, 6, 6) };
+            var shortcut = new Button { Content = caption, Margin = new Thickness(0, 0, 6, 6) };
             shortcut.Click += async (_, _) => await ApplyRangeAsync(days);
             coreFilters.Children.Add(shortcut);
         }
-        coreFilters.Children.Add(Field("Account", _account));
-        coreFilters.Children.Add(Field("Actual model", _model));
+        foreach (var (name, input) in new[] { ("Account", _account), ("Actual model", _model) })
+        {
+            AutomationProperties.SetName(input, name); ToolTip.SetTip(input, name);
+            input.Margin = new Thickness(0, 0, 8, 6); coreFilters.Children.Add(input);
+        }
         foreach (var button in new[] { _apply, _showFilters, _usageBack })
-        { button.Margin = new Thickness(0, 20, 6, 6); coreFilters.Children.Add(button); }
+        { button.Margin = new Thickness(0, 0, 6, 6); coreFilters.Children.Add(button); }
         _showFilters.Click += (_, _) =>
         {
             _filterDetails.IsExpanded = !_filterDetails.IsExpanded;
@@ -180,12 +183,14 @@ public sealed partial class UsageView : UserControl, IPresentationView
         _layout.Children.Add(_filterDetails);
         _layout.Children.Add(_draftState);
         _layout.Children.Add(_error);
-        _layout.Children.Add(UsagePanel(new StackPanel { Spacing = 4, Children = { _totals, _reportedTotal } }, 0));
-        _layout.Children.Add(_coverage);
+        _layout.Children.Add(UsagePanel(_totals, 0));
+        _coverage.Margin = new Thickness(0, 0, 14, 0);
+        _layout.Children.Add(new WrapPanel { Children = { _coverage, _reportedTotal } });
         _primaryResults.Children.Add(BuildAnalysisSection());
         _primaryResults.Children.Add(UsagePanel(_historyDetails));
-        _secondaryResults.Children.Add(UsageSection("Daily activity", "Historical errors · unknown values stay —", new StackPanel { Spacing = 6, Children = { _dailyScope, measure, _daily, _dailyDetails } }));
+        _secondaryResults.Children.Add(UsageSection("Daily activity", "Historical errors · unknown values stay —", new StackPanel { Spacing = 6, Children = { _dailyScope, measure, _daily } }));
         _secondaryResults.Children.Add(UsagePanel(_performanceDetails));
+        _secondaryResults.Children.Add(UsagePanel(_dailyDetails));
         _secondaryResults.Children.Add(UsagePanel(_tokenDetails));
         _secondaryResults.Children.Add(UsagePanel(_sourceDetails));
         _resultsLayout.Children.Add(_primaryResults);
@@ -563,17 +568,22 @@ public sealed partial class UsageView : UserControl, IPresentationView
         ToolTip.SetTip(_context, _scope.Text);
         _dailyScope.Text = ResultScope(query) + " · applied calendar range";
         _coverage.Text = _journalContinuityUnknown ? "Journal continuity unconfirmed · source cursor or observation time moved backwards"
-            : summary.Complete ? "Journal coverage complete for the selected range" : "Journal coverage incomplete · stored totals may omit activity";
+            : summary.Complete ? "Journal complete" : "Journal incomplete · activity may be missing";
+        ToolTip.SetTip(_coverage, "Journal coverage for the applied range: " + (summary.Complete ? "complete" : "incomplete")
+            + $". {summary.Totals.UnknownUsageAttempts:N0} attempts have unknown usage or total. Token measurement is separate.");
         _coverage.Foreground = summary.Complete && !_journalContinuityUnknown ? Muted : Ui.Warning;
         _coverage.Text += $" · observed {TimeZoneInfo.ConvertTime(summary.ObservedAt, zone):HH:mm:ss}";
         RenderTotals(summary.Totals);
         _reportedComponents.Children.Clear();
         _reportedTotal.IsVisible = true;
-        _reportedTotal.Text = "Token measurement coverage is not supplied by this host";
+        _reportedTotal.Text = "Token measurement coverage not supplied";
+        ToolTip.SetTip(_reportedTotal, "This host does not supply measured/eligible counts. No sample coverage is inferred from journal completeness.");
         if (summary.Totals.Measurements is { } measurements)
         {
-            _reportedTotal.Text = Lain.Client.UsageDisplayFacts.Describe("Total tokens", measurements.Total)
+            _reportedTotal.Text = $"Tokens · {measurements.Total.Samples:N0}/{measurements.Total.Eligible:N0} measured"
                 + (summary.Totals.Tokens.Total is null ? " · full total unknown" : "");
+            ToolTip.SetTip(_reportedTotal, Lain.Client.UsageDisplayFacts.Describe("Total tokens", measurements.Total)
+                + (summary.Totals.Tokens.Total is null ? " · full total unknown" : " · full measured total"));
             foreach (var (name, value) in Lain.Client.UsageDisplayFacts.Components(measurements))
                 _reportedComponents.Children.Add(Label(Lain.Client.UsageDisplayFacts.Describe(name, value), Muted));
         }

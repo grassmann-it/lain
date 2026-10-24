@@ -66,7 +66,11 @@ public sealed partial class UsageView
             await RefreshAsync(_lifetime.Token);
         };
         _dimensionOrder.SelectionChanged += (_, _) => { if (!_restoringNavigation && _analysis is not null) RenderAnalysis(_analysis, _analysisError); };
-        var controls = new WrapPanel { Children = { Field("Compare by", _dimension), Field("Group order", _dimensionOrder) } };
+        var groupByLabel = Label("Group by", Muted);
+        groupByLabel.VerticalAlignment = VerticalAlignment.Center; groupByLabel.Margin = new Thickness(0, 0, 8, 0);
+        _dimension.Margin = new Thickness(0, 0, 8, 0);
+        ToolTip.SetTip(_dimensionOrder, "Order the returned groups; this does not change the measured population.");
+        var controls = new WrapPanel { Children = { groupByLabel, _dimension, _dimensionOrder } };
         _performanceDetails.Content = new StackPanel { Spacing = 6, Children = { _performance,
             Label("Output rate is reported output tokens ÷ full attempt duration, including response startup. P50/P95 use all matching stored measurements; each metric reports measured/eligible attempts. Missing measurements stay —. Costs are not reported by this source.", Muted) } };
         _dimensionGroups.MinWidth = 640;
