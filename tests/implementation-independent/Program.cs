@@ -23,10 +23,11 @@ try
     await Run("restored rotating generation is quarantined", RestoredGrant);
     await Run("quota-only core ownership resolves selected purpose", QuotaOnlyCore);
     await Run("missing explicit handle never falls back to inference", MissingExplicitHandle);
+    await Run("failed newer generation write retries newer payload", PersistenceRetry);
     await Run("historical canonical journal digest survives replay", HistoricalJournal);
 }
 finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
-Console.WriteLine($"Independent scenarios: {8 - failures.Count}/8 passed.");
+Console.WriteLine($"Independent scenarios: {9 - failures.Count}/9 passed.");
 Environment.ExitCode = failures.Count == 0 ? 0 : 1;
 
 async Task Run(string label, Func<Task> test)
@@ -158,6 +159,26 @@ Task MissingExplicitHandle()
     return Task.CompletedTask;
 }
 
+async Task PersistenceRetry()
+{
+    var f = Fresh("retry-newer-payload");
+    var initial = Credential("static-key", new("test"));
+    var updated = initial with { Binding = new("test", Subject: "subject-a", Provenance: "observed") };
+    await using var service = new LoginOperationService(configuration: f.Repository, accounts: f.Accounts, secrets: f.Secrets,
+        accountAdapters: [new CheckpointAdapter(initial, updated)]);
+    var operation = await service.BeginAsync(0, new("test", "checkpoint-fixture", ["quota"]));
+    var checkpoint = CredentialRecoveryService.Read(f.Secrets.Generations, operation.Id);
+    Require(checkpoint.Handle?.Generation == 1);
+    var blockedPath = Path.Combine(f.Paths.Credentials, "generations", checkpoint.Handle!.Id, "2.json");
+    Directory.CreateDirectory(blockedPath);
+    try { Require((await service.StatusAsync(operation.Id)).State == "recovery-required"); }
+    finally { Directory.Delete(blockedPath); }
+    await service.StatusAsync(operation.Id);
+    var recovered = CredentialRecoveryService.Read(f.Secrets.Generations, operation.Id);
+    Require(recovered.Handle?.Generation == 2 && recovered.Handle.Binding.Subject == "subject-a");
+    Require(f.Repository.Snapshot.Accounts.Length == 0); // Recovery retry persists; adoption remains explicit.
+}
+
 async Task HistoricalJournal()
 {
     // This v1 canonical shape is literal, independent of the current JournalEvent serializer.
@@ -182,6 +203,18 @@ async Task HistoricalJournal()
 sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
 {
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) => Task.FromResult(respond(request));
+}
+sealed class CheckpointAdapter(PreparedLoginCredential initial, PreparedLoginCredential updated) : IAccountLoginAdapter
+{
+    public string Provider => "test";
+    public string Method => "checkpoint-fixture";
+    public async Task<LoginAdapterResult> BeginAsync(LoginOperationContext context, CancellationToken ct)
+    {
+        await context.CheckpointCredentialAsync!(initial, ct);
+        return new("waiting");
+    }
+    public Task<LoginAdapterResult> StatusAsync(LoginOperationContext context, CancellationToken ct) => Task.FromResult(new LoginAdapterResult("prepared", Credential: updated));
+    public Task CancelAsync(LoginOperationContext context, CancellationToken ct) => Task.CompletedTask;
 }
 sealed class Fixture
 {

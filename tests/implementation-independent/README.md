@@ -16,7 +16,8 @@ Coverage: bound Requesty identity failure; unverified reconnect of a verified
 identity; independent monitoring preservation during inference replacement;
 crash after durable remote credential before recovery pointer; restored rotating
 grant quarantine; quota-only core credential projection; absent explicit handle
-fail-closed behavior; replay against a literal historical canonical journal digest.
+fail-closed behavior; failed superseding-generation persistence retry; replay
+against a literal historical canonical journal digest.
 
 Each scenario reports only its name and exception type. A passing source test
 does not qualify exact packaged binaries, real providers, Core startup on restored
