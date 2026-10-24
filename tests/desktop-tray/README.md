@@ -4,7 +4,18 @@
 ./tests/desktop-tray/run-private-xvfb.sh /tmp/lain-tray-evidence
 # After an integrated build:
 LAIN_DESKTOP_SKIP_BUILD=1 ./tests/desktop-tray/run-private-xvfb.sh /tmp/lain-tray-evidence
+# Against an already prepared frozen publish/installed target plus harness overlay:
+LAIN_TRAY_HARNESS_DLL=/absolute/frozen-target/Lain.Desktop.Tray.Smoke.dll \
+  ./tests/desktop-tray/run-private-xvfb.sh /tmp/lain-tray-publish-evidence
 ```
+
+A supplied LAIN_TRAY_HARNESS_DLL must be an existing absolute DLL path; it always
+skips building and never falls back to workspace binaries. The same directory
+must contain its deps/runtimeconfig JSON, Lain.Desktop.dll, Lain.Client.dll,
+Lain.Core.dll and Assets/Brand/lain-cat.png. The expected native notification
+icon is derived from this directory. The runner writes target-assemblies.sha256
+for the selected harness, production assemblies and icon before starting a GUI;
+compare these with the frozen target and the loaded-assembly evidence.
 
 The runner first discards inherited display, Wayland and desktop D-Bus settings.
 It owns one Xvfb selected with `-displayfd`, a private Xauthority cookie, temporary

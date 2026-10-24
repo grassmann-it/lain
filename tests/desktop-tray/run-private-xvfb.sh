@@ -9,16 +9,38 @@ output=${1:-"$repo/tests/desktop-tray/artifacts/$(date -u +%Y%m%dT%H%M%SZ)-$$"}
 if (( $# > 0 )); then shift; fi
 mkdir -p -- "$output"
 output=$(cd -- "$output" && pwd)
-for dependency in dotnet Xvfb xauth timeout dbus-run-session openbox xprop rg /usr/bin/python3 /usr/bin/gdbus /usr/bin/notify-send; do
+for dependency in dotnet Xvfb xauth timeout dbus-run-session openbox xprop rg sha256sum /usr/bin/python3 /usr/bin/gdbus /usr/bin/notify-send; do
   command -v "$dependency" >/dev/null || { echo "Missing dependency: $dependency" >&2; exit 2; }
 done
 
 /usr/bin/python3 -c 'import dbus, gi; gi.require_version("GdkPixbuf", "2.0"); from gi.repository import GdkPixbuf'
 
-# Building does not start a GUI. Set LAIN_DESKTOP_SKIP_BUILD=1 only after a build.
-if [[ ${LAIN_DESKTOP_SKIP_BUILD:-0} != 1 ]]; then
-  dotnet build "$repo/tests/desktop-tray/Lain.Desktop.Tray.Smoke.csproj" --nologo -m:1 -p:BuildInParallel=false -nr:false
+if [[ ${LAIN_TRAY_HARNESS_DLL+x} == x ]]; then
+  # An explicit artifact selection never builds or falls back to workspace output.
+  [[ "$LAIN_TRAY_HARNESS_DLL" == /* && -f "$LAIN_TRAY_HARNESS_DLL" ]] || {
+    echo "LAIN_TRAY_HARNESS_DLL must name an existing absolute DLL path" >&2; exit 2;
+  }
+  harness="$LAIN_TRAY_HARNESS_DLL"
+else
+  # Building does not start a GUI. Skip only after an integrated build.
+  if [[ ${LAIN_DESKTOP_SKIP_BUILD:-0} != 1 ]]; then
+    dotnet build "$repo/tests/desktop-tray/Lain.Desktop.Tray.Smoke.csproj" --nologo -m:1 -p:BuildInParallel=false -nr:false
+  fi
+  harness="$repo/tests/desktop-tray/bin/Debug/net10.0/Lain.Desktop.Tray.Smoke.dll"
 fi
+harness_directory=$(cd -- "$(dirname -- "$harness")" && pwd -P)
+export LAIN_TRAY_HARNESS_DLL="$harness_directory/$(basename -- "$harness")"
+[[ "$LAIN_TRAY_HARNESS_DLL" == *.dll ]] || { echo "Tray harness must be a DLL" >&2; exit 2; }
+for artifact in "$LAIN_TRAY_HARNESS_DLL" "${LAIN_TRAY_HARNESS_DLL%.dll}.deps.json" "${LAIN_TRAY_HARNESS_DLL%.dll}.runtimeconfig.json" \
+  "$harness_directory/Lain.Desktop.dll" "$harness_directory/Lain.Client.dll" "$harness_directory/Lain.Core.dll" \
+  "$harness_directory/Assets/Brand/lain-cat.png"; do
+  [[ -f "$artifact" ]] || { echo "Selected tray target is incomplete: $artifact" >&2; exit 2; }
+done
+# This manifest describes selected on-disk artifacts; evidence.json separately
+# records the loaded production assembly, so the frozen target can be compared.
+sha256sum "$LAIN_TRAY_HARNESS_DLL" "$harness_directory/Lain.Desktop.dll" \
+  "$harness_directory/Lain.Client.dll" "$harness_directory/Lain.Core.dll" \
+  "$harness_directory/Assets/Brand/lain-cat.png" > "$output/target-assemblies.sha256"
 runtime=$(mktemp -d /tmp/lain-desktop-xvfb.XXXXXXXX)
 xvfb_pid=
 cleanup() {

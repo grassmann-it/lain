@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-[[ ${LAIN_TEST_PRIVATE_BUS:-0} == 1 && -n ${DBUS_SESSION_BUS_ADDRESS:-} ]] || exit 2
+[[ ${LAIN_TEST_PRIVATE_BUS:-0} == 1 && -n ${DBUS_SESSION_BUS_ADDRESS:-} \
+  && ${LAIN_TRAY_HARNESS_DLL:-} == /* && -f "${LAIN_TRAY_HARNESS_DLL:-}" ]] || exit 2
 repo=$1
 shift
 wm_pid=
@@ -32,7 +33,7 @@ for ((attempt=0; attempt<100; attempt++)); do
 done
 xprop -root _NET_SUPPORTING_WM_CHECK | rg -q 'window id # 0x[1-9a-fA-F]' || { echo 'Private window manager did not become ready' >&2; exit 2; }
 export LAIN_TEST_WM_PID="$wm_pid"
-export LAIN_TEST_EXPECTED_ICON="$repo/tests/desktop-tray/bin/Debug/net10.0/Assets/Brand/lain-cat.png"
+export LAIN_TEST_EXPECTED_ICON="$(dirname -- "$LAIN_TRAY_HARNESS_DLL")/Assets/Brand/lain-cat.png"
 /usr/bin/python3 "$repo/tests/desktop-tray/private-bus-stub.py" >"$LAIN_TEST_OUTPUT/native-bus.log" 2>&1 &
 stub_pid=$!
 for ((attempt=0; attempt<100; attempt++)); do
@@ -42,4 +43,4 @@ for ((attempt=0; attempt<100; attempt++)); do
 done
 [[ -f "$LAIN_TEST_OUTPUT/native-bus.ready" ]] || { echo 'Private bus fixture did not become ready' >&2; exit 2; }
 export LAIN_TEST_BUS_STUB_PID="$stub_pid"
-dotnet "$repo/tests/desktop-tray/bin/Debug/net10.0/Lain.Desktop.Tray.Smoke.dll" "$@"
+dotnet "$LAIN_TRAY_HARNESS_DLL" "$@"
