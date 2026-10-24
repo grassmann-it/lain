@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "sourceCommit": "416fe139318a94939270aab7f6489518f4487b74",
+  "files": 1134,
+  "binaryHashes": {
+    "cli/Lain.Cli.dll": "2045e951716d7345efcaaf0fbce9068e9b2a95ad347729e7655c0e6fd2075a64",
+    "desktop/Lain.Desktop.dll": "a10b81ce35e7466afec09495bf579de36d39e96fb2a9bea9a8e988b06fc56b7d",
+    "host/Lain.Host.dll": "06fe63b0c845348a7949d95afe8ba0f8eb65bc06063d0ad473c55f88f5b57cb9",
+    "proxy/lain-proxy": "bab5ff3fdce446f3bae4c4aa495ef6b5d42a8d14f40306734f79368e5bb92d87"
+  },
+  "archiveSha256": "07e21f70bbec107f0e48d4a849ba1693e909efd680ed2f9022a04fd2c04a5143",
+  "releaseQualified": true,
+  "scope": "Settings/About/photo clients416fe13, retained qualified Host/Core; v8 upgrade remains separate and uninstalled. CLI behavior unchanged from compact delivery.",
+  "evidence": [
+    {
+      "path": "client-source-provenance/acceptance/settings-desktop-fixture.json",
+      "sha256": "1b4c42864a75534feb6274d6c715d237a4d35156eec5086eba071fce57e8c037"
+    },
+    {
+      "path": "client-source-provenance/acceptance/settings-frozen-tray.json",
+      "sha256": "88cb38be9f5bd929f5426295252e1870bff56b3d6f0c768f4e17fa799e31f73d"
+    },
+    {
+      "path": "client-source-provenance/acceptance/settings-frozen-host.json",
+      "sha256": "5fd4156c72258ce29e4af38edbfd777e1e07f8d62dedf0c73c5ed7ae383ca5c6"
+    },
+    {
+      "path": "client-source-provenance/acceptance/settings-installed-host.json",
+      "sha256": "7316ea6a7a9473e8778cabb663936ccdaf844ba3fe5a26b1d1db9e0c85497ed8"
+    },
+    {
+      "path": "client-source-provenance/acceptance/settings-installed.json",
+      "sha256": "d9f7e5198c39191610bcc9b95acb566916e9faa24f8ef4fd69bb94a5870d3233"
+    },
+    {
+      "path": "client-source-provenance/acceptance/settings-native-launcher.json",
+      "sha256": "608c9c6be7d2ad02cf6de0b160a206801e08c85fbfb4b50cbdb223e4ca3febd3"
+    },
+    {
+      "path": "client-source-provenance/acceptance/settings-installer.json",
+      "sha256": "5631a28d0ba6515ee4cc94056e4b3695092092dc5006a091232220bd0d5b29de"
+    }
+  ]
+}

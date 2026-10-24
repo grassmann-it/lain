@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "sourceCommit": "416fe139",
+  "checks": [
+    "active Desktop guard rejects before mutation",
+    "exact copied installation manifest",
+    "owned icon and ownership updated together",
+    "desktop entry retained",
+    "Host/Core bytes retained",
+    "backup transaction completed"
+  ]
+}

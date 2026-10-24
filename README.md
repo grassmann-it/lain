@@ -42,15 +42,15 @@ P50/P95. Der Anbieterkatalog bietet offizielle Links, Einrichtung und deklariert
 Fähigkeiten für 15 zusätzliche Anbieter. Diese wurden mit lokalen Testanbietern
 geprüft und bleiben ohne echte Zugangstests ausdrücklich `not_tested`.
 
-Die exakte installierte Oberfläche besteht 124 Prüfungen auf privatem Xvfb;
-Tray und Benachrichtigungen weitere 60 in einer privaten Sitzung. Die kompakte
+Die exakte installierte Oberfläche besteht 166 Prüfungen auf privatem Xvfb;
+Tray und Benachrichtigungen weitere 98 in einer privaten Sitzung. Die kompakte
 CLI besteht 173 Vertragsprüfungen und 55 Terminal-/Pipe-/JSON-Captures.
 Ein echter historischer
 Request mit 81.986 Tokens, Cursor 2 und der gewünschte/aktive Stand 4/2 blieben
 beim Dienstupdate und Fensterneustart erhalten. Der native Launcher samt
 Fenstericon ist ebenfalls geprüft. Der qualifizierte Core blieb bytegleich;
 dieser Umbau fügt keine neue Live-Anbieterqualifikation hinzu.
-[Aktuelle Abnahme und Grenzen](docs/tray-cli-acceptance.md) ·
+[Aktuelle Abnahme und Grenzen](docs/settings-about-acceptance.md) ·
 [CLI und Einrichtung](docs/observability-cli.md) ·
 [Accounts](docs/screenshots/ui-structure-accounts.png) ·
 [Profiles](docs/screenshots/ui-structure-profiles.png) ·

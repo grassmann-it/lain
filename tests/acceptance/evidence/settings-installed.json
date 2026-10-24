@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "sourceCommit": "416fe139318a94939270aab7f6489518f4487b74",
+  "version": "1.0.0+416fe13",
+  "accounts": 5,
+  "historyTotals": {
+    "requests": 1,
+    "attempts": 1,
+    "errors": 0,
+    "tokens": {
+      "input": 81981,
+      "output": 5,
+      "cached": 3968,
+      "reasoning": 0,
+      "total": 81986
+    },
+    "unknownUsageAttempts": 0
+  },
+  "cursor": 2,
+  "revision": 4,
+  "appliedRevision": 2,
+  "compactLines": 20,
+  "fullLines": 99,
+  "checks": [
+    "exact installed manifest equals package",
+    "accounts/models/profiles retained",
+    "Host/Core same process identities and bytes",
+    "historical usage retained",
+    "workspace preferences retained",
+    "native icon/ownership updated; launcher entry retained",
+    "compact CLI/full details retained",
+    "installed usage skill unchanged and current"
+  ]
+}
