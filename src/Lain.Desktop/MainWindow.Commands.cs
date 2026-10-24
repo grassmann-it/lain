@@ -47,6 +47,13 @@ public sealed partial class MainWindow
         return menu;
     }
 
+    private ContextMenu ObjectCommandMenu(Func<IEnumerable<ObjectCommand>> commands)
+    {
+        var menu = ObjectCommandMenu(commands());
+        menu.Opening += (_, _) => ObjectCommands.Populate(menu, commands());
+        return menu;
+    }
+
     private Control AccountInventoryViewport(Control content)
     {
         var scroll = new ScrollViewer { HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
@@ -121,7 +128,8 @@ public sealed partial class MainWindow
         ObjectCommand[] commands =
         [
             new("detail", "Account details", () => ShowAccountInspector(account.Id)),
-            new("refresh", "Refresh quota", () => Run(async () => _quotas = await _client.RefreshQuotasAsync(account.Id, _lifetime.Token), "Quota refresh complete.")),
+            new("refresh", IsAccountQuotaRefreshing(account.Id) ? "Refreshing quota…" : "Refresh quota",
+                () => _ = RefreshAccountQuotaAsync(account.Id), !IsAccountQuotaRefreshing(account.Id), "This account quota refresh is already running."),
             new("usage", "Recorded usage", () => ShowUsageForAccount(account.Id), HasHistory, "This host has no recorded history source."),
             new("models", "Models for this account", () => ShowModelsForAccount(account.Id), canModel, "Choose Gateway to configure model access."),
             new("enabled", account.Enabled ? "Disable account" : "Enable account", () => Run(async () => _configuration = await _client.SetAccountEnabledAsync(revision, account.Id, !account.Enabled, _lifetime.Token), "Account updated.")),
@@ -152,6 +160,7 @@ public sealed partial class MainWindow
             if (command.Key is "refresh" or "enabled" or "credential" or "reconnect" or "monitor" or "remove" && !_hostAvailable)
             { _notice.Text = "The host is offline. The last known account remains visible; reload status before changing it."; return; }
             if (command.Key == "models" && IsMonitorMode) { _notice.Text = "Choose Gateway to configure model access."; return; }
+            if (command.Key == "refresh" && IsAccountQuotaRefreshing(account.Id)) return;
             if (command.Available) command.Execute();
         }, Available = command.Available && (_hostAvailable || command.Key is "detail" or "usage" or "models" or "pin"),
             Reason = !_hostAvailable && command.Key is "refresh" or "enabled" or "credential" or "reconnect" or "monitor" or "remove"
@@ -170,17 +179,18 @@ public sealed partial class MainWindow
         var close = Ui.Button("Close", () => CloseAccountInspector());
         _accountInspectorClose = close;
         AutomationProperties.SetName(close, $"Close account details for {account.Name}");
-        var menu = ObjectCommandMenu(AccountCommands(account, cfg.Revision, null));
+        var menu = ObjectCommandMenu(() => AccountCommands(account, cfg.Revision, null));
         var more = Ui.Button("⋯", () => menu.Open()); more.ContextMenu = menu;
         AutomationProperties.SetName(more, $"Inspector actions for account {account.Name}");
         var heading = Ui.PageHeader(AccountDisplayName(account), ProviderName(account), more, close);
         var content = new StackPanel { Spacing = 12 };
+        if (!_quotas.Any(quota => quota.AccountId == accountId)) content.Children.Add(AccountTileWindow(account, null));
         foreach (var quota in _quotas.Where(q => q.AccountId == accountId)) content.Children.Add(AccountTileWindow(account, quota));
         content.Children.Add(AccountDetail(account, cfg.Revision));
         _accountInspectorScroll = new ScrollViewer { Content = content, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         AutomationProperties.SetName(_accountInspectorScroll, $"Account detail content for {account.Name}");
         var layout = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 12 };
-        layout.Children.Add(heading);
+        layout.Children.Add(Ui.Stack(heading, AccountQuotaRefreshStatus(account)));
         Grid.SetRow(_accountInspectorScroll, 1); layout.Children.Add(_accountInspectorScroll);
         _accountInspectorDetails = Ui.Viewport(layout);
         UpdateAccountInspectorLayout();

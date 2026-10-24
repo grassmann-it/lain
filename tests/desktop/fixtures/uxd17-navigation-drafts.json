@@ -1,0 +1,57 @@
+{
+  "package": "UXD-17",
+  "kind": "synthetic acceptance input matrix; not execution evidence",
+  "choices": { "draftNavigation": "B", "simpleLive": "A" },
+  "viewports": [{ "width": 1120, "height": 780 }, { "width": 800, "height": 560 }],
+  "identity": {
+    "model": "gpt-lain-01",
+    "viewedProfile": "Daily",
+    "lastConfirmedAppliedProfile": "Workspace 2"
+  },
+  "flows": [
+    {
+      "id": "retained-model-draft",
+      "steps": [
+        "Open Models editor for gpt-lain-01, uncheck Enabled, focus a text input, record control references and revision.",
+        "Open Profiles Daily. Expect immediate navigation and unchanged last-confirmed Applied profile.",
+        "Scroll the page, dismiss any ordinary message, change information level and density, visit Settings and Back.",
+        "Expect retained-draft notice outside the page scroller with section and object identity.",
+        "Activate Return to Models · gpt-lain-01 draft using keyboard and pointer in separate runs.",
+        "Expect the same mounted editor, disabled checkbox, revision, scroll anchor and sensible editor focus."
+      ],
+      "requests": "No configuration write, Apply, export or install caused by navigation, display preferences or returning."
+    },
+    {
+      "id": "discard-one-section",
+      "steps": [
+        "Keep both a Models draft and a Profiles draft by navigating away from each.",
+        "Activate Discard Models · gpt-lain-01 draft.",
+        "Expect only the Models retained notice removed; Profiles inputs and its return action remain.",
+        "Reopen Models: expect saved values, not the explicitly discarded local draft."
+      ],
+      "requests": "Discard sends no host mutation."
+    },
+    {
+      "id": "stale-retained-draft",
+      "steps": [
+        "Keep a Models draft, then advance the synthetic saved configuration revision externally.",
+        "Reload status. Expect the retained notice to name old and new revision; focused notice button remains mounted.",
+        "Return to the draft. Expect unchanged inputs and Review latest configuration.",
+        "A stale Save uses its original revision and cannot silently transfer inputs to the new revision.",
+        "Review latest configuration explicitly. Expect restored inputs and a concrete list of any unmatched fields, without a duplicate retained notice for the replaced editor mount."
+      ],
+      "requests": "Review is read-only; new-revision Save requires a separate user action."
+    },
+    {
+      "id": "simple-live-a",
+      "steps": [
+        "Select Simple in the sole bottom-right information-level dropdown.",
+        "Expect Accounts, Models, Profiles, Usage and Live directly, in that order.",
+        "Open More: expect no duplicate Live or Profiles entry.",
+        "Select Barebones while Live is open. Expect mounted Live content preserved with a valid More selection and return route.",
+        "Select Advanced and Simple again. Expect unchanged buffer, filters and a visible footer."
+      ],
+      "requests": "Display changes never switch Monitor/Gateway or invoke Apply."
+    }
+  ]
+}

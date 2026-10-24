@@ -19,7 +19,7 @@ public sealed partial class MainWindow
             : _preferences.Level switch
             {
                 InformationLevel.Barebones => new[] { "Accounts", "Profiles", "Usage" },
-                InformationLevel.Simple => new[] { "Accounts", "Models", "Profiles", "Usage" },
+                InformationLevel.Simple => new[] { "Accounts", "Models", "Profiles", "Usage", "Live" },
                 _ => new[] { "Accounts", "Models", "Profiles", "Usage", "Live" }
             };
         var menu = new ContextMenu();

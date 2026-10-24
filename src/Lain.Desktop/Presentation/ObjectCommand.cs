@@ -10,6 +10,13 @@ internal static class ObjectCommands
     public static ContextMenu Menu(IEnumerable<ObjectCommand> commands)
     {
         var menu = new ContextMenu();
+        Populate(menu, commands);
+        return menu;
+    }
+
+    public static void Populate(ContextMenu menu, IEnumerable<ObjectCommand> commands)
+    {
+        menu.Items.Clear();
         foreach (var command in commands)
         {
             var item = new MenuItem { Header = command.Label, IsEnabled = command.Available };
@@ -24,6 +31,5 @@ internal static class ObjectCommands
             item.Click += (_, _) => command.Execute();
             menu.Items.Add(item);
         }
-        return menu;
     }
 }

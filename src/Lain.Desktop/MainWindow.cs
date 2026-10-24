@@ -30,6 +30,7 @@ public sealed partial class MainWindow : Window
     private readonly List<Button> _actions = [];
     private readonly DispatcherTimer _poll = new() { Interval = TimeSpan.FromSeconds(10) };
     private ConfigurationDto? _configuration;
+    private string? _configurationError;
     private QuotaDto[] _quotas = [];
     private string? _quotaError;
     private ModelEntryDto[] _models = [];
@@ -120,7 +121,10 @@ public sealed partial class MainWindow : Window
         Grid.SetColumn(dismiss, 2); noticeContent.Children.Add(dismiss);
         var noticeBox = new Border { Background = Ui.Raised, BorderBrush = Ui.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(12, 8), Margin = new Thickness(20, 12, 20, 0), Child = noticeContent, IsVisible = false };
         _notice.PropertyChanged += (_, args) => { if (args.Property == TextBlock.TextProperty) noticeBox.IsVisible = !string.IsNullOrWhiteSpace(_notice.Text); };
-        Grid.SetRow(noticeBox, 1); shell.Children.Add(noticeBox);
+        var notices = new StackPanel { Spacing = 0 };
+        notices.Children.Add(noticeBox);
+        notices.Children.Add(_retainedDraftNotices);
+        Grid.SetRow(notices, 1); shell.Children.Add(notices);
 
         _workspace = new ScrollViewer { Content = _page, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, Margin = new Thickness(20, 18, 20, 18) };
         _page.HorizontalContentAlignment = HorizontalAlignment.Stretch;
@@ -238,6 +242,7 @@ public sealed partial class MainWindow : Window
         if (_refreshing || _busy) return;
         _refreshing = true;
         _refresh.IsEnabled = false;
+        var readingConfiguration = false;
         try
         {
             var status = await _client.StatusAsync(_lifetime.Token);
@@ -245,14 +250,32 @@ public sealed partial class MainWindow : Window
             UpdateNavigationDestinations();
             _hostAvailable = true;
             _connection.Text = ServiceSummary(status);
-            _hostIndicator.Background = IsMonitorMode || status.ProxyReady ? Ui.Success : Ui.Warning;
+            _hostIndicator.Background = ProfileApplyOutcomeUnknown ? Ui.Warning : IsMonitorMode || status.ProxyReady ? Ui.Success : Ui.Warning;
             ToolTip.SetTip(_connection, $"lain host {status.Version} · {status.State}\nConfiguration {status.Revision} · Applied {status.AppliedRevision}");
             if (!_editing || explicitRefresh)
             {
+                readingConfiguration = true;
                 _configuration = await _client.GetConfigurationAsync(_lifetime.Token);
+                readingConfiguration = false;
+                _configurationError = null;
                 UpdateNavigationDestinations();
-                try { _quotas = await _client.QuotasAsync(_lifetime.Token); _quotaError = null; }
-                catch (Exception error) when (error is not OperationCanceledException) { _quotaError = Friendly(error); }
+                if (_accountQuotaRefreshes.Count == 0)
+                {
+                    var quotaGeneration = _accountQuotaRefreshGeneration;
+                    try
+                    {
+                        var quotas = await _client.QuotasAsync(_lifetime.Token);
+                        // A full snapshot started before a local account refresh
+                        // must not overwrite that newer account-bound result.
+                        if (quotaGeneration == _accountQuotaRefreshGeneration && _accountQuotaRefreshes.Count == 0)
+                        { _quotas = quotas; _quotaError = null; }
+                    }
+                    catch (Exception error) when (error is not OperationCanceledException)
+                    {
+                        if (quotaGeneration == _accountQuotaRefreshGeneration && _accountQuotaRefreshes.Count == 0)
+                            _quotaError = Friendly(error);
+                    }
+                }
                 try { _models = (await _client.ModelsAsync(_lifetime.Token)).Models; }
                 catch (Exception error) when (error is not OperationCanceledException) { _models = []; }
             }
@@ -267,10 +290,12 @@ public sealed partial class MainWindow : Window
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception ex)
         {
+            if (readingConfiguration || _configuration is null) _configurationError = Friendly(ex);
             _hostAvailable = false;
             _connection.Text = _status is null ? "Local host unavailable · Open service help" : $"Local host unavailable · Last updated {Ui.When(_status.ObservedAt)}";
             _hostIndicator.Background = Ui.Warning;
             ToolTip.SetTip(_connection, Friendly(ex));
+            UpdateServiceSummary();
             if (explicitRefresh || _status is null) _notice.Text = Friendly(ex);
             RefreshPage(explicitRefresh);
         }
@@ -282,6 +307,7 @@ public sealed partial class MainWindow : Window
         if (_busy) return;
         var operationSection = _section;
         _busy = true; _notice.Text = "Working…";
+        UpdateDraftStatus();
         _refresh.IsEnabled = false;
         _page.IsEnabled = false; _navigation.IsEnabled = false; _settingsButton.IsEnabled = false; _backButton.IsEnabled = false;
         foreach (var action in _actions) action.IsEnabled = false;
@@ -290,6 +316,7 @@ public sealed partial class MainWindow : Window
         catch (Exception ex) { _notice.Text = Friendly(ex); }
         finally { _busy = false; _refresh.IsEnabled = !_refreshing; _page.IsEnabled = true; _navigation.IsEnabled = true; _settingsButton.IsEnabled = true; _backButton.IsEnabled = _history.Count > 0; foreach (var action in _actions) action.IsEnabled = true; }
         if (!_editing) { _drafts.Remove(operationSection); await RefreshAsync(false); Render(); }
+        UpdateDraftStatus();
         UpdateServiceSummary();
     }
 
@@ -326,6 +353,8 @@ public sealed partial class MainWindow : Window
         Section = _section,
         HostAvailable = _hostAvailable,
         Configuration = _configuration,
+        ConfigurationError = _section == "Accounts" ? _configurationError : null,
+        AccountQuotaRefreshGeneration = _section == "Accounts" ? _accountQuotaRefreshGeneration : 0,
         // Observation time is visible in Overview; other pages should retain their
         // controls when the host only advances its observation timestamp.
         Status = _section is "Service" or "Profiles" ? _status : null,
@@ -341,7 +370,7 @@ public sealed partial class MainWindow : Window
         UpdateNavigationSelection();
         if (!_editing && _displayedDraftSection == _section)
         {
-            _drafts.Remove(_section); _editorRevision = null; _editorRebuild = null; _displayedDraftSection = null;
+            _drafts.Remove(_section); _editorRevision = null; _editorRebuild = null; _editorIdentity = null; _displayedDraftSection = null;
         }
         UpdateDraftStatus();
         var offset = _workspace.Offset;
