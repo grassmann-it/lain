@@ -122,6 +122,14 @@ internal static class Scenario
         await Click(window, "Save profile"); await Wait(() => handler.LastSaved is not null);
         Check(handler.LastSaved!.Policy is { AllowPaidFallback: true } policy && policy.FallbackRouteIds!.Contains("r2") && handler.ApplyRequests == applyCount,
             "complete fallback policy is saved without implicit apply");
+        // Save completion can remount the narrow page. Navigate using the current
+        // saved name, rather than assuming the previous detail controls survived.
+        await Wait(() => handler.Data.Config.Profiles.Any(profile => profile.Id == handler.LastSaved!.Id && profile.Name == "Draft preserved"));
+        await Wait(() => Controls<Button>(window).Any(button => button.IsEffectivelyVisible && Equals(button.Content, "Back to profiles")) ||
+            Controls<Button>(window).Any(button => button.IsEffectivelyVisible && AutomationProperties.GetName(button) == "Select profile Draft preserved"));
+        if (Controls<Button>(window).Any(button => button.IsEffectivelyVisible && Equals(button.Content, "Back to profiles")))
+            await Click(window, "Back to profiles");
+        await Click(window, "Select profile Draft preserved");
         await Click(window, "Set up Codex client…");
         var executable = Path.Combine(Output, "fixture-lain"); await File.WriteAllTextAsync(executable, "fixture");
         var target = Path.Combine(Output, "client-export"); Directory.CreateDirectory(target);
@@ -186,9 +194,12 @@ internal sealed class ProfileFixture : HttpMessageHandler
             ApplyRequests++;
             if (ApplyGate is not null) await ApplyGate.Task.WaitAsync(ct);
         }
-        if (request.Method == HttpMethod.Put && path.StartsWith("/api/v1/profiles/", StringComparison.Ordinal))
-            LastSaved = (await request.Content!.ReadFromJsonAsync<RevisionRequest<ProfileDto>>(cancellationToken: ct))!.Value;
-        return await fallback.SendAsync(request, ct);
+        var response = await fallback.SendAsync(request, ct);
+        // The shared fixture owns request deserialization. Reading its content here
+        // first consumes the same stream and can make a successful save impossible.
+        if (request.Method == HttpMethod.Put && path.StartsWith("/api/v1/profiles/", StringComparison.Ordinal) && response.IsSuccessStatusCode)
+            LastSaved = Data.Config.Profiles.Single(profile => profile.Id == path.Split('/')[4]);
+        return response;
     }
     protected override void Dispose(bool disposing) { if (disposing) { fallback.Dispose(); Data.Dispose(); } base.Dispose(disposing); }
 }
