@@ -7,6 +7,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Lain.Core;
+using Lain.Desktop.Presentation;
 using System.Text.Json;
 
 namespace Lain.Desktop;
@@ -14,22 +15,32 @@ namespace Lain.Desktop;
 public sealed partial class MainWindow
 {
     private string? _selectedProfileId;
+    private readonly Dictionary<string, bool> _profileDetails = new(StringComparer.Ordinal);
 
     private Control ProfilesPage()
     {
+        var presentation = PresentationFor("Profiles");
+        var dense = presentation.Density == ViewDensity.Compact;
         var create = Ui.Button("Create profile", () => EditProfile(null));
         create.Classes.Add("primary");
-        var panel = Ui.Stack(ProfileHeader("Profiles", "Focused model menus for your clients and workflows.", create));
+        var panel = Ui.Stack(ProfileHeader("Profiles", presentation.Level == InformationLevel.Barebones ? "Saved model menus. Select to view; apply to change the proxy." : "Choose a saved model menu, apply it to the global proxy, or set up a client.", create));
         if (_configuration is not { } cfg) { panel.Children.Add(Empty("Connect to the host to manage profiles.")); return panel; }
-        panel.Children.Add(Ui.Text($"{cfg.Profiles.Length} profiles  ·  Saved revision {cfg.Revision}  ·  Host applied revision {cfg.AppliedRevision}", 12, Ui.Muted));
+        var applied = Ui.Text(AppliedProfileDescription(cfg), 12, Ui.Muted);
+        AutomationProperties.SetName(applied, "Applied proxy profile status");
+        panel.Children.Add(applied);
+        panel.Children.Add(Ui.Text($"{cfg.Profiles.Length} saved profiles · Saved configuration {cfg.Revision} · Proxy configuration {cfg.AppliedRevision}", 12, Ui.Muted));
+        if (cfg.Revision != cfg.AppliedRevision)
+            panel.Children.Add(Ui.Text($"Saved configuration {cfg.Revision} is pending; the proxy uses configuration {cfg.AppliedRevision}.", 12, Ui.Warning));
+        if (_status?.ActiveProfileRevision is { } activeRevision && activeRevision != cfg.Revision)
+            panel.Children.Add(Ui.Text($"The saved configuration differs from applied profile revision {activeRevision}. Selecting or editing a profile does not apply those changes.", 12, Ui.Warning));
         if (cfg.Profiles.Length == 0)
         {
-            panel.Children.Add(Empty("No profiles yet. Create a profile to choose its routes and default model."));
+            panel.Children.Add(Empty("No saved profiles yet. Create a profile to choose its model access entries and default model."));
             return panel;
         }
         var selected = cfg.Profiles.FirstOrDefault(p => p.Id == _selectedProfileId) ?? cfg.Profiles[0];
         _selectedProfileId = selected.Id;
-        var list = new StackPanel { Spacing = 4 };
+        var list = new StackPanel { Spacing = dense ? 2 : 4 };
         var detailHost = new ContentControl();
         var selectors = new Dictionary<string, Button>();
         var detailActions = new List<Button>();
@@ -41,53 +52,106 @@ public sealed partial class MainWindow
             {
                 selector.Background = id == profile.Id ? Ui.AccentSurface : Brushes.Transparent;
                 selector.BorderBrush = id == profile.Id ? Ui.Accent : Brushes.Transparent;
+                AutomationProperties.SetHelpText(selector, id == profile.Id ? "Selected for viewing; selection does not change the proxy" : "Select this saved profile for viewing");
             }
             foreach (var action in detailActions) _actions.Remove(action);
             detailActions.Clear();
-            detailHost.Content = ProfileDetails(cfg, profile, detailActions);
+            detailHost.Content = ProfileDetails(cfg, profile, detailActions, presentation);
         }
         foreach (var profile in cfg.Profiles)
         {
             var button = Ui.Button("", () => SelectProfile(profile));
-            button.Content = new StackPanel { Spacing = 3, Children = { Ui.Text(profile.Name, 13), Ui.Text($"{profile.RouteIds.Length} routes", 12, Ui.Muted) } };
-            AutomationProperties.SetName(button, $"{profile.Name}, {profile.RouteIds.Length} routes");
+            var label = new StackPanel { Spacing = dense ? 1 : 3, Children = { Ui.Text(profile.Name, 13), Ui.Text($"{profile.RouteIds.Length} model access entries", 12, Ui.Muted) } };
+            if (_status?.ActiveProfileId == profile.Id) label.Children.Add(Ui.Text("Applied to proxy", 11, Ui.Accent));
+            button.Content = label;
+            AutomationProperties.SetName(button, $"Select profile {profile.Name}");
             button.HorizontalAlignment = HorizontalAlignment.Stretch;
             button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+            button.Padding = new Thickness(dense ? 8 : 10, dense ? 5 : 8);
             selectors.Add(profile.Id, button);
             list.Children.Add(button);
         }
         SelectProfile(selected);
-        var layout = new Grid { ColumnDefinitions = new ColumnDefinitions("200,*"), ColumnSpacing = 14 };
-        layout.Children.Add(Ui.Card(new ScrollViewer { MaxHeight = 470, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = list }));
+        var layout = new Grid { ColumnDefinitions = new ColumnDefinitions("190,*"), ColumnSpacing = dense ? 8 : 14 };
+        var inventory = Ui.Card(new ScrollViewer { MaxHeight = 470, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = list });
+        inventory.Padding = new Thickness(dense ? 6 : 10);
+        layout.Children.Add(inventory);
         Grid.SetColumn(detailHost, 1);
         layout.Children.Add(detailHost);
         panel.Children.Add(layout);
         return panel;
     }
 
-    private Control ProfileDetails(ConfigurationDto cfg, ProfileDto selected, List<Button> detailActions)
+    private string AppliedProfileDescription(ConfigurationDto cfg)
     {
-        var apply = Action("Apply profile", async () => { _configuration = await _client.ApplyProfileAsync(cfg.Revision, selected.Id, _lifetime.Token); }, $"Profile '{selected.Name}' applied.");
+        var lastReport = _hostAvailable ? "Applied to proxy" : "Last host report: applied to proxy";
+        if (_status?.ActiveProfileId is not { } id) return "Applied profile not reported by the host. Selecting a saved profile does not change the proxy.";
+        var name = cfg.Profiles.FirstOrDefault(p => p.Id == id)?.Name ?? id;
+        var revision = _status?.ActiveProfileRevision is { } value ? value.ToString() : "unknown";
+        return $"{lastReport}: {name} · Profile revision {revision}";
+    }
+
+    private Control ProfileDetails(ConfigurationDto cfg, ProfileDto selected, List<Button> detailActions, PresentationOptions presentation)
+    {
+        var apply = Ui.Button("Apply to proxy…", () => ConfirmProfileApplication(selected));
         var export = Action("Export profile…", () => ExportProfileAsync(selected), "Profile exported without credentials.");
-        detailActions.AddRange([apply, export]);
+        detailActions.Add(export);
         var routes = new StackPanel { Spacing = 0 };
         foreach (var id in selected.RouteIds)
         {
             var route = cfg.Routes.FirstOrDefault(r => r.Id == id);
-            routes.Children.Add(new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(0, 8),
-                Child = ProfileRouteContent(route?.Alias ?? id, route is null ? "Route unavailable" : $"{route.Provider} / {route.UpstreamModel}", id == selected.DefaultRouteId) });
+            var content = Ui.Stack(ProfileRouteContent(route?.Alias ?? id, route is null ? "Model access unavailable" : $"Provider model: {route.Provider} / {route.UpstreamModel}", id == selected.DefaultRouteId));
+            content.Spacing = 4;
+            if (route is not null)
+            {
+                var open = CompactRouteButton("Open model access", () => NavigateTo(new WorkspaceNavigationRequest("Models", RouteId: id)));
+                AutomationProperties.SetName(open, $"Open model access {route.Alias}");
+                content.Children.Add(open);
+            }
+            routes.Children.Add(new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(0, presentation.Density == ViewDensity.Compact ? 5 : 8), Child = content });
         }
-        var details = Ui.Stack(Ui.Text(selected.Name, 18),
-            Ui.Text($"{selected.RouteIds.Length} selected routes  ·  Default: {cfg.Routes.FirstOrDefault(r => r.Id == selected.DefaultRouteId)?.Alias ?? "None"}", 12, Ui.Muted),
-            Ui.Text(selected.Policy?.CostPolicy == "free_only" ? "Spending policy: Only free — no paid fallback" : "Spending policy: Configured access; stricter route policies still apply", 12, Ui.Muted),
-            ProfileWrap(Ui.Button("Edit selection", () => EditProfile(selected)),
-                apply,
-                Ui.Button("Connect Codex…", () => ShowCodexExport(selected))),
-            new ScrollViewer { MaxHeight = 310, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = routes },
-            ProfileWrap(export,
-                Ui.Button("Remove…", () => ConfirmRemoval(selected.Name, async () => { _configuration = await _client.RemoveProfileAsync(cfg.Revision, selected.Id, _lifetime.Token); }))));
-        details.Spacing = 12;
+        var selectionState = Ui.Text($"Selected profile: {selected.Name}", 12, Ui.Accent);
+        AutomationProperties.SetName(selectionState, "Selected profile status");
+        var details = Ui.Stack(Ui.Text(selected.Name, 18), selectionState,
+            Ui.Text(_status?.ActiveProfileId == selected.Id
+                ? $"This profile identity is applied to the proxy · Host profile revision {_status?.ActiveProfileRevision?.ToString() ?? "unknown"}"
+                : "This selection is for viewing. Apply to proxy changes the running proxy for every client.", 12, Ui.Muted),
+            Ui.Text($"{selected.RouteIds.Length} selected model access entries · Default client name: {cfg.Routes.FirstOrDefault(r => r.Id == selected.DefaultRouteId)?.Alias ?? "None"}", 12, Ui.Muted),
+            Ui.Text(selected.Policy?.CostPolicy switch {
+                "free_only" => "Spending policy: Only free — no paid fallback",
+                null or "configured" => "Spending policy: Configured access; stricter model access policies still apply",
+                var policy => $"Spending policy: {policy}"
+            }, 12, Ui.Muted),
+            ProfileWrap(Ui.Button("Edit selection", () => EditProfile(selected)), apply, Ui.Button("Set up Codex client…", () => ShowCodexExport(selected))),
+            Ui.Text("Applying changes the global proxy. Client setup exports a separate Codex connection.", 12, Ui.Muted),
+            new ScrollViewer { MaxHeight = presentation.Level == InformationLevel.Barebones ? 220 : 310, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = routes });
+        var technical = Ui.Stack(Ui.Text($"Profile ID: {selected.Id}", 11, Ui.Muted),
+            Ui.Text($"Default model access ID: {selected.DefaultRouteId ?? "None"}", 11, Ui.Muted));
+        if (selected.Policy?.FallbackRouteIds is { Length: > 0 } fallbacks)
+            technical.Children.Add(Ui.Text($"Saved fallback selections: {string.Join(", ", fallbacks.Select(id => cfg.Routes.FirstOrDefault(r => r.Id == id)?.Alias ?? id))} · Paid fallback permission: {(selected.Policy.AllowPaidFallback ? "allowed" : "not allowed")}", 12, Ui.Muted));
+        technical.Children.Add(ProfileWrap(export, Ui.Button("Remove…", () => ConfirmRemoval(selected.Name, async () => { _configuration = await _client.RemoveProfileAsync(cfg.Revision, selected.Id, _lifetime.Token); }))));
+        var more = new Expander { Header = "Profile details and export", Content = technical,
+            IsExpanded = _profileDetails.TryGetValue(selected.Id, out var expanded) ? expanded : presentation.Level == InformationLevel.Advanced,
+            HorizontalAlignment = HorizontalAlignment.Stretch };
+        AutomationProperties.SetName(more, $"Details and export for profile {selected.Name}");
+        more.PropertyChanged += (_, e) => { if (e.Property == Expander.IsExpandedProperty) _profileDetails[selected.Id] = more.IsExpanded; };
+        details.Children.Add(more);
+        details.Spacing = presentation.Density == ViewDensity.Compact ? 7 : 12;
         return Ui.Card(details);
+    }
+
+    private void ConfirmProfileApplication(ProfileDto profile)
+    {
+        if (_configuration is not { } cfg) return;
+        _editing = true;
+        var confirm = Action("Apply to proxy", async () => {
+            _configuration = await _client.ApplyProfileAsync(cfg.Revision, profile.Id, _lifetime.Token);
+        }, $"Profile '{profile.Name}' applied to the global proxy.");
+        confirm.Classes.Add("primary");
+        _page.Content = Ui.Stack(ProfileHeader($"Apply {profile.Name} to the proxy?", "This changes the GLOBAL proxy configuration for every connected client."),
+            Ui.Card(Ui.Stack(Ui.Text("Active requests may be interrupted while the proxy applies this profile.", 14, Ui.Warning),
+                Ui.Text($"Apply saved profile '{profile.Name}' from configuration revision {cfg.Revision}. Selecting a profile or exporting a Codex client connection does not perform this action.", 13))),
+            ProfileWrap(confirm, Ui.Button("Cancel", () => { _editing = false; Render(); })));
     }
 
     private void ShowCodexExport(ProfileDto profile)
@@ -138,11 +202,11 @@ public sealed partial class MainWindow
                 Ui.Button("Back to profiles", () => { _editing = false; Render(); }));
         }, "Codex connection exported.", stayOnPage: true);
         export.Classes.Add("primary");
-        _page.Content = Ui.Stack(ProfileHeader("Connect Codex", $"{profile.Name}  ·  {profile.RouteIds.Length} routes  ·  Saved revision {cfg.Revision}"),
+        _page.Content = Ui.Stack(ProfileHeader("Set up Codex client", $"{profile.Name}  ·  {profile.RouteIds.Length} routes  ·  Saved revision {cfg.Revision}"),
             Ui.Card(Ui.Stack(Ui.Text("1  Local authentication helper", 14), Ui.Field("lain command-line executable", executable),
                 Ui.Text("Select the installed lain executable used by Codex to authenticate locally.", 12, Ui.Muted))),
             Ui.Card(Ui.Stack(Ui.Text("2  Export destination", 14), Ui.Field("Parent folder", destinationRow),
-                Ui.Text("Creates a new lain-codex-… folder containing a separate configuration and model catalog. Your normal Codex configuration stays unchanged.", 12, Ui.Muted))),
+                Ui.Text("Creates a new lain-codex-… folder containing a separate configuration and model catalog. This exports client files; it does not apply the profile to the global proxy.", 12, Ui.Muted))),
             ProfileWrap(export, Ui.Button("Cancel", () => { _editing = false; Render(); })));
     }
 
@@ -168,15 +232,15 @@ public sealed partial class MainWindow
         if (_configuration is not { } cfg) return;
         _editing = true;
         var name = Ui.Input(profile?.Name, "Profile name");
-        var search = Ui.Input(hint: "Search routes, providers or models");
-        AutomationProperties.SetName(search, "Search profile routes, providers or models");
+        var search = Ui.Input(hint: "Search model access, providers or models");
+        AutomationProperties.SetName(search, "Search profile model access");
         AutomationProperties.SetName(name, "Profile name");
         var spending = new SpendingPolicyEditor(profile?.Policy);
         var policyStatus = Ui.Text("Check saved routes before choosing strict free-only access. Profile fallbacks are validated on save and apply.", 12, Ui.Muted);
         var count = Ui.Text("", 12, Ui.Muted);
-        var empty = Ui.Text("No routes match this search.", 13, Ui.Muted);
+        var empty = Ui.Text("No model access entries match this search.", 13, Ui.Muted);
         var defaults = new ComboBox { ItemsSource = new[] { "None" }.Concat(cfg.Routes.Select(r => r.Alias)).ToArray(), SelectedIndex = profile?.DefaultRouteId is { } id ? Array.FindIndex(cfg.Routes, r => r.Id == id) + 1 : 0 };
-        AutomationProperties.SetName(defaults, "Default route");
+        AutomationProperties.SetName(defaults, "Default client name");
         var defaultHint = Ui.Text("", 12, Ui.Muted);
         var routeList = new StackPanel { Spacing = 0 };
         var choices = cfg.Routes.Select(route => {
@@ -192,8 +256,8 @@ public sealed partial class MainWindow
         {
             count.Text = $"{choices.Count(x => x.Box.IsChecked == true)} of {choices.Length} selected  ·  {choices.Count(x => x.Row.IsVisible)} shown";
             var defaultId = defaults.SelectedIndex > 0 ? cfg.Routes[defaults.SelectedIndex - 1].Id : null;
-            defaultHint.Text = defaultId is null ? "No default route. Clients can choose any selected model."
-                : choices.Any(x => x.Route.Id == defaultId && x.Box.IsChecked == true) ? "Default route is included in the selection." : "Include the default route in your selection before saving.";
+            defaultHint.Text = defaultId is null ? "No default model. Clients can choose any selected client name."
+                : choices.Any(x => x.Route.Id == defaultId && x.Box.IsChecked == true) ? "Default model access is included in the selection." : "Include the default model access in your selection before saving.";
         }
         foreach (var choice in choices) choice.Box.IsCheckedChanged += (_, _) => UpdateSelection();
         defaults.SelectionChanged += (_, _) => UpdateSelection();
@@ -205,15 +269,15 @@ public sealed partial class MainWindow
             UpdateSelection();
         };
         empty.IsVisible = choices.Length == 0;
-        if (choices.Length == 0) empty.Text = "No routes available. Add routes before creating a profile.";
+        if (choices.Length == 0) empty.Text = "No model access available. Add model access before creating a profile.";
         routeList.Children.Add(empty);
         UpdateSelection();
         var save = Action("Save profile", async () => {
             if (string.IsNullOrWhiteSpace(name.Text)) throw new InvalidOperationException("Enter a profile name.");
             var ids = choices.Where(x => x.Box.IsChecked == true).Select(x => x.Route.Id).ToArray();
             var defaultId = defaults.SelectedIndex > 0 ? cfg.Routes[defaults.SelectedIndex - 1].Id : null;
-            if (ids.Length == 0) throw new InvalidOperationException("Select at least one route.");
-            if (defaultId is not null && !ids.Contains(defaultId)) throw new InvalidOperationException("Select the default route in this profile too.");
+            if (ids.Length == 0) throw new InvalidOperationException("Select at least one model access entry.");
+            if (defaultId is not null && !ids.Contains(defaultId)) throw new InvalidOperationException("Select the default model access in this profile too.");
             var profileId = profile?.Id ?? Guid.NewGuid().ToString("N");
             if (profile is not null && profile.RouteIds.Length == ids.Length && profile.RouteIds.All(id => ids.Contains(id, StringComparer.Ordinal))) ids = profile.RouteIds;
             var original = profile ?? new ProfileDto(profileId, "", []);
@@ -224,15 +288,15 @@ public sealed partial class MainWindow
         save.Classes.Add("primary");
         var fields = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), ColumnSpacing = 14 };
         fields.Children.Add(Ui.Field("Profile name", name));
-        var defaultField = Ui.Field("Default route", defaults);
+        var defaultField = Ui.Field("Default client name", defaults);
         Grid.SetColumn(defaultField, 1);
         fields.Children.Add(defaultField);
-        var selection = Ui.Stack(search, ProfileHeader("Routes", "Choose the models this profile offers."),
+        var selection = Ui.Stack(search, ProfileHeader("Model access", "Choose the configured entries this profile offers."),
             ProfileWrap(Ui.Button("Select shown", () => { foreach (var x in choices.Where(x => x.Row.IsVisible)) x.Box.IsChecked = true; }),
                 Ui.Button("Clear shown", () => { foreach (var x in choices.Where(x => x.Row.IsVisible)) x.Box.IsChecked = false; })), count,
             new ScrollViewer { MaxHeight = 300, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = routeList });
         selection.Spacing = 8;
-        _page.Content = Ui.Stack(ProfileHeader(profile is null ? "Create profile" : "Edit profile", $"Choose a model menu and its default. Saved revision {cfg.Revision}."),
+        _page.Content = Ui.Stack(ProfileHeader(profile is null ? "Create profile" : "Edit profile", $"Choose a model menu and its default client name. Saved revision {cfg.Revision}."),
             Ui.Card(Ui.Stack(fields, defaultHint, spending.Control,
                 Ui.Text("A profile can make routes stricter. Configured access never weakens a route's existing free-only rule.", 11, Ui.Muted),
                 SpendingPolicyCheck(spending, () => choices.Where(item => item.Box.IsChecked == true).Select(item => item.Route.Id).ToArray(), policyStatus), policyStatus)), Ui.Card(selection),
