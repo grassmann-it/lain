@@ -124,7 +124,8 @@ else
 fi
 cp packaging/lain packaging/lain.service.in packaging/lain.desktop.in "$out/packaging/"
 cp scripts/install-linux.sh "$out/install-linux.sh"
-cp scripts/lain-maintenance.py "$out/packaging/"
+cp scripts/lain-maintenance.py scripts/prepare-legacy-rollback.py "$out/packaging/"
+cp -a scripts/legacy-rollback-schema "$out/packaging/"
 if [[ "$mode" == gateway ]]; then
 python3 scripts/collect-notices.py "$out/notices" --prepared-adapter "$publish_parent/prepared/adapter"
 python3 - "$out/notices/go/inventory.json" <<'PYNOTICES'
@@ -190,7 +191,7 @@ info = {'format': 1, 'runtime': 'linux-x64', 'sdk': sdk, 'commit': revision, 'so
     'components': components, 'runtimeMode': mode,
     'sourceProvenanceInventorySha256': digest(provenance_path),
     'packagingToolSha256': {name: digest(root / 'scripts' / name) for name in
-        ('publish-linux.sh', 'install-linux.sh', 'lain-maintenance.py', 'collect-notices.py')}}
+        ('publish-linux.sh', 'install-linux.sh', 'lain-maintenance.py', 'prepare-legacy-rollback.py', 'collect-notices.py')}}
 if mode == 'gateway':
     info['packagingToolSha256'].update({name: digest(root / 'scripts' / name) for name in
         ('build-core.sh', 'prepare-core.py', 'build-core-verify.py', 'collect-go-notices.py', 'core-refresh.py')})

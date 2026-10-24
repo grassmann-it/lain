@@ -4,7 +4,10 @@
 Only --execute installs packages/starts their processes. No inference, provider
 reads, real credentials, ordinary Codex config, or existing state is used.
 """
+from contextlib import closing
 import argparse
+import hashlib
+import shutil
 import importlib.util
 import json
 import os
@@ -71,8 +74,8 @@ def write(home, name, content):
 
 
 def seed_history(home):
-    # A synthetic v1 database intentionally exercises real Host migration.
-    with sqlite3.connect(home / 'usage.db') as db:
+    # Build a genuine synthetic v3 checkpoint, including durable event digests.
+    with closing(sqlite3.connect(home / 'usage.db')) as db, db:
         db.executescript((ROOT / 'src/Lain.Host/Usage/Migrations/001_usage.sql').read_text())
         db.execute('INSERT INTO sources VALUES (?,?,?,?,?)', (SOURCE, 2, 2, 1792756800000, 0))
         db.execute('''INSERT INTO attempts (source_id,attempt_id,request_id,account_id,credential_id,route_id,provider,
@@ -84,13 +87,25 @@ def seed_history(home):
              72000, 9986, 18000, None, 2000, 81986, 1000, 100))
     (home / 'usage.db').chmod(0o600)
     events = []
-    for seq in (1, 2):
-        events.append(json.dumps({'schemaVersion': 1, 'sourceId': SOURCE, 'sequence': seq,
-            'eventId': SOURCE + ':' + str(seq), 'kind': 'usage', 'requestId': 'synthetic-request',
-            'attemptId': 'synthetic-attempt', 'accountId': 'static-fixture', 'credentialId': 'synthetic-credential',
-            'provider': 'fixture-static', 'requestedModel': 'synthetic-model', 'model': 'synthetic-model',
-            'observedAt': '2026-10-23T12:00:01Z', 'outcome': 'success', 'usageReported': True,
-            'inputTokens': 72000, 'outputTokens': 9986, 'totalTokens': 81986, 'statusCode': 200}))
+    for seq, kind in ((1, 'attempt_started'), (2, 'usage')):
+        event = dict(schemaVersion=1, sourceId=SOURCE, sequence=seq, eventId=SOURCE + ':' + str(seq),
+            kind=kind, requestId='synthetic-request', attemptId='synthetic-attempt', accountId='static-fixture',
+            credentialId='synthetic-credential', routeId=None, observedAt='2026-10-23T12:00:0' + str(seq - 1) + '+00:00',
+            provider='fixture-static', requestedModel='synthetic-model', model='synthetic-model',
+            outcome='success' if seq == 2 else None, inputTokens=72000 if seq == 2 else None,
+            outputTokens=9986 if seq == 2 else None, totalTokens=81986 if seq == 2 else None,
+            cacheReadTokens=18000 if seq == 2 else None, cacheCreationTokens=None,
+            reasoningTokens=2000 if seq == 2 else None, usageReported=seq == 2,
+            statusCode=200 if seq == 2 else None, latencyMs=1000 if seq == 2 else None,
+            ttftMs=100 if seq == 2 else None)
+        events.append(json.dumps(event, separators=(',', ':')))
+    with closing(sqlite3.connect(home / 'usage.db')) as db, db:
+        for seq, event in enumerate(events, 1):
+            db.execute('INSERT INTO journal_events VALUES (?,?,?,?)',
+                (SOURCE, seq, SOURCE + ':' + str(seq), hashlib.sha256(event.encode()).hexdigest().upper()))
+        for version in (2, 3):
+            migration = next((ROOT / 'src/Lain.Host/Usage/Migrations').glob(f'{version:03d}_*.sql'))
+            db.executescript(migration.read_text())
     write(home, 'proxy/events.jsonl', '\n'.join(events) + '\n')
     write(home, 'proxy/events.jsonl.source', SOURCE)
 
@@ -146,9 +161,9 @@ def install(package, root, home):
 
 
 class Host:
-    def __init__(self, root, home):
+    def __init__(self, root, home, legacy_ports=False):
         self.home = home
-        self.host_port, self.core_port = free_ports()
+        self.host_port, self.core_port = (18418, 18417) if legacy_ports else free_ports()
         self.env = dict(environment(root, home), LAIN_REFERENCE_QUALIFICATION='1',
             LAIN_REFERENCE_HOST_PORT=str(self.host_port), LAIN_REFERENCE_PROXY_PORT=str(self.core_port),
             LAIN_REFERENCE_DISABLE_QUOTA='1', LAIN_PROXY_PATH=str(home / 'app/proxy/lain-proxy'))
@@ -194,18 +209,20 @@ def state_assertions(host):
     require(usage['cursor'] == 2, 'Historical cursor changed')
 
 
-def require_loopback_namespace():
+def require_loopback_namespace(parent_netns=None):
     # Incidental upstream Core startup checks must not reach public networks.
     # A distinct net namespace also prevents old fixed-port binaries from ever
     # reaching the user's running localhost services.
-    require(os.readlink('/proc/self/ns/net') != os.readlink('/proc/1/ns/net'),
+    anchor = parent_netns if parent_netns is not None else os.readlink('/proc/1/ns/net')
+    require(re.fullmatch(r'net:\[[0-9]+\]', anchor) is not None, 'Invalid parent network namespace anchor')
+    require(os.readlink('/proc/self/ns/net') != anchor,
             'Use a dedicated network namespace (without a new PID namespace)')
     require({name for _, name in socket.if_nameindex()} == {'lo'},
             'Package execution requires a loopback-only network namespace')
 
 
 def execute(args):
-    require_loopback_namespace()
+    require_loopback_namespace(args.parent_netns)
     checks = []
     with tempfile.TemporaryDirectory(prefix='lain-release-qualification-') as directory:
         root = Path(directory); root.chmod(0o700)
@@ -230,12 +247,22 @@ def execute(args):
         with Host(monitor_root, monitor_home) as host:
             require(host.status['runtimeMode'] == 'monitor' and not host.status['proxyReady'], 'Gateway package update changed Monitor intent')
         checks.append('actual Monitor-to-Gateway package update retains Monitor intent and leaves Core stopped')
-        # Baseline application installs into private paths; never execute its old Host.
+        # Exact old application runs only inside the required private loopback namespace.
         gateway_root, gateway_home = root / 'gateway', root / 'gateway/state'
         env = install(args.previous_gateway, gateway_root, gateway_home)
-        seed_configuration(gateway_home, 'gateway'); seed_history(gateway_home)
-        host = Host(gateway_root, gateway_home)
+        seed_configuration(gateway_home, 'gateway', rotating=True); seed_history(gateway_home)
+        host = Host(gateway_root, gateway_home, legacy_ports=True)
         write(gateway_home, 'proxy/config.yaml', f'host: "127.0.0.1"\nport: {host.core_port}\nauth-dir: "{gateway_home / "proxy/auth"}"\napi-keys: ["synthetic-local-inference"]\n')
+        rollback_helper = args.gateway_package / 'packaging/prepare-legacy-rollback.py'
+        pins = ['--old-package', str(args.previous_gateway), '--old-manifest-sha256', args.previous_manifest_sha256,
+                '--old-host-sha256', upgrade.digest(args.previous_gateway / 'host/Lain.Host'),
+                '--old-core-sha256', args.previous_core_sha256, '--stopped']
+        with Host(gateway_root, gateway_home, legacy_ports=True) as baseline_host:
+            require(baseline_host.status['proxyReady'], 'Baseline pinned Core not ready')
+            state_assertions(baseline_host)
+        checkpoint = root / 'legacy-checkpoint'
+        command(['python3', str(rollback_helper), 'checkpoint', '--state', str(gateway_home),
+                 '--destination', str(checkpoint)] + pins, environment(root, gateway_home))
         old_config = (gateway_home / 'configuration.json').read_bytes()
         runtime_files = {p: (gateway_home / p).read_bytes() for p in
                          ('active-profile.json', 'proxy/runtime.json', 'proxy/config.yaml', 'proxy/bindings.json')}
@@ -254,6 +281,31 @@ def execute(args):
         require((gateway_home / 'configuration.json').read_bytes() == old_config, 'Gateway startup changed saved configuration')
         require(all((gateway_home / p).read_bytes() == data for p, data in runtime_files.items()), 'Legacy runtime metadata changed')
         checks.append('actual Gateway update starts updated Core preserving desired11/applied2 and historical81986/cursor2')
+        prepared = root / 'legacy-prepared'
+        command(['python3', str(rollback_helper), 'prepare', '--state', str(gateway_home),
+                 '--checkpoint', str(checkpoint), '--destination', str(prepared), '--rebase-auth-dir'] + pins, environment(root, gateway_home))
+        staged = prepared / 'rollback-state'
+        grants = {name: upgrade.fingerprint(staged / name) for name in ('credentials', 'proxy/auth-owned')}
+        with Host(root / 'legacy-run', staged, legacy_ports=True) as old_host:
+            require(old_host.status['proxyReady'], 'Pinned legacy Core not ready')
+            state_assertions(old_host)
+            require(len(old_host.api('/configuration')['accounts']) == 2, 'Legacy accounts missing')
+        require(all(upgrade.fingerprint(staged / name) == value for name, value in grants.items()), 'Old Host changed current grants')
+        # Archival app swap in disposable staged state, preserving both whole snapshots.
+        (staged / 'app').rename(staged / 'app.legacy-qualified')
+        shutil.copytree(prepared / 'current-snapshot/state/app', staged / 'app')
+        with Host(root / 'forward-run', staged, legacy_ports=True) as new_host:
+            require(new_host.status['proxyReady'], 'Forward migrated Core not ready')
+            state_assertions(new_host)
+        require(all(upgrade.fingerprint(staged / name) == value for name, value in grants.items()), 'Forward upgrade changed current grants')
+        with closing(sqlite3.connect(staged / 'usage.db')) as db, db:
+            require(db.execute('PRAGMA user_version').fetchone()[0] == 4, 'Forward migration did not restore schema4')
+        require((staged / 'configuration.json').read_bytes() == old_config, 'Rollback changed desired/applied config')
+        require(all((staged / p).read_bytes() == data for p, data in runtime_files.items() if p != 'proxy/config.yaml'), 'Rollback changed runtime metadata')
+        expected_yaml = runtime_files['proxy/config.yaml'].replace(str(gateway_home / 'proxy/auth').encode(), str(staged / 'proxy/auth').encode())
+        require((staged / 'proxy/config.yaml').read_bytes() == expected_yaml, 'YAML differs beyond exact own auth-dir rebase')
+        checks.append('bounded pinned old-new-old-new staged rollback; schema4-to3-to4; complete current grants preserved')
+
         # A current marker-aware Monitor package contains both old owned and static grants.
         recovery_root, recovery_home = root / 'recovery', root / 'recovery/state'
         install(args.monitor_package, recovery_root, recovery_home)
@@ -279,6 +331,7 @@ def main():
         parser.add_argument('--' + name, required=True, type=Path)
     for name in ('monitor-manifest-sha256', 'gateway-manifest-sha256', 'previous-manifest-sha256', 'gateway-core-sha256', 'previous-core-sha256'):
         parser.add_argument('--' + name, required=True)
+    parser.add_argument('--parent-netns', help='Trusted launcher network identity captured before unshare, net:[digits]')
     parser.add_argument('--execute', action='store_true')
     parser.add_argument('--report', required=True, type=Path)
     args = parser.parse_args()
@@ -293,7 +346,7 @@ def main():
     args.report.write_text(json.dumps({'format': 1, 'status': 'passed' if args.execute else 'not_run',
         'planOnly': not args.execute, 'packages': packages, 'checks': checks,
         'scope': 'Isolated package/install/Host/Core/stopped restore; zero inference/provider reads/systemd/real-state access',
-        'historicalBinaryDowngradeRuntime': 'blocked: old Host rejects SQLite schema4; app-only rollback requires independently qualified schema compatibility'}, indent=2) + '\n')
+        'historicalBinaryDowngradeRuntime': 'passed-bounded-staged-conversion' if args.execute else 'not_run: bounded staged schema conversion only; app-only schema4 rollback remains blocked'}, indent=2) + '\n')
     print('PASS isolated package qualification' if args.execute else 'PLANNED; no install/process has run')
 
 

@@ -17,14 +17,14 @@ override the application's explicit schema version guard.
 Keeping the entire CURRENT credential/auth stores is necessary to avoid spent
 refresh-token resurrection, but does not fix this database incompatibility.
 A successful full current-package stopped restore is also not evidence that an
-old binary opens a migrated database. No successful old-binary runtime stage was
-added to `actual_packages.py`; its report now names this exact schema blocker.
+old binary opens a migrated database. The source-only bounded stage in `actual_packages.py` uses the explicit conversion
+below; runtime qualification is still pending. App-only rollback remains blocked.
 
-## Narrow additional conversion candidate (not authorized/executed here)
+## Narrow staged conversion (implemented; runtime qualification pending)
 
-A bounded rollback could potentially use an explicit, independently qualified
-stopped schema conversion in addition to the app swap. This is a different action
-from an app-only rollback and needs the integrator's concrete decision and proof:
+The explicitly authorized `scripts/prepare-legacy-rollback.py` prepares an isolated
+stopped schema conversion and app swap. It never starts applications, replaces
+input state, or restores checkpoint credentials. Its required proof is:
 
 1. Stop all writers and retain a verified full CURRENT app/state snapshot.
    Keep CURRENT credentials, auth-owned files and every credential generation;
@@ -76,8 +76,9 @@ connect state or restored rotating grants. Those are outside the candidate.
 
 The upstream Core can perform incidental public metadata checks at startup even
 without configured provider accounts. `actual_packages.py --execute` now refuses
-execution unless its network namespace differs from process1's namespace and
-contains only `lo`. The runner must bring up loopback inside an explicitly new
+execution unless its network namespace differs from the trusted launcher's
+`--parent-netns` identity (captured before unshare), or process1's namespace when
+that argument is absent, and contains only `lo`. The runner must bring up loopback inside an explicitly new
 network namespace and must not create a new PID namespace (which would obscure
 this guard's parent namespace reference). No default host port can be used in
 the user's network namespace. A namespace failure aborts; it never falls back.
@@ -86,3 +87,31 @@ Root owns the build/runtime slot and any decision to qualify the extra conversio
 Until actual exact-binary evidence exists, old app-only rollback is **blocked by
 schema4**. Full current-package snapshot/restore remains a separate supported
 qualification target, with rotation quarantine and usable static/history access.
+
+## Helper contract
+
+The shipped `packaging/prepare-legacy-rollback.py` has `checkpoint` and `prepare`
+actions. Both require absolute `--state`, new `--destination`, exact `--old-package`,
+`--old-manifest-sha256`, `--old-host-sha256`, `--old-core-sha256`, and `--stopped`.
+`prepare` additionally requires `--checkpoint`. For the generated absolute
+own-home auth path, explicit `--rebase-auth-dir` permits changing exactly that
+single scalar to the final staged home's `proxy/auth` path. External paths,
+aliases, tags, merges and ambiguous root keys are rejected. Create checkpoint from genuine
+closed v3 state before upgrading; never relabel v4 as a checkpoint. The reviewed
+old Host source pin is `413588c44ee5ad730573baab2cd8f6dc328f48c5`.
+
+`prepare` outputs `current-snapshot/` (entire current state), `rollback-state/`
+(entire current state with only app, empty error column and the explicitly
+permitted own-home auth path changed), and private
+`preparation.json`. Inputs stay intact. No caller-controlled destination may
+overlap inputs. Reviewed schema resource hashes are embedded in the helper.
+All current files outside app/database and that one auth path retain their private inventory;
+checkpoint credential material is never copied into rollback-state.
+
+The operator must keep every writer stopped throughout preparation. Process
+scans and before/after inventories catch observable interference; they do not
+lock out a future or noncooperative writer. A failed guard aborts preparation.
+Synthetic unit tests are in `tests/delivery-stabilization/test_legacy_rollback.py`.
+The old/new runtime fixture uses fixed 18418/18417 only in its required distinct
+loopback-only namespace and retains both old and current full snapshots.
+No credential hashes are published in qualification reports.
