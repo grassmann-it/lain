@@ -14,6 +14,7 @@ try
     await LoginLifecycle();
     await RotationAndRestore();
     await ReviewRegressions();
+    await LegacyPreservation();
     await QuotaGeneration();
     Console.WriteLine($"Account connect foundation: {assertions} assertions passed (offline synthetic state only).");
 }
@@ -255,6 +256,33 @@ async Task ReviewRegressions()
     Check((await operations.StatusAsync(started.Id)).State == "completed", "issued key checkpoint can be enriched before central publication");
     Check(checkpoint.Repository.Snapshot.Accounts.Single().Credentials!.Single().Generation == 2, "verified metadata creates next immutable generation");
     Check(verifiedAdapter.Releases == 1, "completed adapter releases local operation resources");
+    var storage = New("storage-failure");
+    var storageAdapter = new FakeLogin { Next = new("prepared", Credential: Key("memory-retained-key", recovery: true)) };
+    await using var storageOperations = storage.Logins(storageAdapter);
+    var storageStart = await storageOperations.BeginAsync(0, new("test", "fake", ["quota"]));
+    var blockedDirectory = Path.Combine(storage.Paths.Credentials, "generations");
+    OwnStatePaths.WritePrivate(blockedDirectory, "synthetic storage obstruction");
+    Check((await storageOperations.StatusAsync(storageStart.Id)).State == "recovery-required", "received key storage failure is recovery-required rather than failed login");
+    File.Delete(blockedDirectory);
+    Check((await storageOperations.StatusAsync(storageStart.Id)).State == "recovery-required" && storageAdapter.Polls == 1,
+        "retry saves retained in-memory result without provider reissuance");
+    Check(new CredentialRecoveryService(storage.Repository, storage.Accounts, storage.Secrets.Generations).Adopt(0, storageStart.Id).Accounts.Length == 1,
+        "locally retried credential is durably adoptable");
+    var enrichedFailure = New("enriched-storage-failure");
+    string? obstruction = null;
+    var enrichment = new CheckpointLogin { AfterCheckpoint = context =>
+    {
+        var saved = CredentialRecoveryService.Read(enrichedFailure.Secrets.Generations, context.OperationId);
+        obstruction = Path.Combine(enrichedFailure.Paths.Credentials, "generations", saved.Handle!.Id, "2.json");
+        Directory.CreateDirectory(obstruction);
+    } };
+    await using var enrichedOperations = enrichedFailure.Logins(enrichment);
+    var enrichedStart = await enrichedOperations.BeginAsync(0, new("test", "fake", ["quota"]));
+    Check((await enrichedOperations.StatusAsync(enrichedStart.Id)).State == "recovery-required", "final enrichment storage failure retains received result");
+    Directory.Delete(obstruction!);
+    await enrichedOperations.StatusAsync(enrichedStart.Id);
+    Check(CredentialRecoveryService.Read(enrichedFailure.Secrets.Generations, enrichedStart.Id).Handle is { Generation: 2, Binding.Provenance: "verified" },
+        "local retry writes enriched generation instead of reusing earlier unverified checkpoint");
 
     var quarantine = New("quarantine");
     OwnStatePaths.WritePrivate(Path.Combine(quarantine.Paths.OwnedAuth, "unreferenced.json"), "{\"refresh_token\":\"synthetic-spent\"}");
@@ -276,6 +304,78 @@ async Task ReviewRegressions()
     var badReference = core.Repository.Update(core.Repository.Snapshot.Revision, state => state with { Accounts = state.Accounts.Select(a => a with {
         Capabilities = [new("quota", "unverified", "cred-missing")] }).ToArray() });
     ThrowsSync<InvalidDataException>(() => new CredentialResolver(core.Repository, core.Secrets).Resolve(coreAccount.Id, "quota"), "missing explicit generation cannot fall back to another purpose");
+    var shared = New("shared-material");
+    var sharedAccount = shared.Accounts.ConnectCredential(0, new(new("test", "manual", ["quota"]), "same-suitable-fixture-key")).Accounts.Single();
+    shared.Accounts.ConnectCredential(1, new(new("test", "manual", ["inference"], AccountId: sharedAccount.Id), "same-suitable-fixture-key", BaseUrl: "https://provider.example.test/v1"));
+    var materialFiles = Directory.EnumerateFiles(Path.Combine(shared.Paths.Credentials, "material", sharedAccount.Id)).ToArray();
+    Check(materialFiles.Length == 1, "same suitable key is stored once across inference and monitoring descriptors");
+    Check(shared.Repository.Snapshot.Accounts.Single().Credentials!.Length == 2 &&
+        new CredentialResolver(shared.Repository, shared.Secrets).Resolve(sharedAccount.Id, "quota")!.PrivateJson.Contains("same-suitable-fixture-key"),
+        "each purpose keeps its own immutable binding to shared private material");
+    Check(!Directory.EnumerateFiles(Path.Combine(shared.Paths.Credentials, "generations"), "*.json", SearchOption.AllDirectories)
+        .Any(path => File.ReadAllText(path).Contains("same-suitable-fixture-key")), "generation envelopes do not duplicate shared key material");
+}
+
+async Task LegacyPreservation()
+{
+    var source = Path.Combine(root, "legacy-preservation-source");
+    Directory.CreateDirectory(source);
+    var sourceConfig = Path.Combine(source, "legacy.yaml");
+    File.WriteAllText(sourceConfig, """
+        openai-compatibility:
+          - name: test
+            base-url: https://provider.example.test/v1
+            api-key-entries:
+              - api-key: original-import-key
+                label: Source name
+            models:
+              - name: test-model
+                alias: original-alias
+        """);
+    var f = New("legacy-preservation");
+    var importer = new LegacyImportService(f.Paths, f.Repository, f.Secrets);
+    importer.Import(new(0, sourceConfig));
+    var original = f.Repository.Snapshot.Accounts.Single();
+    var routeId = f.Repository.Snapshot.Routes.Single().Id;
+    f.Accounts.ReplaceApiCredential(1, original.Id, "locally-rotated-key");
+    f.Accounts.Connect(2, new("test", "separate-monitor", ["quota"], AccountId: original.Id), Key("separate-monitor-key"));
+    f.Repository.Update(3, state => state with { Accounts = state.Accounts.Select(a => a with { Name = "My chosen account name", BudgetPoolId = "keep-pool" }).ToArray() });
+    var before = f.Repository.Snapshot.Accounts.Single();
+    File.WriteAllText(sourceConfig, File.ReadAllText(sourceConfig).Replace("original-alias", "updated-alias").Replace("Source name", "Changed source label"));
+    importer.Import(new(4, sourceConfig));
+    var after = f.Repository.Snapshot.Accounts.Single();
+    Check(after.Id == before.Id && after.Name == before.Name && after.Generation == before.Generation && after.BudgetPoolId == "keep-pool",
+        "old-source update preserves established identity, custom name, generation and pool");
+    Check(JsonSerializer.Serialize(after.Credentials) == JsonSerializer.Serialize(before.Credentials) && JsonSerializer.Serialize(after.Capabilities) == JsonSerializer.Serialize(before.Capabilities),
+        "reimport keeps all purpose bindings and generation handles");
+    Check(f.Secrets.ReadAccount(after.Id).Contains("locally-rotated-key") && (await f.Source.GetCredentialAsync(after.Id))!.BearerToken == "separate-monitor-key",
+        "old source cannot roll back local key or independent monitor");
+    Check(f.Repository.Snapshot.Routes.Single(r => r.Id == routeId).Alias == "updated-alias", "mapped source route update retains route ID");
+    var replay = importer.Import(new(f.Repository.Snapshot.Revision, sourceConfig));
+    Check(replay.Revision == f.Repository.Snapshot.Revision && replay.Added == 0 && replay.Updated == 0, "modern metadata preservation remains import-idempotent");
+
+    var separateIdentity = New("legacy-no-key-merge");
+    var opaque = separateIdentity.Accounts.ConnectCredential(0, new(new("test", "manual", ["inference"]), "original-import-key", BaseUrl: "https://provider.example.test/v1")).Accounts.Single();
+    new LegacyImportService(separateIdentity.Paths, separateIdentity.Repository, separateIdentity.Secrets).Import(new(1, sourceConfig));
+    Check(separateIdentity.Repository.Snapshot.Accounts.Length == 2 && separateIdentity.Repository.Snapshot.Accounts.Any(a => a.Id == opaque.Id && a.Credentials is not null),
+        "key equality alone cannot merge an established modern identity into imported history");
+
+    var subjects = New("legacy-subjects");
+    var known = subjects.Accounts.Connect(0, new("codex", "snapshot", ["inference", "quota"], Name: "Chosen subject name"),
+        new("external-snapshot", ["inference", "quota"], new("codex", Subject: "provider-subject-a", Provenance: "verified"),
+            "{\"kind\":\"codex-access-snapshot\",\"accessToken\":\"new-local-access\",\"accountId\":\"provider-subject-a\"}", DateTimeOffset.UtcNow.AddHours(1))).Accounts.Single();
+    var empty = Path.Combine(source, "empty.yaml"); File.WriteAllText(empty, "{}\n");
+    var auth = Path.Combine(source, "auth"); Directory.CreateDirectory(auth);
+    File.WriteAllText(Path.Combine(auth, "subject-a.json"), "{\"type\":\"codex\",\"account_id\":\"provider-subject-a\",\"email\":\"changed-name@example.test\",\"access_token\":\"old-source-access\",\"refresh_token\":\"never-copy-refresh\"}");
+    var subjectImport = new LegacyImportService(subjects.Paths, subjects.Repository, subjects.Secrets);
+    subjectImport.Import(new(1, empty, auth));
+    Check(subjects.Repository.Snapshot.Accounts.Single().Id == known.Id && subjects.Repository.Snapshot.Accounts.Single().Name == "Chosen subject name" &&
+        subjects.Secrets.ReadAccount(known.Id).Contains("new-local-access"), "verified provider subject can identify source while changed email cannot replace name or owner");
+    File.WriteAllText(Path.Combine(auth, "subject-b.json"), "{\"type\":\"codex\",\"account_id\":\"provider-subject-b\",\"email\":\"changed-name@example.test\",\"access_token\":\"other-subject-access\"}");
+    subjectImport.Import(new(subjects.Repository.Snapshot.Revision, empty, auth));
+    Check(subjects.Repository.Snapshot.Accounts.Length == 2, "same email with different verified subject never merges accounts");
+    Check(!Directory.EnumerateFiles(subjects.Paths.Root, "*", SearchOption.AllDirectories).Any(p => File.ReadAllText(p).Contains("never-copy-refresh")),
+        "legacy import never copies or refreshes external refresh material");
 }
 
 sealed class Fixture
@@ -331,11 +431,13 @@ sealed class FakeClock : TimeProvider
 sealed class CheckpointLogin : IAccountLoginAdapter
 {
     public string Provider => "test"; public string Method => "fake"; public int Releases;
+    public Action<LoginOperationContext>? AfterCheckpoint;
     public Task<LoginAdapterResult> BeginAsync(LoginOperationContext context, CancellationToken ct) => Task.FromResult(new LoginAdapterResult("waiting"));
     public async Task<LoginAdapterResult> StatusAsync(LoginOperationContext context, CancellationToken ct)
     {
         var credential = new PreparedLoginCredential("static-key", ["quota"], new("test"), "{\"kind\":\"api-key\",\"apiKey\":\"issued-key\"}", PreserveForRecovery: true);
         await context.CheckpointCredentialAsync!(credential, ct);
+        AfterCheckpoint?.Invoke(context);
         return new("prepared", Credential: credential with { Binding = new("test", Subject: "provider-subject", Provenance: "verified") });
     }
     public Task CancelAsync(LoginOperationContext context, CancellationToken ct) => Task.CompletedTask;

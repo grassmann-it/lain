@@ -20,6 +20,7 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
     public LoginOperationContext ReserveConnect(long revision, ConnectAccountRequest request, string operationId, DateTimeOffset expiresAt)
     {
         ArgumentNullException.ThrowIfNull(request);
+        request = request with { Provider = CanonicalProviderId(request.Provider) };
         var state = configuration.Snapshot;
         if (state.Revision != revision) throw new RevisionConflictException(revision, state.Revision);
         if (string.IsNullOrWhiteSpace(request.Provider) || request.Provider.Length > 80 || request.Provider.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '-'))
@@ -30,12 +31,12 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             throw new ArgumentException("Choose supported connection purposes.");
         if (request.Name is { } name && (string.IsNullOrWhiteSpace(name) || name.Length > 120 || name.Any(char.IsControl)))
             throw new ArgumentException("Invalid account name.");
-        if (request.Binding is { } binding && binding.Provider != request.Provider) throw new ArgumentException("Resource provider does not match the connection.");
+        if (request.Binding is { } binding && CanonicalProviderId(binding.Provider) != request.Provider) throw new ArgumentException("Resource provider does not match the connection.");
         var target = request.AccountId is null ? null : state.Accounts.SingleOrDefault(a => a.Id == request.AccountId)
             ?? throw new KeyNotFoundException("Account not found.");
         if (target is not null)
         {
-            if (target.Provider != request.Provider) throw new ArgumentException("Reconnect provider does not match the account.");
+            if (CanonicalProviderId(target.Provider) != request.Provider) throw new ArgumentException("Reconnect provider does not match the account.");
             if (request.ExpectedGeneration is { } generation && generation != target.Generation)
                 throw new InvalidOperationException("Account generation changed; reconnect again.");
             EnsureCompatibleBinding(target.Binding, request.Binding);
@@ -54,7 +55,7 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             if (context.Request.AccountId is not null && (existing is null || existing.Generation != context.AccountGeneration))
                 throw new InvalidOperationException("Account was removed or changed during connection.");
             if (context.Request.AccountId is null && existing is not null) throw new InvalidOperationException("Reserved account identity is already in use.");
-            if (handle.Binding.Provider != context.Request.Provider || context.Request.Purposes.Any(p => !handle.Purposes.Contains(p, StringComparer.Ordinal)))
+            if (CanonicalProviderId(handle.Binding.Provider) != CanonicalProviderId(context.Request.Provider) || context.Request.Purposes.Any(p => !handle.Purposes.Contains(p, StringComparer.Ordinal)))
                 throw new InvalidDataException("Prepared credential does not grant the requested account purposes.");
             EnsureBoundResult(context.Request.Binding, handle.Binding);
             EnsureBoundResult(existing?.Binding, handle.Binding);
@@ -122,7 +123,7 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
     internal static void EnsureCompatibleBinding(ResourceBindingDto? expected, ResourceBindingDto? actual)
     {
         if (expected is null || actual is null) return;
-        if (expected.Provider != actual.Provider || Different(expected.Subject, actual.Subject) || Different(expected.Product, actual.Product) ||
+        if (CanonicalProviderId(expected.Provider) != CanonicalProviderId(actual.Provider) || Different(expected.Subject, actual.Subject) || Different(expected.Product, actual.Product) ||
             Different(expected.Region, actual.Region) || Different(expected.ResourceType, actual.ResourceType) || Different(expected.ResourceId, actual.ResourceId))
             throw new ArgumentException("The credential belongs to a different provider, identity, product, region or resource.");
         static bool Different(string? a, string? b) => a is not null && b is not null && !StringComparer.Ordinal.Equals(a, b);
@@ -139,7 +140,7 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         static bool Missing(string? previous, string? current) => previous is not null && current is null;
     }
     private static ResourceBindingDto MergeBinding(ResourceBindingDto? prior, ResourceBindingDto next) => prior is null ? next :
-        next with { Subject = next.Subject ?? prior.Subject, Product = next.Product ?? prior.Product, Region = next.Region ?? prior.Region,
+        next with { Provider = prior.Provider, Subject = next.Subject ?? prior.Subject, Product = next.Product ?? prior.Product, Region = next.Region ?? prior.Region,
             ResourceType = next.ResourceType ?? prior.ResourceType, ResourceId = next.ResourceId ?? prior.ResourceId,
             Provenance = next.Provenance };
 
@@ -233,6 +234,8 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         return configuration.Update(revision, state =>
         {
             var duplicate = FindDuplicate(state, provider, input.ApiKey, null);
+            if (duplicate is not null && input.ProviderConnectionId is null && input.ProviderRouteId is null)
+                throw new ArgumentException("This credential already belongs to an account.");
             // Key replacement preserves account IDs, so an old key's derived ID
             // can still be occupied by a different current key. Retained private
             // credentials also remain reserved after public account removal.
@@ -364,15 +367,27 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             var capabilities = EffectiveCapabilities(account).Select(capability =>
             {
                 var handle = account.Credentials.SingleOrDefault(h => h.Id == capability.CredentialId && h.Purposes.Contains(capability.Purpose));
-                if (handle is null) return capability with { State = "missing-credential" };
+                if (handle is null)
+                {
+                    if (capability.CredentialId is null && secrets.HasAccount(account.Id))
+                        return capability with { State = account.ExpiresAt <= DateTimeOffset.UtcNow ? "expired" : "unverified" };
+                    return capability with { State = "missing-credential" };
+                }
                 try
                 {
                     if (secrets.Generations.IsRetired(handle)) return capability with { State = "recovery-required" };
-                    secrets.Generations.Read(account.Id, handle);
-                    return capability with { State = handle.ExpiresAt <= DateTimeOffset.UtcNow ? "expired" : capability.State };
+                    var stored = secrets.Generations.Read(account.Id, handle);
+                    var expiresAt = handle.ExpiresAt;
+                    if (handle.Owner == "core")
+                    {
+                        using var projection = JsonDocument.Parse(secrets.ProjectAccessCredential(stored.PrivateJson));
+                        if (projection.RootElement.TryGetProperty("expiresAt", out var expiry) && DateTimeOffset.TryParse(expiry.GetString(), out var currentExpiry))
+                            expiresAt = currentExpiry;
+                    }
+                    return capability with { State = expiresAt <= DateTimeOffset.UtcNow ? "expired" : capability.State };
                 }
                 catch (Exception error) when (error is IOException or JsonException or InvalidDataException)
-                { return capability with { State = secrets.Generations.RestoreEpoch is not null && handle.Owner is "core" or "delegated-cli" or "session-owner"
+                { return capability with { State = secrets.Generations.RestoreEpoch is not null && handle.Owner is not ("static-key" or "external-snapshot")
                     ? "recovery-required" : "missing-credential" }; }
             }).ToArray();
             return account with { Capabilities = capabilities, State = capabilities.Any(c => c.State is "unverified" or "available")
@@ -411,6 +426,12 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         }
         return provider;
     }
+    public static string CanonicalProviderId(string provider) => provider switch
+    {
+        "command-code" => "commandcode",
+        "mimo" => "xiaomi-mimo",
+        _ => provider
+    };
     internal static string CredentialId(string provider, string credential) => "acct-" +
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(provider + "\0" + credential))).ToLowerInvariant()[..32];
     internal static void ValidateEndpoint(string endpoint)

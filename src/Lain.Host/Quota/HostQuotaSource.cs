@@ -25,6 +25,7 @@ public sealed class HostQuotaSource(ConfigurationRepository repository, SecretSt
         var monitor = monitorAccess.GetCredential(accountId);
         if (access is null && monitor is null) return Task.FromResult<QuotaCredential?>(null);
         var version = Fingerprint(accountId, access, monitor);
+        var settings = AccessSettings(access?.PrivateJson);
         if (monitor is not null)
         {
             if (monitor.Kind == "inference-key")
@@ -34,7 +35,8 @@ public sealed class HostQuotaSource(ConfigurationRepository repository, SecretSt
                 return Task.FromResult(QuotaCredential.FromSecretJson(inference.PrivateJson, monitor, version, ["quota"]));
             }
             // Separate monitoring is valid without an inference file, or with expired inference.
-            return Task.FromResult<QuotaCredential?>(new("", expiresAt: monitor.ExpiresAt, monitor: monitor,
+            return Task.FromResult<QuotaCredential?>(new("", providerAccountId: access?.Handle?.Binding.Subject,
+                expiresAt: monitor.ExpiresAt, settings: settings, monitor: monitor,
                 bindingVersion: version, purposes: ["quota"]));
         }
         if (access is null) return Task.FromResult<QuotaCredential?>(null);
@@ -44,13 +46,22 @@ public sealed class HostQuotaSource(ConfigurationRepository repository, SecretSt
             using var document = JsonDocument.Parse(access.PrivateJson);
             var token = JsonFields.String(document.RootElement, "accessToken");
             if (!string.IsNullOrWhiteSpace(token)) credential = new(token, access.Handle?.Binding.Subject,
-                access.Handle?.ExpiresAt, JsonFields.String(document.RootElement, "baseUrl"), bindingVersion: version, purposes: ["quota"]);
+                access.Handle?.ExpiresAt, JsonFields.String(document.RootElement, "baseUrl"), settings, bindingVersion: version, purposes: ["quota"]);
         }
         return Task.FromResult(credential);
     }
 
     public async Task<string?> GetBindingVersionAsync(string accountId, CancellationToken ct = default) =>
         (await GetCredentialAsync(accountId, ct))?.BindingVersion;
+
+    private static IReadOnlyDictionary<string, string>? AccessSettings(string? json)
+    {
+        if (json is null) return null;
+        using var document = JsonDocument.Parse(json);
+        var settings = JsonFields.Object(document.RootElement, "settings");
+        return settings.ValueKind == JsonValueKind.Object ? settings.EnumerateObject()
+            .Where(p => p.Value.ValueKind == JsonValueKind.String).ToDictionary(p => p.Name, p => p.Value.GetString()!, StringComparer.Ordinal) : null;
+    }
 
     private string Fingerprint(string accountId, CredentialAccess? access, QuotaMonitorCredential? monitor)
     {

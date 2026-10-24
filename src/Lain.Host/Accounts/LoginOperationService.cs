@@ -75,6 +75,7 @@ public sealed class LoginOperationService : IAsyncDisposable
         public ITimer? Expiry;
         public CredentialHandleDto? Prepared;
         public PreparedLoginCredential? PreparedCredential;
+        public PreparedLoginCredential? PendingCredential;
         public bool PendingPersistence;
         public bool Released;
         public string? RequestFingerprint;
@@ -91,10 +92,11 @@ public sealed class LoginOperationService : IAsyncDisposable
         clock = timeProvider ?? TimeProvider.System;
     }
 
-    public bool RequiresCore(string provider, string method) => adapters.TryGetValue((provider, method), out var adapter) && adapter.RequiresCore;
+    public bool RequiresCore(string provider, string method) => adapters.TryGetValue((AccountService.CanonicalProviderId(provider), method), out var adapter) && adapter.RequiresCore;
 
     public Task<LoginDto> BeginAsync(long revision, ConnectAccountRequest request, CancellationToken ct = default)
     {
+        request = request with { Provider = AccountService.CanonicalProviderId(request.Provider) };
         if (accounts is null || secrets is null) throw new InvalidOperationException("Account connection service is unavailable.");
         Operation operation;
         lock (gate)
@@ -143,6 +145,7 @@ public sealed class LoginOperationService : IAsyncDisposable
 
     public Task<LoginDto> BeginAsync(string provider, CancellationToken ct = default)
     {
+        provider = AccountService.CanonicalProviderId(provider);
         var adapter = adapters.Values.FirstOrDefault(a => a.Provider == provider);
         if (adapter is not null && configuration is not null)
             return BeginAsync(configuration.Snapshot.Revision, new(provider, adapter.Method, ["inference", "quota"]), ct);
@@ -194,7 +197,7 @@ public sealed class LoginOperationService : IAsyncDisposable
         await operation.Gate.WaitAsync(ct);
         try
         {
-            if (operation.PendingPersistence && operation.PreparedCredential is { } pending)
+            if (operation.PendingPersistence && operation.PendingCredential is { } pending)
             {
                 try { PrepareResult(operation, pending); }
                 catch (IOException) { return Finish(operation, "recovery-required", "Private credential storage is unavailable. Keep the host running and retry local recovery; do not repeat provider issuance."); }
@@ -292,7 +295,7 @@ public sealed class LoginOperationService : IAsyncDisposable
                 return operation.Status;
             }
             var resources = result.Resources;
-            if (resources is { Length: > 64 } || resources?.Any(r => r.Provider != context.Request.Provider) == true)
+            if (resources is { Length: > 64 } || resources?.Any(r => AccountService.CanonicalProviderId(r.Provider) != context.Request.Provider) == true)
                 throw new InvalidDataException("Invalid discovered resource list.");
             operation.Status = operation.Status with { State = result.State, Url = result.Url, Error = null,
                 Resources = resources, NextAction = result.State == "resource-required" ? "select-resource" : "authorize" };
@@ -308,12 +311,13 @@ public sealed class LoginOperationService : IAsyncDisposable
             var durable = credential with { PreserveForRecovery = true };
             var prior = operation.PreparedCredential;
             operation.PendingPersistence = true;
-            operation.PreparedCredential = durable;
+            operation.PendingCredential = durable;
             if (operation.Prepared is null || prior is null || prior.Owner != durable.Owner || prior.Binding != durable.Binding || prior.PrivateJson != durable.PrivateJson ||
                 prior.ExpiresAt != durable.ExpiresAt || !prior.Purposes.SequenceEqual(durable.Purposes))
             {
                 operation.Prepared = secrets!.Generations.Prepare(context.AccountId, durable, context.OperationId,
                     operation.Prepared?.Id, operation.Prepared is null ? 1 : checked(operation.Prepared.Generation + 1));
+                operation.PreparedCredential = durable;
             }
             CredentialRecoveryService.SavePrepared(secrets!.Generations, context, operation.Prepared!, durable.RemoteId);
             operation.PendingPersistence = false;
@@ -411,7 +415,19 @@ public sealed class LoginOperationService : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         Operation[] active;
-        lock (gate) { if (disposed) return; disposed = true; active = operations.Values.Where(o => !Terminal(o.Status.State)).ToArray(); }
-        foreach (var operation in active) await ExpireAsync(operation);
+        lock (gate) { if (disposed) return; disposed = true; active = operations.Values.ToArray(); }
+        await Task.WhenAll(active.Select(async operation =>
+        {
+            if (!Terminal(operation.Status.State)) await ExpireAsync(operation);
+            // An exchange may deliberately finish after cancellation to preserve an issued one-time secret.
+            if (!await operation.Gate.WaitAsync(TimeSpan.FromSeconds(25))) return;
+            try
+            {
+                if (operation.PendingPersistence && operation.PendingCredential is { } credential)
+                    try { PrepareResult(operation, credential); } catch (IOException) { }
+            }
+            finally { operation.Gate.Release(); }
+            await ReleaseAdapterAsync(operation);
+        }));
     }
 }

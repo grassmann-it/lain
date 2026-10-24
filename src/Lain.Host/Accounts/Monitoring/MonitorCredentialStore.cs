@@ -44,10 +44,21 @@ public sealed class MonitorCredentialStore
                 var capability = account.Capabilities.SingleOrDefault(c => c.Purpose == "quota");
                 if (capability is null) return null;
                 var handle = account.Credentials?.SingleOrDefault(h => h.Id == capability.CredentialId);
+                if (capability.CredentialId is not null && handle is null)
+                    throw new InvalidDataException("Referenced monitor credential generation is missing.");
                 if (handle is not null)
                 {
                     var generation = secrets.Generations.Read(account.Id, handle);
                     using var document = JsonDocument.Parse(generation.PrivateJson);
+                    if (document.RootElement.TryGetProperty("kind", out var kind) && kind.GetString() == "cloud-oauth")
+                    {
+                        var token = document.RootElement.TryGetProperty("accessToken", out var accessToken) ? accessToken.GetString() : null;
+                        var cloud = new StoredMonitorAccess(account.Id, account.Provider,
+                            MonitorAccessCatalog.Provider(account.Provider) == "gemini-api" ? "access-token-snapshot" : "api-token",
+                            token, handle.Binding.ResourceId ?? "", handle.ExpiresAt);
+                        ValidateShape(cloud);
+                        return cloud;
+                    }
                     if (!document.RootElement.TryGetProperty("monitorAccess", out var monitor)) return null;
                     var value = monitor.Deserialize<StoredMonitorAccess>(JsonOptions) ?? throw new InvalidDataException("Invalid monitor credential.");
                     if (value.AccountId != account.Id || value.Provider != account.Provider) throw new InvalidDataException("Monitor credential identity mismatch.");

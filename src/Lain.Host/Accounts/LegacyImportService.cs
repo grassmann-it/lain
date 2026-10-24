@@ -75,18 +75,28 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
         var snapshotId = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(snapshot))).ToLowerInvariant();
         var added = 0; var updated = 0;
         var current = configuration.Snapshot;
+        MapVerifiedSnapshotTargets(candidates, current);
         var remappedAccounts = NormalizeImportedIdentities(candidates, current);
+        var preserveCredentials = new HashSet<string>(StringComparer.Ordinal);
         var unique = candidates.GroupBy(c => c.Account.Id).Select(MergeCredentialTransports).Select(candidate =>
         {
-            var own = current.Accounts.SingleOrDefault(a => a.Id == candidate.Account.Id && a.CredentialKind == "codex-owned");
-            return candidate.Account.CredentialKind == "codex-access-snapshot" && own is not null
-                ? (Account: own with { SharedWithLegacy = true }, Credential: secrets.ReadAccountDescriptor(own.Id)) : candidate;
+            var prior = current.Accounts.SingleOrDefault(a => a.Id == candidate.Account.Id);
+            if (prior is null) return candidate;
+            if (IsEstablished(prior) || prior.CredentialKind == "codex-owned")
+            {
+                preserveCredentials.Add(prior.Id);
+                // Import may update its own route metadata, but cannot replace an established credential owner,
+                // scope, custom name, capability reference or current generation with an external snapshot.
+                return (Account: prior with { SharedWithLegacy = true }, candidate.Credential);
+            }
+            return (Account: candidate.Account with { Name = prior.Name, BudgetPoolId = prior.BudgetPoolId }, candidate.Credential);
         }).ToArray();
         if (current.Revision != request.Revision) throw new RevisionConflictException(request.Revision, current.Revision);
         var changed = unique.Where(candidate =>
         {
             var prior = current.Accounts.SingleOrDefault(a => a.Id == candidate.Account.Id);
-            return prior is null || prior != candidate.Account || !secrets.HasAccount(candidate.Account.Id) || secrets.ReadAccount(candidate.Account.Id) != candidate.Credential;
+            return prior is null || prior != candidate.Account || !preserveCredentials.Contains(candidate.Account.Id) &&
+                (!secrets.HasAccount(candidate.Account.Id) || secrets.ReadAccount(candidate.Account.Id) != candidate.Credential);
         }).ToArray();
         var (importedRoutes, routeMetadata, routesChanged) = BuildImportedRoutes(current.Routes.Select(r => r with { AccountIds = r.AccountIds.Select(id => remappedAccounts.GetValueOrDefault(id, id)).Distinct().ToArray() }).ToArray(), unique, root, remappedAccounts);
         // A replay changes neither revision nor secrets. Snapshot is private and content-addressed.
@@ -99,7 +109,7 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
             {
                 if (accounts.ContainsKey(candidate.Account.Id)) updated++; else added++;
                 accounts[candidate.Account.Id] = candidate.Account;
-                secrets.WriteAccount(candidate.Account.Id, candidate.Credential);
+                if (!preserveCredentials.Contains(candidate.Account.Id)) secrets.WriteAccount(candidate.Account.Id, candidate.Credential);
             }
             OwnStatePaths.WritePrivate(Path.Combine(paths.Imports, snapshotId + ".yaml"), snapshot);
             OwnStatePaths.WritePrivate(Path.Combine(paths.Imports, "routes.json"), routeMetadata);
@@ -128,6 +138,7 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
         var sources = new List<(AccountDto Account, YamlMappingNode Model, string? TransportId, bool SourceEnabled)>();
         foreach (var candidate in candidates)
         {
+            if (candidate.Account.Capabilities is not null && !candidate.Account.Capabilities.Any(c => c.Purpose == "inference")) continue;
             using var document = JsonDocument.Parse(candidate.Credential);
             var secret = document.RootElement;
             var transports = secret.TryGetProperty("transports", out var variants) ? variants.EnumerateArray().ToArray() : [secret];
@@ -139,7 +150,7 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
                 if (yaml.Documents[0].RootNode is YamlMappingNode provider && Get(provider, "models") is YamlSequenceNode models)
                     sources.AddRange(models.Children.OfType<YamlMappingNode>().Select(model => (candidate.Account, model, transportId, !transport.TryGetProperty("sourceEnabled", out var enabled) || enabled.GetBoolean())));
             }
-            if (candidate.Account.CredentialKind is "codex-access-snapshot" or "codex-owned")
+            if (JsonText(secret, "kind") is "codex-access-snapshot" or "codex-owned")
             {
                 var aliases = Get(legacy, "oauth-model-alias") is YamlMappingNode oauth ? Get(oauth, "codex") as YamlSequenceNode : null;
                 if (aliases is { Children.Count: > 0 })
@@ -206,9 +217,12 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
         var remapped = new Dictionary<string, string>();
         foreach (var group in candidates.Where(c => c.Account.CredentialKind == "api-key").GroupBy(c => c.Account.Id).ToArray())
         {
+            // A historical source identity remains mapped after a local rotation; matching another account's
+            // current key must not merge its established identity or usage history.
+            if (state.Accounts.Any(a => a.Id == group.Key && IsEstablished(a))) continue;
             using var input = JsonDocument.Parse(group.First().Credential);
             var key = JsonText(input.RootElement, "apiKey");
-            var matches = state.Accounts.Where(a => a.CredentialKind == "api-key" && secrets.HasAccount(a.Id)).Where(a =>
+            var matches = state.Accounts.Where(a => a.CredentialKind == "api-key" && !IsEstablished(a) && secrets.HasAccount(a.Id)).Where(a =>
             {
                 using var prior = JsonDocument.Parse(secrets.ReadAccount(a.Id));
                 return JsonText(prior.RootElement, "apiKey") == key && AccountService.CanonicalProvider(a.Provider, JsonText(prior.RootElement, "baseUrl")) == group.First().Account.Provider;
@@ -220,6 +234,24 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
                 if (candidates[index].Account.Id == group.Key) candidates[index] = (candidates[index].Account with { Id = chosen.Id }, candidates[index].Credential);
         }
         return remapped;
+    }
+    private static bool IsEstablished(AccountDto account) => account.Generation > 0 || account.Credentials is not null ||
+        account.Capabilities is not null || account.Binding is not null;
+
+    private static void MapVerifiedSnapshotTargets(List<(AccountDto Account, string Credential)> candidates, ConfigurationDto state)
+    {
+        for (var index = 0; index < candidates.Count; index++)
+        {
+            var candidate = candidates[index];
+            if (candidate.Account.CredentialKind != "codex-access-snapshot") continue;
+            using var document = JsonDocument.Parse(candidate.Credential);
+            var subject = JsonText(document.RootElement, "accountId");
+            if (subject is null) continue; // Names and emails are never identity evidence.
+            var matches = state.Accounts.Where(a => a.Provider == candidate.Account.Provider && a.Binding?.Subject == subject &&
+                a.Binding.Provenance is "verified" or "observed" &&
+                (a.Capabilities is null || a.Capabilities.Any(c => c.Purpose == "inference"))).ToArray();
+            if (matches.Length == 1) candidates[index] = (candidate.Account with { Id = matches[0].Id }, candidate.Credential);
+        }
     }
     private static (AccountDto Account, string Credential) MergeCredentialTransports(IGrouping<string, (AccountDto Account, string Credential)> group)
     {

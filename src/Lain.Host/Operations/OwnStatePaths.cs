@@ -137,7 +137,7 @@ public sealed class SecretStore(OwnStatePaths paths)
     {
         foreach (var property in descriptor.ToArray())
         {
-            if (property.Key.Contains("refresh", StringComparison.OrdinalIgnoreCase) || property.Key is "id_token" or "idToken") descriptor.Remove(property.Key);
+            if (property.Key.Contains("refresh", StringComparison.OrdinalIgnoreCase) || property.Key is "id_token" or "idToken" or "client_secret" or "clientSecret") descriptor.Remove(property.Key);
             else if (property.Value is JsonObject nested) AccessProjection(nested);
             else if (property.Value is JsonArray array)
                 foreach (var child in array.OfType<JsonObject>()) AccessProjection(child);
