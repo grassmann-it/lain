@@ -1,0 +1,70 @@
+{
+  "date": "2026-10-25",
+  "kind": "cli-style-only-refresh",
+  "cliSourceCommit": "b49096f1d131a12946cc434783ae2ca012ecf60c",
+  "desktopSourceCommit": "67fb26ce83f0f4aa2627fdde57d95ab8a1574355",
+  "hostSourceCommit": "5f41fba5324e1cf1e58e2229d6c35c90ba800846",
+  "packageManifestSha256": "b0f93369ae9788b4a3ca0a3e3bab4d8812212308653d420edee9da9bd6a79d04",
+  "baselineManifestSha256": "9bd1dafcfcb6d681d52c6ab29aa21f09dc454ff1882dcd44c260323ed08c15ce",
+  "qualification": {
+    "sourceCommit": "b49096f1d131a12946cc434783ae2ca012ecf60c",
+    "sourceCliChecks": 248,
+    "sourcePtyCaptures": 59,
+    "exactPublishedCliChecks": 248,
+    "exactPublishedPtyCaptures": 59,
+    "updaterFixtures": 17,
+    "componentAssemblies": {
+      "Lain.Cli.dll": "98fc7e5ac0a93cdc2848220c94114262ba1e356fbf53b6d245901e48a0b9df24",
+      "Lain.Client.dll": "64b04dc9b7478702b603fc2f8ab5fd0156b3641d89f5912f9f4dd3064bf6b274",
+      "Lain.Core.dll": "ab5c8164b61e23768a8574cf46c50abbc747fc4fbab2f83741542792c644a94e"
+    },
+    "evidenceSha256": {
+      "cli-tests-r2.log": "15b9c9a3f40ea4ad738247978715e0b398f273cffd624e178d84fcf6beb6f855",
+      "exact-cli-tests.log": "15b9c9a3f40ea4ad738247978715e0b398f273cffd624e178d84fcf6beb6f855",
+      "exact-pty/checks.json": "1bf4063475b1a0d7523ec4b45a51f327fc87345ea11b40b42666b1d239a0ddec",
+      "exact-loader.log": "0af63b5a6bd9a2de01ed3a01f2207e56704bd5263bd3972ae49526ff130db3da",
+      "overlay-inputs.json": "74a488aa4853f9b276a3006c3489480f697c4c22be07293f0227bcfd3c62f652"
+    },
+    "visualReview": "PASS: synthetic PTY 80/120col renders; empty bar cells dotted after readability review; 20col plain inspected. Not a desktop screenshot."
+  },
+  "installed": {
+    "proxyReady": true,
+    "revision": 35,
+    "appliedRevision": 35,
+    "accountCount": 15,
+    "profileCount": 3,
+    "accountModelProfileResponseHashesUnchanged": true,
+    "usage": {
+      "compactLines": 41,
+      "fullLines": 209,
+      "jsonEqualsFullJson": true,
+      "allAccountNamesRetained": true,
+      "redirectedPlain": true
+    },
+    "desktopHostCorePayloadProtected": true,
+    "hostCoreProcessIdentitiesUnchanged": true
+  },
+  "operator": {
+    "sha256": "76f46e83b26fc2255b4ba5fcf0c1e2c17afcf260563db630215483ce311f92bf",
+    "fixtureSha256": "98cc1ae3a5b979367e815f3d007c8d0c1e7d48de22820574a09da55f4645ef0a",
+    "fixtureChecks": 17,
+    "independentSourceReview": "PASS"
+  },
+  "evidenceSha256": {
+    "qualification.json": "978d26c366a74b9aa6d02360544da9f82a80f348d7d16a7319351987e90d6e62",
+    "qualified-package.json": "8559ad9953718a97955730ffdfde2503f93af23bc2dbf4dd130fe8918dbee1f0",
+    "installed-before.json": "a216e437f2fd690d86ae49432044fea003099b8790a57c7362c0bdf2864c03f1",
+    "installed-after.json": "4bba2393e03955d4d2c564d444424cf331508289807f8f59f8725e1d3cc7e226",
+    "install.log": "3c3f6b54c176698515bca693dce51cbe0260d57102c80a00a2416edbd4c76031",
+    "cleanup.json": "428d15778cf906f89eddf5f9a603421b07a77365b1073ee6b8e311baf5609930"
+  },
+  "deletedBuildBytes": 168897569,
+  "limits": {
+    "cpuQuotaPercent": 100,
+    "memoryHighMiB": 768,
+    "memoryMaxMiB": 1024,
+    "memorySwapMaxMiB": 256,
+    "temporaryBuildDirectory": "~/.cache/lain-build-tmp"
+  },
+  "scope": "No provider refresh, inference, configuration mutation or new backend qualification. Synthetic PTY visual renders are not desktop screenshots."
+}
