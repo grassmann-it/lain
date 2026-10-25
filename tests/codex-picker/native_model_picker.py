@@ -33,6 +33,7 @@ class Terminal:
         self.grid = [[" "] * COLS for _ in range(ROWS)]
         self.row = self.col = 0
         self.saved = (0, 0)
+        self.scroll_top, self.scroll_bottom = 0, ROWS - 1
         self.state = "text"
         self.sequence = ""
         self.decoder = codecs.getincrementaldecoder("utf-8")("replace")
@@ -53,6 +54,12 @@ class Terminal:
             if self.state == "escape":
                 if char == "7": self.saved = (self.row, self.col)
                 elif char == "8": self.row, self.col = self.saved
+                elif char == "D": self.newline()
+                elif char == "M":
+                    if self.row == self.scroll_top:
+                        self.grid.insert(self.scroll_top, [" "] * COLS)
+                        self.grid.pop(self.scroll_bottom + 1)
+                    else: self.row = max(0, self.row - 1)
                 self.state = {"[": "csi", "]": "osc", "P": "osc", "(": "charset", ")": "charset"}.get(char, "text")
                 self.sequence = ""
                 continue
@@ -77,11 +84,11 @@ class Terminal:
                 self.col += width
 
     def newline(self):
-        self.row += 1
-        if self.row >= ROWS:
-            self.grid.pop(0)
-            self.grid.append([" "] * COLS)
-            self.row = ROWS - 1
+        if self.row == self.scroll_bottom:
+            self.grid.pop(self.scroll_top)
+            self.grid.insert(self.scroll_bottom, [" "] * COLS)
+        else:
+            self.row = min(ROWS - 1, self.row + 1)
 
     def csi(self, raw, command):
         private = raw.startswith("?")
@@ -98,8 +105,13 @@ class Terminal:
         elif command == "D": self.col = max(0, self.col - n)
         elif command == "E": self.row = min(ROWS - 1, self.row + n); self.col = 0
         elif command == "F": self.row = max(0, self.row - n); self.col = 0
+        elif command == "r":
+            self.scroll_top = max(0, min(ROWS - 1, n - 1))
+            self.scroll_bottom = min(ROWS - 1, (values[1] or ROWS) - 1) if len(values) > 1 else ROWS - 1
+            self.row = self.col = 0
         elif command == "s": self.saved = (self.row, self.col)
-        elif command == "u": self.row, self.col = self.saved
+        elif command == "u" and not private and not raw.startswith(">"):
+            self.row, self.col = self.saved
         elif command == "L":
             for _ in range(min(n, ROWS - self.row)):
                 self.grid.insert(self.row, [" "] * COLS); self.grid.pop()
@@ -189,6 +201,10 @@ trust_level = "trusted"
 
 [history]
 persistence = "none"
+
+[tui]
+# Preseed the upstream first-start marker so /model sentinel checks exclude onboarding.
+screen_reader_detection_done = true
 '''
 
 
@@ -218,12 +234,12 @@ def prepare(args):
         shutil.copyfile(__file__, case / "native.py")
         plan = {"case": name, "profile": profile, "provider": provider, "grouped": name == "lain-groups",
                 "homePath": str(current_home), "mainSentinelSha256": digest(private / ".codex/config.toml"),
-                "catalogSha256": digest(private / ".codex/models.json"),
+                "catalogSha256": digest(private / ".codex/models.json"), "harnessSha256": digest(__file__),
                 "hostNetworkNamespace": os.readlink("/proc/self/ns/net"),
                 "hostPidNamespace": os.readlink("/proc/self/ns/pid")}
         (case / "plan.json").write_text(json.dumps(plan, indent=2) + "\n")
     (args.output / "prepared.json").write_text(json.dumps({"status": "prepared-not-executed", "binary": str(args.binary),
-        "binarySha256": digest(args.binary), "source": str(args.source), "cases": [item[0] for item in cases]}, indent=2) + "\n")
+        "binarySha256": digest(args.binary), "harnessSha256": digest(__file__), "source": str(args.source), "cases": [item[0] for item in cases]}, indent=2) + "\n")
     return cases
 
 
@@ -291,13 +307,20 @@ def inner():
         text = menu(title)
         return bool(text) and all(label in text for label in labels)
     def choose(index): send(b"\x1b[H" + b"\x1b[B" * index + b"\r")
+    def slash_model():
+        send("/model")
+        # A physical Enter after the paste-burst suppression window, never in the text packet.
+        deadline = time.monotonic() + 0.35
+        while time.monotonic() < deadline: pump(min(0.05, deadline - time.monotonic()))
+        send(b"\r")
     report = {"case": plan["case"], "status": "failed", "command": command, "captures": captures,
               "networkNamespace": network_namespace, "pidNamespace": pid_namespace,
               "hostNetworkNamespace": plan["hostNetworkNamespace"], "hostPidNamespace": plan["hostPidNamespace"],
-              "originalHomeValuePreserved": True, "mountedCatalogSha256": plan["catalogSha256"]}
+              "originalHomeValuePreserved": True, "mountedCatalogSha256": plan["catalogSha256"],
+              "harnessSha256": digest(__file__)}
     try:
-        wait(lambda: "›" in screen.text(), "ready")
-        send("/model\r")
+        wait(lambda: "›" in screen.text() and "Visible Free default" in screen.text(), "ready")
+        slash_model()
         # Startup renders the composer before session configuration completes. Retry only the
         # same non-inference slash command after the documented disabled/updating warning.
         startup_deadline = time.monotonic() + 40
@@ -307,7 +330,7 @@ def inner():
             pump()
             warnings = ("Model selection is disabled until startup completes.", "Models are being updated;")
             if time.monotonic() >= next_retry and any(warning in screen.text() for warning in warnings):
-                send("/model\r"); next_retry = time.monotonic() + 1
+                slash_model(); next_retry = time.monotonic() + 1
         if plan["grouped"]:
             wait(lambda: has_menu("Modellgruppe wählen", "Free", "IT Sec", "Provider", "Alle"), "groups")
             if any(label in menu("Modellgruppe wählen") for label in ("Visible Free", "Hidden Model")): raise AssertionError("members leaked into group list")
@@ -320,7 +343,7 @@ def inner():
             wait(lambda: tomllib.loads(profile_file.read_text()).get("model") == "synthetic/shared", "wire-slug-persisted")
             report["persistedProfileModel"] = tomllib.loads(profile_file.read_text())["model"]
             report["profileSha256AfterSelection"] = digest(profile_file)
-            send("/model\r")
+            slash_model()
             wait(lambda: has_menu("Modellgruppe wählen"), "groups-after-persist")
             choose(1)
             wait(lambda: has_menu("IT Sec · Modell wählen", "Shared Model", "Security Model"), "overlap")
