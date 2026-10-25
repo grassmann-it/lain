@@ -328,7 +328,9 @@ public sealed class LoginOperationService : IAsyncDisposable
     /// <summary>One bounded local retirement pass. Call at startup and periodically; never starts authorization or revokes grants.</summary>
     public async Task CleanupRemovedRecoveriesAsync(CancellationToken ct = default)
     {
-        if (configuration is null || secrets is null || !await recoveryCleanupGate.WaitAsync(0, ct)) return;
+        // This is a nonblocking drain attempt. An exhausted shared HTTP cleanup budget
+        // must not throw out of the middleware's post-publication finally block.
+        if (configuration is null || secrets is null || ct.IsCancellationRequested || !await recoveryCleanupGate.WaitAsync(0)) return;
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(5));
         ct = timeout.Token;
