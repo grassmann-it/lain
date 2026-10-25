@@ -23,6 +23,7 @@ try
     await ApprovalAndIdentity();
     await LateApproval();
     await ActualLifecycle();
+    await ActualLifecycle(alias: true);
     await UnverifiedRecoveryCannotPublish();
     await UnsafeReconnect();
     Console.WriteLine($"Kilo device login: {assertions} assertions passed (offline fake HTTP; no real provider/login/inference).");
@@ -188,10 +189,10 @@ async Task LateApproval()
     }
 }
 
-async Task ActualLifecycle()
+async Task ActualLifecycle(bool alias = false)
 {
     // This exercises the actual immutable-generation publication and runtime compiler.
-    var paths = new OwnStatePaths(Path.Combine(root, "actual")); var secrets = new SecretStore(paths);
+    var paths = new OwnStatePaths(Path.Combine(root, alias ? "actual-alias" : "actual")); var secrets = new SecretStore(paths);
     var repository = new ConfigurationRepository(paths); var catalog = new ProviderCatalogRegistry();
     var accounts = new AccountService(repository, secrets, catalog); var clock = new Clock();
     var connection = catalog.Find("kilo")!.Connections!.Single();
@@ -202,14 +203,17 @@ async Task ActualLifecycle()
     // Model a previously saved own import with two descriptors and embedded old
     // YAML key fields. The selected catalogue route remains the AddApi route.
     var imported = JsonNode.Parse(secrets.ReadAccount(accountId))!.AsObject();
+    if (alias) imported["provider"] = "ai-gateway.kilo.ai";
     imported["sourceConfig"] = "name: kilo\nbase-url: https://ai-gateway.kilo.ai/api/v1\nmodels:\n- name: liquid/lfm-2.5-2.6b:free\n  alias: saved-alias\napi-key-entries:\n- api-key: " + OldToken + "\n";
     imported["entryConfig"] = "api-key: " + OldToken + "\npriority: 2\n";
     var second = imported.DeepClone().AsObject(); second.Remove("providerRouteId"); second.Remove("providerRouteIds"); second.Remove("providerConnectionId");
     second["transportId"] = "own-imported-secondary"; second["sourceConfig"] = "models:\n- name: historical-imported-model\n  alias: historical-alias\napi-key: " + OldToken + "\n";
     imported["transports"] = new JsonArray(imported.DeepClone(), second);
     first = accounts.Connect(first.Revision, new("kilo", "manual-fixture", ["inference", "quota"], AccountId: accountId),
-        new("static-key", ["inference", "quota"], new("kilo"), imported.ToJsonString()));
-    first = repository.Update(first.Revision, state => state with { Profiles = [new("profile-keep", "Keep my profile", [state.Routes.Single().Id], state.Routes.Single().Id)] });
+        new("static-key", ["inference", "quota"], new(alias ? "ai-gateway.kilo.ai" : "kilo"), imported.ToJsonString()));
+    first = repository.Update(first.Revision, state => state with {
+        Accounts = alias ? state.Accounts.Select(a => a with { Provider = "ai-gateway.kilo.ai", Binding = a.Binding! with { Provider = "ai-gateway.kilo.ai" } }).ToArray() : state.Accounts,
+        Profiles = [new("profile-keep", "Keep my profile", [state.Routes.Single().Id], state.Routes.Single().Id)] });
     var oldLease = new CredentialResolver(repository, secrets).Resolve(accountId, "inference")!;
     var writer = new ProxyConfigurationWriter(paths, secrets); writer.Write(first);
     var usage = new SqliteUsageStore(Path.Combine(paths.Root, "history.sqlite"), clock);
@@ -232,7 +236,9 @@ async Task ActualLifecycle()
     Check(login.State == "completed" && login.Url is null && login.UserCode is null && login.VerificationUri is null, "actual lifecycle publishes and clears device instructions");
     var after = repository.Snapshot;
     Check(after.Accounts.Single().Id == accountId && after.Accounts.Single().Name == "Keep my Kilo name"
-        && after.Accounts.Single().Generation == first.Accounts.Single().Generation + 1, "reconnect preserves opaque account/name and publishes next generation");
+        && after.Accounts.Single().Provider == first.Accounts.Single().Provider
+        && after.Accounts.Single().Binding!.Provider == first.Accounts.Single().Binding!.Provider
+        && after.Accounts.Single().Generation == first.Accounts.Single().Generation + 1, "reconnect preserves opaque account/name/provider/binding alias and publishes next generation");
     Check(JsonSerializer.Serialize(after.Routes) == routes && JsonSerializer.Serialize(after.Profiles) == profiles, "route/profile identities and selections preserved");
     Check(!new CredentialResolver(repository, secrets).IsCurrent(oldLease), "old lease is no longer current");
     var current = JsonNode.Parse(secrets.ReadAccount(accountId))!.AsObject();
@@ -257,7 +263,9 @@ async Task ActualLifecycle()
         return Task.FromResult(Json("""{"subscription":null}"""));
     });
     using var quotaClient = new HttpClient(quotaHandler);
-    var quota = await new KiloQuotaAdapter(quotaClient).FetchAsync(after.Accounts.Single(), quotaCredential);
+    var quotaAdapter = new KiloQuotaAdapter(quotaClient);
+    Check(quotaAdapter.Supports("ai-gateway.kilo.ai") && !quotaAdapter.Supports("foreign.invalid"), "quota shares only established canonical provider aliases");
+    var quota = await quotaAdapter.FetchAsync(after.Accounts.Single(), quotaCredential);
     Check(quota.Readings.Single().Remaining == 0 && quota.Error is null && quotaHandler.Calls == 2, "new key reads true zero wallet with explicit no Pass");
     Check(KiloDeviceLoginAdapter.ConnectionMethod().Purposes.Contains("quota"), "method advertises available quota handoff");
 }

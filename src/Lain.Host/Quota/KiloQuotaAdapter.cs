@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Lain.Core;
+using Lain.Host.Accounts;
 
 namespace Lain.Host.Quota;
 
@@ -9,7 +10,7 @@ public sealed class KiloQuotaAdapter(HttpClient client) : IQuotaAdapter
     public const string ResourceType = "personal";
     public const string Endpoint = "https://api.kilo.ai/api/profile/balance";
     public string Source => Endpoint;
-    public bool Supports(string provider) => provider.Equals("kilo", StringComparison.OrdinalIgnoreCase);
+    public bool Supports(string provider) => AccountService.CanonicalProviderId(provider) == "kilo";
 
     internal static void ValidateCredential(QuotaCredential credential)
     {
@@ -28,7 +29,7 @@ public sealed class KiloQuotaAdapter(HttpClient client) : IQuotaAdapter
     {
         if (!Supports(account.Provider) || (credential.CredentialKind ?? account.CredentialKind) != "api-key") throw new QuotaFetchException("Kilo requires its own API key account.");
         ValidateCredential(credential);
-        if (account.Binding is { } binding && (!binding.Provider.Equals("kilo", StringComparison.OrdinalIgnoreCase)
+        if (account.Binding is { } binding && (AccountService.CanonicalProviderId(binding.Provider) != "kilo"
             || binding.Product is not null && binding.Product != Product
             || binding.ResourceType is not null && binding.ResourceType != ResourceType))
             throw new QuotaFetchException("Kilo quota requires its personal Gateway resource binding.");

@@ -14,7 +14,7 @@ internal sealed class KiloTransportHandoff(ConfigurationRepository configuration
         var before = configuration.Snapshot;
         var account = before.Accounts.SingleOrDefault(a => a.Id == context.AccountId);
         if (before.Revision != context.Revision || account is null || account.Generation != context.AccountGeneration
-            || account.Provider != "kilo") throw Invalid();
+            || AccountService.CanonicalProviderId(account.Provider) != "kilo") throw Invalid();
         var resolver = new CredentialResolver(configuration, secrets);
         var access = resolver.Resolve(account.Id, "inference");
         // Attaching inference to a quota-only account has no transport to inherit.
@@ -49,8 +49,9 @@ internal sealed class KiloTransportHandoff(ConfigurationRepository configuration
     {
         var endpoint = source["baseUrl"]?.GetValue<string>()?.TrimEnd('/');
         var core = source["coreProvider"]?.GetValue<string>();
-        if (endpoint != KiloDeviceLoginAdapter.DefaultBaseUrl || source["provider"]?.GetValue<string>() is not (null or "kilo")
-            || core is not (null or "kilo" or "kilo-openai-chat")
+        if (endpoint != KiloDeviceLoginAdapter.DefaultBaseUrl
+            || source["provider"]?.GetValue<string>() is { } provider && AccountService.CanonicalProviderId(provider) != "kilo"
+            || core is not (null or "kilo-openai-chat") && AccountService.CanonicalProviderId(core) != "kilo"
             || source["sourceSection"]?.GetValue<string>() is not (null or "openai-compatibility")) throw Invalid();
         var clean = new JsonObject { ["kind"] = "api-key", ["provider"] = "kilo", ["coreProvider"] = core ?? "kilo",
             ["sourceSection"] = "openai-compatibility", ["baseUrl"] = endpoint };

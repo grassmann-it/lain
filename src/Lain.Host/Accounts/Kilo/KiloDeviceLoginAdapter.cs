@@ -243,13 +243,13 @@ public sealed class KiloDeviceLoginAdapter : IAccountLoginAdapter, IAsyncDisposa
 
     private void Validate(LoginOperationContext context)
     {
-        if (context.Request.Provider != Provider || context.Request.Method != Method || context.ExpiresAt <= clock.GetUtcNow()
+        if (AccountService.CanonicalProviderId(context.Request.Provider) != Provider || context.Request.Method != Method || context.ExpiresAt <= clock.GetUtcNow()
             || context.CheckpointCredentialAsync is null
             || context.ExpiresAt - clock.GetUtcNow() > LoginOperationService.InteractiveLifetime || context.Request.Purposes.Length == 0
             || context.Request.Purposes.Any(p => p is not ("inference" or "quota" or "models"))
             || string.IsNullOrWhiteSpace(context.OperationId) || context.OperationId.Length > 100
             || context.OperationId.Any(c => !char.IsAsciiLetterOrDigit(c) && c is not ('-' or '_'))
-            || context.Request.Binding is { } b && (b.Provider != Provider || b.Product is not (null or "gateway")
+            || context.Request.Binding is { } b && (AccountService.CanonicalProviderId(b.Provider) != Provider || b.Product is not (null or "gateway")
                 || b.Region is not null || b.ResourceType is not (null or "personal") || b.ResourceId is not null))
             throw new ArgumentException("Kilo device connection requires the selected personal Gateway account and supported purposes.");
     }
@@ -260,7 +260,8 @@ public sealed class KiloDeviceLoginAdapter : IAccountLoginAdapter, IAsyncDisposa
             throw new InvalidOperationException("Kilo device connection context changed.");
     }
     private static bool Matches(ResourceBindingDto? expected, ResourceBindingDto actual) => expected is null ||
-        expected.Provider == actual.Provider && (expected.Subject is null || expected.Subject == actual.Subject)
+        AccountService.CanonicalProviderId(expected.Provider) == AccountService.CanonicalProviderId(actual.Provider)
+        && (expected.Subject is null || expected.Subject == actual.Subject)
         && (expected.Product is null || expected.Product == actual.Product) && (expected.Region is null || expected.Region == actual.Region)
         && (expected.ResourceType is null || expected.ResourceType == actual.ResourceType) && (expected.ResourceId is null || expected.ResourceId == actual.ResourceId);
     private static LoginAdapterResult Waiting(Attempt attempt) => new("waiting", Url: attempt.Verification,
