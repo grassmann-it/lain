@@ -1,5 +1,14 @@
 # Umsetzung N01–N09
 
+**Abschlussstand:** Die private Lieferung ist installiert und läuft mit
+Revision 54/54. Maßgeblich für aktuelle Ergebnisse und offene Grenzen ist der
+[Lieferbericht N01–N09](next-work-packages-delivery-2026-10-25.md).
+Die Statusspalte und Zwischenstände unten sind das historische Ablaufprotokoll;
+sie überschreiben den Abschlussbericht nicht. Insbesondere sind native Matrix,
+CLI-Aufnahmen, MiMo-Browserstart und reale Zweiturn-Routerprobe abgeschlossen.
+Der erste automatische Own-Update-Start blieb fehlgeschlagen; explizite Reparatur,
+Dienstneustart und Erhaltungsprüfung bestanden danach separat.
+
 Am 25.10.2026 hat der Nutzer die Umsetzung des
 [konsolidierten Plans](next-work-packages-2026-10-25.md) als Goal mit parallelen
 Workern beauftragt. Die frühere Beschränkung auf Planung ist damit für diesen
@@ -45,7 +54,7 @@ Providerqualifikation getrennt nachgetragen. Offen benötigte Nutzeranmeldung od
 Accountrechte verhindern keine unabhängige Quellimplementierung und dürfen nicht
 als erfolgreicher Monitoringabruf ausgegeben werden.
 
-## Laufender Zwischenstand
+## Historisches Ablaufprotokoll
 
 Gemeinsame Ausgangsbasis `7661886`. Neun Fachworker arbeiten in getrennten
 Cacheworktrees, Root integriert einzelne Commits. Die installierte Anwendung

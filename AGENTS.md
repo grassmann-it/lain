@@ -1,7 +1,7 @@
 # lain
 
-Aktuelle Orientierung (25.10.2026): installierte private Linux-Lieferung in
-`docs/codex-model-groups-delivery-2026-10-25.md`; konsolidierter Reststand und
+Aktuelle Orientierung (25.10.2026): installierte private Linux-Lieferung N01–N09
+in `docs/next-work-packages-delivery-2026-10-25.md`; konsolidierter Ausgangsstand und
 nächste Arbeitspakete in `docs/next-work-packages-2026-10-25.md`.
 Die Umsetzung ist inzwischen als Goal beauftragt; aktueller Ablauf in
 `docs/next-work-packages-execution-2026-10-25.md`. `docs/execution.md` und

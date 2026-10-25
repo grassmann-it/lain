@@ -43,9 +43,10 @@ lain providers routes --provider PROVIDER_ID --json
 lain providers check-free CONFIGURED_ROUTE_ID --json
 ```
 
-Bare `lain usage` shows current quota snapshots for every configured account,
-including actual account names/providers, disabled accounts and unavailable
-quotas. Accounts with readings lead. Its compact view shows at most two primary
+Bare `lain usage` shows cached quota snapshots in a compact table. Accounts
+without a reading are hidden with a count and a `--full` hint; this is only a
+display filter. `lain usage --full` and JSON retain every configured account,
+including disabled accounts and unavailable quotas. Its compact view shows at most two primary
 readings per account, with shorter windows first (5 hours before 7 hours or
 7 days). Monthly allowances are secondary; positive additional credits appear
 as concise amounts and zero-only extras are hidden. A sole monthly allowance or

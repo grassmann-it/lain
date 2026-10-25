@@ -3,6 +3,8 @@
 **Folgeauftrag:** Der Nutzer hat die Umsetzung als Goal mit parallelen Workern
 beauftragt. Durchführung und Nachweise stehen im
 [Ausführungsbericht](next-work-packages-execution-2026-10-25.md).
+Aktuelle Lieferung, Nachweise und verbleibende Methodengrenzen stehen im
+[Abschlussbericht](next-work-packages-delivery-2026-10-25.md).
 Die folgenden Planungsaussagen beschreiben den Stand vor dieser Freigabe.
 
 Stand: **25.10.2026**, Quellenabgleich auf Main
