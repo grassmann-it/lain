@@ -16,7 +16,10 @@ public sealed partial class MainWindow
 {
     private Func<Uri, Task<bool>>? _connectionBrowser = null;
     private Task<bool> OpenConnectionBrowserAsync(Uri uri) => _connectionBrowser?.Invoke(uri) ?? Launcher.LaunchUriAsync(uri);
-    private static bool LoginPending(LoginDto? login) => login?.State is "waiting" or "pending" or "resource-required" or "awaiting-resource";
+    private static bool LoginPending(LoginDto? login) => login?.State is "waiting" or "pending" or "authorizing" or "resource-required" or "awaiting-resource";
+    private static string? LoginAuthorizationUrl(LoginDto login) =>
+        !string.IsNullOrWhiteSpace(login.Url) ? login.Url :
+        !string.IsNullOrWhiteSpace(login.VerificationUri) ? login.VerificationUri : null;
 
     private Task StartCodexLoginAsync() => BeginProviderConnectionAsync("codex");
 
@@ -75,7 +78,7 @@ public sealed partial class MainWindow
                 var polling = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
                 _loginPolling = polling;
                 _ = PollLoginAsync(_login.Id, polling);
-                if (_login.Url is { } url)
+                if (LoginAuthorizationUrl(_login) is { } url)
                 {
                     try
                     {
@@ -132,6 +135,7 @@ public sealed partial class MainWindow
             "expired" => ("Sign-in expired", "This authorization has expired. Return to this provider to start a new connection."),
             "waiting" => ("Waiting for authorization", "Open the authorization page and finish signing in. lain checks for your response automatically."),
             "pending" => ("Waiting for authorization", "Finish signing in in the browser. lain checks this same operation automatically."),
+            "authorizing" => ("Waiting for authorization", "Finish authorizing this connection in the browser. lain checks this same operation automatically."),
             "resource-required" or "awaiting-resource" => ("Choose a resource", "Select the verified resource to continue this same connection."),
             _ => ("Sign-in status", "Return to accounts to check this connection.")
         };
@@ -157,7 +161,19 @@ public sealed partial class MainWindow
                 AutomationProperties.SetLiveSetting(feedback, AutomationLiveSetting.Polite);
                 details.Children.Add(feedback);
             }
-            if (login.Url is { } url)
+            if (!string.IsNullOrWhiteSpace(login.UserCode))
+            {
+                details.Children.Add(Ui.Text("Enter this code on the authorization page.", 13));
+                var userCode = new TextBox
+                {
+                    Text = login.UserCode, IsReadOnly = true, TextWrapping = TextWrapping.Wrap,
+                    FontSize = 22, FontWeight = FontWeight.SemiBold
+                };
+                AutomationProperties.SetName(userCode, "Authorization user code");
+                AutomationProperties.SetHelpText(userCode, "Select all and copy this code into the authorization page. This code is only shown while sign-in is pending.");
+                details.Children.Add(userCode);
+            }
+            if (LoginAuthorizationUrl(login) is { } url)
             {
                 var open = Action("Reopen browser", async () => {
                     if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http")) throw new InvalidOperationException("The host returned an invalid authorization URL.");
@@ -171,17 +187,30 @@ public sealed partial class MainWindow
                 var manualUrl = new TextBox { IsReadOnly = true, TextWrapping = TextWrapping.Wrap, FontSize = 12 };
                 AutomationProperties.SetName(manualUrl, "Authorization link");
                 AutomationProperties.SetHelpText(manualUrl, "Select all and copy this link into your browser. The link is only shown when you expand this section.");
+                var manualContent = Ui.Stack(Ui.Text("Copy this link into your browser if the button cannot open it. Keep the authorization link private.", 12, Ui.Muted), manualUrl);
+                TextBox? verificationUrl = null;
+                if (!string.IsNullOrWhiteSpace(login.UserCode) && !string.IsNullOrWhiteSpace(login.VerificationUri) && login.VerificationUri != url)
+                {
+                    verificationUrl = new TextBox { IsReadOnly = true, TextWrapping = TextWrapping.Wrap, FontSize = 12 };
+                    AutomationProperties.SetName(verificationUrl, "Authorization code entry link");
+                    AutomationProperties.SetHelpText(verificationUrl, "Copy this link into your browser, then enter the authorization user code shown above.");
+                    manualContent.Children.Add(Ui.Text("To enter the code manually, use this page.", 12, Ui.Muted));
+                    manualContent.Children.Add(verificationUrl);
+                }
                 var manual = new Expander
                 {
                     Header = "Use the authorization link manually",
                     HorizontalAlignment = HorizontalAlignment.Stretch,
                     HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                    Content = Ui.Stack(Ui.Text("Copy this link into your browser if the button cannot open it. Keep the authorization link private.", 12, Ui.Muted), manualUrl)
+                    Content = manualContent
                 };
                 manual.PropertyChanged += (_, change) =>
                 {
                     if (change.Property == Expander.IsExpandedProperty)
+                    {
                         manualUrl.Text = manual.IsExpanded ? url : "";
+                        if (verificationUrl is not null) verificationUrl.Text = manual.IsExpanded ? login.VerificationUri : "";
+                    }
                 };
                 details.Children.Add(manual);
             }
@@ -214,6 +243,7 @@ public sealed partial class MainWindow
                     _loginError = "Cancellation could not be confirmed. Retry Cancel sign-in when the host is available.";
                     ShowLoginPage(); throw;
                 }
+                ShowLoginPage();
                 _loginVisible = false;
                 _notice.Text = $"{providerName} login {_login.State}.";
             }, "Sign-in cancelled.");
@@ -242,8 +272,12 @@ public sealed partial class MainWindow
                 {
                     var login = await _client.GetLoginAsync(id, polling.Token);
                     if (polling.IsCancellationRequested || !ReferenceEquals(_loginPolling, polling) || _login?.Id != id) return;
-                    var feedbackChanged = _login.State != login.State || _login.Url != login.Url || _login.Resources != login.Resources || _loginError is not null;
+                    var feedbackChanged = _login.State != login.State || _login.Url != login.Url || _login.Resources != login.Resources
+                        || _login.UserCode != login.UserCode || _login.VerificationUri != login.VerificationUri || _loginError is not null;
                     _login = login; _loginError = null;
+                    // Remove authorization instructions before a subsequent read can
+                    // fail, including terminal responses received during another action.
+                    if (!LoginPending(login) && _loginVisible && _section == "Accounts") ShowLoginPage();
                     if (_login.State == "completed")
                     {
                         var configuration = await _client.GetConfigurationAsync(polling.Token);
@@ -260,7 +294,7 @@ public sealed partial class MainWindow
                         if (!_editing && !showCompletion) _notice.Text = ConnectProviderName(login.Provider) + " credential connected.";
                         return;
                     }
-                    if (feedbackChanged && _loginVisible && _section == "Accounts" && !_busy) ShowLoginPage();
+                    if (feedbackChanged && LoginPending(login) && _loginVisible && _section == "Accounts" && !_busy) ShowLoginPage();
                     if (_login.State is "failed" or "cancelled" or "unsupported" or "expired")
                     {
                         if (!_editing) _notice.Text = $"{ConnectProviderName(login.Provider)} authorization {_login.State}.";
