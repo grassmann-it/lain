@@ -24,7 +24,7 @@ try
     await ApprovalAndIdentity();
     await LateApproval();
     await ActualLifecycle();
-    await ActualLifecycle(alias: true);
+    await LegacyAliasLifecycle();
     await UnverifiedRecoveryCannotPublish();
     await UnsafeReconnect();
     Console.WriteLine($"Kilo device login: {assertions} assertions passed (offline fake HTTP; no real provider/login/inference).");
@@ -199,7 +199,10 @@ async Task LateApproval()
     }
 }
 
-async Task ActualLifecycle(bool alias = false)
+Task ActualLifecycle() => RetainedLifecycle(alias: false);
+Task LegacyAliasLifecycle() => RetainedLifecycle(alias: true);
+
+async Task RetainedLifecycle(bool alias)
 {
     // This exercises the actual immutable-generation publication and runtime compiler.
     var paths = new OwnStatePaths(Path.Combine(root, alias ? "actual-alias" : "actual")); var secrets = new SecretStore(paths);
@@ -210,10 +213,18 @@ async Task ActualLifecycle(bool alias = false)
     var first = accounts.AddApi(0, new("Keep my Kilo name", "kilo", OldToken, connection.BaseUrl,
         Settings: new() { ["billingPlan"] = "free-models" }, ProviderConnectionId: connection.Id, SelectedModelRouteIds: [routeId]));
     var accountId = first.Accounts.Single().Id;
-    // Model a previously saved own import with two descriptors and embedded old
-    // YAML key fields. The selected catalogue route remains the AddApi route.
+    // Model saved own descriptors with embedded old YAML key fields. The
+    // canonical fixture keeps its selected AddApi catalogue route; the legacy
+    // fixture uses an explicit saved model mapping without catalog identity.
     var imported = JsonNode.Parse(secrets.ReadAccount(accountId))!.AsObject();
-    if (alias) imported["provider"] = "ai-gateway.kilo.ai";
+    if (alias)
+    {
+        // A legacy provider/model mapping has no catalog/connection identity.
+        // Keep the canonical AddApi case separate and fully catalog-bound.
+        imported["provider"] = "ai-gateway.kilo.ai";
+        foreach (var name in new[] { "providerRouteId", "providerRouteIds", "providerConnectionId", "settings" }) imported.Remove(name);
+        imported["transportId"] = "legacy-kilo-primary";
+    }
     imported["sourceConfig"] = "name: kilo\nbase-url: https://ai-gateway.kilo.ai/api/v1\nmodels:\n- name: liquid/lfm-2.5-2.6b:free\n  alias: saved-alias\napi-key-entries:\n- api-key: " + OldToken + "\n";
     imported["entryConfig"] = "api-key: " + OldToken + "\npriority: 2\n";
     var second = imported.DeepClone().AsObject(); second.Remove("providerRouteId"); second.Remove("providerRouteIds"); second.Remove("providerConnectionId");
@@ -223,6 +234,10 @@ async Task ActualLifecycle(bool alias = false)
         new("static-key", ["inference", "quota"], new(alias ? "ai-gateway.kilo.ai" : "kilo"), imported.ToJsonString()));
     first = repository.Update(first.Revision, state => state with {
         Accounts = alias ? state.Accounts.Select(a => a with { Provider = "ai-gateway.kilo.ai", Binding = a.Binding! with { Provider = "ai-gateway.kilo.ai" } }).ToArray() : state.Accounts,
+        // A saved import uses the same stored provider on account and route,
+        // and has no catalog route binding (LegacyImportService's RouteDto).
+        // Its route ID, alias, model and account selection remain unchanged.
+        Routes = alias ? state.Routes.Select(r => r with { Provider = "ai-gateway.kilo.ai", ProviderRouteId = null }).ToArray() : state.Routes,
         Profiles = [new("profile-keep", "Keep my profile", [state.Routes.Single().Id], state.Routes.Single().Id)] });
     var oldLease = new CredentialResolver(repository, secrets).Resolve(accountId, "inference")!;
     var writer = new ProxyConfigurationWriter(paths, secrets); writer.Write(first);
@@ -252,8 +267,13 @@ async Task ActualLifecycle(bool alias = false)
     Check(JsonSerializer.Serialize(after.Routes) == routes && JsonSerializer.Serialize(after.Profiles) == profiles, "route/profile identities and selections preserved");
     Check(!new CredentialResolver(repository, secrets).IsCurrent(oldLease), "old lease is no longer current");
     var current = JsonNode.Parse(secrets.ReadAccount(accountId))!.AsObject();
-    Check(current["providerConnectionId"]!.GetValue<string>() == connection.Id && current["transportId"]!.GetValue<string>() == connection.Id
-        && current["providerRouteIds"]!.AsArray().Any(x => x!.GetValue<string>() == routeId) && !current.ToJsonString().Contains(OldToken), "selected connection and model metadata retained; old token removed");
+    if (alias)
+        Check(current["transportId"]!.GetValue<string>() == "legacy-kilo-primary" && current["providerConnectionId"] is null
+            && current["providerRouteId"] is null && current["providerRouteIds"] is null && !current.ToJsonString().Contains(OldToken),
+            "legacy transport identity retained without inventing a catalog or connection binding; old token removed");
+    else
+        Check(current["providerConnectionId"]!.GetValue<string>() == connection.Id && current["transportId"]!.GetValue<string>() == connection.Id
+            && current["providerRouteIds"]!.AsArray().Any(x => x!.GetValue<string>() == routeId) && !current.ToJsonString().Contains(OldToken), "selected connection and model metadata retained; old token removed");
     Check(current["transports"]!.AsArray().Count == 2 && current["transports"]!.AsArray().All(t => t!["apiKey"]!.GetValue<string>() == NewToken)
         && current["transports"]![1]!["transportId"]!.GetValue<string>() == "own-imported-secondary"
         && current["transports"]![1]!["sourceConfig"]!.GetValue<string>().Contains("historical-imported-model"),
