@@ -52,7 +52,7 @@ internal static class DurableRemovalChecks
             }
             finally
             {
-                if (kind == "file") File.Delete(path); else Directory.Delete(path);
+                File.Delete(path);
                 if (kind == "ancestor-link") Directory.Move(outside, path);
             }
         }
@@ -74,7 +74,7 @@ internal static class DurableRemovalChecks
             await service.CleanupRemovedRecoveriesAsync();
             Check(blockedAdapter.Removals == 0 && before.SequenceEqual(CredentialTree(outside))
                 && !Directory.Exists(outside + "-missing"), "recovery scan refuses " + kind + " without touching its target");
-            if (kind == "file") File.Delete(path); else Directory.Delete(path);
+            File.Delete(path);
             Directory.Move(outside, path);
             await service.CleanupRemovedRecoveriesAsync();
             Check(blockedAdapter.Removals == 1 && blockedAdapter.Profiles.Count == 0,
