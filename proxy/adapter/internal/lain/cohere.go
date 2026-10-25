@@ -2,12 +2,14 @@ package lain
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 
 	auth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	executor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
+	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/usage"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
 
@@ -81,7 +83,41 @@ func validateCohereInput(a *auth.Auth, req executor.Request, opts executor.Optio
 			return cohereFieldError(field)
 		}
 	}
-	return nil
+	_, err = cohereRequestedEffort(req, opts)
+	return err
+}
+
+// Preserve only validated explicit caller intent. The generic Responses-to-Chat
+// thinking path can normalize none to low; low is not a supported Cohere level.
+func cohereRequestedEffort(req executor.Request, opts executor.Options) (string, error) {
+	body := opts.OriginalRequest
+	if len(body) == 0 {
+		body = req.Payload
+	}
+	fields, err := toolControlFields(body, "reasoning_effort", "reasoning")
+	if err != nil {
+		return "", &providerInputError{"invalid or duplicate Cohere reasoning controls"}
+	}
+	effort := ""
+	if value, ok := fields["reasoning_effort"]; ok {
+		if json.Unmarshal(value, &effort) != nil || (effort != "none" && effort != "high") {
+			return "", cohereFieldError("reasoning_effort")
+		}
+	}
+	if value, ok := fields["reasoning"]; ok {
+		nested, err := toolControlFields(value, "effort")
+		if err != nil {
+			return "", &providerInputError{"invalid or duplicate Cohere reasoning controls"}
+		}
+		if value, present := nested["effort"]; present {
+			var requested string
+			if json.Unmarshal(value, &requested) != nil || (requested != "none" && requested != "high") || (effort != "" && effort != requested) {
+				return "", cohereFieldError("reasoning_effort")
+			}
+			effort = requested
+		}
+	}
+	return effort, nil
 }
 
 func (t *guardedTransport) normalizeCohereRequest(req *http.Request) error {
@@ -117,6 +153,12 @@ func (t *guardedTransport) normalizeCohereRequest(req *http.Request) error {
 		}
 		delete(fields, "stream_options")
 	}
+	if t.cohereReasoningEffort != "" {
+		if t.cohereReasoningEffort != "none" && t.cohereReasoningEffort != "high" {
+			return cohereFieldError("reasoning_effort")
+		}
+		fields["reasoning_effort"], _ = json.Marshal(t.cohereReasoningEffort)
+	}
 	for field, value := range fields {
 		if !cohereFields[field] {
 			return cohereFieldError(field)
@@ -137,4 +179,21 @@ func (t *guardedTransport) normalizeCohereRequest(req *http.Request) error {
 	req.ContentLength = int64(len(data))
 	req.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(data)), nil }
 	return nil
+}
+
+// Final wire evidence wins over the generic reporter's pre-normalization effort.
+func (i *Integration) observeCohereFinalEffort(ctx context.Context, effort string) {
+	if effort != "none" && effort != "high" {
+		return
+	}
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	a := i.active[usage.ExecutionRequestIDFromContext(ctx)]
+	if a == nil {
+		return
+	}
+	if a.event.Dimensions == nil {
+		a.event.Dimensions = &Dimensions{}
+	}
+	a.event.Dimensions.set("effectiveReasoningEffort", &a.event.Dimensions.EffectiveReasoningEffort, effort, "core", "final_request.reasoning_effort")
 }

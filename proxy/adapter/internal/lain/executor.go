@@ -83,10 +83,13 @@ func (e *boundExecutor) begin(ctx context.Context, a *auth.Auth, req executor.Re
 	if err != nil {
 		return ctx, err
 	}
-	if err = validateCohereInput(a, req, opts); err != nil {
+	if err = e.integration.Before(ctx, a, req, opts); err != nil {
 		return ctx, err
 	}
-	if err = e.integration.Before(ctx, a, req, opts); err != nil {
+	if err = validateCohereInput(a, req, opts); err != nil {
+		if end := e.integration.After(ctx, err); end != nil {
+			return ctx, end
+		}
 		return ctx, err
 	}
 	actualFormat := e.RequestToFormat(req, opts)
@@ -106,8 +109,12 @@ func (e *boundExecutor) begin(ctx context.Context, a *auth.Auth, req executor.Re
 		}
 		return ctx, err
 	}
+	cohereEffort := ""
+	if cohereCompatibility(a) {
+		cohereEffort, _ = cohereRequestedEffort(req, opts) // validated before any provider execution
+	}
 	ctx = httptransport.WithDecorator(ctx, func(next http.RoundTripper) http.RoundTripper {
-		return &guardedTransport{next: next, auth: a, integration: e.integration, cohereValidated: true, compatibility: policy}
+		return &guardedTransport{next: next, auth: a, integration: e.integration, cohereValidated: true, cohereReasoningEffort: cohereEffort, compatibility: policy}
 	})
 	return ctx, nil
 }
@@ -164,6 +171,8 @@ func (e *boundExecutor) ExecuteStream(ctx context.Context, a *auth.Auth, req exe
 		defer close(chunks)
 		defer cancelProvider()
 		var terminal error
+		sawResponseTerminal := false
+		expectsResponseTerminal := opts.SourceFormat == translator.FormatOpenAIResponse || opts.SourceFormat == translator.FormatCodex
 		canceled, overflow := false, false
 		heldBytes := 0
 		var completion []executor.StreamChunk
@@ -174,7 +183,15 @@ func (e *boundExecutor) ExecuteStream(ctx context.Context, a *auth.Auth, req exe
 				}
 				continue
 			}
-			if canceled || overflow {
+			if terminal != nil || canceled || overflow {
+				continue
+			}
+			responseTerminal, payloadFailed := responseStreamOutcome(chunk.Payload)
+			sawResponseTerminal = sawResponseTerminal || responseTerminal
+			if payloadFailed {
+				if terminal == nil {
+					terminal = &streamOutcomeError{}
+				}
 				continue
 			}
 			e.integration.Observe(ctx, chunk.Payload, true)
@@ -197,6 +214,9 @@ func (e *boundExecutor) ExecuteStream(ctx context.Context, a *auth.Auth, req exe
 				canceled = true
 				cancelProvider()
 			}
+		}
+		if terminal == nil && expectsResponseTerminal && !sawResponseTerminal {
+			terminal = &streamOutcomeError{missingTerminal: true}
 		}
 		if end := e.integration.After(ctx, terminal); end != nil {
 			terminal = end
@@ -316,11 +336,12 @@ func (e *boundExecutor) RequestToFormat(req executor.Request, opts executor.Opti
 }
 
 type guardedTransport struct {
-	next            http.RoundTripper
-	auth            *auth.Auth
-	integration     *Integration
-	cohereValidated bool
-	compatibility   compatibilityPolicy
+	next                  http.RoundTripper
+	auth                  *auth.Auth
+	integration           *Integration
+	cohereValidated       bool
+	cohereReasoningEffort string
+	compatibility         compatibilityPolicy
 }
 
 func (t *guardedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -362,6 +383,9 @@ func (t *guardedTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		if err := freeonly.PrepareOpenRouterRequest(req.Context(), client, req, pin); err != nil {
 			return nil, err
 		}
+	}
+	if t.integration != nil && t.cohereReasoningEffort != "" {
+		t.integration.observeCohereFinalEffort(req.Context(), t.cohereReasoningEffort)
 	}
 	response, err := t.next.RoundTrip(req)
 	if err == nil && response != nil && t.integration != nil {

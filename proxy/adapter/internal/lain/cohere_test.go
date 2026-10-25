@@ -11,6 +11,7 @@ import (
 
 	auth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	executor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
+	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/usage"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 	"github.com/tidwall/gjson"
 )
@@ -108,4 +109,69 @@ func TestOtherProviderStreamingUsageAndFieldsRemainUntouched(t *testing.T) {
 		t.Fatal(err)
 	}
 	response.Body.Close()
+}
+
+func TestCohereResponsesPreservesOnlyExplicitSupportedEffort(t *testing.T) {
+	for _, effort := range []string{"none", "high"} {
+		original := []byte(`{"model":"model","input":"fixture","reasoning":{"effort":"` + effort + `"}}`)
+		opts := executor.Options{OriginalRequest: original, SourceFormat: translator.FormatOpenAIResponse}
+		if err := validateCohereInput(cohereAuth(), executor.Request{Payload: original}, opts); err != nil {
+			t.Fatal(err)
+		}
+		requested, err := cohereRequestedEffort(executor.Request{Payload: original}, opts)
+		if err != nil || requested != effort {
+			t.Fatal("supported nested intent lost", requested, err)
+		}
+		calls := 0
+		tr := &guardedTransport{auth: cohereAuth(), cohereValidated: true, cohereReasoningEffort: requested, next: fixtureTransport(func(req *http.Request) (*http.Response, error) {
+			calls++
+			body, _ := io.ReadAll(req.Body)
+			if gjson.GetBytes(body, "reasoning_effort").String() != effort {
+				t.Fatal("generic translator changed explicit supported effort")
+			}
+			return &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(`{}`))}, nil
+		})}
+		// Reproduce the generic thinking layer's low output without borrowing
+		// live provider behavior; only explicit validated none/high may restore it.
+		req, _ := http.NewRequest("POST", "http://fixture.invalid/chat/completions", strings.NewReader(`{"model":"model","messages":[],"reasoning_effort":"low"}`))
+		response, err := tr.RoundTrip(req)
+		if err != nil || calls != 1 {
+			t.Fatal("supported original effort was rejected after translation", err, calls)
+		}
+		response.Body.Close()
+	}
+	for _, original := range []string{
+		`{"reasoning":{"effort":"low"}}`, `{"reasoning":{"effort":"medium"}}`, `{"reasoning":{"effort":null}}`,
+		`{"reasoning":{"effort":"none","effort":"high"}}`, `{"reasoning_effort":"high","reasoning":{"effort":"none"}}`,
+	} {
+		if err := validateCohereInput(cohereAuth(), executor.Request{Payload: []byte(original)}, executor.Options{SourceFormat: translator.FormatOpenAIResponse}); err == nil {
+			t.Fatal("unsupported or ambiguous nested effort was accepted")
+		}
+	}
+}
+
+func TestCohereFinalEffortTelemetryDoesNotReportTranslatorLow(t *testing.T) {
+	i, ctx, a := dispatchFixture(t)
+	if err := i.Before(ctx, a, executor.Request{Model: "model"}, executor.Options{}); err != nil {
+		t.Fatal(err)
+	}
+	tr := &guardedTransport{integration: i, auth: cohereAuth(), cohereValidated: true, cohereReasoningEffort: "none", next: fixtureTransport(func(*http.Request) (*http.Response, error) {
+		if err := i.Publish(ctx, usage.Record{AuthID: a.ID, RequestID: usage.ExecutionRequestIDFromContext(ctx), ReasoningEffort: "low"}); err != nil {
+			t.Fatal(err)
+		}
+		return &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(`{}`))}, nil
+	})}
+	req, _ := http.NewRequestWithContext(ctx, "POST", "http://fixture.invalid/chat/completions", strings.NewReader(`{"model":"model","messages":[],"reasoning_effort":"low"}`))
+	response, err := tr.RoundTrip(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if err := i.After(ctx, nil); err != nil {
+		t.Fatal(err)
+	}
+	page, _ := i.Journal.Read(0, 10)
+	if len(page.Events) != 3 || page.Events[1].Dimensions == nil || page.Events[1].Dimensions.EffectiveReasoningEffort != "none" {
+		t.Fatal("final wire reasoning metadata was replaced by pre-normalization reporter", page)
+	}
 }
