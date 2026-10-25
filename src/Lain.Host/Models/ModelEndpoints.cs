@@ -37,9 +37,9 @@ public static class ModelEndpoints
                 var resolved = models.ResolveForApply(id, request.Revision);
                 var description = compiler.Describe(resolved.Configuration with { Routes = resolved.Routes });
                 var compatibility = new ModelCompatibilityCatalog(registry, description.QualifiedProviderRouteIds, description.TransportBindings);
-                var bindings = RouteBindings.Compile(resolved.Configuration with { Routes = resolved.Routes }, description.CredentialIds,
-                    description.RouteCredentials, registry, id, description.QualifiedProviderRouteIds, description.TransportBindings);
-                return Results.Ok(new CodexProfileAdapter(models, compatibility, registry, bindings.Routers).Generate(id, request.Revision, request.ExecutablePath, request.CatalogPath, compiler.InferenceBaseUrl, request.EnableLainModelPicker));
+                var routerProof = request.EnableLainModelPicker
+                    ? CollectionRouterCompiler.CompileForExport(resolved.Configuration, id, description, registry) : null;
+                return Results.Ok(new CodexProfileAdapter(models, compatibility, registry, routerProof).Generate(id, request.Revision, request.ExecutablePath, request.CatalogPath, compiler.InferenceBaseUrl, request.EnableLainModelPicker));
             }));
     }
 

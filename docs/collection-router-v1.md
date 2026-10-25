@@ -21,7 +21,7 @@ Groups are `collection:<id>`, `provider:<canonical-lowercase-provider>` or
 `policy:free`. Collection order comes from its existing RouteIds; provider and
 Free order comes from the profile. A free group requires `free_only`. A router
 may reference only enabled, visible, single-account strict routes in its own
-profile with qualified catalog transport provenance and OpenAI Chat or Responses
+profile with matching compiled transport provenance and OpenAI Chat or Responses
 transport. Internal approval-review models are excluded. Empty eligible sets
 reject application before drain. Existing route aliases and accounts are shared,
 never copied. Collection RouterTargetId may reference the matching explicit router.
@@ -30,7 +30,17 @@ Compiled `bindings.routers[alias]` contains `id`, `profileId`, `selection`,
 `costPolicy`, ordered `routeIds` and `memberFingerprints`. The opt-in grouped
 Codex export adds one virtual model and references it from the group's
 `router_model`. A pure export without compiled router proof refuses to advertise
-an executable router. Ordinary exports remain unchanged.
+an executable router. The in-process export proof comes from the real
+RouteBindings compiler and binds the resolved profile, revision, effective routes,
+collection order, router policy and logical accounts. A stale proof is rejected;
+callers cannot substitute an arbitrary router dictionary. Ordinary exports do
+not compile routers and remain available even if a saved router is not executable.
+
+Configured routers accept actual compiled native Codex and imported Chat/Responses
+transports without inventing a catalog model identity. Missing, mismatched or
+unknown transport evidence is insufficient. Anthropic and Gemini remain outside
+v1. Free routers additionally require qualified catalog identity and the existing
+runtime cost enforcement; imported or native configured routes never borrow it.
 
 The gateway authenticates a router request before reading or creating a pin.
 Only `/v1/responses`, complete history and one canonical UUID `Thread-Id` are

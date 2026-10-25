@@ -102,6 +102,6 @@ public static class RouteBindings
                 throw new ArgumentException("A core credential identity cannot belong to multiple logical accounts.");
             owners[entry.Value] = entry.Key;
         }
-        return new(defaults, routes, CollectionRouterCompiler.Compile(config, profileId, routes, qualifiedProviderRouteIds));
+        return new(defaults, routes, CollectionRouterCompiler.Compile(config, profileId, routes, qualifiedProviderRouteIds, transportBindings));
     }
 }

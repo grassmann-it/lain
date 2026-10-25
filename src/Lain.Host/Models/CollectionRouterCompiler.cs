@@ -1,7 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Lain.Core;
+using Lain.Host.Operations;
+using Lain.Host.Providers;
 
 namespace Lain.Host.Models;
 
@@ -13,10 +16,46 @@ public sealed record CoreCollectionRouter(
     [property: JsonPropertyName("routeIds")] string[] RouteIds,
     [property: JsonPropertyName("memberFingerprints")] IReadOnlyDictionary<string, string> MemberFingerprints);
 
+/// <summary>In-process evidence from actual profile/transport compilation, never supplied by the HTTP caller.</summary>
+public sealed class CollectionRouterExportProof
+{
+    private readonly string fingerprint;
+    internal IReadOnlyDictionary<string, CoreCollectionRouter> Routers { get; }
+    internal CollectionRouterExportProof(string fingerprint, IReadOnlyDictionary<string, CoreCollectionRouter>? routers)
+    {
+        this.fingerprint = fingerprint;
+        Routers = (routers ?? new Dictionary<string, CoreCollectionRouter>()).ToDictionary(pair => pair.Key, pair => pair.Value with {
+            RouteIds = pair.Value.RouteIds.ToArray(),
+            MemberFingerprints = pair.Value.MemberFingerprints.ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal)
+        }, StringComparer.Ordinal);
+    }
+    internal bool Matches(ConfigurationDto configuration, string profileId) =>
+        fingerprint == CollectionRouterCompiler.SnapshotFingerprint(configuration, profileId);
+}
+
 /// <summary>Ordered pre-dispatch selection, never cross-route retry. References existing bindings only.</summary>
 public static class CollectionRouterCompiler
 {
     public const string Selection = "ordered_sticky_v1";
+
+    public static CollectionRouterExportProof CompileForExport(ConfigurationDto configuration, string profileId,
+        ProxyTransportDescription transport, ProviderCatalogRegistry? catalog = null)
+    {
+        catalog ??= new();
+        var profile = configuration.Profiles.SingleOrDefault(p => p.Id == profileId) ?? throw new ArgumentException("Unknown router export profile.");
+        var effective = configuration with { Routes = new ProviderCostPolicy(catalog).ResolveProfile(configuration, profile) };
+        var bindings = RouteBindings.Compile(effective, transport.CredentialIds, transport.RouteCredentials, catalog, profileId,
+            transport.QualifiedProviderRouteIds, transport.TransportBindings);
+        return new(SnapshotFingerprint(effective, profileId), bindings.Routers);
+    }
+
+    internal static string SnapshotFingerprint(ConfigurationDto configuration, string profileId) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new {
+            configuration.Revision, ProfileId = profileId,
+            Profile = configuration.Profiles.Single(p => p.Id == profileId), configuration.Routes,
+            configuration.Collections, configuration.CollectionRouters,
+            Accounts = configuration.Accounts.Select(account => new { account.Id, account.Provider, account.Enabled, account.Generation })
+        })))).ToLowerInvariant();
 
     public static void Validate(ConfigurationDto configuration)
     {
@@ -62,7 +101,8 @@ public static class CollectionRouterCompiler
     }
 
     public static IReadOnlyDictionary<string, CoreCollectionRouter>? Compile(ConfigurationDto configuration, string? profileId,
-        IReadOnlyDictionary<string, CoreRouteBinding> routes, IReadOnlySet<string>? qualifiedRoutes)
+        IReadOnlyDictionary<string, CoreRouteBinding> routes, IReadOnlySet<string>? qualifiedRoutes,
+        IReadOnlyDictionary<string, ModelCompatibilityTransportBinding>? transports = null)
     {
         var routers = (configuration.CollectionRouters ?? []).Where(r => r.Enabled && r.ProfileId == profileId).ToArray();
         if (routers.Length == 0) return null;
@@ -72,10 +112,13 @@ public static class CollectionRouterCompiler
         foreach (var router in routers)
         {
             var members = MemberIds(configuration, profile, router).Where(id => byId.TryGetValue(id, out var route) &&
-                route.Visible && route.Selection == "strict" && route.Accounts.Length == 1 && qualifiedRoutes?.Contains(id) == true &&
+                route.Visible && route.Selection == "strict" && route.Accounts.Length == 1 &&
+                transports is not null && transports.TryGetValue(id, out var transport) &&
+                transport.Provider == route.Provider && transport.UpstreamModel == route.Model &&
+                transport.UpstreamProtocol == route.UpstreamProtocol && !string.IsNullOrWhiteSpace(transport.Source) &&
                 (route.UpstreamProtocol is "openai" or "responses") &&
                 !(route.Provider == "codex" && route.Model == "codex-auto-review") &&
-                (router.CostPolicy != "free_only" || route.CostPolicy == "free_only" && route.FreeOnlyEnforcement is not null)).ToArray();
+                (router.CostPolicy != "free_only" || qualifiedRoutes?.Contains(id) == true && route.CostPolicy == "free_only" && route.FreeOnlyEnforcement is not null)).ToArray();
             if (members.Length == 0) throw new ArgumentException("Router has no visible, strict, qualified profile members under its cost policy.");
             if (routes.ContainsKey(router.Alias)) throw new ArgumentException("Router alias collides with a model route.");
             result.Add(router.Alias, new(router.Id, router.ProfileId, Selection, router.CostPolicy, members,

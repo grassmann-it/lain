@@ -12,7 +12,7 @@ public record CodexProfileArtifacts(string ConfigFileName, string Configuration,
 
 /// <summary>Pure export: installation is an explicit caller operation. Never reads or changes Codex's base config.</summary>
 public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibilityCatalog? compatibility = null, ProviderCatalogRegistry? registry = null,
-    IReadOnlyDictionary<string, CoreCollectionRouter>? compiledRouters = null)
+    CollectionRouterExportProof? routerProof = null)
 {
     public const string VerifiedVersion = ModelCompatibilityCatalog.ClientVersion;
 
@@ -33,8 +33,10 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         var selected = selectable.SingleOrDefault(x => x.Id == resolved.Profile.DefaultRouteId) ?? selectable[0];
         var catalogRegistry = registry ?? new ProviderCatalogRegistry();
         var routers = enableLainModelPicker ? (resolved.Configuration.CollectionRouters ?? []).Where(r => r.Enabled && r.ProfileId == profileId).ToArray() : [];
+        if (routers.Length > 0 && (routerProof is null || !routerProof.Matches(resolved.Configuration with { Routes = resolved.Routes }, profileId)))
+            throw new ArgumentException("Router catalog export proof is missing or stale; recompile this profile's current transports.");
         foreach (var router in routers)
-            if (compiledRouters is null || !compiledRouters.TryGetValue(router.Alias, out var binding) || binding.Id != router.Id || binding.ProfileId != profileId)
+            if (routerProof is null || !routerProof.Routers.TryGetValue(router.Alias, out var binding) || binding.Id != router.Id || binding.ProfileId != profileId)
                 throw new ArgumentException("Router catalog export requires the current qualified profile bindings.");
         // TOML basic strings accept these JSON escapes for the paths and labels we emit.
         static string Quote(string value) => JsonSerializer.Serialize(value);
@@ -103,7 +105,7 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         foreach (var collection in configuration.Collections ?? [])
             Add("collection:" + collection.Id, collection.Name, collection.RouteIds);
         if (routers.SingleOrDefault(router => router.GroupId == "policy:free") is { } freeRouter)
-            Add("policy:free", "Free", compiledRouters![freeRouter.Alias].RouteIds);
+            Add("policy:free", "Free", routerProof!.Routers[freeRouter.Alias].RouteIds);
         // A derived Free view must reflect the effective execution policy AND a qualified
         // transport binding. This adapter currently has no source-qualified binding seam;
         // hypothetical evaluation under a different policy cannot make an alias free.

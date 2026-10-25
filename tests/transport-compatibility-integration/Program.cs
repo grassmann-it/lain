@@ -89,6 +89,20 @@ try
         .Generate("fixture-profile", profileState.Revision, "/fixture/lain", "/fixture/models.json");
     Check(exported.Compatibility!.Routes.All(r => r.UpstreamProtocol == "openai"), "Codex export includes real compiler provenance");
     Check(!JsonSerializer.Serialize(exported).Contains("synthetic-mimo"), "public compatibility export contains no private credential");
+    // Imported configured routers use actual compiler provenance, not invented catalog IDs.
+    var importedRouterState = models.PutCollectionRouter(profileState.Revision,
+        new("commandcode-router", "auto-commandcode", "provider:commandcode", "fixture-profile"));
+    var importedRouterDescription = writer.Describe(importedRouterState);
+    var importedRouterProof = CollectionRouterCompiler.CompileForExport(importedRouterState, "fixture-profile", importedRouterDescription, registry);
+    var routerExport = new CodexProfileAdapter(models, routerProof: importedRouterProof)
+        .Generate("fixture-profile", importedRouterState.Revision, "/fixture/lain", "/fixture/models.json", enableLainModelPicker: true);
+    Check(importedRouterDescription.QualifiedProviderRouteIds.Count == 0 && routerExport.Catalog.Contains("auto-commandcode"),
+        "Actual imported Chat transport supports configured autorouting without catalog qualification");
+    Reject(() => CollectionRouterCompiler.CompileForExport(importedRouterState, "fixture-profile", importedRouterDescription with {
+        TransportBindings = new Dictionary<string, ModelCompatibilityTransportBinding>() }, registry), "Missing imported transport proof must fail closed");
+    Reject(() => CollectionRouterCompiler.CompileForExport(importedRouterState with {
+        CollectionRouters = [importedRouterState.CollectionRouters![0] with { CostPolicy = "free_only" }] }, "fixture-profile", importedRouterDescription, registry),
+        "Imported configured/free-suffixed models do not borrow strict Free qualification");
     var monitor = new AccountDto("acct-monitor", "Monitor", "fixture", true, "session-token", "unverified", Capabilities: [new("quota", "available")]);
     var unused = new AccountDto("acct-unused", "Unused missing secret", "fixture", true, "api-key", "unverified");
     var withUnused = imported with { Accounts = [.. imported.Accounts, monitor, unused] };
