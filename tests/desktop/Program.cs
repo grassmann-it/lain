@@ -1370,6 +1370,21 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         fixture.InspectorFailure = false;
         await Click("Toggle inspector updates");
         await Wait(() => HasText("Connected to the live inspector", true), "Inspector recovers from a local source outage");
+        fixture.InspectorMalformed = true;
+        await Click("Refresh inspector");
+        await Wait(() => HasText("Inspector display update failed · retrying", true), "unexpected snapshot render failure is visible instead of silently ending the poll task");
+        var failedSnapshotCalls = fixture.InspectorCalls;
+        fixture.InspectorMalformed = false;
+        await Wait(() => fixture.InspectorCalls > failedSnapshotCalls && HasText("Connected to the live inspector", true),
+            "the attached Inspector resumes polling after an unexpected display failure");
+        fixture.InspectorReplacementRequest = "request-later";
+        await Click("Refresh inspector");
+        await Wait(() => HasGroup("request:request-later") && HasText("Selected request metadata expired · choose a current request", true),
+            "expired selection explains how to inspect a later request without changing the selected identity automatically");
+        Check(!HasGroup("request:request-new"), "expired metadata is removed from the observed request inventory");
+        await Click("Inspect group request:request-later");
+        await Wait(() => !HasText("Selected request metadata expired", true) && HasSelectable("New source output only."),
+            "a later request remains selectable after the previous request expires");
         var contextDetails = Controls<Expander>().Single(x => Equals(x.Header, "Identities & measurement sources"));
         contextDetails.IsExpanded = true; await Task.Delay(80);
         await Click("Account a1");

@@ -30,6 +30,8 @@ internal sealed class Fixture : HttpMessageHandler
     public ConnectCredentialRequest? LastConnect;
     public int ProviderCalls, InspectorCalls, InspectorEventCalls, CostPolicyCalls;
     public bool InspectorRestarted, InspectorEmpty, InspectorGap, InspectorAdditionalEvent, QuotaAvailabilityChanged;
+    public bool InspectorMalformed;
+    public string InspectorReplacementRequest = "request-new";
     public bool AccountSortScenario;
     public int AccountSortPhase;
     public long InspectorHighWater => InspectorRestarted ? 1 : InspectorAdditionalEvent ? 14 : 13;
@@ -295,7 +297,7 @@ internal sealed class Fixture : HttpMessageHandler
                 AccountId: "a1", RouteId: "r1", Provider: "fixture-inference", Model: "fixture-inspector-model", Dimensions: dimensions,
                 StatusCode: status, Measurements: state == "success" ? new(120, 2000, Source: "core_monotonic") : null);
         var streams = InspectorRestarted
-            ? new[] { Stream("request-new", "streaming", 1, 1) }
+            ? new[] { Stream(InspectorReplacementRequest, "streaming", 1, 1) }
             : new[] { Stream("request-a", "success", 1, 4, ProvenDimensions(), 200),
                 Stream("request-b", "streaming", 5, 7, ProvenDimensions("request-a")),
                 // Deliberately identical claimed conversation, but no evidence: it must remain independent.
@@ -303,7 +305,8 @@ internal sealed class Fixture : HttpMessageHandler
                 Stream("request-error", "failed", 9, 9, status: 503),
                 Stream("request-conflict", "active", 10, 10, new(ParentRequestId: "request-unknown", Evidence: [new("parentRequestId", "request_body")])),
                 Stream("request-conflict", "active", 11, 11, new(ParentRequestId: "request-error", Evidence: [new("parentRequestId", "request_body")])) with { Id = "stream-request-conflict-retry", AttemptId = "attempt-conflict-retry" } };
-        return new(Api.Version, InspectorSource, now, "live", true, InspectorRestarted ? 1 : 11, 1, 0, new(), InspectorEmpty ? [] : streams);
+        return new(Api.Version, InspectorSource, now, "live", true, InspectorRestarted ? 1 : 11, 1, 0, new(),
+            InspectorMalformed ? null! : InspectorEmpty ? [] : streams);
     }
     private InspectorEventPageDto InspectorEvents(Uri uri)
     {
@@ -317,7 +320,7 @@ internal sealed class Fixture : HttpMessageHandler
         InspectorEventDto E(long cursor, string id, string channel, string text, string? tool = null) => new(cursor, "output_delta", DateTimeOffset.UtcNow,
             id, "attempt-" + id, Dimensions: id is "request-a" or "request-b" ? ProvenDimensions(id == "request-b" ? "request-a" : null) : null,
             Channel: channel, Text: text, ToolCallId: tool is null ? null : "tool-ui", ToolName: tool, RedactionState: "none");
-        var all = InspectorRestarted ? new[] { E(1, "request-new", "assistant", "New source output only.") }
+        var all = InspectorRestarted ? new[] { E(1, InspectorReplacementRequest, "assistant", "New source output only.") }
             : new[] { E(1, "request-a", "reasoning", "Fixture reasoning summary."), E(2, "request-a", "assistant", "First answer "),
                 E(3, "request-a", "assistant", "continued."), E(4, "request-a", "tool_call", "Tool call metadata only.", "fixture_tool"),
                 E(5, "request-b", "tool_result", "Fixture tool result.", "fixture_tool"), E(6, "request-b", "assistant", "Answer after tool."),

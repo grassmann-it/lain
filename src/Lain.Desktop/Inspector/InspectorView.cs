@@ -345,16 +345,28 @@ public sealed class InspectorView : UserControl, IPresentationView
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(250));
             do
             {
-                PruneEvents();
-                if (_renderPending && !_eventList.IsKeyboardFocusWithin) RenderEvents();
-                if (_paused && !_refreshOnce) continue;
-                _refreshOnce = false;
-                if (Stopwatch.GetTimestamp() >= _nextSnapshot)
+                try
                 {
-                    _nextSnapshot = Stopwatch.GetTimestamp() + Stopwatch.Frequency;
-                    await RefreshSnapshotAsync(token);
+                    PruneEvents();
+                    if (_renderPending && !_eventList.IsKeyboardFocusWithin) RenderEvents();
+                    if (_paused && !_refreshOnce) continue;
+                    _refreshOnce = false;
+                    if (Stopwatch.GetTimestamp() >= _nextSnapshot)
+                    {
+                        _nextSnapshot = Stopwatch.GetTimestamp() + Stopwatch.Frequency;
+                        await RefreshSnapshotAsync(token);
+                    }
+                    if (_connected && _selectedRequest is not null && _details.IsVisible) await RefreshEventsAsync(token);
                 }
-                if (_connected && _selectedRequest is not null && _details.IsVisible) await RefreshEventsAsync(token);
+                catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+                catch (Exception error)
+                {
+                    // A failed render must not end the attached view's only polling
+                    // task and leave it permanently frozen until navigation.
+                    _connected = false; _nextSnapshot = 0;
+                    _status.Text = "Inspector display update failed · retrying · active state is unknown (" + error.GetType().Name + ")";
+                    _status.Foreground = Ui.Warning;
+                }
             } while (await timer.WaitForNextTickAsync(token));
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
@@ -606,7 +618,9 @@ public sealed class InspectorView : UserControl, IPresentationView
         var streams = _snapshot.Streams.Where(x => x.RequestId == _selectedRequest).ToArray();
         if (streams.Length == 0)
         {
-            _selection.Text = "Selected request metadata is no longer retained · already received output still expires";
+            _selection.Text = (_snapshot.Streams.Length == 0 ? "No observed streams yet. " : "")
+                + "Selected request metadata expired · choose a current request from Observed requests. Already received output still expires.";
+            ToolTip.SetTip(_selection, _selection.Text);
             _requestField.IsVisible = false; _navigation.Children.Clear(); _navigationKey = null;
             _identityFacts.Content = Selectable("Request " + _selectedRequest + " · source " + _sourceId + " · metadata no longer retained; no status is inferred.");
             return;
