@@ -184,7 +184,7 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
             // cannot establish the new day's remaining allowance. Keep historical
             // usage/limit and timestamps, without manufacturing a reset balance.
             var elapsedFreeDay = row.WindowId == "free-model-daily-requests" && row.Scope == "account"
-                && row.Source == OpenRouterQuotaAdapter.Endpoint + "#free-model-daily-requests"
+                && row.Source == "https://openrouter.ai/api/v1/key#free-model-daily-requests"
                 && row.WindowEnd is { } end && clock.GetUtcNow() >= end;
             var rowState = !account.Enabled ? "disabled" : snapshot?.Refreshing == true ? "refreshing"
                 : cached.LastSuccessAt is null ? error is not null ? "error" : unavailable ? snapshot!.Support!.Kind : "unknown"

@@ -206,6 +206,7 @@ app.Use(async (context, next) => {
  try { await next(context); }
  catch (RevisionConflictException) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError("revision_conflict", "Configuration changed; reload and retry.")); }
  catch (KeyNotFoundException) { context.Response.StatusCode = 404; await context.Response.WriteAsJsonAsync(new ApiError("not_found", "The requested item does not exist.")); }
+ catch (CollectionRouterValidationException ex) { context.Response.StatusCode = 400; await context.Response.WriteAsJsonAsync(ex.ToApiError()); }
  catch (Exception ex) when (ex is ArgumentException or FormatException or OverflowException) { context.Response.StatusCode = 400; await context.Response.WriteAsJsonAsync(new ApiError("validation", "Invalid request values; check dates, identities and selected accounts.")); }
  catch (ProfileDrainTimedOutException ex) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError("runtime_busy", ex.Message)); }
  catch (ProfileDrainRecoveryRequiredException ex) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError("runtime_recovery_required", ex.Message)); }
