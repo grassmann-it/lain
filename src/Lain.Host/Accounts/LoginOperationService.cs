@@ -39,7 +39,8 @@ public sealed record LoginOperationContext(string OperationId, string AccountId,
     public Func<PreparedLoginCredential, CancellationToken, Task>? CheckpointCredentialAsync { get; init; }
 }
 public sealed record LoginAdapterResult(string State, string? Url = null, string? Error = null,
-    PreparedLoginCredential? Credential = null, ResourceBindingDto[]? Resources = null, string? NextAction = null)
+    PreparedLoginCredential? Credential = null, ResourceBindingDto[]? Resources = null, string? NextAction = null,
+    string? UserCode = null, string? VerificationUri = null)
 {
     public override string ToString() => "LoginAdapterResult [redacted]";
 }
@@ -391,6 +392,7 @@ public sealed class LoginOperationService : IAsyncDisposable
     private async Task<LoginDto> AcceptAsync(Operation operation, LoginAdapterResult result, CancellationToken ct)
     {
         ValidateUrl(result.Url);
+        ValidateDeviceDisplay(result.UserCode, result.VerificationUri, result.Url);
         if (result.State is not ("waiting" or "authorizing" or "resource-required" or "prepared" or "failed" or "cancelled" or "recovery-required"))
             throw new InvalidDataException("Adapter returned an invalid connection phase.");
         var context = operation.Context!;
@@ -456,7 +458,8 @@ public sealed class LoginOperationService : IAsyncDisposable
                 if (resources is { Length: > 64 } || resources?.Any(r => AccountService.CanonicalProviderId(r.Provider) != context.Request.Provider) == true)
                     throw new InvalidDataException("Invalid discovered resource list.");
                 operation.Status = operation.Status with { State = result.State, Url = result.Url, Error = null,
-                    Resources = resources, NextAction = result.State == "resource-required" ? "select-resource" : "authorize" };
+                    Resources = resources, NextAction = result.State == "resource-required" ? "select-resource" : "authorize",
+                    UserCode = result.UserCode, VerificationUri = result.VerificationUri };
                 return operation.Status;
             }
         }
@@ -489,6 +492,7 @@ public sealed class LoginOperationService : IAsyncDisposable
     {
         if (status.Id != operation.Status.Id || status.Provider != operation.Status.Provider) throw new InvalidDataException("Invalid login operation identity.");
         ValidateUrl(status.Url);
+        ValidateDeviceDisplay(status.UserCode, status.VerificationUri, status.Url);
         lock (operation.PublicationGate)
         {
             if (operation.Invalidated) return operation.Status;
@@ -503,7 +507,8 @@ public sealed class LoginOperationService : IAsyncDisposable
         {
             if (operation.Status.State == "completed") return operation.Status;
             if (operation.TargetRemoved) { state = "cancelled"; error = "Target account was removed. Connect a new account."; }
-            operation.Status = operation.Status with { State = state, Url = null, Resources = null, Error = error,
+            operation.Status = operation.Status with { State = state, Url = null, UserCode = null, VerificationUri = null,
+                Resources = null, Error = error,
                 NextAction = state == "recovery-required" ? "review-recovery" : null };
             operation.FinishedAt ??= clock.GetUtcNow();
             operation.Expiry?.Dispose();
@@ -610,6 +615,14 @@ public sealed class LoginOperationService : IAsyncDisposable
     {
         if (url is not null && (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != "https" || !string.IsNullOrEmpty(uri.UserInfo)))
             throw new InvalidDataException("Invalid login authorization URL.");
+    }
+    private static void ValidateDeviceDisplay(string? userCode, string? verificationUri, string? authorizationUrl)
+    {
+        ValidateUrl(verificationUri);
+        if (verificationUri?.Length > 4096 || userCode is not null &&
+            (string.IsNullOrWhiteSpace(userCode) || userCode.Length > 64 || userCode.Any(c => c < ' ' || c > '~') ||
+             verificationUri is null && authorizationUrl is null))
+            throw new InvalidDataException("Invalid device authorization instructions.");
     }
     public async ValueTask DisposeAsync()
     {

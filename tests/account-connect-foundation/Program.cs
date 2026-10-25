@@ -13,6 +13,7 @@ try
 {
     await MonitorAndStatic();
     await LoginLifecycle();
+    await DeviceInstructions();
     assertions += await DurableRemovalChecks.Run(Path.Combine(root, "durable-removal"));
     await RotationAndRestore();
     await ReviewRegressions();
@@ -83,6 +84,46 @@ async Task MonitorAndStatic()
     if (!OperatingSystem.IsWindows())
         foreach (var file in Directory.GetFiles(root, "*", SearchOption.AllDirectories))
             Check((File.GetUnixFileMode(file) & (UnixFileMode.OtherRead | UnixFileMode.GroupRead)) == 0, "private credential/config permissions");
+}
+
+async Task DeviceInstructions()
+{
+    foreach (var terminal in new[] { "completed", "cancelled", "failed", "expired" })
+    {
+        var f = New("device-" + terminal);
+        var clock = new FakeClock();
+        var adapter = new FakeLogin();
+        await using var service = f.Logins(adapter, clock);
+        var login = await service.BeginAsync(0, new("test", "fake", ["quota"]));
+        adapter.Next = new("authorizing", UserCode: "ABCD-1234", VerificationUri: "https://provider.example.test/device");
+        login = await service.StatusAsync(login.Id);
+        Check(login.State == "authorizing" && login.UserCode == "ABCD-1234" && login.VerificationUri == "https://provider.example.test/device",
+            "device instructions survive adapter-to-client projection");
+        if (terminal == "cancelled") login = await service.CancelAsync(login.Id);
+        else
+        {
+            if (terminal == "expired") clock.Advance(TimeSpan.FromMinutes(11));
+            adapter.Next = terminal == "completed" ? new("prepared", Credential: Key("device-fixture-token")) : new("failed");
+            login = await service.StatusAsync(login.Id);
+        }
+        Check(login.State == terminal && login.UserCode is null && login.VerificationUri is null && login.Url is null,
+            "terminal login clears all device instructions: " + terminal);
+    }
+    foreach (var invalid in new[] {
+        new LoginAdapterResult("waiting", UserCode: "bad\u001bcode", VerificationUri: "https://provider.example.test/device"),
+        new LoginAdapterResult("waiting", UserCode: new string('x', 65), VerificationUri: "https://provider.example.test/device"),
+        new LoginAdapterResult("waiting", UserCode: "ABCD-1234"),
+        new LoginAdapterResult("waiting", UserCode: "ABCD-1234", VerificationUri: "http://provider.example.test/device"),
+        new LoginAdapterResult("waiting", VerificationUri: "https://credential@provider.example.test/device") })
+    {
+        var f = New("device-invalid-" + Guid.NewGuid().ToString("N"));
+        var adapter = new FakeLogin { Next = invalid };
+        await using var service = f.Logins(adapter);
+        var login = await service.BeginAsync(0, new("test", "fake", ["quota"]));
+        login = await service.StatusAsync(login.Id);
+        Check(login.State == "failed" && login.UserCode is null && login.VerificationUri is null && f.Repository.Snapshot.Accounts.Length == 0,
+            "invalid device instructions are rejected without account publication");
+    }
 }
 
 async Task LoginLifecycle()

@@ -40,7 +40,8 @@ public record QuotaDto(string AccountId, string? BudgetPoolId, string Source, st
     QuotaMetadataObservationDto? RequestyKeyObservation = null);
 public record LoginDto(string Id, string Provider, string State, string? Url = null, string? Error = null,
     string? Method = null, string[]? Purposes = null, string? AccountId = null, DateTimeOffset? ExpiresAt = null,
-    string? NextAction = null, ResourceBindingDto[]? Resources = null);
+    string? NextAction = null, ResourceBindingDto[]? Resources = null,
+    string? UserCode = null, string? VerificationUri = null);
 public record ImportRequest(long Revision, string ConfigPath, string? AuthDirectory = null);
 public record ImportResult(long Revision, int Added, int Updated, string[] Warnings);
 
