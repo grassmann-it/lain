@@ -34,7 +34,7 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
                     "api-key", hasDirectQuota
                         ? "Connect an existing key. Reported limits depend on this account and product; models are optional later."
                         : "Connect an existing inference key. This does not provide a measured remaining budget.",
-                    connection.BaseUrl, fields, descriptor.DocumentationUrl, Recommended: descriptor.Id != "openrouter" && index == 0));
+                    connection.BaseUrl, fields, descriptor.DocumentationUrl, Recommended: descriptor.Id is not ("openrouter" or "kilo") && index == 0));
             }
             foreach (var option in MonitorAccessCatalog.Options(descriptor.Id).Where(o => o.SecretRequired))
             {
@@ -64,7 +64,12 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
             poeAvailable() ? "available" : "setup-required", false, false,
             Description: "Authorize a dedicated Poe API key using the registered lain client.",
             Guidance: "The application maintainer must first qualify the Poe client and callback registration. An existing API key remains usable."));
-        result.AddRange(Lain.Host.Accounts.Managed.ManagedLoginQualifications.Methods());
+        result.Add(Lain.Host.Accounts.Kilo.KiloDeviceLoginAdapter.ConnectionMethod());
+        result.Add(new("kimi", "kimi-device", "Sign in with Kimi", "device", ["quota"], "available", false, false,
+            Description: "Connect Kimi Code monitoring in your browser using the displayed code. Choose the account region; existing inference keys and model routes are kept.",
+            Guidance: "This login reads quota only. It does not add inference access or purchase a plan. Lain owns renewal of its separate Kimi session.",
+            DocumentationUrl: "https://github.com/MoonshotAI/kimi-code/tree/main/packages/oauth", Recommended: true));
+        result.AddRange(Lain.Host.Accounts.Managed.ManagedLoginQualifications.Methods().Where(method => method.Provider != "kimi"));
         foreach (var id in new[] { "requesty", "alibaba-model-studio", "commandcode", "fireworks", "mistral" })
             result.Add(new(id, "official-cli", "Connect with official CLI", "cli", ["inference", "models"], "unavailable", false, false,
                 Guidance: "This provider's executable, isolated credential storage and identity handoff are not yet fully qualified. Use the existing key method; lain does not inspect another CLI's credentials."));
@@ -90,7 +95,7 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
 
         void AddKey(string id, string endpoint, string docs) => result.Add(new(id, "api-key", "API key", "api-key",
             DirectQuota.Contains(id) ? ["inference", "models", "quota"] : ["inference", "models"], "available", false, true, "api-key",
-            "Use an existing key; connecting does not create model routes or apply a profile.", endpoint, DocumentationUrl: docs, Recommended: true));
+            "Use an existing key; connecting does not create model routes or apply a profile.", endpoint, DocumentationUrl: docs, Recommended: id != "kimi"));
     }
 
     public ProviderConnectionMethodDto RequireAvailable(ConnectAccountRequest request, bool secret)

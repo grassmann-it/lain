@@ -125,6 +125,11 @@ async Task DeviceInstructions()
         Check(login.State == "failed" && login.UserCode is null && login.VerificationUri is null && f.Repository.Snapshot.Accounts.Length == 0,
             "invalid device instructions are rejected without account publication");
     }
+    await using var legacy = new LoginOperationService(qualifiedAdapters: [new LegacyDeviceLogin()]);
+    var legacyCompleted = await legacy.BeginAsync("legacy-device");
+    Check(legacyCompleted.State == "completed" && legacyCompleted.Url is null && legacyCompleted.UserCode is null
+        && legacyCompleted.VerificationUri is null && legacyCompleted.Resources is null,
+        "legacy completed response also clears device and authorization instructions");
 }
 
 async Task LoginLifecycle()
@@ -786,6 +791,15 @@ sealed class Fixture
     }
     public LoginOperationService Logins(IAccountLoginAdapter adapter, TimeProvider? clock = null) =>
         new(configuration: Repository, accounts: Accounts, secrets: Secrets, accountAdapters: [adapter], timeProvider: clock);
+}
+sealed class LegacyDeviceLogin : IQualifiedLoginAdapter
+{
+    public string Provider => "legacy-device";
+    public Task<LoginDto> BeginAsync(string operationId, CancellationToken ct) => Task.FromResult(new LoginDto(operationId,
+        Provider, "completed", Url: "https://provider.example.test/authorize", UserCode: "DONE-1234",
+        VerificationUri: "https://provider.example.test/device", Resources: [new(Provider)]));
+    public Task<LoginDto> StatusAsync(string operationId, CancellationToken ct) => BeginAsync(operationId, ct);
+    public Task CancelAsync(string operationId, CancellationToken ct) => Task.CompletedTask;
 }
 sealed class FakeLogin(string provider = "test") : IAccountLoginAdapter
 {

@@ -79,6 +79,8 @@ builder.Services.AddSingleton(new LegacyImportService(paths, repository, secrets
 using var loginBackend = new HttpCodexOwnedLoginBackend(paths, secrets);
 var loginAdapter = new CodexOwnedLoginAdapter(loginBackend, paths, repository, secrets, codexModels);
 using var openRouterLogin = new OpenRouterLoginAdapter();
+await using var kiloLogin = new Lain.Host.Accounts.Kilo.KiloDeviceLoginAdapter(configuration: repository, secrets: secrets);
+using var kimiLogin = new Lain.Host.Accounts.Managed.KimiDeviceLoginAdapter();
 PoeLoginAdapter CreatePoeLogin()
 {
  try { return new PoeLoginAdapter(PoeLoginOptions.LoadMaintainerConfiguration(paths.Root)); }
@@ -119,8 +121,8 @@ try
 catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException)
 { cloudOptions = new([]); }
 var cloudLogins = cloudOptions.Clients.Where(c => c.Qualified).Select(c => new CloudOAuthAdapter(c)).ToArray();
-IAccountLoginAdapter[] accountLogins = [loginAdapter, openRouterLogin, mimoLogin, googleCli, .. (poeLogin.IsAvailable ? new IAccountLoginAdapter[] { poeLogin } : []), .. cloudLogins];
-ICredentialOwner[] credentialOwners = [.. cloudLogins, googleCli];
+IAccountLoginAdapter[] accountLogins = [loginAdapter, openRouterLogin, kiloLogin, kimiLogin, mimoLogin, googleCli, .. (poeLogin.IsAvailable ? new IAccountLoginAdapter[] { poeLogin } : []), .. cloudLogins];
+ICredentialOwner[] credentialOwners = [.. cloudLogins, googleCli, kimiLogin];
 builder.Services.AddSingleton(sp => new LoginOperationService(configuration: repository,
  accounts: sp.GetRequiredService<AccountService>(), secrets: secrets,
  accountAdapters: accountLogins, publicationGate: mutations));
@@ -171,9 +173,10 @@ quotaCoreHttp.DefaultRequestHeaders.Authorization = new("Bearer", managementToke
 var quotaSource = new HostQuotaSource(repository, secrets, monitorAccess);
 using var geminiQuota = new GeminiCloudQuotaAdapter(providerHttp);
 using var cloudflareQuota = new CloudflareQuotaAdapter(cloudOptions.CloudflareNeuronCandidateQualified);
+using var kimiQuota = new KimiDeviceQuotaAdapter(providerHttp);
 var quota = new QuotaService(quotaSource, quotaSource,
  [new CodexQuotaAdapter(providerHttp), new CommandCodeQuotaAdapter(providerHttp),
-  new KimiQuotaAdapter(providerHttp), new ZaiQuotaAdapter(providerHttp),
+  kimiQuota, new ZaiQuotaAdapter(providerHttp),
   new StepFunQuotaAdapter(providerHttp), new PoeQuotaAdapter(providerHttp),
   new OpenRouterQuotaAdapter(providerHttp), new SyntheticQuotaAdapter(providerHttp),
   new KiloQuotaAdapter(providerHttp), new RequestyQuotaAdapter(providerHttp),

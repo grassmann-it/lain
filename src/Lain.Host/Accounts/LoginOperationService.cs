@@ -496,7 +496,10 @@ public sealed class LoginOperationService : IAsyncDisposable
         lock (operation.PublicationGate)
         {
             if (operation.Invalidated) return operation.Status;
-            operation.Status = status with { ExpiresAt = operation.Status.ExpiresAt };
+            var terminal = Terminal(status.State);
+            operation.Status = status with { ExpiresAt = operation.Status.ExpiresAt,
+                Url = terminal ? null : status.Url, UserCode = terminal ? null : status.UserCode,
+                VerificationUri = terminal ? null : status.VerificationUri, Resources = terminal ? null : status.Resources };
             if (Terminal(status.State)) Finish(operation, status.State, status.State == "failed" ? "Provider authorization failed." : null);
             return operation.Status;
         }
