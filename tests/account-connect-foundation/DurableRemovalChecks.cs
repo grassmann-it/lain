@@ -13,6 +13,74 @@ internal static class DurableRemovalChecks
         void Reject(Action action, string message)
         { try { action(); } catch (Exception error) when (error is IOException or InvalidOperationException) { checks++; return; } throw new Exception(message); }
 
+        var passive = new Fixture(Path.Combine(root, "passive"));
+        var passiveAccount = passive.Create();
+        var originalTree = CredentialTree(passive.Paths.Credentials);
+        await using (var service = passive.Logins(new Adapter()))
+            for (var pass = 0; pass < 3; pass++)
+            {
+                await service.CleanupRemovedRecoveriesAsync();
+                passive.Accounts.ReserveConnect(passive.Repository.Snapshot.Revision,
+                    new("test", "durable", ["quota"], AccountId: passiveAccount.Id), "read-" + pass, DateTimeOffset.UtcNow.AddMinutes(5));
+            }
+        Check(originalTree.SequenceEqual(CredentialTree(passive.Paths.Credentials)),
+            "empty startup cleanup and repeated removal-epoch reads preserve all credential paths, modes and bytes");
+
+        foreach (var kind in OperatingSystem.IsWindows() ? new[] { "file" } : new[] { "file", "link", "dangling-link", "ancestor-link" })
+        {
+            var invalid = new Fixture(Path.Combine(root, "invalid-removal-" + kind));
+            var target = invalid.Create();
+            var path = Path.Combine(invalid.Paths.Credentials, "removed-targets");
+            var outside = Path.Combine(invalid.Paths.Root, "outside");
+            if (kind == "file") File.WriteAllText(path, "not a directory");
+            else if (kind == "ancestor-link")
+            {
+                path = invalid.Paths.Credentials;
+                Directory.Move(path, outside);
+                Directory.CreateSymbolicLink(path, outside);
+            }
+            else
+            {
+                if (kind == "link") Directory.CreateDirectory(outside);
+                Directory.CreateSymbolicLink(path, outside);
+            }
+            try
+            {
+                Reject(() => invalid.Accounts.ReserveConnect(invalid.Repository.Snapshot.Revision,
+                    new("test", "durable", ["quota"], AccountId: target.Id), "invalid", DateTimeOffset.UtcNow.AddMinutes(5)),
+                    "removal read accepted " + kind);
+            }
+            finally
+            {
+                if (kind == "file") File.Delete(path); else Directory.Delete(path);
+                if (kind == "ancestor-link") Directory.Move(outside, path);
+            }
+        }
+
+        foreach (var kind in OperatingSystem.IsWindows() ? new[] { "file" } : new[] { "file", "link", "dangling-link" })
+        {
+            var invalid = new Fixture(Path.Combine(root, "invalid-recovery-" + kind));
+            var target = invalid.Create();
+            invalid.Prepare(target.Id, "blocked", "profile-blocked");
+            invalid.Accounts.Remove(invalid.Repository.Snapshot.Revision, target.Id);
+            var path = Path.Combine(invalid.Paths.Credentials, "recovery");
+            var outside = Path.Combine(invalid.Paths.Root, "outside");
+            Directory.Move(path, outside);
+            var before = CredentialTree(outside);
+            if (kind == "file") File.WriteAllText(path, "not a directory");
+            else Directory.CreateSymbolicLink(path, kind == "link" ? outside : outside + "-missing");
+            var blockedAdapter = new Adapter(); blockedAdapter.Profiles.Add("profile-blocked");
+            await using var service = invalid.Logins(blockedAdapter);
+            await service.CleanupRemovedRecoveriesAsync();
+            Check(blockedAdapter.Removals == 0 && before.SequenceEqual(CredentialTree(outside))
+                && !Directory.Exists(outside + "-missing"), "recovery scan refuses " + kind + " without touching its target");
+            if (kind == "file") File.Delete(path); else Directory.Delete(path);
+            Directory.Move(outside, path);
+            await service.CleanupRemovedRecoveriesAsync();
+            Check(blockedAdapter.Removals == 1 && blockedAdapter.Profiles.Count == 0,
+                "recovery cleanup resumes after invalid path is repaired");
+        }
+
         // A retained remote result falls out of the bounded interactive registry while its own
         // profile is still available. Removing its target must find and retire that disk result.
         var pruned = new Fixture(Path.Combine(root, "pruned"));
@@ -143,6 +211,13 @@ internal static class DurableRemovalChecks
         }
         return checks;
     }
+
+    private static string[] CredentialTree(string root) => new[] { root }
+        .Concat(Directory.EnumerateFileSystemEntries(root, "*", SearchOption.AllDirectories)).Order(StringComparer.Ordinal)
+        .Select(path => string.Join('|', Path.GetRelativePath(root, path), Directory.Exists(path) ? "directory" : "file",
+            OperatingSystem.IsWindows() ? "" : File.GetUnixFileMode(path).ToString(),
+            Directory.Exists(path) ? "" : Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path)))))
+        .ToArray();
 
     private static PreparedLoginCredential Credential(string profile) => new("test-owner", ["quota"], new("test"),
         JsonSerializer.Serialize(new { kind = "test-owned-profile", profileReference = profile }), PreserveForRecovery: true);

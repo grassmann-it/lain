@@ -113,15 +113,30 @@ public sealed class CredentialGenerationStore(OwnStatePaths paths)
     {
         ValidateId(accountId);
         var directory = Path.Combine(paths.Credentials, "removed-targets");
-        OwnStatePaths.EnsurePrivateDirectory(directory);
+        ExistingPrivateDirectory(directory);
         return Path.Combine(directory, accountId + ".json");
     }
 
     internal IEnumerable<string> RecoveryFiles()
     {
         var directory = Path.Combine(paths.Credentials, "recovery");
-        OwnStatePaths.EnsurePrivateDirectory(directory);
+        if (!ExistingPrivateDirectory(directory)) return [];
         return Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly);
+    }
+
+    private static bool ExistingPrivateDirectory(string path)
+    {
+        // A passive read must not create metadata, but missing paths must still reject
+        // dangling links and invalid ancestors before they can be treated as empty.
+        for (var current = new DirectoryInfo(Path.GetFullPath(path)); current is not null; current = current.Parent)
+        {
+            RefuseLink(current.FullName);
+            if (File.Exists(current.FullName) && !Directory.Exists(current.FullName))
+                throw new IOException("Invalid private credential directory.");
+        }
+        if (!Directory.Exists(path)) return false;
+        OwnStatePaths.EnsurePrivateDirectory(path);
+        return true;
     }
 
     public bool IsRetired(CredentialHandleDto handle) => File.Exists(RetirementPath(handle));
