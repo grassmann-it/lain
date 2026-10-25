@@ -111,8 +111,8 @@ internal sealed class Gates(IClassicDesktopStyleApplicationLifetime lifetime)
         await Activate(Find<Button>("Cancel"));
         await Wait(() => FindOrNull<TextBox>("Client name") is null);
         Check(fixture.Config.Revision == revision && fixture.Config.Routes.Single(r => r.Id == "r1") == original, "Cancel preserves model identity, fields and saved revision");
-        await ReturnFocus("Edit selected model access " + original.Alias, "model Cancel");
-        await Activate(Find<Button>("Edit selected model access " + original.Alias));
+        await ReturnFocus("Edit model access " + original.Alias, "model Cancel");
+        await Activate(Find<Button>("Edit model access " + original.Alias));
         await Wait(() => FindOrNull<TextBox>("Client name") is not null);
         Check(Find<TextBox>("Client name").Text == original.Alias, "model Cancel discards draft on reopen");
         var spending = Find<ComboBox>("Spending policy");
@@ -138,9 +138,9 @@ internal sealed class Gates(IClassicDesktopStyleApplicationLifetime lifetime)
             && saved.Enabled == original.Enabled && saved.Visible == original.Visible && saved.Pooled == original.Pooled
             && JsonSerializer.Serialize(saved.Policy) == JsonSerializer.Serialize(original.Policy),
             "native Save updates exact route r1 while retaining identity, binding, flags, provenance and complete policy");
-        await ReturnFocus("Edit selected model access native-model-saved", "model Save");
+        await ReturnFocus("Edit model access native-model-saved", "model Save");
         Capture("saved");
-        await Activate(Find<Button>("Edit selected model access native-model-saved"));
+        await Activate(Find<Button>("Edit model access native-model-saved"));
         await Wait(() => FindOrNull<TextBox>("Client name") is not null);
         Check(Find<TextBox>("Client name").Text == saved.Alias, "saved model value reloads from the fixture configuration");
         await Activate(Find<Button>("Cancel"));

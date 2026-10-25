@@ -56,3 +56,14 @@ MemoryMax2G, Swap256M, IOWeight10, nice15/ionice3 and an owned SSD temporary fol
 
 No product source, installed service, ordinary Codex configuration, real account,
 provider endpoint, user display or user session bus was modified or used.
+
+## Follow-up source preparation
+
+Integrated product fix `0800b0b` restores the original stable entry point and also
+preserves the narrow Models inventory instead of forcing its detail on remount.
+The existing four-case follow-up therefore expects/reopens the original Models
+`Edit model access <alias>` inventory trigger (the actual initial action), rather
+than the prior automatic detail's `Edit selected model access <alias>`. The
+required r1 identity, rename, focus restoration and every data assertion are
+unchanged. The eight historical failures had null focus under either contract;
+their manifests and results remain untouched. Profiles' trigger is unchanged.
