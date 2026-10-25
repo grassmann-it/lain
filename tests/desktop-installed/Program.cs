@@ -18,6 +18,7 @@ using Avalonia.LogicalTree;
 using Lain.Client;
 using Lain.Core;
 using Lain.Desktop;
+using Lain.Desktop.Presentation;
 
 internal static class Program
 {
@@ -25,6 +26,7 @@ internal static class Program
     internal static string Output => Environment.GetEnvironmentVariable("LAIN_INSTALLED_OUTPUT") ?? throw new Exception("Private runner output missing");
     internal static string Preferences => Path.Combine(Environment.GetEnvironmentVariable("LAIN_INSTALLED_RUNTIME") ?? throw new Exception("Private runtime missing"), "preferences.json");
     internal static readonly List<object> Assemblies = [];
+    internal static bool CurrentStateOnly => Environment.GetEnvironmentVariable("LAIN_INSTALLED_CURRENT_STATE") == "1";
     [STAThread]
     public static int Main(string[] args)
     {
@@ -133,6 +135,7 @@ internal sealed class Probe
     }
     internal async Task Run()
     {
+        if (Program.CurrentStateOnly) { await RunCurrentState(); return; }
         Directory.CreateDirectory(Program.Output);
         var from = DateTimeOffset.Parse(Environment.GetEnvironmentVariable("LAIN_USAGE_FROM")!, CultureInfo.InvariantCulture);
         var to = DateTimeOffset.Parse(Environment.GetEnvironmentVariable("LAIN_USAGE_TO")!, CultureInfo.InvariantCulture);
@@ -251,6 +254,125 @@ internal sealed class Probe
         guard.Dispose();
         Console.WriteLine("PASS exact-target installed UI probe: " + checks.Count + " checks");
     }
+    // Opt-in current contract observation. The legacy broad suite above remains
+    // separate: it intentionally retains its historical nav/Expander assertions.
+    private async Task RunCurrentState()
+    {
+        Directory.CreateDirectory(Program.Output);
+        var from = DateTimeOffset.Parse(Environment.GetEnvironmentVariable("LAIN_USAGE_FROM")!, CultureInfo.InvariantCulture);
+        var to = DateTimeOffset.Parse(Environment.GetEnvironmentVariable("LAIN_USAGE_TO")!, CultureInfo.InvariantCulture);
+        Check(from < to && to <= DateTimeOffset.UtcNow && to - from <= TimeSpan.FromDays(366), "fixed historical range is valid");
+        query = new UsageQuery(From: from, To: to, TimeZone: "UTC", Limit: 100);
+        var runtime = Path.GetFullPath(Environment.GetEnvironmentVariable("LAIN_INSTALLED_RUNTIME")!);
+        Check(Path.GetDirectoryName(Path.GetFullPath(Program.Preferences)) == runtime && !File.Exists(Program.Preferences),
+            "current-state mode starts with a fresh explicitly isolated preferences path");
+        var preferences = new WorkspacePreferencesStore(Program.Preferences);
+        Check(preferences.Save(preferences.Current with { Level = InformationLevel.Simple, MinimizeToTray = false, CloseToTray = false }),
+            "only private preferences select Simple and normal close behavior");
+        var preferencesBefore = File.ReadAllBytes(Program.Preferences);
+        using var observer = Client();
+        var status = await observer.StatusAsync();
+        Check(status.ProxyReady && status.RuntimeMode == "gateway", "actual own Host reports ready Gateway before opening");
+        var config = await observer.GetConfigurationAsync();
+        var initial = await observer.UsageAsync(query);
+        before = StableUsage(initial);
+        await Open();
+        CheckCurrentSimpleNavigation();
+        Check(AutomationProperties.GetHelpText(Controls<Button>().Single(button => Equals(button.Tag, "Accounts"))) == "Current page",
+            "current-state window initially displays Accounts");
+        Check(Named<Image>("Application logo").Source is not null && window!.Icon is not null, "selected installed cat and window icon remain present");
+        await CaptureBoth("current-accounts", verifyFooter: true, verifyPage: CheckCurrentSimpleNavigation);
+
+        var firstInspectorRead = guard.Requests.Count;
+        await Click("Live");
+        await Wait(() => guard.Requests.Skip(firstInspectorRead).Any(request => request.Path.StartsWith(Api.Prefix + "/inspector", StringComparison.Ordinal)
+            && request.Status == 200), "current Live page reads the actual own Inspector");
+        var inspector = await observer.InspectorAsync();
+        Check(!string.IsNullOrWhiteSpace(inspector.SourceId), "actual Inspector supplies its source identity");
+        await Wait(() => Controls<TextBlock>().Any(block => ToolTip.GetTip(block) is string tip &&
+            tip.Contains("Source " + inspector.SourceId + " ·", StringComparison.Ordinal)), "Live source identity matches the own Host snapshot");
+        var inspectorState = inspector.State switch
+        {
+            "live" => "Connected to the live inspector", "waiting" => "Waiting for the owned proxy stream",
+            "connecting" => "Connecting to the owned proxy stream", _ => "Live source unavailable"
+        };
+        await Wait(() => Named<TextBlock>("Inspector status").Text?.Contains(inspectorState, StringComparison.Ordinal) == true,
+            "Live reports the actual observed source state");
+        string? emptyGuidance = null;
+        if (inspector.Streams.Length == 0)
+        {
+            await Wait(() => Controls<TextBlock>().Any(block => AutomationProperties.GetName(block) == "Live empty state"),
+                "zero actual streams expose Live empty guidance");
+            emptyGuidance = Named<TextBlock>("Live empty state").Text;
+            Check(emptyGuidance?.Contains("transient", StringComparison.OrdinalIgnoreCase) == true &&
+                emptyGuidance.Contains("does not replay", StringComparison.OrdinalIgnoreCase) && emptyGuidance.Contains("Usage → Attempts", StringComparison.Ordinal),
+                "empty Live distinguishes transient output, restart and retained Attempts");
+        }
+        await CaptureBoth("current-live", verifyFooter: true, verifyPage: CheckCurrentSimpleNavigation);
+
+        await Click("Profiles");
+        var profileStatus = await observer.StatusAsync();
+        await Wait(() => Controls<TextBlock>().Any(block => AutomationProperties.GetName(block) == "Applied proxy profile status"),
+            "Profiles exposes its explicit applied-state summary");
+        var applied = Named<TextBlock>("Applied proxy profile status").Text ?? "";
+        if (profileStatus.ActiveProfileId is null)
+            Check(applied.Contains("not reported", StringComparison.OrdinalIgnoreCase) && !applied.Contains("Applied to proxy:", StringComparison.Ordinal),
+                "Profiles explicitly preserves the actual Host's unknown active profile");
+        else
+        {
+            var name = config.Profiles.FirstOrDefault(profile => profile.Id == profileStatus.ActiveProfileId)?.Name ?? profileStatus.ActiveProfileId;
+            Check(applied.Contains(name, StringComparison.Ordinal) && applied.Contains("Profile revision " +
+                (profileStatus.ActiveProfileRevision?.ToString(CultureInfo.InvariantCulture) ?? "unknown"), StringComparison.Ordinal),
+                "Profiles matches the actual reported active profile identity and revision");
+        }
+        profileStates.Add(new { hostActiveProfileId = profileStatus.ActiveProfileId, hostActiveProfileRevision = profileStatus.ActiveProfileRevision, displayed = applied });
+        await CaptureBoth("current-profiles", verifyFooter: true, verifyPage: CheckCurrentSimpleNavigation);
+
+        window!.Close(); await Task.Delay(250);
+        var closedStatus = await observer.StatusAsync();
+        Check(closedStatus.ProxyReady, "actual own Host remains ready while the observation window is closed");
+        Check(StableUsage(await observer.UsageAsync(query)) == before, "fixed historical Usage is unchanged while closed");
+        await Open(); CheckCurrentSimpleNavigation();
+        await CaptureBoth("current-reopened-accounts", verifyFooter: true, verifyPage: CheckCurrentSimpleNavigation);
+        window!.Close(); await Task.Delay(150);
+        var finalUsage = await observer.UsageAsync(query);
+        var finalConfig = await observer.GetConfigurationAsync();
+        var finalStatus = await observer.StatusAsync();
+        Check(finalStatus.ProxyReady, "actual own Host remains ready after close and reopen");
+        Check(StableUsage(finalUsage) == before, "fixed historical Usage is unchanged after close and reopen");
+        Check(JsonSerializer.Serialize(config) == JsonSerializer.Serialize(finalConfig), "actual configuration and revisions remain unchanged");
+        Check(preferencesBefore.SequenceEqual(File.ReadAllBytes(Program.Preferences)), "viewing and reopening preserve the isolated Simple preferences");
+        Check(guard.Blocked.Count == 0 && guard.Requests.All(request => request.Method == "GET"), "unchanged GET-only transport guard permits every observation and no writes");
+        Check(!File.Exists(Path.Combine(runtime, "blocked-browser")), "no browser or external-launch attempt");
+        Program.VerifyAssemblies();
+        File.Copy(Program.Preferences, Path.Combine(Program.Output, "preferences-observed.json"));
+        await Write("evidence.json", new
+        {
+            result = "PASS", mode = "current-state-read-only", privateXvfb = true, assemblies = Program.Assemblies,
+            checks, screenshots, profileStates, requests = guard.Requests, blocked = guard.Blocked,
+            inspector = new { inspector.SourceId, inspector.State, inspector.Complete, inspector.Cursor, streamCount = inspector.Streams.Length, inspector.Error, emptyGuidance },
+            hostBefore = status, hostWhileClosed = closedStatus, hostAfter = finalStatus,
+            configurationRevision = config.Revision, appliedRevision = config.AppliedRevision,
+            historicalUsage = new { from, to, before = initial, after = finalUsage }, isolatedPreferences = Program.Preferences,
+            scope = "Exact selected installed assemblies on actual own Host, unchanged GET-only guard. Current Simple five destinations plus More; Accounts, Live and Profiles in both sizes; private preferences; fixed historical Usage and configuration equality across close/reopen. Routed control events and rendered PNGs, not XTEST or OS pointer qualification. No quota refresh, provider/login/export/Apply/service action. Legacy broad-suite result is separate and is not superseded by this focused mode."
+        });
+        foreach (var http in transports) http.Dispose(); guard.Dispose();
+        Console.WriteLine("PASS current-state installed UI observation: " + checks.Count + " checks");
+    }
+
+    private void CheckCurrentSimpleNavigation()
+    {
+        Check(Named<ComboBox>("Information level").SelectedItem?.ToString() == "Simple", "current installed window uses isolated Simple presentation");
+        var direct = Controls<Button>().Where(button => button.Tag is string tag && Destinations.Contains(tag)).ToArray();
+        Check(direct.Select(button => button.Tag!.ToString()).SequenceEqual(Destinations), "Simple directly exposes Accounts Models Profiles Usage Live in order");
+        var more = Named<Button>("More destinations");
+        Check(Controls<Button>().Count(button => button.Classes.Contains("nav")) == Destinations.Length + 1,
+            "current Simple navigation has five destinations plus one More control");
+        Check(direct.Append(more).All(button => button.TranslatePoint(default, window!) is { } point && button.Bounds.Width > 0 &&
+            point.X >= 0 && point.Y >= 0 && point.X + button.Bounds.Width <= window!.Bounds.Width + 1 &&
+            point.Y + button.Bounds.Height <= window.Bounds.Height + 1), "current Simple destinations and More fit the viewport");
+    }
+
     private async Task Open()
     {
         var constructor = typeof(MainWindow).GetConstructor([typeof(LainApiClient), typeof(string)])
@@ -351,7 +473,7 @@ internal sealed class Probe
         }), $"Settings and About controls fit the available width at {window.Bounds.Width:0}px");
     }
 
-    private async Task CaptureBoth(string page, bool verifyFooter = false)
+    private async Task CaptureBoth(string page, bool verifyFooter = false, Action? verifyPage = null)
     {
         foreach (var (width, height) in new[] { (1120, 780), (800, 560) })
         {
@@ -359,6 +481,7 @@ internal sealed class Probe
             await Wait(() => Math.Abs(window.Bounds.Width - width) < 2 && Math.Abs(window.Bounds.Height - height) < 2, page + " viewport " + width + "x" + height);
             await Task.Delay(120); window.UpdateLayout();
             if (verifyFooter) CheckInformationFooter();
+            verifyPage?.Invoke();
             var file = page + "-" + width + "x" + height + ".png";
             Capture(file);
             screenshots.Add(new { page, width, height, actualWidth = window.Bounds.Width, actualHeight = window.Bounds.Height, file, sha256 = Program.Hash(Path.Combine(Program.Output, file)) });
@@ -382,7 +505,7 @@ internal sealed class Probe
     {
         Directory.CreateDirectory(Program.Output);
         try { if (window is not null && window.IsVisible) Capture("failure.png"); } catch { }
-        await Write("failure.json", new { result = "FAIL", error = error.ToString(), checks, screenshots, requests = guard.Requests, blocked = guard.Blocked, assemblies = Program.Assemblies });
+        await Write("failure.json", new { result = "FAIL", mode = Program.CurrentStateOnly ? "current-state-read-only" : "legacy-broad", error = error.ToString(), checks, screenshots, requests = guard.Requests, blocked = guard.Blocked, assemblies = Program.Assemblies });
         window?.Close(); foreach (var http in transports) http.Dispose(); guard.Dispose();
     }
 }

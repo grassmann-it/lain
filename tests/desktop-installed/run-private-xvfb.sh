@@ -6,6 +6,7 @@ original_lain_home=${LAIN_HOME:-"$HOME/.local/share/lain"}
 unset DISPLAY WAYLAND_DISPLAY DBUS_SESSION_BUS_ADDRESS SESSION_MANAGER
 export GDK_BACKEND=x11 QT_QPA_PLATFORM=xcb AVALONIA_USE_WAYLAND=0
 repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
+current_state=${LAIN_INSTALLED_CURRENT_STATE:-0}
 app= output= from= to= harness="$repo/tests/desktop-installed/bin/Debug/net10.0" state="$original_lain_home"
 while (($#)); do
   case "$1" in
@@ -15,9 +16,11 @@ while (($#)); do
     --to) to=${2:?}; shift 2;;
     --harness) harness=${2:?}; shift 2;;
     --state) state=${2:?}; shift 2;;
-    *) echo 'Usage: run-private-xvfb.sh --app APP_OR_DESKTOP --output NEW_DIR --from YYYY-MM-DD --to YYYY-MM-DD [--harness BUILT_DIR] [--state OWN_LAIN_HOME]' >&2; exit 2;;
+    --current-state) current_state=1; shift;;
+    *) echo 'Usage: run-private-xvfb.sh --app APP_OR_DESKTOP --output NEW_DIR --from YYYY-MM-DD --to YYYY-MM-DD [--harness BUILT_DIR] [--state OWN_LAIN_HOME] [--current-state]' >&2; exit 2;;
   esac
 done
+[[ "$current_state" == 0 || "$current_state" == 1 ]] || { echo 'LAIN_INSTALLED_CURRENT_STATE must be 0 or 1' >&2; exit 2; }
 [[ -n "$app" && -n "$output" && -n "$from" && -n "$to" ]] || { echo 'app, output, from and to are required' >&2; exit 2; }
 [[ "$app" == /* && "$output" == /* && "$harness" == /* && "$state" == /* && ! -e "$output" ]] || { echo 'Use absolute paths and a nonexistent output directory' >&2; exit 2; }
 # Validate complete UTC calendar boundaries before opening a credential or GUI.
@@ -75,6 +78,7 @@ export HOME="$runtime/home" XDG_CONFIG_HOME="$runtime/home/config" XDG_DATA_HOME
 export XDG_RUNTIME_DIR="$runtime/xdg" LAIN_HOME="$state"
 export LAIN_TEST_XVFB_PID="$xvfb_pid" LAIN_TEST_DISPLAY="$DISPLAY" LAIN_INSTALLED_OUTPUT="$output"
 export LAIN_INSTALLED_RUNTIME="$runtime" LAIN_INSTALLED_MANIFEST="$runtime/assemblies.json"
+export LAIN_INSTALLED_CURRENT_STATE="$current_state"
 export LAIN_USAGE_FROM="${from}T00:00:00Z" LAIN_USAGE_TO="${to}T00:00:00Z"
 timeout --signal=TERM --kill-after=5s 180s dotnet "$runtime/target/Lain.Desktop.Installed.dll" 2>&1 | tee "$output/run.log"
 echo "Installed target evidence: $output/evidence.json"

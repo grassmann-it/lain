@@ -59,7 +59,7 @@ refresh, login or export controls. Common browser/desktop launch commands are
 replaced with blockers; the isolated HOME/XDG and absent portal bus provide
 additional isolation. This is an observation harness, not an OS network sandbox.
 
-Checks cover Accounts as the initial page, exactly five destinations, the semantic
+The default legacy broad suite checks Accounts as the initial page, exactly five destinations, the semantic
 `Application logo` image and window icon, the complete configured account inventory
 and named quota windows with supplied percentages and explicit remaining states,
 configured Models, explicit known/unknown applied profile state, real provider
@@ -88,6 +88,38 @@ Temporary runtime/preferences are removed on exit. The scope does not establish
 live provider access, inference correctness, native desktop entry launch, or an
 independent installed-file manifest comparison: the integrator performs those
 separate package/update checks.
+
+## Focused current-state observation
+
+Opt in with `--current-state` (or `LAIN_INSTALLED_CURRENT_STATE=1`) to observe
+the current Simple contract against the actual running own Host:
+
+```sh
+./tests/desktop-installed/run-private-xvfb.sh \
+  --current-state \
+  --app /home/tomka/.local/share/lain/app \
+  --state /home/tomka/.local/share/lain \
+  --output /absolute/new/current-state-evidence \
+  --from 2026-10-01 --to 2026-10-24 \
+  --harness /absolute/previously-built/desktop-installed
+```
+
+This mode creates explicit private Simple preferences with tray closing disabled,
+then checks Accounts, Models, Profiles, Usage, Live and More navigation. Accounts,
+Live, Profiles and reopened Accounts are captured at 1120 × 780 and 800 × 560.
+Live's source identity and state must match the real Inspector snapshot; an empty
+stream list must show transient-output and historical Attempts guidance. Profiles
+must preserve an unreported active profile as unknown when the Host reports null.
+The Host must remain ready while the window is closed and after reopening, with
+the same fixed historical Usage, configuration/revisions and private preferences.
+
+The exact selected-assembly manifest, GET-only transport guard, private Xvfb and
+browser blockers are unchanged. Interactions are routed control events and PNGs
+are rendered window captures; this mode makes no XTEST or native-pointer claim.
+It does not assert the broad provider catalog or quota-window presentation.
+Reports identify this mode as `current-state-read-only`; the default legacy suite
+and any historical failure remain separate. A focused pass does not convert the
+legacy five-navigation/Expander expectations into a pass.
 
 ## Actual native launcher and window icon
 
