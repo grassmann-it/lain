@@ -29,15 +29,19 @@ internal static class SetupPresentationChecks
         Check(text.Split("No separate quota lookup", StringSplitOptions.None).Length == 5, "one neutral explanation per unsupported account");
         Check(!text.Contains("Quota warning") && !text.Contains("Remaining unavailable") && !text.Contains("Reset unknown"), "unsupported is not a warning or repeated missing metrics");
         Check(text.Contains("Key spending limit") && text.Contains("20% used") && text.Contains("8 USD left"), "percentage identifies a bounded key spending limit");
-        Check(text.Contains("Source openrouter.ai") && text.Contains("Checked "), "observed quota source and time present");
+        var fullOutput = new StringWriter();
+        await CliApplication.WriteAccountUsage(fullOutput, overview, new(120, false), full: true);
+        Check(!text.Contains("Source ") && !text.Contains("Checked ") && text.Contains("lain usage --full") &&
+            fullOutput.ToString().Contains("source openrouter.ai") && fullOutput.ToString().Contains("Checked "),
+            "compact defers observed quota source and check time to full output");
         var balance = overview with { Accounts = [new(accounts[4], [overview.Accounts[4].Quotas[0] with { Used = null, Limit = null, Remaining = 8, WindowLabel = "Credit balance" }])] };
         output = new(); await CliApplication.WriteAccountUsage(output, balance, new(120, false));
         Check(output.ToString().Contains("8 USD left") && !output.ToString().Contains("%") && !output.ToString().Contains("Reset"), "balance without denominator has no percent or invented reset");
         var template = overview.Accounts[4].Quotas[0];
-        async Task<string> Render(QuotaDto quota)
+        async Task<string> Render(QuotaDto quota, bool full = false)
         {
             var writer = new StringWriter();
-            await CliApplication.WriteAccountUsage(writer, new(1, "account-usage", [new(accounts[4], [quota])]), new(120, false));
+            await CliApplication.WriteAccountUsage(writer, new(1, "account-usage", [new(accounts[4], [quota])]), new(120, false), full: full);
             return writer.ToString();
         }
         var balanceText = await Render(template with { MeasurementKind = "balance", UsedPercent = 20 });
@@ -45,9 +49,12 @@ internal static class SetupPresentationChecks
         var usageText = await Render(template with { MeasurementKind = "usage", Unit = "requests", Used = 123, Limit = null, Remaining = null, UsedPercent = null,
             Scope = "project", ScopeId = "fixture-project", DataAsOf = observed.AddMinutes(-20) });
         Check(usageText.Contains("Used 123 requests") && !usageText.Contains("Remaining") && !usageText.Contains("%"), "project usage is not a remaining allowance");
-        var supportText = await Render(template with { State = "awaiting-observation", Used = null, Limit = null, Remaining = null,
-            Support = new("awaiting-observation", "Limits appear after ordinary model use.", "https://example.invalid/limits") });
-        Check(supportText.Contains("Limits appear after ordinary model use.") && supportText.Contains("https://example.invalid/limits") && !supportText.Contains("warning"), "passive support message and next step stay neutral");
+        var passive = template with { State = "awaiting-observation", Used = null, Limit = null, Remaining = null,
+            Support = new("awaiting-observation", "Limits appear after ordinary model use.", "https://example.invalid/limits") };
+        var supportText = await Render(passive);
+        Check(supportText.Contains("Limits appear after ordinary model use.") && !supportText.Contains("https://example.invalid/limits") &&
+            (await Render(passive, full: true)).Contains("https://example.invalid/limits") && !supportText.Contains("warning"),
+            "passive support message stays neutral while the full view retains its action link");
         var errorText = await Render(template with { State = "error", Error = "HTTP 401: monitor access expired", Support = new("passive", "After use") });
         Check(errorText.Contains("401") && errorText.Contains("Last known"), "real authentication failure retains last-good values and its error");
         var overdrawn = await Render(template with { MeasurementKind = "quota", Used = 13, Remaining = -3 });
@@ -63,8 +70,11 @@ internal static class SetupPresentationChecks
             var writer = new StringWriter(); var errors = new StringWriter();
             var result = await CliApplication.RunAsync(command, writer, errors, () => new LainApiClient(http));
             var rendered = writer.ToString();
-            Check(result == 0 && errors.ToString() == "" && rendered.Contains("No Gemini API request series") && rendered.Contains("https://aistudio.google.com/usage"),
-                string.Join(' ', command) + " preserves successful empty-monitor guidance and action link");
+            var compact = command.SequenceEqual(new[] { "usage" });
+            Check(result == 0 && errors.ToString() == "" && rendered.Contains("No Gemini API request series") &&
+                (compact ? !rendered.Contains("https://aistudio.google.com/usage") && rendered.Contains("lain usage --full")
+                    : rendered.Contains("https://aistudio.google.com/usage")),
+                string.Join(' ', command) + " preserves successful empty-monitor guidance, with action links in detailed output");
             Check(!rendered.Contains("Unavailable") && !rendered.Contains("Quota values not reported") && !rendered.Contains("Last known") && !rendered.Contains("%") && !rendered.Contains("Remaining unknown"),
                 string.Join(' ', command) + " has no error state, stale value or fabricated zero for HTTP200 no series");
         }

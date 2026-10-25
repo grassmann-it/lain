@@ -88,11 +88,15 @@ internal static class AccountUsageChecks
             ageLines.Single(line => line.Contains("Old snapshot")).Contains("\u001b[33m") &&
             ageLines.Single(line => line.Contains("Fresh snapshot")).Contains("\u001b[32m"), "successful snapshots older than five minutes are last-known warnings while fresh readings may be green");
         Check(ageOutput.ToString().Contains("Expired") && !ageOutput.ToString().Contains("Unverified") &&
-            !ageLines.Single(line => line.Contains("Unknown snapshot")).Contains("[") &&
-            ageLines.Single(line => line.Contains("Unknown snapshot")).Contains("Quota values not reported"), "compact output retains expiry and unknown state without generic unverified verbosity or unknown zero bars");
+            !ageOutput.ToString().Contains("Unknown snapshot") && !ageOutput.ToString().Contains("] 0% used") &&
+            !ageOutput.ToString().Contains("· 0% left"), "compact output retains expiry and defers the unknown secondary window without fabricating a zero");
         var ageFull = new StringWriter();
         await CliApplication.WriteAccountUsage(ageFull, freshness, new(120, false), full: true);
-        Check(ageFull.ToString().Contains("Credential state: Not checked") && ageFull.ToString().Contains("Last known"), "full output retains credential details and age warnings");
+        var unknownDetail = ageFull.ToString().Split("Unknown snapshot", StringSplitOptions.None).Last();
+        Check(ageFull.ToString().Contains("Credential state: Not checked") && ageFull.ToString().Contains("Last known") &&
+            ageFull.ToString().Contains("Unknown snapshot") && unknownDetail.Contains("Quota values not reported") &&
+            !unknownDetail.Contains("% used") && !unknownDetail.Contains("Remaining 0"),
+            "full output retains credential details, age warnings and the unknown secondary window without invented readings");
 
         var fifteenWindows = new AccountUsageOverview(1, "account-usage", Enumerable.Range(0, 6).Select(index =>
             new AccountUsageItem(new("compact-" + index, "Account " + index, "fixture", true, "api-key", "unverified"),
