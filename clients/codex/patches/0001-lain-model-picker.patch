@@ -1,12 +1,14 @@
 diff --git a/codex-rs/core/src/config/lain_model_picker.rs b/codex-rs/core/src/config/lain_model_picker.rs
 new file mode 100644
-index 0000000..68e138b
+index 0000000..a7aa68a
 --- /dev/null
 +++ b/codex-rs/core/src/config/lain_model_picker.rs
-@@ -0,0 +1,115 @@
+@@ -0,0 +1,179 @@
 +//! Explicit, local catalog extension for lain's two-stage TUI model picker.
 +//! This metadata changes presentation only; every selectable slug must already exist in the catalog.
 +
++use codex_config::ConfigLayerSource;
++use codex_config::ConfigLayerStack;
 +use codex_protocol::openai_models::ModelsResponse;
 +use serde::Deserialize;
 +use std::collections::HashSet;
@@ -34,7 +36,40 @@ index 0000000..68e138b
 +    #[serde(flatten)]
 +    pub catalog: ModelsResponse,
 +    #[serde(default)]
-+    pub lain_model_picker: Option<LainModelPicker>,
++    pub lain_model_picker: Option<serde_json::Value>,
++}
++
++/// Require the selected profile's actual provenance, not legacy TOML `profile` or a filename.
++pub fn enabled_for(provider_id: &str, layers: &ConfigLayerStack) -> bool {
++    let profile = layers.get_active_user_layer().and_then(|layer| match &layer.name {
++        ConfigLayerSource::User { profile, .. } => profile.as_deref(),
++        _ => None,
++    });
++    is_lain_scope(provider_id, profile)
++}
++
++fn is_lain_scope(provider_id: &str, profile: Option<&str>) -> bool {
++    provider_id == "lain" && profile == Some("lain")
++}
++
++pub(super) fn parse_catalog(
++    file_contents: &str,
++    enabled: bool,
++) -> io::Result<(ModelsResponse, Option<LainModelPicker>)> {
++    let invalid = |error| io::Error::new(io::ErrorKind::InvalidData, error);
++    // Use the original upstream deserializer outside --profile lain + provider lain. Even an
++    // arbitrarily malformed or repeated unknown extension must keep upstream's ignore behavior.
++    if !enabled {
++        return serde_json::from_str::<ModelsResponse>(file_contents)
++            .map(|catalog| (catalog, None)).map_err(invalid);
++    }
++    let envelope: CatalogEnvelope = serde_json::from_str(file_contents).map_err(invalid)?;
++    let picker: Option<LainModelPicker> = envelope.lain_model_picker
++        .map(serde_json::from_value).transpose().map_err(invalid)?;
++    if let Some(picker) = picker.as_ref() {
++        picker.validate(&envelope.catalog)?;
++    }
++    Ok((envelope.catalog, picker))
 +}
 +
 +impl LainModelPicker {
@@ -118,9 +153,38 @@ index 0000000..68e138b
 +        assert_eq!(envelope.catalog, upstream);
 +        assert!(envelope.lain_model_picker.is_none());
 +    }
++    #[test]
++    fn scope_requires_both_exact_profile_and_provider() {
++        assert!(is_lain_scope("lain", Some("lain")));
++        for (provider, profile) in [("lain", None), ("lain", Some("other")),
++            ("lain", Some("Lain")), ("openai", Some("lain")), ("openai", None)] {
++            assert!(!is_lain_scope(provider, profile));
++        }
++    }
++
++    #[test]
++    fn malformed_extension_is_ignored_outside_opt_in_scope() {
++        let input = include_str!("../../../models-manager/models.json");
++        let upstream: ModelsResponse = serde_json::from_str(input).unwrap();
++        let duplicate = format!("{},\"lain_model_picker\":false,\"lain_model_picker\":42}}", input.trim_end().strip_suffix('}').unwrap());
++        assert!(parse_catalog(&duplicate, false).is_ok());
++        assert!(parse_catalog(&duplicate, true).is_err());
++        for metadata in [serde_json::json!("wrong shape"), serde_json::json!({"schema_version":99,"groups":[]}),
++            serde_json::json!({"schema_version":1,"groups":[{"id":"free","name":"Free","router_model":"missing","models":[]}]})] {
++            let mut value: serde_json::Value = serde_json::from_str(input).unwrap();
++            value["lain_model_picker"] = metadata;
++            for (provider, profile) in [("lain", None), ("lain", Some("other")), ("openai", Some("lain"))] {
++                let (catalog, picker) = parse_catalog(&value.to_string(), is_lain_scope(provider, profile)).unwrap();
++                assert_eq!(catalog, upstream);
++                assert!(picker.is_none());
++            }
++            assert!(parse_catalog(&value.to_string(), true).is_err());
++        }
++    }
++
 +}
 diff --git a/codex-rs/core/src/config/mod.rs b/codex-rs/core/src/config/mod.rs
-index 3f6c1cc..c6640a9 100644
+index 3f6c1cc..e4efe80 100644
 --- a/codex-rs/core/src/config/mod.rs
 +++ b/codex-rs/core/src/config/mod.rs
 @@ -163,6 +163,7 @@ use toml_edit::DocumentMut;
@@ -141,35 +205,36 @@ index 3f6c1cc..c6640a9 100644
      /// Optional verbosity control for GPT-5 models (Responses API `text.verbosity`).
      pub model_verbosity: Option<Verbosity>,
  
-@@ -2215,9 +2219,9 @@ pub fn validate_feature_requirements_for_config_toml(
+@@ -2215,17 +2219,13 @@ pub fn validate_feature_requirements_for_config_toml(
      managed_features::validate_feature_requirements_in_config_toml(cfg, feature_requirements)
  }
  
 -fn load_catalog_json(path: &AbsolutePathBuf) -> std::io::Result<ModelsResponse> {
-+fn load_catalog_json(path: &AbsolutePathBuf) -> std::io::Result<(ModelsResponse, Option<lain_model_picker::LainModelPicker>)> {
++fn load_catalog_json(path: &AbsolutePathBuf, enable_lain_picker: bool) -> std::io::Result<(ModelsResponse, Option<lain_model_picker::LainModelPicker>)> {
      let file_contents = std::fs::read_to_string(path)?;
 -    let catalog = serde_json::from_str::<ModelsResponse>(&file_contents).map_err(|err| {
-+    let envelope = serde_json::from_str::<lain_model_picker::CatalogEnvelope>(&file_contents).map_err(|err| {
-         std::io::Error::new(
-             ErrorKind::InvalidData,
-             format!(
-@@ -2226,6 +2230,10 @@ fn load_catalog_json(path: &AbsolutePathBuf) -> std::io::Result<ModelsResponse>
-             ),
-         )
-     })?;
-+    let catalog = envelope.catalog;
-+    if let Some(picker) = envelope.lain_model_picker.as_ref() {
-+        picker.validate(&catalog)?;
-+    }
+-        std::io::Error::new(
+-            ErrorKind::InvalidData,
+-            format!(
+-                "failed to parse model_catalog_json path `{}` as JSON: {err}",
+-                path.display()
+-            ),
+-        )
+-    })?;
++    let (catalog, picker) = lain_model_picker::parse_catalog(&file_contents, enable_lain_picker)
++        .map_err(|err| {
++            std::io::Error::new(ErrorKind::InvalidData,
++                format!("failed to parse model_catalog_json path `{}` as JSON: {err}", path.display()))
++        })?;
      if catalog.models.is_empty() {
          return Err(std::io::Error::new(
              ErrorKind::InvalidData,
-@@ -2235,15 +2243,16 @@ fn load_catalog_json(path: &AbsolutePathBuf) -> std::io::Result<ModelsResponse>
+@@ -2235,15 +2235,17 @@ fn load_catalog_json(path: &AbsolutePathBuf) -> std::io::Result<ModelsResponse>
              ),
          ));
      }
 -    Ok(catalog)
-+    Ok((catalog, envelope.lain_model_picker))
++    Ok((catalog, picker))
  }
  
  fn load_model_catalog(
@@ -178,24 +243,26 @@ index 3f6c1cc..c6640a9 100644
 -    model_catalog_json
 -        .map(|path| load_catalog_json(&path))
 -        .transpose()
++    enable_lain_picker: bool,
 +) -> std::io::Result<(Option<ModelsResponse>, Option<lain_model_picker::LainModelPicker>)> {
 +    match model_catalog_json {
-+        Some(path) => load_catalog_json(&path).map(|(catalog, picker)| (Some(catalog), picker)),
++        Some(path) => load_catalog_json(&path, enable_lain_picker).map(|(catalog, picker)| (Some(catalog), picker)),
 +        None => Ok((None, None)),
 +    }
  }
  
  fn filter_mcp_servers_by_requirements(
-@@ -4240,7 +4249,7 @@ impl Config {
+@@ -4240,7 +4242,8 @@ impl Config {
          let review_model = override_review_model.or(cfg.review_model);
  
          let check_for_update_on_startup = cfg.check_for_update_on_startup.unwrap_or(true);
 -        let model_catalog = load_model_catalog(cfg.model_catalog_json.clone())?;
-+        let (model_catalog, lain_model_picker) = load_model_catalog(cfg.model_catalog_json.clone())?;
++        let enable_lain_picker = lain_model_picker::enabled_for(&model_provider_id, &config_layer_stack);
++        let (model_catalog, lain_model_picker) = load_model_catalog(cfg.model_catalog_json.clone(), enable_lain_picker)?;
  
          let log_dir = cfg
              .log_dir
-@@ -4597,6 +4606,7 @@ impl Config {
+@@ -4597,6 +4600,7 @@ impl Config {
              plan_mode_reasoning_effort: cfg.plan_mode_reasoning_effort,
              model_reasoning_summary: cfg.model_reasoning_summary,
              model_catalog,
@@ -326,7 +393,7 @@ index 15f99f8..b0ec085 100644
              self.bottom_pane
                  .replace_selection_view_if_present(view_id, params);
 diff --git a/codex-rs/tui/src/chatwidget/model_popups.rs b/codex-rs/tui/src/chatwidget/model_popups.rs
-index aa5de8b..2edd86d 100644
+index aa5de8b..168ab18 100644
 --- a/codex-rs/tui/src/chatwidget/model_popups.rs
 +++ b/codex-rs/tui/src/chatwidget/model_popups.rs
 @@ -9,6 +9,7 @@ use crate::model_catalog::LUNA_RESERVE_MODEL;
@@ -349,12 +416,14 @@ index aa5de8b..2edd86d 100644
          let current_model = self.current_model();
          let current_label = presets
              .iter()
-@@ -197,6 +203,86 @@ impl ChatWidget {
+@@ -197,6 +203,99 @@ impl ChatWidget {
          );
      }
  
 +    fn lain_picker_enabled(&self) -> bool {
-+        self.config.model_provider_id == "lain" && self.config.lain_model_picker.is_some()
++        codex_core::config::lain_model_picker::enabled_for(
++            &self.config.model_provider_id, &self.config.config_layer_stack,
++        ) && self.config.lain_model_picker.is_some()
 +    }
 +
 +    fn lain_picker_groups(&self) -> Vec<codex_core::config::lain_model_picker::LainModelGroup> {
@@ -400,10 +469,21 @@ index aa5de8b..2edd86d 100644
 +    }
 +
 +    pub(crate) fn open_lain_model_group_popup(&mut self, group_id: &str) {
-+        if !self.lain_picker_enabled() || self.restrict_model_picker_to_luna_reserve() {
++        if self.restrict_model_picker_to_luna_reserve() {
++            self.open_luna_reserve_model_popup(
++                self.model_catalog.try_list_models().unwrap_or_default(),
++                LAIN_GROUP_SELECTION_VIEW_ID,
++            );
++            return;
++        }
++        if !self.lain_picker_enabled() {
++            self.bottom_pane.dismiss_view_by_id(LAIN_GROUP_SELECTION_VIEW_ID);
++            self.open_model_popup_with_presets(self.model_catalog.try_list_models().unwrap_or_default());
 +            return;
 +        }
 +        let Some(group) = self.lain_picker_groups().into_iter().find(|group| group.id == group_id) else {
++            self.bottom_pane.dismiss_view_by_id(LAIN_GROUP_SELECTION_VIEW_ID);
++            self.open_model_popup_with_presets(self.model_catalog.try_list_models().unwrap_or_default());
 +            return;
 +        };
 +        let available: Vec<ModelPreset> = self.model_catalog.try_list_models().unwrap_or_default()
@@ -436,7 +516,7 @@ index aa5de8b..2edd86d 100644
      pub(super) fn is_auto_model(model: &str) -> bool {
          model.starts_with("codex-auto-")
      }
-@@ -233,7 +319,17 @@ impl ChatWidget {
+@@ -233,7 +332,17 @@ impl ChatWidget {
          presets: Vec<ModelPreset>,
          view_id: &'static str,
      ) {
@@ -455,7 +535,7 @@ index aa5de8b..2edd86d 100644
              self.bottom_pane.dismiss_view_by_id(view_id);
              self.add_info_message(
                  "No additional models are available right now.".to_string(),
-@@ -243,7 +339,17 @@ impl ChatWidget {
+@@ -243,7 +352,17 @@ impl ChatWidget {
          }
  
          let mut items: Vec<SelectionItem> = Vec::new();
@@ -474,7 +554,7 @@ index aa5de8b..2edd86d 100644
          for preset in presets.into_iter() {
              let description =
                  (!preset.description.is_empty()).then_some(preset.description.to_string());
-@@ -276,7 +382,7 @@ impl ChatWidget {
+@@ -276,7 +395,7 @@ impl ChatWidget {
              });
          }
  
@@ -484,10 +564,10 @@ index aa5de8b..2edd86d 100644
              model_ids,
              SelectionViewParams {
 diff --git a/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs b/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs
-index 613c1b2..43b6a6d 100644
+index 613c1b2..27a0c97 100644
 --- a/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs
-@@ -18,3 +18,104 @@ async fn model_picker_compact_hint_and_actions_follow_configured_bindings() {
+@@ -18,3 +18,159 @@ async fn model_picker_compact_hint_and_actions_follow_configured_bindings() {
      chat.handle_key_event(KeyEvent::from(KeyCode::F(2)));
      assert!(chat.no_modal_or_popup_active());
  }
@@ -507,6 +587,7 @@ index 613c1b2..43b6a6d 100644
 +        }).collect();
 +    chat.model_catalog = Arc::new(ModelCatalog::new(presets));
 +    chat.config.model_provider_id = "lain".to_string();
++    set_lain_test_profile(chat, Some("lain"));
 +    chat.config.lain_model_picker = Some(LainModelPicker {
 +        schema_version: 1,
 +        groups: vec![LainModelGroup { id: "free".to_string(), name: "Free".to_string(),
@@ -591,4 +672,58 @@ index 613c1b2..43b6a6d 100644
 +    let popup = render_bottom_popup(&chat, 80);
 +    assert!(popup.contains("Select Model and Effort"));
 +    assert!(!popup.contains("Modellgruppe wählen"));
++}
++
++fn set_lain_test_profile(chat: &mut ChatWidget, profile: Option<&str>) {
++    let file = chat.config.config_layer_stack.get_user_config_file().cloned()
++        .unwrap_or_else(|| AbsolutePathBuf::try_from(chat.config.codex_home.join("config.toml")).unwrap());
++    let profile = profile.map(|profile| profile.parse::<codex_config::ProfileV2Name>().unwrap());
++    chat.config.config_layer_stack = chat.config.config_layer_stack.with_user_config_profile(
++        &file, profile.as_ref(), toml::Value::Table(Default::default()),
++    ).unwrap();
++}
++
++#[tokio::test]
++async fn lain_provider_without_exact_lain_profile_keeps_upstream_picker() {
++    for profile in [None, Some("other")] {
++        let (mut chat, _rx, _ops) = make_chatwidget_manual(Some("member-a")).await;
++        configure_lain_picker(&mut chat, false);
++        set_lain_test_profile(&mut chat, profile);
++        chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
++        let popup = render_bottom_popup(&chat, 80);
++        assert!(popup.contains("Select Model and Effort"));
++        assert!(!popup.contains("Modellgruppe wählen"));
++    }
++}
++
++#[tokio::test]
++async fn lain_removed_group_dismisses_stale_actions_and_returns_to_current_groups() {
++    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("member-a")).await;
++    configure_lain_picker(&mut chat, true);
++    chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
++    chat.open_lain_model_group_popup("free");
++    chat.config.lain_model_picker.as_mut().unwrap().groups.clear();
++    chat.refresh_open_model_picker();
++    let popup = render_bottom_popup(&chat, 80);
++    assert!(popup.contains("Modellgruppe wählen") && popup.contains("Alle"));
++    assert!(!popup.contains("Member A") && !popup.contains("Automatisch"));
++    chat.handle_key_event(KeyCode::Enter.into());
++    assert_matches!(rx.try_recv(), Ok(AppEvent::OpenLainModelGroupPopup { group_id }) if group_id == "all");
++}
++
++#[tokio::test]
++async fn lain_open_group_refresh_preserves_upstream_luna_reserve_restriction() {
++    let (mut chat, _rx, _ops) = make_chatwidget_manual(Some("member-a")).await;
++    configure_lain_picker(&mut chat, true);
++    let mut luna = chat.model_catalog.models[0].clone();
++    luna.model = "gpt-6-luna".to_string(); luna.id = luna.model.clone();
++    luna.display_name = "Luna".to_string();
++    Arc::make_mut(&mut chat.model_catalog).models.push(luna);
++    chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
++    chat.open_lain_model_group_popup("free");
++    chat.set_model("gpt-reserve");
++    chat.refresh_open_model_picker();
++    let popup = render_bottom_popup(&chat, 80);
++    assert!(popup.contains("Other models return when ordinary usage is available again."));
++    assert!(!popup.contains("Member A") && !popup.contains("Automatisch"));
 +}

@@ -5,8 +5,11 @@ It changes the real TUI `/model` path in `tui/src/chatwidget/model_popups.rs`.
 The original installed Codex binary and configuration are not changed by preparation or build.
 Deployment must use a separate binary and the `lain` profile only; it is outside this bundle.
 
-The extension is active only when the effective model provider is `lain` and its configured
-`model_catalog_json` contains `lain_model_picker`. Other catalogs keep the upstream picker.
+The extension is active only with **`--profile lain`**, effective model provider `lain`, and
+`lain_model_picker` in the configured `model_catalog_json`. The selected user-layer provenance
+records the real CLI profile; legacy TOML `profile` and filenames do not activate it. Outside
+this exact scope, the original upstream catalog deserializer ignores the extension completely,
+including invalid metadata. Other catalogs and profiles keep the upstream picker.
 Core reads the extension and existing model metadata from the same file snapshot. No additional
 configuration setting, environment variable, network lookup, or model-id naming convention is used.
 
@@ -62,9 +65,11 @@ preparation and any build must run in the root's bounded serial lane.
 
 ## Verification status
 
-Prepared: three Core tests cover optional routers/overlap, strict validation and unchanged legacy
-catalog loading. Five TUI tests cover both menu levels and Escape, real-router slug persistence,
-disabled missing router, unfiltered Alle, refresh after a router disappears, and provider opt-in.
+Prepared: five Core tests cover optional routers/overlap, strict validation, unchanged legacy
+catalog loading, exact profile/provider gating, and invalid extensions outside scope. Eight TUI
+tests cover both menu levels and Escape, real-router slug persistence, disabled missing router,
+unfiltered Alle, refresh after a router disappears, removed groups, Reserve restrictions,
+provider opt-in, and missing/other profiles despite provider `lain`.
 
 **These Rust tests and the binary have not been compiled or run in this handoff.** No Rust
 compiler/toolchain was installed and no client/provider request was started by this work. A clean
