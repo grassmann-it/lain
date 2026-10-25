@@ -350,7 +350,9 @@ def probe(core, provider, case):
             connection.close()
             for _ in range(80):
                 events = run.events()["events"]
-                if any(e["kind"] in ("usage", "attempt_finished") for e in events):
+                # Usage and completion are separate durable facts; wait for the
+                # terminal fact before asserting the complete attempt.
+                if any(e["kind"] == "attempt_finished" for e in events):
                     break
                 time.sleep(.05)
             _, usages = assert_complete(events, 1)
