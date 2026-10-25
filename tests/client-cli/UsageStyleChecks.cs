@@ -6,7 +6,7 @@ internal static class UsageStyleChecks
 {
     internal static async Task<int> RunAsync()
     {
-        var checks = 0;
+        var checks = AccountDisplayNameChecks.Run();
         void Check(bool condition, string message) { if (!condition) throw new Exception(message); checks++; }
         var now = DateTimeOffset.UtcNow;
         var zone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
@@ -138,6 +138,16 @@ internal static class UsageStyleChecks
         Check(compactFault.Contains("Refresh failed:") && compactFault.Contains('…') && !compactFault.Contains("END-OF-DETAIL")
             && compactFault.Contains("Last known") && Words(await Render(Overview(faulted), full: true)).Contains(error),
             "compact errors retain a bounded cause and last-known reading; full retains the complete diagnostic");
+
+        var elapsedFree = basis with { WindowId = "free-model-daily-requests", WindowLabel = "Free model requests per day",
+            Scope = "account", WindowEnd = now.AddMinutes(-1), ResetsAt = now.AddMinutes(-1), Unit = "requests",
+            Used = 10, Limit = 50, Remaining = null, UsedPercent = null };
+        var elapsedCompact = Words(await Render(Overview(elapsedFree)));
+        var elapsedFull = Words(await Render(Overview(elapsedFree), full: true));
+        Check(elapsedCompact.Contains("Remaining unknown") && elapsedFull.Contains("Remaining unknown")
+            && elapsedFull.Contains("Used 10 requests / 50 requests")
+            && !elapsedCompact.Contains("%") && !elapsedFull.Contains("%"),
+            "elapsed free-request day retains historical usage without re-deriving current percentage or remainder");
 
         var first = basis with { WindowLabel = "5 hours", ResetsAt = DateTimeOffset.Parse("2030-10-27T00:30:00Z") };
         var second = basis with { WindowLabel = "7 days", ResetsAt = DateTimeOffset.Parse("2030-10-27T01:30:00Z") };

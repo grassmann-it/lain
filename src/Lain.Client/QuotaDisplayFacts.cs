@@ -6,6 +6,11 @@ namespace Lain.Client;
 /// <summary>Provider facts shared by CLI and desktop. Renewal is not a quota reset.</summary>
 public static class QuotaDisplayFacts
 {
+    /// <summary>The observed OpenRouter free-request day has ended; its used/limit facts cannot establish today's remaining quota.</summary>
+    public static bool IsElapsedFreeDay(QuotaDto quota, DateTimeOffset now) =>
+        quota.WindowId == "free-model-daily-requests" && quota.Scope == "account"
+        && quota.WindowEnd is { } end && end <= now;
+
     public static string Number(double value, string? exact = null)
     {
         if (!double.IsFinite(value)) return "unknown";

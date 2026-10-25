@@ -79,11 +79,16 @@ public sealed partial class MainWindow
 
     private Control AccountQuotaRefreshStatus(AccountDto account)
     {
-        // Reserve one line through idle, busy and failure. Quota rows and their
-        // original observation/reset facts remain mounted during the request.
+        // Reserve the status line while idle/busy. A failure adds a readable
+        // bounded cause; full text stays in the scrolling Inspector details.
+        // Quota rows and observation/reset facts remain mounted during requests.
         var status = AccountCell("", 11, Ui.Muted);
         status.Height = 18;
         AutomationProperties.SetName(status, "Quota refresh status for " + account.Name);
+        var reason = Ui.Text("", 11, Ui.Warning);
+        reason.MaxLines = 3;
+        reason.TextTrimming = TextTrimming.CharacterEllipsis;
+        AutomationProperties.SetName(reason, "Quota refresh reason for " + account.Name);
         ObserveAccountQuotaRefresh(status, account.Id, () =>
         {
             var hasValues = _quotas.Any(quota => quota.AccountId == account.Id);
@@ -93,9 +98,13 @@ public sealed partial class MainWindow
                     ? hasValues ? "Refresh failed · showing last known values" : "Quota could not be loaded · try Refresh quota"
                     : "";
             status.Foreground = AccountQuotaError(account.Id) is not null && !IsAccountQuotaRefreshing(account.Id) ? Ui.Warning : Ui.Muted;
-            ToolTip.SetTip(status, AccountQuotaError(account.Id) ?? status.Text);
+            var error = AccountQuotaError(account.Id);
+            reason.Text = error ?? "";
+            reason.IsVisible = error is not null && !IsAccountQuotaRefreshing(account.Id);
+            ToolTip.SetTip(status, error ?? status.Text);
+            ToolTip.SetTip(reason, error);
         });
-        return status;
+        return new StackPanel { Spacing = 3, Children = { status, reason } };
     }
 
     private Action CaptureAccountsNavigation()
@@ -212,7 +221,7 @@ public sealed partial class MainWindow
             var found = OrderedAccounts(cfg.Accounts).Where(account =>
                 (_accountProvider == "All providers" || ProviderName(account).Equals(_accountProvider, StringComparison.OrdinalIgnoreCase))
                 && AccountMatchesStatus(account)
-                && $"{account.Name} {account.Provider} {ProviderName(account)} {account.Id}".Contains(_accountSearch.Trim(), StringComparison.OrdinalIgnoreCase)).ToArray();
+                && $"{account.Name} {AccountDisplayName(account)} {account.Provider} {ProviderName(account)} {account.Id}".Contains(_accountSearch.Trim(), StringComparison.OrdinalIgnoreCase)).ToArray();
             _visibleAccountIds = found.Select(a => a.Id).ToHashSet(StringComparer.Ordinal);
             if (_inspectedAccountId is { } selected && !_visibleAccountIds.Contains(selected))
             {
@@ -420,6 +429,14 @@ public sealed partial class MainWindow
         if (!_hostAvailable || _quotaError is not null) content.Children.Add(Ui.Text(BudgetSnapshotNote(), 11, Ui.Warning));
         if (_quotaError is not null) content.Children.Add(Ui.Text(_quotaError, 11, Ui.Warning));
 
+        if (AccountQuotaError(account.Id) is { } refreshError)
+        {
+            content.Children.Add(Ui.Text("Quota refresh failed · use Refresh quota to try again.", 12, Ui.Warning));
+            var reason = new SelectableTextBlock { Text = refreshError, FontSize = 12, Foreground = Ui.Warning, TextWrapping = TextWrapping.Wrap };
+            AutomationProperties.SetName(reason, "Complete quota refresh reason for " + account.Name);
+            content.Children.Add(reason);
+        }
+        content.Children.Add(QuotaTechnicalField("Saved name", account.Name));
         var technical = new StackPanel { Spacing = 9 };
         technical.Children.Add(AccountPinControls(account, inventoryChanged));
         technical.Children.Add(QuotaTechnicalField("Account ID", account.Id));

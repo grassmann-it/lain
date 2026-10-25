@@ -78,6 +78,7 @@ public static partial class CliApplication
 
     private static string CompactUsageReading(QuotaDto quota, double? percent)
     {
+        if (QuotaDisplayFacts.IsElapsedFreeDay(quota, DateTimeOffset.UtcNow)) return "Remaining unknown";
         // Usage, rate and configured limits are facts with their own labels, never remaining funds.
         if (quota.MeasurementKind == "limit" && quota.Limit is { } limit && double.IsFinite(limit))
             return "Limit " + QuotaAmount(limit, quota.Unit);
@@ -91,32 +92,8 @@ public static partial class CliApplication
         return "Remaining unknown";
     }
 
-    private static string CompactUsageAccountName(AccountDto account, AccountUsageItem[] accounts)
-    {
-        var provider = account.Provider;
-        var display = provider.ToLowerInvariant() switch
-        {
-            "nvidia" or "nvidia-build" => "NVIDIA",
-            "cloudflare" or "cloudflare-workers-ai" => "Cloudflare",
-            "google" or "google-gemini" or "gemini" or "gemini-api" => "Gemini",
-            "xiaomi-mimo" or "mimo" => "MiMo",
-            _ => ProviderDisplayNames.Get(provider)
-        };
-        display = Cell(display);
-        var name = Cell(account.Name);
-        var siblings = accounts.Where(item => string.Equals(item.Account.Provider, provider, StringComparison.OrdinalIgnoreCase)).ToArray();
-        if (siblings.Length == 1 && System.Net.Mail.MailAddress.TryCreate(name, out var address)
-            && string.Equals(address.Address, name, StringComparison.OrdinalIgnoreCase)) return display;
-        var known = new[] { provider, display, ProviderDisplayNames.Get(provider),
-            "My " + provider + " account", "My " + display + " account", "My " + ProviderDisplayNames.Get(provider) + " account" };
-        if (!known.Contains(name, StringComparer.OrdinalIgnoreCase))
-        {
-            var sameName = accounts.Where(item => string.Equals(Cell(item.Account.Name), name, StringComparison.OrdinalIgnoreCase)).ToArray();
-            return sameName.Length == 1 ? name : name + " (" + display + " "
-                + (Array.FindIndex(sameName, item => item.Account.Id == account.Id) + 1) + ")";
-        }
-        return siblings.Length == 1 ? display : display + " " + (Array.FindIndex(siblings, item => item.Account.Id == account.Id) + 1);
-    }
+    private static string CompactUsageAccountName(AccountDto account, AccountUsageItem[] accounts) =>
+        AccountDisplayNames.Get(account, accounts.Select(item => item.Account).ToArray(), Cell);
 
     private static async Task WriteCompactUsageTable(TextWriter output, List<CompactUsageRow> rows, HumanOutputContext context)
     {

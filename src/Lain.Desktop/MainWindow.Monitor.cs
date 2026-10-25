@@ -21,7 +21,10 @@ public sealed partial class MainWindow
             BindAccountQuotaRefreshButton(refresh, account.Id);
             actions.Children.Add(refresh);
         }
-        if (kind == "setup-required" || quota is null || quota.State is "error" or "stale" || quota.Error is not null)
+        // A failed read (including timeout or an unspecified 403) does not prove
+        // that credentials need replacing. Explicit setup guidance remains actionable;
+        // the manual Monitoring access command is always available in account actions.
+        if (kind == "setup-required" || quota is null)
         {
             var setup = Action("Set up " + provider + " quota access", async () =>
             {
@@ -29,7 +32,11 @@ public sealed partial class MainWindow
                 await OpenMonitorSetupAsync(account);
             }, "Review the available access methods for this account.", stayOnPage: true);
             AutomationProperties.SetName(setup, "Set up quota access for " + account.Name);
-            setup.IsEnabled = _hostAvailable;
+            ObserveAccountQuotaRefresh(setup, account.Id, () =>
+            {
+                setup.IsEnabled = _hostAvailable;
+                setup.IsVisible = kind == "setup-required" || AccountQuotaError(account.Id) is null;
+            });
             actions.Children.Add(setup);
         }
         if (Uri.TryCreate(quota?.Support?.ActionUrl, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps)

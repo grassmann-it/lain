@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Lain.Core;
+using Lain.Client;
 
 namespace Lain.Desktop;
 
@@ -22,8 +23,8 @@ public sealed partial class MainWindow
         _ => account.Provider
     };
 
-    private static string AccountDisplayName(AccountDto account) =>
-        account.Name.Equals(account.Provider, StringComparison.OrdinalIgnoreCase) ? ProviderName(account) : account.Name;
+    private string AccountDisplayName(AccountDto account) =>
+        AccountDisplayNames.Get(account, _configuration?.Accounts ?? [account]);
 
     private static bool IsMiMo(AccountDto account) => account.Provider.ToLowerInvariant() is "xiaomi-mimo" or "mimo" or "xiaomi";
 
@@ -41,7 +42,8 @@ public sealed partial class MainWindow
     private static double? ValidAmount(double? value) => value is { } number && double.IsFinite(number) && number >= 0 ? number : null;
 
     private static double? ReportedRemaining(QuotaDto? quota) => quota?.Remaining is { } remaining && double.IsFinite(remaining)
-        && quota.MeasurementKind is not ("usage" or "limit" or "rate") ? remaining : null;
+        && quota.MeasurementKind is not ("usage" or "limit" or "rate")
+        && !QuotaDisplayFacts.IsElapsedFreeDay(quota, DateTimeOffset.UtcNow) ? remaining : null;
 
     private static bool QuotaExhausted(QuotaDto? quota) => quota is not null && !QuotaUnavailable(quota)
         && (QuotaUsedPercent(quota) >= 100 || ReportedRemaining(quota) <= 0);
@@ -51,6 +53,7 @@ public sealed partial class MainWindow
     private static double? QuotaUsedPercent(QuotaDto? quota)
     {
         if (quota is null || QuotaUnavailable(quota) || quota.MeasurementKind is "balance" or "usage" or "limit" or "rate") return null;
+        if (QuotaDisplayFacts.IsElapsedFreeDay(quota, DateTimeOffset.UtcNow)) return null;
         if (quota.UsedPercent is { } supplied)
             return double.IsFinite(supplied) && supplied is >= 0 and <= 100 ? supplied : null;
         if (ValidAmount(quota.Limit) is not { } limit || limit <= 0) return null;
