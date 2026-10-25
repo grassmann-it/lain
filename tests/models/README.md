@@ -105,15 +105,28 @@ extension.
 Picker export tests in `tests/codex-gateway-profile/PickerCases.cs` cover provider
 and overlapping custom collections, profile/visibility intersection, stable
 aliases and collection identities, empty groups and the internal review-model
-filter. No derived `policy:free` group is emitted: the exporter currently lacks a
-source-qualified transport-binding seam, and evaluating a hypothetical
-`free_only` override does not change an alias's effective execution policy.
-A user collection's name does not establish a cost guarantee. Every
-`router_model` remains null: the patched client displays a disabled automatic
-entry, and individual choices use their original inference aliases. This menu
-extension does not implement automatic routing. Grouping changes no profile,
-account, activation, default model, or normal native model entry. Fixture execution
-and patched-client qualification are separate release checks.
+filter. Groups without an explicitly configured executable router retain
+`router_model: null`; the patched client displays a disabled automatic entry.
+Configured `ordered_sticky_v1` routers require a compiler-created export proof
+for the current Host profile and snapshot before their existing virtual alias is
+advertised. The explicit individual default remains unchanged. Derived
+`policy:free` appears only with a real Free router over effective `free_only`
+member routes, qualified transport and runtime cost enforcement. A hypothetical
+policy override or user collection name does not establish a cost guarantee.
+Ordinary native exports omit both the extension and virtual router models.
+Grouping changes no profile, account, activation or normal native model entry.
+Fixture execution and patched-client qualification are separate release checks.
+
+`tests/codex-gateway-profile/RouterExportCases.cs` checks that executable router
+aliases and their groups refer to the same current proof, configured imports can
+use actual compiled transport without borrowing catalog capability claims, and
+Free members need effective policy plus qualified enforcement. It preserves
+manual choices while excluding foreign-profile, hidden, disabled, pooled and
+internal review routes from automatic selection. Stale proofs after route,
+account, order, policy, profile membership or router changes are rejected, as are
+missing, unsourced, mismatched and unqualified transport descriptions. These
+fixtures create only temporary configuration and synthetic credential identities;
+they do not access providers, install Codex or apply a runtime.
 
 Picker metadata is limited to 128 non-empty groups, with single-line IDs up to
 256 UTF-8 bytes and names up to 1024 UTF-8 bytes, matching the patched client.

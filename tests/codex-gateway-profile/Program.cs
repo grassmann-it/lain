@@ -75,6 +75,7 @@ try
 }
 finally { if (Directory.Exists(temporary)) Directory.Delete(temporary, true); }
 assertions += PickerCases.Run();
+assertions += RouterExportCases.Run();
 Console.WriteLine($"{assertions} Codex Gateway profile export assertions passed; no installed config or provider access.");
 
 void Reject(Action action, string name)
