@@ -32,6 +32,17 @@ outcome/error aggregation uses completion precedence. The raw historical state
 and HTTP 200 may remain visible separately and must not be called final success.
 Without early usage the terminal usage/completion is written failed directly.
 
+Root's later controlled delta on the same saved Cloudflare Gemma 4 route
+completed successfully when the output budget increased from 512 to 2048:
+421 visible characters, 1752 reported total tokens (1664 output), 31.89 seconds.
+The smaller budget had produced reasoning-only output and reached the
+budget/EOF boundary without the SDK's required terminal event. This narrows the
+observed trigger to that budget/termination path; it is not a general Cloudflare
+connection, account or model-access failure. The source fix is still required:
+a client-visible terminal error must never remain an effective successful
+attempt, even when a larger explicit budget lets the same route finish. This
+delta was performed by Root; this worker made no additional provider request.
+
 ## Cohere original intent and attribution
 
 The qualified Cohere compatibility subset deliberately rejects an explicit
@@ -77,3 +88,9 @@ package test duration: 0.675 seconds. Build/test ran serially in a capped user
 scope (MemoryHigh 1536M, MemoryMax 2G, SwapMax 256M, CPU 150%, GOMAXPROCS 2,
 GOMEMLIMIT 1GiB, nice 10, ionice 7, outer timeout 120 seconds) with external
 module fetching disabled. No installation or real provider regression is claimed.
+
+Cleanup check: the two worker-owned temporary adapter trees contained no retained
+`.test`, object, archive or Core binary build outputs after the successful Go
+test. Prepared source/manifests and qualification evidence are retained. No
+shared upstream snapshot, toolchain/module/build cache or installed application
+was deleted or changed. No further build, provider call or deployment occurred.
