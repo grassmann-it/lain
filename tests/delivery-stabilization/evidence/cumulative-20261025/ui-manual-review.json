@@ -1,0 +1,53 @@
+{
+  "status": "passed",
+  "sourceCommit": "5f41fba5324e1cf1e58e2229d6c35c90ba800846",
+  "reviewer": "root",
+  "manualFocusRingReview": "passed",
+  "observations": [
+    "Visible focus outline on Models Edit at 1120x780 and 800x560 after Save",
+    "Visible focus outline on Profiles Edit selection at both widths after Save",
+    "Native X11 images confirm Models narrow and Profiles wide focus outlines",
+    "Narrow Usage retains table and group detail side by side with bounded independent scrolling",
+    "Settings failure shows original requested choice and retry inline",
+    "xAI action confirms team identity and explicitly says no budget was read"
+  ],
+  "images": [
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-models-editor-1120x780-saved.png",
+      "sha256": "2228eff17bb0572322252d4e985e7c30f0e332972bd12c28bb0b8b4492d8a346"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-models-editor-800x560-saved.png",
+      "sha256": "018d0dc352e3c33fba23a331ec06b489d0b2411c331607a5328b90ba9f14a5c6"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-profiles-editor-1120x780-saved.png",
+      "sha256": "b3cae990c6dee38cf2803f0f32639a3a2d9659b76e44c99d0b53ca5dc3d0b568"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-profiles-editor-800x560-saved.png",
+      "sha256": "290ad28c746517ec0e884bb4428f81440646934863b00ff6086a22c820f4e41e"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-models-editor-800x560-saved-x11.png",
+      "sha256": "e7ebf3eb5757fecc976bdcf0db9ce87316d9a32c0c807ae661aa075af910b982"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-profiles-editor-1120x780-saved-x11.png",
+      "sha256": "75b773bd6e7fa27c3f39407c42cf53bac351087294c9652ba981e6aaa4e3abd9"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/usage-analysis/evidence/usage-analysis-800x560.png",
+      "sha256": "6e07a216e102e8750cd9bd1282eca6bdeabe6b5a57b932e4712c281d05cfed72"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/settings/evidence/settings-save-failure.png",
+      "sha256": "308e125484ea9b6745d20e265d73319212506560041128222c6d53512ff888dd"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/xai-action/evidence/xai-discover-after-800x560.png",
+      "sha256": "24f04619568132678762c84916df0e21aa0f91432bc3af054b3def0e1c789506"
+    }
+  ],
+  "scope": "Selected synthetic exact-package images; no general accessibility or arbitrary desktop certification"
+}

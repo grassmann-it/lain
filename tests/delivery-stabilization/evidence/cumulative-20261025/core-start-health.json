@@ -1,0 +1,14 @@
+[
+  {
+    "http": 503,
+    "ready": false,
+    "journalHealthy": true,
+    "version": "8.0.41-lain-adapter.3"
+  },
+  {
+    "http": 200,
+    "ready": true,
+    "journalHealthy": true,
+    "version": "8.0.41-lain-adapter.3"
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "planOnly": false,
+  "sourceCommit": "5f41fba5324e1cf1e58e2229d6c35c90ba800846",
+  "monitorPackage": "/home/tomka/.cache/lain-qualification-20261024/cumulative-publish-5f41fba/package-monitor",
+  "manifestSha256": "d34644c05e92892fc729d8c06d77366b7e099d9e27d8a4244c702e23f9b16632",
+  "sourcePins": {
+    "tests/delivery-stabilization/actual_packages.py": "e71646539c38bf2729ec4d0408461b61cf6d58d078753894f27fff71450ef73a",
+    "tests/acceptance/upgrade_probe.py": "7d02277562ad8902392c1d02295ea3cb934bb0fd2c34e93ca8a2c242847d4c5a",
+    "src/Lain.Host/Usage/Migrations/001_usage.sql": "3e5dbdad2260a7559f5f55b1092287793aab0182e05e6d045545b8871222fa1c",
+    "src/Lain.Host/Usage/Migrations/002_source_coverage.sql": "a39c944bd39c24ad63eaa0f9b34ef888fe1c8a02d0e85a794fce8fb79646847a",
+    "src/Lain.Host/Usage/Migrations/003_attempt_dimensions.sql": "cd2b71f157ca784ca9b29bd8614bf58cd7c312c69d299b93321ddf54c88ee6fe"
+  },
+  "existingRestoreBlockSha256": "d770bebc52c621938f085c04a3e762eceafca980a83f0825a57a0c6bef3758ed",
+  "scope": "Only existing full stopped Monitor snapshot restore with synthetic history/identity, rotating grant quarantine and static retention; no live state, UI, Apply, inference or provider access",
+  "checks": [
+    "full stopped snapshot restores history/identity; rotating grant quarantined, static account retained"
+  ]
+}

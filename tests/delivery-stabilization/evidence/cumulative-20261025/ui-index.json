@@ -1,0 +1,446 @@
+{
+  "status": "all_six_functional_cases_passed",
+  "final_package_source": "5f41fba5324e1cf1e58e2229d6c35c90ba800846",
+  "checks": 506,
+  "case_count": 6,
+  "cases": [
+    {
+      "name": "usage-native",
+      "status": "passed",
+      "checks": 27,
+      "package_source": "5f41fba5324e1cf1e58e2229d6c35c90ba800846",
+      "package_manifests": {
+        "gateway": "7aeb2af9cbb82e06a45d628e36e6f19f2ded42dcec365a14fc2d897ed2f0735f",
+        "monitor": "d34644c05e92892fc729d8c06d77366b7e099d9e27d8a4244c702e23f9b16632"
+      },
+      "package_dll_sha256": {
+        "Lain.Desktop.dll": "cbbefe56b1cc8b76b2416bb93def12f8a8546f8ef3d857fbaf932528e7f58b63",
+        "Lain.Client.dll": "0cbbece63459146091e01a298bab37ceaee4a4c034bffeac9d8483041797dd14",
+        "Lain.Core.dll": "0a4a88cb191deadfbc306fb8e21510050145de7c31e16a427ea25ff3a709d352"
+      },
+      "harness": {
+        "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/usage-masterdetail/tests/desktop-usage/bin/Debug/net10.0/Lain.Desktop.Usage.Tests.dll",
+        "sha256": "fd94bd4c5c24dfba3e026433dce025095a0c58fcbfb62fbbe48ec51e0846c0f1",
+        "source": "4ff4339"
+      },
+      "dependency_inputs_sha256": {
+        "Lain.Desktop.Usage.Tests.deps.json": "b32c57873ffce7c329951df4aed353899bb1d3c86b7ab937fe7091fdf58b0a61",
+        "Lain.Desktop.Usage.Tests.runtimeconfig.json": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a"
+      },
+      "input_manifest_sha256": "d1863d9c3f3666600d5749b0bd6af71b6bb57c8f511c8576a75ba1a4fe22cb3f",
+      "operator_sha256": "4e9a314b5667503eaa06dea8077a3d825436a3bee2fb1b941578d6dfaf7df648",
+      "operator_manifest": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/operator-manifest.json",
+        "sha256": "11644483ac0ce77ca5cc03533fca04e88f3bb426f539f0c1f5bb9a8d3fc18a23"
+      },
+      "case_result": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/usage-native/result.json",
+        "sha256": "ebd59dcadb39f962f862e7a19d64fc9759b6deacacbc46a77fa03661eba73660"
+      },
+      "report": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/usage-native/evidence/result.json",
+        "sha256": "0b1bb6d986f0e633530bfa2de0c1b1b1e1a5a64cdb86eb1074761eaee7cf8f2f"
+      },
+      "original_dlls_unchanged": true,
+      "overlay_dlls_match_package_after": true,
+      "png_count": 4
+    },
+    {
+      "name": "usage-analysis",
+      "status": "passed",
+      "checks": 31,
+      "package_source": "5f41fba5324e1cf1e58e2229d6c35c90ba800846",
+      "package_manifests": {
+        "gateway": "7aeb2af9cbb82e06a45d628e36e6f19f2ded42dcec365a14fc2d897ed2f0735f",
+        "monitor": "d34644c05e92892fc729d8c06d77366b7e099d9e27d8a4244c702e23f9b16632"
+      },
+      "package_dll_sha256": {
+        "Lain.Desktop.dll": "cbbefe56b1cc8b76b2416bb93def12f8a8546f8ef3d857fbaf932528e7f58b63",
+        "Lain.Client.dll": "0cbbece63459146091e01a298bab37ceaee4a4c034bffeac9d8483041797dd14",
+        "Lain.Core.dll": "0a4a88cb191deadfbc306fb8e21510050145de7c31e16a427ea25ff3a709d352"
+      },
+      "harness": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-harness/checkout/tests/desktop/bin/Debug/net10.0/linux-x64/Lain.Desktop.Smoke.dll",
+        "sha256": "f732529c1f5974443b675102d7a9054523d6a5dc91e1a57c32647cb5fe5a0bf6",
+        "source": "5f41fba5324e1cf1e58e2229d6c35c90ba800846"
+      },
+      "dependency_inputs_sha256": {
+        "Lain.Desktop.Smoke.deps.json": "ab144d95ab1f1de10d42de808c76dd28aa6f41a710dbf965bb79a4647ec1054c",
+        "Lain.Desktop.Smoke.runtimeconfig.json": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a"
+      },
+      "input_manifest_sha256": "d1863d9c3f3666600d5749b0bd6af71b6bb57c8f511c8576a75ba1a4fe22cb3f",
+      "operator_sha256": "4e9a314b5667503eaa06dea8077a3d825436a3bee2fb1b941578d6dfaf7df648",
+      "operator_manifest": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/operator-manifest.json",
+        "sha256": "11644483ac0ce77ca5cc03533fca04e88f3bb426f539f0c1f5bb9a8d3fc18a23"
+      },
+      "case_result": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/usage-analysis/result.json",
+        "sha256": "78a242e1fdc2ccf2a2e917655164b343a840e9430d06a2955d4d475fc4db48d9"
+      },
+      "report": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/usage-analysis/evidence/usage-analysis-evidence.json",
+        "sha256": "f2fd152cf546ce6f87c3c51cde1e03b68cf02abbbbed0b1b59787e4a6dd8b54b"
+      },
+      "original_dlls_unchanged": true,
+      "overlay_dlls_match_package_after": true,
+      "png_count": 4
+    },
+    {
+      "name": "settings",
+      "status": "passed",
+      "checks": 44,
+      "package_source": "5f41fba5324e1cf1e58e2229d6c35c90ba800846",
+      "package_manifests": {
+        "gateway": "7aeb2af9cbb82e06a45d628e36e6f19f2ded42dcec365a14fc2d897ed2f0735f",
+        "monitor": "d34644c05e92892fc729d8c06d77366b7e099d9e27d8a4244c702e23f9b16632"
+      },
+      "package_dll_sha256": {
+        "Lain.Desktop.dll": "cbbefe56b1cc8b76b2416bb93def12f8a8546f8ef3d857fbaf932528e7f58b63",
+        "Lain.Client.dll": "0cbbece63459146091e01a298bab37ceaee4a4c034bffeac9d8483041797dd14",
+        "Lain.Core.dll": "0a4a88cb191deadfbc306fb8e21510050145de7c31e16a427ea25ff3a709d352"
+      },
+      "harness": {
+        "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/settings-inline-retry/tests/desktop-settings/bin/Debug/net10.0/Settings.Tests.dll",
+        "sha256": "ca24536dd6c7426d8679478ec108600767bdeafc89fe35936efe52c42f18963f",
+        "source": "af79d82"
+      },
+      "dependency_inputs_sha256": {
+        "Settings.Tests.deps.json": "0d9cd8a0d1e0db55afe91b162fa4b817d8f5162b7672377bd067dd5df0cbb713",
+        "Settings.Tests.runtimeconfig.json": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a"
+      },
+      "input_manifest_sha256": "d1863d9c3f3666600d5749b0bd6af71b6bb57c8f511c8576a75ba1a4fe22cb3f",
+      "operator_sha256": "4e9a314b5667503eaa06dea8077a3d825436a3bee2fb1b941578d6dfaf7df648",
+      "operator_manifest": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/operator-manifest.json",
+        "sha256": "11644483ac0ce77ca5cc03533fca04e88f3bb426f539f0c1f5bb9a8d3fc18a23"
+      },
+      "case_result": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/settings/result.json",
+        "sha256": "f50530efd3ea375a9b87c6c37d5e19b7052082bd7e21da503331c3b33d02132c"
+      },
+      "report": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/settings/evidence/settings-evidence.json",
+        "sha256": "43ccedc40acb34c54c52aab60987160f5411465eabd52ab611dc13cfc33d0727"
+      },
+      "original_dlls_unchanged": true,
+      "overlay_dlls_match_package_after": true,
+      "png_count": 7
+    },
+    {
+      "name": "xai-action",
+      "status": "passed",
+      "checks": 15,
+      "package_source": "5f41fba5324e1cf1e58e2229d6c35c90ba800846",
+      "package_manifests": {
+        "gateway": "7aeb2af9cbb82e06a45d628e36e6f19f2ded42dcec365a14fc2d897ed2f0735f",
+        "monitor": "d34644c05e92892fc729d8c06d77366b7e099d9e27d8a4244c702e23f9b16632"
+      },
+      "package_dll_sha256": {
+        "Lain.Desktop.dll": "cbbefe56b1cc8b76b2416bb93def12f8a8546f8ef3d857fbaf932528e7f58b63",
+        "Lain.Client.dll": "0cbbece63459146091e01a298bab37ceaee4a4c034bffeac9d8483041797dd14",
+        "Lain.Core.dll": "0a4a88cb191deadfbc306fb8e21510050145de7c31e16a427ea25ff3a709d352"
+      },
+      "harness": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-harness/checkout/tests/desktop/bin/Debug/net10.0/linux-x64/Lain.Desktop.Smoke.dll",
+        "sha256": "f732529c1f5974443b675102d7a9054523d6a5dc91e1a57c32647cb5fe5a0bf6",
+        "source": "5f41fba5324e1cf1e58e2229d6c35c90ba800846"
+      },
+      "dependency_inputs_sha256": {
+        "Lain.Desktop.Smoke.deps.json": "ab144d95ab1f1de10d42de808c76dd28aa6f41a710dbf965bb79a4647ec1054c",
+        "Lain.Desktop.Smoke.runtimeconfig.json": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a"
+      },
+      "input_manifest_sha256": "d1863d9c3f3666600d5749b0bd6af71b6bb57c8f511c8576a75ba1a4fe22cb3f",
+      "operator_sha256": "4e9a314b5667503eaa06dea8077a3d825436a3bee2fb1b941578d6dfaf7df648",
+      "operator_manifest": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/operator-manifest.json",
+        "sha256": "11644483ac0ce77ca5cc03533fca04e88f3bb426f539f0c1f5bb9a8d3fc18a23"
+      },
+      "case_result": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/xai-action/result.json",
+        "sha256": "0e33d64d4032ef54a64b53251fd587030516951d092be0d85a6fbc90d3bba38b"
+      },
+      "report": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/xai-action/evidence/xai-metadata-evidence.json",
+        "sha256": "2e421fe67293d7fffab9c2c1f1c189a92ad2ca9791b56a26d31398c29d360266"
+      },
+      "original_dlls_unchanged": true,
+      "overlay_dlls_match_package_after": true,
+      "png_count": 4
+    },
+    {
+      "name": "inspector",
+      "status": "passed",
+      "checks": 107,
+      "package_source": "5f41fba5324e1cf1e58e2229d6c35c90ba800846",
+      "package_manifests": {
+        "gateway": "7aeb2af9cbb82e06a45d628e36e6f19f2ded42dcec365a14fc2d897ed2f0735f",
+        "monitor": "d34644c05e92892fc729d8c06d77366b7e099d9e27d8a4244c702e23f9b16632"
+      },
+      "package_dll_sha256": {
+        "Lain.Desktop.dll": "cbbefe56b1cc8b76b2416bb93def12f8a8546f8ef3d857fbaf932528e7f58b63",
+        "Lain.Client.dll": "0cbbece63459146091e01a298bab37ceaee4a4c034bffeac9d8483041797dd14",
+        "Lain.Core.dll": "0a4a88cb191deadfbc306fb8e21510050145de7c31e16a427ea25ff3a709d352"
+      },
+      "harness": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-harness/checkout/tests/desktop/bin/Debug/net10.0/linux-x64/Lain.Desktop.Smoke.dll",
+        "sha256": "f732529c1f5974443b675102d7a9054523d6a5dc91e1a57c32647cb5fe5a0bf6",
+        "source": "5f41fba5324e1cf1e58e2229d6c35c90ba800846"
+      },
+      "dependency_inputs_sha256": {
+        "Lain.Desktop.Smoke.deps.json": "ab144d95ab1f1de10d42de808c76dd28aa6f41a710dbf965bb79a4647ec1054c",
+        "Lain.Desktop.Smoke.runtimeconfig.json": "f9bc8e9f0c46247078ed47309f19a7576b4b94e4300e9de0003917d6bd2d667a"
+      },
+      "input_manifest_sha256": "7d49feb5114644c7947567f84552a585e9c20811759d300c5d144aafd9be53e1",
+      "operator_sha256": "4e9a314b5667503eaa06dea8077a3d825436a3bee2fb1b941578d6dfaf7df648",
+      "operator_manifest": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/operator-manifest.json",
+        "sha256": "43c3ebedce88181afa4c4e59bf29f49b3b90f303a851398dbb4a75fd79e5a414"
+      },
+      "case_result": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/inspector/result.json",
+        "sha256": "8b58bb8acde4f8c683f3b595a81054894070af6e82209808bcfda4deede3cfb1"
+      },
+      "report": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/inspector/evidence/inspector-evidence.json",
+        "sha256": "07ff6b6187e20e6884a5df4cc4c6931ac2bb60ae6b5ff8f2061b23a926c5a364"
+      },
+      "original_dlls_unchanged": true,
+      "overlay_dlls_match_package_after": true,
+      "png_count": 12
+    },
+    {
+      "name": "native-final",
+      "status": "passed",
+      "checks": 282,
+      "package_source": "5f41fba5324e1cf1e58e2229d6c35c90ba800846",
+      "package_manifests": {
+        "gateway": "7aeb2af9cbb82e06a45d628e36e6f19f2ded42dcec365a14fc2d897ed2f0735f",
+        "monitor": "d34644c05e92892fc729d8c06d77366b7e099d9e27d8a4244c702e23f9b16632"
+      },
+      "package_dll_sha256": {
+        "Lain.Desktop.dll": "cbbefe56b1cc8b76b2416bb93def12f8a8546f8ef3d857fbaf932528e7f58b63",
+        "Lain.Client.dll": "0cbbece63459146091e01a298bab37ceaee4a4c034bffeac9d8483041797dd14",
+        "Lain.Core.dll": "0a4a88cb191deadfbc306fb8e21510050145de7c31e16a427ea25ff3a709d352"
+      },
+      "harness": {
+        "path": "/home/tomka/Desktop/lain-native-final-gates/tests/native-final-gates/bin/Debug/net10.0/linux-x64/NativeFinalGates.dll",
+        "sha256": "b02760ef77ecb11ef18b03ac92eb59608a550c87e3f20d05984713026844a48d",
+        "source": "ef507a7"
+      },
+      "dependency_inputs_sha256": {
+        "NativeFinalGates.deps.json": "d360e27a4f8e50d59933df26a1917dc133e78a3507c6c7c92273f9fe17673359",
+        "NativeFinalGates.runtimeconfig.json": "f088e51ed60afbcea7829cae863fe4818d5eafd21fe8419959932d57c248f6c0"
+      },
+      "input_manifest_sha256": "7d49feb5114644c7947567f84552a585e9c20811759d300c5d144aafd9be53e1",
+      "operator_sha256": "4e9a314b5667503eaa06dea8077a3d825436a3bee2fb1b941578d6dfaf7df648",
+      "operator_manifest": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/operator-manifest.json",
+        "sha256": "43c3ebedce88181afa4c4e59bf29f49b3b90f303a851398dbb4a75fd79e5a414"
+      },
+      "case_result": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/result.json",
+        "sha256": "e74ef359e61123ad94c789629cc846f7bdc1206c7b6f3884d795c179a34781c4"
+      },
+      "report": {
+        "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/evidence.json",
+        "sha256": "71038f3c837f9fecbca06daa84087dc83b6e549c2540a2f4a708eb1c02fb0e8e"
+      },
+      "original_dlls_unchanged": true,
+      "overlay_dlls_match_package_after": true,
+      "png_count": 44
+    }
+  ],
+  "historical_count_failure": {
+    "operator_result": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/inspector/result.json",
+      "sha256": "74ff7f54a8257360740a3cb2d7b1e5bd0090b2336c8d273916d8cf2880b2b484"
+    },
+    "functional_report": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/inspector/evidence/inspector-evidence.json",
+      "sha256": "7cda19ad9296fbcde0cd689dd1f331a85bd456ce0e8bb43d4c7b662668c3d41d"
+    },
+    "explanation": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-harness/inspector-count-review.json",
+      "sha256": "9ce81a94dc1f55189be07afd75dd91f77b936aceed6e97b94ae99e82ca9c65be"
+    },
+    "original_manifest": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-operator/inputs.json",
+      "sha256": "d1863d9c3f3666600d5749b0bd6af71b6bb57c8f511c8576a75ba1a4fe22cb3f"
+    },
+    "corrected_manifest_copy": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-operator/inputs-5f41fba-inspector107.json",
+      "sha256": "7d49feb5114644c7947567f84552a585e9c20811759d300c5d144aafd9be53e1"
+    },
+    "manifest_diff": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-operator/inputs-5f41fba-inspector107.diff",
+      "sha256": "d529b296ceb787e1f61ede6d0a055495da5f120e9e8cad7645d110fd61c1f7cb"
+    },
+    "retained_unchanged": true,
+    "source_change_commit": "4c6dc9da4d7a785f7fe70ccb7d0b801a9f6be440",
+    "description": "One prior empty-state assertion replaced by two retention assertions; exact final-source count107 authorized; old operator FAIL retained."
+  },
+  "builds": {
+    "central": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-harness/central-build-result.json",
+      "sha256": "70c41ecf25ef278f846a752814c7692f7a94d0b3ad9b697013fc5b78ed21ffee"
+    },
+    "installed": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-harness/installed-build-result.json",
+      "sha256": "ab2040b641312b8adb39f4f98e16378fe5cee48a107b06f3635d8f73f7203e3d"
+    },
+    "all_frozen_source_locks_unchanged": true,
+    "source_checkout_clean": true,
+    "installed_probe_runtime": "NOT RUN; requires later post-update authorization"
+  },
+  "saved_pngs_for_root_focus_review": [
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-models-editor-1120x780-saved-x11.png",
+      "sha256": "7e1413a70ef8c2fc74be3cc21438fe1f771466dd34f7ae2405bc64a194e3d26b"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-models-editor-1120x780-saved.png",
+      "sha256": "2228eff17bb0572322252d4e985e7c30f0e332972bd12c28bb0b8b4492d8a346"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-models-editor-800x560-saved-x11.png",
+      "sha256": "e7ebf3eb5757fecc976bdcf0db9ce87316d9a32c0c807ae661aa075af910b982"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-models-editor-800x560-saved.png",
+      "sha256": "018d0dc352e3c33fba23a331ec06b489d0b2411c331607a5328b90ba9f14a5c6"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-profiles-editor-1120x780-saved-x11.png",
+      "sha256": "75b773bd6e7fa27c3f39407c42cf53bac351087294c9652ba981e6aaa4e3abd9"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-profiles-editor-1120x780-saved.png",
+      "sha256": "b3cae990c6dee38cf2803f0f32639a3a2d9659b76e44c99d0b53ca5dc3d0b568"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-profiles-editor-800x560-saved-x11.png",
+      "sha256": "09891b460866e89bdb3b14113579b0e15e18b3499e06dbf6a7fc4cba3cdbcccf"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/evidence/native-profiles-editor-800x560-saved.png",
+      "sha256": "290ad28c746517ec0e884bb4428f81440646934863b00ff6086a22c820f4e41e"
+    }
+  ],
+  "manual_focus_ring_review": "passed_by_separate_root_review",
+  "runtime_cleanup": {
+    "recorded_xvfb_dbus_pids": [
+      {
+        "case": "inspector",
+        "run": "package-ui-5f41fba-exact-1",
+        "kind": "xvfb_pid",
+        "pid": 350026,
+        "still_exists": false
+      },
+      {
+        "case": "inspector",
+        "run": "package-ui-5f41fba-exact-1",
+        "kind": "dbus_pid",
+        "pid": 350029,
+        "still_exists": false
+      },
+      {
+        "case": "settings",
+        "run": "package-ui-5f41fba-exact-1",
+        "kind": "xvfb_pid",
+        "pid": 349792,
+        "still_exists": false
+      },
+      {
+        "case": "settings",
+        "run": "package-ui-5f41fba-exact-1",
+        "kind": "dbus_pid",
+        "pid": 349807,
+        "still_exists": false
+      },
+      {
+        "case": "usage-analysis",
+        "run": "package-ui-5f41fba-exact-1",
+        "kind": "xvfb_pid",
+        "pid": 349617,
+        "still_exists": false
+      },
+      {
+        "case": "usage-analysis",
+        "run": "package-ui-5f41fba-exact-1",
+        "kind": "dbus_pid",
+        "pid": 349620,
+        "still_exists": false
+      },
+      {
+        "case": "usage-native",
+        "run": "package-ui-5f41fba-exact-1",
+        "kind": "xvfb_pid",
+        "pid": 349266,
+        "still_exists": false
+      },
+      {
+        "case": "usage-native",
+        "run": "package-ui-5f41fba-exact-1",
+        "kind": "dbus_pid",
+        "pid": 349269,
+        "still_exists": false
+      },
+      {
+        "case": "xai-action",
+        "run": "package-ui-5f41fba-exact-1",
+        "kind": "xvfb_pid",
+        "pid": 349914,
+        "still_exists": false
+      },
+      {
+        "case": "xai-action",
+        "run": "package-ui-5f41fba-exact-1",
+        "kind": "dbus_pid",
+        "pid": 349917,
+        "still_exists": false
+      },
+      {
+        "case": "inspector",
+        "run": "package-ui-5f41fba-exact-2",
+        "kind": "xvfb_pid",
+        "pid": 353121,
+        "still_exists": false
+      },
+      {
+        "case": "inspector",
+        "run": "package-ui-5f41fba-exact-2",
+        "kind": "dbus_pid",
+        "pid": 353124,
+        "still_exists": false
+      },
+      {
+        "case": "native-final",
+        "run": "package-ui-5f41fba-exact-2",
+        "kind": "xvfb_pid",
+        "pid": 353337,
+        "still_exists": false
+      },
+      {
+        "case": "native-final",
+        "run": "package-ui-5f41fba-exact-2",
+        "kind": "dbus_pid",
+        "pid": 353340,
+        "still_exists": false
+      }
+    ],
+    "all_recorded_pids_gone": true,
+    "scopes_confirmed_inactive": [
+      "lain-package-ui-5f41fba-central-build.scope",
+      "lain-package-ui-5f41fba-installed-build.scope",
+      "lain-package-ui-5f41fba-exact.scope",
+      "lain-package-ui-5f41fba-exact-2.scope"
+    ]
+  },
+  "limits": "Exact published package DLL copies; in-memory synthetic API only; no real Host state, provider, installed service, update or real display actions.",
+  "root_manual_review": {
+    "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-manual-review.json",
+    "sha256": "b737f6d348982bbada99b7624234687358a34b76c86c9dc514169a430718ad52",
+    "original_operator_manual_pending_preserved": true
+  }
+}

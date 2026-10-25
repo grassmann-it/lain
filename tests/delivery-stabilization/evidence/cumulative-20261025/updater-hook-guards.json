@@ -1,0 +1,14 @@
+{
+  "scope": "AST-selected own_unit and pure validation with fake systemctl/busctl responses and disposable synthetic unit file. No helper import, real process/service queries, installation, runtime or provider operations.",
+  "status": "passed",
+  "exitCode": 0,
+  "tests": 9,
+  "hookNegativeReplySubcases": 32,
+  "existingNonemptyHookSubcases": 4,
+  "helperSha256": "5fd2a474b46a4db67f64c0d05594cba4c53873908c2c2ae83fff4edb60eac7a6",
+  "originalHelperSha256": "d2ce23cb9468ab2623004a9724c5ad103284d1043ccb7d5e3ec053d749b825c7",
+  "testSourceSha256": "d27e52a25dca8b10d1cc7e52bb52ca7388e271ea17acc34abbcc41bb6701604e",
+  "rawLogSha256": "aec0ac845a9e8ca980cb95b06910527a2cf59592d37a2c0c4c4f27159dc6a04e",
+  "diffSha256": "710e8d477691dcaacc5c73e48f2afaf3a184569e3b4621f6c261f82e8df6a947",
+  "validateUnitOverridesAstUnchanged": true
+}

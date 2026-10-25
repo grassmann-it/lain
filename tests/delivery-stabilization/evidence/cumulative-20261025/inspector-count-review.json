@@ -1,0 +1,24 @@
+{
+  "status": "source-and-evidence-comparison-only",
+  "old": {
+    "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/inspector-ui/tests/desktop/artifacts/20261025-inspector-targeted-0205/inspector-evidence.json",
+    "sha256": "da9cc47d8cd2dd910b820c86447806dca2fc74be40bc9481335689b56bdfa764",
+    "checks": 106
+  },
+  "new": {
+    "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/inspector/evidence/inspector-evidence.json",
+    "sha256": "7cda19ad9296fbcde0cd689dd1f331a85bd456ce0e8bb43d4c7b662668c3d41d",
+    "checks": 107,
+    "harness_exit": 0
+  },
+  "removed": [
+    "empty live source explains how to get an observed stream"
+  ],
+  "added": [
+    "empty retention after a selected request acknowledges earlier observed requests",
+    "expired selection never implies that no earlier request was observed"
+  ],
+  "source_change_commit": "4c6dc9da4d7a785f7fe70ccb7d0b801a9f6be440",
+  "final_source": "5f41fba5324e1cf1e58e2229d6c35c90ba800846",
+  "conclusion": "Final source replaces one empty-state assertion with two retention-specific assertions, requiring exactly 107 checks. Existing operator result remains failed; no manifest changed and no rerun performed."
+}

@@ -1,0 +1,70 @@
+{
+  "status": "passed",
+  "mode": "current-state-read-only",
+  "final_source": "5f41fba5324e1cf1e58e2229d6c35c90ba800846",
+  "session": 21293,
+  "exit_code": 0,
+  "checks": 100,
+  "screenshots": [
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/postupdate-5f41fba-current-state/current-accounts-1120x780.png",
+      "sha256": "8a9489772fc281fc465b8bf236e1254563da43f982aa1bc3fd9d503c86761c87"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/postupdate-5f41fba-current-state/current-accounts-800x560.png",
+      "sha256": "11f047f68575ab3012151caa739ac9244c8547651b3074c8393a7a53f592f94f"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/postupdate-5f41fba-current-state/current-live-1120x780.png",
+      "sha256": "9c97181c6b200922e99c2ec3e51250a735d6dedf2b9dfb4e2d4c1689bc24cff5"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/postupdate-5f41fba-current-state/current-live-800x560.png",
+      "sha256": "ff11d90c540d314da7808f770e92dfa592f5299e2b65f25b82e003039e769d4c"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/postupdate-5f41fba-current-state/current-profiles-1120x780.png",
+      "sha256": "de351cf7031ebfeb9b8f1b0550a8884baf145e013be55f40df7d3140be889c64"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/postupdate-5f41fba-current-state/current-profiles-800x560.png",
+      "sha256": "5706df3f6cc70ea8d7fe3dbf67873648e0c3206f8213bf6f7e714a0e6ea7089d"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/postupdate-5f41fba-current-state/current-reopened-accounts-1120x780.png",
+      "sha256": "8a9489772fc281fc465b8bf236e1254563da43f982aa1bc3fd9d503c86761c87"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/postupdate-5f41fba-current-state/current-reopened-accounts-800x560.png",
+      "sha256": "11f047f68575ab3012151caa739ac9244c8547651b3074c8393a7a53f592f94f"
+    }
+  ],
+  "request_count": 23,
+  "all_requests_get": true,
+  "blocked_requests": 0,
+  "historical_utc_range": {
+    "from_inclusive": "2026-10-23",
+    "to_exclusive": "2026-10-25"
+  },
+  "report": {
+    "path": "/home/tomka/.cache/lain-qualification-20261025/postupdate-5f41fba-current-state/evidence.json",
+    "sha256": "39c40c4096c26103045e592d6df9bfb0dff03df35569b88be34febf53bea9afa"
+  },
+  "selected_assemblies": {
+    "path": "/home/tomka/.cache/lain-qualification-20261025/postupdate-5f41fba-current-state/selected-assemblies.json",
+    "sha256": "e7256fcdb99227221936cebb6cbd8e4e007d5f7b5565caec9c82e6bbe3ca4db7"
+  },
+  "target_selection": {
+    "path": "/home/tomka/.cache/lain-qualification-20261025/postupdate-5f41fba-current-state/target-selection.json",
+    "sha256": "b6c6a132c80de7659c19f3fe1304a57831d57ba0bbd64345854dc429b9c69603"
+  },
+  "harness": {
+    "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-harness/checkout/tests/desktop-installed/bin/Debug/net10.0/linux-x64/Lain.Desktop.Installed.dll",
+    "sha256": "0f2d203cd6d9d521fad7a31267da1862626220a0878e792eb81158cf7e04d335",
+    "unchanged": true
+  },
+  "scope": "lain-postupdate-5f41fba-current-state.scope",
+  "scope_state": "inactive/dead, empty ControlGroup",
+  "private_runtime_removed": true,
+  "limits": "Owned Xvfb/custom DBus without service directories, private preferences, GET-only allowlist; no provider refresh, inference, configuration mutation, browser or installed service action."
+}

@@ -1,0 +1,67 @@
+{
+  "deleted": [
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/cumulative-publish-ae79589/package-monitor",
+      "bytes": 313330340,
+      "reason": "Unqualified superseded package or disposable exact-package test copy; reports and images retained"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/cumulative-publish-ae79589/package-gateway",
+      "bytes": 379479942,
+      "reason": "Unqualified superseded package or disposable exact-package test copy; reports and images retained"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/cumulative-publish-ae79589/package-monitor.tar.gz",
+      "bytes": 135094737,
+      "reason": "Unqualified superseded package or disposable exact-package test copy; reports and images retained"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/cumulative-publish-ae79589/package-gateway.tar.gz",
+      "bytes": 164635584,
+      "reason": "Unqualified superseded package or disposable exact-package test copy; reports and images retained"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/usage-native/overlay",
+      "bytes": 597108040,
+      "reason": "Unqualified superseded package or disposable exact-package test copy; reports and images retained"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/usage-analysis/overlay",
+      "bytes": 32923814,
+      "reason": "Unqualified superseded package or disposable exact-package test copy; reports and images retained"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/settings/overlay",
+      "bytes": 32601774,
+      "reason": "Unqualified superseded package or disposable exact-package test copy; reports and images retained"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/xai-action/overlay",
+      "bytes": 32923814,
+      "reason": "Unqualified superseded package or disposable exact-package test copy; reports and images retained"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-1/inspector/overlay",
+      "bytes": 32923814,
+      "reason": "Unqualified superseded package or disposable exact-package test copy; reports and images retained"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/inspector/overlay",
+      "bytes": 32923814,
+      "reason": "Unqualified superseded package or disposable exact-package test copy; reports and images retained"
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/package-ui-5f41fba-exact-2/native-final/overlay",
+      "bytes": 115196604,
+      "reason": "Unqualified superseded package or disposable exact-package test copy; reports and images retained"
+    }
+  ],
+  "bytesFreed": 1869142277,
+  "preserved": [
+    "final 5f41fba packages/archives",
+    "d720 baseline packages",
+    "full stopped backups and current app/app.previous",
+    "all test logs, reports, PNGs and original harnesses"
+  ],
+  "movedToSsd": false
+}

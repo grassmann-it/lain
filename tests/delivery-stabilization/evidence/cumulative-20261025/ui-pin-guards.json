@@ -1,0 +1,25 @@
+{
+  "scope": "Only AST-selected pure guards and disposable synthetic files; no operator import, UI, .NET, service, provider, product or package execution",
+  "status": "passed",
+  "tests": 12,
+  "observedRunnerExitCode": 0,
+  "operatorSha256": "4e9a314b5667503eaa06dea8077a3d825436a3bee2fb1b941578d6dfaf7df648",
+  "originalOperatorSha256": "fed3abaf54ebd1428f896557ff7a0edbba756eb88d8b7541c78e14e0b543dd9b",
+  "testSourceSha256": "5701cb74efc6c7385c5ebe77a829fcfd5281f5da8a2a4d9cab499cdc4acc9b16",
+  "inputManifestSha256": "d1863d9c3f3666600d5749b0bd6af71b6bb57c8f511c8576a75ba1a4fe22cb3f",
+  "cases": [
+    "test_valid_minimal_package",
+    "test_central_and_peer_arguments",
+    "test_wrong_manifest_pin_before_json_read",
+    "test_extra_file",
+    "test_missing_file",
+    "test_changed_file",
+    "test_file_symlink_and_dangling_link",
+    "test_directory_symlink",
+    "test_root_and_ancestor_symlinks",
+    "test_special_file",
+    "test_root_parent_traversal",
+    "test_manifest_traversal_absolute_and_self_record"
+  ],
+  "rawLogSha256": "5cea3c9535db28e43e1dbe31e0ee037cc5109e808dbd18eda8117bb70947786d"
+}
