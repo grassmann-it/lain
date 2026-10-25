@@ -67,3 +67,11 @@ The separate `test_prepare.py` suite only tests source-lock verification and is 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 python tests/codex-picker/test_prepare.py
 ```
+
+Observed native harness corrections are retained in separate evidence attempts:
+r1 sent slash text and Enter in one paste burst; r2's two ordinary-invocation
+sentinels changed only because upstream first-start screen-reader detection
+persisted its marker. The fixture now seeds the existing
+`tui.screen_reader_detection_done = true` setting. Neither correction changes
+the product binary, scope gate or model picker. Final evidence comes from a
+fresh complete run; the original failed attempts remain available.
