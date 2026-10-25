@@ -114,8 +114,8 @@ public sealed class KiloDeviceLoginAdapter : IAccountLoginAdapter, IAsyncDisposa
             var providerExpiry = clock.GetUtcNow().AddSeconds(seconds);
             attempt.ExpiresAt = providerExpiry < attempt.Context.ExpiresAt ? providerExpiry : attempt.Context.ExpiresAt;
             attempt.NextPollAt = clock.GetUtcNow();
-            return attempt.Cancelled || attempt.ExpiresAt <= clock.GetUtcNow()
-                ? attempt.Result = new("cancelled") : Waiting(attempt);
+            if (attempt.Cancelled) return attempt.Result = new("cancelled");
+            return attempt.ExpiresAt <= clock.GetUtcNow() ? attempt.Result = new("expired") : Waiting(attempt);
         }
         catch (Exception error) when (Boundary(error))
         { return attempt.Result = new("failed", Error: "Kilo device authorization could not begin. No existing credentials were changed.", NextAction: "reconnect"); }
