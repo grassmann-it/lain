@@ -93,7 +93,7 @@ using (var client = new HttpClient(new FakeHandler((_, _) => Task.FromResult(Rep
 {
     var reader = new XaiKeyMetadataReader(client);
     Check((await reader.ReadAsync(Account("xai"), new(secret)))?.TeamId == "team-1", "xAI confirms returned team");
-    await Denied(() => reader.ReadAsync(Account("xai"), new(secret, "different-team")), "Wrong bound team rejected");
+    await Denied(() => reader.ReadAsync(Account("xai"), new(secret, "different-team")), "Wrong bound team rejected", "xAI metadata team does not match the bound account.");
 }
 using (var client = new HttpClient(new FakeHandler((_, _) => Task.FromResult(Reply("{\"id\":\"actual-key\",\"group\":{\"id\":\"actual-group\"},\"monthly_limit\":10,\"monthly_spend\":0}")))))
 {
@@ -124,21 +124,23 @@ using (var client = new HttpClient(new FakeHandler((req, _) => Task.FromResult(r
     Check(result.Readings.Count == 3 && result.Readings.All(r => r.ScopeId is null) && result.Error is not null,
         "Unbound legacy Requesty usage remains an independent partial observation");
 }
-using (var client = new HttpClient(new FakeHandler((_, _) => throw new Exception("Unexpected network"))))
+var preflightCalls = 0;
+using (var client = new HttpClient(new FakeHandler((_, _) => { preflightCalls++; throw new Exception("Unexpected network"); })))
 {
-    await Denied(() => new KiloQuotaAdapter(client).FetchAsync(Account("kilo"), new(secret, baseUrl: "https://untrusted.invalid/v1")), "Wrong Kilo host rejected before request");
-    await Denied(() => new KiloQuotaAdapter(client).FetchAsync(Account("kilo") with { Binding = new("kilo", Product: "gateway", ResourceType: "organization", ResourceId: "org-1") }, new(secret)), "Kilo organization binding rejected before request");
-    await Denied(() => new StepFunQuotaAdapter(client).FetchAsync(Account("stepfun") with { Binding = new("stepfun", Product: "payg", Region: "ai", ResourceType: "personal") }, new(secret, baseUrl: StepFunQuotaAdapter.ApiBaseUrl)), "Step incompatible region rejected before request");
-    await Denied(() => new RequestyQuotaAdapter(client).FetchAsync(Account("requesty"), new(secret, baseUrl: "https://router.requesty.ai.evil.invalid/v1")), "Wrong Requesty host rejected");
-    await Denied(() => new XaiKeyMetadataReader(client).ReadAsync(Account("xai"), new(secret, baseUrl: "https://api.x.ai/v1?key=private")), "Wrong xAI target rejected");
+    await Denied(() => new KiloQuotaAdapter(client).FetchAsync(Account("kilo"), new(secret, baseUrl: "https://untrusted.invalid/v1")), "Wrong Kilo host rejected before request", "Kilo requires its official Gateway API base URL.");
+    await Denied(() => new KiloQuotaAdapter(client).FetchAsync(Account("kilo") with { Binding = new("kilo", Product: "gateway", ResourceType: "organization", ResourceId: "org-1") }, new(secret)), "Kilo organization binding rejected before request", "Kilo quota requires its personal Gateway resource binding.");
+    await Denied(() => new StepFunQuotaAdapter(client).FetchAsync(Account("stepfun") with { Binding = new("stepfun", Product: "payg", Region: "ai", ResourceType: "personal") }, new(secret, baseUrl: StepFunQuotaAdapter.ApiBaseUrl)), "Step incompatible region rejected before request", "StepFun balance requires its personal PAYG resource binding.");
+    await Denied(() => new RequestyQuotaAdapter(client).FetchAsync(Account("requesty"), new(secret, baseUrl: "https://router.requesty.ai.evil.invalid/v1")), "Wrong Requesty host rejected", "Requesty Self requires its official router API base URL.");
+    await Denied(() => new XaiKeyMetadataReader(client).ReadAsync(Account("xai"), new(secret, baseUrl: "https://api.x.ai/v1?key=private")), "Wrong xAI target rejected", "xAI metadata requires its official API base URL.");
 }
+Check(preflightCalls == 0, "Origin and binding rejections perform no HTTP calls");
 checks += await MetadataRetention.RunAsync();
 checks += await ReaderRecovery.RunAsync();
 Console.WriteLine($"PASS: {checks} account-connect reader checks");
 
-async Task Denied(Func<Task> action, string message)
+async Task Denied(Func<Task> action, string message, string expectedDiagnostic)
 {
-    try { await action(); } catch (QuotaFetchException ex) { Check(!ex.Message.Contains(secret), message); return; }
+    try { await action(); } catch (Exception ex) when (ex.Message == expectedDiagnostic) { Check(!ex.Message.Contains(secret), message); return; }
     throw new Exception(message);
 }
 static HttpResponseMessage Reply(string json) => new(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") };

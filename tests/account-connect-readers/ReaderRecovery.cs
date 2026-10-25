@@ -31,7 +31,7 @@ static class ReaderRecovery
                     new("fixture-key", baseUrl: Base(provider), credentialKind: "access-token-snapshot"));
                 throw new Exception(provider + " accepted an incompatible selected credential kind");
             }
-            catch (QuotaFetchException) { Check(calls == before, provider + " cannot fall back from selected incompatible kind to account label"); }
+            catch (Exception ex) when (ex.Message == RejectedKind(provider)) { Check(calls == before && !ex.Message.Contains("fixture-key"), provider + " cannot fall back from selected incompatible kind to account label"); }
         }
 
         using (var aliasClient = new HttpClient(new RecoveryHttp((request, _) => Task.FromResult(Reply(Body("kilo", request))))))
@@ -67,7 +67,7 @@ static class ReaderRecovery
                     new("", monitor: monitor, credentialKind: "api-token"));
                 throw new Exception("Expected monitor binding rejection");
             }
-            catch (QuotaFetchException) { Check(monitorCalls == before, "Fireworks separate monitor cannot read another bound account"); }
+            catch (Exception ex) when (ex.Message == "Fireworks quota does not match the bound account.") { Check(monitorCalls == before && !ex.Message.Contains("independent-monitor-key"), "Fireworks separate monitor cannot read another bound account"); }
             var missing = await adapter.FetchAsync(account, new("unused-inference", monitor: new("api-token", null, "demo")));
             Check(missing.Support?.Kind == "setup-required" && monitorCalls == before,
                 "Missing independent monitor token does not fall back to inference access");
@@ -126,6 +126,14 @@ static class ReaderRecovery
         return checks;
     }
 
+    private static string RejectedKind(string provider) => provider switch
+    {
+        "kilo" => "Kilo requires its own API key account.", "requesty" => "Requesty Self requires its own API key account.",
+        "synthetic" => "Synthetic quota requires its own API key account.", "stepfun" => "StepFun PAYG balance requires an API key.",
+        "commandcode" => "Command Code quota requires a qualified API key.", "zai" => "Z.ai quota requires a qualified API key.",
+        "kimi" => "Kimi quota requires a qualified API key.", "openrouter" => "OpenRouter quota requires an API key.",
+        _ => throw new Exception("Provider")
+    };
     private static string Base(string provider) => provider switch
     {
         "kilo" => "https://ai-gateway.kilo.ai/api/v1", "requesty" => "https://router.requesty.ai/v1",

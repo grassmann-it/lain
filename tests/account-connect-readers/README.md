@@ -3,7 +3,10 @@
 Run `./tests/account-connect-readers/run.sh` in a coordinator-approved .NET build
 slot. All HTTP uses fake handlers and synthetic keys. No service, installation,
 provider request or inference is performed. The project is generated under TMPDIR
-and removed after the run; shared project files remain untouched.
+and removed after the run. It references the real Host project with linux-x64,
+SelfContained=true and locked restore; it does not copy production sources or
+publish internal exception types. Guard rejections assert exact fixed diagnostics,
+no HTTP calls and no secret disclosure through the public adapter methods.
 
 Qualified offline semantics:
 
