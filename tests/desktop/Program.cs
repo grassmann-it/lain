@@ -48,8 +48,9 @@ internal static class Program
         SmokeApp.UsageAnalysisOnly = args.Contains("--usage-analysis-smoke", StringComparer.Ordinal);
         SmokeApp.N01DisplayOnly = args.Contains("--n01-display-smoke", StringComparer.Ordinal);
         SmokeApp.N05N06ProfilesOnly = args.Contains("--n05n06-profiles-smoke", StringComparer.Ordinal);
+        SmokeApp.OauthDeviceDisplayOnly = args.Contains("--oauth-device-display-smoke", StringComparer.Ordinal);
         return AppBuilder.Configure<SmokeApp>().UsePlatformDetect().WithInterFont()
-            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--quota-hierarchy-smoke" or "--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--xai-metadata-smoke" or "--model-identity-smoke" or "--monitor-table-smoke" or "--inspector-smoke" or "--usage-analysis-smoke" or "--n01-display-smoke" or "--n05n06-profiles-smoke")).ToArray());
+            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--quota-hierarchy-smoke" or "--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--xai-metadata-smoke" or "--model-identity-smoke" or "--monitor-table-smoke" or "--inspector-smoke" or "--usage-analysis-smoke" or "--n01-display-smoke" or "--n05n06-profiles-smoke" or "--oauth-device-display-smoke")).ToArray());
     }
 }
 
@@ -66,6 +67,7 @@ internal sealed class SmokeApp : Application
     public static bool UsageAnalysisOnly { get; set; }
     public static bool N01DisplayOnly { get; set; }
     public static bool N05N06ProfilesOnly { get; set; }
+    public static bool OauthDeviceDisplayOnly { get; set; }
     public override void Initialize()
     {
         // Reuse production initialization (Semi/Ursa resources included), not a test theme.
@@ -90,7 +92,8 @@ internal sealed class SmokeApp : Application
             var scenario = new Scenario(lifetime);
             try
             {
-                if (N01DisplayOnly) await scenario.RunN01DisplaySmoke();
+                if (OauthDeviceDisplayOnly) await scenario.RunOauthDeviceDisplayCases();
+                else if (N01DisplayOnly) await scenario.RunN01DisplaySmoke();
                 else if (N05N06ProfilesOnly) await scenario.RunN05N06ProfilesCases();
                 else if (QuotaHierarchyOnly) await scenario.RunQuotaHierarchySmoke();
                 else if (UsageAnalysisOnly) await scenario.RunUsageAnalysisSmoke();
