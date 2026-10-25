@@ -1,15 +1,21 @@
 # lain
 
-Projektstand: Implementierung und Qualifikation des ersten Linux-Stands.
-Aktuelle Umsetzung in docs/execution.md, unabhängige Abnahme in docs/acceptance.md.
+Aktuelle Orientierung (25.10.2026): installierte private Linux-Lieferung in
+`docs/codex-model-groups-delivery-2026-10-25.md`; konsolidierter Reststand und
+nächste Arbeitspakete in `docs/next-work-packages-2026-10-25.md`.
+Die Umsetzung ist inzwischen als Goal beauftragt; aktueller Ablauf in
+`docs/next-work-packages-execution-2026-10-25.md`. `docs/execution.md` und
+`docs/acceptance.md` enthalten frühere Aufträge und deren damalige Nachweise;
+alte Offen-/Laufend-Aussagen nicht ohne Abgleich als heutigen Stand übernehmen.
 Bestätigte Ziele stehen in `docs/product-scope.md`, der geprüfte technische
 Ausgangsbestand in `docs/technical-inventory.md`. Bestehende persönliche
 Proxy-/TUI-Projekte sind Quellen und mögliche Bausteine; ihre Entscheidungen
 gelten nicht automatisch für lain. Vorschläge bleiben als solche gekennzeichnet.
 Der aktuelle Paketentwurf steht in `docs/implementation-plan.md`, die vorgeschlagene
 Struktur in `docs/architecture.md` und die fachlichen Verträge in
-`docs/service-contracts.md`. A qualifiziert den Backendanschluss; abhängige Pakete
-sind bis zu dessen Ergebnis noch keine vollständige ausführbare Übergabe.
+`docs/service-contracts.md`. A qualifizierte den ursprünglichen Backendanschluss;
+spätere Upgrades und Lieferungen stehen in den aktuellen Berichten oben.
+Ursprüngliche Paketgrenzen nicht als Beleg noch fehlender Implementierung lesen.
 
 <!-- architecture-sparring:start -->
 Architekturkontext für Codex: Dieser Abschnitt gilt nur für Codex.

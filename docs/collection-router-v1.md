@@ -1,5 +1,11 @@
 # Ordered collection routing v1
 
+**Current status, 25 October 2026:** this contract is implemented, synthetically
+qualified and installed as recorded in the
+[model-group delivery report](codex-model-groups-delivery-2026-10-25.md).
+Free automation remains inactive. The introductory preparation-stage description
+below is historical; the routing rules remain the contract.
+
 This source adds an explicit, profile-bound `ordered_sticky_v1` selector. It is
 not release qualification: the new Host/Go fixtures and built runtime still need
 the serial synthetic qualification lane before deployment. No existing user

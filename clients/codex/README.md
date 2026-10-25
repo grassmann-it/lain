@@ -1,5 +1,14 @@
 # Opt-in Codex CLI model groups
 
+**Current local delivery, 25 October 2026:** the separate client and dispatcher
+are installed for the lain profile. Seven native PTY cases and a bounded harness
+of the six unchanged Core module tests passed. The full Core test build hit its
+memory limit; eight TUI library tests were not run. See the authoritative
+[delivery report](../../docs/codex-model-groups-delivery-2026-10-25.md) for exact
+binary pins and boundaries. The preparation handoff below records its earlier
+stage; it does not supersede that delivery. Remaining maintenance is in
+[N08](../../docs/next-work-packages-2026-10-25.md).
+
 This is a small patch over the public `rust-v0.164.0` source, not a selection wrapper.
 It changes the real TUI `/model` path in `tui/src/chatwidget/model_popups.rs`.
 The original installed Codex binary and configuration are not changed by preparation or build.
@@ -73,7 +82,7 @@ closure and peak memory have not yet been measured. Its git dependencies include
 rmcp, runfiles and the upstream-pinned terminal/WebSocket forks. Network/toolchain/dependency
 preparation and any build must run in the root's bounded serial lane.
 
-## Verification status
+## Verification status at the original preparation handoff
 
 Prepared: six Core tests cover optional routers/overlap, strict validation, unchanged legacy
 catalog loading, Unicode labels, exact profile/provider gating, and invalid extensions outside scope. Eight TUI

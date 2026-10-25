@@ -1,8 +1,10 @@
 # Opt-in launcher for the lain profile
 
-Prepared implementation only. Installing this launcher is a separate explicit
-step after the patched Codex binary has passed its native TUI checks. The source
-patch or a successful build alone does not install it.
+**Local installation completed, 25 October 2026:** the separate patched client
+passed its native TUI checks and this launcher was explicitly installed. Exact
+pins and scope are in the [delivery report](../../docs/codex-model-groups-delivery-2026-10-25.md).
+For a new installation, source preparation or a successful build alone still
+does not install the launcher; installation remains an explicit separate step.
 
 The Linux-only launcher replaces the existing `~/.local/bin/codex` **symlink**.
 It recognizes interactive root invocations such as `codex --profile lain`,

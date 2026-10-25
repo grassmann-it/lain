@@ -1,5 +1,13 @@
 # Account Connect: Arbeitsaufteilung und Übergabe
 
+**Aktuelle Orientierung, 25.10.2026:** Dieser Ordner hält den ursprünglichen
+Paketzuschnitt fest. Basis, Reader und einzelne Methoden sind inzwischen
+implementiert und geliefert; offene Qualifikationen bleiben methodenspezifisch.
+Den heutigen Reststand und begrenzte nächste Pakete zuerst im
+[konsolidierten Abgleich](../next-work-packages-2026-10-25.md) lesen. „Planungsstand“
+und fehlende Klassen im folgenden historischen Ausgangsbefund sind keine
+pauschale Aussage zum aktuellen Code.
+
 Stand 24.10.2026, Ausgangscode `5dc916fcea702f2a196520903937570745e26dac`.
 Auftrag dieser Runde: aus dem [Account-Connect-Entwurf](../account-connect-redesign-2026-10-24.md)
 konkrete Arbeitspakete bilden. Sechs Sol-Worker haben Fachpakete ausgearbeitet;
