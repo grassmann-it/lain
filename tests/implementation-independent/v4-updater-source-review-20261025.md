@@ -130,3 +130,17 @@ EnvironmentFiles/UnsetEnvironment fields to remain visible while preserving the
 required-field and own-LAIN_HOME checks. Source-level closure confirmed for this
 specific adjustment; no runtime outcome or whole-machine security guarantee is
 claimed. Prior update lease, backup, failure-off and no-rollback guards remain.
+
+## EnvironmentFiles compatibility follow-up, SHA-256 `d16b41752d09d42b1456d19842f25879042a605e49598ce8edae0dc40e6419fd`
+
+Root's read-only preflight found that EnvironmentFiles may be omitted even with
+`systemctl show --all`; the preceding source observation did not establish actual
+visibility on this installation. The revised helper invokes a fixed user-systemd
+D-Bus EnvironmentFiles property read only when the show key is absent. The
+existing run wrapper requires command success, and the fallback accepts only
+`a(sb) 0` after surrounding whitespace removal. Missing output, another type,
+nonempty arrays and failed queries reject the update. A present nonempty show
+property remains rejected. Property contents are not returned or persisted.
+
+Narrow source-level closure confirmed after independent source read/hash; no
+runtime, D-Bus, systemd or private-state query was performed by the reviewer.
