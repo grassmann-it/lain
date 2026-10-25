@@ -107,3 +107,26 @@ All three concrete findings in this review are now addressed in source. This is
 not an execution result or authorization to update: exact-package qualification,
 runtime guards and the orchestrator's execution decision remain separate. The
 reviewer did not invoke the helper or read the installed unit/state.
+
+## Process-scope adjustment, final SHA-256 `a88a088c81f9ee7a7548b0ed8a704899c12a8b42ccc8bb46a4910760e3ce889d`
+
+Source-only review of the adjustment requested after Root encountered nondumpable
+external user processes. The reviewer did not inspect live processes. Root supplied
+the external role/cgroup evidence separately. Exemptions require the exact listed
+external comm and cgroup; systemd additionally requires the system manager's
+reported user-service MainPID, and sd-pam its matching PPid. Unknown unreadable
+processes still refuse the audit. Accessible own executables remain inspected.
+
+Two narrow source findings in intermediate `761996bf...` were fixed: an already
+recognized executable candidate now remains classified as a candidate if argv
+later raises PermissionError, and Desktop DLL detection accepts both relative
+and absolute arguments. The final monotonic candidate predicate uses both comm
+and executable basename for Lain.Desktop/Lain.Host/Lain.Cli/lain-proxy/dotnet;
+these candidates cannot take the external-role EACCES exemption. No argv or
+environment values are logged by this classification.
+
+The loaded-unit show call now includes `--all`, allowing deliberately empty
+EnvironmentFiles/UnsetEnvironment fields to remain visible while preserving the
+required-field and own-LAIN_HOME checks. Source-level closure confirmed for this
+specific adjustment; no runtime outcome or whole-machine security guarantee is
+claimed. Prior update lease, backup, failure-off and no-rollback guards remain.
