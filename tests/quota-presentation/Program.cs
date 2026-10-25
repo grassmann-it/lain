@@ -13,6 +13,7 @@ void Check(bool condition, string message)
 }
 var five = Quota("5 hours");
 var sevenHour = Quota("7h");
+var hyphenatedSevenHour = Quota("7-hour window");
 var weekly = Quota("7 days");
 var monthly = Quota("Monthly credits");
 var purchased = Quota("Purchased credits", 4);
@@ -20,6 +21,9 @@ var freeZero = Quota("Free credits", 0);
 var unknown = Quota("Unknown", null);
 var ordered = QuotaPresentation.Order([unknown, monthly, purchased, weekly, sevenHour, five]);
 Check(ordered.SequenceEqual(new[] { five, sevenHour, weekly, monthly, purchased, unknown }), "Short windows precede month, wallet and missing, ordered by semantic duration");
+Check(QuotaPresentation.Order([weekly, hyphenatedSevenHour, five]).SequenceEqual(new[] { five, hyphenatedSevenHour, weekly }), "Codex hyphenated duration labels sort by the reported hours");
+Check(QuotaPresentation.Order([Quota("Unspecified") with { Source = "https://provider.invalid/1h" }, sevenHour]).First() == sevenHour,
+    "A duration in a URL path does not establish a window period");
 var summary = QuotaPresentation.ForSummary([unknown, monthly, purchased, weekly, sevenHour, five, freeZero]);
 Check(summary.Primary.SequenceEqual(new[] { five, sevenHour }), "At most two relevant windows are primary");
 Check(summary.Additional.SequenceEqual(new[] { weekly, monthly, purchased }), "Further real windows and positive credits remain available as additional");

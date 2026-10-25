@@ -17,7 +17,7 @@ public sealed record QuotaSummaryPresentation(
 public static class QuotaPresentation
 {
     private static readonly Regex DurationPattern = new(
-        @"(?<![a-z0-9])(?<number>\d+(?:\.\d+)?)\s*(?<unit>hours?|h|days?|d|weeks?|w|minutes?|mins?|m|seconds?|secs?|s)\b",
+        @"(?<![a-z0-9])(?<number>\d+(?:\.\d+)?)\s*-?\s*(?<unit>hours?|h|days?|d|weeks?|w|minutes?|mins?|m|seconds?|secs?|s)\b",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     public static bool HasReading(QuotaDto quota)
@@ -95,7 +95,8 @@ public static class QuotaPresentation
 
     private static bool Finite(double? value) => value is { } number && double.IsFinite(number);
     private static bool Amount(double? value) => value is { } number && double.IsFinite(number) && number >= 0;
-    private static string Fragment(QuotaDto quota) => quota.Source[(quota.Source.LastIndexOf('#') + 1)..].ToLowerInvariant();
+    private static string Fragment(QuotaDto quota) => quota.Source.LastIndexOf('#') is var separator && separator >= 0
+        ? quota.Source[(separator + 1)..].ToLowerInvariant() : "";
 
     private static bool ShortWindow(QuotaDto quota) => quota.MeasurementKind != "balance" && !MonthlyOrLonger(quota)
         && DurationSeconds(quota) is { } seconds && seconds <= TimeSpan.FromDays(7).TotalSeconds;
