@@ -14,6 +14,7 @@ public sealed class MiMoConsoleLoginAdapter(IMiMoConsoleBrowser browser, TimePro
         public LoginOperationContext Context = context;
         public string Profile = profile;
         public bool Prepared;
+        public bool CancelRequested;
     }
     private readonly ConcurrentDictionary<string, Attempt> attempts = new();
     private readonly TimeProvider clock = timeProvider ?? TimeProvider.System;
@@ -65,17 +66,20 @@ public sealed class MiMoConsoleLoginAdapter(IMiMoConsoleBrowser browser, TimePro
     }
     public async Task CancelAsync(LoginOperationContext context, CancellationToken ct)
     {
-        if (!attempts.TryRemove(context.OperationId, out var attempt)) return;
+        if (!attempts.TryGetValue(context.OperationId, out var attempt)) return;
         Same(attempt.Context, context);
+        attempt.CancelRequested = true;
         await browser.CloseAsync(attempt.Profile, true, ct);
+        attempts.TryRemove(context.OperationId, out _);
     }
     public async Task ReleaseAsync(LoginOperationContext context, CancellationToken ct)
     {
-        if (!attempts.TryRemove(context.OperationId, out var attempt)) return;
+        if (!attempts.TryGetValue(context.OperationId, out var attempt)) return;
         Same(attempt.Context, context);
         // Published sessions outlive the interactive operation. Host shutdown closes
         // their browser, and future reads request explicit reconnection.
-        if (!attempt.Prepared) await browser.CloseAsync(attempt.Profile, true, ct);
+        if (!attempt.Prepared || attempt.CancelRequested) await browser.CloseAsync(attempt.Profile, true, ct);
+        attempts.TryRemove(context.OperationId, out _);
     }
     public async Task TargetRemovedAsync(LoginOperationContext context, PreparedLoginCredential? prepared, CancellationToken ct)
     {

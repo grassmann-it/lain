@@ -90,6 +90,7 @@ public sealed class LoginOperationService : IAsyncDisposable
         public PreparedLoginCredential? PendingCredential;
         public bool PendingPersistence;
         public bool Released;
+        public bool CancellationDispatched;
         public string? RequestFingerprint;
         public Task<LoginDto>? BeginTask;
     }
@@ -138,7 +139,8 @@ public sealed class LoginOperationService : IAsyncDisposable
                     var recoveredContext = CredentialRecoveryService.Context(recovered);
                     var restored = new Operation(status, recoveredContext, clock.GetUtcNow())
                     { FinishedAt = clock.GetUtcNow(), Prepared = recovered.Handle, TargetRemoved = recovered.State == "target-removed",
-                        TargetCleanupCompleted = recovered.TargetCleanupCompleted, RequestFingerprint = fingerprint };
+                        TargetCleanupCompleted = recovered.TargetCleanupCompleted, RequestFingerprint = fingerprint,
+                        Released = recovered.State != "target-removed" || recovered.TargetCleanupCompleted };
                     operations[recovered.OperationId] = restored;
                     idempotency[key] = recovered.OperationId;
                     restored.BeginTask = restored.TargetRemoved ? CompleteRecoveredTargetCleanupAsync(restored) : Task.FromResult(status);
@@ -209,11 +211,7 @@ public sealed class LoginOperationService : IAsyncDisposable
         {
             operation.Gate.Release();
             if (operation.TargetRemoved) await CleanupRemovedTargetAsync(operation);
-            else
-            {
-                if (operation.Status.State is "failed" or "cancelled" or "expired") await CleanupAdapterAsync(operation);
-                if (Terminal(operation.Status.State)) await ReleaseAdapterAsync(operation);
-            }
+            else if (Terminal(operation.Status.State)) await CleanupTerminalAdapterAsync(operation);
         }
     }
 
@@ -242,11 +240,7 @@ public sealed class LoginOperationService : IAsyncDisposable
         {
             operation.Gate.Release();
             if (operation.TargetRemoved) await CleanupRemovedTargetAsync(operation);
-            else
-            {
-                if (operation.Status.State is "failed" or "cancelled" or "expired") await CleanupAdapterAsync(operation);
-                if (Terminal(operation.Status.State)) await ReleaseAdapterAsync(operation);
-            }
+            else if (Terminal(operation.Status.State)) await CleanupTerminalAdapterAsync(operation);
         }
     }
 
@@ -274,13 +268,15 @@ public sealed class LoginOperationService : IAsyncDisposable
         var operation = Find(id);
         lock (operation.PublicationGate)
         {
-            if (Terminal(operation.Status.State)) return operation.Status;
-            operation.Invalidated = true;
-            Finish(operation, "cancelled");
+            if (!Terminal(operation.Status.State))
+            {
+                operation.Invalidated = true;
+                Finish(operation, "cancelled");
+            }
         }
-        operation.Cancellation.Cancel();
-        await CleanupAdapterAsync(operation);
-        await ReleaseAdapterAsync(operation);
+        if (operation.Status.State == "cancelled") operation.Cancellation.Cancel();
+        if (operation.TargetRemoved) await CleanupRemovedTargetAsync(operation);
+        else await CleanupTerminalAdapterAsync(operation);
         return operation.Status;
     }
 
@@ -375,6 +371,16 @@ public sealed class LoginOperationService : IAsyncDisposable
                 }
                 catch (Exception error) when (error is not OutOfMemoryException and not StackOverflowException)
                 { /* Durable target-removed state retains retry work; malformed entries never authorize deletion. */ }
+            }
+            // Terminal local cleanup keeps its original operation slot. A prior cancellation
+            // is never sent again; only the adapter's existing local Release is retried.
+            Operation[] localReleases;
+            lock (gate) localReleases = operations.Values.Where(o => Terminal(o.Status.State) && !o.TargetRemoved && !o.Released)
+                .Take(MaximumActiveOperations).ToArray();
+            foreach (var operation in localReleases)
+            {
+                if (ct.IsCancellationRequested) break;
+                await CleanupTerminalAdapterAsync(operation, ct);
             }
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or OperationCanceledException)
@@ -512,39 +518,41 @@ public sealed class LoginOperationService : IAsyncDisposable
             operation.Invalidated = true; Finish(operation, "expired");
         }
         operation.Cancellation.Cancel();
-        await CleanupAdapterAsync(operation);
-        await ReleaseAdapterAsync(operation);
+        await CleanupTerminalAdapterAsync(operation);
     }
-    private async Task CleanupAdapterAsync(Operation operation)
+    private async Task CleanupTerminalAdapterAsync(Operation operation, CancellationToken? budget = null)
     {
-        // Cleanup has its own small deadline; caller disconnect does not abandon owned resources.
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        // One bounded serial attempt. Keep the operation/profile until local release succeeds;
+        // subsequent attempts must not resend cancellation of an external authorization.
+        using var timeout = budget is null ? new CancellationTokenSource(TimeSpan.FromSeconds(5)) : null;
+        var ct = budget ?? timeout!.Token;
         try
         {
-            await operation.Gate.WaitAsync(timeout.Token);
+            await operation.Gate.WaitAsync(ct);
             try
             {
+                if (operation.Released || operation.TargetRemoved || !Terminal(operation.Status.State)) return;
                 if (operation.Context is { } context && adapters.TryGetValue((context.Request.Provider, context.Request.Method), out var adapter))
-                    await adapter.CancelAsync(context, timeout.Token);
-                else if (legacy.TryGetValue(operation.Status.Provider, out var old)) await old.CancelAsync(operation.Status.Id, timeout.Token);
+                {
+                    if (!operation.CancellationDispatched && operation.Status.State is ("failed" or "cancelled" or "expired"))
+                    {
+                        operation.CancellationDispatched = true;
+                        await adapter.CancelAsync(context, ct);
+                    }
+                    await adapter.ReleaseAsync(context, ct);
+                }
+                else if (legacy.TryGetValue(operation.Status.Provider, out var old))
+                {
+                    if (!operation.CancellationDispatched && operation.Status.State is ("failed" or "cancelled" or "expired"))
+                    {
+                        operation.CancellationDispatched = true;
+                        await old.CancelAsync(operation.Status.Id, ct);
+                    }
+                    await old.ReleaseAsync(operation.Status.Id, ct);
+                }
+                operation.Released = true;
             }
             finally { operation.Gate.Release(); }
-        }
-        catch (Exception error) when (error is not OutOfMemoryException and not StackOverflowException) { }
-    }
-    private async Task ReleaseAdapterAsync(Operation operation)
-    {
-        lock (operation.PublicationGate)
-        {
-            if (operation.Released) return;
-            operation.Released = true;
-        }
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        try
-        {
-            if (operation.Context is { } context && adapters.TryGetValue((context.Request.Provider, context.Request.Method), out var adapter))
-                await adapter.ReleaseAsync(context, timeout.Token);
-            else if (legacy.TryGetValue(operation.Status.Provider, out var old)) await old.ReleaseAsync(operation.Status.Id, timeout.Token);
         }
         catch (Exception error) when (error is not OutOfMemoryException and not StackOverflowException) { }
     }
@@ -586,7 +594,7 @@ public sealed class LoginOperationService : IAsyncDisposable
     }
     private void Prune()
     {
-        var terminal = operations.Where(p => p.Value.FinishedAt is not null && !p.Value.PendingPersistence
+        var terminal = operations.Where(p => p.Value.FinishedAt is not null && p.Value.Released && !p.Value.PendingPersistence
             && (!p.Value.TargetRemoved || p.Value.TargetCleanupCompleted)).OrderByDescending(p => p.Value.FinishedAt).ToArray();
         foreach (var pair in terminal.Where((p, index) => index >= MaximumTerminalOperations || p.Value.FinishedAt + TerminalLifetime <= clock.GetUtcNow()))
         {
@@ -596,7 +604,7 @@ public sealed class LoginOperationService : IAsyncDisposable
     }
     private void ThrowIfDisposed() { if (disposed) throw new ObjectDisposedException(nameof(LoginOperationService)); }
     private static bool NeedsActiveSlot(Operation operation) => !Terminal(operation.Status.State) || operation.PendingPersistence
-        || operation.TargetRemoved && !operation.TargetCleanupCompleted;
+        || !operation.Released || operation.TargetRemoved && !operation.TargetCleanupCompleted;
     private static bool Terminal(string state) => state is "completed" or "cancelled" or "expired" or "failed" or "unsupported" or "recovery-required";
     private static void ValidateUrl(string? url)
     {
@@ -619,7 +627,7 @@ public sealed class LoginOperationService : IAsyncDisposable
             }
             finally { operation.Gate.Release(); }
             if (operation.TargetRemoved) await CleanupRemovedTargetAsync(operation);
-            else await ReleaseAdapterAsync(operation);
+            else await CleanupTerminalAdapterAsync(operation);
         }));
         await recoveryCleanupGate.WaitAsync();
         try { recoveryScan?.Dispose(); recoveryScan = null; }

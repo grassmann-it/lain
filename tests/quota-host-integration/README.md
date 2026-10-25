@@ -29,3 +29,10 @@ The persisted-removal follow-up adds actual MiMo adapter coverage with a synthet
 terminal pruning and service restart. Its selected quota remains absent; the private disk descriptor
 must still close exactly the removed target's profile and store completed cleanup. These additions
 await the coordinated integration run.
+
+Ordinary MiMo Cancel/Release follow-up: a failed owned-profile close retains the adapter attempt
+and the terminal Host operation. Cancellation is dispatched once; later Cancel/Status or the
+periodic local pass retries Release only. Unreleased terminal operations count against the existing
+eight-operation limit and cannot be pruned. Fixtures cover FailCloseOnce, both retry entry points
+after the terminal lifetime, capacity backpressure/reuse, the periodic pass and direct Release.
+Source prepared only; execution remains with the coordinated integration slot.
