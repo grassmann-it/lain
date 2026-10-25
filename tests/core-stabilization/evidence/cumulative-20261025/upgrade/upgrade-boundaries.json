@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "coreSha256": "e05d21027a9aa0c543430db8bee6fd8c34d5a9fff78ea81f80953e8f29cf485e",
+  "checks": [
+    {
+      "name": "snapshot-no-refresh-import-boundary",
+      "passed": true,
+      "evidence": {
+        "rejectedCases": [
+          "refresh-token",
+          "empty-refresh-token",
+          "null-refresh-token",
+          "other-oauth-provider",
+          "symlink"
+        ],
+        "credentialsUnchanged": true,
+        "upstreamAttempts": 0,
+        "scope": "startup rejection only; no OAuth exchange or live refresh"
+      }
+    },
+    {
+      "name": "copied-owned-file-never-borrowed",
+      "passed": true,
+      "evidence": {
+        "copiedFileNotRegistered": true,
+        "routeReferenceDoesNotGrantOwnership": true,
+        "rejectedStatus": 503,
+        "borrowedUpstreamAttempts": 0,
+        "knownAccountStillWorks": true,
+        "copiedCredentialUnchanged": true
+      }
+    },
+    {
+      "name": "unqualified-free-only-fails-closed",
+      "passed": true,
+      "evidence": {
+        "rejectedCases": [
+          "unknown-price",
+          "missing-enforcement",
+          "forged-enforcement"
+        ],
+        "upstreamAttempts": 0,
+        "scope": "startup fail-closed; final translated request and fresh zero-cap proof require transport unit gate"
+      }
+    },
+    {
+      "name": "gemini-native-bearer-and-default-key",
+      "passed": true,
+      "evidence": {
+        "cases": [
+          {
+            "mode": "bearer",
+            "nativeEndpoint": "/v1beta/models/fixture-gemini:generateContent",
+            "bearerAuthorization": true,
+            "googleApiKeyPresent": false,
+            "durableAttempt": true
+          },
+          {
+            "mode": "default-api-key",
+            "nativeEndpoint": "/v1beta/models/fixture-gemini:generateContent",
+            "bearerAuthorization": false,
+            "googleApiKeyPresent": true,
+            "durableAttempt": true
+          }
+        ],
+        "scope": "synthetic native Gemini gateway auth headers only; no live provider claim"
+      }
+    }
+  ],
+  "passed": true,
+  "pending": [
+    "owned OAuth refresh lifecycle unit gate",
+    "final translated free-only transport gate",
+    "inspector bounded memory and performance gate",
+    "real provider and login qualification"
+  ]
+}

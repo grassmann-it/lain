@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "coreSha256": "e05d21027a9aa0c543430db8bee6fd8c34d5a9fff78ea81f80953e8f29cf485e",
+  "scope": "single-file launcher binary boundaries plus real SQLite consumer replay",
+  "checks": [
+    {
+      "name": "protocol-durability",
+      "passed": true,
+      "report": "protocol-durability.json",
+      "binaryHashMatches": true,
+      "cases": 15
+    },
+    {
+      "name": "independent-auth-crash",
+      "passed": true,
+      "report": "independent-auth-crash.json",
+      "binaryHashMatches": true,
+      "cases": 2
+    },
+    {
+      "name": "inspector",
+      "passed": true,
+      "report": "inspector.json",
+      "binaryHashMatches": true,
+      "cases": 15
+    },
+    {
+      "name": "upgrade-boundaries",
+      "passed": true,
+      "report": "upgrade-boundaries.json",
+      "binaryHashMatches": true,
+      "cases": 4
+    },
+    {
+      "name": "native-tool-boundary",
+      "passed": true,
+      "report": "native-tool-boundary.json",
+      "binaryHashMatches": true,
+      "cases": 2
+    },
+    {
+      "name": "hostwriter-transports",
+      "passed": true,
+      "report": "hostwriter-transports.json",
+      "binaryHashMatches": true,
+      "cases": 2
+    },
+    {
+      "name": "version-transition",
+      "passed": true,
+      "report": "version-transition.json",
+      "binaryHashMatches": true,
+      "cases": 2
+    },
+    {
+      "name": "consumer-replay-10",
+      "passed": true,
+      "report": "consumer-replay.json"
+    }
+  ],
+  "passed": true,
+  "requiredSeparateGates": [
+    "adapter journal fsync/fault and durability-before-queue unit tests",
+    "qualified parser component-presence unit tests",
+    "owned OAuth login cancellation/persistence and all refresh gate unit tests",
+    "Inspector capacity/expiry/redaction and measurement provenance unit tests",
+    "free-only fresh zero-cap proof and final translated outbound request transport tests",
+    "unchanged upstream dependency and documented build-patch provenance"
+  ],
+  "notTested": [
+    "real provider inference",
+    "real OAuth login/refresh",
+    "new upstream capabilities",
+    "installed service workflow"
+  ]
+}

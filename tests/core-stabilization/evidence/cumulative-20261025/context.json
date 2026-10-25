@@ -1,0 +1,140 @@
+{
+  "syntheticOnly": true,
+  "coreSha256": "e05d21027a9aa0c543430db8bee6fd8c34d5a9fff78ea81f80953e8f29cf485e",
+  "checks": [
+    {
+      "protocol": "chat",
+      "stream": false,
+      "status": 400,
+      "upstreamRequests": 1,
+      "wireRequestBytes": 192495,
+      "clientErrorBytes": 224,
+      "contextCodePreserved": true,
+      "completeConversationAndTools": true
+    },
+    {
+      "protocol": "chat",
+      "stream": false,
+      "status": 413,
+      "upstreamRequests": 1,
+      "wireRequestBytes": 192495,
+      "clientErrorBytes": 224,
+      "contextCodePreserved": true,
+      "completeConversationAndTools": true
+    },
+    {
+      "protocol": "chat",
+      "stream": false,
+      "status": 422,
+      "upstreamRequests": 1,
+      "wireRequestBytes": 192495,
+      "clientErrorBytes": 224,
+      "contextCodePreserved": true,
+      "completeConversationAndTools": true
+    },
+    {
+      "protocol": "chat",
+      "stream": true,
+      "status": 400,
+      "upstreamRequests": 1,
+      "wireRequestBytes": 192534,
+      "clientErrorBytes": 224,
+      "contextCodePreserved": true,
+      "completeConversationAndTools": true
+    },
+    {
+      "protocol": "chat",
+      "stream": true,
+      "status": 413,
+      "upstreamRequests": 1,
+      "wireRequestBytes": 192534,
+      "clientErrorBytes": 224,
+      "contextCodePreserved": true,
+      "completeConversationAndTools": true
+    },
+    {
+      "protocol": "chat",
+      "stream": true,
+      "status": 422,
+      "upstreamRequests": 1,
+      "wireRequestBytes": 192534,
+      "clientErrorBytes": 224,
+      "contextCodePreserved": true,
+      "completeConversationAndTools": true
+    },
+    {
+      "protocol": "responses",
+      "stream": false,
+      "status": 400,
+      "upstreamRequests": 1,
+      "wireRequestBytes": 192505,
+      "clientErrorBytes": 224,
+      "contextCodePreserved": true,
+      "completeConversationAndTools": true
+    },
+    {
+      "protocol": "responses",
+      "stream": false,
+      "status": 413,
+      "upstreamRequests": 1,
+      "wireRequestBytes": 192505,
+      "clientErrorBytes": 224,
+      "contextCodePreserved": true,
+      "completeConversationAndTools": true
+    },
+    {
+      "protocol": "responses",
+      "stream": false,
+      "status": 422,
+      "upstreamRequests": 1,
+      "wireRequestBytes": 192505,
+      "clientErrorBytes": 224,
+      "contextCodePreserved": true,
+      "completeConversationAndTools": true
+    },
+    {
+      "protocol": "responses",
+      "stream": true,
+      "status": 400,
+      "upstreamRequests": 1,
+      "wireRequestBytes": 192544,
+      "clientErrorBytes": 224,
+      "contextCodePreserved": true,
+      "completeConversationAndTools": true
+    },
+    {
+      "protocol": "responses",
+      "stream": true,
+      "status": 413,
+      "upstreamRequests": 1,
+      "wireRequestBytes": 192544,
+      "clientErrorBytes": 224,
+      "contextCodePreserved": true,
+      "completeConversationAndTools": true
+    },
+    {
+      "protocol": "responses",
+      "stream": true,
+      "status": 422,
+      "upstreamRequests": 1,
+      "wireRequestBytes": 192544,
+      "clientErrorBytes": 224,
+      "contextCodePreserved": true,
+      "completeConversationAndTools": true
+    },
+    {
+      "case": "oversize",
+      "status": 400,
+      "clientErrorBytes": 182,
+      "passed": true
+    },
+    {
+      "case": "unrelated-small",
+      "status": 400,
+      "clientErrorBytes": 70,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "binaryUnchanged": true
+}

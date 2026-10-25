@@ -1,0 +1,20 @@
+{
+  "files": {
+    "upgrade/qualification.json": "d80bc6990286931b71baa9e214e1d45c17f35ae5080982e189477cc547841f45",
+    "process.json": "5fc0185811028ff1b31f9ddedbdba87b7ac468ae2f0e475af9cb6e826ea08b08",
+    "providers.json": "23c5f0ad05fa57c964f6929f03f0b15e63f951472d564c60e7d181d2aed8f4a7",
+    "context.json": "41bb0ee4de106c178ff2ccb52cbd0f79729c51eef9d95949b4ab0e626a2acf61",
+    "archive.json": "6f0c73c353de45ce84de479e07f549aecfdcc6440866eebf3ef36c3d3d600b8b",
+    "upgrade/protocol-durability.json": "0e8831a440be44e01254e5a186b763b386bcc6e0e6a0480dc27f92ef18a86307",
+    "upgrade/independent-auth-crash.json": "ac7c527985f501a16bc390f437a06230be14d78d0dc053d5baa0e33551e6a2f6",
+    "upgrade/inspector.json": "7943ebd680462b5660b9d1b4856a9440fe46494ce78b5f91dac17106f2f42edf",
+    "upgrade/upgrade-boundaries.json": "92e53937216fbc2b776e789ad6b73466fa98be06c9906971f7887c4102cf7cc1",
+    "upgrade/native-tool-boundary.json": "040f2985d0f8684852f1e9cdb94720b81e9946677f643d6d16a2041794006c38",
+    "upgrade/hostwriter-transports.json": "9fc7df025700e8ea54453243cd9a1c0f49cae49c06e3adb9c9331dbd267c0322",
+    "upgrade/version-transition.json": "3252c66307b6d58c899486f4f1a36e0dd8eab749afa8b35d6f56585bd29572f4",
+    "upgrade/consumer-replay.json": "bba14b2a60cb9bc0f2e1de52827530ddfb6aa08b2c4b5b9d380b424dda93778d",
+    "build-manifest.json": "bd3d9775b102ed4516932e9e0cf0d02f053cdf1e7d40c081077eefa0ab20f852",
+    "run-index.json": "961d14fc74452d97fc081a59c150e2400d4efb3e00b90daadfe81b05dd92b61d"
+  },
+  "scope": "Unmodified synthetic raw reports and their producer index; Go raw evidence remains in sibling journal-segments. No installation or live-provider qualification."
+}

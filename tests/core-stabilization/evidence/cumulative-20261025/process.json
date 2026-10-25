@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "actualCoreProcesses": true,
+  "coreSha256": "e05d21027a9aa0c543430db8bee6fd8c34d5a9fff78ea81f80953e8f29cf485e",
+  "networkIsolation": "private_network_namespace_loopback_only",
+  "binaryUnchanged": true,
+  "sourceManifestSha256": "9c6bed3c8be2af1c3f98942b8402e7b49d6cbaae2ea96cde8132e1b3046739b1",
+  "passed": true,
+  "checks": [
+    {
+      "name": "drain-sse-reopen",
+      "passed": true,
+      "evidence": {
+        "actualSSEHandlerTracked": true,
+        "blockedInferencePaths": 4,
+        "timeoutReopenPreservedOldRuntime": true,
+        "admittedStreamTailDelivered": true,
+        "managementUnaffected": true,
+        "completedRequests": 3
+      }
+    },
+    {
+      "name": "qualified-dispatch-tools",
+      "passed": true,
+      "evidence": {
+        "originalRejections": [
+          "native_search_unsupported",
+          "native_search_unsupported",
+          "namespace_tools_unsupported",
+          "custom_tools_unsupported"
+        ],
+        "finalOverrideRejections": [
+          {
+            "route": "glyph",
+            "status": 400,
+            "category": "unsupported_tool"
+          },
+          {
+            "route": "beam",
+            "status": 400,
+            "category": "tool_limit"
+          }
+        ],
+        "beam128ArrivedIntact": true,
+        "beam129Blocked": true,
+        "functionNamePreserved": true,
+        "durableAttribution": true,
+        "http429Unclassified": true,
+        "legacyChatDefaultChecked": true
+      }
+    },
+    {
+      "name": "native-protocol-scope",
+      "passed": true,
+      "evidence": {
+        "cases": [
+          {
+            "protocol": "responses",
+            "nativeEndpoint": "/v1/responses",
+            "chatRestrictionInherited": false
+          },
+          {
+            "protocol": "anthropic",
+            "nativeEndpoint": "/v1/messages",
+            "chatRestrictionInherited": false
+          },
+          {
+            "protocol": "gemini",
+            "nativeEndpoint": "/v1beta/models/reflection/beam:free:generateContent",
+            "chatRestrictionInherited": false
+          }
+        ],
+        "scope": "actual executor/protocol binding; does not certify arbitrary native provider tool capabilities"
+      }
+    },
+    {
+      "name": "parent-stdin-eof",
+      "passed": true,
+      "evidence": {
+        "actualCoreExitedOnEOF": true,
+        "exitCode": 0,
+        "elapsedMilliseconds": 113.604,
+        "listenerReleased": true
+      }
+    },
+    {
+      "name": "abrupt-owner-death",
+      "passed": true,
+      "evidence": {
+        "syntheticOwningProcessKilled": true,
+        "coreAutomaticallyExited": true,
+        "coreReaped": true,
+        "listenerReleased": true
+      }
+    },
+    {
+      "name": "legacy-journal-recovery-copy",
+      "passed": true,
+      "evidence": {
+        "legacyFormatEvents": 600,
+        "checkpointBoundariesReplayed": 7,
+        "originalBytesRetained": true,
+        "sameSourceAndCursorAfterCopyAdoption": true,
+        "tornTailRefusedAtStartup": true,
+        "uncertainTailBytes": 30,
+        "recoveredCopyContinued": true,
+        "oldBinaryRollbackTested": false,
+        "fullHostBackupRestoreTested": false
+      }
+    }
+  ],
+  "notQualified": [
+    "live provider inference",
+    "installed service",
+    "old-binary rollback",
+    "full Host config/credentials/SQLite backup restore",
+    "sustained production growth"
+  ]
+}

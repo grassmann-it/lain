@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "syntheticOnly": true,
+  "baselineCoreSha256": "39c09202ca7c38c636cfb949abec3b71c6c9843dd2651cbc8bf44944c13c0629",
+  "coreSha256": "e05d21027a9aa0c543430db8bee6fd8c34d5a9fff78ea81f80953e8f29cf485e",
+  "passed": true,
+  "checks": [
+    {
+      "name": "journal-upgrade-and-rollback-read",
+      "passed": true,
+      "evidence": {
+        "sourceIdRetained": true,
+        "oldJournalBytesRetained": true,
+        "oldEventsUnchanged": true,
+        "beforeCursor": 6,
+        "afterCursor": 12,
+        "requests": 4,
+        "attempts": 4,
+        "tokens": 72,
+        "newIdentitiesDisjoint": true,
+        "mixedReplayUnchanged": true,
+        "rollbackReadTested": true,
+        "rollbackReadCompatible": true
+      }
+    },
+    {
+      "name": "mixed-version-consumer-replay-10",
+      "passed": true,
+      "evidence": {
+        "consumerDllSha256": "7e58a29bde8a1a6a073b7367b9688c82bbaea002b1dd7ccb7cd4ee87f559ae72",
+        "inputJournalSha256": "c948e2a9af6544cd934d7870ab14d5fb74ccba328aff4634a8547a2dcdc328aa",
+        "replays": 10,
+        "storeReopenedEachReplay": true,
+        "result": {
+          "cursor": 12,
+          "complete": true,
+          "totals": {
+            "requests": 4,
+            "attempts": 4,
+            "errors": 0,
+            "tokens": {
+              "input": 44,
+              "output": 28,
+              "cached": null,
+              "reasoning": null,
+              "total": 72,
+              "cacheCreation": null
+            },
+            "unknownUsageAttempts": 0,
+            "measurements": {
+              "input": {
+                "knownReported": 44,
+                "samples": 4,
+                "eligible": 4
+              },
+              "output": {
+                "knownReported": 28,
+                "samples": 4,
+                "eligible": 4
+              },
+              "cached": {
+                "knownReported": null,
+                "samples": 0,
+                "eligible": 4
+              },
+              "cacheCreation": {
+                "knownReported": null,
+                "samples": 0,
+                "eligible": 4
+              },
+              "reasoning": {
+                "knownReported": null,
+                "samples": 0,
+                "eligible": 4
+              },
+              "total": {
+                "knownReported": 72,
+                "samples": 4,
+                "eligible": 4
+              }
+            }
+          },
+          "days": 1,
+          "accounts": 2,
+          "models": 1
+        }
+      }
+    }
+  ],
+  "scope": "fresh synthetic journal only; no installed journal, database, credentials or live provider accessed"
+}

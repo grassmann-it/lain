@@ -1,0 +1,62 @@
+{
+  "syntheticOnly": true,
+  "coreSha256": "e05d21027a9aa0c543430db8bee6fd8c34d5a9fff78ea81f80953e8f29cf485e",
+  "consumerDllSha256": "7e58a29bde8a1a6a073b7367b9688c82bbaea002b1dd7ccb7cd4ee87f559ae72",
+  "replays": 10,
+  "storeReopenedEachReplay": true,
+  "passed": true,
+  "inputJournalSha256": "f7ab3217b508b806ed7c3c399d412b7920ab5d7ee9fbf894ec30b63e04f38d21",
+  "result": {
+    "cursor": 600,
+    "complete": true,
+    "totals": {
+      "requests": 200,
+      "attempts": 200,
+      "errors": 0,
+      "tokens": {
+        "input": 2200,
+        "output": 1400,
+        "cached": null,
+        "reasoning": null,
+        "total": 3600,
+        "cacheCreation": null
+      },
+      "unknownUsageAttempts": 0,
+      "measurements": {
+        "input": {
+          "knownReported": 2200,
+          "samples": 200,
+          "eligible": 200
+        },
+        "output": {
+          "knownReported": 1400,
+          "samples": 200,
+          "eligible": 200
+        },
+        "cached": {
+          "knownReported": null,
+          "samples": 0,
+          "eligible": 200
+        },
+        "cacheCreation": {
+          "knownReported": null,
+          "samples": 0,
+          "eligible": 200
+        },
+        "reasoning": {
+          "knownReported": null,
+          "samples": 0,
+          "eligible": 200
+        },
+        "total": {
+          "knownReported": 3600,
+          "samples": 200,
+          "eligible": 200
+        }
+      }
+    },
+    "days": 1,
+    "accounts": 2,
+    "models": 1
+  }
+}

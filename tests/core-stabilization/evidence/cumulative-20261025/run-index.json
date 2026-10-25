@@ -1,0 +1,131 @@
+{
+  "passed": true,
+  "syntheticOnly": true,
+  "core": {
+    "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/binary/lain-proxy",
+    "sha256": "e05d21027a9aa0c543430db8bee6fd8c34d5a9fff78ea81f80953e8f29cf485e"
+  },
+  "binaryManifest": {
+    "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/binary/lain-proxy.manifest.json",
+    "sha256": "bd3d9775b102ed4516932e9e0cf0d02f053cdf1e7d40c081077eefa0ab20f852"
+  },
+  "buildSourceCommit": "6293d1268d7b1656691d3f2ccdf89ba61b6c61c1",
+  "finalHarnessSourceCommit": "620923be01bebad69d07aafc0659cd29d9c99120",
+  "sourceManifestSha256": "9c6bed3c8be2af1c3f98942b8402e7b49d6cbaae2ea96cde8132e1b3046739b1",
+  "coreInputChangesAfterBuild": [],
+  "harnessOnlyFixes": [
+    "93539af",
+    "072a6df"
+  ],
+  "mandatoryFiles": {
+    "upgrade": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r2/upgrade/qualification.json",
+      "sha256": "d80bc6990286931b71baa9e214e1d45c17f35ae5080982e189477cc547841f45"
+    },
+    "process": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r2/process.json",
+      "sha256": "5fc0185811028ff1b31f9ddedbdba87b7ac468ae2f0e475af9cb6e826ea08b08"
+    },
+    "providers": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r3/gateway.json",
+      "sha256": "23c5f0ad05fa57c964f6929f03f0b15e63f951472d564c60e7d181d2aed8f4a7"
+    },
+    "context": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r3/context.json",
+      "sha256": "41bb0ee4de106c178ff2ccb52cbd0f79729c51eef9d95949b4ab0e626a2acf61"
+    },
+    "archive": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r3/archive.json",
+      "sha256": "6f0c73c353de45ce84de479e07f549aecfdcc6440866eebf3ef36c3d3d600b8b"
+    },
+    "upgrade/protocol-durability": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r2/upgrade/protocol-durability.json",
+      "sha256": "0e8831a440be44e01254e5a186b763b386bcc6e0e6a0480dc27f92ef18a86307"
+    },
+    "upgrade/independent-auth-crash": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r2/upgrade/independent-auth-crash.json",
+      "sha256": "ac7c527985f501a16bc390f437a06230be14d78d0dc053d5baa0e33551e6a2f6"
+    },
+    "upgrade/inspector": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r2/upgrade/inspector.json",
+      "sha256": "7943ebd680462b5660b9d1b4856a9440fe46494ce78b5f91dac17106f2f42edf"
+    },
+    "upgrade/upgrade-boundaries": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r2/upgrade/upgrade-boundaries.json",
+      "sha256": "92e53937216fbc2b776e789ad6b73466fa98be06c9906971f7887c4102cf7cc1"
+    },
+    "upgrade/native-tool-boundary": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r2/upgrade/native-tool-boundary.json",
+      "sha256": "040f2985d0f8684852f1e9cdb94720b81e9946677f643d6d16a2041794006c38"
+    },
+    "upgrade/hostwriter-transports": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r2/upgrade/hostwriter-transports.json",
+      "sha256": "9fc7df025700e8ea54453243cd9a1c0f49cae49c06e3adb9c9331dbd267c0322"
+    },
+    "upgrade/version-transition": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r2/upgrade/version-transition.json",
+      "sha256": "3252c66307b6d58c899486f4f1a36e0dd8eab749afa8b35d6f56585bd29572f4"
+    },
+    "upgrade/consumer-replay-10": {
+      "path": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r2/upgrade/consumer-replay.json",
+      "sha256": "bba14b2a60cb9bc0f2e1de52827530ddfb6aa08b2c4b5b9d380b424dda93778d"
+    },
+    "go-unit": {
+      "path": "/home/tomka/Desktop/lain/tests/core-stabilization/evidence/journal-segments/unit.json",
+      "sha256": "7c92c98c0758be598e32b423ff3336847be8926b53aa4e22bca79b19c9ffbba5"
+    },
+    "go-unit/go-test.jsonl": {
+      "path": "/home/tomka/Desktop/lain/tests/core-stabilization/evidence/journal-segments/go-test.jsonl",
+      "sha256": "ad3d08ddbbb36eb84aa1959ddceae6e3dc847abe86e95bc4db716a42390d6d01"
+    },
+    "go-unit/upgrade-tests.txt": {
+      "path": "/home/tomka/Desktop/lain/tests/core-stabilization/evidence/journal-segments/upgrade-tests.txt",
+      "sha256": "9b73940438b997b0002d9729222714cd9a7e4680f07b44fea79e5888acad2a62"
+    },
+    "go-unit/legacy-tests.txt": {
+      "path": "/home/tomka/Desktop/lain/tests/core-stabilization/evidence/journal-segments/legacy-tests.txt",
+      "sha256": "49f0c20cf885175916968e61767f59ac8c0aa134538f2def6c69c87ecc52b4cd"
+    }
+  },
+  "gateChecks": {
+    "upgrade": 8,
+    "process": 6,
+    "gateway": 27,
+    "context": 14,
+    "archive": 12
+  },
+  "updaterFileTests": {
+    "tests": 9,
+    "exitCode": 0,
+    "log": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence/updater.log",
+    "logSha256": "928285daf72a168741c8513fc6f91e89c14c54da811544b876c026122cd4972d"
+  },
+  "wrapperFileTests": {
+    "tests": 31,
+    "exitCode": 0,
+    "wrapperSha256": "c4464be30e465573f444e62538b4776ae8c1efd46b67cba0ca74f2db124127e4",
+    "log": "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r3/wrapper.log",
+    "logSha256": "73d9236d2fe621eac4a1e97281b4a542c0c1e1d4e203b4803b7ba4b05a92b5e6"
+  },
+  "terminalScopes": {
+    "updater": "ActiveState=inactive\nSubState=dead",
+    "build": "ActiveState=inactive\nSubState=dead",
+    "upgrade": "ActiveState=inactive\nSubState=dead",
+    "process": "ActiveState=inactive\nSubState=dead",
+    "gateway": "ActiveState=inactive\nSubState=dead",
+    "context": "ActiveState=inactive\nSubState=dead",
+    "archive": "ActiveState=inactive\nSubState=dead",
+    "wrapper": "ActiveState=inactive\nSubState=dead"
+  },
+  "retainedFailedReports": [
+    "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence/upgrade/qualification.json",
+    "/home/tomka/.cache/lain-qualification-20261025/core-freeze-1528d10-0d1zsb25/evidence-r2/gateway.json"
+  ],
+  "qualificationLimits": [
+    "synthetic loopback fixtures only; no real provider or installed service tested",
+    "archive oldBinaryExecutionTested=false",
+    "archive fullHostLifecycleRetested=false",
+    "real Host JournalUsageCollector and SQLite plus matching whole-tree synthetic archive restore tested",
+    "final app package sealing remains Root task"
+  ]
+}

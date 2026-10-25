@@ -1,0 +1,316 @@
+{
+  "syntheticOnly": true,
+  "coreSha256": "e05d21027a9aa0c543430db8bee6fd8c34d5a9fff78ea81f80953e8f29cf485e",
+  "binaryUnchanged": true,
+  "passed": true,
+  "checks": [
+    {
+      "provider": "cohere",
+      "case": "json",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "stream",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "tool",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 2,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "status_401",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "status_403",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "status_429",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "status_404",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "cancel",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "truncated",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "responses_json",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false,
+        "statelessChat": true,
+        "reasoningNone": true,
+        "maxTokens": 64,
+        "fullResponseCompletion": true,
+        "completeFunctionHistory": false,
+        "durableReplay": true
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "responses_stream",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false,
+        "statelessChat": true,
+        "reasoningNone": true,
+        "maxTokens": 64,
+        "fullResponseCompletion": true,
+        "completeFunctionHistory": false,
+        "durableReplay": true
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "responses_tool",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 2,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false,
+        "statelessChat": true,
+        "reasoningNone": true,
+        "maxTokens": 64,
+        "fullResponseCompletion": true,
+        "completeFunctionHistory": true,
+        "durableReplay": true
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "responses_store_true",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 0,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false,
+        "rejectedBeforeProvider": true,
+        "statusCode": 400,
+        "durableFailure": true,
+        "durableReplay": true
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "responses_previous_response_id",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 0,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false,
+        "rejectedBeforeProvider": true,
+        "statusCode": 400,
+        "durableFailure": true,
+        "durableReplay": true
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "responses_native_search",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 0,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false,
+        "rejectedBeforeProvider": true,
+        "statusCode": 400,
+        "durableFailure": true,
+        "durableReplay": true
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "responses_additional_native_search",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 0,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false,
+        "rejectedBeforeProvider": true,
+        "statusCode": 400,
+        "durableFailure": true,
+        "durableReplay": true
+      }
+    },
+    {
+      "provider": "cohere",
+      "case": "responses_native_file_search",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 0,
+        "vendorPath": "/compatibility/v1/chat/completions",
+        "liveProvider": false,
+        "rejectedBeforeProvider": true,
+        "statusCode": 400,
+        "durableFailure": true,
+        "durableReplay": true
+      }
+    },
+    {
+      "provider": "kilo",
+      "case": "json",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/api/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "kilo",
+      "case": "stream",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/api/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "kilo",
+      "case": "tool",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 2,
+        "vendorPath": "/api/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "kilo",
+      "case": "status_401",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/api/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "kilo",
+      "case": "status_403",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/api/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "kilo",
+      "case": "status_429",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/api/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "kilo",
+      "case": "status_404",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/api/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "kilo",
+      "case": "cancel",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/api/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "kilo",
+      "case": "truncated",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/api/v1/chat/completions",
+        "liveProvider": false
+      }
+    },
+    {
+      "provider": "kilo",
+      "case": "status_402",
+      "passed": true,
+      "evidence": {
+        "upstreamCalls": 1,
+        "vendorPath": "/api/v1/chat/completions",
+        "liveProvider": false
+      }
+    }
+  ]
+}

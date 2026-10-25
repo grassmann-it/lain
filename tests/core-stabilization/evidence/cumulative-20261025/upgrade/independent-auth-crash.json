@@ -1,0 +1,27 @@
+{
+  "syntheticOnly": true,
+  "coreSha256": "e05d21027a9aa0c543430db8bee6fd8c34d5a9fff78ea81f80953e8f29cf485e",
+  "binaryUnchanged": true,
+  "passed": true,
+  "checks": [
+    {
+      "name": "management-and-inference-auth",
+      "passed": true,
+      "evidence": {
+        "managementAudienceSeparated": true,
+        "inferenceAudienceSeparated": true,
+        "upstreamCalls": 0
+      }
+    },
+    {
+      "name": "kill-after-dispatch-restart",
+      "passed": true,
+      "evidence": {
+        "durableUnfinishedDispatch": true,
+        "sourceAndCursorRetained": true,
+        "inventedCompletion": false,
+        "subsequentRequestRecorded": true
+      }
+    }
+  ]
+}
