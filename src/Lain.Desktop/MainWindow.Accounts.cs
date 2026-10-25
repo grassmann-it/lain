@@ -234,7 +234,7 @@ public sealed partial class MainWindow
             if (_accountStatus != "All states") AddFilterChip(_accountStatus, "Clear account state filter", () => status.SelectedIndex = 0);
             activeFilters.IsVisible = activeFilters.Children.Count > 0;
             count.Text = $"{found.Length} of {cfg.Accounts.Length} accounts · {cfg.Accounts.Count(account => account.Enabled)} enabled"
-                + " · " + (_preferences.AccountSort switch { "name" => "Ordered by name", "provider" => "Ordered by provider and name", "five-hour" => "5h usage · order held until updated", _ => "Pinned first, then provider and name" });
+                + " · " + (_preferences.AccountSort switch { "name" => "Quota readings first · ordered by name", "provider" => "Quota readings first · ordered by provider and name", "five-hour" => "5h usage · order held until updated", _ => "Pinned first · quota readings before unavailable" });
             if (found.Length == 0)
             {
                 inventory.Content = Empty("No accounts match these filters. Clear filters to see the full inventory.");
@@ -242,19 +242,27 @@ public sealed partial class MainWindow
             }
             if (!_preferences.GroupAccountsByProvider)
             {
-                inventory.Content = AccountInventoryRows(cfg, found, Populate);
+                inventory.Content = AccountAvailabilityRows(cfg, found, Populate);
                 previousInventoryActions.AddRange(_actions.Where(action => !actionsBefore.Contains(action)));
                 return;
             }
             var groups = new StackPanel { Spacing = options.Density == ViewDensity.Compact ? 12 : 18 };
             var pinned = _preferences.AccountSort == "favorites" ? found.Where(IsAccountPinned).ToArray() : [];
             if (pinned.Length > 0) groups.Children.Add(Ui.Section("Pinned", AccountInventoryRows(cfg, pinned, Populate)));
-            var providerGroups = found.Where(account => !pinned.Contains(account)).GroupBy(ProviderName);
-            // In 5h mode, the first account supplies the group's highest ranked
-            // actual 5h window. Shared or separate budgets are never summed.
-            if (_preferences.AccountSort != "five-hour") providerGroups = providerGroups.OrderBy(providerGroup => providerGroup.Key, StringComparer.OrdinalIgnoreCase);
+            var providerGroups = found.Where(account => !pinned.Contains(account))
+                .GroupBy(account => (Provider: ProviderName(account), HasReading: _preferences.AccountSort == "five-hour" || HasAccountQuotaReading(account)));
+            // In 5h mode the captured rank remains authoritative. Other modes
+            // keep all measured groups above groups with no usable reading.
+            if (_preferences.AccountSort != "five-hour") providerGroups = providerGroups
+                .OrderByDescending(providerGroup => providerGroup.Key.HasReading)
+                .ThenBy(providerGroup => providerGroup.Key.Provider, StringComparer.OrdinalIgnoreCase);
+            var splitProviders = providerGroups.GroupBy(providerGroup => providerGroup.Key.Provider, StringComparer.OrdinalIgnoreCase)
+                .Where(providerGroup => providerGroup.Count() > 1).Select(providerGroup => providerGroup.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
             foreach (var accounts in providerGroups)
-                groups.Children.Add(Ui.Section(accounts.Key, AccountInventoryRows(cfg, accounts.ToArray(), Populate)));
+            {
+                var label = accounts.Key.Provider + (!accounts.Key.HasReading && splitProviders.Contains(accounts.Key.Provider) ? " · No quota readings" : "");
+                groups.Children.Add(Ui.Section(label, AccountInventoryRows(cfg, accounts.ToArray(), Populate)));
+            }
             inventory.Content = groups;
             previousInventoryActions.AddRange(_actions.Where(action => !actionsBefore.Contains(action)));
         }
@@ -286,17 +294,42 @@ public sealed partial class MainWindow
                 .ThenBy(ProviderName, StringComparer.OrdinalIgnoreCase).ThenBy(AccountDisplayName, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(account => account.Id, StringComparer.Ordinal);
         }
-        if (_preferences.AccountSort == "name") return accounts.OrderBy(AccountDisplayName, StringComparer.OrdinalIgnoreCase)
+        if (_preferences.AccountSort == "name") return accounts.OrderByDescending(HasAccountQuotaReading)
+            .ThenBy(AccountDisplayName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(ProviderName, StringComparer.OrdinalIgnoreCase).ThenBy(account => account.Id, StringComparer.Ordinal);
-        if (_preferences.AccountSort == "provider") return accounts.OrderBy(ProviderName, StringComparer.OrdinalIgnoreCase)
+        if (_preferences.AccountSort == "provider") return accounts.OrderByDescending(HasAccountQuotaReading)
+            .ThenBy(ProviderName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(AccountDisplayName, StringComparer.OrdinalIgnoreCase).ThenBy(account => account.Id, StringComparer.Ordinal);
         var pins = _preferences.PinnedAccountIds.Select((id, position) => (id, position))
             .GroupBy(item => item.id, StringComparer.Ordinal).ToDictionary(group => group.Key, group => group.First().position, StringComparer.Ordinal);
-        // Quota availability and consumption deliberately have no bearing on order.
+        // Explicit pins retain their chosen order. Unpinned accounts with actual
+        // readings precede setup-only or missing quota; consumption is not ranked.
         return accounts.OrderBy(account => pins.TryGetValue(account.Id, out var position) ? position : int.MaxValue)
+            .ThenByDescending(HasAccountQuotaReading)
             .ThenBy(ProviderName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(AccountDisplayName, StringComparer.OrdinalIgnoreCase)
             .ThenBy(account => account.Id, StringComparer.Ordinal);
+    }
+
+    private bool HasAccountQuotaReading(AccountDto account) => QuotaPresentation.HasQuotaReading(
+        _quotas.Where(quota => quota.AccountId == account.Id));
+
+    private Control AccountAvailabilityRows(ConfigurationDto configuration, IReadOnlyList<AccountDto> accounts, Action inventoryChanged)
+    {
+        if (_preferences.AccountSort == "five-hour") return AccountInventoryRows(configuration, accounts, inventoryChanged);
+        var pinned = _preferences.AccountSort == "favorites" ? accounts.Where(IsAccountPinned).ToArray() : [];
+        var unpinned = accounts.Where(account => !pinned.Contains(account)).ToArray();
+        var measured = unpinned.Where(HasAccountQuotaReading).ToArray();
+        var missing = unpinned.Where(account => !HasAccountQuotaReading(account)).ToArray();
+        if (pinned.Length == 0 && (measured.Length == 0 || missing.Length == 0))
+            return AccountInventoryRows(configuration, accounts, inventoryChanged);
+        // Independent masonry columns must not lift a short missing-data tile
+        // above a taller measured tile in the preceding group.
+        var sections = new StackPanel { Spacing = PresentationFor("Accounts").Density == ViewDensity.Compact ? 12 : 18 };
+        if (pinned.Length > 0) sections.Children.Add(Ui.Section("Pinned", AccountInventoryRows(configuration, pinned, inventoryChanged)));
+        if (measured.Length > 0) sections.Children.Add(AccountInventoryRows(configuration, measured, inventoryChanged));
+        if (missing.Length > 0) sections.Children.Add(Ui.Section("Quota not available", AccountInventoryRows(configuration, missing, inventoryChanged)));
+        return sections;
     }
 
     private void CaptureFiveHourOrder(IEnumerable<AccountDto> accounts)
