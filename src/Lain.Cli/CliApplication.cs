@@ -35,6 +35,11 @@ public static partial class CliApplication
           collections save|upsert ID --name NAME --routes ROUTE[,ROUTE...] --revision N [--json]
                 Routes are ordered IDs or unique aliases; use --routes '' for an empty collection.
           collections delete ID --revision N [--json]
+          routers [list] [--json]  Saved router definitions and current revision
+          routers save ID --alias ALIAS --group GROUP_ID --profile HOST_PROFILE_ID
+                --cost configured|free_only --revision N [--json]
+                Group IDs: collection:ID, provider:ID, policy:free. Saving does not apply or export.
+          routers delete ID --revision N [--json]
           import CONFIG [--auth-dir DIR] [--revision N] [--json]
           history [--today] [--from ISO] [--to ISO] [--timezone IANA]
                 [--account ID] [--model ID] [--status HTTP] [--json]
@@ -98,7 +103,7 @@ public static partial class CliApplication
                 return 0;
             }
             // Validate the command before discovery, so misspellings work even when the host is stopped.
-            if (command is not ("status" or "accounts" or "import" or "models" or "profiles" or "collections" or "usage" or "history" or "attempts" or "quotas" or "auth" or "service" or "providers" or "inspector" or "mode"))
+            if (command is not ("status" or "accounts" or "import" or "models" or "profiles" or "collections" or "routers" or "usage" or "history" or "attempts" or "quotas" or "auth" or "service" or "providers" or "inspector" or "mode"))
                 throw new ArgumentException($"Unknown command '{command}'. Run 'lain help'.");
             Validate(command, options);
             if (command == "accounts" && options.Positionals.FirstOrDefault() is "add" or "monitor")
@@ -138,6 +143,7 @@ public static partial class CliApplication
                     break;
                 case "models": result = await client.ModelsAsync(ct); break;
                 case "collections": result = await Collections(client, options, ct); break;
+                case "routers": result = await Routers(client, options, ct); break;
                 case "profiles":
                     if (options.Positionals.Count == 0) { result = await client.ProfilesAsync(ct); break; }
                     var profileRevision = options.Get("revision") is { } revisionValue ? ParseLong(revisionValue, "revision") :
@@ -207,6 +213,7 @@ public static partial class CliApplication
     private static void Validate(string command, Options options)
     {
         if (command == "collections") { ValidateCollections(options); return; }
+        if (command == "routers") { ValidateRouters(options); return; }
         if (command == "mode")
         {
             options.RequireOnly("json", "revision");
@@ -396,6 +403,8 @@ public static partial class CliApplication
         {
             case CollectionListResult collections: await WriteCollections(output, collections); break;
             case CollectionChangeResult collection: await WriteCollectionChange(output, collection); break;
+            case RouterListResult routers: await WriteRouters(output, routers); break;
+            case RouterChangeResult router: await WriteRouterChange(output, router); break;
             case AccountUsageOverview overview: await WriteAccountUsage(output, overview, full: full); break;
             case StatusDto s: await WriteStatus(output, s); break;
             case AccountDto[] accounts:
