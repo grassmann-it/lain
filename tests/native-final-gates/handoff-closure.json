@@ -1,0 +1,618 @@
+{
+  "sourceCheckout": "e48bc118a5ecd2ada80648370ed2b8ef102fd01e plus existing owner-authored uncommitted design files",
+  "purpose": "Explicit ST-05 document/media handoff; no provider research included; hashes freeze this read, do not claim files are committed.",
+  "seedCount": 16,
+  "mediaCount": 70,
+  "selectedBaseKindsFound": [
+    "ACCOUNTS-A",
+    "NARROW-A",
+    "MONITOR-B",
+    "MODELS-A",
+    "USAGE-A"
+  ],
+  "files": [
+    {
+      "path": "docs/ux-design-work-packages/10-selected-layouts-monitor.md",
+      "category": "document",
+      "exists": true,
+      "bytes": 4020,
+      "sha256": "3cca50732e97d36e4ab4cf0de856970ec21badc0101c1a44eae0faf9fef89074"
+    },
+    {
+      "path": "docs/ux-design-work-packages/11-connect-interruptions.md",
+      "category": "document",
+      "exists": true,
+      "bytes": 2423,
+      "sha256": "0866ac9751680ed83ecf6489f640ac28b6af9de58b9c838d912b81cc4629a858"
+    },
+    {
+      "path": "docs/ux-design-work-packages/12-profiles-apply-recovery.md",
+      "category": "document",
+      "exists": true,
+      "bytes": 3755,
+      "sha256": "8f637710a1802514cdea9606b7fe1caea90d2ac0552abc38f95a5b0e7ca15c6c"
+    },
+    {
+      "path": "docs/ux-design-work-packages/13-usage-partial-scope.md",
+      "category": "document",
+      "exists": true,
+      "bytes": 2465,
+      "sha256": "3b826b5d3c9a239036823103b922addf6f280862c277f50a40b411ee85b64c91"
+    },
+    {
+      "path": "docs/ux-design-work-packages/14-live-pause-source.md",
+      "category": "document",
+      "exists": true,
+      "bytes": 2896,
+      "sha256": "5216eab3108c9709cb079ccad80c07e004b731e4dde33675ec485196e08640c5"
+    },
+    {
+      "path": "docs/ux-design-work-packages/15-settings-and-native-gates.md",
+      "category": "document",
+      "exists": true,
+      "bytes": 2904,
+      "sha256": "4990f3f425362df58c3d7ef33f1fbb1aff2cecf70e8b38a0492f44195f7e6ce2"
+    },
+    {
+      "path": "docs/uxpilot-selection-2026-10-24.md",
+      "category": "document",
+      "exists": true,
+      "bytes": 18168,
+      "sha256": "0688f3a3002f494f09a5ab8f5acd4a8b64c1955dc10ab872eb2b767784ce505c"
+    },
+    {
+      "path": "docs/uxpilot-followup-2026-10-24.json",
+      "category": "document",
+      "exists": true,
+      "bytes": 27102,
+      "sha256": "91e18f696fdf27336d3025af71075a0f4fda5c593f23e79551cc928e919535a2"
+    },
+    {
+      "path": "docs/uxpilot-followup-2026-10-24.html",
+      "category": "document",
+      "exists": true,
+      "bytes": 2674553,
+      "sha256": "90664ebfb53a1d7f333f2d9a45bd1b3f51b3f169f25823d70fcfc164e8912fce"
+    },
+    {
+      "path": "docs/uxpilot-flows-2026-10-25.md",
+      "category": "document",
+      "exists": true,
+      "bytes": 17649,
+      "sha256": "34cab4524272cf37ab732bab43a436d94541d4954da15ec547a4769ab3a5a52e"
+    },
+    {
+      "path": "docs/uxpilot-flows-2026-10-25.json",
+      "category": "document",
+      "exists": true,
+      "bytes": 37013,
+      "sha256": "4e38863b1432b9b302c4fc39f532490dce2a54b4f6f8262695fa5e6e84f6bead"
+    },
+    {
+      "path": "docs/uxpilot-flows-2026-10-25.html",
+      "category": "document",
+      "exists": true,
+      "bytes": 1449693,
+      "sha256": "49da00931bfc9f8fbbdd131ecb4b74f585b24b13d269554b2940e64fa204de91"
+    },
+    {
+      "path": "docs/uxpilot-flow-prompts-2026-10-25.md",
+      "category": "document",
+      "exists": true,
+      "bytes": 14196,
+      "sha256": "4fa313a6928636de7b451253c5d4a4262d78d8d788b5fa9dc2c3729a0c2eff8f"
+    },
+    {
+      "path": "docs/uxpilot-comparison-2026-10-24.json",
+      "category": "document",
+      "exists": true,
+      "bytes": 22689,
+      "sha256": "88f2e32ad6ad4eda929de49f4ef6b2ff7a59088ac6178ab07a815ac87c4408dc"
+    },
+    {
+      "path": "docs/uxpilot-comparison-2026-10-24.md",
+      "category": "document",
+      "exists": true,
+      "bytes": 9546,
+      "sha256": "9fc3b09726d77613d938334ea6ba8fc33f60541ee6a9b5fd97d08dfac53b0917"
+    },
+    {
+      "path": "docs/uxpilot-comparison-2026-10-24.html",
+      "category": "document",
+      "exists": true,
+      "bytes": 3530765,
+      "sha256": "d2c0affa3e212a28c4d0a5755502ed021b70852088772a505624fafd48dd610d"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-O63jRSAvsTNvo54maqIS.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 71076,
+      "sha256": "ee82ca65f0affdc005cfcf6d80762048231f3a9aa986842d9ee472391e1180e9"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-Rf8aun5CqK1jJDDEsy1R.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 92709,
+      "sha256": "10adbaba7df9592c83e32c388225b12f98f2ec311b08ed84ab4f8e239a2c5156"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-VFZv56jHJJ2zSdBAQhNG.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 107674,
+      "sha256": "7e81c13d99eab5c391521c559ef581e4161e86e98b4c0695369cb05ca39b5aab"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-VqOo9QWKoHTuPl2QFBA3.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 47185,
+      "sha256": "b5595ff99da77fe0cf7f0a35ac8ecfeadb58eb2167cab3340b47899f669fbca4"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-XRRl0bWu3u4yabFGoOVB.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 52700,
+      "sha256": "3ff1f963f21c2f863501476e5efe22e995b38c7662e9a5b5d004373eb9c4aed5"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-XjprbmkRcPW8vOyOPOEr.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 127530,
+      "sha256": "67a494981d947629d73140f3ea62c0e123387460bbebd2d4f480fde2b9646292"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-ZFjD7XKb3sOKSBNNikNQ.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 111992,
+      "sha256": "8646a43f16c4a94d595ed0fe396156fd5e2260b20e4f38e218976923720df47b"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-e15bU4GJVZiLJqr1AD7h.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 82398,
+      "sha256": "8cdc0785f92a4805f24f7b1b9e5c9bf06762bab037fd96aabdb47464775c5bec"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-gzASp44CCY795jSZqF7i.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 49488,
+      "sha256": "1b1a5a55923c125efd3ec085821f05aa7c8b3bfcc7f019e4897b7b0e15c4f921"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-k0kGywZOHwQqiJP6M9dc.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 47046,
+      "sha256": "ad013b00426aeac9c4561115c4bda92756a1e569d60de8d9fa79fe3b88f5dbb4"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-qCI0uheft2XiFWKSBJmQ.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 89141,
+      "sha256": "4f745daf3c4b813e17b6ef6d752e4ea1410d5d19e63ec19fd138eeeb55026779"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-t41xl53MKsTLKcXbKOmb.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 79030,
+      "sha256": "0c0ef23f64b207c13c6e7a4c57b7fcaaec584f3a736ec618617855a5f48fbd1d"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-tUQuAL5HzEst2g0t69B1.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 87505,
+      "sha256": "72da57cb3ab598a43fe24e2f2b0327274304afcecc15a167925038c2903953cc"
+    },
+    {
+      "path": "artifacts/uxpilot-20261024/review-wQVdJZc3s1aOOHiSyLRP.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 44823,
+      "sha256": "8a7455672d254c31fa4fc65c5dc4ce23077ffcc395a38c1d42e5f5ac15c6b2b1"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/ACCOUNTS-B-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 146549,
+      "sha256": "ad24631d2bdd951539132f2fbd6739397f4c97a9a9fd7750ff713fb898e2c2be"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/ACCOUNTS-C-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 118131,
+      "sha256": "65df5e94ecea636baac5c16a803c4c4482d7515a0a3e0dd2949814b03f4f16f7"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/EMPTY-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 42678,
+      "sha256": "019f6a01717362bcf3e8c2d29b587d4040c9bcd3481808d9c9d0758501a86f07"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/MODELS-B-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 96022,
+      "sha256": "c2c15c87448b3544129f185387c418eafcb1fcb38c6b2953889ef45db86a9944"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/MODELS-C-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 69055,
+      "sha256": "e41dbff9f272778109fd1e39ce80438976ca0a779f3117931fba482330a28a15"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/MONITOR-A-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 69888,
+      "sha256": "40d3f60d15a5c46d2fb46ce4191ccfb854147411c807e4434c137fcc9f2dc9b8"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/MONITOR-B-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 69536,
+      "sha256": "3debfcb0f2c4911b0d31544b155cfe516da138343df99acf2164af466f6db94a"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/MONITOR-C-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 72890,
+      "sha256": "a030f1e5ab87be095244dd543b0df15c13c306c9b1820ea6d3d3298fe1e439b7"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/NARROW-A-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 85804,
+      "sha256": "fb2825e5ec4f9fced541729639b1b6db6c553f7cf6873ed72b621f7442f8f383"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/NARROW-B-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 56550,
+      "sha256": "78e760a2f2f056ac811983c599b9ddb8804b58eca185c666932722468278ff99"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/NARROW-C-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 81444,
+      "sha256": "8c5c2f0d6e7b390c39c9a4c2c0fa4ad1ae26c431a53d796ba83e90f9af626d1b"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/OFFLINE-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 117497,
+      "sha256": "a6cb757b0b689087f39c850fb8e3ce3547d5f3fb2af25281bd1695099473c548"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/USAGE-B-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 71686,
+      "sha256": "5135a1446fe18c8d2e6bb0c18998c11758a20a0ab0ee26d63db9871aa615ed3e"
+    },
+    {
+      "path": "artifacts/uxpilot-alternatives-20261024/USAGE-C-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 81269,
+      "sha256": "3cf900f6dcaa82dbbc02249208fe987e116b6ba15032166070cd4e90d0bc5f04"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/ACC-NARROW-EXPERT-LOWER-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 88115,
+      "sha256": "d9190e3f821b6c98c398937897921fe1d766e0db638dddbdd72665bf8aa76661"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/ACC-NARROW-EXPERT-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 95108,
+      "sha256": "0b105ede56b4d8dc22eafd554ab36b6e64bac0800106443c25cc159bc60dd88c"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/ACC-NARROW-LONGNAME-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 96012,
+      "sha256": "fc4ec6e86cb9ae476000d38249a571742a10e47ebe4418bcd124a0d87447e2c5"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/CONNECT-EXPIRED-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 39836,
+      "sha256": "ba1c7bbd117a4a6ba520053c0d52b4deb1664c116540f5e182b44612f01b9ee4"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/CONNECT-RECONNECT-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 46621,
+      "sha256": "06da1a77d06d3637fc3688d1bc11be61cc18ebd13c82e403c4cf95bfd8b7a2bf"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/LIVE-NARROW-A-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 63864,
+      "sha256": "6ba72b5188f7cea24935cabf0c955acc115e1ae975d3c71f8b4f486dee4d9d44"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/LIVE-NARROW-B-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 49448,
+      "sha256": "5aab355aaee87deeb3898e1487d80161a61cd258afd5f0f713c50a43fe02fb13"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/LIVE-SOURCE-CHANGED-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 51248,
+      "sha256": "8f80250b4983eea410e5592c44ecf40d3c07de4d7acb7fe52712d00bb1b31e87"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/MODEL-NARROW-EDITOR-LOWER-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 60798,
+      "sha256": "00d9ba85925e15d0143a677f7a36e9730fe64ccf193396b25c81eac92f530142"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/MODEL-NARROW-EDITOR-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 55883,
+      "sha256": "f346026be8ed9ded0ed2655e20edc9329a8433f6516f97dab69f8ca8ca465d34"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/MON-BARS-A-LOWER-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 55357,
+      "sha256": "e3ead7499d69f255e24832d4c8e1802134ca8c66b755490ff68f5619222c1423"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/MON-BARS-A-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 54833,
+      "sha256": "369ab6ce5c65093f8df89652407599e143e7b1b36d4cc36894861c148b946eef"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/MON-BARS-B-LOWER-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 57604,
+      "sha256": "1726a66426fc29934e0a409a3b35bd6694d5ed64cb82e86bdb782dd443c70d7a"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/MON-BARS-B-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 57258,
+      "sha256": "6d16edf8a3b165a92f384b8a811c007e32923a7aecf7be2e0eea1df8ca8d834a"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/PROFILE-CONFLICT-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 47934,
+      "sha256": "4652b391476a49878aded63a65ac1dce7edc4bbbf47ab468a1ae2c8e0557f957"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/PROFILE-NARROW-EDITOR-LOWER-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 56244,
+      "sha256": "92c8275d94e255db222f5bb9af0da4b0222a849c469b28eb1aae9c3af9c2ba15"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/PROFILE-NARROW-EDITOR-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 50050,
+      "sha256": "7e97e715e51fe627e2a057be645cf1069cfdc84c125ef9b716c4fe2c701e0d1a"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/PROFILE-RECOVERY-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 48423,
+      "sha256": "6f61edef7911777a098db5397c007dca45376834e7ab7227e7516ac239c19be8"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/PROFILE-REVIEW-A-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 68273,
+      "sha256": "3336bc2d2db29051639d9cfba947a54e308b5dd87e5cbc3fbe652aae496edec1"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/PROFILE-REVIEW-B-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 75853,
+      "sha256": "2d4be498093355e29961c2f9cbbe6c9bbb9cb2b2b8070f569ed88b1f262abc54"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/SETTINGS-NARROW-ERROR-LOWER-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 49968,
+      "sha256": "1785c9611ea785c2aea8af90b4e1664958ecfcb7dd06b2194e61c9aafcef29ce"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/SETTINGS-NARROW-ERROR-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 53214,
+      "sha256": "f9c429cb83dc6e5ffa343d43047639d0d702b68e1a2ae0914485aa49f08f11da"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/USAGE-NARROW-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 57155,
+      "sha256": "dea87a7cc93cfa3df56797d7194865865d1417fc8bea8d5f19ddcdec06fe21aa"
+    },
+    {
+      "path": "artifacts/uxpilot-deepening-20261024/USAGE-PARTIAL-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 92935,
+      "sha256": "e03665d6d70cfcf314a13d27a03c704e185aaf07c01d68216ab8cd57286f022c"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/ACCOUNTS-FIRST-LOAD-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 29220,
+      "sha256": "b6e7da4e20e98634f527e7cde47c545357cd71e020838d975c36bfefe0da3b4b"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/ACCOUNTS-REFRESH-BUSY-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 53528,
+      "sha256": "ea2ed6acca8fd02e95d9709c240c183027fd3dffc8dad539e0a00e0ded35d024"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/APPLY-RECOVERY-INPLACE-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 50083,
+      "sha256": "d22c47dc3034347197c76003a2cee1b759ad1ec1545f755e4ead220ec25f837a"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/APPLY-STALE-INPLACE-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 49236,
+      "sha256": "13cee4868f1bd7b21b4c2877fa7fecd771fe9e9afbf2f899da01d2c92428a071"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/CODEX-EXPORT-PREPARED-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 48363,
+      "sha256": "17c159f15a64fd0720fffe2686b152848668266caa66d0c4b576f07ee92dc610"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/CODEX-SETUP-VALIDATION-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 49767,
+      "sha256": "dcea8a60c7ce5dd9d2c3a8409a4e91e6ecdc70428f7d5cb90e095cf25b08957b"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/CONNECT-PREREQUISITE-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 39255,
+      "sha256": "638cc0b0241415d44cb5f4b469d0b00f191aa196bfcc1af87230cfa05696ab73"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/DRAFT-LEAVE-A-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 40679,
+      "sha256": "9f16544d9167d58d2a76ae51c7bf95a890425f1f30cb6c932a74bd86643a8bb5"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/DRAFT-LEAVE-B-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 39098,
+      "sha256": "ec4a64d1be4d56d0914472375ed52a1269c37a31e75bb5d7be3e85d461b99370"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/FIRST-START-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 42609,
+      "sha256": "77d1c966873cee5e3c0523219473d7da688f3e082e7f4043bfea0141e06dd8dc"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/GATEWAY-ADVANCED-COMPACT-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 53423,
+      "sha256": "32cc4d20a2843e58ca82362aad03018f1ba3e5cef5957dc421f6acc5fcf60365"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/GATEWAY-BAREBONES-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 52514,
+      "sha256": "e654976c27cfc3581544968f48c8a57792a09775968c17b096f67d05b86c15f2"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/MODEL-MENU-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 45095,
+      "sha256": "2a8e6ef7f56ea3bc291d6ac67b31677fd9a193d45fec289cd9f2064ba8202316"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/MODEL-SELECTION-GONE-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 43754,
+      "sha256": "bf8e02458c98a6dca67ae12f37d6ac1735ea095ac146a7f7015c1d5966f337be"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/MODELS-NO-MATCH-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 34375,
+      "sha256": "950118a28f9b8d8cb1ce80134ee3baf97e59450c98ffea8df066ab74905e5fd0"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/REMOVE-REFERENCED-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 62336,
+      "sha256": "a0eda034c5bd53724b9dd5ffb66a9bfc11ee2f2042606b80dfa95720f665d3e4"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/SIMPLE-NAV-A-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 51051,
+      "sha256": "072a3a5e70462658237e87d5b33569359e8b6f49465551e56c2b696b73e4b6b6"
+    },
+    {
+      "path": "artifacts/uxpilot-flows-20261025/SIMPLE-NAV-B-reviewed.png",
+      "category": "reference-image",
+      "exists": true,
+      "bytes": 51893,
+      "sha256": "526e509c65a2310fb25df1b5b967fe5668100f8cee1548940ebd6caaa2dfe146"
+    }
+  ],
+  "closureNote": "Every local image path in the three included JSON manifests, plus direct Markdown image links, is included; alternative images remain design history, not accepted product choices. HTML galleries embed images. Existing tracked cross-links resolve from the fresh checkout; no unrelated provider research is included."
+}
