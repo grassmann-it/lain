@@ -110,6 +110,40 @@ func TestContextBoundaryOversizeIsGenericAndReadIsBounded(t *testing.T) {
 	}
 }
 
+func TestContextBoundaryExactDiagnosticAndParameterLimits(t *testing.T) {
+	base := `{"error":{"code":"context_length_exceeded","message":""}}`
+	for _, size := range []int{maxRequestErrorBytes, maxRequestErrorBytes + 1} {
+		body := strings.Replace(base, `"message":""`, `"message":"`+strings.Repeat("x", size-len(base))+`"`, 1)
+		source := &contextBoundaryBody{Reader: strings.NewReader(body)}
+		response := &http.Response{StatusCode: 400, Body: source}
+		boundRequestErrorResponse(response)
+		actual, _ := io.ReadAll(response.Body)
+		_ = response.Body.Close()
+		want := "context_length_exceeded"
+		if size > maxRequestErrorBytes {
+			want = "error_details_too_large"
+		}
+		if len(body) != size || !strings.Contains(string(actual), `"code":"`+want+`"`) || source.closes != 1 {
+			t.Fatalf("diagnostic byte boundary size=%d was not exact", size)
+		}
+	}
+	for _, param := range []any{"", "messages", strings.Repeat("🐈", 32), strings.Repeat("🐈", 33), strings.Repeat("\x00", 128), nil, 7} {
+		body, _ := json.Marshal(map[string]any{"error": map[string]any{"code": "context_length_exceeded", "param": param}})
+		response := &http.Response{StatusCode: 400, Body: io.NopCloser(bytes.NewReader(body))}
+		boundRequestErrorResponse(response)
+		actual, _ := io.ReadAll(response.Body)
+		_ = response.Body.Close()
+		var envelope struct{ Error map[string]any }
+		_ = json.Unmarshal(actual, &envelope)
+		text, isString := param.(string)
+		wantParam := isString && len(text) <= 128
+		got, hasParam := envelope.Error["param"]
+		if len(actual) > 1024 || !utf8.Valid(actual) || !json.Valid(actual) || hasParam != wantParam || (wantParam && got != param) {
+			t.Fatal("parameter limit split UTF-8, retained an invalid parameter or lost a bounded field name")
+		}
+	}
+}
+
 type contextBoundaryReadError struct{ err error }
 
 func (r contextBoundaryReadError) Read([]byte) (int, error) { return 0, r.err }
