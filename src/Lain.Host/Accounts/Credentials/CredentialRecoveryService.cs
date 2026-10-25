@@ -8,12 +8,13 @@ namespace Lain.Host.Accounts.Credentials;
 
 /// <summary>Private recovery metadata; secrets remain in immutable generation files.</summary>
 public sealed record CredentialRecoveryRecord(string OperationId, string AccountId, long Revision, long AccountGeneration,
-    ConnectAccountRequest Request, string State, CredentialHandleDto? Handle = null, string? RemoteId = null);
+    ConnectAccountRequest Request, string State, CredentialHandleDto? Handle = null, string? RemoteId = null,
+    string? TargetRemovalEpoch = null, bool TargetCleanupCompleted = false, DateTimeOffset? ExpiresAt = null);
 
 public sealed class CredentialRecoveryService(ConfigurationRepository configuration, AccountService accounts,
     CredentialGenerationStore generations)
 {
-    public static CredentialRecoveryRecord? FindRequest(CredentialGenerationStore store, string key, string fingerprint)
+    public static CredentialRecoveryRecord? FindRequest(CredentialGenerationStore store, string key, string fingerprint, ConfigurationDto? state = null)
     {
         var path = store.RecoveryPath("request-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))).ToLowerInvariant());
         if (!File.Exists(path)) return null;
@@ -21,7 +22,7 @@ public sealed class CredentialRecoveryService(ConfigurationRepository configurat
         using var document = JsonDocument.Parse(File.ReadAllText(path));
         if (document.RootElement.GetProperty("Fingerprint").GetString() != fingerprint)
             throw new ArgumentException("The idempotency key belongs to another connection request.");
-        return Read(store, document.RootElement.GetProperty("OperationId").GetString()!);
+        return Read(store, document.RootElement.GetProperty("OperationId").GetString()!, state);
     }
     public static void ReserveRequest(CredentialGenerationStore store, string key, string fingerprint, LoginOperationContext context)
     {
@@ -31,10 +32,12 @@ public sealed class CredentialRecoveryService(ConfigurationRepository configurat
     }
 
     public static void SaveStarted(CredentialGenerationStore store, LoginOperationContext context) =>
-        Write(store, new(context.OperationId, context.AccountId, context.Revision, context.AccountGeneration, context.Request, "remote-pending"));
+        Write(store, new(context.OperationId, context.AccountId, context.Revision, context.AccountGeneration, context.Request, "remote-pending",
+            TargetRemovalEpoch: context.TargetRemovalEpoch, ExpiresAt: context.ExpiresAt));
 
     public static void SavePrepared(CredentialGenerationStore store, LoginOperationContext context, CredentialHandleDto handle, string? remoteId) =>
-        Write(store, new(context.OperationId, context.AccountId, context.Revision, context.AccountGeneration, context.Request, "prepared", handle, remoteId));
+        Write(store, new(context.OperationId, context.AccountId, context.Revision, context.AccountGeneration, context.Request, "prepared", handle, remoteId,
+            context.TargetRemovalEpoch, ExpiresAt: context.ExpiresAt));
 
     public static void MarkPublished(CredentialGenerationStore store, string operationId)
     {
@@ -48,15 +51,15 @@ public sealed class CredentialRecoveryService(ConfigurationRepository configurat
     {
         lock (store)
         {
-            CredentialRecoveryRecord record = File.Exists(store.RecoveryPath(context.OperationId)) ? Read(store, context.OperationId)
-                : new(context.OperationId, context.AccountId, context.Revision, context.AccountGeneration, context.Request, "remote-pending");
+            CredentialRecoveryRecord record = File.Exists(store.RecoveryPath(context.OperationId)) ? Read(store, context.OperationId, reconcilePrepared: false)
+                : new(context.OperationId, context.AccountId, context.Revision, context.AccountGeneration, context.Request, "remote-pending", TargetRemovalEpoch: context.TargetRemovalEpoch);
             if (record.AccountId != context.AccountId || record.Request.AccountId != context.Request.AccountId)
                 throw new InvalidDataException("Recovery target identity changed.");
             Write(store, record with { State = "target-removed" });
         }
     }
 
-    public static CredentialRecoveryRecord Read(CredentialGenerationStore store, string operationId)
+    public static CredentialRecoveryRecord Read(CredentialGenerationStore store, string operationId, ConfigurationDto? state = null, bool reconcilePrepared = true)
     {
         lock (store)
         {
@@ -64,13 +67,26 @@ public sealed class CredentialRecoveryService(ConfigurationRepository configurat
             CredentialGenerationStore.RefuseLink(path);
             if (new FileInfo(path).Length > 128 * 1024) throw new InvalidDataException("Invalid credential recovery record.");
             var record = JsonSerializer.Deserialize<CredentialRecoveryRecord>(File.ReadAllText(path)) ?? throw new InvalidDataException("Invalid recovery record.");
-            if (record.OperationId != operationId) throw new InvalidDataException("Recovery operation identity mismatch.");
-            if (record.State != "published" && store.FindPrepared(record.OperationId, record.AccountId) is { } prepared &&
+            if (record.OperationId != operationId || record.Request is null || record.Revision < 0 || record.AccountGeneration < 0)
+                throw new InvalidDataException("Recovery operation identity mismatch.");
+            if (record.State is not ("remote-pending" or "prepared" or "published" or "target-removed")
+                || record.TargetRemovalEpoch is { } epoch && (epoch.Length != 32 || !epoch.All(char.IsAsciiHexDigit)))
+                throw new InvalidDataException("Invalid recovery state.");
+            CredentialGenerationStore.ValidateId(record.AccountId);
+            if (record.Request.AccountId is not null && record.Request.AccountId != record.AccountId)
+                throw new InvalidDataException("Recovery target identity mismatch.");
+            if (record.State != "published" && record.State != "target-removed" && CredentialTargetRemoval.IsRemoved(store, Context(record), state))
+            {
+                record = record with { State = "target-removed" };
+                Write(store, record);
+            }
+            if (reconcilePrepared && record.State != "published" && store.FindPrepared(record.OperationId, record.AccountId) is { } prepared &&
                 (record.Handle is null || prepared.Handle.Generation > record.Handle.Generation))
             {
                 if (record.Handle is { } previous && (previous.Id != prepared.Handle.Id || previous.Owner != prepared.Handle.Owner))
                     throw new InvalidDataException("Recovery generation ownership changed unexpectedly.");
-                record = record with { State = record.State == "target-removed" ? "target-removed" : "prepared", Handle = prepared.Handle, RemoteId = prepared.RemoteId };
+                record = record with { State = record.State == "target-removed" ? "target-removed" : "prepared", Handle = prepared.Handle, RemoteId = prepared.RemoteId,
+                    TargetCleanupCompleted = false };
                 Write(store, record);
             }
             return record;
@@ -80,9 +96,9 @@ public sealed class CredentialRecoveryService(ConfigurationRepository configurat
     // Explicit local action: revalidate the saved result against a fresh revision, never invoke the provider again.
     public ConfigurationDto Adopt(long revision, string operationId)
     {
-        var record = Read(generations, operationId);
         var state = configuration.Snapshot;
         if (state.Revision != revision) throw new RevisionConflictException(revision, state.Revision);
+        var record = Read(generations, operationId, state);
         if (record.State == "target-removed")
             throw new InvalidOperationException("Recovery target was removed. This authorization cannot be adopted; connect a new account.");
         if (record.Handle is null || record.State == "remote-pending")
@@ -97,12 +113,28 @@ public sealed class CredentialRecoveryService(ConfigurationRepository configurat
         if (record.Request.AccountId is not null && (existing is null || existing.Generation != record.AccountGeneration))
             throw new InvalidOperationException("Recovery target was removed or changed. The saved credential cannot be silently attached.");
         generations.Read(record.AccountId, record.Handle);
-        var context = new LoginOperationContext(record.OperationId, record.AccountId, revision, record.AccountGeneration,
-            record.Request, DateTimeOffset.MaxValue);
+        var context = Context(record) with { Revision = revision };
         var result = accounts.CommitPrepared(context, record.Handle);
         MarkPublished(generations, operationId);
         return result;
     }
+
+    internal static LoginOperationContext Context(CredentialRecoveryRecord record) =>
+        new(record.OperationId, record.AccountId, record.Revision, record.AccountGeneration, record.Request, record.ExpiresAt ?? DateTimeOffset.MaxValue)
+        { TargetRemovalEpoch = record.TargetRemovalEpoch };
+
+    internal static void MarkTargetCleanupCompleted(CredentialGenerationStore store, string operationId, CredentialHandleDto? cleanedHandle)
+    {
+        lock (store)
+        {
+            var current = Read(store, operationId, reconcilePrepared: false);
+            if (current.State == "target-removed" && SameGeneration(current.Handle, cleanedHandle))
+                Write(store, current with { TargetCleanupCompleted = true });
+        }
+    }
+
+    private static bool SameGeneration(CredentialHandleDto? a, CredentialHandleDto? b) =>
+        a is null ? b is null : b is not null && a.Id == b.Id && a.Generation == b.Generation && a.Owner == b.Owner;
 
     private static void Write(CredentialGenerationStore store, CredentialRecoveryRecord record)
     {
@@ -114,13 +146,15 @@ public sealed class CredentialRecoveryService(ConfigurationRepository configurat
             {
                 if (new FileInfo(path).Length > 128 * 1024) throw new InvalidDataException("Invalid credential recovery record.");
                 var previous = JsonSerializer.Deserialize<CredentialRecoveryRecord>(File.ReadAllText(path)) ?? throw new InvalidDataException("Invalid recovery record.");
-                if (previous.OperationId != record.OperationId || previous.AccountId != record.AccountId)
+                if (previous.OperationId != record.OperationId || previous.AccountId != record.AccountId || previous.TargetRemovalEpoch != record.TargetRemovalEpoch)
                     throw new InvalidDataException("Recovery record identity changed.");
                 // A late remote checkpoint can add its private handle but can never
                 // restore adoption rights after the explicit target was removed.
                 if (previous.State == "target-removed") record = record with { State = "target-removed",
-                    Handle = record.Handle ?? previous.Handle, RemoteId = record.RemoteId ?? previous.RemoteId };
+                    Handle = record.Handle ?? previous.Handle, RemoteId = record.RemoteId ?? previous.RemoteId,
+                    TargetCleanupCompleted = (record.TargetCleanupCompleted || previous.TargetCleanupCompleted) && SameGeneration(record.Handle ?? previous.Handle, previous.Handle) };
             }
+            if (CredentialTargetRemoval.IsRemoved(store, Context(record))) record = record with { State = "target-removed" };
             OwnStatePaths.WritePrivate(path, JsonSerializer.Serialize(record));
         }
     }

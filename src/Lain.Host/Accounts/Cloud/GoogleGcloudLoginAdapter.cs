@@ -219,7 +219,7 @@ public sealed class GoogleGcloudLoginAdapter : IAccountLoginAdapter, ICredential
         return grant.ProfileReference;
     }
     internal sealed record OwnedProfileReceipt(string Reference, string LocalAccountId, string OperationId, string? LoginAccount, string? LoginSubject);
-    internal OwnedProfileReceipt[] ReadOwnedProfileReceipts()
+    internal OwnedProfileReceipt[] ReadOwnedProfileReceipts(CancellationToken ct = default)
     {
         lock (gate)
         {
@@ -229,6 +229,7 @@ public sealed class GoogleGcloudLoginAdapter : IAccountLoginAdapter, ICredential
             var receipts = new List<OwnedProfileReceipt>();
             foreach (var directory in directories)
             {
+                ct.ThrowIfCancellationRequested();
                 var reference = Path.GetFileName(directory);
                 if (!reference.StartsWith("profile-", StringComparison.Ordinal)) continue;
                 receipts.Add(ReadProfileReceipt(reference));
@@ -314,7 +315,18 @@ public sealed class GoogleGcloudLoginAdapter : IAccountLoginAdapter, ICredential
             if (grant?.LocalAccountId != context.AccountId) throw new InvalidDataException("Removed Google Cloud CLI credential account does not match.");
             reference = GetProfileReference(credential.PrivateJson);
         }
-        if (reference is null) return; // Already released, with no prepared profile to retire.
+        if (reference is null)
+        {
+            // A crash can leave an owned CLI profile before a credential handle was checkpointed.
+            // Inspect only this adapter's bounded receipt set, requiring both exact identities.
+            // Unknown, malformed, excessive or ambiguous receipts throw and retain retry work.
+            CliPrivatePaths.Id(context.AccountId); CliPrivatePaths.Id(context.OperationId);
+            ct.ThrowIfCancellationRequested();
+            var matches = ReadOwnedProfileReceipts(ct).Where(r => r.LocalAccountId == context.AccountId && r.OperationId == context.OperationId).ToArray();
+            if (matches.Length > 1) throw new InvalidDataException("Removed Google Cloud CLI operation has ambiguous owned profiles.");
+            if (matches.Length == 0) return; // A complete bounded receipt scan confirmed no owned profile for this operation.
+            reference = matches[0].Reference;
+        }
         lock (gate)
         {
             ct.ThrowIfCancellationRequested();

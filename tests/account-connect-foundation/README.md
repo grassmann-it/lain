@@ -22,3 +22,20 @@ Quota boundary regressions cover canonical reader/reconnect aliases without pers
 same-key official transport selection with scope and purpose fences, selected monitor-kind metadata,
 fixed HTTP status/category diagnostics without provider text, and optional passive fallback when direct
 access is absent, expired or unreadable. These additions await the coordinated build slot.
+
+The persisted target-removal follow-up is source-prepared, not yet executed. Its fixtures cover
+pruned/restarted recovery, exact same-ID recreation, failed removal publication, both sides of the
+removal-journal crash boundary, late generations, unrelated-account preservation and bounded fair
+cleanup retries across restart. Private removal epochs are prepared before config publication and
+confirmed afterward; an absent account completes a pending journal after a crash. Failed config
+publication leaves the old epoch and existing credential selection intact.
+
+`LoginOperationService.CleanupRemovedRecoveriesAsync` requires a startup and periodic Host hook.
+Each pass examines at most 64 recovery entries and attempts at most eight disk-only retirements,
+using a cooperative five-second deadline and a retained enumeration cursor. It never globally scans
+credential generations, starts login, or revokes external grants. Completed retirement is stored in
+the existing private recovery record; a late new generation makes retirement pending again. A
+missing handle is passed only to its owner hook, which must identify its own persisted operation
+resources or report uncertainty. Google verifies its bounded receipt inventory against both account
+and operation IDs; malformed/ambiguous/busy profiles retain retry work. MiMo's separate startup
+reconciliation handles browser profiles whose former host has exited.

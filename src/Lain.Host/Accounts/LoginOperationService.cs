@@ -33,6 +33,8 @@ public interface IAccountLoginAdapter
 public sealed record LoginOperationContext(string OperationId, string AccountId, long Revision, long AccountGeneration,
     ConnectAccountRequest Request, DateTimeOffset ExpiresAt)
 {
+    /// <summary>Private fence captured when this explicit target operation was reserved.</summary>
+    public string? TargetRemovalEpoch { get; init; }
     /// <summary>Persist an issued result before further provider work. Never publishes or retries remote creation.</summary>
     public Func<PreparedLoginCredential, CancellationToken, Task>? CheckpointCredentialAsync { get; init; }
 }
@@ -64,6 +66,10 @@ public sealed class LoginOperationService : IAsyncDisposable
     private readonly SecretStore? secrets;
     private readonly TimeProvider clock;
     private readonly SemaphoreSlim? publicationGate;
+    private readonly SemaphoreSlim recoveryCleanupGate = new(1, 1);
+    private IEnumerator<string>? recoveryScan;
+    public const int MaximumRecoveryScanRecords = 64;
+    public const int MaximumRecoveryCleanupAttempts = 8;
     private bool disposed;
 
     private sealed class Operation(LoginDto status, LoginOperationContext? context, DateTimeOffset createdAt)
@@ -120,19 +126,19 @@ public sealed class LoginOperationService : IAsyncDisposable
                     if (repeated.RequestFingerprint != fingerprint) throw new ArgumentException("The idempotency key belongs to another connection request.");
                     return repeated.BeginTask ?? Task.FromResult(repeated.Status);
                 }
-                if (CredentialRecoveryService.FindRequest(secrets.Generations, key, fingerprint) is { } recovered)
+                if (CredentialRecoveryService.FindRequest(secrets.Generations, key, fingerprint, configuration?.Snapshot) is { } recovered)
                 {
-                    if (recovered.State == "target-removed" && operations.Values.Count(NeedsActiveSlot) >= MaximumActiveOperations)
+                    if (recovered.State == "target-removed" && !recovered.TargetCleanupCompleted && operations.Values.Count(NeedsActiveSlot) >= MaximumActiveOperations)
                         throw new InvalidOperationException("Too many active connection operations. Finish local cleanup before retrying recovery.");
                     var status = new LoginDto(recovered.OperationId, recovered.Request.Provider,
                         recovered.State == "published" ? "completed" : recovered.State == "target-removed" ? "cancelled" : "recovery-required", Method: recovered.Request.Method,
                         Purposes: recovered.Request.Purposes, AccountId: recovered.AccountId,
                         NextAction: recovered.State is "published" or "target-removed" ? null : "review-recovery");
                     if (recovered.State == "target-removed") status = status with { Error = "Target account was removed. Connect a new account." };
-                    var recoveredContext = new LoginOperationContext(recovered.OperationId, recovered.AccountId, recovered.Revision,
-                        recovered.AccountGeneration, recovered.Request, DateTimeOffset.MaxValue);
+                    var recoveredContext = CredentialRecoveryService.Context(recovered);
                     var restored = new Operation(status, recoveredContext, clock.GetUtcNow())
-                    { FinishedAt = clock.GetUtcNow(), Prepared = recovered.Handle, TargetRemoved = recovered.State == "target-removed", RequestFingerprint = fingerprint };
+                    { FinishedAt = clock.GetUtcNow(), Prepared = recovered.Handle, TargetRemoved = recovered.State == "target-removed",
+                        TargetCleanupCompleted = recovered.TargetCleanupCompleted, RequestFingerprint = fingerprint };
                     operations[recovered.OperationId] = restored;
                     idempotency[key] = recovered.OperationId;
                     restored.BeginTask = restored.TargetRemoved ? CompleteRecoveredTargetCleanupAsync(restored) : Task.FromResult(status);
@@ -281,13 +287,23 @@ public sealed class LoginOperationService : IAsyncDisposable
     /// <summary>Invalidate only operations reconnecting an account whose removal was persisted.</summary>
     public async Task CancelRemovedAccountAsync(string accountId, CancellationToken? budget = null)
     {
-        if (configuration?.Snapshot.Accounts.Any(a => a.Id == accountId) == true) return;
+        using var timeout = budget is null ? new CancellationTokenSource(TimeSpan.FromSeconds(5)) : null;
+        var ct = budget ?? timeout!.Token;
+        await InvalidateRemovedOperationsAsync(accountId, ct);
+        await CleanupRemovedRecoveriesAsync(ct);
+    }
+
+    private async Task InvalidateRemovedOperationsAsync(string accountId, CancellationToken ct)
+    {
+        if (configuration is null || secrets is null) return;
+        var state = configuration.Snapshot;
         Operation[] selected;
         lock (gate)
         {
             if (disposed) return;
             selected = operations.Values.Where(o => o.Context is { } context && context.AccountId == accountId
-                && context.Request.AccountId == accountId && o.Status.State != "completed").ToArray();
+                && context.Request.AccountId == accountId && o.Status.State != "completed"
+                && CredentialTargetRemoval.IsRemoved(secrets.Generations, context, state)).ToArray();
             foreach (var operation in selected)
                 lock (operation.PublicationGate)
                 {
@@ -306,8 +322,62 @@ public sealed class LoginOperationService : IAsyncDisposable
             catch (Exception error) when (error is not OutOfMemoryException and not StackOverflowException)
             { /* Cleanup retries the durable invalidation before deleting any owned profile. */ }
         }
-        using var timeout = budget is null ? new CancellationTokenSource(TimeSpan.FromSeconds(5)) : null;
-        await Task.WhenAll(selected.Select(operation => CleanupRemovedTargetAsync(operation, budget ?? timeout!.Token)));
+        await Task.WhenAll(selected.Select(operation => CleanupRemovedTargetAsync(operation, ct)));
+    }
+
+    /// <summary>One bounded local retirement pass. Call at startup and periodically; never starts authorization or revokes grants.</summary>
+    public async Task CleanupRemovedRecoveriesAsync(CancellationToken ct = default)
+    {
+        if (configuration is null || secrets is null || !await recoveryCleanupGate.WaitAsync(0, ct)) return;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(5));
+        ct = timeout.Token;
+        try
+        {
+            lock (gate) { if (disposed) return; }
+            string[] targets;
+            lock (gate)
+                targets = operations.Values.Where(o => o.Context?.Request.AccountId is not null && o.Status.State != "completed")
+                    .Select(o => o.Context!.AccountId).Distinct(StringComparer.Ordinal).ToArray();
+            foreach (var target in targets)
+            {
+                if (ct.IsCancellationRequested) return;
+                await InvalidateRemovedOperationsAsync(target, ct);
+            }
+            recoveryScan ??= secrets.Generations.RecoveryFiles().GetEnumerator();
+            var attempts = 0;
+            for (var inspected = 0; inspected < MaximumRecoveryScanRecords && attempts < MaximumRecoveryCleanupAttempts; inspected++)
+            {
+                if (ct.IsCancellationRequested) break;
+                if (!recoveryScan.MoveNext()) { recoveryScan.Dispose(); recoveryScan = null; break; }
+                var path = recoveryScan.Current;
+                var id = Path.GetFileNameWithoutExtension(path);
+                if (id.StartsWith("request-", StringComparison.Ordinal)) continue;
+                // Enumeration progress is retained across passes, including failed candidates. No
+                // unbounded retry dictionary or sorted full-directory snapshot is held in memory.
+                try
+                {
+                    CredentialGenerationStore.RefuseLink(path);
+                    var record = CredentialRecoveryService.Read(secrets.Generations, id, configuration.Snapshot, reconcilePrepared: false);
+                    if (record.State != "target-removed" || record.TargetCleanupCompleted) continue;
+                    lock (gate) { if (operations.ContainsKey(id)) continue; }
+                    if (!adapters.TryGetValue((record.Request.Provider, record.Request.Method), out var adapter)) continue;
+                    if (record.Handle is { } selected && configuration.Snapshot.Accounts.Any(a =>
+                        a.Credentials?.Any(h => h.Id == selected.Id && h.Generation == selected.Generation) == true)) continue;
+                    attempts++;
+                    PreparedLoginCredential? prepared = record.Handle is { } handle
+                        ? new(handle.Owner, handle.Purposes, handle.Binding, secrets.Generations.Read(record.AccountId, handle).PrivateJson, handle.ExpiresAt)
+                        : null;
+                    await adapter.TargetRemovedAsync(CredentialRecoveryService.Context(record), prepared, ct);
+                    CredentialRecoveryService.MarkTargetCleanupCompleted(secrets.Generations, id, record.Handle);
+                }
+                catch (Exception error) when (error is not OutOfMemoryException and not StackOverflowException)
+                { /* Durable target-removed state retains retry work; malformed entries never authorize deletion. */ }
+            }
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or OperationCanceledException)
+        { recoveryScan?.Dispose(); recoveryScan = null; }
+        finally { recoveryCleanupGate.Release(); }
     }
 
     private async Task<LoginDto> AcceptAsync(Operation operation, LoginAdapterResult result, CancellationToken ct)
@@ -493,6 +563,7 @@ public sealed class LoginOperationService : IAsyncDisposable
                     if (prepared is null && operation.Prepared is { } handle)
                         prepared = new(handle.Owner, handle.Purposes, handle.Binding, secrets.Generations.Read(context.AccountId, handle).PrivateJson, handle.ExpiresAt);
                     await adapter.TargetRemovedAsync(context, prepared, ct);
+                    CredentialRecoveryService.MarkTargetCleanupCompleted(secrets!.Generations, context.OperationId, operation.Prepared);
                 }
                 operation.TargetCleanupCompleted = true;
                 operation.Released = true;
@@ -548,5 +619,8 @@ public sealed class LoginOperationService : IAsyncDisposable
             if (operation.TargetRemoved) await CleanupRemovedTargetAsync(operation);
             else await ReleaseAdapterAsync(operation);
         }));
+        await recoveryCleanupGate.WaitAsync();
+        try { recoveryScan?.Dispose(); recoveryScan = null; }
+        finally { recoveryCleanupGate.Release(); }
     }
 }

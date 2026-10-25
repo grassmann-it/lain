@@ -24,3 +24,8 @@ after publication would lose owned-session retirement. Persistent cleanup failur
 grow this dictionary. A hard cap requires durable retirement/admission control before publication;
 callbacks must honor cancellation. Pending login target-cleanup occupies the existing active-operation
 limit and is not pruned until cleanup succeeds.
+
+The persisted-removal follow-up adds actual MiMo adapter coverage with a synthetic browser after
+terminal pruning and service restart. Its selected quota remains absent; the private disk descriptor
+must still close exactly the removed target's profile and store completed cleanup. These additions
+await the coordinated integration run.

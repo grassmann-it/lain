@@ -266,6 +266,7 @@ try
     await browser.OpenAsync("fixture-host-stop", CancellationToken.None);
     await browser.DisposeAsync();
     Check(browser.Active.Count == 0 && browser.Disposed, "Host-owned browser lifetime closes remaining owned windows");
+    checks += await DurableMiMoCleanupChecks.Run(Path.Combine(root, "durable-mimo"));
     Console.WriteLine($"Quota Host integration: {checks} synthetic checks passed.");
 }
 finally { if (Directory.Exists(root)) Directory.Delete(root, true); }

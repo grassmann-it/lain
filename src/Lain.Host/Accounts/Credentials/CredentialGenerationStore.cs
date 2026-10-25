@@ -109,6 +109,21 @@ public sealed class CredentialGenerationStore(OwnStatePaths paths)
         return Path.Combine(paths.Credentials, "recovery", operationId + ".json");
     }
 
+    internal string RemovalPath(string accountId)
+    {
+        ValidateId(accountId);
+        var directory = Path.Combine(paths.Credentials, "removed-targets");
+        OwnStatePaths.EnsurePrivateDirectory(directory);
+        return Path.Combine(directory, accountId + ".json");
+    }
+
+    internal IEnumerable<string> RecoveryFiles()
+    {
+        var directory = Path.Combine(paths.Credentials, "recovery");
+        OwnStatePaths.EnsurePrivateDirectory(directory);
+        return Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly);
+    }
+
     public bool IsRetired(CredentialHandleDto handle) => File.Exists(RetirementPath(handle));
     public void RetireForRotation(CredentialHandleDto handle, string operationId)
     {

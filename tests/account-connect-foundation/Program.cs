@@ -13,6 +13,7 @@ try
 {
     await MonitorAndStatic();
     await LoginLifecycle();
+    assertions += await DurableRemovalChecks.Run(Path.Combine(root, "durable-removal"));
     await RotationAndRestore();
     await ReviewRegressions();
     await LegacyPreservation();

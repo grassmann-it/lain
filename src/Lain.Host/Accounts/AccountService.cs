@@ -42,7 +42,8 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             EnsureCompatibleBinding(target.Binding, request.Binding);
         }
         return new(operationId, target?.Id ?? "acct-" + Guid.NewGuid().ToString("N"), revision, target?.Generation ?? 0,
-            request with { Binding = request.Binding ?? target?.Binding, Purposes = request.Purposes.Distinct(StringComparer.Ordinal).ToArray() }, expiresAt);
+            request with { Binding = request.Binding ?? target?.Binding, Purposes = request.Purposes.Distinct(StringComparer.Ordinal).ToArray() }, expiresAt)
+        { TargetRemovalEpoch = target is null ? null : CredentialTargetRemoval.Epoch(secrets.Generations, target.Id, state) };
     }
 
     public ConfigurationDto CommitPrepared(LoginOperationContext context, CredentialHandleDto handle, Func<bool>? mayCommit = null)
@@ -51,6 +52,8 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         return configuration.Update(context.Revision, state =>
         {
             if (mayCommit is not null && !mayCommit()) throw new OperationCanceledException("Connect operation is no longer active.");
+            if (CredentialTargetRemoval.IsRemoved(secrets.Generations, context, state))
+                throw new InvalidOperationException("Connection target was removed. Connect again.");
             var existing = state.Accounts.SingleOrDefault(a => a.Id == context.AccountId);
             if (context.Request.AccountId is not null && (existing is null || existing.Generation != context.AccountGeneration))
                 throw new InvalidOperationException("Account was removed or changed during connection.");
@@ -402,14 +405,29 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
     public ConfigurationDto Remove(long revision, string id)
     {
         // Historical usage keeps the stable identity; active routes lose this account.
-        return configuration.Update(revision, state =>
+        string? removalId = null;
+        ConfigurationDto result;
+        try
         {
-            RequireAccount(state, id);
-            if (state.Routes.Any(r => r.AccountIds.Contains(id)))
-                throw new InvalidOperationException("Remove this account from active routes before removing it.");
-            // Credentials are retained privately for in-flight requests and explicit cleanup.
-            return state with { Accounts = state.Accounts.Where(a => a.Id != id).ToArray() };
-        });
+            result = configuration.Update(revision, state =>
+            {
+                RequireAccount(state, id);
+                var account = state.Accounts.Single(a => a.Id == id);
+                if (state.Routes.Any(r => r.AccountIds.Contains(id)))
+                    throw new InvalidOperationException("Remove this account from active routes before removing it.");
+                // No removal is published unless its durable recovery fence was prepared first.
+                removalId = CredentialTargetRemoval.Prepare(secrets.Generations, account, state.Revision);
+                return state with { Accounts = state.Accounts.Where(a => a.Id != id).ToArray() };
+            });
+        }
+        catch
+        {
+            if (removalId is not null)
+                CredentialTargetRemoval.Abort(secrets.Generations, id, removalId);
+            throw;
+        }
+        CredentialTargetRemoval.Complete(secrets.Generations, id, removalId!);
+        return result;
     }
     public AccountDto Check(string id)
     {

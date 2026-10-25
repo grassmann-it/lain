@@ -192,6 +192,28 @@ finally:
                 Directory.Delete(malformedReceipt, recursive: true);
                 await retention.StartupReconcileAsync();
                 Check(!Directory.Exists(fake.Profiles[0]) && !Directory.Exists(restoreOrphan), "startup retires unselected profiles after resolved recovery without replaying grants");
+                var diskContext = Context(now, [], "disk-only-target") with { AccountId = "removed-account" };
+                var diskProfile = Orphan(diskContext.OperationId);
+                var differentOperation = Orphan("different-operation");
+                var differentAccount = Orphan(diskContext.OperationId);
+                OwnStatePaths.WritePrivate(Path.Combine(differentAccount, "lain-owner.json"), JsonSerializer.Serialize(new
+                { localAccountId = "different-account", operationId = diskContext.OperationId, loginAccount = "one@example.test", loginSubject = "123456789" }));
+                using (var lease = new FileStream(Path.Combine(diskProfile, "lain-process.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+                {
+                    await Reject(() => adapter.TargetRemovedAsync(diskContext, null, default), "disk-only pending result retains busy owned profile for retry");
+                    Check(Directory.Exists(diskProfile), "failed disk cleanup does not claim profile retirement");
+                }
+                var callsBeforeDiskCleanup = fake.LoginCalls;
+                await adapter.TargetRemovedAsync(diskContext, null, default);
+                Check(!Directory.Exists(diskProfile) && Directory.Exists(differentOperation) && Directory.Exists(differentAccount),
+                    "missing-handle cleanup requires exact account and operation receipt");
+                Check(fake.LoginCalls == callsBeforeDiskCleanup, "disk-only receipt cleanup never starts authorization");
+                await adapter.TargetRemovedAsync(diskContext, null, default);
+                Check(Directory.Exists(differentOperation) && Directory.Exists(differentAccount), "repeated disk-only cleanup leaves unrelated profiles");
+                var ambiguousA = Orphan(diskContext.OperationId); var ambiguousB = Orphan(diskContext.OperationId);
+                await Reject(() => adapter.TargetRemovedAsync(diskContext, null, default), "ambiguous disk-only owner receipts retain recovery work");
+                Check(Directory.Exists(ambiguousA) && Directory.Exists(ambiguousB), "ambiguous receipts never authorize deletion");
+                Directory.Delete(ambiguousA, true); Directory.Delete(ambiguousB, true);
                 for (var i = 0; i < 9; i++)
                 {
                     var removed = Context(now, [], "removed-slot-" + i);
