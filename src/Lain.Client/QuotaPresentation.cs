@@ -44,6 +44,7 @@ public static class QuotaPresentation
         // A rolling credit allowance is still a short quota window, not an extra wallet.
         if (ShortWindow(quota)) return false;
         var label = quota.WindowLabel ?? "";
+        if (label.Contains("not credit balance", StringComparison.OrdinalIgnoreCase)) return false;
         return Fragment(quota) is "monthlycredits" or "purchasedcredits" or "freecredits"
             || label.Contains("credits", StringComparison.OrdinalIgnoreCase)
             || label.Contains("credit balance", StringComparison.OrdinalIgnoreCase);
@@ -112,6 +113,7 @@ public static class QuotaPresentation
     {
         var label = (quota.WindowLabel ?? "").ToLowerInvariant();
         var match = DurationPattern.Match(label);
+        if (!match.Success) match = DurationPattern.Match(Fragment(quota).Replace('_', ' ').Replace('-', ' '));
         if (match.Success && double.TryParse(match.Groups["number"].Value, NumberStyles.AllowDecimalPoint,
                 CultureInfo.InvariantCulture, out var number) && number > 0)
         {

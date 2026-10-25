@@ -58,12 +58,14 @@ Check(QuotaPresentation.IsLongWindow(bounded with { WindowEnd = now.AddDays(8) }
 Check(QuotaPresentation.IsLongWindow(monthly with { WindowStart = now.AddDays(-2), WindowEnd = now }), "A monthly semantic label is not shortened by its partial sample period");
 var fragmentFive = five with { WindowLabel = null, Source = "https://provider.invalid/api#fiveHour" };
 Check(QuotaPresentation.Order([sevenHour, fragmentFive]).First() == fragmentFive, "Known semantic source fragment identifies a short window");
+Check(QuotaPresentation.Order([weekly, fragmentFive with { Source = "https://provider.invalid/api#limit_7h" }]).First().Source.EndsWith("#limit_7h"), "Numeric source-fragment duration also supplies a semantic window");
 var creditWindow = Quota("Credits · 5 hours · 2");
 Check(!QuotaPresentation.IsAdditionalCredit(creditWindow) && !QuotaPresentation.IsSecondary(creditWindow), "Rolling credit allowances stay primary rather than being mistaken for wallets");
 var minute = Quota("model · Tokens per minute");
 var day = Quota("model · Requests per day");
 Check(QuotaPresentation.Order([day, five, minute]).SequenceEqual(new[] { minute, five, day }), "Provider minute and day labels have semantic durations");
 Check(!QuotaPresentation.IsSecondary(Quota("Weekly plan credits")), "Weekly subscription credit windows remain short limits");
+Check(!QuotaPresentation.IsAdditionalCredit(Quota("Account monthly spend constraint · not credit balance")), "A spend constraint explicitly distinguished from credit balance is not an additional wallet");
 var otherA = Quota("Unspecified A");
 var otherB = Quota("Unspecified B");
 Check(QuotaPresentation.Order([otherB, otherA]).SequenceEqual(new[] { otherB, otherA }), "Equivalent relevance retains original order");
