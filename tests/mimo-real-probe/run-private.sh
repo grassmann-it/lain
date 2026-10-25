@@ -48,8 +48,12 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 mkdir -p "$runtime/xdg/config" "$runtime/xdg/data" "$runtime/xdg/cache" "$runtime/run" "$runtime/lain"
+mkdir -p "$runtime/tmp"
+export TMPDIR="$runtime/tmp"
+export LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe
+export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json
 touch "$runtime/Xauthority"
-Xvfb -displayfd 3 -screen 0 1280x900x24 -nolisten tcp -auth "$runtime/Xauthority" \
+Xvfb -displayfd 3 -screen 0 1280x900x24 -nolisten tcp -extension GLX -auth "$runtime/Xauthority" \
   3>"$runtime/display" >"$output/xvfb.log" 2>&1 &
 xvfb_pid=$!
 for ((attempt=0; attempt<100; attempt++)); do
@@ -77,7 +81,9 @@ for ((attempt=0; attempt<100; attempt++)); do
   kill -0 "$dbus_pid" 2>/dev/null || exit 2
   sleep .05
 done
+[[ -S "$runtime/run/bus" ]] || { echo 'Private D-Bus socket unavailable' >&2; exit 2; }
 export DBUS_SESSION_BUS_ADDRESS="$(head -n 1 "$runtime/bus-address")"
+[[ "$DBUS_SESSION_BUS_ADDRESS" == "unix:path=$runtime/run/bus"* ]] || exit 2
 export XDG_CONFIG_HOME="$runtime/xdg/config" XDG_DATA_HOME="$runtime/xdg/data" XDG_CACHE_HOME="$runtime/xdg/cache" XDG_RUNTIME_DIR="$runtime/run"
 export LAIN_HOME="$runtime/lain" LAIN_MIMO_PROBE_RUNTIME="$runtime"
 export LAIN_TEST_XVFB_PID="$xvfb_pid" LAIN_TEST_DISPLAY="$DISPLAY"

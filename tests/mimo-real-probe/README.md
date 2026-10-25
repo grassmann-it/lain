@@ -38,6 +38,46 @@ with `--startup-only`. Exit0 in this mode means only opened and erased; it prove
 neither authentication nor monitoring. See
 [N03 qualification](../../docs/next-qualification/n03-mimo.md) for the exact plan.
 
+For Root's single real startup attempt use `run-startup-private.sh`, with the
+reviewed **new** probe DLL and its matching Host SHA/source commit. This wrapper
+refuses an inherited HOME different from the user's passwd home and leaves the
+HOME value unchanged. A private mount overlays its filesystem with a new empty
+home; the real user's browser profiles, crash-report directories and sockets are
+hidden. Artifact files are mounted read-only. The private `/tmp` contains X11
+pathname sockets; `/run`, PID/IPC/UTS, Xauthority, D-Bus and XDG state are private.
+The outer network namespace is retained for public-console resources, so X11's
+abstract socket uses a unique display and private authentication. No sandbox is
+disabled. The runner uses N09's software Mesa/llvmpipe/EGL environment and disables
+Xvfb GLX; TMPDIR is on its fresh cache-backed filesystem. It never captures a
+screenshot or calls a named connector read in this mode.
+
+After the coordinator supplies the three reviewed inputs, this is the bounded
+command (no build is performed by either script):
+
+```sh
+: "${LAIN_MIMO_PROBE_DLL:?absolute newly built MiMo.RealProbe.dll}"
+: "${LAIN_MIMO_PROBE_HOST_SHA256:?matching reviewed Host SHA256}"
+: "${LAIN_MIMO_PROBE_SOURCE_COMMIT:?full source commit for that build}"
+: "${LAIN_MIMO_PROBE_EVIDENCE:?absolute new directory below user cache}"
+systemd-run --user --wait --collect --unit="lain-mimo-startup-$(date -u +%Y%m%dT%H%M%SZ)" \
+  -p MemoryHigh=1536M -p MemoryMax=2G -p MemorySwapMax=256M -p CPUQuota=150% \
+  -p RuntimeMaxSec=125s -p TimeoutStopSec=5s -p KillMode=control-group \
+  --setenv=LAIN_MIMO_PROBE_SLOT=1 \
+  --setenv="LAIN_MIMO_PROBE_HOST_SHA256=$LAIN_MIMO_PROBE_HOST_SHA256" \
+  --setenv="LAIN_MIMO_PROBE_SOURCE_COMMIT=$LAIN_MIMO_PROBE_SOURCE_COMMIT" \
+  /usr/bin/nice -n 10 /usr/bin/ionice -c3 /usr/bin/bash \
+  /home/tomka/.cache/lain-worktrees/next-20261025/n03-mimo/tests/mimo-real-probe/run-startup-private.sh \
+  "$LAIN_MIMO_PROBE_DLL" "$LAIN_MIMO_PROBE_EVIDENCE"
+```
+
+Run from the original user environment, outside any earlier private UI runner;
+never assign a synthetic HOME before this command. The inner probe is limited to
+90 seconds, namespace supervisor to 115 seconds, and unit to 125 seconds plus its
+5-second kill grace. Keep `inputs.sha256`, `source-commit.txt`, `exit-code.txt`,
+`supervisor.log` and `probe-evidence/`. The wrapper deletes only its newly created
+private home afterward; PID-namespace exit and the unit kill all owned descendants.
+No real attempt with this wrapper has yet been run.
+
 ## Build handoff: assigned serial slot only
 
 `/usr/bin/chromium` was found by read-only inventory. Existing Main Host DLLs

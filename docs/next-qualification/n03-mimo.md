@@ -112,3 +112,17 @@ an authenticated monitor. This gate is open; no login, MFA, provider account,
 entitlement or real quota success is claimed here.
 
 No package update, installation or live-state modification has been performed.
+
+## Single-attempt runner preparation
+
+The startup-only outer runner now overlays a fresh empty filesystem at unchanged
+HOME, with read-only probe artifacts, private `/tmp` X11 pathname sockets, `/run`,
+PID/IPC/UTS and D-Bus. Network remains available only as ordinary browser/page
+behavior; no named API read or login is added. It rejects a caller that already
+substituted HOME. Software Mesa/llvmpipe, Mesa EGL and disabled Xvfb GLX match the
+N09 software-rendered environment. Its inner TMPDIR uses fresh cache-backed state.
+The new runner takes a reviewed absolute probe DLL, Host hash and source commit;
+it never selects an old build automatically. Exact bounded unit command and
+evidence locations are in the [probe README](../../tests/mimo-real-probe/README.md).
+Only static shell checks are part of this preparation; no browser/build/network
+attempt has been performed here.
