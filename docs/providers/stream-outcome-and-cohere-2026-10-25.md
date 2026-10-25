@@ -138,7 +138,17 @@ false accepted without forwarding, instructions/token budget/text format/effort
 preserved, function call and full-history result roundtrip, durable true/ID/state
 rejections, native declaration loss prevention, final overrides and unchanged
 Chat field subset. These fixtures do not prove real Cohere model behavior.
-The follow-up is source-prepared; execution awaits the shared test slot.
+Follow-up local result: **PASS** at source commit `50ebc9e`, prepared manifest
+source hash `686e62602282d077fe1e7188e599ec747875a90e42ed3ad33f518645be92f61a`.
+`go test -mod=readonly -p=1 ./internal/lain ./internal/freeonly -count=1 -timeout=90s`
+passed: lain 0.630 seconds, freeonly 0.004 seconds, 37.335 seconds total elapsed.
+The existing Go 1.27.2 toolchain ran inside a private user/network namespace with
+loopback only and module fetching disabled; MemoryHigh 1536M, MemoryMax 2G,
+SwapMax 256M, CPU 150%, GOMAXPROCS 2, GOMEMLIMIT 1GiB, nice 10, ionice 7 and
+outer timeout 120 seconds. The confirmed terminal process exited 0 and the shared
+slot was released. Logs, command, qualification and prepared manifest remain in
+`/tmp/lain-cohere-stateless-20261025-ndt7d113/`. No installed runtime or real
+provider behavior is claimed by this test.
 
 ## Remaining compatibility scope
 
