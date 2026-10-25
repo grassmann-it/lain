@@ -963,7 +963,15 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         Check(new[] { "a2", "a3", "a4", "a5", "a-new" }.All(id => Controls<Button>().Any(button => AutomationProperties.GetName(button) == $"Inspect inactive account {id}")),
             "configured accounts with no matching observed activity remain discoverable");
 
-        await CaptureBoth("usage-analysis", () => Named<StackPanel>("Usage performance").BringIntoView(), () =>
+        void RevealResults()
+        {
+            var page = Named<ScrollViewer>("Usage results scroll");
+            var table = Named<ScrollViewer>("Usage table scroll");
+            table.Offset = default;
+            Named<ScrollViewer>("Usage detail scroll").Offset = default;
+            page.Offset = new Vector(0, table.TranslatePoint(default, (Control)page.Content!)!.Value.Y);
+        }
+        await CaptureBoth("usage-analysis", RevealResults, () =>
         {
             var table = Named<ScrollViewer>("Usage table scroll");
             var detail = Named<ScrollViewer>("Usage detail scroll");
@@ -971,6 +979,10 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
             var detailOrigin = detail.TranslatePoint(default, window)!.Value;
             Check(detailOrigin.X >= tableOrigin.X + table.Bounds.Width && Math.Abs(detailOrigin.Y - tableOrigin.Y) < 2,
                 "usage keeps independent table and selected-detail panes adjacent at both window sizes");
+            var page = Named<ScrollViewer>("Usage results scroll");
+            var pageOrigin = page.TranslatePoint(default, window)!.Value;
+            Check(tableOrigin.Y >= pageOrigin.Y - 1 && tableOrigin.Y + table.Bounds.Height <= pageOrigin.Y + page.Bounds.Height + 1,
+                "usage screenshot reveals the whole bounded results area after scrolling past open filters");
             Check(Named<TextBlock>("Usage selected group name").Text == "Unknown",
                 "usage resize retains the selected group rather than selecting the first sorted row");
         });
@@ -987,7 +999,7 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         await ClickUsageApply();
         Check(HasText("Configured accounts without matching observed activity · coverage is incomplete", true),
             "unobserved accounts are qualified when historical coverage is incomplete");
-        await CaptureBoth("usage-unobserved", () => Named<Button>("Inspect inactive account a2").BringIntoView());
+        await CaptureBoth("usage-unobserved", RevealResults);
         fixture.IncompleteCoverage = false;
         fixture.AnalysisFailure = true;
         await ClickUsageApply();
