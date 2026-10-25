@@ -56,3 +56,25 @@ Die gemeinsame Anzeige benötigt seit N01 das aktuelle vollständige Accountinve
 Methodengruppen-Verwendungen von `AccountDisplayName` und `BudgetIdentity` wurden
 statisch geprüft; alle liegen jetzt in Instanzmethoden. Kein zusätzlicher Build
 aus diesem Worktree (Slot verbleibt bei N05). `git diff --check` ohne Befund.
+
+## N09-Fix: Monitor bei 640×420
+
+Basis `b74a398`, Source-only-Nachtrag nach unabhängigem Datei-/Screenshotreview.
+Bei tatsächlichen 640×420 blieben mit dauerhafter 340px-Inventarspalte nur etwa
+48px Inventarhöhe: der lange Detailbutton wurde abgeschnitten, drei native
+Q02-Zellen scheiterten vor dem Öffnen des Inspectors.
+
+Unter 800px belegen Accounts jetzt jeweils die volle Breite: ohne Auswahl das
+Inventar, mit Auswahl der Inspector. Dadurch kann die Inventarüberschrift
+wieder einzeilig neben den Aktionen liegen; lange Namen erhalten mehr Breite.
+Die vorhandenen Controls bleiben montiert. Close/Escape öffnet das Inventar
+mit gespeicherter Scrollposition und ursprünglichem Triggerfokus wieder.
+Beim Verkleinern wird Fokus aus dem dann unsichtbaren Inventar nach Close
+übergeben. Versteckte Scrollereignisse überschreiben die gespeicherte Position
+nicht; Navigation/Präsentationswechsel behalten den gespeicherten Offset.
+Ab 800px bleibt 340px/Rest, ab 1000px */400px unverändert nebeneinander.
+
+Keine Änderungen an Quota-Fakten, Reihenfolge, Backend, zentralen Assertions oder
+Fixturebedingungen. `git diff --check` bestanden; Build/Runtime hier ausdrücklich
+nicht gestartet. Erneut zu prüfen: die drei 640-Zellen plus die zwölf übrigen
+Matrixzellen je Skala, insbesondere Close/Escape, Fokus und Scrollrückkehr.

@@ -89,7 +89,10 @@ public sealed partial class MainWindow
         else scroll.Content = content;
         AutomationProperties.SetName(scroll, "Account inventory");
         _accountListScroll = scroll;
-        scroll.ScrollChanged += (_, _) => _accountInventoryOffset = scroll.Offset;
+        scroll.ScrollChanged += (_, _) =>
+        {
+            if (_workspace.IsVisible && ReferenceEquals(_accountListScroll, scroll)) _accountInventoryOffset = scroll.Offset;
+        };
         var offset = _accountInventoryOffset;
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
@@ -113,7 +116,7 @@ public sealed partial class MainWindow
 
     private void PrepareAccountsRender()
     {
-        if (!_restoringAccountNavigation && _accountListScroll is { } list) _accountInventoryOffset = list.Offset;
+        if (!_restoringAccountNavigation && _workspace.IsVisible && _accountListScroll is { } list) _accountInventoryOffset = list.Offset;
         if (_inspectedAccountId is { } id)
         {
             _pendingAccountInspection = id;
@@ -236,12 +239,34 @@ public sealed partial class MainWindow
         try
         {
             var accountPage = _section == "Accounts" && !_editing;
-            var narrow = (Bounds.Width > 0 ? Bounds.Width : Width) < 1000;
-            // Accounts A keeps inventory and detail mounted side by side at both
-            // agreed sizes. Each pane retains its own independent scroll surface.
-            _workspaceRegion.ColumnDefinitions = new ColumnDefinitions(!accountPage ? "*,0" : narrow ? "340,*" : "*,400");
+            var width = Bounds.Width > 0 ? Bounds.Width : Width;
+            var singlePane = accountPage && width < 800;
+            var detailOnly = singlePane && _inspectedAccountId is not null && _accountInspectorDetails is not null;
+            var restoreInventory = !_workspace.IsVisible && !detailOnly;
+            var moveFocusToDetail = detailOnly && _workspace.IsKeyboardFocusWithin;
+            if (_workspace.IsVisible && detailOnly && _accountListScroll is { } currentList)
+                _accountInventoryOffset = currentList.Offset;
+            // Keep both controls mounted. Below 800px the inventory and Inspector
+            // each get the full width; Close/Escape returns to the saved inventory.
+            // The agreed 800/1120px layouts retain their independent side-by-side panes.
+            _workspace.IsVisible = !detailOnly;
+            _workspaceRegion.ColumnDefinitions = new ColumnDefinitions(!accountPage || singlePane && !detailOnly
+                ? "*,0" : detailOnly ? "0,*" : width < 1000 ? "340,*" : "*,400");
+            if (restoreInventory && _accountListScroll is { } list)
+            {
+                var offset = _accountInventoryOffset;
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (_section == "Accounts" && !_editing && _workspace.IsVisible && ReferenceEquals(_accountListScroll, list))
+                        list.Offset = offset;
+                }, DispatcherPriority.Loaded);
+            }
+            if (moveFocusToDetail) Dispatcher.UIThread.Post(() =>
+            {
+                if (!_workspace.IsVisible) _accountInspectorClose?.Focus();
+            }, DispatcherPriority.Loaded);
             if (_accountInspectorClose is { } close) close.Content = "Close";
-            if (accountPage)
+            if (accountPage && (!singlePane || detailOnly))
             {
                 if (!ReferenceEquals(_accountInspector.Child, _accountInspectorDetails) || _accountInspector.Child is null)
                 {

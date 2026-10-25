@@ -114,7 +114,7 @@ public sealed partial class MainWindow
         var status = _accountStatus;
         var filtersExpanded = _accountFiltersExpanded;
         var selected = _inspectedAccountId;
-        var listOffset = _accountListScroll?.Offset ?? _accountInventoryOffset;
+        var listOffset = _workspace.IsVisible ? _accountListScroll?.Offset ?? _accountInventoryOffset : _accountInventoryOffset;
         var detailOffset = _accountInspectorScroll?.Offset ?? _accountInspectorOffset;
         return () =>
         {
