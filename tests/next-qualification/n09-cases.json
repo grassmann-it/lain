@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "baseline": "7661886",
+  "kind": "planned acceptance cases, not execution evidence",
+  "globalState": "source-preparation",
+  "matrix": {
+    "gatewayViewports": [[1120, 780], [800, 560]],
+    "monitorViewports": [[1120, 780], [800, 560], [640, 420]],
+    "scales": [1, 1.25],
+    "informationLevels": ["Barebones", "Simple", "Advanced"],
+    "density": "Normal for focused flow matrix; existing Compact editor cases only when affected",
+    "navigation": "Use actual supported destinations; Profiles direct, Live direct in Simple, one bottom-right mode selector. Shared navigation between modes is allowed."
+  },
+  "cases": [
+    {
+      "id": "N09-Q01", "owner": "n01_display", "state": "awaiting-integration-and-runtime",
+      "operator": "tests/desktop/Program.cs --n01-display-smoke",
+      "reuse": ["tests/desktop/Fixture.cs", "tests/desktop/QuotaHierarchyCases.cs"],
+      "fixture": "Two accounts with the same known default label, one custom long name; selected account refresh timeout/403 with no snapshot; another account retains a measured 37 percent and an older success timestamp.",
+      "assertions": ["Visible account-local error without tooltip search", "Timeout does not claim login required or paid plan needed", "Last-good measured value remains explicitly old", "Short labels and filters retain stable account IDs and saved names", "No implicit provider refresh or login"],
+      "requiredEvidence": ["functional assertions", "request ledger", "actual scale and viewport", "PNG review"]
+    },
+    {
+      "id": "N09-Q02", "owner": "n09", "state": "native-extension-pending",
+      "operator": "tests/desktop/Program.cs focused N09 viewport/mode case",
+      "reuse": ["tests/desktop/Uxd18MonitorCases.cs", "tests/desktop/QuotaHierarchyCases.cs", "tests/uxd-acceptance/NativeInput.cs"],
+      "fixture": "Same measured/unknown quota snapshot across Gateway and Monitor; long account names, multi-window account and no-snapshot error.",
+      "assertions": ["Allowed matrix client dimensions and actual RenderScaling are recorded", "Monitor 640x420 keeps details and Back reachable", "Known short windows first; monthly and extra balances in details", "Unknown remains unknown and is never rendered as a zero-percent budget", "Tab/Shift+Tab/Enter/Space/Escape act on actual mounted controls", "Mode changes preserve selected identity and retained drafts without inventing different navigation"],
+      "requiredEvidence": ["native input trace", "viewport and scale coverage", "mutation count unchanged", "PNG review at each required size/scale"]
+    },
+    {
+      "id": "N09-M01", "owner": "n09", "state": "native-extension-pending",
+      "operator": "tests/uxd-acceptance native model command flow plus focused physical-order extension",
+      "reuse": ["tests/desktop/Uxd19ModelsCases.cs", "tests/uxd-acceptance/StateFlows.cs", "tests/uxd-acceptance/NativeInput.cs"],
+      "fixture": "45 model aliases, stable r1 references in multiple profiles, one hidden and one disabled route; reordered inventory, stale revision and same-alias replacement with another ID.",
+      "assertions": ["Physical inventory position matches displayed sort/order without retargeting selected stable ID", "Pointer, context menu and keyboard use the same command", "Named references disable removal", "Revision change or removed ID blocks frozen action without a PUT to another route", "Save conflict retains mounted inputs and review route", "No global visibility change is presented as removing one group member"],
+      "requiredEvidence": ["physical bounds/order", "native input trace", "route IDs and request bodies", "conflict and lock screenshots"]
+    },
+    {
+      "id": "N09-P01", "owner": "codex_picker_impl", "state": "owner-cases-pending",
+      "operator": "tests/desktop/Program.cs --n05n06-profiles-smoke",
+      "reuse": ["tests/desktop/Fixture.cs", "tests/uxd-acceptance/StateFlows.cs"],
+      "fixture": "Daily viewed while Workspace 2 is applied; explicit group opt-in; two installation targets and synthetic executable; immutable generation/export revision; delayed export and stale configuration.",
+      "assertions": ["Prepare sends explicit group flag and installs no files or client", "Cancel and target/profile change cause no install or Apply and retain unrelated draft", "Known revision change requires new preparation", "HTTP409 retains draft and offers recovery", "Install uses the exact prepared generation/revision", "Only qualified target shows the matching start command", "Missing or changed dispatcher is explained, never overwritten", "Ordinary Codex sentinel unchanged"],
+      "requiredEvidence": ["fixture requests with opt-in and revision", "before/after file inventory", "native Cancel/target switch trace", "prepared/blocked/installed screenshots"]
+    },
+    {
+      "id": "N09-P02", "owner": "codex_picker_impl+collections_backend", "state": "owner-cases-pending",
+      "operator": "tests/desktop/Program.cs --n05n06-profiles-smoke and existing model/client contract suites",
+      "reuse": ["tests/models/RouterCases.cs", "tests/client-cli/Program.cs", "tests/codex-picker/host_model_groups.py"],
+      "fixture": "Two custom groups sharing real route IDs; collection-order permutation; explicit account router; ambiguous provider, missing/deactivated member, pool and unqualified Free cases.",
+      "assertions": ["Groups are managed in existing Profiles, without a new top-level destination", "Complete unique collection permutation changes neither members nor routers", "Member order and group order survive save/reload/export", "Stale save and invalid permutation do not mutate state", "Group membership changes do not flip global Route.Visible", "Multi-account ambiguity requires explicit account target", "Free missing qualification stays disabled", "Save, Apply and export/install remain separate actions"],
+      "requiredEvidence": ["revisioned route/collection/router request ledger", "no implicit Apply/inference", "grouped export identity/order", "native keyboard/pointer order actions", "PNG review"]
+    },
+    {
+      "id": "N09-C01", "owner": "cli_usage_table", "state": "awaiting-owner-evidence",
+      "operator": "existing focused client-cli usage formatting cases",
+      "reuse": ["tests/client-cli/Program.cs"],
+      "fixture": "Same known/unknown quota/usage snapshot as UI at narrow/wide TTY, pipe and NO_COLOR.",
+      "assertions": ["Measured quantities and reset freshness match UI", "Pipe and NO_COLOR contain no terminal control sequences", "JSON/full preserve complete data", "Formatting does not write configuration or invoke providers"],
+      "requiredEvidence": ["fixture input identity", "width-specific output", "pipe/NO_COLOR output", "source/binary pin"]
+    },
+    {
+      "id": "N09-I01", "owner": "root", "state": "package-gate-pending",
+      "operator": "tests/codex-picker/host_model_groups.py; tests/codex-picker/native_model_picker.py",
+      "reuse": ["tests/backend/router_sdk_probe.py", "tests/codex-picker/host_model_groups.py", "tests/codex-picker/native_model_picker.py"],
+      "fixture": "Exact selected mixed package and qualified Codex client, synthetic private state/loopback provider; prepared profiles and resulting group order.",
+      "assertions": ["Exact selected Host/CLI/Desktop/Core/Codex hashes recorded independently", "Synthetic grouped export reaches actual native model menu in expected order", "Account/route wire aliases and conversation pin persist", "Main Codex and foreign launchers unchanged", "Only justified focused regressions rerun after change"],
+      "requiredEvidence": ["source and binary manifest", "separate package/install/native receipts", "explicit individual PNG review"]
+    },
+    {
+      "id": "N09-R01", "owner": "root", "state": "real-provider-gate-not-started",
+      "operator": "root's explicitly scheduled small real two-turn autorouter probe",
+      "reuse": ["docs/collection-router-v1.md"],
+      "fixture": "Existing qualified account/router, two small conversation steps only; no new provider load, credentials or account creation from N09.",
+      "assertions": ["Output, Inspector, real route/account, sticky binding and durable usage agree", "Closing UI does not stop Host", "Name exactly which method/model was tested", "Do not generalize from earlier calls to all models/providers"],
+      "requiredEvidence": ["separate explicit runtime authorization", "redacted exact method/model receipt", "usage/Inspector identity match"]
+    },
+    {
+      "id": "N09-R02", "owner": "root+user", "state": "user-interaction-gates-open",
+      "operator": "existing provider-specific authorized flow only",
+      "reuse": ["docs/account-connect-qualification/mimo.md"],
+      "fixture": "OpenRouter explicit consent/login and any visible key bootstrap; MiMo login/MFA; Cloudflare allowed account/dataset read.",
+      "assertions": ["No automatic login, new key creation or provider request from acceptance preparation", "Saved grant, verified identity and successful reporting read are distinct", "Missing permission or user interaction stays an open real gate", "Never call synthetic result a successful real quota read"],
+      "requiredEvidence": ["separate method authorization", "identity/scope/reporting receipt or honest blocker"]
+    }
+  ]
+}
