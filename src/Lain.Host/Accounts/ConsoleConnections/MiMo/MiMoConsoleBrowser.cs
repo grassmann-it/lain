@@ -107,7 +107,8 @@ public sealed class MiMoConsoleBrowser : IMiMoConsoleBrowser, IAsyncDisposable
                     lock (lifecycle)
                     {
                         ObjectDisposedException.ThrowIf(disposed, this);
-                        if (session.Lifetime.IsCancellationRequested || process.HasExited) throw new MiMoConsoleBrowserStartException(MiMoBrowserStartReason.ProcessExited);
+                        if (session.Lifetime.IsCancellationRequested) throw new MiMoConsoleBrowserStartException(MiMoBrowserStartReason.StartupInterrupted);
+                        if (process.HasExited) throw new MiMoConsoleBrowserStartException(MiMoBrowserStartReason.ProcessExited);
                         session.Port = port;
                         return profile;
                     }
