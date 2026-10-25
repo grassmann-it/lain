@@ -242,7 +242,7 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
         }
         if (!handle.Purposes.Contains("inference", StringComparer.Ordinal))
             throw new InvalidDataException("Referenced credential does not grant inference.");
-        if (!string.Equals(account.Provider, handle.Binding.Provider, StringComparison.OrdinalIgnoreCase))
+        if (AccountService.CanonicalProviderId(account.Provider) != AccountService.CanonicalProviderId(handle.Binding.Provider))
             throw new InvalidDataException("Inference credential provider does not match the account.");
         AccountService.EnsureCompatibleBinding(account.Binding, handle.Binding);
         if (secrets.Generations.IsRetired(handle)) throw new InvalidDataException("Credential owner recovery is required.");
