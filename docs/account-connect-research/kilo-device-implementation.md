@@ -53,7 +53,9 @@ Reconnect reads only the selected account's current inference-generation lease
 before the first authorization POST. A Kilo-owned handoff preserves qualified
 connection/route/transport IDs, billing choice and safe imported model mappings.
 It removes old root/variant/YAML keys, then inserts the newly issued token in all
-transport descriptors. Foreign endpoints, custom/organization headers and unknown
+transport descriptors. The own importer's `displayNameIsExplicit` and
+`sourceEnabled` descriptors are preserved as strict booleans, including false;
+strings, numbers, objects and null are rejected. Foreign endpoints, custom/organization headers and unknown
 private additions require local review before authorization begins. This avoids
 publishing a new key that silently breaks existing selected routes or forwards it
 to an unqualified transport. Other purpose generations remain centrally managed.
@@ -91,6 +93,12 @@ key replacement, real SQLite History preservation, and the current-generation
 handoff into the real quota adapter with a zero balance. No real provider
 account/login API, inference, purchase, cap change or external credential store
 is used by these tests.
+
+An additional fixture runs the actual `LegacyImportService` on a generated
+synthetic YAML file outside the temporary own state. It retains both enabled and
+disabled transport descriptors, saved alias routes, profile and private import
+metadata through device reconnect and actual runtime compilation. It does not
+strip descriptor flags to make the import pass.
 
 Run the fixture only in the assigned serial build slot:
 

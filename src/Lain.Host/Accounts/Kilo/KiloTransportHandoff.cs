@@ -55,6 +55,14 @@ internal sealed class KiloTransportHandoff(ConfigurationRepository configuration
             || source["sourceSection"]?.GetValue<string>() is not (null or "openai-compatibility")) throw Invalid();
         var clean = new JsonObject { ["kind"] = "api-key", ["provider"] = "kilo", ["coreProvider"] = core ?? "kilo",
             ["sourceSection"] = "openai-compatibility", ["baseUrl"] = endpoint };
+        // LegacyImportService emits these own, nonsecret boolean descriptors.
+        // Preserve false as well as true; never coerce strings/numbers/null.
+        foreach (var name in new[] { "displayNameIsExplicit", "sourceEnabled" })
+            if (source.TryGetPropertyValue(name, out var flag))
+            {
+                if (flag is not JsonValue value || !value.TryGetValue<bool>(out var enabled)) throw Invalid();
+                clean[name] = enabled;
+            }
         var registry = new ProviderCatalogRegistry();
         foreach (var name in new[] { "providerRouteId", "providerConnectionId", "transportId" })
             if (source[name] is { } value)
@@ -80,7 +88,7 @@ internal sealed class KiloTransportHandoff(ConfigurationRepository configuration
         foreach (var property in source)
             if (property.Key is not ("kind" or "provider" or "coreProvider" or "sourceSection" or "baseUrl" or "apiKey"
                 or "origin" or "providerRouteId" or "providerRouteIds" or "providerConnectionId" or "transportId"
-                or "settings" or "transports" or "sourceConfig" or "entryConfig")) throw Invalid();
+                or "settings" or "transports" or "sourceConfig" or "entryConfig" or "displayNameIsExplicit" or "sourceEnabled")) throw Invalid();
         foreach (var name in new[] { "sourceConfig", "entryConfig" })
             if (source[name] is { } yaml) clean[name] = SafeYaml(yaml.GetValue<string>(), name == "entryConfig");
         return clean;

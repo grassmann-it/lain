@@ -25,6 +25,8 @@ try
     await LateApproval();
     await ActualLifecycle();
     await LegacyAliasLifecycle();
+    await ActualLegacyImportLifecycle();
+    await InvalidImportMetadata();
     await UnverifiedRecoveryCannotPublish();
     await UnsafeReconnect();
     Console.WriteLine($"Kilo device login: {assertions} assertions passed (offline fake HTTP; no real provider/login/inference).");
@@ -317,6 +319,93 @@ async Task UnverifiedRecoveryCannotPublish()
         var recovery = new CredentialRecoveryService(repository, accounts, secrets.Generations);
         await Throws<InvalidDataException>(() => Task.FromResult(recovery.Adopt(0, login.Id)), "Recovery.Adopt cannot bypass personal profile gate");
         Check(repository.Snapshot.Accounts.Length == 0 && handler.Calls == 3, "rejected adoption makes no provider call or account");
+    }
+}
+
+async Task ActualLegacyImportLifecycle()
+{
+    var paths = new OwnStatePaths(Path.Combine(root, "actual-legacy-import")); var secrets = new SecretStore(paths);
+    var repository = new ConfigurationRepository(paths); var accounts = new AccountService(repository, secrets); var clock = new Clock();
+    var source = Path.Combine(root, "synthetic-legacy-source.yaml");
+    OwnStatePaths.WritePrivate(source, $$"""
+        openai-compatibility:
+          - name: ai-gateway.kilo.ai
+            base-url: https://ai-gateway.kilo.ai/api/v1
+            api-key-entries:
+              - api-key: {{OldToken}}
+                priority: 2
+            models:
+              - name: liquid/lfm-2.5-2.6b:free
+                alias: imported-liquid-alias
+          - name: ai-gateway.kilo.ai
+            base-url: https://ai-gateway.kilo.ai/api/v1
+            prefix: historical
+            disabled: true
+            api-key-entries:
+              - api-key: {{OldToken}}
+            models:
+              - name: historical-imported-model
+                alias: imported-historical-alias
+        """);
+    var sourceBytes = File.ReadAllBytes(source);
+    new LegacyImportService(paths, repository, secrets).Import(new(0, source));
+    var first = repository.Snapshot; var account = first.Accounts.Single();
+    Check(account.Provider == "ai-gateway.kilo.ai" && account.SharedWithLegacy && account.Enabled && first.Routes.Length == 2
+        && first.Routes.All(r => r.Provider == account.Provider && r.ProviderRouteId is null)
+        && first.Routes.Count(r => r.Enabled) == 1, "real importer creates consistent alias account and enabled/disabled legacy routes");
+    first = repository.Update(first.Revision, state => state with { Profiles = [new("profile-real-import", "Keep imported profile", [state.Routes.Single(r => r.Enabled).Id])] });
+    var original = JsonNode.Parse(secrets.ReadAccount(account.Id))!.AsObject();
+    string Metadata(JsonObject value) => JsonSerializer.Serialize(new {
+        SourceEnabled = value["sourceEnabled"]!.GetValue<bool>(), DisplayNameIsExplicit = value["displayNameIsExplicit"]!.GetValue<bool>(),
+        Transports = value["transports"]!.AsArray().Select(t => new { Id = t!["transportId"]!.GetValue<string>(),
+            SourceEnabled = t["sourceEnabled"]!.GetValue<bool>(), DisplayNameIsExplicit = t["displayNameIsExplicit"]!.GetValue<bool>() }).ToArray() });
+    var metadata = Metadata(original);
+    Check(original["transports"]!.AsArray().Count == 2 && original["sourceEnabled"]!.GetValue<bool>()
+        && original["transports"]!.AsArray().Count(t => t!["sourceEnabled"]!.GetValue<bool>()) == 1,
+        "actual imported descriptor fixture contains both true and false boolean flags");
+    var routes = JsonSerializer.Serialize(first.Routes); var profiles = JsonSerializer.Serialize(first.Profiles);
+    var importFiles = Directory.GetFiles(paths.Imports).ToDictionary(p => p, File.ReadAllBytes);
+    var writer = new ProxyConfigurationWriter(paths, secrets); writer.Write(first);
+    var handler = new Handler((request, _) => Task.FromResult(request.Method == HttpMethod.Post ? Initiation()
+        : request.RequestUri!.AbsoluteUri == KiloDeviceLoginAdapter.ProfileEndpoint ? Json("""{"email":"same@example.invalid"}""") : Approval()));
+    await using var adapter = new KiloDeviceLoginAdapter(handler, clock, repository, secrets);
+    await using var service = new LoginOperationService(configuration: repository, accounts: accounts, secrets: secrets, accountAdapters: [adapter], timeProvider: clock);
+    var login = await service.BeginAsync(first.Revision, new("kilo", "device", ["inference", "models", "quota"], AccountId: account.Id, ExpectedGeneration: account.Generation));
+    login = await service.StatusAsync(login.Id); var after = repository.Snapshot;
+    Check(login.State == "completed" && after.Accounts.Single().Id == account.Id && after.Accounts.Single().Provider == account.Provider
+        && after.Accounts.Single().Name == account.Name && after.Accounts.Single().SharedWithLegacy, "actual import reconnect preserves account identity/provider/name/provenance");
+    var current = JsonNode.Parse(secrets.ReadAccount(account.Id))!.AsObject();
+    Check(Metadata(current) == metadata && current["apiKey"]!.GetValue<string>() == NewToken
+        && current["transports"]!.AsArray().All(t => t!["apiKey"]!.GetValue<string>() == NewToken) && !current.ToJsonString().Contains(OldToken),
+        "actual imported flags and transport identities retained exactly while all saved keys are replaced");
+    Check(JsonSerializer.Serialize(after.Routes) == routes && JsonSerializer.Serialize(after.Profiles) == profiles
+        && after.Routes.Count(r => r.Enabled) == 1, "actual imported aliases/routes/profile and disabled selection preserved");
+    writer.Write(after); var yaml = File.ReadAllText(paths.ProxyConfig);
+    Check(yaml.Contains(NewToken) && !yaml.Contains(OldToken) && writer.RouteCredentials.Count == 1
+        && writer.RouteCredentials.ContainsKey(after.Routes.Single(r => r.Enabled).Id), "actual imported transport metadata compiles after reconnect without enabling disabled route");
+    var quotaSource = new HostQuotaSource(repository, secrets, new MonitorAccessService(repository, secrets, new MonitorCredentialStore(paths)));
+    Check((await quotaSource.GetCredentialAsync(account.Id))?.BearerToken == NewToken, "actual imported account quota resolves the newly published generation");
+    Check(File.ReadAllBytes(source).SequenceEqual(sourceBytes) && importFiles.All(f => File.ReadAllBytes(f.Key).SequenceEqual(f.Value)),
+        "synthetic import source, private snapshots and transport-specific route metadata remain unchanged");
+}
+
+async Task InvalidImportMetadata()
+{
+    foreach (var name in new[] { "displayNameIsExplicit", "sourceEnabled" })
+    foreach (var invalid in new[] { "null", "\"true\"", "1", "{}" })
+    {
+        var paths = new OwnStatePaths(Path.Combine(root, "invalid-flag-" + Guid.NewGuid().ToString("N"))); var secrets = new SecretStore(paths);
+        var repository = new ConfigurationRepository(paths); var accounts = new AccountService(repository, secrets); var clock = new Clock();
+        var json = JsonNode.Parse(JsonSerializer.Serialize(new { kind = "api-key", provider = "kilo", coreProvider = "kilo",
+            sourceSection = "openai-compatibility", apiKey = OldToken, baseUrl = KiloDeviceLoginAdapter.DefaultBaseUrl }))!.AsObject();
+        json[name] = JsonNode.Parse(invalid);
+        var state = accounts.Connect(0, new("kilo", "manual-fixture", ["inference"]), new("static-key", ["inference"], new("kilo"), json.ToJsonString()));
+        var handler = new Handler((_, _) => throw new Exception("unexpected HTTP"));
+        await using var adapter = new KiloDeviceLoginAdapter(handler, clock, repository, secrets);
+        var context = accounts.ReserveConnect(state.Revision, new("kilo", "device", ["inference"], AccountId: state.Accounts.Single().Id), "device-invalid-flag", clock.GetUtcNow().AddMinutes(10))
+            with { CheckpointCredentialAsync = (_, _) => Task.CompletedTask };
+        await Throws<InvalidOperationException>(() => adapter.BeginAsync(context, default), "import boolean metadata rejects nonboolean values before authorization");
+        Check(handler.Calls == 0 && secrets.ReadAccount(state.Accounts.Single().Id).Contains(OldToken), "invalid metadata preserves prior key with zero HTTP");
     }
 }
 
