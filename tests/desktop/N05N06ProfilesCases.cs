@@ -6,6 +6,7 @@ using System.Text.Json;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using Lain.Client;
 using Lain.Core;
@@ -60,26 +61,45 @@ internal sealed partial class Scenario
             probe.SetValue(window, Expression.Lambda(probe.FieldType, Expression.Constant(task, task.GetType()), parameter).Compile());
             return () => pendingType.GetMethod("SetResult")!.Invoke(pending, [proof]);
         }
+        Control CurrentEditor() => (Control)((ContentControl)type.GetField("_page", fields)!.GetValue(window)!).Content!;
+        bool InEditor(Control control, Control expected) => ReferenceEquals(control, expected) || control.GetVisualAncestors().Contains(expected);
+        bool Identifies(Control control, string name) => AutomationProperties.GetName(control) == name || control is Button button && Equals(button.Content, name);
+        T EditorControl<T>(string name) where T : Control
+        {
+            var expected = CurrentEditor();
+            var matches = Controls<T>().Where(control => Identifies(control, name) && InEditor(control, expected)).ToArray();
+            if (matches.Length != 1) throw new InvalidOperationException($"Current editor requires exactly one {typeof(T).Name} '{name}', found {matches.Length}.");
+            return matches[0];
+        }
+        async Task WaitForEditorFields(params (Type Type, string Name)[] required)
+        {
+            var expected = CurrentEditor();
+            string[] Missing() => required.Where(field => !Controls<Control>().Any(control =>
+                field.Type.IsInstanceOfType(control) && Identifies(control, field.Name) && InEditor(control, expected)))
+                .Select(field => field.Type.Name + " '" + field.Name + "'").ToArray();
+            try { await Wait(() => Missing().Length == 0, "N05/N06 current editor fields mounted: " + string.Join(", ", required.Select(field => field.Name))); }
+            catch (Exception error)
+            {
+                var logical = string.Join(" | ", expected.GetLogicalDescendants().OfType<Control>().Prepend(expected)
+                    .Where(control => required.Any(field => Identifies(control, field.Name)))
+                    .Select(control => $"{control.GetType().Name}:{AutomationProperties.GetName(control)} visible={control.IsVisible} effective={control.IsEffectivelyVisible}"
+                        + (control is ComboBox combo ? " selectedIndex=" + combo.SelectedIndex : "")));
+                throw new InvalidOperationException(error.Message + " Missing: " + string.Join(", ", Missing()) + ". Logical controls: " + logical, error);
+            }
+        }
+        Task WaitForEditor<T>(string name) where T : Control => WaitForEditorFields((typeof(T), name));
+        Task WaitForSetupControls() => WaitForEditorFields((typeof(TextBox), "lain command-line executable"),
+            (typeof(TextBox), "Destination parent folder"), (typeof(ComboBox), "Codex installation target"),
+            (typeof(CheckBox), "Include Codex model groups"));
+        Task WaitForRouterControls() => WaitForEditorFields((typeof(TextBox), "Automatic target client name"),
+            (typeof(ComboBox), "Automatic target group or account"), (typeof(CheckBox), "Automatic target enabled"));
         async Task Setup()
         {
             Snapshot(); Invoke("ShowCodexExport", fixture.Config.Profiles[0]);
-            var page = (ContentControl)type.GetField("_page", fields)!.GetValue(window)!;
-            var expected = (Control)page.Content!;
-            await Wait(() => new[] { "lain command-line executable", "Destination parent folder" }.All(name =>
-                Controls<TextBox>().Any(input => AutomationProperties.GetName(input) == name && input.GetVisualAncestors().Contains(expected))),
-                "N05 current setup fields are mounted before editing");
-            Named<TextBox>("lain command-line executable").Text = executable;
-            Named<TextBox>("Destination parent folder").Text = scratch;
+            await WaitForSetupControls();
+            EditorControl<TextBox>("lain command-line executable").Text = executable;
+            EditorControl<TextBox>("Destination parent folder").Text = scratch;
             await WaitForAction("Prepare Codex files");
-        }
-        Task WaitForEditor<T>(string name) where T : Control
-        {
-            var page = (ContentControl)type.GetField("_page", fields)!.GetValue(window)!;
-            var expected = (Control)page.Content!;
-            return Wait(() => Controls<T>().Any(control =>
-                (AutomationProperties.GetName(control) == name || control is Button button && Equals(button.Content, name))
-                && (ReferenceEquals(control, expected) || control.GetVisualAncestors().Contains(expected))),
-                "N05/N06 new editor control mounted: " + name);
         }
         async Task WaitForAction(string label)
         {
@@ -115,7 +135,7 @@ internal sealed partial class Scenario
         try
         {
             await ReadyClick("Profiles"); InjectDispatcher("proof-a"); await Setup();
-            Named<CheckBox>("Include Codex model groups").IsChecked = true;
+            EditorControl<CheckBox>("Include Codex model groups").IsChecked = true;
             var filesBefore = Directory.GetFileSystemEntries(scratch).Order().ToArray();
             await ReadyClick("Prepare Codex files");
             await Wait(() => HasText("No files installed yet"), "N05 grouped preparation completed");
@@ -124,18 +144,18 @@ internal sealed partial class Scenario
             Check(HasText("Model groups: 2", true), "N05 prepared scope comes from actual exported groups");
             var exportedBeforeReview = handler.Requests.Count;
             fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 }; Snapshot();
-            Invoke("RefreshProfileReviewState"); Invoke("ReviewDraft"); await WaitForEditor<TextBox>("lain command-line executable");
-            Check(Named<TextBox>("lain command-line executable").Text == executable
-                && Named<TextBox>("Destination parent folder").Text == scratch
-                && Named<ComboBox>("Codex installation target").SelectedIndex == 0
-                && Named<CheckBox>("Include Codex model groups").IsChecked == true,
+            Invoke("RefreshProfileReviewState"); Invoke("ReviewDraft"); await WaitForSetupControls();
+            Check(EditorControl<TextBox>("lain command-line executable").Text == executable
+                && EditorControl<TextBox>("Destination parent folder").Text == scratch
+                && EditorControl<ComboBox>("Codex installation target").SelectedIndex == 0
+                && EditorControl<CheckBox>("Include Codex model groups").IsChecked == true,
                 "N05 Review latest preserves hidden prepared setup inputs for the same stable profile");
             Check(handler.Requests.Count == exportedBeforeReview && !HasText("No files installed yet"),
                 "N05 Review latest discards old prepared artifacts without exporting or installing");
             await ReadyClick("Prepare Codex files");
             await Wait(() => HasText("No files installed yet"), "N05 reviewed inputs prepare a new revision explicitly");
-            await ReadyClick("Change prepared Codex target");
-            Check(Named<CheckBox>("Include Codex model groups").IsChecked == true, "N05 change setup retains explicit group choice");
+            await ReadyClick("Change prepared Codex target"); await WaitForSetupControls();
+            Check(EditorControl<CheckBox>("Include Codex model groups").IsChecked == true, "N05 change setup retains explicit group choice");
             await ReadyClick("Cancel");
             Check(Directory.GetFileSystemEntries(scratch).Order().SequenceEqual(filesBefore), "N05 prepared Cancel does not install files");
 
@@ -151,17 +171,17 @@ internal sealed partial class Scenario
 
             await Setup(); handler.RejectExport = true; await ReadyClick("Prepare Codex files");
             await Wait(() => HasText("draft is kept", true), "N05 HTTP 409 remains visible in setup draft");
-            Check(Named<TextBox>("Destination parent folder").Text == scratch, "N05 revision conflict preserves target inputs");
+            Check(EditorControl<TextBox>("Destination parent folder").Text == scratch, "N05 revision conflict preserves target inputs");
             handler.RejectExport = false; await ReadyClick("Cancel");
 
-            await Setup(); Named<CheckBox>("Include Codex model groups").IsChecked = true;
+            await Setup(); EditorControl<CheckBox>("Include Codex model groups").IsChecked = true;
             await ReadyClick("Prepare Codex files"); await Wait(() => HasText("No files installed yet"), "N05 receipt-bound setup prepared");
             InjectDispatcher("proof-b"); await ReadyClick("Install client files");
             await Wait(() => HasText("prerequisite changed", true), "N05 changed dispatcher receipt prevents installation");
             Check(Directory.GetFileSystemEntries(scratch).Order().SequenceEqual(filesBefore), "N05 changed dispatcher writes no files");
             await ReadyClick("Cancel");
 
-            await Setup(); Named<CheckBox>("Include Codex model groups").IsChecked = true;
+            await Setup(); EditorControl<CheckBox>("Include Codex model groups").IsChecked = true;
             await ReadyClick("Prepare Codex files"); await Wait(() => HasText("No files installed yet"), "N05 cancel-during-probe preparation ready");
             var releaseProbe = HoldDispatcher("proof-b");
             await ReadyClick("Install client files"); await ReadyClick("Cancel");
@@ -180,13 +200,13 @@ internal sealed partial class Scenario
 
             Snapshot(); Invoke("ShowProfileGroups", "p1"); await WaitForEditor<StackPanel>("Profile model groups");
             Check(HasText("multiple exported accounts", true), "N06 provider ambiguity explains explicit account repair");
-            await ReadyClick("Create group"); Named<TextBox>("Custom model group name").Text = "Research";
+            await ReadyClick("Create group"); await WaitForEditor<TextBox>("Custom model group name"); EditorControl<TextBox>("Custom model group name").Text = "Research";
             await ReadyClick("Add model gpt-lain-01 to group"); await ReadyClick("Add model gpt-lain-02 to group");
             // Shared menu/button action reorders identities, never clones routes.
             await Press(Controls<StackPanel>().Single(panel => Equals(panel.Tag, "r2")), "Move up");
             fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 }; Snapshot();
             Invoke("ReviewDraft"); await WaitForEditor<TextBox>("Custom model group name");
-            Check(Named<TextBox>("Custom model group name").Text == "Research",
+            Check(EditorControl<TextBox>("Custom model group name").Text == "Research",
                 "N06 Review latest retains collection name alongside explicit membership draft");
             await ReadyClick("Save group");
             await Wait(() => fixture.Config.Collections!.Any(value => value.Name == "Research"), "N06 global group saved");
@@ -201,8 +221,8 @@ internal sealed partial class Scenario
             await ReadyClick("Save group order");
             await Wait(() => fixture.Config.Collections![1].Id == research.Id, "N06 unsaved global collection permutation survives Review latest and persists");
 
-            await ReadyClick("Choose account target…");
-            var targets = Named<ComboBox>("Automatic target group or account");
+            await ReadyClick("Choose account target…"); await WaitForRouterControls();
+            var targets = EditorControl<ComboBox>("Automatic target group or account");
             Check(targets.SelectedItem?.ToString()?.Contains("choose a specific account") == true,
                 "N06 repair does not silently preselect one account");
             await ReadyClick("Save automatic target");
@@ -213,11 +233,11 @@ internal sealed partial class Scenario
             Check(fixture.Config.CollectionRouters!.Single().Id == "provider-router", "N06 account repair preserves router identity");
 
             Invoke("EditProfileRouter", "p1", "provider-router");
-            await WaitForEditor<CheckBox>("Automatic target enabled");
-            Named<CheckBox>("Automatic target enabled").IsChecked = false;
+            await WaitForRouterControls();
+            EditorControl<CheckBox>("Automatic target enabled").IsChecked = false;
             fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 }; Snapshot();
-            Invoke("ReviewDraft"); await WaitForEditor<CheckBox>("Automatic target enabled");
-            Check(Named<CheckBox>("Automatic target enabled").IsChecked == false,
+            Invoke("ReviewDraft"); await WaitForRouterControls();
+            Check(EditorControl<CheckBox>("Automatic target enabled").IsChecked == false,
                 "N06 named enabled toggle survives router Review latest");
             await ReadyClick("Cancel");
 
@@ -225,8 +245,8 @@ internal sealed partial class Scenario
                 Collections = fixture.Config.Collections!.Select(value => value.Id == "one" ? value with { RouterTargetId = "referenced-router" } : value).ToArray(),
                 CollectionRouters = fixture.Config.CollectionRouters!.Append(new("referenced-router", "auto-collection", "collection:one", "p1")).ToArray() };
             Snapshot(); Invoke("EditProfileRouter", "p1", "referenced-router");
-            await WaitForEditor<ComboBox>("Automatic target group or account");
-            var lockedTarget = Named<ComboBox>("Automatic target group or account");
+            await WaitForRouterControls();
+            var lockedTarget = EditorControl<ComboBox>("Automatic target group or account");
             Check(!lockedTarget.IsEnabled && HasText("Target group locked", true), "N06 referenced target explains removal and recreation before retargeting");
             var routerWrites = handler.RouterWrites;
             lockedTarget.SelectedItem = lockedTarget.Items.Cast<object>().Single(value => value.ToString()!.Contains(" · a2", StringComparison.Ordinal));
@@ -239,9 +259,9 @@ internal sealed partial class Scenario
             await Wait(() => fixture.Config.Collections!.Single(value => value.Id == "one").RouterTargetId is null,
                 "N06 explicit automatic target removal clears its collection reference");
             Invoke("EditProfileRouter", "p1", null);
-            await WaitForEditor<TextBox>("Automatic target client name");
-            Named<TextBox>("Automatic target client name").Text = "new-account-target";
-            var replacementTarget = Named<ComboBox>("Automatic target group or account");
+            await WaitForRouterControls();
+            EditorControl<TextBox>("Automatic target client name").Text = "new-account-target";
+            var replacementTarget = EditorControl<ComboBox>("Automatic target group or account");
             replacementTarget.SelectedItem = replacementTarget.Items.Cast<object>().Single(value => value.ToString()!.Contains(" · a2", StringComparison.Ordinal));
             await ReadyClick("Save automatic target");
             await Wait(() => fixture.Config.CollectionRouters!.Any(value => value.Alias == "new-account-target" && value.GroupId == "account:a2"),
@@ -249,11 +269,11 @@ internal sealed partial class Scenario
 
             Invoke("EditProfileCollection", "p1", "one");
             await WaitForEditor<TextBox>("Custom model group name");
-            Named<TextBox>("Custom model group name").Text = "Unsaved retained name";
+            EditorControl<TextBox>("Custom model group name").Text = "Unsaved retained name";
             var writes = handler.CollectionWrites;
             fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 }; Snapshot();
             await ReadyClick("Save group");
-            Check(handler.CollectionWrites == writes && Named<TextBox>("Custom model group name").Text == "Unsaved retained name",
+            Check(handler.CollectionWrites == writes && EditorControl<TextBox>("Custom model group name").Text == "Unsaved retained name",
                 "N06 stale collection save preserves draft and sends no mutation");
             await ReadyClick("Accounts");
             Check(HasText("Unsaved retained name", true) || HasText("draft", true), "N06 navigation retains a groups draft notice");
