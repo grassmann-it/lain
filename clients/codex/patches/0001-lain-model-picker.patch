@@ -402,7 +402,7 @@ index 15f99f8..b0ec085 100644
              self.bottom_pane
                  .replace_selection_view_if_present(view_id, params);
 diff --git a/codex-rs/tui/src/chatwidget/model_popups.rs b/codex-rs/tui/src/chatwidget/model_popups.rs
-index aa5de8b..168ab18 100644
+index aa5de8b..1c43fea 100644
 --- a/codex-rs/tui/src/chatwidget/model_popups.rs
 +++ b/codex-rs/tui/src/chatwidget/model_popups.rs
 @@ -9,6 +9,7 @@ use crate::model_catalog::LUNA_RESERVE_MODEL;
@@ -430,16 +430,16 @@ index aa5de8b..168ab18 100644
      }
  
 +    fn lain_picker_enabled(&self) -> bool {
-+        codex_core::config::lain_model_picker::enabled_for(
++        crate::legacy_core::config::lain_model_picker::enabled_for(
 +            &self.config.model_provider_id, &self.config.config_layer_stack,
 +        ) && self.config.lain_model_picker.is_some()
 +    }
 +
-+    fn lain_picker_groups(&self) -> Vec<codex_core::config::lain_model_picker::LainModelGroup> {
++    fn lain_picker_groups(&self) -> Vec<crate::legacy_core::config::lain_model_picker::LainModelGroup> {
 +        let mut groups = self.config.lain_model_picker.as_ref()
 +            .map(|picker| picker.groups.clone()).unwrap_or_default();
 +        if !groups.iter().any(|group| group.id == "all") {
-+            groups.push(codex_core::config::lain_model_picker::LainModelGroup {
++            groups.push(crate::legacy_core::config::lain_model_picker::LainModelGroup {
 +                id: "all".to_string(), name: "Alle".to_string(),
 +                router_model: None, models: Vec::new(),
 +            });
@@ -573,7 +573,7 @@ index aa5de8b..168ab18 100644
              model_ids,
              SelectionViewParams {
 diff --git a/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs b/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs
-index 613c1b2..27a0c97 100644
+index 613c1b2..e804a1d 100644
 --- a/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs
 @@ -18,3 +18,159 @@ async fn model_picker_compact_hint_and_actions_follow_configured_bindings() {
@@ -582,8 +582,8 @@ index 613c1b2..27a0c97 100644
  }
 +
 +fn configure_lain_picker(chat: &mut ChatWidget, router: bool) {
-+    use codex_core::config::lain_model_picker::LainModelGroup;
-+    use codex_core::config::lain_model_picker::LainModelPicker;
++    use crate::legacy_core::config::lain_model_picker::LainModelGroup;
++    use crate::legacy_core::config::lain_model_picker::LainModelPicker;
 +    let mut template = get_available_model(chat, "gpt-5.5");
 +    template.default_reasoning_effort = ReasoningEffortConfig::None;
 +    template.supported_reasoning_efforts.clear();

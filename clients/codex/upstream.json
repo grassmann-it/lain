@@ -13,7 +13,7 @@
     "patches/0002-release-workspace-lock.patch"
   ],
   "patchSha256": {
-    "patches/0001-lain-model-picker.patch": "f7039dc4b7d372286850422412a909e29c208b227ccffddf4e92734c6a64cf7c",
+    "patches/0001-lain-model-picker.patch": "e54a69904ff75926803e21cd144b60292d8aadbf532939d1d19f0a1f84264cbf",
     "patches/0002-release-workspace-lock.patch": "5e8d2b73b3bf7870dab1cb3f23d7629ecf47af88076f0052b636a19b9b5bc6d4"
   },
   "workspaceLockNormalization": {
