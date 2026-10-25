@@ -1,0 +1,32 @@
+{
+  "revision": 21,
+  "appliedRevision": 2,
+  "profile": "lain",
+  "profileRouteCount": 47,
+  "newRoutes": [
+    {
+      "alias": "google/gemma-4-26b-a4b-it:free",
+      "provider": "kilo",
+      "model": "google/gemma-4-26b-a4b-it:free"
+    },
+    {
+      "alias": "nvidia-step-5-preview",
+      "provider": "nvidia-build",
+      "model": "stepfun-ai/step-5-preview"
+    }
+  ],
+  "defaultRouteUnchanged": true,
+  "allAccountsUnchanged": true,
+  "allExistingRoutesUnchanged": true,
+  "otherProfilesUnchanged": true,
+  "previewBaselineKnown": false,
+  "applyPerformed": false,
+  "clientFilesInstalled": false,
+  "freeOnlyGuaranteeClaimed": false,
+  "transportCompilation": "passed",
+  "preparedModelCount": 47,
+  "newAliasesInPreparedCatalog": true,
+  "normalAndSeparateCodexFilesUnchanged": true,
+  "clientPreviewDirectory": "/home/tomka/.cache/lain-live-demo-20261025/client-preview-revision21",
+  "clientPreviewGenerationId": "72f7da1efbc79f5e8fca4154a7c5071aa3866f16c6b3a62021b2ac2e0bb7c5a9"
+}
