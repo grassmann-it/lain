@@ -23,7 +23,7 @@ def need(value, message):
 
 def prepared_class():
     tree = ast.parse(SOURCE.read_text())
-    function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'run_update')
+    function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'prepare_update_class')
     definition = next(node for node in function.body if isinstance(node, ast.ClassDef) and node.name == 'Update')
     isolated = ast.Module(body=[definition], type_ignores=[])
     namespace = {'old': SimpleNamespace(Update=object), 'before_files': {}, 'need': need,
@@ -39,6 +39,8 @@ class DrainFixtures(unittest.TestCase):
         self.update = object.__new__(self.cls)
         self.update.drain_attempted = False
         self.update.drain_identity = None
+        self.update.drain_files = {}
+        self.update.start_attempted = False
         self.identity = {'host': {'pid': 1, 'start': 10, 'sha256': 'h'},
                          'core': {'pid': 2, 'start': 20, 'sha256': 'c'}}
         self.update.backend_identity = Mock(return_value=self.identity)
@@ -101,7 +103,7 @@ class DrainFixtures(unittest.TestCase):
         self.update.activity_request.side_effect = [OSError('lost'), {'draining': False, 'activeRequests': 2}]
         self.update.restore_admission()
         self.assertFalse(self.update.drain_attempted)
-        self.assertEqual(self.update.backend_identity.call_args.kwargs, {'allow_ui': True})
+        self.assertEqual(self.update.backend_identity.call_args.kwargs, {'files': {}, 'allow_ui': True})
 
     def test_unconfirmed_reopen_remains_failure(self):
         self.update.drain_identity = self.identity
