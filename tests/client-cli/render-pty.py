@@ -79,8 +79,8 @@ def capture(command, columns, no_color):
     return data.decode("utf-8").replace("\r\n", "\n")
 
 
-for columns in (20, 40, 60, 80, 120):
-    commands = ("usage",) if columns < 60 else ("quotas", "status", "usage", "usage-full", "history", "help", "providers")
+for columns in (20, 40, 60, 80, 100, 120, 160, 200):
+    commands = ("usage",) if columns < 60 else ("usage", "usage-full") if columns in (100, 160, 200) else ("quotas", "status", "usage", "usage-full", "history", "help", "providers")
     for command in commands:
         for no_color in (False, True):
             raw = capture(command, columns, no_color)
@@ -97,14 +97,22 @@ for columns in (20, 40, 60, 80, 120):
                 assert "Remaining 12 USD-Credits" in plain and "Account ID: account-codex" in plain
             if command == "usage":
                 words = " ".join(plain.split())
-                assert "Personal Codex" in words and "codex" in words and "Coding credits" in words and "Disabled" in words
-                assert "Missing credential" in words and "Quota not reported" in words and "40% used" in words
-                assert "12 USD-Credits left" in words and "Reset due" in words and "Last known" in words
+                assert "Personal Codex" in words and "Coding credits" in words and "Disabled" in words
+                assert "Missing credential" not in words and "Quota not reported" not in words and "40% used" in words
+                assert "12 USD-Credits left" in words and "due" in words and "Last known" in words
                 assert "ID:" not in plain and "Source " not in plain and "Checked " not in plain
-                assert "Details: lain usage --full" in words and "No quota readings" in words
-                assert ("━" in plain) == (columns >= 48), "narrow compact output keeps numbers without bars"
+                assert "3 accounts without quota readings hidden" in words and "lain usage --full" in words
+                assert "---" in plain and "━" not in plain, "default table uses aligned native readings without coloured bars"
+                if columns >= 60:
+                    readings = [line for line in plain.splitlines() if "60% left" in line or "4% left" in line]
+                    assert len(readings) == 2
+                    assert readings[0].index("60% left") == readings[1].index("4% left"), "quota windows share a reading column"
+                if columns >= 110:
+                    assert any(line.startswith("Account  ") for line in plain.splitlines())
                 assert "Free credits" not in plain, "zero-only extras stay out of the first view"
                 if not no_color:
+                    assert initialized.startswith("\x1b[0m"), "default usage neutralizes inherited shell colour"
+                    assert "\x1b[36" not in initialized and "\x1b[32" not in initialized, "table reserves colour for warnings"
                     active = ""
                     for chunk in re.split(r"(\x1b\[[0-9;]*m)", initialized):
                         if sgr.fullmatch(chunk):
@@ -120,7 +128,7 @@ for columns in (20, 40, 60, 80, 120):
             (args.output / (name + ".ansi.txt")).write_text(raw)
             checks.append(name)
 
-for columns in (60, 80, 120):
+for columns in (60, 80, 100, 120, 160, 200):
     for no_color in (False, True):
         assert line_counts[("usage", columns, no_color)] < line_counts[("usage-full", columns, no_color)]
 

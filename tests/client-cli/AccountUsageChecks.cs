@@ -28,16 +28,19 @@ internal static class AccountUsageChecks
         var human = await Run("usage");
         Check(human.Exit == 0 && human.Error == "" && human.Output.Contains("Account usage (6 accounts)"), "bare usage is the current all-account quota overview");
         Check(handler.Requests.SequenceEqual(new[] { "/api/v1/accounts", "/api/v1/quotas" }), "overview reads accounts and cached quotas on the same client, without historical/configuration/provider calls");
-        Check(human.Output.Contains("Personal Codex · codex · shared") && human.Output.Contains("Coding credits · command-code · Disabled") &&
-            human.Output.Contains("Missing credential · zai · Missing"), "overview uses actual account names/providers and retains disabled or missing-credential accounts");
+        Check(human.Output.Contains("Personal Codex") && human.Output.Contains("Coding credits") && human.Output.Contains("Disabled") &&
+            human.Output.Contains("shared") && !human.Output.Contains("Missing credential"),
+            "default table keeps custom names, disabled measured accounts and shared-budget warnings while hiding missing measurements");
         Check(human.Output.Contains("40% used") && human.Output.Contains("7 days") && human.Output.Contains("96% used") &&
-            human.Output.Contains("Quota not reported") && human.Output.Contains("No separate quota lookup"), "all named windows and unavailable accounts remain visible without invented quotas");
+            human.Output.Contains("3 accounts without quota readings hidden") && !human.Output.Contains("Quota not reported"),
+            "measured windows stay visible and unavailable accounts contribute only to the hidden count");
         Check(!human.Output.Contains("ID:") && !human.Output.Contains("Source ") && !human.Output.Contains("Checked ") &&
             human.Output.Contains("lain usage --full") && !human.Output.Contains("same provider funds"),
             "compact overview defers source and check-time detail to the explicit full command");
         var full = await Run("usage", "--full");
         Check(full.Exit == 0 && full.Error == "" && full.Output.Contains("ID: account-codex") && full.Output.Contains("Checked ") &&
-            full.Output.Contains("source ") && full.Output.Contains("same provider funds") && full.Output.Contains("Used 18 USD-Credits / 20 USD-Credits"),
+            full.Output.Contains("source ") && full.Output.Contains("same provider funds") && full.Output.Contains("Used 18 USD-Credits / 20 USD-Credits") &&
+            full.Output.Contains("Missing credential") && full.Output.Contains("Quota not reported") && full.Output.Contains("No separate quota lookup"),
             "usage --full retains the detailed account and quota rendering");
 
         var structured = await Run("usage", "--json");
@@ -68,11 +71,11 @@ internal static class AccountUsageChecks
             Check(output.ToString().Split('\n').All(line => HumanTable.Width(line.TrimEnd('\r')) <= width) &&
                 detailed.ToString().Split('\n').All(line => HumanTable.Width(line.TrimEnd('\r')) <= width), $"compact and full all-account overview fit {width} columns");
             Check(output.ToString().Split('\n').Length < detailed.ToString().Split('\n').Length &&
-                output.ToString().Contains("12 USD-Credits left") && output.ToString().Contains("Reset due") && output.ToString().Contains("Last known"),
+                output.ToString().Contains("12 USD-Credits left") && output.ToString().Contains("due") && output.ToString().Contains("Last known"),
                 $"{width}-column compact overview remains substantially shorter while retaining balances and warnings");
             var compactLines = output.ToString().Split('\n');
-            Check(new[] { "40% used", "12 USD-Credits left", "Reset 2099-01-01 00:00 +00:00", "Reset due", "Last known" }
-                .All(field => compactLines.Any(line => line.Contains(field))), $"{width}-column quota fields remain whole across line breaks");
+            Check(new[] { "40% used", "12 USD-Credits left", "2099-01-01", "+00:00", "due", "Last known" }
+                .All(field => compactLines.Any(line => line.Contains(field))), $"{width}-column table retains native amounts, reset date and timezone with warnings");
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -82,11 +85,12 @@ internal static class AccountUsageChecks
              CliPresentationFixtures.Quotas[0] with { LastSuccessAt = now, ResetsAt = now.AddHours(2), WindowLabel = "Fresh snapshot" },
              CliPresentationFixtures.Quotas[5] with { WindowLabel = "Unknown snapshot" }])]);
         var ageOutput = new StringWriter();
-        await CliApplication.WriteAccountUsage(ageOutput, freshness, new(120, true));
+        await CliApplication.WriteAccountUsage(ageOutput, freshness, new(160, true));
         var ageLines = ageOutput.ToString().Split('\n');
         Check(ageLines.Single(line => line.Contains("Old snapshot")).Contains("Last known") &&
             ageLines.Single(line => line.Contains("Old snapshot")).Contains("\u001b[33m") &&
-            ageLines.Single(line => line.Contains("Fresh snapshot")).Contains("\u001b[32m"), "successful snapshots older than five minutes are last-known warnings while fresh readings may be green");
+            !ageLines.Single(line => line.Contains("Fresh snapshot")).Contains("Last known") &&
+            !ageOutput.ToString().Contains("\u001b[32m"), "old successful readings carry explicit last-known warnings while fresh readings remain neutral");
         Check(ageOutput.ToString().Contains("Expired") && !ageOutput.ToString().Contains("Unverified") &&
             !ageOutput.ToString().Contains("Unknown snapshot") && !ageOutput.ToString().Contains("] 0% used") &&
             !ageOutput.ToString().Contains("· 0% left"), "compact output retains expiry and defers the unknown secondary window without fabricating a zero");
@@ -103,7 +107,7 @@ internal static class AccountUsageChecks
                 Enumerable.Range(0, index < 3 ? 3 : 2).Select(window => CliPresentationFixtures.Quotas[0] with
                 { LastSuccessAt = now, ResetsAt = now.AddHours(2), WindowLabel = "Window " + window }).ToArray())).ToArray());
         var budgetOutput = new StringWriter();
-        await CliApplication.WriteAccountUsage(budgetOutput, fifteenWindows, new(100, false));
+        await CliApplication.WriteAccountUsage(budgetOutput, fifteenWindows, new(160, false));
         Check(budgetOutput.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Length <= 24 &&
             budgetOutput.ToString().Split('\n').Count(line => line.Contains("40% used")) == 12 &&
             budgetOutput.ToString().Split('\n').Count(line => line.Contains("more: --full")) == 3,
@@ -132,7 +136,7 @@ internal static class AccountUsageChecks
         Check(hierarchy.IndexOf("5 hours", StringComparison.Ordinal) < hierarchy.IndexOf("7 hours", StringComparison.Ordinal)
             && !hierarchy.Contains("Monthly allowance") && !hierarchy.Contains("7 days")
             && hierarchy.Contains("more: --full"), "shortest two explicit periods lead compact output; longer windows stay reachable via full");
-        Check(hierarchy.Contains("Additional: Purchased credits · 12 credits left") && !hierarchy.Contains("Free credits"),
+        Check(hierarchy.Contains("Purchased credits") && hierarchy.Contains("12 credits left") && !hierarchy.Contains("Free credits"),
             "positive extra credits stay concise while zero-only free credits do not occupy compact rows");
         var hierarchyFull = await Render(hierarchyQuotas, fullDetails: true);
         Check(new[] { "5 hours", "7 hours", "7 days", "Monthly allowance", "Purchased credits", "Free credits" }.All(hierarchyFull.Contains)
@@ -146,8 +150,8 @@ internal static class AccountUsageChecks
             "a real exhausted primary balance remains visible; hidden zero-only extras do not add detail hints");
         var unknownExtra = freeZero with { Remaining = null, State = "unavailable" };
         var unknownOutput = await Render([unknownExtra]);
-        Check(unknownOutput.Contains("Free credits") && unknownOutput.Contains("Quota values not reported")
-            && !unknownOutput.Contains("0 credits") && !unknownOutput.Contains("Exhausted"), "unknown extra credits are not silently treated as a reported zero");
+        Check(!unknownOutput.Contains("Free credits") && unknownOutput.Contains("1 account without quota readings hidden")
+            && !unknownOutput.Contains("0 credits") && !unknownOutput.Contains("Exhausted"), "unknown extra credits remain unknown and hidden by default");
         var shortCredits = fiveHours with { WindowLabel = "5 hours credits", Unit = "credits", Used = 18, Limit = 20,
             Remaining = 2, UsedPercent = 90 };
         var exhaustedShort = await Render([shortCredits with { Used = 20, Remaining = 0, UsedPercent = 100 }, monthly]);
@@ -170,9 +174,9 @@ internal static class AccountUsageChecks
             new(new("known", "Real balance", "fixture", true, "api-key", "ready"), [mainZero])]);
         var orderWriter = new StringWriter();
         await CliApplication.WriteAccountUsage(orderWriter, orderedOverview, new(120, false));
-        Check(orderWriter.ToString().IndexOf("Real balance", StringComparison.Ordinal) < orderWriter.ToString().IndexOf("Missing first", StringComparison.Ordinal)
-            && orderWriter.ToString().IndexOf("Missing first", StringComparison.Ordinal) < orderWriter.ToString().IndexOf("Zero extras", StringComparison.Ordinal),
-            "accounts with real readings lead, including an empty primary balance; other accounts retain host order");
+        Check(orderWriter.ToString().Contains("Real balance") && !orderWriter.ToString().Contains("Missing first")
+            && !orderWriter.ToString().Contains("Zero extras") && orderWriter.ToString().Contains("2 accounts without quota readings hidden"),
+            "real zero primary balances remain visible while unmeasured accounts and zero-only extra wallets stay hidden");
         var expectedOverview = JsonSerializer.Serialize(overview, jsonOptions) + Environment.NewLine;
         Check(structured.Output == expectedOverview && fullStructured.Output == expectedOverview,
             "compact selection and human sorting preserve the original account/window order and exact complete JSON bytes");

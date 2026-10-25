@@ -7,6 +7,8 @@ namespace Lain.Cli;
 public static partial class CliApplication
 {
     private sealed record CompactUsageField(string Text, string? Color = null, string Separator = " · ");
+    private sealed record CompactUsageRow(string Account, string Window, string Reading, string Used,
+        string Reset, string State, string? StateColor);
 
     private static async Task WriteCompactAccountUsage(TextWriter output, AccountUsageOverview overview,
         HumanOutputContext? context, TimeZoneInfo? timeZone)
@@ -14,110 +16,185 @@ public static partial class CliApplication
         context ??= HumanOutputContext.Detect(output);
         timeZone ??= TimeZoneInfo.Local;
         var now = DateTimeOffset.UtcNow;
+        // Start from the terminal default, including when invoked after a coloured shell prompt.
+        if (context.Color) await output.WriteAsync("\u001b[0m");
         await WriteCompactUsageFields(output, [new($"Account usage ({overview.Accounts.Length} accounts)", "1"),
-            new(Cell(timeZone.Id), "2")], context, "", "  ");
+            new(Cell(timeZone.Id))], context, "", "  ");
         if (overview.Accounts.Length == 0)
         {
             await WriteCompactUsageFields(output, [new("No accounts configured.")], context, "", "  ");
             return;
         }
-        // Presentation only: the overview and its JSON retain the host's account/window order.
-        var ordered = overview.Accounts.OrderByDescending(item => QuotaPresentation.HasQuotaReading(item.Quotas)).ToArray();
-        var readingCount = ordered.Count(item => QuotaPresentation.HasQuotaReading(item.Quotas));
-        for (var index = 0; index < ordered.Length; index++)
+        // Filter presentation only. Full/JSON retain every account, snapshot and host ordering.
+        var measured = overview.Accounts.Where(item => QuotaPresentation.HasQuotaReading(item.Quotas)).ToArray();
+        var rows = new List<CompactUsageRow>();
+        foreach (var item in measured)
         {
-            var item = ordered[index];
-            if (index == readingCount && readingCount > 0)
-                await WriteCompactUsageFields(output, [new($"No quota readings ({ordered.Length - readingCount})", "2")], context, "", "  ");
             var account = item.Account;
             var summary = QuotaPresentation.ForSummary(item.Quotas);
-            var deferred = summary.Additional.Where(quota => !QuotaPresentation.IsAdditionalCredit(quota) || QuotaPresentation.IsLongWindow(quota)).ToArray();
-            var tags = new List<CompactUsageField> { new(Cell(account.Name), account.Enabled ? "1;36" : "1;2") };
-            if (!string.Equals(Cell(account.Name), Cell(account.Provider), StringComparison.OrdinalIgnoreCase))
-                tags.Add(new(Cell(account.Provider), "2"));
-            if (!account.Enabled) tags.Add(new("Disabled", "2"));
-            if (item.Quotas.Any(quota => !QuotaHasSupportOnly(quota) && (quota.State == "error" || !string.IsNullOrWhiteSpace(quota.Error))))
-                tags.Add(new("Quota refresh error", "31"));
-            if (deferred.Any(quota => QuotaIsLastKnown(quota, now))) tags.Add(new("Last known quota", "33"));
-            if (account.State is not ("ready" or "ok" or "available" or "unverified")) tags.Add(new(ReadableState(account.State), "33"));
-            if (account.ExpiresAt is { } expiry && expiry <= now && account.State != "expired") tags.Add(new("Expired", "31"));
-            if (account.SharedWithLegacy || account.BudgetPoolId is not null || item.Quotas.Any(quota => quota.SharedWithLegacy || quota.BudgetPoolId is not null))
-                tags.Add(new("shared", "2"));
-            if (deferred.Length > 0) tags.Add(new("more: --full", "2"));
-            await WriteCompactUsageFields(output, tags, context, "", "  ");
-
-            var additional = summary.Additional.Where(quota => QuotaPresentation.IsAdditionalCredit(quota) && !QuotaPresentation.IsLongWindow(quota)).ToArray();
-            var labelWidth = context.Width >= 60
-                ? Math.Min(24, summary.Primary.Select(quota => HumanTable.Width(QuotaWindowName(quota))).DefaultIfEmpty(0).Max()) : 0;
-            if (item.Quotas.Length == 0)
-                await WriteCompactUsageFields(output, [new("Quota not reported", "2")], context);
-            else if (summary.Primary.Count == 0 && summary.Missing.Count == 0)
-                await WriteCompactUsageFields(output, [new("No primary quota reported", "2")], context);
-            foreach (var quota in summary.Primary)
-                await WriteCompactQuotaWindow(output, quota, account.Enabled, context, now, timeZone, labelWidth);
-            // Extra wallets keep their native amounts; shared balances are never added together.
-            foreach (var quota in additional)
-                await WriteCompactQuotaWindow(output, quota, account.Enabled, context, now, timeZone, additional: true);
-            // Unknown secondary windows stay in --full when a main reading is available.
-            if (summary.Primary.Count == 0 && summary.Missing.FirstOrDefault() is { } missing)
-                await WriteCompactQuotaWindow(output, missing, account.Enabled, context, now, timeZone);
+            var additional = summary.Additional.Where(quota => QuotaPresentation.IsAdditionalCredit(quota)
+                && !QuotaPresentation.IsLongWindow(quota)).ToArray();
+            var deferred = summary.Additional.Except(additional).ToArray();
+            var accountStates = new List<string>();
+            if (!account.Enabled) accountStates.Add("Disabled");
+            if (account.State is not ("ready" or "ok" or "available" or "unverified")) accountStates.Add(ReadableState(account.State));
+            if (account.ExpiresAt is { } expiry && expiry <= now && account.State != "expired") accountStates.Add("Expired");
+            if (account.SharedWithLegacy || account.BudgetPoolId is not null
+                || item.Quotas.Any(quota => quota.SharedWithLegacy || quota.BudgetPoolId is not null)) accountStates.Add("shared");
+            if (deferred.Any(quota => quota.State == "error" || !string.IsNullOrWhiteSpace(quota.Error))) accountStates.Add("Quota refresh error");
+            if (deferred.Any(quota => QuotaIsLastKnown(quota, now))) accountStates.Add("Last known quota");
+            if (deferred.Length > 0) accountStates.Add("more: --full");
+            var first = true;
+            foreach (var quota in summary.Primary.Concat(additional))
+            {
+                var states = new List<string>();
+                var stale = QuotaIsLastKnown(quota, now);
+                var percent = CompactUsagePercentage(quota);
+                var remainingKind = quota.MeasurementKind is not ("usage" or "usage-estimate" or "limit" or "rate");
+                var exhausted = remainingKind && quota.Remaining is { } left && double.IsFinite(left) && left <= 0;
+                if (exhausted) states.Add(stale ? "Last known exhausted" : "Exhausted");
+                else if (stale) states.Add("Last known");
+                if (quota.State is not ("ok" or "available" or "stale")) states.Add(ReadableState(quota.State));
+                if (!string.IsNullOrWhiteSpace(quota.Error)) states.Add("Note: " + CompactUsageNote(quota.Error));
+                if (first) states.AddRange(accountStates);
+                rows.Add(new(first ? CompactUsageAccountName(account, overview.Accounts) : "",
+                    QuotaWindowName(quota), CompactUsageReading(quota, percent),
+                    percent is { } used ? QuotaDisplayFacts.Percent(used) + "% used" : "",
+                    quota.ResetsAt is { } reset ? CompactReset(reset, now, timeZone)[6..] : "unknown",
+                    string.Join(" · ", states), quota.State == "error" || exhausted && !stale ? "31" : stale ? "33" : null));
+                first = false;
+            }
         }
-        await WriteCompactUsageFields(output, [new("Details: lain usage --full", "2")], context, "", "  ");
+        if (rows.Count > 0) await WriteCompactUsageTable(output, rows, context);
+        else await WriteCompactUsageFields(output, [new("No quota readings available.")], context, "", "  ");
+        var hidden = overview.Accounts.Length - measured.Length;
+        if (hidden > 0)
+            await WriteCompactUsageFields(output, [new($"{hidden} {(hidden == 1 ? "account" : "accounts")} without quota readings hidden; see lain usage --full.")], context, "", "  ");
+        else await WriteCompactUsageFields(output, [new("Details: lain usage --full")], context, "", "  ");
     }
 
-    private static async Task WriteCompactQuotaWindow(TextWriter output, QuotaDto quota, bool enabled,
-        HumanOutputContext context, DateTimeOffset now, TimeZoneInfo timeZone, int labelWidth = 0, bool additional = false)
+    private static double? CompactUsagePercentage(QuotaDto quota) =>
+        quota.MeasurementKind == "usage-estimate" ? null : QuotaPercentage(quota);
+
+    private static string CompactUsageReading(QuotaDto quota, double? percent)
     {
-        if (QuotaHasSupportOnly(quota))
+        // Usage, rate and configured limits are facts with their own labels, never remaining funds.
+        if (quota.MeasurementKind == "limit" && quota.Limit is { } limit && double.IsFinite(limit))
+            return "Limit " + QuotaAmount(limit, quota.Unit);
+        if (quota.MeasurementKind is "usage" or "usage-estimate" or "rate")
+            return (quota.MeasurementKind == "rate" ? "Observed " : quota.MeasurementKind == "usage-estimate" ? "Est. used " : "Used ")
+                + (quota.Used is { } used && double.IsFinite(used) ? QuotaAmount(used, quota.Unit) : "unknown");
+        if (quota.Remaining is { } remaining && double.IsFinite(remaining)) return QuotaAmount(remaining, quota.Unit) + " left";
+        if (percent is { } known && quota.Unit is ("percent" or "%")) return QuotaDisplayFacts.Percent(100 - known) + "% left";
+        if (quota.Used is { } amount && double.IsFinite(amount)) return "Used " + QuotaAmount(amount, quota.Unit);
+        if (quota.Limit is { } ceiling && double.IsFinite(ceiling)) return "Limit " + QuotaAmount(ceiling, quota.Unit);
+        return "Remaining unknown";
+    }
+
+    private static string CompactUsageAccountName(AccountDto account, AccountUsageItem[] accounts)
+    {
+        var provider = account.Provider;
+        var display = provider.ToLowerInvariant() switch
         {
-            var message = quota.Support?.Kind switch
+            "nvidia" or "nvidia-build" => "NVIDIA",
+            "cloudflare" or "cloudflare-workers-ai" => "Cloudflare",
+            "google" or "google-gemini" or "gemini" or "gemini-api" => "Gemini",
+            "xiaomi-mimo" or "mimo" => "MiMo",
+            _ => ProviderDisplayNames.Get(provider)
+        };
+        display = Cell(display);
+        var name = Cell(account.Name);
+        var siblings = accounts.Where(item => string.Equals(item.Account.Provider, provider, StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (siblings.Length == 1 && System.Net.Mail.MailAddress.TryCreate(name, out var address)
+            && string.Equals(address.Address, name, StringComparison.OrdinalIgnoreCase)) return display;
+        var known = new[] { provider, display, ProviderDisplayNames.Get(provider),
+            "My " + provider + " account", "My " + display + " account", "My " + ProviderDisplayNames.Get(provider) + " account" };
+        if (!known.Contains(name, StringComparer.OrdinalIgnoreCase))
+        {
+            var sameName = accounts.Where(item => string.Equals(Cell(item.Account.Name), name, StringComparison.OrdinalIgnoreCase)).ToArray();
+            return sameName.Length == 1 ? name : name + " (" + display + " "
+                + (Array.FindIndex(sameName, item => item.Account.Id == account.Id) + 1) + ")";
+        }
+        return siblings.Length == 1 ? display : display + " " + (Array.FindIndex(siblings, item => item.Account.Id == account.Id) + 1);
+    }
+
+    private static async Task WriteCompactUsageTable(TextWriter output, List<CompactUsageRow> rows, HumanOutputContext context)
+    {
+        if (context.Width < 48)
+        {
+            // A native unit such as USD-Credits needs more room than two tiny cells allow.
+            await WriteCompactUsageFields(output, [new("Window / reading", "1")], context, "", "  ");
+            await output.WriteLineAsync(new string('-', context.Width));
+            foreach (var row in rows)
             {
-                "setup-required" => "Quota setup required",
-                "console" => "Quota: check provider console",
-                "unimplemented" => "Quota integration not available",
-                "awaiting-observation" or "passive" => "Waiting for quota observation",
-                "unavailable" => "No quota series reported",
-                _ => "No separate quota lookup configured"
-            };
-            await WriteCompactUsageFields(output, [new(message, "2")], context);
+                if (row.Account.Length > 0)
+                    await WriteCompactUsageFields(output, [new(row.Account, "1")], context, "", "  ");
+                await WriteCompactUsageFields(output, [new(row.Window)], context);
+                await WriteCompactUsageFields(output, [new(row.Reading)], context);
+                var details = new List<CompactUsageField>();
+                if (row.Used.Length > 0) details.Add(new(row.Used));
+                details.Add(new("Reset " + row.Reset));
+                if (row.State.Length > 0) details.Add(new(row.State, row.StateColor));
+                await WriteCompactUsageFields(output, details, context);
+            }
             return;
         }
-        var percent = QuotaPercentage(quota);
-        var stale = QuotaIsLastKnown(quota, now);
-        var hasNumber = QuotaPresentation.HasReading(quota);
-        var color = !enabled || quota.State == "disabled" ? "2"
-            : stale ? "33" : percent >= 95 || quota.Remaining <= 0 ? "31" : percent >= 80 ? "33" : "32";
-        var label = (additional ? "Additional: " : "") + QuotaWindowName(quota);
-        var fields = new List<CompactUsageField>();
-        // A synthetic fallback label says nothing useful when no values were reported.
-        if (hasNumber || quota.WindowLabel is not null) fields.Add(new(label + new string(' ', Math.Max(0, labelWidth - HumanTable.Width(label)))));
-        if (!additional && percent is { } used)
+        // Long names wrap locally instead of forcing the entire table into a field list.
+        var showAccount = context.Width >= 110;
+        var showUsed = context.Width >= 72;
+        var showReset = context.Width >= 72;
+        var showState = context.Width >= 140;
+        var headings = new List<string>();
+        var maxima = new List<int>();
+        var minima = new List<int>();
+        var getters = new List<Func<CompactUsageRow, string>>();
+        void Column(string heading, int minimum, int maximum, Func<CompactUsageRow, string> get)
+        { headings.Add(heading); minima.Add(minimum); maxima.Add(maximum); getters.Add(get); }
+        if (showAccount) Column("Account", 10, 24, row => row.Account);
+        Column("Window", 8, 26, row => row.Window);
+        Column("Available / reading", 19, 30, row => row.Reading);
+        if (showUsed) Column("Used", 9, 12, row => row.Used);
+        if (showReset) Column("Reset", 12, 26, row => row.Reset);
+        if (showState) Column("State", 12, 36, row => row.State);
+        var widths = getters.Select((get, index) => Math.Clamp(Math.Max(HumanTable.Width(headings[index]),
+            rows.Max(row => HumanTable.Width(get(row)))), minima[index], maxima[index])).ToArray();
+        var budget = context.Width - (widths.Length - 1) * 2;
+        while (widths.Sum() > budget)
         {
-            var metric = QuotaDisplayFacts.Percent(used) + "% used";
-            // Very narrow terminals keep the actual number together instead of splitting a bar.
-            if (context.Width >= 48)
-            {
-                const int cells = 10;
-                var consumed = (int)Math.Round(used / 100 * cells, MidpointRounding.AwayFromZero);
-                metric = "[" + new string('━', consumed) + new string('·', cells - consumed) + "] " + metric;
-            }
-            fields.Add(new(metric, color, "  "));
+            var widest = Enumerable.Range(0, widths.Length).Where(index => widths[index] > 4)
+                .OrderByDescending(index => widths[index]).First();
+            widths[widest]--;
         }
-        else if (!hasNumber) fields.Add(new("Quota values not reported", "2"));
-        if (quota.MeasurementKind is not ("usage" or "usage-estimate" or "limit" or "rate") && hasNumber)
-            fields.Add(new(CompactRemaining(quota, percent), "1"));
-        if (quota.MeasurementKind == "limit" && quota.Limit is { } reportedLimit && double.IsFinite(reportedLimit))
-            fields.Add(new("Limit " + QuotaAmount(reportedLimit, quota.Unit)));
-        if ((percent is null || additional && quota.Remaining is null) && quota.Used is { } amountUsed && double.IsFinite(amountUsed) && amountUsed >= 0)
-            fields.Add(new((quota.MeasurementKind == "rate" ? "Observed " : "Used ") + QuotaAmount(amountUsed, quota.Unit)));
-        if (quota.ResetsAt is { } next) fields.Add(new(CompactReset(next, now, timeZone), "2"));
-        if (quota.MeasurementKind is not ("usage" or "usage-estimate" or "limit" or "rate") && quota.Remaining is { } left && double.IsFinite(left) && left <= 0)
-            fields.Add(new(stale ? "Last known exhausted" : "Exhausted", color));
-        else if (stale && hasNumber) fields.Add(new("Last known", "33"));
-        if (quota.State is not ("ok" or "available") && !(quota.State == "stale" && hasNumber))
-            fields.Add(new(ReadableState(quota.State), quota.State == "error" ? "31" : "33"));
-        if (!string.IsNullOrWhiteSpace(quota.Error)) fields.Add(new("Note: " + CompactUsageNote(quota.Error), "33"));
-        await WriteCompactUsageFields(output, fields, context);
+        async Task Line(string[] cells, string?[] colors)
+        {
+            var wrapped = cells.Select((cell, index) => WrapCompactUsageText(cell, widths[index]).DefaultIfEmpty("").ToArray()).ToArray();
+            for (var line = 0; line < wrapped.Max(parts => parts.Length); line++)
+            {
+                var parts = wrapped.Select((lines, index) =>
+                {
+                    var text = line < lines.Length ? lines[line] : "";
+                    var pad = new string(' ', widths[index] - HumanTable.Width(text));
+                    return HumanTable.Paint(text + pad, colors[index], context);
+                });
+                await output.WriteLineAsync(string.Join("  ", parts).TrimEnd());
+            }
+        }
+        await Line(headings.ToArray(), headings.Select(_ => (string?)"1").ToArray());
+        await output.WriteLineAsync(string.Join("  ", widths.Select(width => new string('-', width))));
+        foreach (var row in rows)
+        {
+            var separateName = !showAccount || HumanTable.Width(row.Account) > widths[0] * 2;
+            if (separateName && row.Account.Length > 0)
+                await WriteCompactUsageFields(output, [new(row.Account, "1")], context, "", "  ");
+            var displayed = showAccount && separateName ? row with { Account = "" } : row;
+            var colors = getters.Select((_, index) => headings[index] == "State" ? row.StateColor : null).ToArray();
+            await Line(getters.Select(get => get(displayed)).ToArray(), colors);
+            var details = new List<CompactUsageField>();
+            if (!showUsed && row.Used.Length > 0) details.Add(new(row.Used));
+            if (!showReset) details.Add(new("Reset " + row.Reset));
+            if (!showState && row.State.Length > 0) details.Add(new(row.State, row.StateColor));
+            if (details.Count > 0) await WriteCompactUsageFields(output, details, context);
+        }
     }
 
     private static string CompactReset(DateTimeOffset reset, DateTimeOffset now, TimeZoneInfo timeZone)
@@ -218,11 +295,4 @@ public static partial class CliApplication
     private static bool QuotaCheckIsOld(QuotaDto quota, DateTimeOffset now) =>
         quota.FreshUntil is { } freshUntil ? freshUntil <= now : quota.LastSuccessAt is not { } success || now - success > TimeSpan.FromMinutes(5);
 
-    private static string CompactRemaining(QuotaDto quota, double? percent)
-    {
-        if (quota.Remaining is { } amount && double.IsFinite(amount)) return QuotaAmount(amount, quota.Unit) + " left";
-        if (percent is { } known && quota.Unit is ("percent" or "%"))
-            return QuotaDisplayFacts.Percent(100 - known) + "% left";
-        return "Remaining unknown";
-    }
 }

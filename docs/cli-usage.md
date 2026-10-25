@@ -1,7 +1,7 @@
 # Account usage and proxy history
 
 Run `lain --help` to check the installed version's command contract.
-`lain usage` shows current quota snapshots for every configured account:
+`lain usage` shows useful cached quota readings. `--full` includes every configured account:
 
 ```sh
 lain usage
@@ -9,33 +9,46 @@ lain usage --full
 lain usage --json
 ```
 
-The default human overview puts accounts with quota readings first, preserving
-Host order within each group. Each short account header has at most two primary
-readings, with shorter quota windows first (for example, 5 hours before 7 hours
-or 7 days). Monthly allowances are secondary; additional credits use concise
-amounts, and zero-only extra credits are hidden. A sole monthly allowance or
-wallet remains visible, as does a real exhausted main balance. Missing readings
-stay unknown and never become zero. When a main reading exists, unknown
-secondary windows are deferred to `--full`.
+The default human overview shows accounts with actual readings in a compact
+aligned table, preserving Host account order. Accounts without readings are
+hidden; a neutral footer gives their count and points to `--full`. The heading's
+account count still describes the complete configured account set.
 
-Account names are highlighted, repeated provider names are omitted, and status
-colours belong to consumption bars and warnings rather than whole rows. Window
-labels align within each account. Accounts without readings form a quiet second
-group, with short setup/status guidance instead of full connection instructions.
-Detailed instructions and unabridged error messages remain in `--full`.
+Each account has at most two primary readings, with shorter explicit windows
+first (for example, 5 hours before 7 hours or 7 days). Monthly allowances are
+secondary; additional credits retain their native amounts, and zero-only extra
+credits are hidden. A sole monthly allowance or wallet remains visible, as does
+a real exhausted main balance. Missing readings stay unknown and never become
+zero. Unknown secondary windows remain in `--full`.
 
-Narrow terminals wrap at field boundaries, with indented continuations; below
-48 columns the bar gives way to its explicit percentage. Long names and words
-wrap without dropping text. Known consumed percentages, native remaining
-balances, reset times and concise shared-budget tags remain visible. Resets use
-the system's local timezone, named in the heading, with an explicit UTC offset
-on each future reset (including repeated hours at daylight-saving transitions).
-`--full` and JSON retain the original UTC timestamps. Disabled
-accounts retain their reported values. Missing credentials, expiry and unavailable
-quota diagnostics remain visible for accounts without readings. Refresh errors
-and last-known warnings remain visible even when their quota window is deferred. Stale/overdue displayed
-values are marked as last known. Successful snapshots older than five minutes,
-or numerical snapshots without a successful check time, are also last known.
+The table leads with window and native remaining amount or explicitly labelled
+reading. Usage, usage estimates, observed rates and configured limits retain
+their own labels; they never become remaining funds. Percentage consumption and
+reset columns appear when there is room. From 110 columns, accounts have a
+shared table column; narrower terminals use account headings. From 140 columns,
+warnings have their own state column. At smaller widths, reset/state details
+continue directly below the relevant reading. Below 48 columns, a single-column
+layout preserves native units. Long names and labels wrap locally without
+forcing other accounts out of the table or dropping text.
+
+Known generated single-account names use short provider labels such as `Gemini`,
+`NVIDIA` or `Cloudflare`; a single account with an imported email name also uses
+the provider label. Custom names are preserved; multiple accounts remain
+distinguishable. These display labels never rename accounts or alter JSON.
+Headings use bold text and colour is reserved for warnings. Consumption bars and
+raw provider IDs no longer occupy the default overview. Plain output and
+`NO_COLOR` retain the same content and alignment.
+
+Resets use the system's local timezone, named in the heading, with an explicit
+UTC offset on each future reset (including repeated hours at daylight-saving
+transitions). `--full` and JSON retain the original UTC timestamps. Disabled
+accounts retain their reported readings. Credential, expiry and shared-budget
+warnings stay visible for measured accounts; accounts without readings and their
+setup/error diagnostics remain available in `--full`. Refresh errors and
+last-known warnings remain visible even when their measured quota window is
+deferred. Stale/overdue displayed values are marked as last known. Successful
+snapshots older than five minutes, or numerical snapshots without a successful
+check time, are also last known.
 
 `lain usage --full` shows every window, including zero-only extra credits and
 unknown readings, in the same human presentation order. It includes full account
