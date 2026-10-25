@@ -44,8 +44,9 @@ internal static class Program
         SmokeApp.AccountSortOnly = args.Contains("--account-sort-smoke", StringComparer.Ordinal);
         SmokeApp.ProviderSetupOnly = args.Contains("--provider-setup-smoke", StringComparer.Ordinal);
         SmokeApp.InspectorOnly = args.Contains("--inspector-smoke", StringComparer.Ordinal);
+        SmokeApp.UsageAnalysisOnly = args.Contains("--usage-analysis-smoke", StringComparer.Ordinal);
         return AppBuilder.Configure<SmokeApp>().UsePlatformDetect().WithInterFont()
-            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--xai-metadata-smoke" or "--model-identity-smoke" or "--monitor-table-smoke" or "--inspector-smoke")).ToArray());
+            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--xai-metadata-smoke" or "--model-identity-smoke" or "--monitor-table-smoke" or "--inspector-smoke" or "--usage-analysis-smoke")).ToArray());
     }
 }
 
@@ -58,6 +59,7 @@ internal sealed class SmokeApp : Application
     public static bool AccountSortOnly { get; set; }
     public static bool ProviderSetupOnly { get; set; }
     public static bool InspectorOnly { get; set; }
+    public static bool UsageAnalysisOnly { get; set; }
     public override void Initialize()
     {
         // Reuse production initialization (Semi/Ursa resources included), not a test theme.
@@ -82,7 +84,8 @@ internal sealed class SmokeApp : Application
             var scenario = new Scenario(lifetime);
             try
             {
-                if (InspectorOnly) await scenario.RunInspectorSmoke();
+                if (UsageAnalysisOnly) await scenario.RunUsageAnalysisSmoke();
+                else if (InspectorOnly) await scenario.RunInspectorSmoke();
                 else if (MonitorTableOnly) await scenario.RunMonitorTableSmoke();
                 else if (AccountSnapshotsOnly) await scenario.RunAccountSnapshotsSmoke();
                 else if (XaiMetadataOnly) await scenario.RunXaiMetadataSmoke();
