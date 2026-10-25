@@ -333,3 +333,73 @@ Vier weitere PNGs wurden unabhängig geöffnet:
 
 Zusammen sind jetzt 13 konkrete PNGs aus zwei getrennten Läufen gesichtet.
 Die native Endqualifikation bleibt noch offen.
+
+## Gezielte Endassembly-Sichtung `native-final`
+
+Manifest `native-final/evidence.json`, Commit
+`5af70cbcc3108f30fc7c844c6074535d400a387e`, Desktopassembly SHA-256
+`689A91279225725BCBA4EE9BDE43434731408DBFB3C1920BA1D8F44A05A62D3E`.
+Diese gezielte Matrix meldet 17/18 Fälle PASS, 352 Assertions und 46
+Bilddatensätze, insgesamt korrekt FAIL. Getestet wurden Draft,
+Apply/late-preview/runtime_busy, verspätetes Connect/Status, Browse und die
+Monitor-/Live-Layouts in 1120×780 und 800×560. Sie ist keine Wiederholung einer
+historischen 45-Fälle-Matrix. Tatsächliche RenderScaling dieser Aufnahmen: 1.
+
+Elf weitere PNGs wurden selbst geöffnet, unabhängig vom Testowner:
+
+| Aufnahmen aus `native-final` | Beobachtung und begrenzter Abschluss |
+| --- | --- |
+| `native-layout-monitor-table-800x560-selected.png`, `native-layout-monitor-table-1120x780-selected.png` | Inventar und Detail gleichzeitig sichtbar. Der lange 0–100-Balken liegt unter den Verbrauchs-/Restzahlen; schmal werden Fenstertitel und Reset gestapelt. Breite Ansicht zeigt weitere Command-Code-Fenster einschließlich Last known, unbestätigtem Reset und Guthaben ohne Prozentbalken. F07 ist für diese native Fixture in beiden Größen belegt. |
+| `native-layout-live-left-800x560-selected.png`, `native-layout-live-left-1120x780-selected.png` | Linke Liste bleibt mit ausgewählter Ausgabe sichtbar, schmal 200 px; Pause, Follow, Refresh, Clear und Footer sind erreichbar dargestellt. Der Lauf prüft gemountete Scrollcontrols, Polling und Informationswechsel. F08 ist für diese native Fixture in beiden Größen belegt. |
+| `native-state-apply-800x560-confirmed.png`, `native-state-apply-1120x780-confirmed.png` | Daily revision 3, saved 3 / proxy 3 und Shell Active Daily stimmen überein. Keine falsche Pendingzeile. Der im ersten Lauf sichtbare Metadatenwiderspruch ist in diesen Aufnahmen geschlossen. |
+| `native-state-apply-rejected-800x560-rejected.png`, `native-state-apply-rejected-800x560-manual-new-review.png` | Bestätigtes runtime_busy ist als Ablehnung mit erhaltenem Workspace 2 erklärt, kein Unknown. Apply bleibt bis zur bewusst erneuerten Vorschau gesperrt; danach ist die neue Bestätigung erreichbar. Manifest belegt denselben Fall auch breit und keinen automatischen zweiten Apply. F03 für diese Fälle nativ geschlossen. |
+| `native-state-status-late-1120x780-confirmed-after-navigation.png` | Viewing Workspace 3 bleibt erhalten, während Summary, Liste und Shell das tatsächlich bestätigte Daily revision 2 zeigen. F05 ist breit nativ belegt. |
+| `native-state-status-late-800x560-failure.png` | Der Test erreicht nach Cancel die schmale Daily-Detailseite mit sichtbarem Back to profiles. Er sucht dort vor dem Backschritt den nicht sichtbaren Workspace-3-Listenauslöser. Der Fall bleibt fehlgeschlagen und benötigt den korrigierten nativen Nachlauf; kein PASS aus dem Bild allein. |
+| `native-state-browse-800x560-picker-open-x11.png` | Ein tatsächlicher nativer Ordnerdialog mit Open/Cancel ist sichtbar. Das Manifest führt Escape/Fokusrückgabe getrennt als bestandenen Ablauf; das Bild qualifiziert keinen plattformübergreifenden Dateidialog. |
+
+Die Requestzuordnung ist in diesem Manifest korrigiert und selbst geprüft:
+174 Requestdetails aus 18 Fixture-Sitzungen, kein fehlendes `fixtureSession`/
+`currentCase`, keine doppelte Kombination aus Session und Sequence. Jede Session
+ist genau einem Matrixfall zuordenbar; die anfänglichen `startup`-Reads haben
+denselben eindeutigen Sessionbezug wie die nachfolgenden Bilder. Die sechs
+Apply-POSTs gehören den Apply-, Rejected- und Late-status-Fällen, jeweils genau
+einer pro Fall und Ziel p1 mit Revision 2 beziehungsweise 3. Die übrigen
+untersuchten Fälle erzeugen keine Mutation. Die frühere Zuordnungslücke ist
+damit für diesen Lauf geschlossen.
+
+Der unabhängige Bildumfang beträgt nun 24 konkrete PNGs aus drei getrennten
+Läufen. Kein neuer visueller Befund in den elf gezielt geprüften Endassembly-
+Aufnahmen. Der 800er Late-status-Nachlauf und eine gesonderte Vergrößerungsprüfung
+sind noch nicht gelesen. F02 bleibt hinsichtlich der stale-ProfileDto-Reproduktion
+quellengeprüft; aus den anderen nativen Fällen wird kein ungetesteter
+Profileditor-Nachweis abgeleitet. Ebenso keine pauschale Abnahme aller langen
+Namen, Scrollpositionen, Providerfälle oder Accessibilitymerkmale.
+
+## Getrennter Late-status-Nachlauf `native-status-final`
+
+Das Manifest `native-status-final/evidence.json` nennt denselben Commit
+`5af70cbcc3108f30fc7c844c6074535d400a387e` und exakt dieselbe Desktopassembly-SHA
+`689A91279225725BCBA4EE9BDE43434731408DBFB3C1920BA1D8F44A05A62D3E`
+wie `native-final`. Der korrigierte Fixtureweg nimmt im schmalen Detail zuerst
+Back to profiles. Beide Größen wurden erneut ausgeführt: 2/2 PASS,
+29 Assertions, zwei Bilddatensätze, tatsächliche RenderScaling 1.
+Der ursprüngliche 17/18-Fehllauf bleibt als solcher erhalten.
+
+Beide PNGs wurden unabhängig geöffnet:
+
+- `native-state-status-late-800x560-confirmed-after-navigation.png`
+- `native-state-status-late-1120x780-confirmed-after-navigation.png`
+
+In beiden bleibt Viewing Workspace 3 nach der verspäteten Statusklärung
+erhalten. Die Summary zeigt Daily revision 2 sowie saved 2 / proxy 2, die Shell
+Active Daily. Breit ist außerdem der Appliedmarker für Daily in der weiterhin
+sichtbaren Liste erkennbar. Schmal ist die erwartete Workspace-3-Detailseite mit
+Back to profiles sichtbar. Die Requestdetails belegen genau einen Apply-POST
+je Fall auf p1 revision 2; die verspätete Klärung wiederholt Apply nicht.
+
+F05 ist damit für die getestete native Fixture in 1120×780 und 800×560
+geschlossen. Der unabhängige Bildumfang beträgt nun 26 konkrete PNGs aus vier
+getrennten Läufen. Kein neuer visueller Befund in den beiden Nachlaufbildern.
+Die gesonderte Vergrößerungsprüfung bleibt bis zu ihrer eigenen Sichtung offen;
+die oben genannten Grenzen für ungetestete Profileditor-, Inhalts-, Provider-
+und Accessibilityfälle gelten fort.
