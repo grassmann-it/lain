@@ -62,7 +62,7 @@ internal static class AccountUsageChecks
         foreach (var width in new[] { 60, 80, 120 })
         {
             var output = new StringWriter();
-            await CliApplication.WriteAccountUsage(output, overview, new(width, false));
+            await CliApplication.WriteAccountUsage(output, overview, new(width, false), timeZone: TimeZoneInfo.Utc);
             var detailed = new StringWriter();
             await CliApplication.WriteAccountUsage(detailed, overview, new(width, false), full: true);
             Check(output.ToString().Split('\n').All(line => HumanTable.Width(line.TrimEnd('\r')) <= width) &&
@@ -71,7 +71,7 @@ internal static class AccountUsageChecks
                 output.ToString().Contains("12 USD-Credits left") && output.ToString().Contains("Reset due") && output.ToString().Contains("Last known"),
                 $"{width}-column compact overview remains substantially shorter while retaining balances and warnings");
             var compactLines = output.ToString().Split('\n');
-            Check(new[] { "40% used", "12 USD-Credits left", "Reset 2099-01-01 00:00Z", "Reset due", "Last known" }
+            Check(new[] { "40% used", "12 USD-Credits left", "Reset 2099-01-01 00:00 +00:00", "Reset due", "Last known" }
                 .All(field => compactLines.Any(line => line.Contains(field))), $"{width}-column quota fields remain whole across line breaks");
         }
 
@@ -106,7 +106,7 @@ internal static class AccountUsageChecks
         await CliApplication.WriteAccountUsage(budgetOutput, fifteenWindows, new(100, false));
         Check(budgetOutput.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Length <= 24 &&
             budgetOutput.ToString().Split('\n').Count(line => line.Contains("40% used")) == 12 &&
-            budgetOutput.ToString().Split('\n').Count(line => line.Contains("More windows and details")) == 3,
+            budgetOutput.ToString().Split('\n').Count(line => line.Contains("more: --full")) == 3,
             "fifteen quota windows show at most two primary readings per account, with explicit full-detail paths, in twenty-four lines");
         // Presentation hierarchy must not change the source envelope or lose the only known budget.
         var basis = CliPresentationFixtures.Quotas[0] with { AccountId = "hierarchy", SharedWithLegacy = false, LastSuccessAt = now,
@@ -131,7 +131,7 @@ internal static class AccountUsageChecks
         var hierarchy = await Render(hierarchyQuotas);
         Check(hierarchy.IndexOf("5 hours", StringComparison.Ordinal) < hierarchy.IndexOf("7 hours", StringComparison.Ordinal)
             && !hierarchy.Contains("Monthly allowance") && !hierarchy.Contains("7 days")
-            && hierarchy.Contains("More windows and details: --full"), "shortest two explicit periods lead compact output; longer windows stay reachable via full");
+            && hierarchy.Contains("more: --full"), "shortest two explicit periods lead compact output; longer windows stay reachable via full");
         Check(hierarchy.Contains("Additional: Purchased credits · 12 credits left") && !hierarchy.Contains("Free credits"),
             "positive extra credits stay concise while zero-only free credits do not occupy compact rows");
         var hierarchyFull = await Render(hierarchyQuotas, fullDetails: true);
@@ -142,7 +142,7 @@ internal static class AccountUsageChecks
         var mainZero = purchased with { WindowLabel = "Account balance", Source = "fixture#account-balance", Remaining = 0 };
         var emptyBalance = await Render([mainZero, freeZero]);
         Check(emptyBalance.Contains("Account balance") && emptyBalance.Contains("0 credits left") && emptyBalance.Contains("Exhausted")
-            && !emptyBalance.Contains("Free credits") && !emptyBalance.Contains("More windows and details"),
+            && !emptyBalance.Contains("Free credits") && !emptyBalance.Contains("more: --full"),
             "a real exhausted primary balance remains visible; hidden zero-only extras do not add detail hints");
         var unknownExtra = freeZero with { Remaining = null, State = "unavailable" };
         var unknownOutput = await Render([unknownExtra]);
@@ -162,7 +162,7 @@ internal static class AccountUsageChecks
         var faultOutput = await Render([fiveHours, sevenHours, faultedMonthly]);
         var unknownMonthlyOutput = await Render([fiveHours, unknown with { WindowLabel = "Unknown monthly allowance" }]);
         Check(faultOutput.Contains("Quota refresh error") && faultOutput.Contains("Last known quota") && faultOutput.Contains("--full")
-            && !unknownMonthlyOutput.Contains("Unknown monthly allowance") && !unknownMonthlyOutput.Contains("More windows and details"),
+            && !unknownMonthlyOutput.Contains("Unknown monthly allowance") && !unknownMonthlyOutput.Contains("more: --full"),
             "deferred refresh errors stay visible while unknown secondary windows do not add compact diagnostic rows");
         var orderedOverview = new AccountUsageOverview(1, "account-usage", [
             new(new("missing", "Missing first", "fixture", true, "api-key", "ready"), [unknown]),

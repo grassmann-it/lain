@@ -27,7 +27,7 @@ internal static class SetupPresentationChecks
         var text = output.ToString();
         Check(names.All(text.Contains), "all custom account names retained");
         Check(text.Split("No separate quota lookup", StringSplitOptions.None).Length == 5, "one neutral explanation per unsupported account");
-        Check(!text.Contains("Quota warning") && !text.Contains("Remaining unavailable") && !text.Contains("Reset unknown"), "unsupported is not a warning or repeated missing metrics");
+        Check(!text.Contains("Quota warning") && !text.Contains("Quota refresh error") && !text.Contains("Remaining unavailable") && !text.Contains("Reset unknown"), "unsupported is not a warning or repeated missing metrics");
         Check(text.Contains("Key spending limit") && text.Contains("20% used") && text.Contains("8 USD left"), "percentage identifies a bounded key spending limit");
         var fullOutput = new StringWriter();
         await CliApplication.WriteAccountUsage(fullOutput, overview, new(120, false), full: true);
@@ -52,7 +52,7 @@ internal static class SetupPresentationChecks
         var passive = template with { State = "awaiting-observation", Used = null, Limit = null, Remaining = null,
             Support = new("awaiting-observation", "Limits appear after ordinary model use.", "https://example.invalid/limits") };
         var supportText = await Render(passive);
-        Check(supportText.Contains("Limits appear after ordinary model use.") && !supportText.Contains("https://example.invalid/limits") &&
+        Check(supportText.Contains("Waiting for quota observation") && !supportText.Contains("Limits appear after ordinary model use.") && !supportText.Contains("https://example.invalid/limits") &&
             (await Render(passive, full: true)).Contains("https://example.invalid/limits") && !supportText.Contains("warning"),
             "passive support message stays neutral while the full view retains its action link");
         var errorText = await Render(template with { State = "error", Error = "HTTP 401: monitor access expired", Support = new("passive", "After use") });
@@ -71,9 +71,10 @@ internal static class SetupPresentationChecks
             var result = await CliApplication.RunAsync(command, writer, errors, () => new LainApiClient(http));
             var rendered = writer.ToString();
             var compact = command.SequenceEqual(new[] { "usage" });
-            Check(result == 0 && errors.ToString() == "" && rendered.Contains("No Gemini API request series") &&
-                (compact ? !rendered.Contains("https://aistudio.google.com/usage") && rendered.Contains("lain usage --full")
-                    : rendered.Contains("https://aistudio.google.com/usage")),
+            Check(result == 0 && errors.ToString() == "" &&
+                (compact ? rendered.Contains("No quota series reported") && !rendered.Contains("No Gemini API request series") &&
+                    !rendered.Contains("https://aistudio.google.com/usage") && rendered.Contains("lain usage --full")
+                    : rendered.Contains("No Gemini API request series") && rendered.Contains("https://aistudio.google.com/usage")),
                 string.Join(' ', command) + " preserves successful empty-monitor guidance, with action links in detailed output");
             Check(!rendered.Contains("Unavailable") && !rendered.Contains("Quota values not reported") && !rendered.Contains("Last known") && !rendered.Contains("%") && !rendered.Contains("Remaining unknown"),
                 string.Join(' ', command) + " has no error state, stale value or fabricated zero for HTTP200 no series");

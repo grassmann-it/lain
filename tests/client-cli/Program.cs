@@ -405,6 +405,7 @@ assertions += await SetupPresentationChecks.RunAsync();
 assertions += await AccountWizardChecks.RunAsync();
 assertions += await MonitorWizardChecks.RunAsync();
 assertions += await AccountUsageChecks.RunAsync();
+assertions += await UsageStyleChecks.RunAsync();
 Console.WriteLine($"PASS: {assertions} client/CLI contract checks.");
 
 sealed class FakeHandler : HttpMessageHandler

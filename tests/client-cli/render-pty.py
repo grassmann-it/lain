@@ -79,8 +79,9 @@ def capture(command, columns, no_color):
     return data.decode("utf-8").replace("\r\n", "\n")
 
 
-for columns in (60, 80, 120):
-    for command in ("quotas", "status", "usage", "usage-full", "history", "help", "providers"):
+for columns in (20, 40, 60, 80, 120):
+    commands = ("usage",) if columns < 60 else ("quotas", "status", "usage", "usage-full", "history", "help", "providers")
+    for command in commands:
         for no_color in (False, True):
             raw = capture(command, columns, no_color)
             # .NET initializes a new TTY's keypad mode before application output.
@@ -95,10 +96,21 @@ for columns in (60, 80, 120):
                 assert "Quota values not reported" in plain and "No separate quota lookup" in plain and "Reset due" in plain
                 assert "Remaining 12 USD-Credits" in plain and "Account ID: account-codex" in plain
             if command == "usage":
-                assert "Personal Codex" in plain and "codex" in plain and "Coding credits" in plain and "Disabled" in plain
-                assert "Missing credential" in plain and "Quota not reported" in plain and "40% used" in plain
-                assert "12 USD-Credits left" in plain and "Reset due" in plain and "Last known" in plain
-                assert "ID:" not in plain and "Source " in plain and "Checked " in plain
+                words = " ".join(plain.split())
+                assert "Personal Codex" in words and "codex" in words and "Coding credits" in words and "Disabled" in words
+                assert "Missing credential" in words and "Quota not reported" in words and "40% used" in words
+                assert "12 USD-Credits left" in words and "Reset due" in words and "Last known" in words
+                assert "ID:" not in plain and "Source " not in plain and "Checked " not in plain
+                assert "Details: lain usage --full" in words and "No quota readings" in words
+                assert ("━" in plain) == (columns >= 48), "narrow compact output keeps numbers without bars"
+                assert "Free credits" not in plain, "zero-only extras stay out of the first view"
+                if not no_color:
+                    active = ""
+                    for chunk in re.split(r"(\x1b\[[0-9;]*m)", initialized):
+                        if sgr.fullmatch(chunk):
+                            active = chunk[2:-1]
+                        elif set(active.split(";")).intersection({"31", "32", "33", "36"}):
+                            assert "USD-Credits left" not in chunk and "Reset " not in chunk, "balances and resets do not inherit metric colour"
             if command == "usage-full":
                 assert "ID: account-codex" in plain and "source " in plain and "Checked " in plain
                 assert "Shared budget with legacy" in plain and "Used 18 USD-Credits / 20 USD-Credits" in plain
