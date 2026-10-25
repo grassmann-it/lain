@@ -136,6 +136,16 @@ try
         release.SetResult();
         using var response = await pending;
         Check(response.StatusCode == HttpStatusCode.Conflict && JsonSerializer.Serialize(repository.Snapshot) == after, name + " refuses late publication");
+        // Each race owns its target. In particular the intentionally retired
+        // credential must not remain in the next case's duplicate-key scan.
+        await gate.WaitAsync();
+        try
+        {
+            if (repository.Snapshot.Accounts.Any(a => a.Id == target.Id))
+                accounts.Remove(repository.Snapshot.Revision, target.Id);
+        }
+        finally { gate.Release(); }
+        Check(repository.Snapshot.Accounts.All(a => a.Id != target.Id), name + " releases its isolated target after checking late-result rejection");
     }
     await Late("late disconnect", target => { accounts.Remove(repository.Snapshot.Revision, target.Id); return Task.CompletedTask; });
     await Late("late disable", target => { accounts.SetEnabled(repository.Snapshot.Revision, target.Id, false); return Task.CompletedTask; });
@@ -213,9 +223,12 @@ try
         replacementRequest with { BaseUrl = "https://untrusted.invalid/v1", Connection = replacementRequest.Connection with { ExpectedGeneration = afterReconnect.Generation } })))
         Check(result.StatusCode == HttpStatusCode.BadRequest && provider.Calls == reconnectCalls, "reconnect uses unchanged catalog endpoint validation before provider HTTP");
     var legacyRejected = false;
+    var beforeLegacyKey = new CredentialResolver(repository, secrets).Resolve(afterReconnect.Id, "inference")!.PrivateJson;
     try { accounts.ReplaceApiCredential(beforeInvalid.Revision, afterReconnect.Id, "unproved-legacy-key"); }
     catch (InvalidOperationException) { legacyRejected = true; }
-    Check(legacyRejected && repository.Snapshot.Revision == beforeInvalid.Revision, "legacy replacement entry remains fail-closed for confirmed xAI identity");
+    Check(legacyRejected && JsonSerializer.Serialize(repository.Snapshot) == JsonSerializer.Serialize(beforeInvalid)
+        && new CredentialResolver(repository, secrets).Resolve(afterReconnect.Id, "inference")!.PrivateJson == beforeLegacyKey,
+        "legacy replacement entry remains fail-closed for confirmed xAI identity");
 
     var reconnectEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
     var reconnectRelease = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
