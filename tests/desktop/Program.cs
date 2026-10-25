@@ -42,8 +42,9 @@ internal static class Program
         SmokeApp.ModelIdentityOnly = args.Contains("--model-identity-smoke", StringComparer.Ordinal);
         SmokeApp.AccountSortOnly = args.Contains("--account-sort-smoke", StringComparer.Ordinal);
         SmokeApp.ProviderSetupOnly = args.Contains("--provider-setup-smoke", StringComparer.Ordinal);
+        SmokeApp.InspectorOnly = args.Contains("--inspector-smoke", StringComparer.Ordinal);
         return AppBuilder.Configure<SmokeApp>().UsePlatformDetect().WithInterFont()
-            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--model-identity-smoke" or "--monitor-table-smoke")).ToArray());
+            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--model-identity-smoke" or "--monitor-table-smoke" or "--inspector-smoke")).ToArray());
     }
 }
 
@@ -54,6 +55,7 @@ internal sealed class SmokeApp : Application
     public static bool ModelIdentityOnly { get; set; }
     public static bool AccountSortOnly { get; set; }
     public static bool ProviderSetupOnly { get; set; }
+    public static bool InspectorOnly { get; set; }
     public override void Initialize()
     {
         // Reuse production initialization (Semi/Ursa resources included), not a test theme.
@@ -78,7 +80,8 @@ internal sealed class SmokeApp : Application
             var scenario = new Scenario(lifetime);
             try
             {
-                if (MonitorTableOnly) await scenario.RunMonitorTableSmoke();
+                if (InspectorOnly) await scenario.RunInspectorSmoke();
+                else if (MonitorTableOnly) await scenario.RunMonitorTableSmoke();
                 else if (AccountSnapshotsOnly) await scenario.RunAccountSnapshotsSmoke();
                 else if (ModelIdentityOnly) await scenario.RunModelIdentitySmoke();
                 else if (ProviderSetupOnly) await scenario.RunProviderSetupSmoke();
@@ -109,6 +112,21 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
     private readonly List<object> headerLayouts = [];
     private MainWindow window = null!;
     private readonly List<HttpClient> transports = [];
+
+    public async Task RunInspectorSmoke()
+    {
+        Directory.CreateDirectory(Output);
+        await Open();
+        await CheckInspector(inspectorOnly: true);
+        await File.WriteAllTextAsync(Path.Combine(Output, "inspector-evidence.json"), JsonSerializer.Serialize(new
+        {
+            result = "PASS", scenario = "inspector-smoke", checks, screenshots, requests = fixture.Requests,
+            scope = "Production InspectorView on private Xvfb and private DBus; in-memory Host fixtures only. Source transitions, pause, selection, display failure recovery, expired selection and detach. No real providers, credentials or services."
+        }, new JsonSerializerOptions { WriteIndented = true }));
+        window.Close();
+        foreach (var transport in transports) transport.Dispose();
+        Console.WriteLine($"PASS inspector smoke: {checks.Count} checks, {screenshots.Count} screenshots. {Output}/inspector-evidence.json");
+    }
 
     public async Task RunProviderSetupSmoke()
     {
@@ -1266,7 +1284,7 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         probe.Close(); window.Activate();
     }
 
-    private async Task CheckInspector()
+    private async Task CheckInspector(bool inspectorOnly = false)
     {
         await Click("Live");
         await Wait(() => HasText("Connected to the live inspector", true) && HasSelectable("First answer continued."), "Inspector loads and assembles live output chunks");
@@ -1291,8 +1309,8 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
                 && requestPicker.SelectedItem?.ToString() == selectedRequest,
                 $"Inspector resize preserves native picker group control and selected request at {window.Bounds.Width:0}px");
             if (window.Bounds.Width < 900)
-                Check(FitsScrollViewports(Named<ComboBox>("Conversation / linked requests")) && FitsScrollViewports(requestPicker),
-                    "narrow Inspector conversation and request pickers fit within the initial viewport");
+                Check(!Controls<ComboBox>().Any(control => AutomationProperties.GetName(control) == "Conversation / linked requests") && FitsScrollViewports(requestPicker),
+                    "narrow Inspector keeps its observed-request inventory and selected request picker within the initial viewport");
         });
         var eventDetail = Named<StackPanel>("Inspector events").GetVisualDescendants().OfType<Expander>().First(x => Equals(x.Header, "Event details"));
         eventDetail.IsExpanded = true;
@@ -1361,7 +1379,7 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         await CaptureBoth("live-source-empty");
         fixture.InspectorEmpty = false;
         await Click("Refresh inspector");
-        await Wait(() => HasSelectable("New source output only."), "manual refresh restores the nonempty source before outage testing");
+        await Wait(() => HasGroup("request:request-new") && HasSelectable("New source output only."), "manual refresh restores the nonempty source before outage testing");
         fixture.InspectorFailure = true;
         await Click("Refresh inspector");
         await Wait(() => HasText("Inspector disconnected · active state is unknown", true), "Inspector failures report unknown active state");
@@ -1385,6 +1403,14 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         await Click("Inspect group request:request-later");
         await Wait(() => !HasText("Selected request metadata expired", true) && HasSelectable("New source output only."),
             "a later request remains selectable after the previous request expires");
+        if (inspectorOnly)
+        {
+            await Click("Models");
+            var stoppedCalls = fixture.InspectorCalls + fixture.InspectorEventCalls;
+            await Task.Delay(550);
+            Check(fixture.InspectorCalls + fixture.InspectorEventCalls == stoppedCalls, "Inspector polling stops when detached");
+            return;
+        }
         var contextDetails = Controls<Expander>().Single(x => Equals(x.Header, "Identities & measurement sources"));
         contextDetails.IsExpanded = true; await Task.Delay(80);
         await Click("Account a1");
