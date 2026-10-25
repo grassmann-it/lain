@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -5,6 +6,7 @@ using Lain.Core;
 using Lain.Host.Accounts;
 using Lain.Host.Providers;
 using Lain.Host.Models;
+using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
 namespace Lain.Host.Operations;
@@ -86,7 +88,8 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
             if (Path.GetFileName(name) != name) throw new InvalidDataException("Invalid own import metadata.");
             var source = Parse(File.ReadAllText(Path.Combine(paths.Imports, name)));
             foreach (var key in new[] { "routing", "oauth-model-alias", "oauth-excluded-models", "payload", "request-retry", "disable-image-generation" })
-                if (LegacyImportService.Get(source, key) is { } value) config.Add(key, value);
+                if (LegacyImportService.Get(source, key) is { } value)
+                    config.Add(key, key == "request-retry" ? NormalizeRequestRetry(value) : value);
             if (LegacyImportService.Get(config, "oauth-model-alias") is YamlMappingNode oauth)
                 foreach (var aliases in oauth.Children.Values.OfType<YamlSequenceNode>()) NormalizeModelAliases(aliases);
         }
@@ -279,6 +282,16 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
     {
         foreach (var model in models.Children.OfType<YamlMappingNode>())
             if (LegacyImportService.Text(model, "name") is { } modelName) Set(model, "alias", new YamlScalarNode(modelName));
+    }
+    private static YamlScalarNode NormalizeRequestRetry(YamlNode value)
+    {
+        if (value is not YamlScalarNode scalar ||
+            !scalar.Tag.IsEmpty && scalar.Tag.Value is not ("tag:yaml.org,2002:int" or "tag:yaml.org,2002:str") ||
+            !long.TryParse(scalar.Value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var retry))
+            throw new InvalidDataException("Imported request-retry must be a decimal integer scalar.");
+        // Imported strings retain their quoted style/tag in the YAML object graph.
+        // Core requires an integer, so publish its type as well as its numeric value.
+        return new(retry.ToString(CultureInfo.InvariantCulture)) { Style = ScalarStyle.Plain, Tag = "tag:yaml.org,2002:int" };
     }
     private static string? Read(JsonElement node, string name) => node.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     private static void Set(YamlMappingNode mapping, string key, YamlNode value) => mapping.Children[new YamlScalarNode(key)] = value;

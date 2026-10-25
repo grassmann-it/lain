@@ -4,6 +4,8 @@ using Lain.Host.Accounts;
 using Lain.Host.Models;
 using Lain.Host.Operations;
 using Lain.Host.Providers;
+using YamlDotNet.Core;
+using YamlDotNet.RepresentationModel;
 
 var assertions = 0;
 void Check(bool condition, string name) { assertions++; if (!condition) throw new Exception(name); }
@@ -99,6 +101,39 @@ try
     Reject(() => writer.Write(withUnused with { Routes = [badRoute with { AccountIds = [unused.Id] }] }), "missing inference credential must fail");
     Reject(() => writer.Write(imported with { Routes = [imported.Routes[0] with { AccountIds = [] }] }), "empty route must fail");
     Check(File.ReadAllText(sentinel) == "synthetic sentinel" && File.ReadAllText(paths.ProxyConfig) == generatedBefore, "validation fails before generated auth deletion or config replacement");
+
+    // A successful Describe must not leave quoted retry counts for Core's integer field.
+    var retryPaths = new OwnStatePaths(Path.Combine(root, "retry-runtime"));
+    var retrySecrets = new SecretStore(retryPaths);
+    var retryRepository = new ConfigurationRepository(retryPaths);
+    var retryImporter = new LegacyImportService(retryPaths, retryRepository, retrySecrets);
+    var retryWriter = new ProxyConfigurationWriter(retryPaths, retrySecrets);
+    var retrySource = Path.Combine(root, "retry-source.yaml");
+    foreach (var (input, expected) in new[] { ("0", "0"), ("3", "3"), ("'4'", "4"), ("\"5\"", "5"), ("!!str 6", "6"), ("-1", "-1") })
+    {
+        File.WriteAllText(retrySource, "request-retry: " + input + "\n");
+        retryImporter.Import(new(retryRepository.Snapshot.Revision, retrySource));
+        retryWriter.Describe(retryRepository.Snapshot);
+        retryWriter.Write(retryRepository.Snapshot);
+        var yaml = new YamlStream();
+        using (var read = new StringReader(File.ReadAllText(retryPaths.ProxyConfig))) yaml.Load(read);
+        var retry = (YamlScalarNode)((YamlMappingNode)yaml.Documents.Single().RootNode).Children[new YamlScalarNode("request-retry")];
+        var integerType = retry.Tag.IsEmpty ? retry.Style == ScalarStyle.Plain : retry.Tag.Value == "tag:yaml.org,2002:int";
+        Check(retry.Value == expected && integerType,
+            "compiled retry retains its integer value and YAML type: " + input);
+    }
+    var retryConfigBefore = File.ReadAllText(retryPaths.ProxyConfig);
+    var retrySentinel = Path.Combine(retryPaths.ProxyAuth, "acct-preserve.json");
+    OwnStatePaths.WritePrivate(retrySentinel, "synthetic retry sentinel");
+    foreach (var input in new[] { "null", "true", "1.5", "\"retries\"", "[1]", "{count: 1}", "9223372036854775808", "!!float 1" })
+    {
+        File.WriteAllText(retrySource, "request-retry: " + input + "\n");
+        retryImporter.Import(new(retryRepository.Snapshot.Revision, retrySource));
+        Reject(() => retryWriter.Describe(retryRepository.Snapshot), "Describe rejects malformed retry: " + input);
+        Reject(() => retryWriter.Write(retryRepository.Snapshot), "Write rejects malformed retry: " + input);
+        Check(File.ReadAllText(retryPaths.ProxyConfig) == retryConfigBefore && File.ReadAllText(retrySentinel) == "synthetic retry sentinel",
+            "malformed retry leaves generated runtime/auth unchanged: " + input);
+    }
 
     // Every supported executor derives from its compiled section/switch, never display/provider guesses.
     foreach (var (section, protocolSwitch, expected) in new[] {
