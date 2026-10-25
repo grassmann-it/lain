@@ -8,5 +8,19 @@
   "archiveSha256": "57f8c2f88fe5b6eaf08672212b6372362ca044bee43d6e57b6ad032152be772e",
   "archiveRoot": "codex-rust-v0.164.0",
   "rustToolchain": "1.99.1",
-  "patches": ["patches/0001-lain-model-picker.patch"]
+  "patches": [
+    "patches/0001-lain-model-picker.patch",
+    "patches/0002-release-workspace-lock.patch"
+  ],
+  "patchSha256": {
+    "patches/0001-lain-model-picker.patch": "f7039dc4b7d372286850422412a909e29c208b227ccffddf4e92734c6a64cf7c",
+    "patches/0002-release-workspace-lock.patch": "5e8d2b73b3bf7870dab1cb3f23d7629ecf47af88076f0052b636a19b9b5bc6d4"
+  },
+  "workspaceLockNormalization": {
+    "oldLocalVersion": "0.0.0",
+    "newLocalVersion": "0.164.0",
+    "changedLocalPackages": 166,
+    "externalPackages": 1308,
+    "normalizedLockSha256": "bc5f7352658f51deace9dddb4bc404742b06c6402cc825b6d37051c008d989bd"
+  }
 }

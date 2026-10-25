@@ -48,13 +48,23 @@ router availability, and cost policy remain responsibilities of lain's real expo
 
 `upstream.json` pins the public tag, peeled commit and archive SHA-256. The source archive is
 not vendored. Preparation validates it, safely extracts into a new directory, checks/applies the
-patch, and writes source provenance. It never overwrites an existing checkout.
+patches, and writes source provenance. It never overwrites an existing checkout. Temporary
+extraction uses `~/.cache/lain-build-tmp` when `TMPDIR` is unset; source archives do not default
+to the RAM-backed `/tmp` directory.
 
 ```sh
 python scripts/prepare-codex-picker.py --fetch --output /absolute/new/source
 # Or replace --fetch with --archive /path/to/upstream-rust-v0.164.0.tar.gz.
 scripts/build-codex-picker.sh /absolute/new/source
 ```
+
+The public release bumps workspace package versions to `0.164.0` while its committed lock
+still records the 166 local packages as `0.0.0`. The second pinned patch corrects only those
+local version fields. Preparation independently compares all 1308 complete external package
+records (including dependencies), every local field except the expected version, lock metadata,
+and the final lock hash. These checks are included in `lain-picker-source.json`; no unlocked
+build or dependency update is needed. `tests/codex-picker/test_prepare.py` checks rejection
+of changes to external records, local dependencies, and lock metadata.
 
 The tag requires **Rust 1.99.1**. The build script uses the upstream `dev-small` profile, one Cargo
 job, no incremental cache and `--locked`. It only builds `codex-cli`'s `codex` executable and does
