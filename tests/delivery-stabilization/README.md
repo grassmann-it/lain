@@ -192,7 +192,9 @@ The runner parses that source and evaluates only the selected pure validator,
 files and fake subprocess/package readers; it never evaluates module top-level
 code, imports the private module or calls service/process/install/update paths.
 `fixtures/updater-unit-guards.json` defines accepted/rejected loaded environment
-and lifecycle-hook cases. Additional checks cover output-free child-error
+and lifecycle-hook cases. An absent Core override requires bare-key
+`LAIN_PROXY_PATH` in `UnsetEnvironment`; mere absence or a value-specific removal
+cannot exclude manager inheritance. Additional checks cover output-free child-error
 diagnostics, changed application bytes after an earlier check, and the AST
 placement of the final complete app pin immediately before the installer.
 Missing hook metadata is refused, not interpreted as proof of no hook. These

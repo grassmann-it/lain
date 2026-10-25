@@ -72,8 +72,10 @@ services, UI, providers or builds and does not access installed user state.
 ## Additional private updater guards
 
 The prepared cumulative helper additionally rejects loaded `LAIN_PROXY_PATH`
-values other than its exact own `app/proxy/lain-proxy` path or no assignment,
-any loaded `LAIN_REFERENCE_` assignment, and nonempty or unavailable
+values other than its exact own `app/proxy/lain-proxy` path. An absent assignment is
+accepted only when bare-key `LAIN_PROXY_PATH` appears in `UnsetEnvironment`,
+preventing inheritance from the user manager. A value-specific unset rule does
+not establish that guarantee. It also rejects any loaded `LAIN_REFERENCE_` assignment, and nonempty or unavailable
 `ExecStartPre`, `ExecStartPost`, `ExecStop` or `ExecStopPost` metadata. Cleaning
 the updater child's environment alone does not validate a systemd service.
 The complete installed old-app package is checked again immediately before the
