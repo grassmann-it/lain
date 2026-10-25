@@ -73,3 +73,21 @@ newer grant, and forward update. Monitor requires no Core package/listener. Same
 Core binary reuse requires exact source identity and identical qualification
 record. The explicit scope remains this fixture, not arbitrary downgrade or
 rotating-grant recovery. No execution result is inferred from source inspection.
+
+## Helper guard follow-up, SHA-256 `8d25c3fc229537a23e667a104eb311e294474ad7f9009d8ef3aa80dfe5f82c87`
+
+Independently read and hashed the revised helper source. Findings 1 and 3 are
+closed at source level: a fixed private nonblocking flock lease surrounds all
+execution and failure cleanup, and all four external file fingerprints/absence
+are rechecked immediately before the installer. The lock descriptor refuses
+links, foreign ownership, non-regular files, extra hardlinks and non-private
+permissions; it is not inherited across exec.
+
+Finding 2 is substantially addressed: loaded FragmentPath, single ExecStart
+path/argv, and own MainPID/executable are checked before baseline and every
+service action, including failure stop. One remaining boundary was sent to the
+delivery worker and Root: loaded Environment/EnvironmentFiles are not checked,
+so the same Host executable could operate on a different LAIN_HOME. Require the
+exact loaded own state path and fail closed on unresolved environment files.
+No claim about the real unit's configuration is made. No helper execution or
+private state inspection was performed.
