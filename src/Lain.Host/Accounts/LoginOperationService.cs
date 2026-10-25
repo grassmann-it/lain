@@ -393,7 +393,7 @@ public sealed class LoginOperationService : IAsyncDisposable
     {
         ValidateUrl(result.Url);
         ValidateDeviceDisplay(result.UserCode, result.VerificationUri, result.Url);
-        if (result.State is not ("waiting" or "authorizing" or "resource-required" or "prepared" or "failed" or "cancelled" or "recovery-required"))
+        if (result.State is not ("waiting" or "authorizing" or "resource-required" or "prepared" or "failed" or "cancelled" or "expired" or "recovery-required"))
             throw new InvalidDataException("Adapter returned an invalid connection phase.");
         var context = operation.Context!;
         if (result.Credential is { } credential)

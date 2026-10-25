@@ -12,7 +12,7 @@ public static class ManagedLoginQualifications
         ["Supported lain client admission for the published device toolkit.", "One region/subject-bound refresh owner and isolated persistence; or a pinned isolated CLI with bounded local bearer handoff."],
         "https://github.com/MoonshotAI/kimi-code/tree/main/packages/oauth", "Use the existing Kimi Coding API key on its qualified .com/.ai host.");
     public static readonly ManagedLoginQualification Zai = new("zai", "zai-managed", "undecided", "unqualified",
-        ["Supported own clientType/version and renewable OAuth/business session.", "A personal international account, explicit organization/project and existing key ID, with non-creating discovery."],
+        ["No supported independent client contract or bound, non-creating official CLI path has been established from the pinned source.", "A personal international account, explicit organization/project and existing key ID are required; primary session expiry requires reconnect, not an invented OAuth refresh."],
         "https://github.com/zai-org/ZCode/blob/main/packages/shared/src/project-access-token-client.ts", "Use an existing international Coding key; no key is created by monitoring.");
     public static readonly ManagedLoginQualification Codex = new("codex", "codex-standalone", "delegated-cli-candidate", "unqualified",
         ["Pinned app-server isolated HOME/CODEX_HOME and file-only credential backend, restart and renewal qualification.", "Stable verified account/workspace scope: documented account/read only supplies nullable email and plan type; no guessed identity or foreign auth-cache adoption."],

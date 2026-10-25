@@ -88,7 +88,7 @@ async Task MonitorAndStatic()
 
 async Task DeviceInstructions()
 {
-    foreach (var terminal in new[] { "completed", "cancelled", "failed", "expired" })
+    foreach (var terminal in new[] { "completed", "cancelled", "failed", "expired", "provider-expired" })
     {
         var f = New("device-" + terminal);
         var clock = new FakeClock();
@@ -103,10 +103,11 @@ async Task DeviceInstructions()
         else
         {
             if (terminal == "expired") clock.Advance(TimeSpan.FromMinutes(11));
-            adapter.Next = terminal == "completed" ? new("prepared", Credential: Key("device-fixture-token")) : new("failed");
+            adapter.Next = terminal == "completed" ? new("prepared", Credential: Key("device-fixture-token"))
+                : new(terminal == "provider-expired" ? "expired" : "failed");
             login = await service.StatusAsync(login.Id);
         }
-        Check(login.State == terminal && login.UserCode is null && login.VerificationUri is null && login.Url is null,
+        Check(login.State == (terminal == "provider-expired" ? "expired" : terminal) && login.UserCode is null && login.VerificationUri is null && login.Url is null,
             "terminal login clears all device instructions: " + terminal);
     }
     foreach (var invalid in new[] {
