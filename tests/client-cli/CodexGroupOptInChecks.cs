@@ -53,7 +53,7 @@ internal static class CodexGroupOptInChecks
         var helpOutput = new StringWriter();
         Check(await CliApplication.RunAsync(["help"], helpOutput, new StringWriter()) == 0 &&
             helpOutput.ToString().Contains("[--model-groups]") && helpOutput.ToString().Contains("lain-patched Codex") &&
-            helpOutput.ToString().Contains("automatic routing is unavailable"), "Help explains the explicit patched-client opt-in and routing boundary");
+            helpOutput.ToString().Contains("saved, qualified routers") && helpOutput.ToString().Contains("account:ID"), "Help explains the explicit patched-client opt-in and routing boundary");
 
         // The CLI installer resolves UserProfile; restrict the fixture to its disposable home
         // and fail before any install if the platform cannot honor that isolation.

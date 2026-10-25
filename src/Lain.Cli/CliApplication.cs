@@ -30,7 +30,7 @@ public static partial class CliApplication
           profiles preview ID [--revision N] [--json]
           profiles apply ID [--revision N] [--json]
           profiles install-codex ID [--model-groups] [--revision N] [--json]
-                --model-groups opts into the lain-patched Codex picker; automatic routing is unavailable.
+                --model-groups opts into the lain-patched Codex picker; saved, qualified routers provide Automatisch.
           collections [list] [--json]  Saved definitions and current revision
           collections save|upsert ID --name NAME --routes ROUTE[,ROUTE...] --revision N [--json]
                 Routes are ordered IDs or unique aliases; use --routes '' for an empty collection.
@@ -38,7 +38,7 @@ public static partial class CliApplication
           routers [list] [--json]  Saved router definitions and current revision
           routers save ID --alias ALIAS --group GROUP_ID --profile HOST_PROFILE_ID
                 --cost configured|free_only --revision N [--json]
-                Group IDs: collection:ID, provider:ID, policy:free. Saving does not apply or export.
+                Group IDs: collection:ID, provider:ID, account:ID, policy:free. Saving does not apply or export.
           routers delete ID --revision N [--json]
           import CONFIG [--auth-dir DIR] [--revision N] [--json]
           history [--today] [--from ISO] [--to ISO] [--timezone IANA]

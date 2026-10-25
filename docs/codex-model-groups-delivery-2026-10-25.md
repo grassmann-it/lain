@@ -14,6 +14,10 @@ and account retained for the conversation. Errors do not select another route.
 
 - Optional revisioned collections reference existing route IDs in user order.
   Provider groups reference the same routes; membership can overlap.
+- The user confirmed automatic provider groups and configurable custom groups
+  such as `1M`. Multiple active exported accounts of one provider must remain
+  distinguishable, for example `Codex (Privat)` and `Codex (Work)`; account
+  automatic selection must never include another account implicitly.
 - Explicit collection routers are profile-bound. Saving, applying and exporting
   are separate actions. See [routing contract](collection-router-v1.md).
 - The grouped catalog is opt-in through
@@ -56,8 +60,12 @@ slug persistence are verified; six out-of-scope/profile/provider cases retain
 the upstream picker. The separate mixed-package run passes seven Host/CLI/Core
 checks in a private PID/network namespace, including two Responses turns across
 a Host restart, matching Usage identities, opt-in export and stale CAS 409.
-Desktop remains byte-identical to the baseline. Fourteen targeted Rust library
-tests are still running and are not yet counted as passed.
+Desktop remains byte-identical to the baseline. The complete Core library test
+build reached the 3 GiB memory limit before executing any of its six targeted
+tests. It is not counted as passed. A smaller harness includes the unchanged
+production module and its six original tests with real, pinned dependencies;
+that run is pending. Eight TUI library tests have not been started; the seven
+real native PTY cases above are the completed menu qualification.
 
 The narrow retained-Desktop update helper passed 15 synthetic file fixtures after
 independent source review. Five additional tests exercise real exact-package
@@ -89,7 +97,7 @@ cause is not established. The current preservation boundary uses SHA-256
 and separate opaque fingerprints for the other ordinary Codex files.
 
 The prepared group activation preserves all accounts, routes and profiles.
-Free and IT Sec are collections over their existing route IDs. Automatic
+Free, IT Sec and 1M are collections over their existing route IDs. Automatic
 provider/IT Sec targets must first pass the actual Host export compiler. Free
 automation is not activated: no current route has effective `free_only`, and
 the cached OpenRouter key spend cap is 20 USD; the qualified runtime guard
