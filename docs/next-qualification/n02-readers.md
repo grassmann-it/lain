@@ -2,7 +2,8 @@
 
 Source baseline: `7661886`. This package changes only the two readers and focused
 fixtures. No provider request, login, inference, installation or runtime mutation
-was performed. Source completion is separate from the pending build/runtime gate.
+was performed. The two small standalone checks below passed in the subsequently
+allocated bounded slot. Shared cache-expiry integration remains Root-owned.
 
 ## Implemented
 
@@ -55,20 +56,54 @@ shared quota contracts without building the Host. Fake HTTP/clock cases cover:
 The prior gateway fixture's obsolete `ResetsAt=null` assertion was updated with
 Root's explicit authorization to check the policy-bound one-day window instead.
 
-Pending commands for the serialized Root slot (small standalone .NET projects,
-one process at a time, no GUI/Core/provider/network service required):
+Commands executed sequentially in the allocated slot (small standalone .NET
+projects, no GUI/Core/provider/network service required):
 
 ```sh
-dotnet build tests/next-readers/NextReaders.Tests.csproj -m:1 -p:BuildInParallel=false -nr:false
+dotnet build tests/next-readers/NextReaders.Tests.csproj -m:1 -nr:false -p:BuildInParallel=false -p:UseSharedCompilation=false --verbosity minimal
 dotnet run --project tests/next-readers/NextReaders.Tests.csproj --no-build --no-restore
-dotnet build tests/gateways/Gateways.Tests.csproj -m:1 -p:BuildInParallel=false -nr:false
+dotnet build tests/gateways/Gateways.Tests.csproj -m:1 -nr:false -p:BuildInParallel=false -p:UseSharedCompilation=false --verbosity minimal
 dotnet run --project tests/gateways/Gateways.Tests.csproj --no-build --no-restore
 ```
 
-Additionally run the existing account-connect reader regression in Root's normal
-Host build lane and Root's new cached-day-expiry test. These runtime checks have
-**not** been executed by this worker; no build/restore/dotnet command was run.
+| Project | Result | Build / run wall time | cgroup memory peak |
+| --- | --- | --- | --- |
+| NextReaders | 44 assertions passed; zero build warnings/errors | 14.388 s / 1.391 s | 201,461,760 bytes (192.1 MiB) |
+| Gateways | 37 assertions passed; zero build warnings/errors | 11.079 s / 1.317 s | 203,083,776 bytes (193.7 MiB) |
+
+Each project ran in its own `systemd-run --user --scope`, respectively
+`lain-n02-nextreaders` and `lain-n02-gateways`, with requested properties
+`MemoryHigh=768M MemoryMax=1280M MemorySwapMax=128M CPUQuota=100% IOWeight=20
+MemoryAccounting=yes`. Inside the scope the actual memory/cpu limits were read
+back and asserted before dotnet: 805306368 / 1342177280 / 134217728 bytes and
+`cpu.max=100000 100000`. `nice -n 10 ionice -c3` wrapped the process;
+`MSBUILDDISABLENODEREUSE=1` and
+`TMPDIR=/home/tomka/.cache/lain-build-tmp` were set. Nice=10 was verified.
+An initial attempt using the service-only `Nice` scope property was rejected
+before dotnet; process nice was used instead. A second pre-build instrumentation
+attempt found `/usr/bin/time` absent; final timings used Python monotonic time
+and cgroup `memory.peak`. No unbounded dotnet alternative ran.
+
+The user cgroup delegates cpu/memory/pids but no I/O controller. Requested
+`IOWeight=20` therefore could not be effective; Root explicitly authorized
+continuing with real memory/CPU bounds, nice 10 and ionice idle priority. Both
+runs had zero memory high/max/oom/oom_kill events. Both scopes were inactive when
+the exclusive slot was released. Available memory before the first actual build
+was 8520 MiB, before the second 8753 MiB and after both 7652 MiB.
+
+Private logs with exact command arrays, bounds, results and peaks:
+`~/.cache/lain-qualification-20261025/next/n02/next-readers.log` and
+`~/.cache/lain-qualification-20261025/next/n02/gateways.log`. The private Python
+measurement wrapper is adjacent; it is instrumentation, not a build dependency.
+Restore changed no tracked source or existing lockfile. The new standalone
+project's generated lockfile is included because the repository enables locked
+dependencies; its `net10.0` dependency set is empty (no new packages).
+
+Still pending in Root's normal Host build lane: the existing account-connect
+reader regression and Root's new cached-day-expiry test. They were **not** run by
+this worker. The two passing projects establish bounded source-reader behavior,
+not Host cache expiry, installed behavior or real provider qualification.
 Static verification passed: `git diff --check`, project XML parsing and all 13
 literal JSON fixtures parsed. The focused suite has 29 static assertion callsites;
-loops add cases at runtime. This is not evidence
-of compiled or installed behavior, real provider access or GUI/CLI runtime tests.
+loops add cases at runtime (44 assertions executed). No GUI/CLI runtime test or
+installed/real-provider qualification is claimed.
