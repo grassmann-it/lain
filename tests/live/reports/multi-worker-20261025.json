@@ -1,0 +1,246 @@
+{
+  "calls": [
+    {
+      "slot": "codex",
+      "model": "gpt-6-luna",
+      "provider": "codex",
+      "workerId": "lain-live-codex",
+      "startedAt": "2026-10-25T00:57:57.062880+00:00",
+      "requestCount": 1,
+      "automaticRetries": 0,
+      "automaticFallbacks": 0,
+      "state": "http_error",
+      "outputCharacters": 0,
+      "sseEvents": 0,
+      "bytes": 0,
+      "httpStatus": 401,
+      "usage": null,
+      "terminalType": null,
+      "finishedAt": "2026-10-25T00:57:58.198819+00:00",
+      "elapsedSeconds": 1.14
+    },
+    {
+      "slot": "kimi",
+      "model": "kimi-for-coding",
+      "provider": "kimi",
+      "workerId": "lain-live-kimi",
+      "startedAt": "2026-10-25T00:58:02.044595+00:00",
+      "requestCount": 1,
+      "automaticRetries": 0,
+      "automaticFallbacks": 0,
+      "state": "passed",
+      "outputCharacters": 694,
+      "sseEvents": 397,
+      "bytes": 91100,
+      "httpStatus": 200,
+      "usage": {
+        "input_tokens": 168,
+        "output_tokens": 400,
+        "total_tokens": 568
+      },
+      "terminalType": "response.completed",
+      "finishedAt": "2026-10-25T00:58:12.542216+00:00",
+      "elapsedSeconds": 10.5
+    },
+    {
+      "slot": "zai",
+      "model": "glm-5.3-flash",
+      "provider": "zai",
+      "workerId": "lain-live-zai",
+      "startedAt": "2026-10-25T00:58:06.281843+00:00",
+      "requestCount": 1,
+      "automaticRetries": 0,
+      "automaticFallbacks": 0,
+      "state": "passed",
+      "outputCharacters": 684,
+      "sseEvents": 769,
+      "bytes": 175371,
+      "httpStatus": 200,
+      "usage": {
+        "input_tokens": 87,
+        "output_tokens": 761,
+        "total_tokens": 848
+      },
+      "terminalType": "response.completed",
+      "finishedAt": "2026-10-25T00:58:20.756315+00:00",
+      "elapsedSeconds": 14.47
+    }
+  ],
+  "live": {
+    "state": "live",
+    "cursor": 53,
+    "streams": 2,
+    "droppedEvents": 2,
+    "error": null,
+    "models": [
+      {
+        "model": "glm-5.3-flash",
+        "worker": "lain-live-zai",
+        "state": "success"
+      },
+      {
+        "model": "kimi-for-coding",
+        "worker": "lain-live-kimi",
+        "state": "success"
+      }
+    ],
+    "complete": false,
+    "earliestCursor": 3
+  },
+  "attempts": [
+    {
+      "model": "glm-5.3-flash",
+      "status": 200,
+      "state": "success",
+      "workerId": "lain-live-zai",
+      "tokens": {
+        "input": 87,
+        "output": 761,
+        "cached": 0,
+        "reasoning": 574,
+        "total": 848,
+        "cacheCreation": null
+      },
+      "error": null
+    },
+    {
+      "model": "kimi-for-coding",
+      "status": 200,
+      "state": "success",
+      "workerId": "lain-live-kimi",
+      "tokens": {
+        "input": 168,
+        "output": 400,
+        "cached": 0,
+        "reasoning": 166,
+        "total": 568,
+        "cacheCreation": 0
+      },
+      "error": null
+    },
+    {
+      "model": "gpt-6-luna",
+      "status": 401,
+      "state": "failed",
+      "workerId": "lain-live-codex",
+      "tokens": {
+        "input": null,
+        "output": null,
+        "cached": null,
+        "reasoning": null,
+        "total": null,
+        "cacheCreation": null
+      },
+      "error": "authentication"
+    }
+  ],
+  "historyTotals": {
+    "requests": 3,
+    "attempts": 3,
+    "errors": 1,
+    "tokens": {
+      "input": null,
+      "output": null,
+      "cached": null,
+      "reasoning": null,
+      "total": null,
+      "cacheCreation": null
+    },
+    "unknownUsageAttempts": 1,
+    "measurements": {
+      "input": {
+        "knownReported": 255,
+        "samples": 2,
+        "eligible": 3
+      },
+      "output": {
+        "knownReported": 1161,
+        "samples": 2,
+        "eligible": 3
+      },
+      "cached": {
+        "knownReported": 0,
+        "samples": 2,
+        "eligible": 3
+      },
+      "cacheCreation": {
+        "knownReported": 0,
+        "samples": 1,
+        "eligible": 3
+      },
+      "reasoning": {
+        "knownReported": 740,
+        "samples": 2,
+        "eligible": 3
+      },
+      "total": {
+        "knownReported": 1416,
+        "samples": 2,
+        "eligible": 3
+      }
+    }
+  },
+  "retentionAfterward": {
+    "sourceId": "a2665e21a6454d03a3b0125ba995f47c",
+    "nextCursor": 53,
+    "highWatermark": 53,
+    "earliestCursor": 54,
+    "droppedEvents": 53,
+    "truncated": true,
+    "gapReason": "stream_expired"
+  },
+  "scope": "Three separate workers, one real request each through own loopback proxy and pinned existing accounts; synthetic text only, no tools, retries or alternate routes. No new provider accounts qualified by these probes.",
+  "sourceCodeSha256": "e3a8cc4b1a613e1e1018629241aed2c2876aba680b1369588c59c1c1ce7268f7",
+  "codexReimport": {
+    "import": {
+      "revision": 19,
+      "added": 0,
+      "updated": 0,
+      "warnings": []
+    },
+    "revisionBefore": 19,
+    "revisionAfter": 19,
+    "appliedRevision": 2,
+    "sameStableCodexAccount": true,
+    "sourceUnchanged": true,
+    "refreshMaterialCopied": false,
+    "refreshOrRevokeCalled": false,
+    "savedAccessAlreadyMatchedSource": true,
+    "activeAccessMatchedSource": false,
+    "savedExpiry": "2026-11-03T16:15:52+01:00",
+    "activeExpiry": "2026-10-29T07:55:58+01:00",
+    "allRoutesUnchanged": true,
+    "allProfilesUnchanged": true,
+    "allAccountMetadataUnchanged": true,
+    "globalImportOptionsPreserved": true,
+    "runtimeAliasCount": 45,
+    "profileAliasCount": 45,
+    "routeBindingDifferences": [],
+    "nextStep": "Explicit revision-bound global profile Apply required to publish saved credentials to owned Core; no Apply performed"
+  },
+  "newProfileRoutesStillMissing": {
+    "cloudflare-workers-ai": [
+      "@cf/google/gemma-4-26b-a4b-it",
+      "@cf/zai-org/glm-4.7-flash"
+    ],
+    "cohere": [
+      "command-a-plus-05-2026"
+    ],
+    "kilo": [
+      "google/gemma-4-26b-a4b-it:free"
+    ],
+    "sambanova": [
+      "Meta-Llama-3.3-70B-Instruct"
+    ],
+    "upstage": [
+      "solar-mini4-260922"
+    ]
+  },
+  "accountsWithoutConfiguredRoute": [
+    "nvidia-build",
+    "groq",
+    "openrouter",
+    "gemini-api",
+    "synthetic"
+  ]
+}
