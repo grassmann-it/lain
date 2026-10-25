@@ -19,6 +19,7 @@ internal sealed partial class Scenario
     {
         Directory.CreateDirectory(Output);
         var scratch = Path.Combine(Output, "n05-files"); Directory.CreateDirectory(scratch);
+        await RunN05CodexStatusInputChecks(scratch);
         var executable = Path.Combine(scratch, "lain-fixture");
         await File.WriteAllTextAsync(executable, "#!/bin/sh\nexit 0\n");
         if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(executable, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);

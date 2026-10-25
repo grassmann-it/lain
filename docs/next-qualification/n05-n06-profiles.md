@@ -75,3 +75,18 @@ locked target names those collections and explains Cancel, explicit removal (whi
 clears RouterTargetId), then recreation. Unreferenced provider-to-account repair
 remains available. The production-control fixture adds all three regressions;
 runtime and independent rereview remain pending, with original failure evidence kept.
+
+The N03 pre-execution review also identified FIFO blocking in ordinary file reads.
+Dispatcher inputs now use Linux O_NONBLOCK/O_NOFOLLOW/O_CLOEXEC open followed by
+statx on that exact descriptor (AT_EMPTY_PATH). Only regular files at most 1 MiB
+are read; symlinks, directories, FIFOs and changing lengths fail closed. This does
+not rely on File.Exists/attributes to classify a FIFO. Missing libc statx also
+fails closed before launching maintenance.
+
+Both the on-disk receipt and ready status reply must identify schema 1, grammar
+codex-0.164.0 and the exact supported default entry/state/maintenance paths. The
+maintenance and manifest hashes are checked before execution. Custom dispatcher
+entries are not configured by this UI and require separate support. Synthetic
+regular/symlink/directory/FIFO and malformed receipt fixtures use only runner
+output, with a two-second FIFO refusal bound. They are added, not yet executed
+under the currently frozen build lane.

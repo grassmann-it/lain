@@ -292,22 +292,16 @@ public sealed partial class MainWindow
             // protection against another process running as the same user.
             var receiptPath = Path.Combine(state, "receipt.json");
             var manifestPath = Path.Combine(state, "manifest.json");
-            byte[] ReadRegular(string path)
-            {
-                for (FileSystemInfo? item = new FileInfo(path); item is not null;
-                    item = item is FileInfo file ? file.Directory : ((DirectoryInfo)item).Parent)
-                    if (item.LinkTarget is not null) throw new IOException("Client status paths must not be symbolic links.");
-                if (new FileInfo(path).Length > 1024 * 1024) throw new IOException("Client status file exceeds its size limit.");
-                return File.ReadAllBytes(path);
-            }
-            using var receiptDocument = JsonDocument.Parse(ReadRegular(receiptPath));
+            using var receiptDocument = JsonDocument.Parse(ReadCodexStatusFile(receiptPath));
             var installed = receiptDocument.RootElement;
-            var scriptHash = Convert.ToHexString(SHA256.HashData(ReadRegular(maintenance))).ToLowerInvariant();
-            var manifestHash = Convert.ToHexString(SHA256.HashData(ReadRegular(manifestPath))).ToLowerInvariant();
+            if (!CodexReceiptMatchesTarget(installed, home))
+                return new(false, "The dispatcher receipt does not match this supported default installation. Explicit client maintenance is required; no checker was started.");
+            var scriptHash = Convert.ToHexString(SHA256.HashData(ReadCodexStatusFile(maintenance))).ToLowerInvariant();
+            var manifestHash = Convert.ToHexString(SHA256.HashData(ReadCodexStatusFile(manifestPath))).ToLowerInvariant();
             if (installed.GetProperty("maintenanceSha256").GetString() != scriptHash || installed.GetProperty("manifestSha256").GetString() != manifestHash)
                 return new(false, "The installed dispatcher maintenance files changed. Explicit client maintenance is required; no checker was started.");
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException or KeyNotFoundException)
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException or KeyNotFoundException or EntryPointNotFoundException)
         { return new(false, "The dispatcher maintenance receipt is missing or invalid. Explicit client maintenance is required; no checker was started."); }
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(8));
@@ -328,8 +322,7 @@ public sealed partial class MainWindow
                 || !root.TryGetProperty("receipt", out var receipt) || receipt.ValueKind != JsonValueKind.Object)
                 return new(false, "The lain Codex dispatcher is missing, changed or needs explicit maintenance. Review its status before preparing groups; no client was changed.");
             var entry = receipt.GetProperty("entry").GetString();
-            if (process.ExitCode != 0 || receipt.GetProperty("grammarVersion").GetString() != "codex-0.164.0"
-                || receipt.GetProperty("state").GetString() != state || string.IsNullOrEmpty(entry) || !Path.IsPathFullyQualified(entry) || !File.Exists(entry))
+            if (process.ExitCode != 0 || !CodexReceiptMatchesTarget(receipt, home) || string.IsNullOrEmpty(entry) || !File.Exists(entry))
                 return new(false, "The installed dispatcher did not provide a valid checked entry. Review the separate client.");
             var fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(receipt.GetRawText())));
             return new(true, "Qualified lain Codex 0.164.0 dispatcher checked. Installation will check it again before writing files.", entry, fingerprint);
