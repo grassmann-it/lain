@@ -187,7 +187,7 @@ public sealed class KiloDeviceLoginAdapter : IAccountLoginAdapter, IAsyncDisposa
         var credential = Credential(attempt, token!, binding) with { Purposes = [] };
         // Save before optional identity reads; a valid issued token must never be lost to a metadata or local CAS failure.
         try { await context.CheckpointCredentialAsync!(credential, CancellationToken.None); }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or OperationCanceledException)
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or OperationCanceledException)
         { return Recovery(credential, "The Kilo token could not be saved. Keep this host running and review recovery; do not repeat authorization."); }
         if (attempt.Cancelled || caller.IsCancellationRequested)
             return Recovery(credential, "Kilo authorization completed after local cancellation. Its token is saved; review recovery before reconnecting.");
@@ -268,7 +268,7 @@ public sealed class KiloDeviceLoginAdapter : IAccountLoginAdapter, IAsyncDisposa
         UserCode: attempt.Code, VerificationUri: attempt.Verification);
     private static LoginAdapterResult Uncertain() => new("recovery-required", Error: "Kilo authorization could not be confirmed. Review saved recovery and your Kilo account before reconnecting.", NextAction: "review-recovery");
     private static LoginAdapterResult Recovery(PreparedLoginCredential credential, string error) => new("recovery-required", Error: error, Credential: credential, NextAction: "review-recovery");
-    private static bool Boundary(Exception e) => e is HttpRequestException or IOException or OperationCanceledException or JsonException or ArgumentException or InvalidOperationException;
+    private static bool Boundary(Exception e) => e is HttpRequestException or IOException or InvalidDataException or OperationCanceledException or JsonException or ArgumentException or InvalidOperationException;
     private static string? Text(JsonElement element, string name) => element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     private static bool UserCode(string? value) => value is { Length: >= 4 and <= 64 } && value.All(c => char.IsAsciiLetterOrDigit(c) || c == '-');
     private static bool Token(string? value) => value is { Length: >= 1 and <= 16384 } && !value.Any(c => char.IsWhiteSpace(c) || char.IsControl(c));
@@ -302,9 +302,17 @@ public sealed class KiloDeviceLoginAdapter : IAccountLoginAdapter, IAsyncDisposa
         Attempt[] pending;
         lock (gate)
         { if (disposed) return; disposed = true; pending = attempts.Values.ToArray(); foreach (var a in pending) a.Cancelled = true; }
-        foreach (var attempt in pending)
-        { await attempt.Initialization; await attempt.Gate.WaitAsync(); attempt.Code = null; attempt.Verification = null; attempt.Gate.Release(); }
-        lock (gate) attempts.Clear();
-        client.Dispose();
+        try
+        {
+            foreach (var attempt in pending)
+            {
+                try { await attempt.Initialization; }
+                catch (Exception) { /* Begin's original task carries its failure; teardown must still release all own state. */ }
+                await attempt.Gate.WaitAsync();
+                try { attempt.Code = null; attempt.Verification = null; }
+                finally { attempt.Gate.Release(); }
+            }
+        }
+        finally { lock (gate) attempts.Clear(); client.Dispose(); }
     }
 }

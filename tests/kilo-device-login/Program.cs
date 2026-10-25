@@ -19,6 +19,7 @@ try
 {
     await ContractAndCadence();
     await InvalidInitiation();
+    await FailedInitializationCleanup();
     await TerminalStates();
     await ApprovalAndIdentity();
     await LateApproval();
@@ -127,6 +128,15 @@ async Task TerminalStates()
     await using var expired = new KiloDeviceLoginAdapter(count, time); var ctx = Context(time);
     await expired.BeginAsync(ctx, default); time.Advance(TimeSpan.FromSeconds(300));
     Check((await expired.StatusAsync(ctx, default)).State == "expired" && count.Calls == 1, "provider lifetime bounds host lifetime without another poll");
+}
+
+async Task FailedInitializationCleanup()
+{
+    var clock = new Clock(); var handler = new Handler((_, _) => throw new NotSupportedException("fixture-initialization-fault"));
+    var adapter = new KiloDeviceLoginAdapter(handler, clock);
+    await Throws<NotSupportedException>(() => adapter.BeginAsync(Context(clock), default), "unexpected initiation fault remains visible to its caller");
+    await adapter.DisposeAsync(); await adapter.DisposeAsync();
+    Check(handler.Disposed, "faulted initialization still disposes HTTP resources without rethrowing its old fault");
 }
 
 async Task ApprovalAndIdentity()
@@ -313,8 +323,10 @@ async Task UnsafeReconnect()
 sealed class Handler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send) : HttpMessageHandler
 {
     public int Calls;
+    public bool Disposed;
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     { Interlocked.Increment(ref Calls); return send(request, ct); }
+    protected override void Dispose(bool disposing) { Disposed = true; base.Dispose(disposing); }
 }
 sealed class Clock : TimeProvider
 {
