@@ -136,8 +136,21 @@ internal sealed partial class Acceptance
     {
         await Wait(() => menu.IsOpen);
         var item = menu.Items.OfType<MenuItem>().Single(value => Equals(value.Header, header));
-        Check(item.IsEffectivelyEnabled && item.Bounds.Width > 0 && item.Bounds.Height > 0, "native menu target is enabled and mounted: " + header);
-        input.Click(item); await Task.Delay(160);
+        // A 125% popup can scroll even at the wide viewport. Position the
+        // real menu item before clicking; this is not native-scroll coverage.
+        item.BringIntoView();
+        await Wait(() =>
+        {
+            var top = TopLevel.GetTopLevel(item);
+            var origin = top is null ? null : item.TranslatePoint(default, top);
+            return item.IsEffectivelyEnabled && item.Bounds.Width > 0 && item.Bounds.Height > 0
+                && origin is { } point && Contains(new Avalonia.Rect(top!.ClientSize), new Avalonia.Rect(point, item.Bounds.Size))
+                && item.GetVisualAncestors().OfType<Avalonia.Controls.Presenters.ScrollContentPresenter>().All(viewport =>
+                    item.TranslatePoint(default, viewport) is { } position
+                    && Contains(new Avalonia.Rect(viewport.Bounds.Size), new Avalonia.Rect(position, item.Bounds.Size)));
+        });
+        Check(true, "native menu target is enabled and inside its mounted popup viewport: " + header);
+        input.Click(item); await Wait(() => !menu.IsOpen);
     }
 
     private JsonElement N09RequestBody(string method, string path)
