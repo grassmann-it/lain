@@ -115,8 +115,8 @@ internal static class UsageStyleChecks
                 kind + " accounts are hidden in default while full retains instructions and actions");
         }
         var unknown = basis with { Used = null, Limit = null, Remaining = null, UsedPercent = null, State = "error", Error = "No data" };
-        var mixed = await Render(new(1, "account-usage", [new(account with { Name = "No snapshot" }, []),
-            new(account with { Name = "No measurement" }, [unknown]), new(account, [basis])]));
+        var mixed = await Render(new(1, "account-usage", [new(account with { Id = "no-snapshot", Name = "No snapshot" }, []),
+            new(account with { Id = "no-measurement", Name = "No measurement" }, [unknown with { AccountId = "no-measurement" }]), new(account, [basis])]));
         Check(mixed.Contains("Style account") && !mixed.Contains("No snapshot") && !mixed.Contains("No measurement")
             && mixed.Contains("2 accounts without quota readings hidden"), "unmeasured accounts contribute only to the neutral hidden count");
         var invalid = basis with { Remaining = double.NaN, Used = double.PositiveInfinity, UsedPercent = -1, Limit = null };
