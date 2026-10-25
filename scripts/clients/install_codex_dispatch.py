@@ -17,6 +17,10 @@ MANAGED = ("dispatch.py", "manifest.json", "receipt.json", *SUPPORT)
 SUPPORTED_GRAMMAR = "codex-0.164.0"
 
 
+class NonExecutableLauncher(ValueError):
+    pass
+
+
 def sha256(path):
     with Path(path).open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()
@@ -179,6 +183,8 @@ def owned_launcher(state, manifest):
     if not entry.is_absolute() or link_snapshot(entry) != manifest["installedEntry"] or current_link(entry) != str(state / "dispatch.py"):
         raise ValueError("Codex entry changed; refusing to replace a foreign launcher")
     wrapper = safe_path(state / "dispatch.py")
+    if not stat.S_ISREG(wrapper.lstat().st_mode) or not os.access(wrapper, os.X_OK):
+        raise NonExecutableLauncher("dispatcher must be a regular executable file; inspect its permissions before maintenance")
     if file_identity(wrapper) != manifest["dispatcherIdentity"] or sha256(wrapper) != manifest["dispatcherSha256"]:
         raise ValueError("dispatcher identity or bytes changed; explicit inspection required")
 
@@ -241,6 +247,9 @@ def check_status(state):
         owned_launcher(state, manifest)
         result["readyForGroups"] = not result["issues"]
         result["code"] = "ready" if result["readyForGroups"] else "maintenance-required"
+    except NonExecutableLauncher:
+        issue("dispatcher-not-executable", "Dispatcher is not a regular executable file; inspect its permissions before launching or rebinding.")
+        result["code"] = "maintenance-required"
     except (OSError, ValueError, KeyError, TypeError, RuntimeError) as error:
         issue("unrecognized-or-incomplete", "Dispatcher state is unrecognized, changed or incomplete; inspect status and maintenance backups before changing it.")
         result["code"] = "unrecognized"

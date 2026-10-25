@@ -460,6 +460,20 @@ class Installation(unittest.TestCase):
         self.assertFalse(status["readyForGroups"])
         self.assertIn("maintenance-files-changed", [item["code"] for item in status["issues"]])
 
+    def test_non_executable_wrapper_is_not_ready_and_rebind_refuses(self):
+        self.install()
+        wrapper = self.state / "dispatch.py"
+        wrapper.chmod(0o600)
+        before = self.files()
+        status = installer.check_status(self.state)
+        self.assertFalse(status["readyForGroups"])
+        self.assertEqual(status["code"], "maintenance-required")
+        self.assertIn("dispatcher-not-executable", [item["code"] for item in status["issues"]])
+        with self.assertRaisesRegex(ValueError, "regular executable"):
+            self.bind(self.binding_args(self.original))
+        self.assertEqual(self.files(), before)
+        self.assertEqual(wrapper.stat().st_mode & 0o777, 0o600)
+
     def test_interrupted_rebind_has_failed_receipt_and_explicit_verified_rollback(self):
         self.install()
         before_wrapper = (self.state / "dispatch.py").read_bytes()

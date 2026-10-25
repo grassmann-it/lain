@@ -38,7 +38,7 @@ Full command, receipt and concurrency contracts:
 ## Local checks
 
 `PYTHONDONTWRITEBYTECODE=1 python3 scripts/clients/test_codex_dispatch.py -v`:
-**38 serial tests passed**, most recent measured run approximately 1.2 seconds.
+**39 serial tests passed**, most recent measured run approximately 1.1 seconds.
 The tests use temporary files, synthetic qualification registries and local
 Python/env executables as neutral exec probes. No Codex, provider, service,
 user-config or live installer operation is performed. They cover:
@@ -55,7 +55,9 @@ user-config or live installer operation is performed. They cover:
 - installed temporary maintenance CLI/receipt, legacy migration, stale manifest,
   altered support/receipt, wrong wrapper binding, intentional qualified rebind,
   interrupted receipt write and explicit verified recovery;
-- a hostile lock symlink leaves its target unchanged.
+- a hostile lock symlink leaves its target unchanged;
+- removing wrapper execute permission makes status not-ready and blocks rebind
+  before any maintenance mutation, even while wrapper bytes/inode still match.
 
 Synthetic hashes/version labels in fixtures test the contract; they do not
 qualify Python/env as a Codex release. `git diff --check` passes. No new Cargo
