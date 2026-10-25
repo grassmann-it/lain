@@ -27,6 +27,17 @@ ROUTES = {
 COHERE_FIELDS = {"model", "messages", "stream", "reasoning_effort", "response_format",
                  "tools", "temperature", "max_tokens", "stop", "seed", "top_p",
                  "frequency_penalty", "presence_penalty"}
+COHERE_RESPONSES_CASES = ("responses_json", "responses_stream", "responses_tool",
+                          "responses_store_true", "responses_previous_response_id",
+                          "responses_native_search", "responses_additional_native_search",
+                          "responses_native_file_search")
+FUNCTION_PARAMETERS = {"type": "object", "properties": {"value": {"type": "string"}},
+                       "required": ["value"]}
+
+
+def message_text(message):
+    content = message.get("content", "")
+    return content if isinstance(content, str) else "".join(part.get("text", "") for part in content or [])
 
 
 class ContractProvider(FakeProvider):
@@ -67,6 +78,31 @@ class ContractProvider(FakeProvider):
                         errors.append("unsupported Cohere fields: " + ",".join(sorted(set(body) - COHERE_FIELDS)))
                     if "reasoning_effort" in body and body["reasoning_effort"] not in ("none", "high"):
                         errors.append("unsupported Cohere reasoning effort")
+                    if case.startswith("responses_"):
+                        if body.get("reasoning_effort") != "none":
+                            errors.append("explicit Responses reasoning none lost")
+                        row["statelessChat"] = "messages" in body and "store" not in body and "input" not in body and "previous_response_id" not in body
+                        row["reasoningNone"] = body.get("reasoning_effort") == "none"
+                        row["bounded64"] = body.get("max_tokens") == 64
+                        if case == "responses_tool":
+                            expected_tool = {"type": "function", "function": {"name": "fixture_echo", "description": "fixture echo",
+                                                                            "parameters": FUNCTION_PARAMETERS}}
+                            if body.get("tools") != [expected_tool]:
+                                errors.append("Responses function definition/schema changed")
+                            messages = body.get("messages", [])
+                            tool_messages = [m for m in messages if m.get("role") == "tool"]
+                            if tool_messages:
+                                calls = [call for m in messages if m.get("role") == "assistant" for call in m.get("tool_calls", [])]
+                                valid = (len(messages) == 3 and [m.get("role") for m in messages] == ["user", "assistant", "tool"]
+                                         and message_text(messages[0]) == marker("responses_tool", "responses_tool")
+                                         and len(calls) == 1 and calls[0].get("id") == "call_owned"
+                                         and calls[0].get("type") == "function"
+                                         and calls[0].get("function") == {"name": "fixture_echo", "arguments": '{"value":"safe"}'}
+                                         and len(tool_messages) == 1 and tool_messages[0].get("tool_call_id") == "call_owned"
+                                         and tool_messages[0].get("content") == "result-safe")
+                                row["completeFunctionHistory"] = valid
+                                if not valid:
+                                    errors.append("full Responses function/result history changed")
                 if errors:
                     with owner.lock:
                         owner.contract_errors.extend(errors)
@@ -75,7 +111,7 @@ class ContractProvider(FakeProvider):
                     code = int(case.removeprefix("status_"))
                     return self.reply(code, {"error": {"message": "synthetic vendor refusal", "code": code}})
                 tool_result = any(m.get("role") == "tool" for m in body.get("messages", []))
-                tool = case == "tool" and not tool_result
+                tool = case in ("tool", "responses_tool") and not tool_result
                 message = {"role": "assistant", "content": "synthetic tool result accepted" if tool_result else "synthetic response"}
                 if tool:
                     message = {"role": "assistant", "content": None, "tool_calls": [{"id": "call_owned", "type": "function",
@@ -153,10 +189,122 @@ class ProviderRun(Run):
         return Request(self.url + "/v1/chat/completions", json.dumps(body).encode(),
                        {"Authorization": "Bearer " + CLIENT_KEY, "Content-Type": "application/json"})
 
+    def responses_request(self, case, *, stream=False, inputs=None, tools=None, controls=None):
+        body = {"model": "owned-alias", "input": inputs if inputs is not None else [
+            {"role": "user", "content": [{"type": "input_text", "text": marker(case, case)}]}],
+            "store": False, "reasoning": {"effort": "none"}, "max_output_tokens": 64, "stream": stream}
+        if tools is not None:
+            body["tools"] = tools
+        if controls:
+            body.update(controls)
+        return Request(self.url + "/v1/responses", json.dumps(body).encode(),
+                       {"Authorization": "Bearer " + CLIENT_KEY, "Content-Type": "application/json"})
+
+
+def complete_response(request, *, stream=False):
+    with urlopen(request, timeout=10) as response:
+        expect(response.status == 200, "Responses request did not return HTTP 200")
+        expect(("text/event-stream" if stream else "application/json") in response.headers.get("Content-Type", ""),
+               "Responses content type changed")
+        payload = response.read()
+    if stream:
+        events = [json.loads(line[5:].strip()) for line in payload.decode().splitlines()
+                  if line.startswith("data:") and line[5:].strip() and line[5:].strip() != "[DONE]"]
+        expect(not any(e.get("type") in ("error", "response.error", "response.failed") for e in events),
+               "Responses SSE contains a terminal error")
+        completed = [e for e in events if e.get("type") == "response.completed"]
+        expect(len(completed) == 1 and completed[0] is events[-1], "Responses SSE lacks one final completion")
+        result = completed[0].get("response", {})
+    else:
+        result = json.loads(payload)
+    expect(result.get("object") == "response" and result.get("status") == "completed" and result.get("error") is None,
+           "Responses protocol did not complete successfully")
+    return result
+
+
+def response_text(response):
+    return "".join(part.get("text", "") for item in response.get("output", []) if item.get("type") == "message"
+                   for part in item.get("content", []) if part.get("type") == "output_text")
+
+
+def probe_cohere_responses(run, case):
+    if case in ("responses_json", "responses_stream", "responses_tool"):
+        streaming = case in ("responses_stream", "responses_tool")
+        tools = [{"type": "function", "name": "fixture_echo", "description": "fixture echo",
+                  "parameters": FUNCTION_PARAMETERS}] if case == "responses_tool" else None
+        response = complete_response(run.responses_request(case, stream=streaming, tools=tools), stream=streaming)
+        requests = 1
+        if case == "responses_tool":
+            calls = [item for item in response.get("output", []) if item.get("type") == "function_call"]
+            expect(len(calls) == 1 and calls[0].get("call_id") == "call_owned" and calls[0].get("name") == "fixture_echo"
+                   and calls[0].get("arguments") == '{"value":"safe"}', "streamed Responses function call changed")
+            history = [{"role": "user", "content": [{"type": "input_text", "text": marker(case, case)}]}, calls[0],
+                       {"type": "function_call_output", "call_id": "call_owned", "output": "result-safe"}]
+            response = complete_response(run.responses_request(case, inputs=history, tools=tools))
+            expect("tool result accepted" in response_text(response), "Responses function continuation lost")
+            requests = 2
+        else:
+            expect(response_text(response) == "synthetic response", "Responses text output changed")
+        observations = run.provider.snapshot()
+        expect(len(observations) == requests and all(row.get("statelessChat") and row.get("reasoningNone") and row.get("bounded64") for row in observations),
+               "Responses intent did not reach the bounded stateless Chat wire")
+        if case == "responses_tool":
+            expect(observations[-1].get("completeFunctionHistory") is True, "complete function history was not observed upstream")
+        events = run.events()
+        _, usages = assert_complete(events["events"], requests)
+        expect(all(u["accountId"] == "account-a" and u["routeId"] == "cohere-owned-route" for u in usages), "Responses attribution changed")
+        expect(all(u.get("inputTokens") == 11 and u.get("outputTokens") == 7 and u.get("totalTokens") == 18 for u in usages),
+               "Responses token coverage changed")
+        finished = [e for e in events["events"] if e["kind"] == "attempt_finished"]
+        expect(all(e.get("completionState") == "success" for e in finished), "completed Responses attempt persisted failure")
+        run.stop()
+        run.start()
+        expect(run.events() == events, "Responses replay/source identity changed after restart")
+        return {"statelessChat": True, "reasoningNone": True, "maxTokens": 64,
+                "fullResponseCompletion": True, "completeFunctionHistory": case == "responses_tool", "durableReplay": True}
+    controls, tools = {}, None
+    if case == "responses_store_true":
+        controls = {"store": True}
+    elif case == "responses_previous_response_id":
+        controls = {"previous_response_id": "resp_prior"}
+    elif case == "responses_native_search":
+        tools = [{"type": "web_search"}]
+    elif case == "responses_additional_native_search":
+        controls = {"input": [{"role": "user", "content": marker(case, case)},
+                              {"type": "additional_tools", "tools": [{"type": "web_search"}]}]}
+    elif case == "responses_native_file_search":
+        tools = [{"type": "file_search", "vector_store_ids": ["vs_synthetic"]}]
+    else:
+        raise AssertionError("unknown Cohere Responses case")
+    try:
+        with urlopen(run.responses_request(case, tools=tools, controls=controls), timeout=10) as response:
+            response.read()
+        raise AssertionError("unsupported Responses intent became success")
+    except HTTPError as error:
+        expect(error.code == 400, "unsupported Responses intent did not return bounded HTTP 400")
+        expect(len(error.read(65537)) <= 65536, "local Responses rejection is unbounded")
+        error.close()
+    expect(not run.provider.snapshot(), "unsupported Responses intent reached provider")
+    events = run.events()
+    _, usages = assert_complete(events["events"], 1)
+    expect(usages[0].get("outcome") == "failed" and usages[0].get("completionState") == "failed"
+           and usages[0].get("statusCode") == 400 and usages[0].get("totalTokens") is None,
+           "local Responses rejection lacks attributed failed/unknown-usage history")
+    expect(usages[0].get("accountId") == "account-a" and usages[0].get("routeId") == "cohere-owned-route",
+           "local Responses rejection lost account/route attribution")
+    run.stop()
+    run.start()
+    expect(run.events() == events, "local Responses rejection changed after restart")
+    return {"rejectedBeforeProvider": True, "statusCode": 400, "durableFailure": True, "durableReplay": True}
+
 
 def probe(core, provider, case):
     with ProviderRun(core, provider) as run:
-        if case in ("json", "stream", "tool"):
+        responses_evidence = {}
+        if case.startswith("responses_"):
+            expect(provider == "cohere", "Responses extension is only qualified for Cohere")
+            responses_evidence = probe_cohere_responses(run, case)
+        elif case in ("json", "stream", "tool"):
             streaming = case == "stream"
             with urlopen(run.request("tool" if case == "tool" else "text", stream=streaming, tools=case == "tool"), timeout=10) as response:
                 payload = response.read()
@@ -212,7 +360,8 @@ def probe(core, provider, case):
         journal = json.dumps(run.events())
         expect(all(key not in journal for key in KEYS), "synthetic credential escaped into durable history")
         expect(all(row["account"] == "account-a" for row in run.provider.snapshot()), "strict account scope changed")
-        return {"upstreamCalls": len(run.provider.snapshot()), "vendorPath": ROUTES[provider][0] + "/chat/completions", "liveProvider": False}
+        return {"upstreamCalls": len(run.provider.snapshot()), "vendorPath": ROUTES[provider][0] + "/chat/completions", "liveProvider": False,
+                **responses_evidence}
 
 
 def main():
@@ -224,7 +373,8 @@ def main():
     checks = []
     for provider in ROUTES:
         # Kilo tool behavior here proves transport preservation only, not Gemma support.
-        for case in ("json", "stream", "tool", "status_401", "status_403", "status_429", "status_404", "cancel", "truncated", *( ["status_402"] if provider == "kilo" else [])):
+        for case in ("json", "stream", "tool", "status_401", "status_403", "status_429", "status_404", "cancel", "truncated",
+                     *(["status_402"] if provider == "kilo" else []), *(COHERE_RESPONSES_CASES if provider == "cohere" else ())):
             try:
                 checks.append({"provider": provider, "case": case, "passed": True, "evidence": probe(args.core, provider, case)})
             except Exception as error:
