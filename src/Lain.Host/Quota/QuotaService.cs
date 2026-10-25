@@ -180,15 +180,21 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
         {
             var row = cached.Reading;
             var error = cached.Error ?? snapshot?.Error;
+            // This observation belongs to a completed UTC Free day. A cached read
+            // cannot establish the new day's remaining allowance. Keep historical
+            // usage/limit and timestamps, without manufacturing a reset balance.
+            var elapsedFreeDay = row.WindowId == "free-model-daily-requests" && row.Scope == "account"
+                && row.Source == OpenRouterQuotaAdapter.Endpoint + "#free-model-daily-requests"
+                && row.WindowEnd is { } end && clock.GetUtcNow() >= end;
             var rowState = !account.Enabled ? "disabled" : snapshot?.Refreshing == true ? "refreshing"
                 : cached.LastSuccessAt is null ? error is not null ? "error" : unavailable ? snapshot!.Support!.Kind : "unknown"
-                : cached.Error is not null || unavailable || clock.GetUtcNow() >= (row.FreshUntil ?? cached.LastSuccessAt.Value + RefreshInterval) ? "stale" : "ok";
+                : cached.Error is not null || unavailable || elapsedFreeDay || clock.GetUtcNow() >= (row.FreshUntil ?? cached.LastSuccessAt.Value + RefreshInterval) ? "stale" : "ok";
             yield return new(account.Id, row.BudgetPoolId ?? (row.InheritAccountPool ? account.BudgetPoolId : null), row.Source, rowState,
-                cached.ObservedAt, cached.LastSuccessAt, row.ResetsAt, row.Unit, row.Used, row.Limit, row.Remaining,
-                account.SharedWithLegacy, error, row.WindowLabel, row.UsedPercent, snapshot?.Support,
+                cached.ObservedAt, cached.LastSuccessAt, row.ResetsAt, row.Unit, row.Used, row.Limit, elapsedFreeDay ? null : row.Remaining,
+                account.SharedWithLegacy, error, row.WindowLabel, elapsedFreeDay ? null : row.UsedPercent, snapshot?.Support,
                 row.WindowId, row.MeasurementKind, row.Scope, row.ScopeId, row.Model, row.SourceUrl,
                 row.DataAsOf, row.WindowStart, row.WindowEnd, row.FreshUntil, row.ProviderUpdatedAt, row.ApprovedLimit,
-                row.ExactUsed, row.ExactLimit, row.ExactRemaining, row.NextRegenerationAt, row.NextRegenerationPercent,
+                row.ExactUsed, row.ExactLimit, elapsedFreeDay ? null : row.ExactRemaining, row.NextRegenerationAt, row.NextRegenerationPercent,
                 row.ExactNextRegeneration, snapshot?.KiloPass?.Value, snapshot?.RequestyKey?.Value,
                 ProjectMetadata(snapshot?.KiloPass, account, snapshot), ProjectMetadata(snapshot?.RequestyKey, account, snapshot));
         }

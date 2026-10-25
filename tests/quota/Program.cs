@@ -117,7 +117,40 @@ static class Test
         Check(oldMonthly.State == "stale" && oldMonthly.Remaining == 12 && oldMonthly.LastSuccessAt == previousMonthly.LastSuccessAt && oldMonthly.ObservedAt == previousMonthly.ObservedAt, "partial response retains old missing window and original observation");
         Check(partialRows.Single(r => r.Source.EndsWith("weekly")).State == "ok", "partial response exposes fresh successful window");
         await ProviderQuotaTests(account, clock);
+        await OpenRouterCachedDayTests(account);
         Console.WriteLine($"Quota: {assertions} assertions passed (synthetic only).");
+    }
+
+    private static async Task OpenRouterCachedDayTests(AccountDto account)
+    {
+        var clock = new Clock();
+        clock.Advance(TimeSpan.FromHours(11) + TimeSpan.FromMinutes(59) + TimeSpan.FromSeconds(59));
+        var reader = new FakeHttp(_ => """{"data":{"free_model_daily_requests":{"used":4,"limit":20,"remaining":16},"limit":10,"usage":1,"limit_remaining":9,"include_byok_in_limit":false}}""");
+        using var client = new HttpClient(reader);
+        var service = new QuotaService(new Accounts([account with { Provider = "openrouter", CredentialKind = "api-key" }]),
+            new Credentials(), [new OpenRouterQuotaAdapter(client, clock)], clock);
+        var rows = await service.RefreshAsync();
+        var original = rows.Single(r => r.WindowId == "free-model-daily-requests");
+        Check(original.State == "ok" && original.Remaining == 16 && original.WindowEnd == clock.GetUtcNow().AddSeconds(1), "current OpenRouter day has measured remainder");
+        var requests = reader.Urls.Count;
+        clock.Advance(TimeSpan.FromSeconds(1));
+        rows = await service.GetSnapshotsAsync();
+        var expired = rows.Single(r => r.WindowId == "free-model-daily-requests");
+        Check(expired.State == "stale" && expired.Remaining is null && expired.UsedPercent is null && expired.ExactRemaining is null,
+            "UTC day boundary invalidates cached Free remainder and percent without refresh");
+        Check(expired.Used == 4 && expired.Limit == 20 && expired.ObservedAt == original.ObservedAt && expired.LastSuccessAt == original.LastSuccessAt,
+            "completed Free day retains historical usage, limit and observation times");
+        Check(rows.Single(r => r.Source.EndsWith("#key-spend-cap")).Remaining == 9 && reader.Urls.Count == requests,
+            "Free expiry neither changes USD cap nor sends a provider request");
+        reader.Response = _ => throw new HttpRequestException("private provider diagnostic");
+        expired = (await service.RefreshAsync()).Single(r => r.WindowId == "free-model-daily-requests");
+        Check(expired.Remaining is null && expired.State == "stale" && expired.LastSuccessAt == original.LastSuccessAt
+            && !JsonSerializer.Serialize(expired).Contains("private provider diagnostic"), "failed next-day refresh does not revive yesterday's allowance");
+        clock.Advance(TimeSpan.FromSeconds(1));
+        reader.Response = _ => """{"data":{"free_model_daily_requests":{"used":2,"limit":20,"remaining":18}}}""";
+        var renewed = (await service.RefreshAsync()).Single(r => r.WindowId == "free-model-daily-requests");
+        Check(renewed.State == "ok" && renewed.Remaining == 18 && renewed.Used == 2 && renewed.WindowStart == original.WindowEnd
+            && renewed.WindowEnd == original.WindowEnd!.Value.AddDays(1), "new measured day replaces the expired Free observation");
     }
 
     private static IReadOnlyList<QuotaReading> Normalize(string json, Func<JsonElement, IReadOnlyList<QuotaReading>> parse)
