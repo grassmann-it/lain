@@ -37,5 +37,32 @@ in-memory HTTP; no actual host, credentials, providers, services or installation
 A 90-second timeout bounds the native run. `LAIN_TEST_ASSEMBLY` can override the
 built test DLL location when the coordinator uses a runtime-specific output path.
 
-Status at source handoff: **not run**; build/runtime slot still pending. PNGs and
-`result.json` are created by the actual run, not committed or claimed in advance.
+## Executed qualification — 25 October 2026
+
+Production source through `4ff4339` (the source handoff plus the Avalonia 12
+`TopLevel.GetTopLevel` compile correction) passed the serialized native run:
+**27 checks, four PNGs, exit 0**. Evidence is under
+`/home/tomka/.cache/lain-qualification-20261025/usage-masterdetail/native-1/`.
+`result.json` records the run scope. Both 800×560 densities and 1120×780 were
+asserted; native XTest pointer, Space and text input were actually exercised.
+All four PNGs were visually inspected. The narrow complete-data PNG also records
+the horizontally scrolled core columns; the partial PNG shows group identity and
+unknown components beside the table.
+
+The targeted central `--usage-analysis-smoke` runner reuses the existing analysis
+cases in the production MainWindow: **31 checks, four PNGs, exit 0**. Evidence is
+under `/home/tomka/.cache/lain-qualification-20261025/usage-masterdetail/central-native-final/`.
+It checks complete-range and group measurement populations, null identity,
+ordering without refetch, selected identity after sorting/resize, exact native
+800×560/1120×780 bounds, adjacent panes, applied dimension drilldown, incomplete
+coverage, retained-analysis errors and grouping recovery. The screenshot reveal
+explicitly scrolls past open filters; the final 800×560 image was visually checked.
+These central control actions are routed events; native-input evidence belongs
+to the separate fixture above. The full unrelated desktop suite was not run.
+
+Both builds succeeded with no errors. Build/runtime scopes used MemoryHigh 1536M,
+MemoryMax 2G, MemorySwapMax 256M, CPUQuota 150%, one MSBuild worker, no shared C#
+compiler or node reuse, and SSD-backed TMPDIR. Runtime used owned Xvfb and DBus,
+90-second caps, no provider traffic or installed-service changes. All four scopes
+were confirmed inactive/dead at slot release. Only this fixture's generated lock
+file is included; generated shared-project lock changes were discarded.
