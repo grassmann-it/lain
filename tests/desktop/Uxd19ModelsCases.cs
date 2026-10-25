@@ -1,4 +1,5 @@
 using System.Reflection;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Lain.Core;
 using Lain.Desktop;
@@ -87,6 +88,8 @@ internal sealed partial class Scenario
             selected.SetValue(window, null);
             type.GetField("_modelNarrowDetail", instance)!.SetValue(window, false);
             editing.SetValue(window, false); Invoke("Render");
+            await Wait(() => Controls<TextBox>().Any(input => AutomationProperties.GetName(input) == "Search configured model access"
+                && input.Bounds.Width > 0), "UXD19 model inventory search is mounted after rebuilding the viewport");
             Named<TextBox>("Search configured model access").Text = "no-match-demo";
             await Task.Delay(80);
             Check(HasText("Search query: no-match-demo") && Controls<Button>().Any(b => Equals(b.Content, "Clear filters")),
