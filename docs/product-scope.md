@@ -84,6 +84,11 @@ Seitenzuständigkeiten und Beschriftungen sollen gemeinsam geprüft und klarer
 gestaltet werden; die bestätigten Kontingentkacheln bleiben die Grundlage.
 **Profile werden häufig gewechselt und sollen als eigener Hauptpunkt direkt
 erreichbar bleiben.** Dies ist die ausdrückliche Antwort auf die Navigationsfrage.
+**Eigene Modellgruppen wie Free oder 1M werden in Profiles bearbeitet**, zusammen
+mit ihrer Darstellung in Codex `/model`. Anbietergruppen entstehen weiterhin
+automatisch. Dies hat der Nutzer am 25.10.2026 ausdrücklich gewählt; Models bleibt
+das Modellinventar. Der aktuelle Anschlussauftrag steht in
+[N05/N06](next-work-packages-2026-10-25.md).
 Im anschließenden Sparring bestätigt der Nutzer fünf Hauptbereiche:
 **Accounts als Startseite, Models, Profiles, Usage und Live als Inspector**.
 **Anbieter entdecken** gehört innerhalb von Accounts. Der erste Blick soll
