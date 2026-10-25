@@ -1,0 +1,32 @@
+
+
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:03.83
+PASS reference API port requires explicit qualification mode
+PASS isolated client uses guarded loopback Host port
+PASS reference port cannot redirect non-temporary state
+PASS invalid isolated port fails before contacting an installed service
+PASS intentional Monitor status does not invent a failed proxy
+PASS small balances and provider exact precision survive human rendering
+PASS partial regeneration and Pass dates retain distinct meanings
+PASS unbounded money does not get a fabricated percentage
+PASS fresh wallet cannot imply stale Pass details were refreshed
+PASS missing Requesty metadata reports its own failed reading independently of balance
+PASS CLI reports known partial token totals with component measurement coverage
+PASS fractional quota labels use one percentage decimal and at most two native decimals
+PASS grouping and decimal precision follow the requested culture without changing units
+PASS tiny signed balances stay distinct from zero and overdrawn values retain their sign
+PASS exact integers retain precision beyond double range and decimal underflow cannot erase tiny balances
+PASS percentage labels preserve nonzero, nonexhausted and over-limit distinctions
+PASS missing and nonfinite quota values remain unknown
+PASS regeneration percentage uses the same human precision
+PASS quota ratio calculation retains full precision before display formatting
+PASS full CLI quota rendering uses concise native values and grouped counts
+PASS explicit exact amount details retain provider precision
+PASS compact CLI account rendering shares the same quota formatter
+PASS machine JSON retains full numeric data and exact provider strings
+PASS observed Enterprise usage rates are distinct from remaining budgets and quota percentages
+PASS compact rates retain the source sample without invented quota state
+PASS all fixtures are read-only without external credentials or provider calls

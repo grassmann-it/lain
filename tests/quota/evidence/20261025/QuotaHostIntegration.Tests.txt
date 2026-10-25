@@ -1,0 +1,10 @@
+/home/tomka/Desktop/lain/tests/quota-host-integration/Program.cs(264,11): warning CS8602: Dereference of a possibly null reference. [/home/tomka/.cache/lain-qualification-20261024/quota-regressions-r3/harness-QuotaHostIntegration.Tests/QuotaHostIntegration.Tests.csproj]
+
+
+
+/home/tomka/Desktop/lain/tests/quota-host-integration/Program.cs(264,11): warning CS8602: Dereference of a possibly null reference. [/home/tomka/.cache/lain-qualification-20261024/quota-regressions-r3/harness-QuotaHostIntegration.Tests/QuotaHostIntegration.Tests.csproj]
+    1 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:16.59
+Quota Host integration: 47 synthetic checks passed.

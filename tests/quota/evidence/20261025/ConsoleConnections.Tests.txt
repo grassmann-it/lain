@@ -1,0 +1,9 @@
+
+
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:21.81
+PASS console boundary and MiMo synthetic identity/normalization fixtures; no browser or provider qualification implied
+PASS MiMo synthetic profile receipts: stale cleanup, PID reuse, live recovery preservation, directory/receipt symlink guards and bounded startup work
+PASS MiMo isolated-browser fake: discovery, same-account attach, monitor-only, cancellation, wrong UID, expiry, partial detail, browser identity switches and private capability

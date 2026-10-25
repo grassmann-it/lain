@@ -7,84 +7,84 @@
       "suite": "Foundation",
       "status": "passed",
       "reportedChecks": 171,
-      "log": "AccountConnectFoundation.Tests.log",
+      "log": "AccountConnectFoundation.Tests.txt",
       "sha256": "f6cedae628f534b8694cac91249f478073fb030063d1fbdb0e5b88b6f3e09427"
     },
     {
       "suite": "Host integration",
       "status": "passed",
       "reportedChecks": 47,
-      "log": "QuotaHostIntegration.Tests.log",
+      "log": "QuotaHostIntegration.Tests.txt",
       "sha256": "b5d6ce2c9a861cbf1feed7af41bd231e493e0e81250f53f04d5ff39c4dbb128e"
     },
     {
       "suite": "Quota sources",
       "status": "passed",
       "reportedChecks": 75,
-      "log": "QuotaSources.Tests.log",
+      "log": "QuotaSources.Tests.txt",
       "sha256": "bf078d4ca0e2c19b0e23f1350de94b283434f620cb82b901694a825728b6383f"
     },
     {
       "suite": "Groq Enterprise",
       "status": "passed",
       "reportedChecks": 66,
-      "log": "GroqEnterprise.Tests.log",
+      "log": "GroqEnterprise.Tests.txt",
       "sha256": "63a5fd736f16db36e4da25a81be62c52f51ab1b03d44bb42a6c859217e247971"
     },
     {
       "suite": "NVIDIA public reference",
       "status": "passed",
       "reportedChecks": null,
-      "log": "NvidiaQuota.Tests.log",
+      "log": "NvidiaQuota.Tests.txt",
       "sha256": "4a106c59f50ae307507e61f39f34defda15abfeaa9a037da2b46156d531aa4d6"
     },
     {
       "suite": "Cloudflare",
       "status": "passed",
       "reportedChecks": 52,
-      "log": "CloudflareQuota.Tests.log",
+      "log": "CloudflareQuota.Tests.txt",
       "sha256": "38becdfe4ff1cc3791a7bedb9e5653816b883574be832ab911b11206135eaf52"
     },
     {
       "suite": "Google Cloud",
       "status": "passed",
       "reportedChecks": 142,
-      "log": "Cloud.Connections.Tests.log",
+      "log": "Cloud.Connections.Tests.txt",
       "sha256": "b59587b07c0c6bd355a32fa8b692386840d06c2f52feea425193787c4b250d13"
     },
     {
       "suite": "MiMo console",
       "status": "passed",
       "reportedChecks": null,
-      "log": "ConsoleConnections.Tests.log",
+      "log": "ConsoleConnections.Tests.txt",
       "sha256": "8d683fc34907fc33f7bdd86c9eb9770dcc5da8ba428844a0291fd277206348d1"
     },
     {
       "suite": "Client CLI",
       "status": "passed",
       "reportedChecks": 223,
-      "log": "ClientCli.Tests.log",
+      "log": "ClientCli.Tests.txt",
       "sha256": "4816a0aaad3a05172c58bd5d2653fff5ac0067742750f73828adf088865e3e06"
     },
     {
       "suite": "Client connect formatting",
       "status": "passed",
       "reportedChecks": null,
-      "log": "ClientConnect.Stabilization.log",
+      "log": "ClientConnect.Stabilization.txt",
       "sha256": "ccd58f9e8c1bcacbfe6a99df07c2038435005b46cfe8fa55e76938f6d5747ce8"
     },
     {
       "suite": "Quota retention",
       "status": "passed",
       "reportedChecks": 98,
-      "log": "quota.log",
+      "log": "quota.txt",
       "sha256": "664385170eb750d01e327db19821fd767d0d992250c1b5811c8aa45ec8fde994"
     },
     {
       "suite": "Account readers",
       "status": "passed",
       "reportedChecks": 157,
-      "log": "readers-final.log",
+      "log": "readers-final.txt",
       "sha256": "5098a9a000ae85a850506b074a38b5fcd27c99f15442d101adec068fa782f9e9"
     }
   ],
