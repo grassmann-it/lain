@@ -56,6 +56,8 @@ type Batch struct {
 type Journal struct {
 	mu       sync.Mutex
 	file     *os.File
+	basePath string
+	segments *journalSegments
 	sourceID string
 	offsets  []int64
 	count    int64
@@ -76,6 +78,9 @@ type JournalStorage struct {
 	IndexCapacityBytes       int     `json:"indexCapacityBytes"`
 	IndexStride              int64   `json:"indexStride"`
 	Healthy                  bool    `json:"healthy"`
+	Format                   string  `json:"format"`
+	SealedSegments           int     `json:"sealedSegments"`
+	MaxSegmentBytes          int64   `json:"maxSegmentBytes,omitempty"`
 	OnDiskBytes              *int64  `json:"onDiskBytes,omitempty"`
 	FilesystemAvailableBytes *uint64 `json:"filesystemAvailableBytes,omitempty"`
 }
@@ -83,9 +88,12 @@ type JournalStorage struct {
 func (j *Journal) Storage() JournalStorage {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	storage := JournalStorage{SourceID: j.sourceID, Events: j.count, Bytes: j.end, IndexEntries: len(j.offsets), IndexCapacityBytes: cap(j.offsets) * 8, IndexStride: journalIndexStride, Healthy: j.fault == nil}
+	storage := JournalStorage{SourceID: j.sourceID, Events: j.count, Bytes: j.end, IndexEntries: len(j.offsets), IndexCapacityBytes: cap(j.offsets) * 8, IndexStride: journalIndexStride, Healthy: j.fault == nil, Format: "flat"}
 	if info, err := j.file.Stat(); err == nil {
 		storage.OnDiskBytes = ptr(info.Size())
+	}
+	if j.segments != nil {
+		j.segmentStorage(&storage)
 	}
 	var fs syscall.Statfs_t
 	if syscall.Fstatfs(int(j.file.Fd()), &fs) == nil {
@@ -95,6 +103,9 @@ func (j *Journal) Storage() JournalStorage {
 }
 
 func OpenJournal(path string) (*Journal, error) {
+	if info, err := os.Lstat(path); err == nil && info.IsDir() {
+		return openSegmentedJournal(path, true)
+	}
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return nil, err
 	}
@@ -114,7 +125,7 @@ func OpenJournal(path string) (*Journal, error) {
 	if err = f.Chmod(0600); err != nil {
 		return nil, err
 	}
-	j := &Journal{file: f, syncFile: f.Sync}
+	j := &Journal{file: f, basePath: path, syncFile: f.Sync}
 	sourcePath := path + ".source"
 	source, err := os.ReadFile(sourcePath)
 	if errors.Is(err, os.ErrNotExist) {
@@ -209,7 +220,14 @@ func (j *Journal) Append(event Event) error {
 		return j.fail(err)
 	}
 	data = append(data, '\n')
-	n, err := j.file.WriteAt(data, j.end)
+	writeAt := j.end
+	if j.segments != nil {
+		if err = j.prepareSegmentAppend(int64(len(data))); err != nil {
+			return j.fail(err)
+		}
+		writeAt = j.segments.active.bytes
+	}
+	n, err := j.file.WriteAt(data, writeAt)
 	if err != nil {
 		return j.fail(err)
 	}
@@ -219,7 +237,14 @@ func (j *Journal) Append(event Event) error {
 	if err = j.syncFile(); err != nil {
 		return j.fail(err)
 	}
-	if j.count%journalIndexStride == 0 {
+	if j.segments != nil {
+		active := &j.segments.active
+		if active.count%journalIndexStride == 0 {
+			active.offsets = append(active.offsets, active.bytes)
+		}
+		active.count++
+		active.bytes += int64(len(data))
+	} else if j.count%journalIndexStride == 0 {
 		j.offsets = append(j.offsets, j.end)
 	}
 	j.count++
@@ -235,6 +260,9 @@ func (j *Journal) Read(after int64, limit int) (Batch, error) {
 	}
 	if after == b.HighWatermark {
 		return b, nil
+	}
+	if j.segments != nil {
+		return j.readSegments(b, after, limit)
 	}
 	checkpoint := after / journalIndexStride
 	start := j.offsets[checkpoint]
@@ -256,4 +284,12 @@ func (j *Journal) Read(after int64, limit int) (Batch, error) {
 	}
 	return b, nil
 }
-func (j *Journal) Close() error { j.mu.Lock(); defer j.mu.Unlock(); return j.file.Close() }
+func (j *Journal) Close() error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	err := j.file.Close()
+	if j.segments != nil {
+		err = errors.Join(err, j.segments.lock.Close())
+	}
+	return err
+}

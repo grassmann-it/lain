@@ -27,7 +27,7 @@ func main() {
 	}
 }
 func run() error {
-	if len(os.Args) > 1 && (os.Args[1] == "journal-inspect" || os.Args[1] == "journal-recover-copy") {
+	if len(os.Args) > 1 && isJournalMaintenanceCommand(os.Args[1]) {
 		return runJournalMaintenance(os.Args[1:], os.Stdout)
 	}
 	configPath := flag.String("config", "", "isolated core YAML path")

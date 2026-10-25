@@ -124,15 +124,28 @@ That complete backup/restore transaction remains a separate pending ST-04 stage.
 
 ### Segmentation and archive decision
 
-Destructive live segmentation is deferred: old binaries only understand the flat
-journal and would silently miss removed history. The compatible first step is
-the sparse in-memory index plus explicit sealed whole-journal copies. No source
-events are automatically removed. Full segmentation needs a versioned segment
-manifest, contiguous global sequence/cursor lookup across sealed boundaries,
-hash-checked segment publication, matching SQLite snapshot/replay guarantees,
-and an explicit legacy-flat export before rollback. It also needs a separately
-agreed retention policy before any deletion. These are not claimed complete by
-the bounded memory improvement.
+The opt-in segmented implementation is documented in
+[Journal segments and rollback](../../docs/journal-segments.md). Existing flat
+journals are never rewritten automatically. `journal-segment-copy` publishes a
+new private directory with a versioned manifest, contiguous global ranges,
+hash-checked sealed files and a bounded active segment. Runtime rotation and
+replay cross actual file boundaries; `journal-export-flat` independently verifies
+an exact byte-preserving flat copy before any legacy rollback. Old binaries fail
+to open the directory format rather than silently omitting history.
+
+No retention deletion is implemented or authorized. Startup still verifies all
+archive bytes. The new Go and actual-Core archive gate tests are separate from
+the previously executed sparse-index, filesystem and complete-state backup
+qualifications below; implementation alone is not new executed evidence.
+
+After fresh verified preparation/build, the serialized integrator slot can run:
+
+```sh
+unshare -Urn sh -c 'ip link set lo up && exec python3 \
+  tests/core-stabilization/archive_gate.py \
+  --core /absolute/private-build/lain-proxy \
+  --report /absolute/private-evidence/journal-archives.json'
+```
 
 ## Reproduction
 
