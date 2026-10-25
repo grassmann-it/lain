@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MiMoProbeHostDirectory)' == ''">
+    <ProjectReference Include="../../src/Lain.Host/Lain.Host.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MiMoProbeHostDirectory)' != ''">
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Reference Include="Lain.Host"><HintPath>$(MiMoProbeHostDirectory)/Lain.Host.dll</HintPath></Reference>
+    <Reference Include="Lain.Core"><HintPath>$(MiMoProbeHostDirectory)/Lain.Core.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>
