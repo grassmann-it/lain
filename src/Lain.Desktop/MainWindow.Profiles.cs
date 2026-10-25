@@ -255,6 +255,7 @@ public sealed partial class MainWindow
             new("edit", "Edit profile", () => EditProfile(selected)),
             new("export", "Export profile…", () => _ = RunAsync(() => ExportProfileAsync(selected), "Profile exported without credentials.")),
             new("codex", "Set up Codex client…", () => ShowCodexExport(selected)),
+            new("groups", "Model groups and automatic routing…", () => ShowProfileGroups(selected.Id)),
             new("remove", "Remove profile…", () => ConfirmProfileRemoval(selected.Id))
         ];
         var menu = ObjectCommandMenu(commands);
@@ -295,6 +296,7 @@ public sealed partial class MainWindow
         var routeCard = Ui.Card(routes); routeCard.Padding = new Thickness(0);
         details.Children.Add(routeCard);
         details.Children.Add(ProfileWrap(export, Ui.Button("Set up Codex client…", () => ShowCodexExport(selected))));
+        details.Children.Add(Ui.Button("Model groups and automatic routing…", () => ShowProfileGroups(selected.Id)));
         var technical = Ui.Stack(Ui.Text($"Profile ID: {selected.Id} · Default ID: {selected.DefaultRouteId ?? "none"}", 11, Ui.Muted),
             Ui.Text("Apply updates the global proxy. Export and client installation are separate operations.", 12, Ui.Muted));
         if (selected.Policy?.FallbackRouteIds is { Length: > 0 } fallbacks)
@@ -326,6 +328,7 @@ public sealed partial class MainWindow
     private void RefreshProfileReviewState()
     {
         _refreshProfileStatusUi?.Invoke();
+        _refreshCodexSetup?.Invoke();
         if (_profileReview is not { } review) return;
         if (review.AwaitingOutcome && !ProfileApplyOutcomeUnknown)
         {
@@ -549,128 +552,6 @@ public sealed partial class MainWindow
         try { await ReadProfileStatusAsync(review); }
         catch (Exception error) { review.Message = "Current status unavailable. " + Friendly(error) + (ProfileApplyOutcomeUnknown ? " Apply outcome remains unknown; last confirmed status is retained." : ""); }
         finally { review.Working = false; RenderProfileReview(review); }
-    }
-
-    private void ShowCodexExport(ProfileDto profile)
-    {
-        if (!CanOpenSectionEditor()) return;
-        if (_configuration is not { } cfg) return;
-        if (cfg.Profiles.FirstOrDefault(item => item.Id == profile.Id) is not { } current)
-        {
-            _notice.Text = "This profile no longer exists. Return to Profiles and select an existing profile.";
-            return;
-        }
-        profile = current;
-        RegisterEditor(() =>
-        {
-            var latest = _configuration?.Profiles.FirstOrDefault(item => item.Id == profile.Id)
-                ?? throw new InvalidOperationException("This profile was removed. Cancel setup and review Profiles.");
-            ShowCodexExport(latest);
-        }, cfg.Revision, profile.Name + " · Codex setup");
-        _editing = true;
-        var launcher = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin", "lain");
-        var executable = Ui.Input(File.Exists(launcher) ? launcher : "", "/absolute/path/to/lain");
-        var folder = Ui.Input(hint: "Choose or enter an existing parent folder");
-        var validation = Ui.Text("", 12, Ui.Warning);
-        AutomationProperties.SetName(validation, "Client setup validation");
-        Button? prepare = null;
-        bool ValidInputs()
-        {
-            var executableError = ValidateCodexExecutable(executable.Text);
-            var parentError = ValidateCodexParent(folder.Text);
-            validation.Text = string.Join(" ", new[] { executableError, parentError }.Where(error => error is not null));
-            if (prepare is not null) prepare.IsEnabled = !_busy && executableError is null && parentError is null;
-            return executableError is null && parentError is null;
-        }
-        executable.TextChanged += (_, _) => ValidInputs();
-        folder.TextChanged += (_, _) => ValidInputs();
-        AutomationProperties.SetName(folder, "Destination parent folder");
-        AutomationProperties.SetName(executable, "lain command-line executable");
-        var pick = Ui.Button("Browse…", async () => {
-            try
-            {
-                var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Choose a parent folder for a new Codex connection", AllowMultiple = false });
-                if (folders.FirstOrDefault()?.TryGetLocalPath() is { } path) folder.Text = path;
-            }
-            catch (Exception error) { validation.Text = Friendly(error); }
-            finally { folder.Focus(); }
-        });
-        var destinationRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 8 };
-        destinationRow.Children.Add(folder);
-        Grid.SetColumn(pick, 1);
-        destinationRow.Children.Add(pick);
-        Control? setup = null;
-        prepare = Ui.Button("Prepare Codex files", () => _ = PrepareAsync());
-        async Task PrepareAsync()
-        {
-            // Recheck at the action boundary too: the file or directory may have
-            // disappeared since TextChanged last validated the retained inputs.
-            if (_busy || !ValidInputs()) return;
-            var executablePath = executable.Text!.Trim();
-            var parentPath = folder.Text!.Trim();
-            await RunAsync(async () =>
-            {
-                var destination = Path.Combine(parentPath, $"lain-codex-{DateTimeOffset.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..6]}");
-                var artifacts = await _client.ExportCodexProfileAsync(cfg.Revision, profile.Id, executablePath, Path.Combine(destination, "lain.models.json"), _lifetime.Token);
-                if (artifacts.ProfileId != profile.Id || artifacts.Revision != cfg.Revision || string.IsNullOrWhiteSpace(artifacts.GenerationId))
-                    throw new InvalidOperationException("The prepared artifact does not identify this saved profile and revision. Nothing was installed; prepare again.");
-                var installationStarted = false;
-                var install = Action("Install client files", async () =>
-                {
-                    if (!installationStarted && (Directory.Exists(destination) || File.Exists(destination)))
-                        throw new InvalidOperationException("This destination already exists. Prepare a new private client folder before installing.");
-                    installationStarted = true;
-                    var installed = CodexArtifactInstaller.Install(artifacts, destination);
-                    var installation = CodexArtifactInstaller.Inspect(destination, ProfileApplyOutcomeUnknown ? null : _status?.ActiveProfileId, ProfileApplyOutcomeUnknown ? null : _status?.ActiveProfileRevision);
-                    if (installation.State != "installed") throw new InvalidOperationException(installation.RecoveryAction ?? "Client installation needs recovery.");
-                    static string Quote(string value) => "'" + value.Replace("'", "'\\''") + "'";
-                    var command = $"CODEX_HOME={Quote(destination)} codex {string.Join(" ", installed.LaunchArguments.Select(Quote))}";
-                    var copy = Ui.Button("Copy command", async () =>
-                    {
-                        try
-                        {
-                            if (Clipboard is not { } clipboard) throw new InvalidOperationException("Clipboard is unavailable. Select the command below.");
-                            await clipboard.SetTextAsync(command); _notice.Text = "Launch command copied.";
-                        }
-                        catch (Exception error) { _notice.Text = Friendly(error); }
-                    });
-                    _page.Content = Ui.Stack(ProfileHeader("Codex files installed", $"{profile.Name} · Exported revision {installed.Revision}"),
-                        Ui.Card(Ui.Stack(Ui.Text(installation.Stale switch
-                        {
-                            true => "This export differs from the last reported applied profile. Apply and client setup are separate operations.",
-                            false => "Matches the last reported applied profile and revision.",
-                            _ => "Applied profile identity is unknown; client/runtime alignment cannot be confirmed."
-                        }, 13, installation.Stale == false ? Ui.Muted : Ui.Warning),
-                            ProfileReadOnly(installed.ConfigurationPath), ProfileReadOnly(installed.CatalogPath),
-                            Ui.Text("Installed generation: " + installed.GenerationId, 11, Ui.Muted))),
-                        Ui.Card(Ui.Stack(ProfileHeader("Launch this connection", "Run the command in your terminal.", copy), ProfileReadOnly(command))),
-                        Ui.Text("Separate client files were installed. The global proxy and ordinary Codex configuration were not changed.", 12, Ui.Muted),
-                        Ui.Button("Back to profiles", () => { _editing = false; Render(); }));
-                    await Task.CompletedTask;
-                }, "Client files installed. Proxy unchanged.", stayOnPage: true);
-                install.Classes.Add("primary");
-                var preparedIdentity = Ui.Text("Profile: " + artifacts.ProfileId + " · Export generation: " + artifacts.GenerationId + " · Revision: " + artifacts.Revision, 12, Ui.Muted);
-                AutomationProperties.SetName(preparedIdentity, "Prepared Codex artifact");
-                var preparedStatus = Ui.Text("No files installed yet", 15);
-                AutomationProperties.SetName(preparedStatus, "Codex setup status");
-                _page.Content = Ui.Stack(ProfileHeader("Codex export prepared", $"{profile.Name} · Saved export revision {artifacts.Revision}"),
-                    Ui.Card(Ui.Stack(preparedStatus, ProfileReadOnly(destination),
-                        preparedIdentity,
-                        Ui.Text("Install creates a separate private configuration with an immutable model catalog. This does not apply the profile.", 12, Ui.Muted))),
-                    ProfileWrap(install, Ui.Button("Cancel", () => { _editing = false; Render(); })));
-            }, "Codex export prepared. No files installed yet.", stayOnPage: true);
-            if (ReferenceEquals(_page.Content, setup)) ValidInputs();
-        }
-        prepare.Classes.Add("primary");
-        setup = Ui.Stack(ProfileHeader("Set up Codex client", $"{profile.Name}  ·  {profile.RouteIds.Length} routes  ·  Saved revision {cfg.Revision}"),
-            Ui.Card(Ui.Stack(Ui.Text("1  Local authentication helper", 14), Ui.Field("lain command-line executable", executable),
-                Ui.Text("Select the installed lain executable used by Codex to authenticate locally.", 12, Ui.Muted))),
-            Ui.Card(Ui.Stack(Ui.Text("2  Export destination", 14), Ui.Field("Parent folder", destinationRow),
-                Ui.Text("Prepare generates a saved-profile export without writing files. Review it, then choose Install client files to create a separate lain-codex-… folder. Neither action applies the profile.", 12, Ui.Muted))),
-            validation,
-            ProfileWrap(prepare, Ui.Button("Cancel", () => { _editing = false; Render(); })));
-        _page.Content = setup;
-        ValidInputs();
     }
 
     private static string? ValidateCodexExecutable(string? value)
