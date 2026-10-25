@@ -44,7 +44,8 @@ internal static class UsageStyleChecks
             .Select(match => match.Groups[2].Value).ToArray();
         Check(statusSpans.Any(span => span.Contains("Style account")) && statusSpans.Any(span => span.Contains('━')) &&
             statusSpans.All(span => !span.Contains("60% left") && !span.Contains("Reset ")) &&
-            !colored.Contains("[####"), "compact colour emphasizes the account and thin quota bars, leaving balance/reset text neutral");
+            Plain(colored).Contains("[━━━━······]") && !colored.Contains("[####"),
+            "compact colour emphasizes the account and visibly filled quota bars, leaving balance/reset text neutral");
         var metricRows = Plain(colored).Split('\n').Where(line => line.Contains('━')).ToArray();
         Check(metricRows.Length == 2 && metricRows.Select(line => HumanTable.Width(line[..line.IndexOf('━')])).Distinct().Count() == 1,
             "primary quota metrics align within an account despite different window label lengths");

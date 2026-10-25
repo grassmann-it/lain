@@ -99,7 +99,7 @@ public static partial class CliApplication
             {
                 const int cells = 10;
                 var consumed = (int)Math.Round(used / 100 * cells, MidpointRounding.AwayFromZero);
-                metric = "[" + new string('━', consumed) + new string('─', cells - consumed) + "] " + metric;
+                metric = "[" + new string('━', consumed) + new string('·', cells - consumed) + "] " + metric;
             }
             fields.Add(new(metric, color, "  "));
         }
