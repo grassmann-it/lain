@@ -1,0 +1,75 @@
+# v4 update source review, 2026-10-25
+
+Reviewed source only:
+
+- Main `tests/delivery-stabilization/v4_update.py`, integrated `e647c19` plus
+  `4233d66` (worker delta `930c901`).
+- `/home/tomka/.cache/lain-qualification-20261024/update-installed-lain-v4.py`,
+  independently hashed as
+  `cc8a45cd9b9fca3c870e25c0c759af2fbeb07baff75c87eb03d69af55dcc2de5`.
+- Relevant `actual_packages.py`, `upgrade_probe.py`, installer and maintenance
+  source contracts. No helper import/execution, build, tests, services, processes,
+  real installation state, credentials, or private evidence were accessed.
+
+## Pre-execution guard findings
+
+1. **No exclusive updater lease.** The private helper's execute path starts at
+   line 183 without a fixed installation-wide lock. Two helpers with different
+   fresh backup destinations can both pass baseline and stopped-writer checks,
+   then interleave prior-app archive, install and service start. Guards detect
+   some outcomes after mutation, but do not serialize it. Acquire an owned,
+   no-symlink, nonblocking fixed lock outside app/app.previous, hold it through
+   final verification/failure stop, and refuse a second updater before mutation.
+
+2. **Loaded service identity is assumed.** The helper pins the installed app and
+   uses the exact intended `systemctl --user ... lain.service`, but does not
+   establish the loaded service's FragmentPath/ExecStart/environment before
+   stopping it. A modified or stale-loaded unit could control another install.
+   Validate that the loaded unit is the expected owned unit and executable/state
+   path, and reject unexpected overrides before stop. This is a source guard gap,
+   not a claim that the user's actual service is misconfigured.
+
+3. **External backup can become stale before overwrite.** Lines 201-210 back up
+   launcher/unit/desktop/icon before stopping. Their fingerprints/absence are not
+   checked again immediately before the installer at line 241. A concurrent edit
+   could be overwritten while the backup contains only an older version. Recheck
+   all four external records before archive/install; the updater lease alone
+   does not serialize an independent editor. Frozen configuration/runtime/journal
+   files do already receive repeated checks.
+
+Findings were sent to Root and the delivery worker. No updater edits were made
+by the reviewer. Execution readiness depends on Root resolving or explicitly
+bounding these guard gaps and completing the exact package qualification.
+
+## Confirmed source properties
+
+The private updater defaults to plan-only and requires a hashed passed,
+non-plan-only report matching all four package identities. Source commits,
+complete cli/host/desktop identities, package inventory and Core qualification
+are checked. It requires the installed previous Gateway source `793822c`, captures
+dynamic CLI identities twice, and preserves desired/applied revision, profiles,
+models and historical token components rather than hardcoding current counts.
+
+UI detection defers/refuses an update; it does not kill UI or discard drafts.
+Service control targets the fixed lain.service name. After stopping, the helper
+requires no own installed writer, uses the maintenance backup's before/after/
+copied inventory verification, includes app.previous in the full stopped state,
+and backs up the four external integration files. app.previous is archived only
+after the fresh stopped snapshot is checked. Installation uses the pinned real
+installer. Current selected generation/material/auth files are compared by
+opaque hash, without credential JSON or SQLite parsing by this helper.
+
+The failure path attempts to stop the named service and optionally snapshots
+the failed current state. It never promotes old credentials, old application,
+or an older database schema. This intentionally leaves a failed upgrade stopped
+for review; it is not an automatic recovery promise. A UI that opens during a
+child command is detected afterward; the helper does not forcibly terminate it.
+
+The v4 harness uses synthetic state in a distinct loopback-only network namespace,
+with the trusted parent namespace anchor reused from the existing harness. It
+tests desired19/applied2, schema4 integrity and history, full stopped backup,
+prior-app archive, real new installer, app-only return preserving a simulated
+newer grant, and forward update. Monitor requires no Core package/listener. Same
+Core binary reuse requires exact source identity and identical qualification
+record. The explicit scope remains this fixture, not arbitrary downgrade or
+rotating-grant recovery. No execution result is inferred from source inspection.
