@@ -179,7 +179,7 @@ def inner():
                           "profileId": "package-profile", "costPolicy": "configured", "enabled": True}
         account_saved = cli("routers", "save", account_router["id"], "--alias", account_router["alias"],
                             "--group", account_router["groupId"], "--profile", account_router["profileId"],
-                            "--cost", account_router["costPolicy"], "--revision", str(config["revision"]))
+                            "--cost", account_router["costPolicy"], "--revision", str(config["revision"]), "--json")
         expect(account_saved["revision"] == config["revision"] + 1 and account_saved["id"] == account_router["id"],
                "typed CLI account router save did not acknowledge the exact CAS write")
         config = api("/configuration")
