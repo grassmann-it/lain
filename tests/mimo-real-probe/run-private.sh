@@ -49,7 +49,15 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 mkdir -p "$runtime/xdg/config" "$runtime/xdg/data" "$runtime/xdg/cache" "$runtime/run" "$runtime/lain"
 mkdir -p "$runtime/tmp"
-export TMPDIR="$runtime/tmp"
+# Chromium appends a random directory and SingletonSocket to TMPDIR. Its Unix
+# socket must fit sockaddr_un; the long cache runtime path does not fit. The
+# startup namespace supplies a short alias for its own cache-backed tmp mount.
+if [[ -n ${LAIN_MIMO_PROBE_SHORT_TMPDIR:-} ]]; then
+  [[ "$LAIN_MIMO_PROBE_SHORT_TMPDIR" == /mnt/tmp && -d /mnt/tmp && ! -L /mnt/tmp ]] || exit 2
+  export TMPDIR="$LAIN_MIMO_PROBE_SHORT_TMPDIR"
+else
+  export TMPDIR="$runtime/tmp"
+fi
 export LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe
 export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json
 touch "$runtime/Xauthority"

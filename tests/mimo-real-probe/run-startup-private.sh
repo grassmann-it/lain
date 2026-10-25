@@ -33,7 +33,7 @@ cleanup() { rm -rf -- "$scratch"; }
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
-mkdir -p "$scratch/home/.cache/lain-build-tmp"
+mkdir -p "$scratch/home/.cache/lain-build-tmp" "$scratch/tmp"
 printf '%s\n' "$LAIN_MIMO_PROBE_SOURCE_COMMIT" >"$output/source-commit.txt"
 sha256sum -- "$runner" "${BASH_SOURCE[0]}" "$probe" "$artifact_directory/Lain.Host.dll" \
   "$artifact_directory/Lain.Core.dll" >"$output/inputs.sha256"
@@ -46,11 +46,13 @@ timeout --signal=TERM --kill-after=5s 115s \
   bwrap --die-with-parent --new-session --unshare-pid --unshare-ipc --unshare-uts \
     --ro-bind / / --proc /proc --dev /dev --tmpfs /tmp --tmpfs /run \
     --bind "$scratch/home" "$HOME" --bind "$output" /mnt \
+    --bind "$scratch/tmp" /mnt/tmp \
     --ro-bind "$artifact_directory" /mnt/artifacts --ro-bind "$runner" /mnt/run-private.sh \
     --chdir /mnt --clearenv --setenv PATH /usr/bin:/bin --setenv HOME "$HOME" \
     --setenv LANG C.UTF-8 --setenv DOTNET_PROCESSOR_COUNT 1 \
     --setenv DOTNET_CLI_TELEMETRY_OPTOUT 1 \
     --setenv LAIN_MIMO_PROBE_SLOT 1 \
+    --setenv LAIN_MIMO_PROBE_SHORT_TMPDIR /mnt/tmp \
     --setenv LAIN_MIMO_PROBE_HOST_SHA256 "$LAIN_MIMO_PROBE_HOST_SHA256" \
     /usr/bin/bash -c 'mkdir -m 1777 /tmp/.X11-unix; exec /usr/bin/bash /mnt/run-private.sh --startup-only "$1" /mnt/probe-evidence' \
     lain-mimo-startup "/mnt/artifacts/$(basename -- "$probe")" \

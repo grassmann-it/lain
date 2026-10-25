@@ -126,3 +126,14 @@ it never selects an old build automatically. Exact bounded unit command and
 evidence locations are in the [probe README](../../tests/mimo-real-probe/README.md).
 Only static shell checks are part of this preparation; no browser/build/network
 attempt has been performed here.
+
+The subsequent approved real startup attempt on Host `f3d485121a2b` failed with
+exit 133, zero named reads and erased profile. A separately approved one-pair
+`about:blank` diagnosis reproduced `Socket path too long` in Chromium's
+`process_singleton_posix.cc:313` from both distribution launcher and direct
+binary. The probe's long cache TMPDIR cannot hold the appended Unix socket path.
+Only the startup runner now supplies a short `/mnt/tmp` mount alias backed by
+its new cache directory. No production code or sandbox rule changed. This fix
+has passed static checks only; no successful production startup rerun is claimed.
+The historical original failure remains unexplained; this diagnosis establishes
+the cause of the newer private-runner failure, not its historical cause.

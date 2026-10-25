@@ -76,7 +76,36 @@ never assign a synthetic HOME before this command. The inner probe is limited to
 5-second kill grace. Keep `inputs.sha256`, `source-commit.txt`, `exit-code.txt`,
 `supervisor.log` and `probe-evidence/`. The wrapper deletes only its newly created
 private home afterward; PID-namespace exit and the unit kill all owned descendants.
-No real attempt with this wrapper has yet been run.
+The original wrapper's failed real attempt and the pending short-TMPDIR correction
+are documented below; the corrected wrapper has not yet been run.
+
+### Startup failure and bounded diagnosis, 25 October
+
+The real `f3d485121a2b` startup-only attempt failed with process exit 133 before
+an endpoint; its profile was erased and it made zero named reads or sign-in
+interactions. The later approved single diagnosis pair used the same private
+Xvfb/D-Bus/home and production flags, replacing the landing URL with `about:blank`.
+Both `/usr/bin/chromium` and `/usr/lib/chromium/chromium` exited with SIGTRAP
+before publishing an endpoint. Both stderr logs reported
+`FATAL:chrome/browser/process_singleton_posix.cc:313] Socket path too long` for
+Chromium's temporary `SingletonSocket`. The diagnostic TMPDIR prefix had the
+same length as the failed runner's cache runtime prefix. This reproduces an
+isolation-runner error independently of the provider and distribution launcher.
+
+The startup wrapper now binds a freshly allocated cache-backed tmp directory to
+the short namespace path `/mnt/tmp`. Only its inner runner receives that TMPDIR;
+HOME, sandbox flags and production Host code remain unchanged. This is a source
+fix pending a separately authorized real startup rerun; the earlier failure
+remains a failure. The direct inner runner without this namespace alias retains
+its long cache TMPDIR and is not the supported startup launch command.
+
+Private diagnostic evidence is under
+`~/.cache/lain-qualification-20261025/next/native-responsive-f3d485121a2b/n03-diagnose-pair/`
+(0700 directory, capped stdout/stderr logs, results and input hashes). The pair
+completed in 1.082 seconds with peak memory 432.6 MiB, under MemoryMax=1 GiB,
+MemorySwapMax=0 and CPUQuota=100%. Both owned profiles were erased; no Host,
+provider API read, login or production source change occurred. The diagnostic
+script is opt-in and never a substitute for the production `OpenAsync` probe.
 
 ## Build handoff: assigned serial slot only
 
