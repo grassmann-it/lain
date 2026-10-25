@@ -9,21 +9,29 @@ lain usage --full
 lain usage --json
 ```
 
-The default human overview is compact: one short account name/provider header
-and one line per quota window when it fits the terminal width. Narrow terminals
-wrap only as needed. Short consumed-percentage bars, native remaining balances,
-reset times and concise shared-budget tags remain visible. Disabled accounts
-retain their reported values. Missing credentials, expiry,
-unsupported quota APIs, missing snapshots and unknown measurements stay visible.
-Only known consumed percentages produce bars; a known zero is a valid reading.
-Stale/overdue values are marked as last known. Successful snapshots older than
-five minutes, or numerical snapshots without a successful check time, are also
-last known.
+The default human overview puts accounts with quota readings first, preserving
+Host order within each group. Each short account header has at most two primary
+readings, with shorter quota windows first (for example, 5 hours before 7 hours
+or 7 days). Monthly allowances are secondary; additional credits use concise
+amounts, and zero-only extra credits are hidden. A sole monthly allowance or
+wallet remains visible, as does a real exhausted main balance. Missing readings
+stay unknown and never become zero. When a main reading exists, unknown
+secondary windows are deferred to `--full`.
 
-`lain usage --full` shows the detailed account and quota view, including full
-account IDs, credential diagnostics, used/limit amounts, source/check times and
+Narrow terminals wrap as needed. Known consumed-percentage bars, native remaining
+balances, reset times and concise shared-budget tags remain visible. Disabled
+accounts retain their reported values. Missing credentials, expiry and unavailable
+quota diagnostics remain visible for accounts without readings. Refresh errors
+and last-known warnings remain visible even when their quota window is deferred. Stale/overdue displayed
+values are marked as last known. Successful snapshots older than five minutes,
+or numerical snapshots without a successful check time, are also last known.
+
+`lain usage --full` shows every window, including zero-only extra credits and
+unknown readings, in the same human presentation order. It includes full account
+IDs, credential diagnostics, used/limit amounts, source/check times and
 shared-budget explanations. `lain usage --full --json` returns exactly the same
-overview JSON as `lain usage --json`; the flag only changes human presentation.
+overview JSON as `lain usage --json`, preserving all data and the original Host
+account/window order; the flag only changes human presentation.
 
 The overview makes `GET /api/v1/accounts`, then `GET /api/v1/quotas` through the
 existing authenticated client. These reads use Host snapshots and do not trigger

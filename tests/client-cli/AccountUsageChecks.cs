@@ -32,8 +32,9 @@ internal static class AccountUsageChecks
             human.Output.Contains("Missing credential · zai · Missing"), "overview uses actual account names/providers and retains disabled or missing-credential accounts");
         Check(human.Output.Contains("40% used") && human.Output.Contains("7 days") && human.Output.Contains("96% used") &&
             human.Output.Contains("Quota not reported") && human.Output.Contains("No separate quota lookup"), "all named windows and unavailable accounts remain visible without invented quotas");
-        Check(!human.Output.Contains("ID:") && human.Output.Contains("Source ") && human.Output.Contains("Checked ") &&
-            !human.Output.Contains("same provider funds"), "compact overview retains observation provenance without account IDs");
+        Check(!human.Output.Contains("ID:") && !human.Output.Contains("Source ") && !human.Output.Contains("Checked ") &&
+            human.Output.Contains("lain usage --full") && !human.Output.Contains("same provider funds"),
+            "compact overview defers source and check-time detail to the explicit full command");
         var full = await Run("usage", "--full");
         Check(full.Exit == 0 && full.Error == "" && full.Output.Contains("ID: account-codex") && full.Output.Contains("Checked ") &&
             full.Output.Contains("source ") && full.Output.Contains("same provider funds") && full.Output.Contains("Used 18 USD-Credits / 20 USD-Credits"),
@@ -99,9 +100,79 @@ internal static class AccountUsageChecks
                 { LastSuccessAt = now, ResetsAt = now.AddHours(2), WindowLabel = "Window " + window }).ToArray())).ToArray());
         var budgetOutput = new StringWriter();
         await CliApplication.WriteAccountUsage(budgetOutput, fifteenWindows, new(100, false));
-        Check(budgetOutput.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Length <= 42 &&
-            budgetOutput.ToString().Split('\n').Count(line => line.Contains("40% used")) == 15,
-            "fifteen quota windows across six accounts fit within forty-two lines including source/freshness at 100 columns");
+        Check(budgetOutput.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Length <= 24 &&
+            budgetOutput.ToString().Split('\n').Count(line => line.Contains("40% used")) == 12 &&
+            budgetOutput.ToString().Split('\n').Count(line => line.Contains("More windows and details")) == 3,
+            "fifteen quota windows show at most two primary readings per account, with explicit full-detail paths, in twenty-four lines");
+        // Presentation hierarchy must not change the source envelope or lose the only known budget.
+        var basis = CliPresentationFixtures.Quotas[0] with { AccountId = "hierarchy", SharedWithLegacy = false, LastSuccessAt = now,
+            FreshUntil = now.AddMinutes(5), ResetsAt = now.AddHours(2) };
+        var weekly = basis with { WindowLabel = "7 days", Source = "fixture#weekly" };
+        var sevenHours = basis with { WindowLabel = "7 hours", Source = "fixture#seven-hour" };
+        var fiveHours = basis with { WindowLabel = "5 hours", Source = "fixture#fiveHour" };
+        var monthly = basis with { WindowLabel = "Monthly allowance", Source = "fixture#monthly" };
+        var purchased = basis with { WindowLabel = "Purchased credits", Source = "fixture#purchasedCredits", MeasurementKind = "balance",
+            Unit = "credits", Used = null, Limit = null, Remaining = 12, UsedPercent = null, ResetsAt = null };
+        var freeZero = purchased with { WindowLabel = "Free credits", Source = "fixture#freeCredits", Remaining = 0 };
+        var unknown = basis with { WindowLabel = "Unknown budget", Source = "fixture#unknown", Used = null, Limit = null,
+            Remaining = null, UsedPercent = null, ResetsAt = null, State = "unavailable" };
+        async Task<string> Render(QuotaDto[] quotas, bool fullDetails = false)
+        {
+            var writer = new StringWriter();
+            await CliApplication.WriteAccountUsage(writer, new(1, "account-usage", [new(
+                new("hierarchy", "Hierarchy account", "fixture", true, "api-key", "ready"), quotas)]), new(120, false), full: fullDetails);
+            return writer.ToString();
+        }
+        var hierarchyQuotas = new[] { monthly, weekly, sevenHours, freeZero, purchased, fiveHours };
+        var hierarchy = await Render(hierarchyQuotas);
+        Check(hierarchy.IndexOf("5 hours", StringComparison.Ordinal) < hierarchy.IndexOf("7 hours", StringComparison.Ordinal)
+            && !hierarchy.Contains("Monthly allowance") && !hierarchy.Contains("7 days")
+            && hierarchy.Contains("More windows and details: --full"), "shortest two explicit periods lead compact output; longer windows stay reachable via full");
+        Check(hierarchy.Contains("Additional: Purchased credits · 12 credits left") && !hierarchy.Contains("Free credits"),
+            "positive extra credits stay concise while zero-only free credits do not occupy compact rows");
+        var hierarchyFull = await Render(hierarchyQuotas, fullDetails: true);
+        Check(new[] { "5 hours", "7 hours", "7 days", "Monthly allowance", "Purchased credits", "Free credits" }.All(hierarchyFull.Contains)
+            && hierarchyFull.Contains("Remaining 0 credits"), "full rendering preserves every longer and zero-credit reading");
+        Check((await Render([monthly])).Contains("Monthly allowance") && (await Render([purchased])).Contains("12 credits left"),
+            "a sole monthly allowance or credit balance remains the visible main reading");
+        var mainZero = purchased with { WindowLabel = "Account balance", Source = "fixture#account-balance", Remaining = 0 };
+        var emptyBalance = await Render([mainZero, freeZero]);
+        Check(emptyBalance.Contains("Account balance") && emptyBalance.Contains("0 credits left") && emptyBalance.Contains("Exhausted")
+            && !emptyBalance.Contains("Free credits") && !emptyBalance.Contains("More windows and details"),
+            "a real exhausted primary balance remains visible; hidden zero-only extras do not add detail hints");
+        var unknownExtra = freeZero with { Remaining = null, State = "unavailable" };
+        var unknownOutput = await Render([unknownExtra]);
+        Check(unknownOutput.Contains("Free credits") && unknownOutput.Contains("Quota values not reported")
+            && !unknownOutput.Contains("0 credits") && !unknownOutput.Contains("Exhausted"), "unknown extra credits are not silently treated as a reported zero");
+        var shortCredits = fiveHours with { WindowLabel = "5 hours credits", Unit = "credits", Used = 18, Limit = 20,
+            Remaining = 2, UsedPercent = 90 };
+        var exhaustedShort = await Render([shortCredits with { Used = 20, Remaining = 0, UsedPercent = 100 }, monthly]);
+        Check(exhaustedShort.Contains("5 hours credits") && exhaustedShort.Contains("100% used") && exhaustedShort.Contains("0 credits left")
+            && !exhaustedShort.Contains("Monthly allowance"), "five-hour credit allowances remain primary even when exhausted");
+        var resetOnly = basis with { WindowLabel = "Unspecified period", Source = "fixture#opaque", ResetsAt = now.AddMinutes(1) };
+        var explicitPeriod = fiveHours with { WindowLabel = "Explicit five-hour window", ResetsAt = now.AddDays(3) };
+        var durationOutput = await Render([resetOnly, explicitPeriod]);
+        Check(durationOutput.IndexOf("Explicit five-hour window", StringComparison.Ordinal) < durationOutput.IndexOf("Unspecified period", StringComparison.Ordinal),
+            "an imminent reset does not manufacture a shorter quota duration");
+        var faultedMonthly = monthly with { State = "error", Error = "Refresh failed" };
+        var faultOutput = await Render([fiveHours, sevenHours, faultedMonthly]);
+        var unknownMonthlyOutput = await Render([fiveHours, unknown with { WindowLabel = "Unknown monthly allowance" }]);
+        Check(faultOutput.Contains("Quota refresh error") && faultOutput.Contains("Last known quota") && faultOutput.Contains("--full")
+            && !unknownMonthlyOutput.Contains("Unknown monthly allowance") && !unknownMonthlyOutput.Contains("More windows and details"),
+            "deferred refresh errors stay visible while unknown secondary windows do not add compact diagnostic rows");
+        var orderedOverview = new AccountUsageOverview(1, "account-usage", [
+            new(new("missing", "Missing first", "fixture", true, "api-key", "ready"), [unknown]),
+            new(new("zero", "Zero extras", "fixture", true, "api-key", "ready"), [freeZero]),
+            new(new("known", "Real balance", "fixture", true, "api-key", "ready"), [mainZero])]);
+        var orderWriter = new StringWriter();
+        await CliApplication.WriteAccountUsage(orderWriter, orderedOverview, new(120, false));
+        Check(orderWriter.ToString().IndexOf("Real balance", StringComparison.Ordinal) < orderWriter.ToString().IndexOf("Missing first", StringComparison.Ordinal)
+            && orderWriter.ToString().IndexOf("Missing first", StringComparison.Ordinal) < orderWriter.ToString().IndexOf("Zero extras", StringComparison.Ordinal),
+            "accounts with real readings lead, including an empty primary balance; other accounts retain host order");
+        var expectedOverview = JsonSerializer.Serialize(overview, jsonOptions) + Environment.NewLine;
+        Check(structured.Output == expectedOverview && fullStructured.Output == expectedOverview,
+            "compact selection and human sorting preserve the original account/window order and exact complete JSON bytes");
+
         foreach (var args in new[]
         {
             new[] { "usage", "--full", "--today", "--json" },

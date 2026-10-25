@@ -27,7 +27,7 @@ public static partial class CliApplication
         context ??= HumanOutputContext.Detect(output);
         await HumanTable.WriteTextAsync(output, $"Account usage ({overview.Accounts.Length} accounts)", context);
         if (overview.Accounts.Length == 0) { await HumanTable.WriteTextAsync(output, "No accounts configured.", context); return; }
-        foreach (var item in overview.Accounts)
+        foreach (var item in overview.Accounts.OrderByDescending(item => QuotaPresentation.HasQuotaReading(item.Quotas)))
         {
             var account = item.Account;
             await output.WriteLineAsync();
@@ -45,7 +45,7 @@ public static partial class CliApplication
             {
                 await HumanTable.WriteTextAsync(output, "Quota not reported. See provider setup for available access.", context, "  ");
             }
-            else await WriteQuotaWindows(output, item.Quotas, context, disabled: !account.Enabled, checkAge: true);
+            else await WriteQuotaWindows(output, QuotaPresentation.Order(item.Quotas), context, disabled: !account.Enabled, checkAge: true);
         }
     }
 }

@@ -45,16 +45,22 @@ lain providers check-free CONFIGURED_ROUTE_ID --json
 
 Bare `lain usage` shows current quota snapshots for every configured account,
 including actual account names/providers, disabled accounts and unavailable
-quotas. Its compact view keeps a short account header and a line per window when
-space allows, with native remaining units, reset times and concise shared/state
-warnings. Numbers older than five minutes since the last successful check, or
-with unknown check time, stay last known. Use `lain usage --full` for IDs,
-credential diagnostics, source/check times and full quota details.
+quotas. Accounts with readings lead. Its compact view shows at most two primary
+readings per account, with shorter windows first (5 hours before 7 hours or
+7 days). Monthly allowances are secondary; positive additional credits appear
+as concise amounts and zero-only extras are hidden. A sole monthly allowance or
+wallet and a real exhausted main balance remain visible. Unknown readings never
+become zero; unknown secondary windows stay in `--full` when a main reading exists.
+Native remaining units, reset times, shared-budget tags and refresh errors stay
+visible. Displayed numbers older than five minutes since the last successful
+check, or with unknown check time, stay last known. Use `lain usage --full` for
+every window, including zero extras and missing readings, plus IDs, credential
+diagnostics, source/check times and full quota details.
 `lain usage --json` returns a CLI envelope with `version: 1`,
 `kind: "account-usage"` and `accounts`, each containing the full `account` DTO
 and its `quotas` array. Missing snapshots remain empty arrays. It reads accounts
 and cached quotas through the Host; it does not refresh providers.
-`--full --json` returns the same envelope and bytes; `--full` cannot be combined
+`--full --json` returns the same envelope and bytes in original Host account/window order; `--full` cannot be combined
 with historical arguments or the `history` command.
 `lain quotas --json` remains the raw quota DTO array from a single GET.
 Quota `support` describes a capability separately from `error`. Missing quota
