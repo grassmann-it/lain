@@ -43,3 +43,16 @@ Entrypoint is owned by N09 (`--n05n06-profiles-smoke`); no duplicate Program.cs 
 Runtime result is pending the private Xvfb lane. Real Dispatcher/native /model and
 integrated mode/scale acceptance remain N08/N09 gates, not inferred from compilation.
 Private logs: `~/.cache/lain-qualification-20261025/next-n05-n06/`.
+
+## Confirmed review correction
+
+N09 confirmed that the shell snapshot cannot see setup controls after the prepared
+review replaces them. A small explicit `CodexSetupDraft` now captures executable,
+parent folder, target and groups in the editor rebuild closure. Review latest
+resolves the same stable profile ID and rebuilds only those inputs at the current
+revision; prepared artifacts, dispatcher proof and install state are discarded.
+A removed profile cannot retarget an identically named replacement. The original
+prepared controls remain available if rebuilding fails. The focused fixture adds
+this regression; native confirmation is owned by N09. This correction was checked
+statically (`git diff --check`); no additional build/runtime started during Root's
+backend lane.

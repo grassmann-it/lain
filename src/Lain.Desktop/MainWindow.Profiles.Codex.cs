@@ -18,27 +18,41 @@ public sealed partial class MainWindow
     private Action? _refreshCodexSetup;
     private sealed record CodexDispatcherCheck(bool Ready, string Message, string? Entry = null, string? Receipt = null);
     private Func<CancellationToken, Task<CodexDispatcherCheck>> _codexDispatcherProbe = CheckCodexDispatcherAsync;
+    private sealed record CodexSetupDraft(string? Executable, string? Parent, int Target, bool Groups);
 
-    private void ShowCodexExport(ProfileDto profile)
+    private void ShowCodexExport(ProfileDto profile) => ShowCodexExportDraft(profile, null);
+
+    private void ShowCodexExportDraft(ProfileDto profile, CodexSetupDraft? retained)
     {
         if (!CanOpenSectionEditor() || _configuration is not { } cfg) return;
         if (cfg.Profiles.FirstOrDefault(item => item.Id == profile.Id) is not { } current)
         { _notice.Text = "This profile no longer exists. Return to Profiles and select an existing profile."; return; }
         profile = current;
-        RegisterEditor(() => ShowCodexExport(_configuration?.Profiles.FirstOrDefault(item => item.Id == profile.Id)
-            ?? throw new InvalidOperationException("This profile was removed. Cancel setup and review Profiles.")), cfg.Revision, profile.Name + " · Codex setup");
+        var profileId = profile.Id;
         _editing = true;
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var launcher = Path.Combine(home, ".local", "bin", "lain");
-        var executable = Ui.Input(File.Exists(launcher) ? launcher : "", "/absolute/path/to/lain");
+        var executable = Ui.Input(retained?.Executable ?? (File.Exists(launcher) ? launcher : ""), "/absolute/path/to/lain");
         AutomationProperties.SetName(executable, "lain command-line executable");
-        var folder = Ui.Input(hint: "Choose or enter an existing parent folder");
+        var folder = Ui.Input(retained?.Parent, "Choose or enter an existing parent folder");
         AutomationProperties.SetName(folder, "Destination parent folder");
-        var target = new ComboBox { ItemsSource = new[] { "New private Codex folder", "Separate lain profile files in ~/.codex" }, SelectedIndex = 0,
+        var target = new ComboBox { ItemsSource = new[] { "New private Codex folder", "Separate lain profile files in ~/.codex" }, SelectedIndex = retained?.Target == 1 ? 1 : 0,
             HorizontalAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetName(target, "Codex installation target");
-        var grouped = new CheckBox { Content = "Include model groups and configured automatic routers", IsChecked = false };
+        var grouped = new CheckBox { Content = "Include model groups and configured automatic routers", IsChecked = retained?.Groups ?? false };
         AutomationProperties.SetName(grouped, "Include Codex model groups");
+        // Prepared content deliberately contains no editable fields. Capture the
+        // actual setup controls here as well, so shell Review latest can rebuild
+        // inputs even when EditorSnapshot only sees the prepared review surface.
+        // Keep the stable profile ID; never transfer a preparation to another
+        // profile or carry old artifacts/proof across a configuration revision.
+        RegisterEditor(() =>
+        {
+            var inputs = new CodexSetupDraft(executable.Text, folder.Text, target.SelectedIndex, grouped.IsChecked == true);
+            var latest = _configuration?.Profiles.FirstOrDefault(item => item.Id == profileId)
+                ?? throw new InvalidOperationException("This profile was removed. Your setup inputs are kept; cancel setup and review Profiles.");
+            ShowCodexExportDraft(latest, inputs);
+        }, cfg.Revision, profile.Name + " · Codex setup");
         var validation = Ui.Text("", 12, Ui.Warning);
         AutomationProperties.SetName(validation, "Client setup validation");
         var dispatcherText = Ui.Text("For model groups, check the separately installed lain Codex dispatcher before preparing.", 12, Ui.Muted);

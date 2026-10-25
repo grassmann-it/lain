@@ -68,6 +68,18 @@ internal sealed partial class Scenario
             Check(handler.LastExport?.EnableLainModelPicker == true, "N05 explicit group opt-in reaches Host export");
             Check(Directory.GetFileSystemEntries(scratch).Order().SequenceEqual(filesBefore), "N05 Prepare writes no files");
             Check(HasText("Model groups: 2", true), "N05 prepared scope comes from actual exported groups");
+            var exportedBeforeReview = handler.Requests.Count;
+            fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 }; Snapshot();
+            Invoke("RefreshProfileReviewState"); Invoke("ReviewDraft"); await Task.Delay(100);
+            Check(Named<TextBox>("lain command-line executable").Text == executable
+                && Named<TextBox>("Destination parent folder").Text == scratch
+                && Named<ComboBox>("Codex installation target").SelectedIndex == 0
+                && Named<CheckBox>("Include Codex model groups").IsChecked == true,
+                "N05 Review latest preserves hidden prepared setup inputs for the same stable profile");
+            Check(handler.Requests.Count == exportedBeforeReview && !HasText("No files installed yet"),
+                "N05 Review latest discards old prepared artifacts without exporting or installing");
+            await Click("Prepare Codex files");
+            await Wait(() => HasText("No files installed yet"), "N05 reviewed inputs prepare a new revision explicitly");
             await Click("Change prepared Codex target");
             Check(Named<CheckBox>("Include Codex model groups").IsChecked == true, "N05 change setup retains explicit group choice");
             await Click("Cancel");
