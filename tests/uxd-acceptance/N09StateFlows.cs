@@ -174,7 +174,7 @@ internal sealed partial class Acceptance
         await NativePress(input, Need<Button>("Review latest configuration"));
         Check(Need<TextBox>("lain command-line executable").Text == executable
             && Need<TextBox>("Destination parent folder").Text == parent
-            && Need<ComboBox>("Codex installation target").SelectedIndex == 0
+            && Need<ComboBox>("Installation target").SelectedIndex == 0
             && Need<CheckBox>("Include Codex model groups").IsChecked != true,
             "native Review latest from Prepared preserves hidden setup inputs rather than restoring defaults");
         Check(Find<TextBlock>("Prepared Codex artifact") is null && fixture.ExportCalls == 1
@@ -219,7 +219,7 @@ internal sealed partial class Acceptance
         Check(ReferenceEquals(folder, Need<TextBox>("Destination parent folder")) && folder.Text == parentA
             && ReferenceEquals(executableField, Need<TextBox>("lain command-line executable")),
             "native Change setup restores exact input controls and destination A");
-        var target = Need<ComboBox>("Codex installation target");
+        var target = Need<ComboBox>("Installation target");
         await NativePress(input, target); input.Key(0xff57); input.Key(0xff0d); await Task.Delay(120);
         Check(target.SelectedIndex == 1 && Find<TextBox>("Destination parent folder") is null && fixture.ExportCalls == 1,
             "native shared-target choice hides parent and causes no export or installation");
