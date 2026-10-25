@@ -150,14 +150,18 @@ For execution repeat **the same argv** with `--execute`, under a new loopback-on
 network namespace, with the parent anchor captured outside. Prefix the argv with:
 
 ```sh
-unshare --user --map-root-user --net sh -c 'ip link set lo up; exec "$@"' n07-lane \
+unshare --user --map-root-user --net --pid --fork --kill-child --mount-proc sh -c 'ip link set lo up; exec "$@"' n07-lane \
   env TMPDIR="$BUILD_TMP" python3 tests/delivery-stabilization/full_packages.py
 # append exactly the arguments above, plus --execute
 ```
 
-The namespace contract deliberately does not add a PID namespace, matching the
-reused package probes. No caller port is trusted; each synthetic Host/Core gets
-guarded fixture ports. Failure retains its private scratch directory and error
+Use a private PID namespace with a fresh `/proc` as well as the loopback-only
+network namespace. A user/network namespace alone still exposes host processes
+whose executable links may be unreadable: the unchanged conservative application
+scanner correctly refuses those candidates. The private `/proc` preserves real
+synthetic child-process scanning without exposing unrelated installed processes.
+`--kill-child` terminates the namespace child if its launcher dies. No caller
+port is trusted; each synthetic Host/Core gets guarded fixture ports. Failure retains its private scratch directory and error
 in `exact-full-runtime/report.json`; success removes synthetic package copies
 while retaining actual metadata and assertion evidence. Product output is never
 forwarded as credential text.
@@ -177,7 +181,7 @@ Run serially after the previous namespace exits:
 
 ```sh
 PARENT_NETNS=$(readlink /proc/self/ns/net)
-unshare --user --map-root-user --net sh -c 'ip link set lo up; exec "$@"' n07-drain \
+unshare --user --map-root-user --net --pid --fork --kill-child --mount-proc sh -c 'ip link set lo up; exec "$@"' n07-drain \
   env TMPDIR="$BUILD_TMP" python3 tests/delivery-stabilization/drain_exact_core.py \
   --core "$GATEWAY/proxy/lain-proxy" --core-sha256 "$CORE_SHA" \
   --parent-netns "$PARENT_NETNS" --report "$EVIDENCE/exact-core-drain.json" --execute
