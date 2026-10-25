@@ -79,10 +79,12 @@ internal static class RouterCases
         var route = new RouteDto("codex-route", "codex-alias", "codex-fixture-model", "codex", [account.Id]);
         var router = new CollectionRouterDto("codex-router", "auto-codex", "provider:codex", "codex-profile");
         var configuration = new ConfigurationDto(1, 0, [account], [route], [new("codex-profile", "Fixture", [route.Id])], CollectionRouters:[router]);
+        OwnStatePaths.WritePrivate(Path.Combine(paths.OwnedAuth, "fixture.json"), JsonSerializer.Serialize(new {
+            type = "codex", account_id = "synthetic-subject", access_token = "synthetic-access-token" }));
         foreach (var kind in new[] { "codex-owned", "codex-access-snapshot" })
         {
             configuration = configuration with { Accounts = [account with { CredentialKind = kind }] };
-            secrets.WriteAccount(account.Id, JsonSerializer.Serialize(new { kind, accessToken = "synthetic-access-token", ownedAuthFile = "fixture.json" }));
+            secrets.WriteAccount(account.Id, JsonSerializer.Serialize(new { kind, accountId = "synthetic-subject", accessToken = "synthetic-access-token", ownedAuthFile = "fixture.json" }));
             var transport = new ProxyConfigurationWriter(paths, secrets).Describe(configuration);
             if (transport.QualifiedProviderRouteIds.Count != 0 || transport.TransportBindings[route.Id].UpstreamProtocol != "responses")
                 throw new Exception("Native Codex must use real compiled Responses transport without a catalog ID");
