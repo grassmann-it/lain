@@ -74,6 +74,7 @@ try
     Reject(() => metadataAdapter.Generate("fixture", state.Revision, "/opt/lain/lain", "/tmp/lain.models.json"), "A review-only profile cannot export an inconsistent hidden default");
 }
 finally { if (Directory.Exists(temporary)) Directory.Delete(temporary, true); }
+assertions += PickerCases.Run();
 Console.WriteLine($"{assertions} Codex Gateway profile export assertions passed; no installed config or provider access.");
 
 void Reject(Action action, string name)

@@ -4,7 +4,7 @@ using Lain.Host.Providers;
 
 namespace Lain.Host.Models;
 
-public record CodexExportRequest(long Revision, string ExecutablePath, string CatalogPath);
+public record CodexExportRequest(long Revision, string ExecutablePath, string CatalogPath, bool EnableLainModelPicker = false);
 
 public static class ModelEndpoints
 {
@@ -33,7 +33,7 @@ public static class ModelEndpoints
                 var resolved = models.ResolveForApply(id, request.Revision);
                 var description = compiler.Describe(resolved.Configuration with { Routes = resolved.Routes });
                 var compatibility = new ModelCompatibilityCatalog(registry, description.QualifiedProviderRouteIds, description.TransportBindings);
-                return Results.Ok(new CodexProfileAdapter(models, compatibility, registry).Generate(id, request.Revision, request.ExecutablePath, request.CatalogPath, compiler.InferenceBaseUrl));
+                return Results.Ok(new CodexProfileAdapter(models, compatibility, registry).Generate(id, request.Revision, request.ExecutablePath, request.CatalogPath, compiler.InferenceBaseUrl, request.EnableLainModelPicker));
             }));
     }
 

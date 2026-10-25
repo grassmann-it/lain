@@ -16,7 +16,7 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
     public const string VerifiedVersion = ModelCompatibilityCatalog.ClientVersion;
 
     public CodexProfileArtifacts Generate(string profileId, long revision, string absoluteLainExecutable, string absoluteCatalogPath,
-        string proxyBaseUrl = "http://127.0.0.1:18417/v1")
+        string proxyBaseUrl = "http://127.0.0.1:18417/v1", bool enableLainModelPicker = false)
     {
         if (!Path.IsPathFullyQualified(absoluteLainExecutable) || !Path.IsPathFullyQualified(absoluteCatalogPath))
             throw new ArgumentException("Codex auth executable and catalog paths must be absolute.");
@@ -55,9 +55,9 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
             """ + "\n";
         // Capabilities not established by RouteDto are deliberately not advertised.
         // Supported model metadata can be added by a qualified catalog source later.
-        var catalog = JsonSerializer.Serialize(new
+        var catalogDocument = new Dictionary<string, object>
         {
-            models = routes.Select((route, index) => new
+            ["models"] = routes.Select((route, index) => new
             {
                 slug = route.Alias, display_name = DisplayName(route, catalogRegistry),
                 description = Description(route, catalogRegistry),
@@ -68,10 +68,35 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
                 supports_search_tool = false, tool_mode = (string?)null,
                 experimental_supported_tools = Array.Empty<string>(), input_modalities = new[] { "text" }
             }).ToArray()
-        }, new JsonSerializerOptions { WriteIndented = true });
+        };
+        // Versioned lain client extension, not a native Codex catalog field. Callers opt in
+        // only for the separately qualified patched CLI and its generated --profile lain.
+        if (enableLainModelPicker)
+            catalogDocument["lain_model_picker"] = new { schema_version = 1, groups = PickerGroups(resolved.Configuration, selectable, catalogRegistry) };
+        var catalog = JsonSerializer.Serialize(catalogDocument, new JsonSerializerOptions { WriteIndented = true });
         var generation = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
             profileId + "\n" + revision.ToString(CultureInfo.InvariantCulture) + "\n" + config + "\n" + catalog))).ToLowerInvariant();
         return new("lain.config.toml", config, Path.GetFileName(absoluteCatalogPath), catalog, ["--no-daemon", "--profile", "lain"], revision, manifest, profileId, generation);
+    }
+
+    private static object[] PickerGroups(ConfigurationDto configuration, RouteDto[] routes, ProviderCatalogRegistry catalog)
+    {
+        var byId = routes.ToDictionary(route => route.Id, StringComparer.Ordinal);
+        var groups = new List<object>();
+        void Add(string id, string name, IEnumerable<string> routeIds)
+        {
+            var aliases = routeIds.Where(byId.ContainsKey).Select(routeId => byId[routeId].Alias).Distinct(StringComparer.Ordinal).ToArray();
+            if (aliases.Length > 0) groups.Add(new { id, name, router_model = (string?)null, models = aliases });
+        }
+        foreach (var collection in configuration.Collections ?? [])
+            Add("collection:" + collection.Id, collection.Name, collection.RouteIds);
+        var costs = new ProviderCostPolicy(catalog);
+        var freeRoutes = routes.Where(route => costs.Evaluate(configuration, route, new RoutingPolicyDto("free_only")).Allowed);
+        Add("policy:free", "Free", freeRoutes.Select(route => route.Id));
+        foreach (var provider in routes.GroupBy(route => route.Provider, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase))
+            Add("provider:" + provider.Key.ToLowerInvariant(), ServiceName(provider.First(), catalog), provider.Select(route => route.Id));
+        return groups.ToArray();
     }
 
     // This is the native internal approval-review model, never a collection auto-router.

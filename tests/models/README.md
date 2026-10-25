@@ -91,3 +91,24 @@ an implicit default uses the first ordinary selectable model. Same-named aliases
 or upstream models on other services do not inherit that internal role.
 These cases are synthetic fixtures; they do not establish provider acceptance or
 modify the normal Codex configuration.
+
+The two-stage model picker is a separate, versioned **lain-patched Codex** client
+extension. `CodexProfileAdapter.Generate(..., enableLainModelPicker: true)` and
+`CodexExportRequest.EnableLainModelPicker` explicitly opt in; both default to
+false while the normal native catalog remains `models` only. The extension is
+`lain_model_picker: {schema_version: 1, groups: [{id, name, router_model, models}]}`.
+It is generated only within the existing separate `lain.config.toml` export for
+Codex `--profile lain`; Host profile IDs can differ. Normal Codex configuration
+and launchers are untouched. An unmodified Codex client is not qualified for this
+extension.
+
+Picker export tests in `tests/codex-gateway-profile/PickerCases.cs` cover provider
+and overlapping custom collections, profile/visibility intersection, stable
+aliases and collection identities, empty groups and the internal review-model
+filter. A derived `policy:free` group includes only `free_only` policy-allowed
+routes; a user collection's name does not establish a cost guarantee. Every
+`router_model` remains null: the patched client displays a disabled automatic
+entry, and individual choices use their original inference aliases. This menu
+extension does not implement automatic routing. Grouping changes no profile,
+account, activation, default model, or normal native model entry. Fixture execution
+and patched-client qualification are separate release checks.
