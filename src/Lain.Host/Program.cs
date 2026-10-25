@@ -161,6 +161,9 @@ builder.Services.AddInspector(managementToken, coreAddress: new Uri($"http://127
 var providerHttp = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(20) };
 builder.Services.AddSingleton(sp => new XaiKeyMetadataService(repository, secrets,
  sp.GetRequiredService<AccountService>(), providerHttp, mutations));
+builder.Services.AddSingleton(sp => new XaiCredentialReconnectService(repository, secrets,
+ sp.GetRequiredService<AccountService>(), sp.GetRequiredService<ConnectionMethodCatalog>(),
+ monitorAccess, providerHttp, mutations));
 using var quotaCoreHttp = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false })
  { BaseAddress = new Uri($"http://127.0.0.1:{paths.GatewayPort}/"), Timeout = TimeSpan.FromSeconds(10) };
 quotaCoreHttp.DefaultRequestHeaders.Authorization = new("Bearer", managementToken);
@@ -252,8 +255,8 @@ app.MapPut(Api.Prefix + "/runtime-mode", async (RuntimeModeRequest request, Canc
 });
 app.MapGet(Api.Prefix + "/connection-methods", (string? provider, ConnectionMethodCatalog methods) => methods.Snapshot(provider));
 app.MapXaiKeyMetadata();
-app.MapPost(Api.Prefix + "/accounts/connect", (RevisionRequest<ConnectCredentialRequest> request, AccountService accounts, ConnectionMethodCatalog methods) =>
- methods.Connect(request.Revision, request.Value, accounts, monitorAccess, repository));
+app.MapPost(Api.Prefix + "/accounts/connect", (RevisionRequest<ConnectCredentialRequest> request, XaiCredentialReconnectService reconnect, CancellationToken ct) =>
+ reconnect.ConnectAsync(request.Revision, request.Value, ct)).WithMetadata(new OwnsPublicationGate());
 app.MapPost(Api.Prefix + "/accounts/{id}/models", (string id, RevisionRequest<AttachAccountModelsRequest> request, AccountService accounts) => {
  RequireGateway();
  return accounts.AttachModels(request.Revision, id, request.Value.ExpectedGeneration, request.Value.ConnectionId, request.Value.ModelRouteIds, request.Value.Settings);
