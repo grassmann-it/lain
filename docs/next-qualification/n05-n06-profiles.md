@@ -56,3 +56,22 @@ prepared controls remain available if rebuilding fails. The focused fixture adds
 this regression; native confirmation is owned by N09. This correction was checked
 statically (`git diff --check`); no additional build/runtime started during Root's
 backend lane.
+
+Three further independent review findings were corrected without a build during
+Root's backend lane. Collection membership and group-order drafts now have explicit
+models captured by the shell rebuild closure; surviving order is retained across
+Review latest, removed groups cannot be recreated, and newly added groups append
+with a visible inventory-change explanation. The router enabled toggle is named
+for snapshot restoration.
+
+Codexsetup now owns a generation. Cancel, rebuild and changing preparation invalidate
+older operations. After every awaited dispatcher/launch check, installation and
+clipboard initiation recheck cancellation and generation before effects. Cancel
+during an install prerequisite cannot subsequently write files; operations already
+completed synchronously before Cancel are not rolled back or described as atomic.
+
+A router referenced by a collection cannot change its group in this first UI. The
+locked target names those collections and explains Cancel, explicit removal (which
+clears RouterTargetId), then recreation. Unreferenced provider-to-account repair
+remains available. The production-control fixture adds all three regressions;
+runtime and independent rereview remain pending, with original failure evidence kept.

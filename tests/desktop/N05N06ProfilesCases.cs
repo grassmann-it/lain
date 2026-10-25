@@ -47,6 +47,18 @@ internal sealed partial class Scenario
             var parameter = Expression.Parameter(typeof(CancellationToken), "ct");
             probe.SetValue(window, Expression.Lambda(probe.FieldType, Expression.Constant(task, task.GetType()), parameter).Compile());
         }
+        Action HoldDispatcher(string receipt)
+        {
+            var probe = type.GetField("_codexDispatcherProbe", fields)!;
+            var proofType = type.GetNestedType("CodexDispatcherCheck", BindingFlags.NonPublic)!;
+            var proof = Activator.CreateInstance(proofType, true, "Synthetic qualified dispatcher", executable, receipt)!;
+            var pendingType = typeof(TaskCompletionSource<>).MakeGenericType(proofType);
+            var pending = Activator.CreateInstance(pendingType, TaskCreationOptions.RunContinuationsAsynchronously)!;
+            var task = pendingType.GetProperty("Task")!.GetValue(pending)!;
+            var parameter = Expression.Parameter(typeof(CancellationToken), "ct");
+            probe.SetValue(window, Expression.Lambda(probe.FieldType, Expression.Constant(task, task.GetType()), parameter).Compile());
+            return () => pendingType.GetMethod("SetResult")!.Invoke(pending, [proof]);
+        }
         void Setup()
         {
             Snapshot(); Invoke("ShowCodexExport", fixture.Config.Profiles[0]);
@@ -107,6 +119,15 @@ internal sealed partial class Scenario
             Check(Directory.GetFileSystemEntries(scratch).Order().SequenceEqual(filesBefore), "N05 changed dispatcher writes no files");
             await Click("Cancel");
 
+            Setup(); Named<CheckBox>("Include Codex model groups").IsChecked = true;
+            await Click("Prepare Codex files"); await Wait(() => HasText("No files installed yet"), "N05 cancel-during-probe preparation ready");
+            var releaseProbe = HoldDispatcher("proof-b");
+            await Click("Install client files"); await Click("Cancel");
+            releaseProbe(); await Task.Delay(250);
+            Check(Directory.GetFileSystemEntries(scratch).Order().SequenceEqual(filesBefore),
+                "N05 Cancel while Install checks the dispatcher prevents every subsequent file write");
+            InjectDispatcher("proof-b");
+
             Setup(); await Click("Prepare Codex files"); await Click("Install client files");
             await Wait(() => HasText("Codex files installed"), "N05 explicit private installation completed");
             Check(Directory.GetDirectories(scratch).Length == 1, "N05 explicit Install creates one private target");
@@ -121,6 +142,10 @@ internal sealed partial class Scenario
             await Click("Add model gpt-lain-01 to group"); await Click("Add model gpt-lain-02 to group");
             // Shared menu/button action reorders identities, never clones routes.
             await Press(Controls<StackPanel>().Single(panel => Equals(panel.Tag, "r2")), "Move up");
+            fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 }; Snapshot();
+            Invoke("ReviewDraft"); await Task.Delay(100);
+            Check(Named<TextBox>("Custom model group name").Text == "Research",
+                "N06 Review latest retains collection name alongside explicit membership draft");
             await Click("Save group");
             await Wait(() => fixture.Config.Collections!.Any(value => value.Name == "Research"), "N06 global group saved");
             var research = fixture.Config.Collections!.Single(value => value.Name == "Research");
@@ -129,8 +154,10 @@ internal sealed partial class Scenario
             Check(fixture.Config.Routes.Length == Fixture.InitialRoutes, "N06 membership changes do not duplicate routes");
             await Click("Change group order");
             await Press(Controls<StackPanel>().Single(panel => Equals(panel.Tag, research.Id)), "Move group up");
+            fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 }; Snapshot();
+            Invoke("ReviewDraft"); await Task.Delay(100);
             await Click("Save group order");
-            await Wait(() => fixture.Config.Collections![1].Id == research.Id, "N06 global collection permutation persisted");
+            await Wait(() => fixture.Config.Collections![1].Id == research.Id, "N06 unsaved global collection permutation survives Review latest and persists");
 
             await Click("Choose account target…");
             var targets = Named<ComboBox>("Automatic target group or account");
@@ -142,6 +169,37 @@ internal sealed partial class Scenario
             await Click("Save automatic target");
             await Wait(() => fixture.Config.CollectionRouters!.Single().GroupId == "account:a1", "N06 explicit account repair saved");
             Check(fixture.Config.CollectionRouters!.Single().Id == "provider-router", "N06 account repair preserves router identity");
+
+            Invoke("EditProfileRouter", "p1", "provider-router");
+            Named<CheckBox>("Automatic target enabled").IsChecked = false;
+            fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 }; Snapshot();
+            Invoke("ReviewDraft"); await Task.Delay(100);
+            Check(Named<CheckBox>("Automatic target enabled").IsChecked == false,
+                "N06 named enabled toggle survives router Review latest");
+            await Click("Cancel");
+
+            fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1,
+                Collections = fixture.Config.Collections!.Select(value => value.Id == "one" ? value with { RouterTargetId = "referenced-router" } : value).ToArray(),
+                CollectionRouters = fixture.Config.CollectionRouters!.Append(new("referenced-router", "auto-collection", "collection:one", "p1")).ToArray() };
+            Snapshot(); Invoke("EditProfileRouter", "p1", "referenced-router");
+            var lockedTarget = Named<ComboBox>("Automatic target group or account");
+            Check(!lockedTarget.IsEnabled && HasText("Target group locked", true), "N06 referenced target explains removal and recreation before retargeting");
+            var routerWrites = handler.RouterWrites;
+            lockedTarget.SelectedItem = lockedTarget.Items.Cast<object>().Single(value => value.ToString()!.Contains(" · a2", StringComparison.Ordinal));
+            await Click("Save automatic target");
+            Check(handler.RouterWrites == routerWrites && HasText("Remove this automatic target first", true),
+                "N06 referenced retarget is refused before any invalid Host write");
+            await Click("Cancel"); Invoke("RemoveProfileRouter", "p1", "referenced-router");
+            await Click("Remove automatic target");
+            await Wait(() => fixture.Config.Collections!.Single(value => value.Id == "one").RouterTargetId is null,
+                "N06 explicit automatic target removal clears its collection reference");
+            Invoke("EditProfileRouter", "p1", null);
+            Named<TextBox>("Automatic target client name").Text = "new-account-target";
+            var replacementTarget = Named<ComboBox>("Automatic target group or account");
+            replacementTarget.SelectedItem = replacementTarget.Items.Cast<object>().Single(value => value.ToString()!.Contains(" · a2", StringComparison.Ordinal));
+            await Click("Save automatic target");
+            await Wait(() => fixture.Config.CollectionRouters!.Any(value => value.Alias == "new-account-target" && value.GroupId == "account:a2"),
+                "N06 explicit recreation permits a new unreferenced account target");
 
             Invoke("EditProfileCollection", "p1", "one");
             Named<TextBox>("Custom model group name").Text = "Unsaved retained name";
@@ -207,6 +265,16 @@ internal sealed class N05N06ProfilesHandler(Fixture fixture) : DelegatingHandler
         }
         else
         {
+            if (request.Method == HttpMethod.Delete)
+            {
+                var revision = long.Parse(request.RequestUri.Query.Split('=')[1], System.Globalization.CultureInfo.InvariantCulture);
+                if (revision != fixture.Config.Revision) return Conflict();
+                var id = path.Split('/')[4];
+                fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1,
+                    CollectionRouters = (fixture.Config.CollectionRouters ?? []).Where(value => value.Id != id).ToArray(),
+                    Collections = (fixture.Config.Collections ?? []).Select(value => value.RouterTargetId == id ? value with { RouterTargetId = null } : value).ToArray() };
+                return Result(fixture.Config);
+            }
             var body = (await request.Content!.ReadFromJsonAsync<RevisionRequest<CollectionRouterDto>>(cancellationToken: ct))!;
             if (body.Revision != fixture.Config.Revision) return Conflict();
             RouterWrites++;

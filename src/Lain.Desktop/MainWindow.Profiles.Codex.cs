@@ -16,6 +16,7 @@ namespace Lain.Desktop;
 public sealed partial class MainWindow
 {
     private Action? _refreshCodexSetup;
+    private long _codexSetupGeneration;
     private sealed record CodexDispatcherCheck(bool Ready, string Message, string? Entry = null, string? Receipt = null);
     private Func<CancellationToken, Task<CodexDispatcherCheck>> _codexDispatcherProbe = CheckCodexDispatcherAsync;
     private sealed record CodexSetupDraft(string? Executable, string? Parent, int Target, bool Groups);
@@ -29,6 +30,7 @@ public sealed partial class MainWindow
         { _notice.Text = "This profile no longer exists. Return to Profiles and select an existing profile."; return; }
         profile = current;
         var profileId = profile.Id;
+        var sessionGeneration = ++_codexSetupGeneration;
         _editing = true;
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var launcher = Path.Combine(home, ".local", "bin", "lain");
@@ -65,7 +67,8 @@ public sealed partial class MainWindow
         Button? install = null;
         TextBlock? preparedStatus = null;
         bool Shared() => target.SelectedIndex == 1;
-        bool Current() => CodexPreparationCurrent(cfg.Revision, profile.Id);
+        bool Active() => !cancelled && sessionGeneration == _codexSetupGeneration;
+        bool Current() => Active() && CodexPreparationCurrent(cfg.Revision, profile.Id);
         void Refresh()
         {
             var error = ValidateCodexExecutable(executable.Text) ?? (Shared() ? null : ValidateCodexParent(folder.Text));
@@ -76,7 +79,11 @@ public sealed partial class MainWindow
             if (preparedStatus is not null && !Current()) preparedStatus.Text = "Preparation is out of date · no files installed. Prepare again before installation.";
         }
         _refreshCodexSetup = Refresh;
-        void Cancel() { cancelled = true; _editing = false; Render(); }
+        void Cancel()
+        {
+            if (!Active()) return;
+            cancelled = true; ++_codexSetupGeneration; _editing = false; Render();
+        }
         var browse = Ui.Button("Browse…", async () =>
         {
             try
@@ -85,7 +92,7 @@ public sealed partial class MainWindow
                 if (!cancelled && folders.FirstOrDefault()?.TryGetLocalPath() is { } path) folder.Text = path;
             }
             catch (Exception error) { validation.Text = Friendly(error); }
-            finally { folder.Focus(); }
+            finally { if (Active()) folder.Focus(); }
         });
         var destinationRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 8 };
         destinationRow.Children.Add(folder); Grid.SetColumn(browse, 1); destinationRow.Children.Add(browse);
@@ -106,7 +113,7 @@ public sealed partial class MainWindow
             if (working) return;
             working = true; Refresh();
             proof = await _codexDispatcherProbe(_lifetime.Token);
-            dispatcherText.Text = proof.Message;
+            if (Active()) dispatcherText.Text = proof.Message;
             working = false; Refresh();
         });
         Control? setup = null;
@@ -125,6 +132,7 @@ public sealed partial class MainWindow
         {
             Refresh();
             if (working || _busy || !prepare!.IsEnabled) return;
+            var operationGeneration = sessionGeneration;
             working = true; Refresh();
             try
             {
@@ -138,13 +146,14 @@ public sealed partial class MainWindow
                 if (groups || shared)
                 {
                     proof = await _codexDispatcherProbe(_lifetime.Token);
+                    if (!Active() || operationGeneration != sessionGeneration) return;
                     dispatcherText.Text = proof.Message;
                     if (!proof.Ready) throw new InvalidOperationException(proof.Message);
                 }
                 var preparedProof = proof;
                 var artifacts = await _client.ExportCodexProfileAsync(cfg.Revision, profile.Id, executablePath,
                     Path.Combine(destination, "lain.models.json"), _lifetime.Token, enableLainModelPicker: groups);
-                if (cancelled) return;
+                if (!Active() || operationGeneration != sessionGeneration) return;
                 if (artifacts.ProfileId != profile.Id || artifacts.Revision != cfg.Revision || string.IsNullOrWhiteSpace(artifacts.GenerationId))
                     throw new InvalidOperationException("The export does not identify this saved profile and revision. Nothing was installed; prepare again.");
                 // Count the actual compiled export, rather than infer group membership
@@ -160,6 +169,7 @@ public sealed partial class MainWindow
                 var change = Ui.Button("Change setup", () =>
                 {
                     if (working) return;
+                    sessionGeneration = ++_codexSetupGeneration;
                     install = null; preparedStatus = null;
                     root.Content = setup; Refresh();
                 });
@@ -175,7 +185,7 @@ public sealed partial class MainWindow
 
                 async Task InstallAsync()
                 {
-                    if (working || installedFiles) return;
+                    if (working || installedFiles || !Active() || operationGeneration != sessionGeneration) return;
                     working = true; Refresh();
                     try
                     {
@@ -183,30 +193,38 @@ public sealed partial class MainWindow
                         if (groups || shared)
                         {
                             var latest = await _codexDispatcherProbe(_lifetime.Token);
+                            if (!Active() || operationGeneration != sessionGeneration) return;
                             if (!latest.Ready || latest.Receipt != preparedProof?.Receipt)
                                 throw new InvalidOperationException("The Codex dispatcher prerequisite changed. Nothing was installed; check the client and prepare again. " + latest.Message);
                         }
                         // This guard covers changes already observed by the GUI. A
                         // Host write after this check is not a local-file transaction.
+                        if (!Active() || operationGeneration != sessionGeneration) return;
                         if (!Current()) throw new InvalidOperationException("Configuration changed. Prepare again before installing.");
                         if (!shared && !installationStarted && (Directory.Exists(destination) || File.Exists(destination)))
                             throw new InvalidOperationException("The private destination already exists. Prepare a fresh folder.");
                         installationStarted = true;
+                        if (!Active() || operationGeneration != sessionGeneration) return;
                         var result = CodexArtifactInstaller.Install(artifacts, destination);
                         installedFiles = true;
                         var inspection = CodexArtifactInstaller.Inspect(destination,
                             ProfileApplyOutcomeUnknown ? null : _status?.ActiveProfileId, ProfileApplyOutcomeUnknown ? null : _status?.ActiveProfileRevision);
                         if (inspection.State != "installed") throw new InvalidOperationException(inspection.RecoveryAction ?? "Client installation needs recovery.");
                         var launch = await CodexLaunchCommandAsync(destination, shared, groups, preparedProof, result, _lifetime.Token);
+                        if (!Active() || operationGeneration != sessionGeneration) return;
                         var command = Ui.Text(launch.Command ?? launch.Message, 12, launch.Command is null ? Ui.Warning : Ui.Muted);
                         var copy = Ui.Button("Copy command", async () =>
                         {
                             try
                             {
+                                if (!Active() || operationGeneration != sessionGeneration) return;
                                 var fresh = await CodexLaunchCommandAsync(destination, shared, groups, preparedProof, result, _lifetime.Token);
+                                if (!Active() || operationGeneration != sessionGeneration) return;
                                 if (fresh.Command is null) { command.Text = fresh.Message; return; }
                                 if (Clipboard is not { } clipboard) throw new InvalidOperationException("Clipboard is unavailable. Select the command below.");
-                                await clipboard.SetTextAsync(fresh.Command); _notice.Text = "Launch command copied.";
+                                if (!Active() || operationGeneration != sessionGeneration) return;
+                                await clipboard.SetTextAsync(fresh.Command);
+                                if (Active() && operationGeneration == sessionGeneration) _notice.Text = "Launch command copied.";
                             }
                             catch (Exception error) { command.Text = Friendly(error); }
                         });

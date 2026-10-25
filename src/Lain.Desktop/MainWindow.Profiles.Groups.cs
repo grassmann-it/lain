@@ -13,6 +13,8 @@ public sealed partial class MainWindow
 {
     private sealed record ProfileRouterGroup(string Id, string Label, string[] RouteIds, bool NeedsAccount = false)
     { public override string ToString() => Label; }
+    private sealed record ProfileCollectionDraft(string? Name, string[] Members);
+    private sealed record ProfileCollectionOrderDraft(string[] GroupIds);
 
     private void ShowProfileGroups(string profileId)
     {
@@ -94,18 +96,24 @@ public sealed partial class MainWindow
         return row;
     }
 
-    private void EditProfileCollection(string profileId, string? collectionId)
+    private void EditProfileCollection(string profileId, string? collectionId) => EditProfileCollectionDraft(profileId, collectionId, null);
+
+    private void EditProfileCollectionDraft(string profileId, string? collectionId, ProfileCollectionDraft? retained)
     {
         if (!CanOpenSectionEditor() || _configuration is not { } cfg) return;
         var profile = cfg.Profiles.FirstOrDefault(value => value.Id == profileId);
         if (profile is null) { _notice.Text = "This profile was removed. Review Profiles."; return; }
         var original = (cfg.Collections ?? []).FirstOrDefault(value => value.Id == collectionId);
         if (collectionId is not null && original is null) { _notice.Text = "This group was removed. Reload groups; no replacement was selected."; return; }
-        RegisterEditor(() => EditProfileCollection(profileId, collectionId), cfg.Revision, (original?.Name ?? "New group") + " · global group");
         _editing = true;
         var id = original?.Id ?? "group-" + Guid.NewGuid().ToString("N");
-        var name = Ui.Input(original?.Name, "Group name"); AutomationProperties.SetName(name, "Custom model group name");
-        var members = original?.RouteIds.ToList() ?? [];
+        var name = Ui.Input(retained?.Name ?? original?.Name, "Group name"); AutomationProperties.SetName(name, "Custom model group name");
+        var members = retained?.Members.ToList() ?? original?.RouteIds.ToList() ?? [];
+        RegisterEditor(() =>
+        {
+            RequireProfileGroupRebuild(profileId, collectionId);
+            EditProfileCollectionDraft(profileId, collectionId, new(name.Text, members.ToArray()));
+        }, cfg.Revision, (original?.Name ?? "New group") + " · global group");
         var selectedRows = new StackPanel { Spacing = 6 };
         var availableRows = new StackPanel { Spacing = 6 };
         var search = Ui.Input(hint: "Search existing models…"); AutomationProperties.SetName(search, "Search models for group membership");
@@ -180,12 +188,22 @@ public sealed partial class MainWindow
         (ids[index], ids[next]) = (ids[next], ids[index]);
     }
 
-    private void EditProfileCollectionOrder(string profileId)
+    private void EditProfileCollectionOrder(string profileId) => EditProfileCollectionOrderDraft(profileId, null);
+
+    private void EditProfileCollectionOrderDraft(string profileId, ProfileCollectionOrderDraft? retained)
     {
         if (!CanOpenSectionEditor() || _configuration is not { } cfg) return;
         RequireCurrentProfileDraft(cfg.Revision, profileId);
-        RegisterEditor(() => EditProfileCollectionOrder(profileId), cfg.Revision, "Global group order"); _editing = true;
-        var ids = (cfg.Collections ?? []).Select(value => value.Id).ToList();
+        _editing = true;
+        var currentIds = (cfg.Collections ?? []).Select(value => value.Id).ToArray();
+        // Preserve the edited relative order of surviving identities. Newly added
+        // groups append in saved order; removed groups cannot be resurrected.
+        var ids = (retained?.GroupIds ?? currentIds).Where(currentIds.Contains).Concat(currentIds.Where(id => retained is not null && !retained.GroupIds.Contains(id))).ToList();
+        RegisterEditor(() =>
+        {
+            RequireProfileGroupRebuild(profileId);
+            EditProfileCollectionOrderDraft(profileId, new(ids.ToArray()));
+        }, cfg.Revision, "Global group order");
         var rows = new StackPanel { Spacing = 8 };
         void Draw()
         {
@@ -209,9 +227,20 @@ public sealed partial class MainWindow
             RequireCurrentProfileDraft(cfg.Revision, profileId);
             _configuration = await _client.ReorderCollectionsAsync(cfg.Revision, ids.ToArray(), _lifetime.Token);
         }, "Global group order saved. Apply and client installation remain separate.", afterSuccess: () => ShowProfileGroups(profileId));
-        _page.Content = Ui.Stack(ProfileHeader("Global group order", "Affects every profile; automatic provider views remain first."), rows,
+        var scope = retained is not null && !retained.GroupIds.Order().SequenceEqual(currentIds.Order())
+            ? "The group inventory changed. Surviving groups retain your edited order; removed groups are omitted and new groups append below. Review before saving."
+            : "Affects every profile; automatic provider views remain first.";
+        _page.Content = Ui.Stack(ProfileHeader("Global group order", scope), rows,
             ProfileWrap(save, Ui.Button("Cancel", () => ShowProfileGroups(profileId))));
         Draw();
+    }
+
+    private void RequireProfileGroupRebuild(string profileId, string? collectionId = null)
+    {
+        if (_configuration is not { } cfg || cfg.Profiles.All(profile => profile.Id != profileId))
+            throw new InvalidOperationException("This profile was removed. Your group draft is kept; cancel and review Profiles.");
+        if (collectionId is not null && !(cfg.Collections ?? []).Any(collection => collection.Id == collectionId))
+            throw new InvalidOperationException("This group was removed. Your draft is kept; it cannot target a replacement or recreate the removed group.");
     }
 
     private void RemoveProfileCollection(string profileId, string collectionId)
@@ -279,8 +308,11 @@ public sealed partial class MainWindow
         var group = new ComboBox { ItemsSource = choices, SelectedItem = choices.FirstOrDefault(value => value.Id == original?.GroupId),
             HorizontalAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetName(group, "Automatic target group or account");
+        var references = (cfg.Collections ?? []).Where(collection => collection.RouterTargetId == routerId && routerId is not null).ToArray();
+        group.IsEnabled = references.Length == 0;
         var alias = Ui.Input(original?.Alias, "Client name for automatic target"); AutomationProperties.SetName(alias, "Automatic target client name");
         var enabled = new CheckBox { Content = "Enabled after a separate global Apply", IsChecked = original?.Enabled ?? true };
+        AutomationProperties.SetName(enabled, "Automatic target enabled");
         var explanation = Ui.Text("Choose a group or one explicit account. No account is selected automatically.", 12, Ui.Muted);
         AutomationProperties.SetName(explanation, "Automatic target scope explanation");
         var members = new StackPanel { Spacing = 4 };
@@ -305,6 +337,8 @@ public sealed partial class MainWindow
                 throw new InvalidOperationException("This automatic target was removed. Your draft is kept; it cannot recreate the removed target.");
             if (group.SelectedItem is not ProfileRouterGroup choice || choice.NeedsAccount)
                 throw new InvalidOperationException("Choose an explicit group or account target. Multiple accounts will not be joined automatically.");
+            if (original is not null && choice.Id != original.GroupId && references.Length > 0)
+                throw new InvalidOperationException("This automatic target is referenced by a collection. Remove this automatic target first (clears its collection references), then create the new target. The existing draft is kept; nothing was changed.");
             if (choice.RouteIds.Length == 0) throw new InvalidOperationException("The target has no models selected in this profile. Review profile membership first.");
             if (string.IsNullOrWhiteSpace(alias.Text)) throw new InvalidOperationException("Enter a client name for this automatic target.");
             _configuration = await _client.SaveCollectionRouterAsync(cfg.Revision,
@@ -315,6 +349,8 @@ public sealed partial class MainWindow
             Ui.Field("Client model name", alias), Ui.Field("Group or account target", group), enabled, explanation, members,
             Ui.Text("Policy: " + (original?.CostPolicy ?? "configured") + ". This editor preserves cost rules. Free-only automation requires qualified routes and a fresh same-key zero-USD cap; it is not activated by naming a group Free.", 12, Ui.Muted),
             ProfileWrap(save, Ui.Button("Cancel", () => ShowProfileGroups(profileId))));
+        if (references.Length > 0) body.Children.Insert(1, Ui.Text("Target group locked: referenced by " + string.Join(", ", references.Select(collection => collection.Name))
+            + ". To change its group, cancel this editor, remove the automatic target to clear these references, then create a new target. Collections and models are retained.", 12, Ui.Warning));
         _page.Content = body; Update();
     }
 
