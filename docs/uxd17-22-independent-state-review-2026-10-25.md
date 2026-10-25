@@ -403,3 +403,60 @@ getrennten Läufen. Kein neuer visueller Befund in den beiden Nachlaufbildern.
 Die gesonderte Vergrößerungsprüfung bleibt bis zu ihrer eigenen Sichtung offen;
 die oben genannten Grenzen für ungetestete Profileditor-, Inhalts-, Provider-
 und Accessibilityfälle gelten fort.
+
+## Unabhängige Sichtung der tatsächlichen Paket-DLLs
+
+Die folgenden Nachweise liegen getrennt unter
+`/home/tomka/.cache/lain-qualification-20261024/packaged-quota-state-ui/`:
+
+| Manifest | Tatsächlicher Umfang |
+| --- | --- |
+| `scale-1/evidence.json` | 18/18 PASS, 377 Assertiondatensätze, 46 Bilddatensätze; Draft, gehaltene Modelcommands, Apply/late-preview/runtime_busy, verspätetes Connect/Status und Monitor-/Live-Layouts in beiden Größen. |
+| `scale-1.25/evidence.json` | 4/4 PASS, 70 Assertiondatensätze, 12 Bilddatensätze; ausschließlich Monitor-/Live-Layouts in beiden Größen. Tatsächliche RenderScaling aller Aufnahmen: 1,25. |
+
+Beide nennen Paketquellstand `d7200d7d700bd2d23abf8bf028d40526eb235bf7`
+und Desktop-SHA-256
+`89D8D86BA1519F5154841DE6F72C345643FD5A2D2E9F97F9668BE812C48937D6`.
+Der gelesene `SaveEvidence`-Code dieses Stands ermittelt Pfad und SHA direkt
+aus `typeof(MainWindow).Assembly.Location`. Der Paketprüfer kopiert Desktop,
+Client und Core aus dem Paket in seinen privaten Harness und zeichnet deren
+Hashes in `packaged-identities.json` auf. Das temporäre Harnessverzeichnis
+wurde nach dem Lauf erwartungsgemäß entfernt und deshalb nicht erneut gehasht.
+
+Stattdessen wurden die vorhandenen Dateien der beiden Pakete
+`artifacts/lain-linux-x64-gateway-quota-state-20261025` und
+`artifacts/lain-linux-x64-monitor-quota-state-20261025` selbst gelesen und
+gehasht: Desktop, Client und Core stimmen jeweils mit den aufgezeichneten
+Produktidentitäten überein. Beide `build-info.json` nennen denselben Quellstand.
+Der SHA des Gateway-`SHA256SUMS` stimmt zusätzlich exakt mit dem aufgezeichneten
+Paketmanifest-SHA `ced56fffeecc3e29dcdeb02ae503ec71e0b31ee5234adce0e93afff2db42435c`
+überein. Das belegt die Zuordnung der geprüften Desktopassembly zum Paket;
+Installation und reale Provider sind kein Bestandteil dieses Reviews.
+
+Sechs weitere X11-PNGs wurden selbst geöffnet:
+
+| Dateien, jeweils für `800x560` und `1120x780` | Visueller Befund |
+| --- | --- |
+| `scale-1/native-state-apply-{Größe}-confirmed-x11.png` | Profilliste und Review bleiben nebeneinander. Summary, Listenmarker und Shell bestätigen Daily revision 3 mit saved 3 / proxy 3. Kein falscher Pendingstatus; vor erneutem Apply ist eine frische Vorschau erforderlich. |
+| `scale-1.25/native-layout-monitor-table-{Größe}-selected-x11.png` | Beide Accountflächen bleiben sichtbar; lange Balken unter Verbrauchs-/Restwerten, schmal gestapelte Angaben. Breit sind weitere Fenster mit Last known, fälligem unbestätigtem Reset und Guthaben ohne erfundenen Prozentbalken lesbar. Aktionen und Footer bleiben sichtbar. |
+| `scale-1.25/native-layout-live-left-{Größe}-selected-x11.png` | Linke Requestliste bleibt neben der Ausgabe sichtbar. Pause, Follow, Refresh, Clear, Informationswahl und Retentionhinweis sind erreichbar dargestellt; die Ausgabe nutzt ihren eigenen Scrollbereich. |
+
+Die Größen bezeichnen logische Clientmaße; die 1,25-Aufnahmen zeigen entsprechend
+vergrößerte native Fenster. Kein neuer visueller Defekt in diesen sechs Bildern.
+Damit ist die Vergrößerung für diese Monitor-/Live-Fixtures unabhängig gesichtet.
+
+Die Requestdetails wurden ebenfalls vollständig auf Zuordnung geprüft:
+184 Records aus 18 Sessions bei Scale 1, 36 Records aus vier Sessions bei
+Scale 1,25. Keine fehlende Session-/Fallkennung, keine doppelten
+Session-/Sequence-Schlüssel und keine falsche Fallzuordnung der Requests oder
+Bilder. Startupreads sind über ihre Session eindeutig zuordenbar. Scale 1
+enthält genau sechs Apply-POSTs, einen je Apply-, Rejected- und Late-status-Fall,
+sowie zwei ausdrücklich gewählte PUTs auf Route r2 revision 2 in den beiden
+Retained-model-command-Fällen. Diese Fälle prüfen den Erhalt von Draft A nach
+der fremden Aktion B. Sonst keine Mutation; der Scale-1,25-Lauf enthält nur Reads.
+
+Insgesamt wurden nun 32 konkrete PNGs aus sechs getrennten Läufen unabhängig
+geöffnet. Die Paketläufe ersetzen keine historische 45-Fälle-Matrix; aus ihrer
+begrenzten Auswahl folgt keine pauschale Accessibility-, Provider- oder
+Releasefreigabe. Quellen und Laufzeit wurden durch diesen Reviewer nicht geändert
+und keine Builds oder Tests ausgeführt.
