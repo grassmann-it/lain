@@ -123,3 +123,45 @@ uses BringIntoView only to position a target; actions and text use XTEST. Native
 scrolling, the complete Q02 viewport/mode matrix, provider gates and any images
 not individually reviewed remain outside these claims. Run the assembly with
 `--uxd-filter=native-n09-` through the N09 runner after Root allocates a slot.
+
+## Q02 native quota matrix
+
+`tests/uxd-acceptance/N09QuotaMatrix.cs` now supplies the focused filter
+`native-n09-quota-`: 15 cells per scale, using Gateway 1120×780/800×560 and Monitor
+1120×780/800×560/640×420, each at Barebones/Simple/Advanced. Run once at 100% and
+once at 125% for 30 cells. Each cell asserts actual `ClientSize`, `RenderScaling`,
+Host mode, information level and physical non-overlapping card bounds. The input
+snapshot (seven synthetic accounts with a long custom name, measured and stale
+budgets, real zero credits, missing reporting and reporting failure) is frozen
+across the cells and written to `n09-quota-input.json`.
+
+Native actions cover filter typing/clearing, Tab/Shift+Tab focus, pointer/Space
+budget expansion, selecting details, mode changes with selected identity intact,
+and Escape with focus restoration. The existing harness's BringIntoView remains
+an explicit positioning aid, not native-scroll evidence. All cells must leave
+configuration and quota snapshots unchanged and send zero mutation requests.
+No artificial navigation difference between information levels is asserted.
+
+Each cell captures inventory with long name, selected long-name details and
+selected missing-reporting details, with both rendered and native-X11 PNGs.
+Images retain `visualReview=REQUIRED`; bounds and native input do not certify
+readability or accessibility. These cases have **not yet been compiled or run**.
+Root owns the build/runtime slots and integrates fixes for concrete findings.
+
+Commands after the approved UXD assembly is built (each output must be new):
+
+```sh
+python3 tests/next-qualification/run_native.py \
+  --assembly /absolute/approved/Lain.Uxd.Acceptance.dll \
+  --source-commit FULL_SOURCE_COMMIT \
+  --output "$HOME/.cache/lain-qualification-20261025/next/n09-quota-100" \
+  --scale 1 --uxd-filter=native-n09-quota- --timeout 480 --run
+python3 tests/next-qualification/run_native.py \
+  --assembly /absolute/approved/Lain.Uxd.Acceptance.dll \
+  --source-commit FULL_SOURCE_COMMIT \
+  --output "$HOME/.cache/lain-qualification-20261025/next/n09-quota-125" \
+  --scale 1.25 --uxd-filter=native-n09-quota- --timeout 480 --run
+```
+
+Narrower filters remain available, for example
+`native-n09-quota-monitor-Simple-640x420`, to rerun only a concrete failing cell.

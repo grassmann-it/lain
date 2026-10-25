@@ -520,7 +520,8 @@ internal sealed partial class Acceptance(IClassicDesktopStyleApplicationLifetime
         var preferences = ((WorkspacePreferencesStore)typeof(MainWindow).GetField("_preferencesStore", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!).Current;
         images.Add(new { file, currentCase, fixtureSession = fixture.SessionId, page = actualPage, runtimeMode = fixture.Config.RuntimeMode, informationLevel = preferences.Level.ToString(),
             density = preferences.Densities.GetValueOrDefault(actualPage, ViewDensity.Normal).ToString(), width = target.ClientSize.Width, height = target.ClientSize.Height,
-            fixture = "five-accounts-45-routes-three-profiles", visualReview = "REQUIRED", nativeScreen, nativeInput = nativeInputTrace.Any(value => value.StartsWith(currentCase + ": ", StringComparison.Ordinal)),
+            fixture = currentCase.StartsWith("native-n09-quota-", StringComparison.Ordinal)
+                ? "quota-hierarchy-seven-accounts-long-custom-name" : "five-accounts-45-routes-three-profiles", visualReview = "REQUIRED", nativeScreen, nativeInput = nativeInputTrace.Any(value => value.StartsWith(currentCase + ": ", StringComparison.Ordinal)),
             renderScaling = target.RenderScaling, scaleMethod = "AVALONIA_GLOBAL_SCALE_FACTOR",
             requestedScale = Environment.GetEnvironmentVariable("AVALONIA_GLOBAL_SCALE_FACTOR") });
     }

@@ -12,6 +12,7 @@ internal sealed partial class Acceptance
 
     private async Task RunStateFlows()
     {
+        await RunN09QuotaMatrix();
         await FirstAccountSnapshots();
         foreach (var (width, height) in new[] { (1120, 780), (800, 560) })
         {

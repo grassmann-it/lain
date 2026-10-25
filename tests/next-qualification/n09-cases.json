@@ -21,8 +21,8 @@
       "requiredEvidence": ["functional assertions", "request ledger", "actual scale and viewport", "PNG review"]
     },
     {
-      "id": "N09-Q02", "owner": "n09", "state": "native-extension-pending",
-      "operator": "tests/desktop/Program.cs focused N09 viewport/mode case",
+      "id": "N09-Q02", "owner": "n09", "state": "matrix-source-ready-runtime-pending",
+      "operator": "tests/uxd-acceptance LAIN_UXD_ONLY=native-n09-quota-; separate runner --scale 1 and --scale 1.25",
       "reuse": ["tests/desktop/Uxd18MonitorCases.cs", "tests/desktop/QuotaHierarchyCases.cs", "tests/uxd-acceptance/NativeInput.cs"],
       "fixture": "Same measured/unknown quota snapshot across Gateway and Monitor; long account names, multi-window account and no-snapshot error.",
       "assertions": ["Allowed matrix client dimensions and actual RenderScaling are recorded", "Monitor 640x420 keeps details and Back reachable", "Known short windows first; monthly and extra balances in details", "Unknown remains unknown and is never rendered as a zero-percent budget", "Tab/Shift+Tab/Enter/Space/Escape act on actual mounted controls", "Mode changes preserve selected identity and retained drafts without inventing different navigation"],
