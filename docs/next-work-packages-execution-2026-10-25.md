@@ -18,13 +18,13 @@ und interaktive Anmeldung bleiben echte, separat ausgewiesene Schritte.
 | --- | --- | --- |
 | N01 | Account-/Quota-Darstellung und gemeinsamer kurzer Anzeigename | Integriert; CLI-/Desktopqualifikation läuft |
 | N02 | Synthetic- und OpenRouter-Readerkorrekturen | Integriert; 44 Reader- und 37 Gatewayprüfungen bestanden; gemeinsamer Service-/Clientanschluss separat |
-| N03 | MiMo-Browser und zugehörige Fixtures | Integriert; unabhängiger enger Quellenreview ohne Zusatzbefund; Fixture-/Browsergate offen |
-| N04 | Cloudflare-Readerdiagnostik und zugehörige Fixtures | Integriert; optionaler IOException-Fehlerpfad nach Review korrigiert; Runtime-/Realread offen |
-| N05/N06 | Profiles-UI, Codexsetup und danach Gruppenverwaltung | Integriert; bestätigte Draft-/Cancel-/Referenz-/Receiptbefunde werden vor Abnahme korrigiert |
+| N03 | MiMo-Browser und zugehörige Fixtures | Integriert; 19 Startfixtures und Consolefälle bestanden; Browser-/Loginmethoden getrennt offen |
+| N04 | Cloudflare-Readerdiagnostik und zugehörige Fixtures | Integriert; 143 Checks bestanden, optionaler IOException-Pfad korrigiert; echter Read offen |
+| N05/N06 | Profiles-UI, Codexsetup und danach Gruppenverwaltung | Integriert; bestätigte Draft-/Cancel-/Referenz-/Receiptbefunde nachgeprüft behoben; native Abnahme läuft |
 | N06-Vertrag | Reorder-/Gruppen-API und Clientanschluss | Integriert; Models-Suite bestanden, sicherer Applycatch angeschlossen |
-| N07 | Portable Komponentenlieferung und begrenzte Diagnostik | Erste Quelle integriert; unabhängiger Review blockiert echte Ausführung bis Transaktions-/Poststartfixes abgeschlossen sind |
-| N08 | Codexdispatcher, Wartung und Rücknahme | Integriert; 38 Pythonfixtures bestanden; Ausführbarkeitsprüfung und reale Migration noch offen |
-| N09 | Unabhängige Integration, native Abnahme und genaue Evidenzgrenzen | Drei fokussierte Nativefälle und privater Runner integriert; native Runtime noch offen |
+| N07 | Portable Komponentenlieferung und begrenzte Diagnostik | Quellenfixes integriert und unabhängig nachgeprüft; 54 Fixtures bestanden; exakte Paketqualifikation offen |
+| N08 | Codexdispatcher, Wartung und Rücknahme | Integriert; 39 Pythonfixtures bestanden, Ausführbarkeit geprüft; reale Migration offen |
+| N09 | Unabhängige Integration, native Abnahme und genaue Evidenzgrenzen | Drei fokussierte Nativefälle, 30 Größen-/Modus-/Skalierungskombinationen und privater Runner integriert; native Runtime noch offen |
 
 Root koordiniert gemeinsame Verträge, Build-/Projektdateien, Integration und
 Auslieferung. Worker arbeiten in eigenen Gitworktrees unter Benutzer-Cache,
@@ -93,3 +93,28 @@ gezielten Fixtures. Beim neuen Updateoperator wurden Postflight-Baseline,
 Poststartdrain und geerbtes `LAIN_HOME` korrigiert; im neuen vollständigen
 Paketpfad verlangt der Review zusätzlich dauerhafte vorbereitete Payloads und
 atomaren Directorywechsel. Vor geschlossenem Review keine echte Installation.
+
+Die integrierten Nativeharnesses bauen inzwischen erfolgreich (bekannte
+Fixturewarnungen bleiben dokumentiert). N01: je 15 Assertions bei 100/125 %
+bestanden. N05: neun Descriptor-/FIFO-/Receiptchecks und die dateifreie gruppierte
+Vorbereitung bestanden. Weitere Fixtureläufe stoppten an fehlender
+Layout-/Validierungsbereitschaft nach direkten Editoraufrufen; die ursprünglichen
+Fehler bleiben unter `next/native-{5f95574,0c7393f,e1a2182}` erhalten. Synchronisation
+wurde gezielt ergänzt; vollständiger Profiles-/Matrixpass steht weiterhin aus.
+Der erfolgreiche Xvfb-Start ist kein visueller Pass; das bisherige schwarze
+Render-Fehlerbild belegt kein geprüftes Layout.
+
+N08 wurde real auf Wartungsschema 3 migriert, mit unverändertem qualifiziertem
+Original/Patch 0.164.0 und bestandener Dateierhaltung. Ein alter eigener leerer
+Lock mit Modus 0644 wurde nach Eigentümer-/Identitätsprüfung unter exklusivem
+Lock auf 0600 eingeengt; der ursprüngliche vor Mutation verweigerte Versuch bleibt
+erhalten. Normale Version und Unterbefehlhilfe sind bytegleich zum Original.
+Der erste echte Menüversuch ist nicht nachgewiesen, ohne Inferenzprompt;
+normale Konfiguration/Auth unverändert, getrennte lain-Profilmetadaten änderten
+sich beim Start. Keine Rücknahme dieser aktuellen Profildaten.
+
+N07: tatsächliches installiertes Appverzeichnis stimmt vollständig mit der
+expliziten Vorgängerbaseline überein (1205 Dateien, Manifest `3ea1444b…`). Die
+portablen exakten Paket-/PE-/Drainharnesses sind integriert und im engen
+Quellenreview freigegeben. Frische Gateway-/Monitorpakete, deren Laufzeit und
+eine eigene Dienstaktualisierung sind noch nicht als bestanden ausgewiesen.
