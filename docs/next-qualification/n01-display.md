@@ -47,3 +47,12 @@ Vorbereitet, **noch nicht ausgeführt** (serielle Build-Lane beim Integrator):
 
 Kein Build/Restore/dotnet, GUI, Providerread, Dienstzugriff, Credential-/Bestands-
 änderung oder Push aus diesem Worktree. Kein Runtime-/Visual-Pass behauptet.
+
+## Integrationskorrektur
+
+Der integrierte N05-Smoke fand CS0120 im bisherigen statischen `BudgetIdentity`:
+Die gemeinsame Anzeige benötigt seit N01 das aktuelle vollständige Accountinventar.
+`BudgetIdentity` ist deshalb ebenfalls eine Instanzmethode. Alle direkten sowie
+Methodengruppen-Verwendungen von `AccountDisplayName` und `BudgetIdentity` wurden
+statisch geprüft; alle liegen jetzt in Instanzmethoden. Kein zusätzlicher Build
+aus diesem Worktree (Slot verbleibt bei N05). `git diff --check` ohne Befund.

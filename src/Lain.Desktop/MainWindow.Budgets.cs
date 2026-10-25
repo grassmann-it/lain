@@ -213,7 +213,7 @@ public sealed partial class MainWindow
             BudgetWindowCells(Ui.Text("Budget window", 11, Ui.Muted), Ui.Text("Consumption", 11, Ui.Muted), Ui.Text("Resets · local time", 11, Ui.Muted)))
     };
 
-    private static Control BudgetIdentity(AccountDto account)
+    private Control BudgetIdentity(AccountDto account)
     {
         var name = AccountCell(AccountDisplayName(account), 13);
         name.FontWeight = FontWeight.Medium;
