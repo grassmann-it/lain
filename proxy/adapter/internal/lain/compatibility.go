@@ -191,7 +191,7 @@ func (p compatibilityPolicy) validateTool(tool []byte, depth int) error {
 }
 
 func (p compatibilityPolicy) validateKind(kind string) error {
-	if p.mimoBridge && (kind == "web_search" || kind == "web_search_preview" || strings.HasPrefix(kind, "web_search_preview_")) {
+	if p.mimoBridge && nativeSearchToolKind(kind) {
 		return &compatibilityError{"native_search_unsupported", "unsupported_tool", "the qualified MiMo Responses-to-Chat translator cannot carry native web search; use an explicit function tool or another qualified route"}
 	}
 	if p.glyph && kind == "namespace" {
@@ -201,6 +201,10 @@ func (p compatibilityPolicy) validateKind(kind string) error {
 		return &compatibilityError{"custom_tools_unsupported", "unsupported_tool", "this bound Glyph model does not accept custom tools"}
 	}
 	return nil
+}
+
+func nativeSearchToolKind(kind string) bool {
+	return kind == "web_search" || kind == "web_search_preview" || strings.HasPrefix(kind, "web_search_preview_")
 }
 
 func (p compatibilityPolicy) validateFinal(req *http.Request) error {

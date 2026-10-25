@@ -68,6 +68,33 @@ func TestFreshZeroCapAndFinalPayload(t *testing.T) {
 	}
 }
 
+func TestExactFreeModelAllowlistPreservesExistingPinsAndGuardsLiquid(t *testing.T) {
+	for _, model := range []string{"meta-llama/llama-3.3-70b-instruct:free", "qwen/qwen3-coder:free", "liquid/lfm-2.5-2.6b:free"} {
+		if !IsOpenRouterFreeModel(model) {
+			t.Fatal("qualified exact model pin lost", model)
+		}
+		checks := 0
+		client := &http.Client{Transport: fakeTransport(func(*http.Request) (*http.Response, error) {
+			checks++
+			return &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(proof))}, nil
+		})}
+		req := outgoing(t, `{"model":"`+model+`","messages":[{"role":"user","content":"fixture"}]}`)
+		if err := PrepareOpenRouterRequest(context.Background(), client, req, model); err != nil || checks != 1 {
+			t.Fatal("allowlisted model bypassed fresh key proof", model, err, checks)
+		}
+		payload, _ := io.ReadAll(req.Body)
+		body, err := object(payload)
+		if err != nil || body["model"] != model || body["provider"].(map[string]any)["allow_fallbacks"] != false {
+			t.Fatal("exact pin/strict fallback guard missing", model, err)
+		}
+	}
+	for _, model := range []string{"openrouter/free", "liquid/lfm-2.5-2.6b", "liquid/lfm-2.6b:free", "unqualified/new-model:free"} {
+		if IsOpenRouterFreeModel(model) {
+			t.Fatal("free suffix or similar name authorized an unqualified model", model)
+		}
+	}
+}
+
 func TestUnsafeInputsNeverReachProofEndpoint(t *testing.T) {
 	client := &http.Client{Transport: fakeTransport(func(*http.Request) (*http.Response, error) { t.Fatal("unsafe input reached network"); return nil, nil })}
 	for _, payload := range []string{

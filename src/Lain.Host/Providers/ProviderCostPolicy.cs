@@ -104,7 +104,7 @@ public sealed class ProviderCostPolicy(ProviderCatalogRegistry catalog)
         route.Provider == "openrouter" && descriptor is not null && descriptor.Model == route.UpstreamModel &&
         descriptor.PricingClass == "free" && descriptor.FreeOnlyEligible && descriptor.FreeOnlyEnforcementKind == "free_model_pin" &&
         descriptor.Protocol == "openai-chat" && descriptor.BaseUrl.TrimEnd('/') == "https://openrouter.ai/api/v1" &&
-        route.UpstreamModel is "meta-llama/llama-3.3-70b-instruct:free" or "qwen/qwen3-coder:free";
+        route.UpstreamModel is "meta-llama/llama-3.3-70b-instruct:free" or "qwen/qwen3-coder:free" or "liquid/lfm-2.5-2.6b:free";
 
     private static RoutingPolicyDto EffectivePolicy(RoutingPolicyDto? route, RoutingPolicyDto? profile)
     {

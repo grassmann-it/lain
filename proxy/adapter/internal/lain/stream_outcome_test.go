@@ -112,10 +112,10 @@ func TestResponseContentMentioningErrorsDoesNotFail(t *testing.T) {
 	}
 }
 
-func TestCohereStoreFalseRejectionHasDurableAttempt(t *testing.T) {
+func TestCohereStoreTrueRejectionHasDurableAttempt(t *testing.T) {
 	i, ctx, _ := dispatchFixture(t)
 	raw := &fixtureExecutor{}
-	original := []byte(`{"model":"model","stream":true,"store":false,"max_output_tokens":512,"input":"fixture","reasoning":{"effort":"none"}}`)
+	original := []byte(`{"model":"model","stream":true,"store":true,"max_output_tokens":512,"input":"fixture","reasoning":{"effort":"none"}}`)
 	_, err := i.ExecutorDecorator(nil)(raw).Execute(ctx, cohereAuth(), executor.Request{Model: "model", Payload: original}, executor.Options{OriginalRequest: original, SourceFormat: translator.FormatOpenAIResponse})
 	if err == nil || raw.executions != 0 {
 		t.Fatal("explicit unsupported store intent must be rejected without upstream request")

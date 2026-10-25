@@ -46,10 +46,16 @@ provider even when Kilo reports zero cost.
 
 Use a short text request with `max_tokens: 64` for qualification. Cohere documents
 Chat streaming and tools for the selected model. Its compatibility contract is
-a subset: unsupported fields include `parallel_tool_calls`, `store`, `metadata`,
+a subset: unsupported upstream fields include `parallel_tool_calls`, `store`, `metadata`,
 `n`, audio and native Cohere `documents`/`connectors`. Use `max_tokens`, not an
 assumed `max_completion_tokens` equivalent. Compatibility reasoning accepts only
-`none`/`high`; this catalog entry advertises no reasoning mode. Kilo's gateway
+`none`/`high`; this catalog entry advertises no reasoning mode. The local
+Responses-to-Chat bridge accepts a validated literal `store:false` as stateless
+Chat without sending a store field. `store:true`, stored-response IDs and stored
+conversations are rejected; complete function-call input history remains supported
+by the translator. Native Chat requests retain the stricter documented field
+subset. See [the bounded follow-up](stream-outcome-and-cohere-2026-10-25.md#bounded-stateless-responses-follow-up)
+for declaration-loss guards and synthetic qualification scope. Kilo's gateway
 supports Chat SSE and tools generally; the Gemma entry keeps those capabilities
 unknown until the concrete route has been qualified. A synthetic successful tool
 roundtrip proves local preservation, not the vendor model's capability.

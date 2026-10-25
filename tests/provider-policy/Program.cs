@@ -75,11 +75,27 @@ Throws<ArgumentException>(() => RouteBindings.Compile(guardedConfig, new Diction
 var guardedBindings = RouteBindings.Compile(guardedConfig, new Dictionary<string, string> { [account.Id] = "core" }, catalog: guardedCatalog,
     qualifiedProviderRouteIds: new HashSet<string> { guardedRoute.Id });
 Check(guardedBindings.Routes[guardedRoute.Alias].FreeOnlyEnforcement == "openrouter_zero_cap_v1", "free runtime binding requires named key-proof and final-request guard");
+foreach (var model in new[] { "meta-llama/llama-3.3-70b-instruct:free", "qwen/qwen3-coder:free", "liquid/lfm-2.5-2.6b:free" })
+{
+    var modelDescriptor = guardedDescriptor with { Routes = [guardedDescriptor.Routes[0] with { Model = model }] };
+    var modelPolicy = new ProviderCostPolicy(new([modelDescriptor]));
+    var modelRoute = guardedRoute with { UpstreamModel = model };
+    Check(modelPolicy.Evaluate(guardedConfig with { Routes = [modelRoute] }, modelRoute).Allowed && modelPolicy.RuntimeEnforcement(modelRoute) == "openrouter_zero_cap_v1",
+        "exact allowlisted model retains mandatory zero-cap guard: " + model);
+    var kiloDescriptor = modelDescriptor with { Id = "kilo" };
+    var kiloPolicy = new ProviderCostPolicy(new([kiloDescriptor]));
+    var kiloRoute = modelRoute with { Provider = "kilo" };
+    var kiloConfig = guardedConfig with { Accounts = [account with { Provider = "kilo" }], Routes = [kiloRoute] };
+    Check(!kiloPolicy.Evaluate(kiloConfig, kiloRoute).Allowed && kiloPolicy.RuntimeEnforcement(kiloRoute) is null,
+        "same model on Kilo cannot inherit OpenRouter enforcement: " + model);
+}
 foreach (var invalid in new[]
 {
     guardedDescriptor.Routes[0] with { BaseUrl = "https://other.example.test/v1" },
     guardedDescriptor.Routes[0] with { Model = "openrouter/free" },
     guardedDescriptor.Routes[0] with { Model = "unqualified/new-model:free" },
+    guardedDescriptor.Routes[0] with { Model = "liquid/lfm-2.5-2.6b" },
+    guardedDescriptor.Routes[0] with { Model = "liquid/lfm-2.6b:free" },
     guardedDescriptor.Routes[0] with { Protocol = "openai-responses" }
 })
 {

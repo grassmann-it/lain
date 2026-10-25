@@ -39,6 +39,10 @@ func cohereFieldError(field string) error {
 		return &providerInputError{"Cohere compatibility supports max_tokens; max_completion_tokens is not qualified"}
 	case "reasoning_effort":
 		return &providerInputError{"Cohere compatibility reasoning_effort must be none or high"}
+	case "store":
+		return &providerInputError{"Cohere supports only Responses store:false through the stateless Chat bridge"}
+	case "previous_response_id", "conversation":
+		return &providerInputError{"Cohere Chat requires complete input history; response IDs and stored conversations are not supported"}
 	default:
 		return &providerInputError{"request contains a field outside the supported Cohere compatibility subset"}
 	}
@@ -70,11 +74,18 @@ func validateCohereInput(a *auth.Auth, req executor.Request, opts executor.Optio
 			return &providerInputError{"invalid or duplicate Cohere request fields"}
 		}
 	}
-	fields, err := toolControlFields(body, "stream_options", "max_completion_tokens", "reasoning_effort", "parallel_tool_calls", "store", "metadata", "n", "audio", "documents", "connectors", "tool_choice")
+	responses := opts.SourceFormat == translator.FormatOpenAIResponse
+	fields, err := toolControlFields(body, "stream_options", "max_completion_tokens", "reasoning_effort", "parallel_tool_calls", "store", "previous_response_id", "conversation", "metadata", "n", "audio", "documents", "connectors", "tool_choice")
 	if err != nil {
 		return &providerInputError{"invalid or duplicate Cohere request controls"}
 	}
 	for field, value := range fields {
+		// The Responses storage control concerns retrieval of a generated response,
+		// not provider logging/retention. This bridge has no stored response resource:
+		// false maps to an ordinary stateless Chat request, never to a sent store field.
+		if field == "store" && responses && bytes.Equal(bytes.TrimSpace(value), []byte("false")) {
+			continue
+		}
 		if field != "reasoning_effort" {
 			return cohereFieldError(field)
 		}
@@ -83,8 +94,99 @@ func validateCohereInput(a *auth.Auth, req executor.Request, opts executor.Optio
 			return cohereFieldError(field)
 		}
 	}
+	if err := validateCohereTools(body, responses); err != nil {
+		return err
+	}
 	_, err = cohereRequestedEffort(req, opts)
 	return err
+}
+
+// Only declaration locations are inspected; function schemas and tool results
+// are data. Match the pinned Responses-to-Chat translator, including additional_tools.
+func validateCohereTools(body []byte, responses bool) error {
+	fields, err := toolControlFields(body, "tools", "input")
+	if err != nil {
+		return &providerInputError{"invalid or duplicate Cohere tool controls"}
+	}
+	if err := validateCohereToolArray(fields["tools"], responses, 0); err != nil {
+		return err
+	}
+	if !responses || len(fields["input"]) == 0 {
+		return nil
+	}
+	var input []json.RawMessage
+	if json.Unmarshal(fields["input"], &input) != nil {
+		return nil // A string input is handled by the translator.
+	}
+	for _, item := range input {
+		controls, err := toolControlFields(item, "type", "tools")
+		if err != nil {
+			return &providerInputError{"invalid or duplicate Cohere input controls"}
+		}
+		var kind string
+		if raw := controls["type"]; len(raw) > 0 && json.Unmarshal(raw, &kind) != nil {
+			return &providerInputError{"invalid Cohere input type"}
+		}
+		if kind == "item_reference" {
+			return cohereFieldError("previous_response_id")
+		}
+		if kind == "additional_tools" {
+			if err := validateCohereToolArray(controls["tools"], true, 0); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func validateCohereToolArray(raw []byte, responses bool, depth int) error {
+	if len(raw) == 0 || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+		return nil
+	}
+	if depth > 64 {
+		return &providerInputError{"tool nesting exceeds the qualified request limit"}
+	}
+	var tools []json.RawMessage
+	if json.Unmarshal(raw, &tools) != nil {
+		return &providerInputError{"invalid Cohere tools array"}
+	}
+	for _, tool := range tools {
+		fields, err := toolControlFields(tool, "type", "tools", "environment", "format")
+		if err != nil {
+			return &providerInputError{"invalid or duplicate Cohere tool declaration"}
+		}
+		var kind string
+		if json.Unmarshal(fields["type"], &kind) != nil {
+			return &providerInputError{"invalid Cohere tool type"}
+		}
+		if nativeSearchToolKind(kind) {
+			return &compatibilityError{"native_search_unsupported", "unsupported_tool", "the qualified Cohere Responses-to-Chat bridge cannot carry native web search; use an explicit function tool or another qualified route"}
+		}
+		switch {
+		case kind == "function":
+		case responses && kind == "custom":
+			if raw := fields["format"]; len(raw) > 0 {
+				format, err := toolControlFields(raw, "type")
+				var mode string
+				if err != nil || json.Unmarshal(format["type"], &mode) != nil || mode != "text" {
+					return &compatibilityError{"chat_bridge_tool_unsupported", "unsupported_tool", "the qualified Cohere Chat bridge cannot carry a constrained custom tool format"}
+				}
+			}
+		case responses && kind == "namespace" && depth == 0:
+			if err := validateCohereToolArray(fields["tools"], true, depth+1); err != nil {
+				return err
+			}
+		case responses && kind == "shell":
+			environment, err := toolControlFields(fields["environment"], "type")
+			var mode string
+			if err != nil || json.Unmarshal(environment["type"], &mode) != nil || mode != "local" || depth != 0 {
+				return &compatibilityError{"chat_bridge_tool_unsupported", "unsupported_tool", "the qualified Cohere Chat bridge cannot carry this native tool"}
+			}
+		default:
+			return &compatibilityError{"chat_bridge_tool_unsupported", "unsupported_tool", "the qualified Cohere Chat bridge cannot carry this native tool"}
+		}
+	}
+	return nil
 }
 
 // Preserve only validated explicit caller intent. The generic Responses-to-Chat
@@ -169,6 +271,9 @@ func (t *guardedTransport) normalizeCohereRequest(req *http.Request) error {
 				return cohereFieldError(field)
 			}
 		}
+	}
+	if err := validateCohereTools(data, false); err != nil {
+		return err
 	}
 	data, err = json.Marshal(fields)
 	if err != nil {

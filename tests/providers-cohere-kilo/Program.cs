@@ -20,12 +20,12 @@ try
     {
         var provider = catalog.Find(id)!;
         Check(provider is not null, "Provider is embedded and discoverable");
-        var route = provider!.Routes.Single();
+        var route = provider!.Routes.Single(r => r.Id == (id == "cohere" ? "cohere/command-a-plus-05-2026" : "kilo/google/gemma-4-26b-a4b-it:free"));
         Check(provider.LiveVerification == "not_tested" && provider.QuotaSupport == "unsupported", "No inferred live/quota success");
         Check(provider.Credentials is [{ Id: "apiKey", Required: true, Secret: true }], "One private personal inference credential");
         Check(!route.FreeOnlyEligible && route.FreeOnlyEnforcementKind == "unsupported", "Free marketing does not enable strict policy");
         Check(route.Protocol == "openai-chat", "Exact documented wire protocol");
-        Check(provider.Sources.All(s => s.CheckedAt?.Date == new DateTime(2026, 10, 24)), "Dated official sources");
+        Check(provider.Sources.All(s => s.CheckedAt.HasValue && new[] { new DateTime(2026, 10, 24), new DateTime(2026, 10, 25) }.Contains(s.CheckedAt.Value.Date)), "Dated official sources from original qualification and Liquid catalog addition");
         var plan = ProviderTransportValidation.Prepare(catalog, id, route.Id, route.BaseUrl)!;
         Check(plan.SourceSection == "openai-compatibility" && plan.CoreProvider == id + "-openai-chat" && plan.Headers.Count == 0, "Provider/protocol identity and personal Bearer transport");
         Reject(() => ProviderTransportValidation.Prepare(catalog, id, null, route.BaseUrl));
@@ -47,7 +47,7 @@ try
     }
     var snapshot = repository.Snapshot;
     var routes = snapshot.Accounts.Select(a => {
-        var r = catalog.Find(a.Provider)!.Routes.Single();
+        var r = catalog.Find(a.Provider)!.Routes.Single(r => r.Id == (a.Provider == "cohere" ? "cohere/command-a-plus-05-2026" : "kilo/google/gemma-4-26b-a4b-it:free"));
         return new RouteDto(a.Provider + "-route", a.Provider + "-alias", r.Model, a.Provider, [a.Id], ProviderRouteId: r.Id);
     }).ToArray();
     var writer = new ProxyConfigurationWriter(paths, secrets, cost);
@@ -58,8 +58,11 @@ try
     Check(yaml.Contains("https://api.cohere.ai/compatibility/v1") && yaml.Contains("https://ai-gateway.kilo.ai/api/v1"), "Official paths survive compilation");
     Check(yaml.Contains("command-a-plus-05-2026") && yaml.Contains("google/gemma-4-26b-a4b-it:free") && !yaml.Contains("kilo-auto/"), "Pinned models survive compilation without auto fallback");
     var kilo = catalog.Find("kilo")!;
-    Check(kilo.Routes.Single().Capabilities.Tools is null && kilo.Routes.Single().Capabilities.Streaming is null, "Generic gateway support is not model-specific proof");
-    Check(kilo.Routes.Single().PricingClass == "free" && kilo.BillingPlans.Single().Scope == "ip", "Free pricing and IP limits retain separate meaning");
+    var gemma = kilo.Routes.Single(r => r.Id == "kilo/google/gemma-4-26b-a4b-it:free");
+    Check(gemma.Capabilities.Tools is null && gemma.Capabilities.Streaming is null, "Generic gateway support is not model-specific proof");
+    Check(gemma.PricingClass == "free" && kilo.BillingPlans.Single().Scope == "ip", "Free pricing and IP limits retain separate meaning");
+    var liquid = kilo.Routes.Single(r => r.Id == "kilo/liquid/lfm-2.5-2.6b:free");
+    Check(liquid.Model == "liquid/lfm-2.5-2.6b:free" && !liquid.FreeOnlyEligible && liquid.FreeOnlyEnforcementKind == "unsupported", "Kilo Liquid does not borrow strict OpenRouter eligibility");
     var cohere = catalog.Find("cohere")!;
     Check(cohere.BillingPlans.Single().Kind == "trial" && cohere.Routes.Single().PricingClass == "trial", "Evaluation is not permanent free/production access");
 }

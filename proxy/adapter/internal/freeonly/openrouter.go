@@ -34,7 +34,7 @@ func OpenRouterPin(ctx context.Context) (string, bool) {
 
 // IsOpenRouterFreeModel deliberately excludes random routers and suffix guesses.
 func IsOpenRouterFreeModel(model string) bool {
-	return model == "meta-llama/llama-3.3-70b-instruct:free" || model == "qwen/qwen3-coder:free"
+	return model == "meta-llama/llama-3.3-70b-instruct:free" || model == "qwen/qwen3-coder:free" || model == "liquid/lfm-2.5-2.6b:free"
 }
 
 func reject(reason string) error { return errors.Join(ErrRejected, errors.New(reason)) }

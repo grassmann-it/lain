@@ -45,8 +45,8 @@ delta was performed by Root; this worker made no additional provider request.
 
 ## Cohere original intent and attribution
 
-The qualified Cohere compatibility subset deliberately rejects an explicit
-`store` field, including `false`; it is not silently stripped. Root's first
+The initial qualified Cohere compatibility subset rejected an explicit
+`store` field, including `false`. Root's first
 Responses probe included `store:false`. The original local validation ran before
 `Before`, explaining the missing durable attempt. It now follows durable start
 and immediately records failed completion/400, still without executing upstream.
@@ -65,8 +65,7 @@ The fix validates nested Responses effort as none/high, rejects unsupported,
 null, duplicate or conflicting effort, and carries only that explicit validated
 intent to the final transport. If generic translation changed or removed it,
 the final request restores exactly none/high. No original effort means no
-invented effort. The parameter subset is unchanged; store and unsupported levels
-remain rejected. Final-wire metadata also preserves the actual sent effort so
+invented effort. Unsupported reasoning levels remain rejected. Final-wire metadata also preserves the actual sent effort so
 an early SDK reporter's low value cannot replace it.
 
 ## Synthetic regression
@@ -74,7 +73,7 @@ an early SDK reporter's low value cannot replace it.
 `proxy/adapter/internal/lain/stream_outcome_test.go` covers payload errors,
 post-error output suppression, missing/empty/reasoning-only Responses EOF,
 ordinary text mentioning errors, valid completion, early immutable usage with
-failed completion, and durable Cohere store rejection. Cohere tests add nested
+failed completion, and durable Cohere stored-state rejection. Cohere tests add nested
 none/high final-wire preservation, unsupported/conflicting effort rejection and
 correct final-wire reasoning telemetry.
 
@@ -94,3 +93,67 @@ Cleanup check: the two worker-owned temporary adapter trees contained no retaine
 test. Prepared source/manifests and qualification evidence are retained. No
 shared upstream snapshot, toolchain/module/build cache or installed application
 was deleted or changed. No further build, provider call or deployment occurred.
+
+Subsequent authorized cleanup removed the two redundant worker-owned prepared
+source copies (`source` and `source-final`) after ownership/link checks, freeing
+80,252,928 allocated bytes. Small manifests and cleanup evidence remain in the
+original temporary task root. Shared sources/toolchains/caches are unchanged.
+
+
+## Bounded stateless Responses follow-up
+
+The local bridge now accepts only the literal boolean `store:false` on Responses
+input. The pinned v8.0.41
+`internal/translator/openai/openai/responses/openai_openai-responses_request.go`
+constructs a Chat request from complete `input` history (`messages`, function
+calls and results), instructions, tools and supported generation controls. It
+has no stored Responses resource, response-ID lookup or store field on that wire.
+The documented Cohere compatibility subset also excludes the upstream `store`
+parameter. Therefore explicit false maps to the existing stateless Chat call;
+it is validated locally and never sent as an unsupported provider field.
+This concerns later retrieval of a response, not a guarantee about Cohere's own
+logging or retention. Local lain usage/inspection policy is unchanged.
+
+`store:true`, null/string/numeric storage intent, duplicates,
+`previous_response_id`, stored `conversation` and input `item_reference` are
+explicit errors before translation/provider dispatch. Native Chat requests keep
+their existing field subset, including rejection of `store:false`. Both the
+preserved original request and a differing handler payload are checked; final
+Chat overrides containing store remain errors. Full client-owned function-call
+history is passed to the existing SDK translator without rewriting calls/results.
+
+The pinned tool converter skips declarations it cannot translate. Cohere now
+rejects such declarations before that loss, including native web/file search,
+computer tools and unknown future native types, both in top-level `tools` and
+`additional_tools` input items. It follows the supported conversion of ordinary
+functions, one namespace level, unconstrained custom tools and local shell;
+constrained custom formats and nested namespaces are rejected. Final Chat wire
+tools must be function declarations. The existing MiMo native-search predicate is
+reused; no route inherits another provider's model capability. Function names or
+schema strings mentioning web search remain ordinary data.
+
+`cohere_stateless_test.go` exercises the real pinned SDK request/response
+translator through the adapter decorator and an in-process fake final transport:
+false accepted without forwarding, instructions/token budget/text format/effort
+preserved, function call and full-history result roundtrip, durable true/ID/state
+rejections, native declaration loss prevention, final overrides and unchanged
+Chat field subset. These fixtures do not prove real Cohere model behavior.
+The follow-up is source-prepared; execution awaits the shared test slot.
+
+## Remaining compatibility scope
+
+These requirements belong to ST-01; ST-04 is duration/data/recovery in the work
+package register. The gateway completion contract is bounded text, streams,
+tools where supported, abort and honest usage/error attribution. It does not
+promise every Responses feature on every Chat provider. Known Glyph type and
+Beam 128-final-tool limits are deliberate, enforced boundaries; native web search
+in the separate Codex profile stays explicitly disabled. No tool truncation or
+paid fallback is introduced.
+
+This follow-up qualifies neither native search emulation nor ID-based HTTP
+continuation for Chat routes. Other providers using the same translator still
+need their own explicit protection against unsupported declaration loss. Native
+Responses routes retain their separate ID-continuation path; websocket transcript
+reconstruction must be qualified separately. Context windows remain source facts,
+not a tokenizer-based request admission check. Real provider tool acceptance and
+the user's complete MCP/plugin toolset remain separate from synthetic tests.

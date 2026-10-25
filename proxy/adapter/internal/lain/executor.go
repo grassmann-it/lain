@@ -86,7 +86,19 @@ func (e *boundExecutor) begin(ctx context.Context, a *auth.Auth, req executor.Re
 	if err = e.integration.Before(ctx, a, req, opts); err != nil {
 		return ctx, err
 	}
-	if err = validateCohereInput(a, req, opts); err != nil {
+	cohereOpts := opts
+	if cohereCompatibility(a) {
+		cohereOpts.OriginalRequest = originalCompatibilityRequest(ctx, req, opts)
+	}
+	err = validateCohereInput(a, req, cohereOpts)
+	if err == nil && cohereCompatibility(a) && len(req.Payload) > 0 && !bytes.Equal(req.Payload, cohereOpts.OriginalRequest) {
+		// Handler-normalized payloads must not introduce stored state or native
+		// tools after validation of the preserved original caller request.
+		dispatchOpts := opts
+		dispatchOpts.OriginalRequest = req.Payload
+		err = validateCohereInput(a, req, dispatchOpts)
+	}
+	if err != nil {
 		if end := e.integration.After(ctx, err); end != nil {
 			return ctx, end
 		}
@@ -111,7 +123,7 @@ func (e *boundExecutor) begin(ctx context.Context, a *auth.Auth, req executor.Re
 	}
 	cohereEffort := ""
 	if cohereCompatibility(a) {
-		cohereEffort, _ = cohereRequestedEffort(req, opts) // validated before any provider execution
+		cohereEffort, _ = cohereRequestedEffort(req, cohereOpts) // validated before any provider execution
 	}
 	ctx = httptransport.WithDecorator(ctx, func(next http.RoundTripper) http.RoundTripper {
 		return &guardedTransport{next: next, auth: a, integration: e.integration, cohereValidated: true, cohereReasoningEffort: cohereEffort, compatibility: policy}
@@ -349,6 +361,9 @@ func (t *guardedTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		return nil, err
 	}
 	if err := t.normalizeCohereRequest(req); err != nil {
+		if t.integration != nil {
+			t.integration.recordCompatibilityFailure(req.Context(), err)
+		}
 		return nil, err
 	}
 	if err := t.compatibility.validateFinal(req); err != nil {
