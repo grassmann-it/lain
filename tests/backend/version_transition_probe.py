@@ -107,7 +107,7 @@ def main():
                 totals = summary["totals"]
                 expect(totals["requests"] == 4 and totals["attempts"] == 4 and totals["errors"] == 0,
                        "mixed-version consumer duplicate/request count mismatch")
-                expect(totals["tokens"] == {"input": 44, "output": 28, "cached": None, "reasoning": None, "total": 72},
+                expect(totals["tokens"] == {"input": 44, "output": 28, "cached": None, "reasoning": None, "total": 72, "cacheCreation": None},
                        "mixed-version consumer changed known or unknown token quantities")
                 expect(summary["accounts"] == 2 and summary["models"] == 1, "mixed-version consumer account/model attribution mismatch")
                 expect(hashlib.sha256(consumer.read_bytes()).hexdigest() == consumer_hash, "consumer DLL changed during replay")

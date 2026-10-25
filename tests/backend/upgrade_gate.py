@@ -23,7 +23,7 @@ def validate_consumer(result, batch):
     totals = result["totals"]
     if any(totals.get(key) != value for key, value in expected.items()):
         raise AssertionError("consumer request/attempt/error aggregates changed after replay")
-    if totals.get("tokens") != {"input": 2200, "output": 1400, "cached": None, "reasoning": None, "total": 3600}:
+    if totals.get("tokens") != {"input": 2200, "output": 1400, "cached": None, "reasoning": None, "total": 3600, "cacheCreation": None}:
         raise AssertionError("consumer token aggregates changed or unknown quantities became zero")
     if result.get("accounts") != 2 or result.get("models") != 1:
         raise AssertionError("consumer account/model attribution changed")
