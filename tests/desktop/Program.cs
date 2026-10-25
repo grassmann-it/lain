@@ -46,8 +46,10 @@ internal static class Program
         SmokeApp.ProviderSetupOnly = args.Contains("--provider-setup-smoke", StringComparer.Ordinal);
         SmokeApp.InspectorOnly = args.Contains("--inspector-smoke", StringComparer.Ordinal);
         SmokeApp.UsageAnalysisOnly = args.Contains("--usage-analysis-smoke", StringComparer.Ordinal);
+        SmokeApp.N01DisplayOnly = args.Contains("--n01-display-smoke", StringComparer.Ordinal);
+        SmokeApp.N05N06ProfilesOnly = args.Contains("--n05n06-profiles-smoke", StringComparer.Ordinal);
         return AppBuilder.Configure<SmokeApp>().UsePlatformDetect().WithInterFont()
-            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--quota-hierarchy-smoke" or "--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--xai-metadata-smoke" or "--model-identity-smoke" or "--monitor-table-smoke" or "--inspector-smoke" or "--usage-analysis-smoke")).ToArray());
+            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--quota-hierarchy-smoke" or "--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--xai-metadata-smoke" or "--model-identity-smoke" or "--monitor-table-smoke" or "--inspector-smoke" or "--usage-analysis-smoke" or "--n01-display-smoke" or "--n05n06-profiles-smoke")).ToArray());
     }
 }
 
@@ -62,6 +64,8 @@ internal sealed class SmokeApp : Application
     public static bool ProviderSetupOnly { get; set; }
     public static bool InspectorOnly { get; set; }
     public static bool UsageAnalysisOnly { get; set; }
+    public static bool N01DisplayOnly { get; set; }
+    public static bool N05N06ProfilesOnly { get; set; }
     public override void Initialize()
     {
         // Reuse production initialization (Semi/Ursa resources included), not a test theme.
@@ -86,7 +90,9 @@ internal sealed class SmokeApp : Application
             var scenario = new Scenario(lifetime);
             try
             {
-                if (QuotaHierarchyOnly) await scenario.RunQuotaHierarchySmoke();
+                if (N01DisplayOnly) await scenario.RunN01DisplaySmoke();
+                else if (N05N06ProfilesOnly) await scenario.RunN05N06ProfilesCases();
+                else if (QuotaHierarchyOnly) await scenario.RunQuotaHierarchySmoke();
                 else if (UsageAnalysisOnly) await scenario.RunUsageAnalysisSmoke();
                 else if (InspectorOnly) await scenario.RunInspectorSmoke();
                 else if (MonitorTableOnly) await scenario.RunMonitorTableSmoke();
