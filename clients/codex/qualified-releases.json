@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "supportedGrammars": ["codex-0.164.0"],
+  "originals": {
+    "b93f6811d3f653f0fb83be4050d857fb9abbb111dfa2ce160563327daff7f306": {
+      "version": "0.164.0",
+      "grammarVersion": "codex-0.164.0",
+      "platform": "x86_64-unknown-linux-musl"
+    }
+  },
+  "patched": {
+    "5b3a058525925731f12eec3366fd6dff74f716fb2967791e4531e88e7a06d484": {
+      "version": "0.164.0",
+      "variant": "lain-model-picker",
+      "grammarVersion": "codex-0.164.0",
+      "upstreamCommit": "6aaac694803004a63c6f393d153c96d22521a6b9"
+    }
+  },
+  "evidence": "docs/codex-model-groups-delivery-2026-10-25.md",
+  "policy": "Explicitly qualified bytes only. Unknown releases or CLI grammars require separate source, parser and native qualification before this registry changes."
+}

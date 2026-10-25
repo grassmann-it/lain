@@ -1,12 +1,16 @@
 #!/usr/bin/python3
 """Linux Codex 0.164 interactive-only profile dispatcher; installed from a template."""
 import os
+import hashlib
 from pathlib import Path
 import sys
 
 # Installer replaces these JSON string literals in its private copy.
 ORIGINAL = "@LAIN_ORIGINAL@"
 PATCHED = "@LAIN_PATCHED@"
+ORIGINAL_SHA256 = "@LAIN_ORIGINAL_SHA256@"
+PATCHED_SHA256 = "@LAIN_PATCHED_SHA256@"
+GRAMMAR_VERSION = "codex-0.164.0"
 
 SUBCOMMANDS = frozenset("agents tcp-tunnel exec e review login logout mcp plugin app-server remote-control app completion update doctor sandbox debug execpolicy apply a resume queue archive delete migrate-rollouts migrate-nfs-db unarchive fork cloud cloud-tasks responses-api-proxy stdio-to-uds exec-server features help".split())
 VALUES = frozenset("config model local-provider profile sandbox cd add-dir ask-for-approval remote remote-auth-token-env enable disable image".split())
@@ -106,15 +110,23 @@ def restore_initial_environment():
 
 def main():
     target = PATCHED if uses_lain(sys.argv[1:]) else ORIGINAL
-    if target == PATCHED and (not Path(target).is_file() or not os.access(target, os.X_OK)):
-        print("lain Codex: explicitly installed patched binary is missing or not executable; reinstall the opt-in client.", file=sys.stderr)
-        return 126
     try:
+        check_target(target, PATCHED_SHA256 if target == PATCHED else ORIGINAL_SHA256)
         restore_initial_environment()
         os.execv(target, sys.argv)
     except OSError as error:
         print(f"lain Codex: cannot exec {target}: {error}", file=sys.stderr)
         return 126
+
+
+def check_target(target, expected):
+    kind = "patched binary" if target == PATCHED else "chosen original fallback"
+    if not Path(target).is_file() or not os.access(target, os.X_OK):
+        raise OSError(f"{kind} is missing or not executable; run maintenance status and explicitly rebind/reinstall")
+    with Path(target).open("rb") as stream:
+        actual = hashlib.file_digest(stream, "sha256").hexdigest()
+    if actual != expected:
+        raise OSError(f"{kind} bytes changed; run maintenance status and choose a qualified release explicitly")
 
 
 if __name__ == "__main__":
