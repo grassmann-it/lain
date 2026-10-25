@@ -47,6 +47,17 @@ internal static class UsageStyleChecks
             Check((width >= 110) == text.Split('\n').Any(line => line.TrimStart().StartsWith("Account  ")),
                 $"{width}-column layout uses account cells only when the table has room");
         }
+        foreach (var width in new[] { 20, 60, 120, 160 })
+        {
+            var wallet = basis with { MeasurementKind = "balance", Used = null, Limit = null, Remaining = 8,
+                UsedPercent = null, Unit = "USD", WindowLabel = "Credit balance" };
+            var noReset = await Render(Overview(wallet), width);
+            Check(noReset.Contains("8 USD left") && !noReset.Contains("Reset") && !noReset.Contains("unknown"),
+                $"{width}-column wallet-only overview omits empty reset columns and details");
+        }
+        var mixedReset = await Render(Overview(basis with { ResetsAt = now.AddHours(2) }, basis with { WindowLabel = "7 days" }), width: 160);
+        Check(mixedReset.Contains("Reset") && mixedReset.Contains('—') && !mixedReset.Contains("Reset unknown"),
+            "mixed reset data keeps its reset column with a neutral missing-value dash");
         var colored = await Render(Overview(basis with { State = "stale", FreshUntil = now.AddMinutes(-1) }), color: true);
         var spans = Regex.Matches(colored, @"\x1b\[([0-9;]*)m([^\x1b]*)").Cast<Match>().ToArray();
         Check(colored.StartsWith("\u001b[0m", StringComparison.Ordinal) && !colored.Contains("\u001b[36") && !colored.Contains("\u001b[32")

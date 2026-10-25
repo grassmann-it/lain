@@ -60,7 +60,7 @@ public static partial class CliApplication
                 rows.Add(new(first ? CompactUsageAccountName(account, overview.Accounts) : "",
                     QuotaWindowName(quota), CompactUsageReading(quota, percent),
                     percent is { } used ? QuotaDisplayFacts.Percent(used) + "% used" : "",
-                    quota.ResetsAt is { } reset ? CompactReset(reset, now, timeZone)[6..] : "unknown",
+                    quota.ResetsAt is { } reset ? CompactReset(reset, now, timeZone)[6..] : "",
                     string.Join(" · ", states), quota.State == "error" || exhausted && !stale ? "31" : stale ? "33" : null));
                 first = false;
             }
@@ -120,6 +120,8 @@ public static partial class CliApplication
 
     private static async Task WriteCompactUsageTable(TextWriter output, List<CompactUsageRow> rows, HumanOutputContext context)
     {
+        var hasResets = rows.Any(row => row.Reset.Length > 0);
+        string Reset(CompactUsageRow row) => row.Reset.Length > 0 ? row.Reset : "—";
         if (context.Width < 48)
         {
             // A native unit such as USD-Credits needs more room than two tiny cells allow.
@@ -133,7 +135,7 @@ public static partial class CliApplication
                 await WriteCompactUsageFields(output, [new(row.Reading)], context);
                 var details = new List<CompactUsageField>();
                 if (row.Used.Length > 0) details.Add(new(row.Used));
-                details.Add(new("Reset " + row.Reset));
+                if (hasResets) details.Add(new("Reset " + Reset(row)));
                 if (row.State.Length > 0) details.Add(new(row.State, row.StateColor));
                 await WriteCompactUsageFields(output, details, context);
             }
@@ -142,7 +144,7 @@ public static partial class CliApplication
         // Long names wrap locally instead of forcing the entire table into a field list.
         var showAccount = context.Width >= 110;
         var showUsed = context.Width >= 72;
-        var showReset = context.Width >= 72;
+        var showReset = hasResets && context.Width >= 72;
         var showState = context.Width >= 140;
         var headings = new List<string>();
         var maxima = new List<int>();
@@ -154,7 +156,7 @@ public static partial class CliApplication
         Column("Window", 8, 26, row => row.Window);
         Column("Available / reading", 19, 30, row => row.Reading);
         if (showUsed) Column("Used", 9, 12, row => row.Used);
-        if (showReset) Column("Reset", 12, 26, row => row.Reset);
+        if (showReset) Column("Reset", 12, 26, Reset);
         if (showState) Column("State", 12, 36, row => row.State);
         var widths = getters.Select((get, index) => Math.Clamp(Math.Max(HumanTable.Width(headings[index]),
             rows.Max(row => HumanTable.Width(get(row)))), minima[index], maxima[index])).ToArray();
@@ -191,7 +193,7 @@ public static partial class CliApplication
             await Line(getters.Select(get => get(displayed)).ToArray(), colors);
             var details = new List<CompactUsageField>();
             if (!showUsed && row.Used.Length > 0) details.Add(new(row.Used));
-            if (!showReset) details.Add(new("Reset " + row.Reset));
+            if (hasResets && !showReset) details.Add(new("Reset " + Reset(row)));
             if (!showState && row.State.Length > 0) details.Add(new(row.State, row.StateColor));
             if (details.Count > 0) await WriteCompactUsageFields(output, details, context);
         }

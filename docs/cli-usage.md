@@ -24,7 +24,9 @@ zero. Unknown secondary windows remain in `--full`.
 The table leads with window and native remaining amount or explicitly labelled
 reading. Usage, usage estimates, observed rates and configured limits retain
 their own labels; they never become remaining funds. Percentage consumption and
-reset columns appear when there is room. From 110 columns, accounts have a
+reset columns appear when there is room. If no visible reading supplies a reset,
+the reset column and reset details are omitted. Mixed snapshots use a dash for
+missing resets. From 110 columns, accounts have a
 shared table column; narrower terminals use account headings. From 140 columns,
 warnings have their own state column. At smaller widths, reset/state details
 continue directly below the relevant reading. Below 48 columns, a single-column
