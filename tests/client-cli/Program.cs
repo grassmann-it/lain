@@ -400,6 +400,7 @@ finally
     if (Directory.Exists(state)) Directory.Delete(state, true);
 }
 assertions += await ExpansionContractChecks.RunAsync();
+assertions += await CollectionCommandChecks.RunAsync();
 assertions += await HumanRenderingChecks.RunAsync();
 assertions += await SetupPresentationChecks.RunAsync();
 assertions += await AccountWizardChecks.RunAsync();
