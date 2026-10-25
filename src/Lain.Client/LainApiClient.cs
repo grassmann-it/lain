@@ -67,8 +67,8 @@ public sealed partial class LainApiClient : IDisposable
     public Task<ProfileExportDto> ExportProfileAsync(string id, CancellationToken ct = default) => Get<ProfileExportDto>($"profiles/{Id(id)}/export", ct);
     public Task<ConfigurationDto> ApplyProfileAsync(long revision, string id, CancellationToken ct = default) =>
         Send<ConfigurationDto>(HttpMethod.Post, $"profiles/{Id(id)}/apply", new ProfileApplyRequest(revision), ct);
-    public Task<CodexProfileArtifacts> ExportCodexProfileAsync(long revision, string id, string executablePath, string catalogPath, CancellationToken ct = default) =>
-        Send<CodexProfileArtifacts>(HttpMethod.Post, $"profiles/{Id(id)}/codex/export", new CodexExportRequest(revision, executablePath, catalogPath), ct);
+    public Task<CodexProfileArtifacts> ExportCodexProfileAsync(long revision, string id, string executablePath, string catalogPath, CancellationToken ct = default, bool enableLainModelPicker = false) =>
+        Send<CodexProfileArtifacts>(HttpMethod.Post, $"profiles/{Id(id)}/codex/export", new CodexExportRequest(revision, executablePath, catalogPath, enableLainModelPicker), ct);
     public Task<UsageSummaryDto> UsageAsync(UsageQuery query, CancellationToken ct = default) => Get<UsageSummaryDto>("usage" + QueryString(query), ct);
     public Task<PageDto<AttemptDto>> AttemptsAsync(UsageQuery query, CancellationToken ct = default) => Get<PageDto<AttemptDto>>("attempts" + QueryString(query), ct);
     public Task<QuotaDto[]> QuotasAsync(CancellationToken ct = default) => Get<QuotaDto[]>("quotas", ct);

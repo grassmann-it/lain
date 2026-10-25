@@ -29,7 +29,8 @@ public static partial class CliApplication
           mode [monitor|gateway] [--revision N] [--json]
           profiles preview ID [--revision N] [--json]
           profiles apply ID [--revision N] [--json]
-          profiles install-codex ID [--revision N] [--json]
+          profiles install-codex ID [--model-groups] [--revision N] [--json]
+                --model-groups opts into the lain-patched Codex picker; automatic routing is unavailable.
           collections [list] [--json]  Saved definitions and current revision
           collections save|upsert ID --name NAME --routes ROUTE[,ROUTE...] --revision N [--json]
                 Routes are ordered IDs or unique aliases; use --routes '' for an empty collection.
@@ -151,7 +152,7 @@ public static partial class CliApplication
                         if (!File.Exists(executable)) throw new IOException("lain launcher is missing at ~/.local/bin/lain. Run the lain installer first.");
                         var codexDirectory = Path.Combine(home, ".codex");
                         var artifacts = await client.ExportCodexProfileAsync(profileRevision, options.Positionals[1], executable,
-                            Path.Combine(codexDirectory, "lain.models.json"), ct);
+                            Path.Combine(codexDirectory, "lain.models.json"), ct, enableLainModelPicker: options.Has("model-groups"));
                         result = CodexArtifactInstaller.Install(artifacts, codexDirectory);
                     }
                     break;
@@ -273,7 +274,9 @@ public static partial class CliApplication
         { options.RequireOnly("json", "auth-dir", "revision"); options.RequirePositionals(1); return; }
         if (command == "profiles" && options.Positionals.Count > 0)
         {
-            options.RequireOnly("json", "revision"); options.RequirePositionals(2);
+            options.RequireOnly("json", "revision", "model-groups"); options.RequirePositionals(2);
+            if (options.Has("model-groups") && options.Positionals[0] != "install-codex")
+                throw new ArgumentException("--model-groups is only valid for profiles install-codex.");
             if (options.Positionals[0] is not ("apply" or "preview" or "install-codex"))
                 throw new ArgumentException("Profile action must be preview, apply or install-codex.");
             if (options.Get("revision") is { } revision) _ = ParseLong(revision, "revision");
@@ -458,7 +461,7 @@ public static partial class CliApplication
                 if (name.Length == 0 || name.Contains('=')) throw new ArgumentException("Use options as '--name value'.");
                 if (options.values.ContainsKey(name) && name != "setting") throw new ArgumentException($"Duplicate option --{name}.");
                 string? value = null;
-                if (name is not ("json" or "full" or "today" or "key-stdin"))
+                if (name is not ("json" or "full" or "today" or "key-stdin" or "model-groups"))
                 {
                     if (++i >= args.Length || args[i].StartsWith("--", StringComparison.Ordinal)) throw new ArgumentException($"--{name} requires a value.");
                     value = args[i];

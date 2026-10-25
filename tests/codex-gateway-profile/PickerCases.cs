@@ -43,11 +43,11 @@ internal static class PickerCases
             Check(picker.GetProperty("schema_version").GetInt32() == 1 && picker.EnumerateObject().Count() == 2, "The opt-in extension uses the exact versioned lain schema");
             var groups = picker.GetProperty("groups").EnumerateArray().ToDictionary(group => group.GetProperty("id").GetString()!);
             string[] Members(string id) => groups[id].GetProperty("models").EnumerateArray().Select(model => model.GetString()!).ToArray();
-            Check(groups.Keys.SequenceEqual(new[] { "collection:security", "collection:overlap", "policy:free", "provider:codex", "provider:commandcode", "provider:openrouter" }), "Custom group order is preserved before derived Free and provider groups; empty views are omitted");
+            Check(groups.Keys.SequenceEqual(new[] { "collection:security", "collection:overlap", "provider:codex", "provider:commandcode", "provider:openrouter" }), "Custom group order is preserved before provider groups; empty views are omitted");
             Check(Members("collection:security").SequenceEqual(new[] { "alias-b", "alias-a", "unknown-alias" }), "Custom membership preserves order while excluding hidden, disabled, off-profile and internal review routes");
             Check(Members("collection:overlap").SequenceEqual(new[] { "alias-a", "alias-b" }) && Members("provider:openrouter").SequenceEqual(new[] { "alias-b" }), "Overlapping custom and service groups reference the same existing inference aliases");
             Check(groups["provider:commandcode"].GetProperty("name").GetString() == "Command Code" && Members("provider:codex").SequenceEqual(new[] { "alias-a" }), "Provider group names are readable and omit the internal review model");
-            Check(Members("policy:free").SequenceEqual(new[] { "alias-b" }), "Derived Free contains only routes allowed by the actual free_only policy, never unknown free-suffixed models");
+            Check(!groups.ContainsKey("policy:free"), "A hypothetical free_only override cannot advertise configured-policy routes as free");
             Check(groups.Values.All(group => group.GetProperty("router_model").ValueKind == JsonValueKind.Null &&
                 group.EnumerateObject().Select(property => property.Name).SequenceEqual(new[] { "id", "name", "router_model", "models" })), "Every group has a disabled router target and the exact patched-client group shape");
             Check(groups.Values.All(group => group.GetProperty("models").EnumerateArray().All(model =>
@@ -59,10 +59,10 @@ internal static class PickerCases
             Check(JsonSerializer.Serialize(repository.Snapshot) == unchanged && !Directory.EnumerateFiles(directory, "*.toml").Any(), "Grouped export is pure and does not activate, install or mutate configuration");
             state = repository.Update(state.Revision, configuration => configuration with
             {
-                Routes = configuration.Routes.Select(route => route.Id == "b" ? route with { ProviderRouteId = null } : route).ToArray()
+                Routes = configuration.Routes.Select(route => route.Id == "b" ? route with { Policy = new RoutingPolicyDto("free_only") } : route).ToArray()
             });
             using var unbound = JsonDocument.Parse(Export(true).Catalog);
-            Check(!unbound.RootElement.GetProperty("lain_model_picker").GetProperty("groups").EnumerateArray().Any(group => group.GetProperty("id").GetString() == "policy:free"), "Without a policy-qualified free route no derived Free group is claimed");
+            Check(!unbound.RootElement.GetProperty("lain_model_picker").GetProperty("groups").EnumerateArray().Any(group => group.GetProperty("id").GetString() == "policy:free"), "Effective free_only without a source-qualified transport binding still cannot advertise a derived Free group");
             state = repository.Update(state.Revision, configuration => configuration with
             {
                 Collections = configuration.Collections!.Select(collection => collection.Id == "security" ? collection with { Name = "Security renamed" } : collection).ToArray()
@@ -70,6 +70,36 @@ internal static class PickerCases
             using var renamed = JsonDocument.Parse(Export(true).Catalog);
             var renamedGroup = renamed.RootElement.GetProperty("lain_model_picker").GetProperty("groups").EnumerateArray().Single(group => group.GetProperty("id").GetString() == "collection:security");
             Check(renamedGroup.GetProperty("name").GetString() == "Security renamed" && renamedGroup.GetProperty("models").EnumerateArray().Select(model => model.GetString()).SequenceEqual(new[] { "alias-b", "alias-a", "unknown-alias" }), "Renaming a collection preserves its stable group identity and existing inference aliases");
+            var unicodeName = new string('界', 256);
+            state = repository.Update(state.Revision, configuration => configuration with
+            {
+                Collections = Enumerable.Range(0, 125).Select(index => new ModelCollectionDto("group-" + index,
+                    index == 0 ? unicodeName : "Group " + index, ["a"])).ToArray()
+            });
+            using var bounded = JsonDocument.Parse(Export(true).Catalog);
+            var boundedGroups = bounded.RootElement.GetProperty("lain_model_picker").GetProperty("groups");
+            Check(boundedGroups.GetArrayLength() == 128 && boundedGroups[0].GetProperty("name").GetString() == unicodeName,
+                "Exactly 128 non-empty groups and the complete 256-character Unicode name fit the aligned client limits");
+            state = repository.Update(state.Revision, configuration => configuration with
+            {
+                Collections = [.. configuration.Collections!, new("overflow", "Overflow", ["a"])]
+            });
+            try { Export(true); throw new Exception("Too many groups must fail clearly"); }
+            catch (ArgumentException error) when (error.Message.Contains("at most 128")) { assertions++; }
+            using var ordinaryOverflow = JsonDocument.Parse(Export().Catalog);
+            Check(!ordinaryOverflow.RootElement.TryGetProperty("lain_model_picker", out _) && repository.Snapshot.Collections!.Length == 126,
+                "The group limit never truncates stored collections or prevents a normal native export");
+            var importedProvider = new string('界', 100);
+            state = repository.Update(state.Revision, configuration => configuration with
+            {
+                Collections = [],
+                Accounts = configuration.Accounts.Select(account => account.Provider == "codex" ? account with { Provider = importedProvider } : account).ToArray(),
+                Routes = configuration.Routes.Select(route => route.Provider == "codex" ? route with { Provider = importedProvider } : route).ToArray()
+            });
+            try { Export(true); throw new Exception("Overlong UTF-8 provider group identity must fail clearly"); }
+            catch (ArgumentException error) when (error.Message.Contains("256 UTF-8 bytes")) { assertions++; }
+            Check(repository.Snapshot.Routes.First().Provider == importedProvider && !string.IsNullOrWhiteSpace(Export().Catalog),
+                "An unsupported imported provider group identity is never truncated and does not prevent the ordinary export");
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
         return assertions;

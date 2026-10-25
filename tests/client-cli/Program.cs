@@ -401,6 +401,7 @@ finally
 }
 assertions += await ExpansionContractChecks.RunAsync();
 assertions += await CollectionCommandChecks.RunAsync();
+assertions += await CodexGroupOptInChecks.RunAsync();
 assertions += await HumanRenderingChecks.RunAsync();
 assertions += await SetupPresentationChecks.RunAsync();
 assertions += await AccountWizardChecks.RunAsync();

@@ -86,16 +86,23 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         void Add(string id, string name, IEnumerable<string> routeIds)
         {
             var aliases = routeIds.Where(byId.ContainsKey).Select(routeId => byId[routeId].Alias).Distinct(StringComparer.Ordinal).ToArray();
-            if (aliases.Length > 0) groups.Add(new { id, name, router_model = (string?)null, models = aliases });
+            if (aliases.Length == 0) return;
+            if (Encoding.UTF8.GetByteCount(id) > 256 || Encoding.UTF8.GetByteCount(name) > 1024 ||
+                string.IsNullOrWhiteSpace(name) || id.Any(char.IsControl) || name.Any(char.IsControl))
+                throw new ArgumentException("The lain Codex model picker requires single-line group IDs up to 256 UTF-8 bytes and names up to 1024 UTF-8 bytes. Stored names are preserved; shorten the affected group label before export.");
+            groups.Add(new { id, name, router_model = (string?)null, models = aliases });
         }
         foreach (var collection in configuration.Collections ?? [])
             Add("collection:" + collection.Id, collection.Name, collection.RouteIds);
-        var costs = new ProviderCostPolicy(catalog);
-        var freeRoutes = routes.Where(route => costs.Evaluate(configuration, route, new RoutingPolicyDto("free_only")).Allowed);
-        Add("policy:free", "Free", freeRoutes.Select(route => route.Id));
+        // A derived Free view must reflect the effective execution policy AND a qualified
+        // transport binding. This adapter currently has no source-qualified binding seam;
+        // hypothetical evaluation under a different policy cannot make an alias free.
+        // Custom collection names retain their stored meaning without cost guarantees.
         foreach (var provider in routes.GroupBy(route => route.Provider, StringComparer.OrdinalIgnoreCase)
             .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase))
             Add("provider:" + provider.Key.ToLowerInvariant(), ServiceName(provider.First(), catalog), provider.Select(route => route.Id));
+        if (groups.Count > 128)
+            throw new ArgumentException("The lain Codex model picker supports at most 128 non-empty groups. Reduce the selected profile's provider or collection views.");
         return groups.ToArray();
     }
 

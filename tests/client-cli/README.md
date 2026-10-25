@@ -50,3 +50,15 @@ CLI discovery uses `LAIN_HOME/credentials/host.token`, or `~/.local/share/lain/c
 ```sh
 python3 tests/client-cli/wizard-pty.py --dll tests/client-cli/bin/Debug/net10.0/ClientCli.Tests.dll
 ```
+
+`lain profiles install-codex ID --model-groups` explicitly requests the versioned
+lain-patched Codex model picker. Without the flag the typed request keeps
+`enableLainModelPicker: false`; existing client calls, including positional
+cancellation tokens, remain compatible. The flag is rejected for profile apply,
+preview and other commands before client discovery. It does not implement
+automatic routing or switch the normal Codex launcher/profile.
+`CodexGroupOptInChecks.cs` verifies both request values and installs synthetic
+artifacts only under a disposable, guarded user-profile directory. Main Codex
+configuration and launcher sentinels remain unchanged, and the fake HTTP handler
+rejects every request except the explicit export: no runtime apply, configuration
+mutation, service or provider call is made.

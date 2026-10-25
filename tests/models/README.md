@@ -105,10 +105,19 @@ extension.
 Picker export tests in `tests/codex-gateway-profile/PickerCases.cs` cover provider
 and overlapping custom collections, profile/visibility intersection, stable
 aliases and collection identities, empty groups and the internal review-model
-filter. A derived `policy:free` group includes only `free_only` policy-allowed
-routes; a user collection's name does not establish a cost guarantee. Every
+filter. No derived `policy:free` group is emitted: the exporter currently lacks a
+source-qualified transport-binding seam, and evaluating a hypothetical
+`free_only` override does not change an alias's effective execution policy.
+A user collection's name does not establish a cost guarantee. Every
 `router_model` remains null: the patched client displays a disabled automatic
 entry, and individual choices use their original inference aliases. This menu
 extension does not implement automatic routing. Grouping changes no profile,
 account, activation, default model, or normal native model entry. Fixture execution
 and patched-client qualification are separate release checks.
+
+Picker metadata is limited to 128 non-empty groups, with single-line IDs up to
+256 UTF-8 bytes and names up to 1024 UTF-8 bytes, matching the patched client.
+Collection names remain complete, including the Host's maximum 256-character
+Unicode labels. Unsupported labels or too many groups cause a clear export
+validation error; definitions are never silently dropped or truncated. The
+ordinary native export remains available without the opt-in.
