@@ -1,5 +1,16 @@
 # UX reference handoff, 25 October 2026
 
+## Integrator delivery decision
+
+The exact 86 manifest entries below are now selected for version control:
+16 documents and all 70 synthetic design-reference PNGs. Their recorded hashes
+and sizes were checked again before staging. The PNGs are explicitly included
+despite the general artifact ignore rule, so this handoff's local image paths
+resolve in a fresh checkout. No provider research, unrelated dirty planning
+changes, build outputs or runtime screenshots are included. The following audit
+records the earlier read-only preparation; its candidate/ignored descriptions
+explain that original state, not an additional unfinished staging gate.
+
 This is a read-only ST-05 handoff inventory, not a source freeze, product
 acceptance or instruction to stage other owners' files. Root decides the exact
 staging set. Provider research is outside this handoff. No source, owner document,

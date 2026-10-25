@@ -1,0 +1,470 @@
+{
+  "revision": "2026-10-24-abc-v1",
+  "status": "reviewed proposals; awaiting user preference",
+  "pageId": "RIYV8uJ5sbN92n08oTjz",
+  "pageUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+  "credits": {
+    "authorized": 500,
+    "previousCharged": 70,
+    "thisRound": 68,
+    "cumulative": 138,
+    "jobs": [
+      {
+        "id": "0i07SrliJEOY6SgmWoQP",
+        "charged": 18
+      },
+      {
+        "id": "cDkR38ojxa5ELSixcPcU",
+        "charged": 22
+      },
+      {
+        "id": "T032xLCd69WRaySJAAay",
+        "charged": 28
+      }
+    ]
+  },
+  "creditsLabel": "Neue Runde: 68 Credits · Insgesamt 138 von 500 freigegebenen Credits. Kostenlose HTML-Korrekturen sind in den geprüften Bildern enthalten.",
+  "groups": [
+    {
+      "key": "accounts",
+      "number": "01",
+      "viewport": "1120 × 780",
+      "title": "Accounts breit",
+      "question": "Wie möchtest du Accounts vergleichen und daneben Details öffnen? Daten und Marke bleiben gleich.",
+      "options": [
+        {
+          "designId": "KHVTKTujolE1ODNri20R",
+          "sourceDesignId": "ZFjD7XKb3sOKSBNNikNQ",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/608961a4cc-e81f217127a57025db45.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-20261024/review-ZFjD7XKb3sOKSBNNikNQ.png",
+          "width": 1120,
+          "height": 780,
+          "kind": "ACCOUNTS-A",
+          "letter": "A",
+          "title": "Eine Accountspalte + 400-px-Detail",
+          "difference": "Der bisher geprüfte Entwurf mit dauerhaft freier Detailfläche rechts.",
+          "benefit": "Ruhige Hierarchie; viel Platz für Aktionen und Fehlerdetails.",
+          "tradeoff": "Weniger Accounts gleichzeitig sichtbar; rechts bleibt vor Auswahl Platz frei.",
+          "verdict": "Meine Empfehlung",
+          "review": "Die ausgeglichenste Ausgangsbasis.",
+          "selectable": true
+        },
+        {
+          "designId": "DVSqF8JYqJTpWgNiaImT",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/3918245c85-d117a7fb813f6b2e4f21.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-alternatives-20261024/ACCOUNTS-B-reviewed.png",
+          "width": 1120,
+          "height": 780,
+          "kind": "ACCOUNTS-B",
+          "letter": "B",
+          "title": "Zwei Kartenspalten + 320-px-Detail",
+          "difference": "Mehr Accounts nebeneinander, schmaleres rechtes Detailpanel.",
+          "benefit": "Mehr Überblick bei demselben Fenster; bekannte Kartenform.",
+          "tradeoff": "Ungleich hohe Karten lassen Leerraum; lange Zeilen und Details werden enger.",
+          "verdict": "Sinnvolle Alternative",
+          "review": "Wenn dir mehr Übersicht wichtiger ist als ein breites Detailpanel.",
+          "selectable": true
+        },
+        {
+          "designId": "GDQnucVE6dKhbDge8cpa",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/0d39f5ab5b-7a6fa48a1f928488d1d0.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-alternatives-20261024/ACCOUNTS-C-reviewed.png",
+          "width": 1120,
+          "height": 780,
+          "kind": "ACCOUNTS-C",
+          "letter": "C",
+          "title": "Quota-Zeilen + 400-px-Detail",
+          "difference": "Accountüberschriften und Quotafenster als ruhig getrennte Inventarzeilen.",
+          "benefit": "Werte und Resets sind leicht untereinander zu vergleichen.",
+          "tradeoff": "Weniger visuelle Trennung zwischen Accounts; weiterhin viel vertikaler Inhalt.",
+          "verdict": "Sinnvolle Alternative",
+          "review": "Für häufiges Vergleichen statt einzelner Accountarbeit.",
+          "selectable": true
+        }
+      ]
+    },
+    {
+      "key": "narrow",
+      "number": "02",
+      "viewport": "800 × 560",
+      "title": "Accounts schmal",
+      "question": "Was soll beim kleinen Desktopfenster Vorrang haben: Übersicht und Detail gleichzeitig oder mehr Platz zum Lesen?",
+      "options": [
+        {
+          "designId": "2acYFlKqIOMTxJllD6A2",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/99d07378ac-5950c9ffb1eb2e81a248.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-alternatives-20261024/NARROW-A-reviewed.png",
+          "width": 800,
+          "height": 560,
+          "kind": "NARROW-A",
+          "letter": "A",
+          "title": "Liste und Detail nebeneinander",
+          "difference": "Auch bei 800 Pixeln bleibt die Auswahl links sichtbar.",
+          "benefit": "Der Bezug zum ausgewählten Account bleibt immer im Blick.",
+          "tradeoff": "Schmale Quotazeilen; mehr Umbrüche und zwei Scrollflächen.",
+          "verdict": "Brauchbar",
+          "review": "Die Platzgrenze ist im Bild deutlich sichtbar.",
+          "selectable": true
+        },
+        {
+          "designId": "pu0GEihKPrZ1660XppNa",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/994a2f5b71-23e0f9be6cbd44e8bc0e.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-alternatives-20261024/NARROW-B-reviewed.png",
+          "width": 800,
+          "height": 560,
+          "kind": "NARROW-B",
+          "letter": "B",
+          "title": "Eigene Detailseite mit Zurück",
+          "difference": "Nach Auswahl nutzt der Account die ganze Arbeitsfläche.",
+          "benefit": "Lesbare Werte und Aktionen; ruhiger Rückweg zum erhaltenen Inventar.",
+          "tradeoff": "Während der Detailarbeit fehlt die gleichzeitige Accountliste.",
+          "verdict": "Meine Empfehlung",
+          "review": "Für 800×560 am klarsten. Scroll-/Fokusrückgabe muss später nativ bestehen.",
+          "selectable": true
+        },
+        {
+          "designId": "DnP5UPrxYlJtK5vvXF01",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/4a9b02e9a7-1d78191fa7c4c3927523.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-alternatives-20261024/NARROW-C-reviewed.png",
+          "width": 800,
+          "height": 560,
+          "kind": "NARROW-C",
+          "letter": "C",
+          "title": "Liste oben, Detail unten",
+          "difference": "Zwei voneinander getrennte Bereiche ohne Überdeckung.",
+          "benefit": "Accountkontext und Details bleiben gleichzeitig vorhanden.",
+          "tradeoff": "Sehr wenig Höhe in beiden Bereichen; häufiges Scrollen.",
+          "verdict": "Eher zurückstellen",
+          "review": "Als Vergleich bewusst behalten; die vertikale Enge ist der Hauptnachteil.",
+          "selectable": true
+        }
+      ]
+    },
+    {
+      "key": "monitor",
+      "number": "03",
+      "viewport": "800 × 560 · Monitor / Barebones",
+      "title": "Kompakter Monitor",
+      "question": "Wie möchtest du Kontingente prüfen, wenn kein Gateway/Core läuft? Alle Varianten enthalten dieselben gemeldeten Fenster im scrollbaren Bestand.",
+      "options": [
+        {
+          "designId": "BfAX0rdGKoV8mQcpsfCx",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/45df01a221-5806bce9e32fc0171d3d.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-alternatives-20261024/MONITOR-A-reviewed.png",
+          "width": 800,
+          "height": 560,
+          "kind": "MONITOR-A",
+          "letter": "A",
+          "title": "Kompakte Accountliste",
+          "difference": "Eine breite Spalte, kurze Fensterzeilen und lokale Warnungen.",
+          "benefit": "Ruhige Accountgrenzen und lesbare Werte.",
+          "tradeoff": "Ein Account mit vielen Fenstern nimmt viel Höhe ein.",
+          "verdict": "Gute Standardoption",
+          "review": "Für gelegentliches Prüfen leicht verständlich.",
+          "selectable": true
+        },
+        {
+          "designId": "5saYPjGTtD3ddI1gMcN6",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/8140164203-a91cee04f4cac52c5bbb.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-alternatives-20261024/MONITOR-B-reviewed.png",
+          "width": 800,
+          "height": 560,
+          "kind": "MONITOR-B",
+          "letter": "B",
+          "title": "Tabelle der Quotafenster",
+          "difference": "Fenster, gemeldete Restwerte und Resets in festen Spalten.",
+          "benefit": "Schnelles Vergleichen mit klaren Spalten; Geld und Prozent bleiben getrennt.",
+          "tradeoff": "Technischer und weniger kartenartig; lange Zustände brauchen Zusatzzeilen.",
+          "verdict": "Meine Empfehlung",
+          "review": "Wenn der Monitor hauptsächlich zum Vergleichen vieler Fenster dient.",
+          "selectable": true
+        },
+        {
+          "designId": "hrZvhcb5gdhxOFdtGcYx",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/7832740d9d-b9a69c4571a3a0b9d00c.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-alternatives-20261024/MONITOR-C-reviewed.png",
+          "width": 800,
+          "height": 560,
+          "kind": "MONITOR-C",
+          "letter": "C",
+          "title": "Zwei Accountspalten",
+          "difference": "Bekannte kompakte Karten auf zwei Spalten verteilt.",
+          "benefit": "Mehr nebeneinander sichtbar; vertraute Kartenform.",
+          "tradeoff": "Viele Fenster erzeugen ungleiche Höhen und Leerraum; engere Zeilen.",
+          "verdict": "Sinnvolle Alternative",
+          "review": "Optisch stärker gegliedert, aber nicht automatisch kompakter.",
+          "selectable": true
+        }
+      ]
+    },
+    {
+      "key": "models",
+      "number": "04",
+      "viewport": "1120 × 780",
+      "title": "Models",
+      "question": "Soll der Bestand als flache Tabelle oder nach Accounts geordnet sein? C zeigt zusätzlich eine andere Form der Bearbeitung.",
+      "options": [
+        {
+          "designId": "yWFvRTiVdekXpNLsmnhR",
+          "sourceDesignId": "XjprbmkRcPW8vOyOPOEr",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/7728cc3fab-765948b632df61864f57.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-20261024/review-XjprbmkRcPW8vOyOPOEr.png",
+          "width": 1120,
+          "height": 780,
+          "kind": "MODELS-A",
+          "letter": "A",
+          "title": "Tabelle + Detailpanel",
+          "difference": "Der bisher geprüfte Inventarentwurf mit direkt sichtbaren Zuständen.",
+          "benefit": "Am besten für Suche und Vergleich im großen Modellbestand.",
+          "tradeoff": "Rechtes Detailpanel verbraucht dauerhaft Breite.",
+          "verdict": "Meine Empfehlung",
+          "review": "Für 45 Einträge die stärkste Standardansicht.",
+          "selectable": true
+        },
+        {
+          "designId": "S1Gg1oL34vPu2pgTr5yt",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/3e2b022dd1-03a67251d790bf05f2df.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-alternatives-20261024/MODELS-B-reviewed.png",
+          "width": 1120,
+          "height": 780,
+          "kind": "MODELS-B",
+          "letter": "B",
+          "title": "Nach Account gruppiert + Detail",
+          "difference": "Modellzeilen werden unter ihrer bekannten Accountbindung gesammelt.",
+          "benefit": "Accountbezug und problematische Zugänge schnell erkennbar.",
+          "tradeoff": "Viele Gruppenköpfe verbrauchen Höhe; unbekannte Bindungen bleiben ausdrücklich unbekannt.",
+          "verdict": "Sinnvolle Alternative",
+          "review": "Gut, wenn du meist von Accounts aus arbeitest.",
+          "selectable": true
+        },
+        {
+          "designId": "wBG5B77k6SCMscVOLkCG",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/0b45aa0035-e2a90b9b020aa9cbcf16.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-alternatives-20261024/MODELS-C-reviewed.png",
+          "width": 1120,
+          "height": 780,
+          "kind": "MODELS-C",
+          "letter": "C",
+          "title": "Eigene Bearbeitungsseite",
+          "difference": "Ein Modell bearbeiten, mit Zurück zum Bestand; keine gleichzeitige Inventarliste.",
+          "benefit": "Platz für verständliche Felder und getrenntes Speichern/Apply.",
+          "tradeoff": "Zusätzlicher Wechsel; das Bild ersetzt nicht die Inventaransicht.",
+          "verdict": "Als Editiermuster sinnvoll",
+          "review": "Vollständige Policy-/Fallbackeditoren sind hier noch keine native Abnahme.",
+          "selectable": true
+        }
+      ]
+    },
+    {
+      "key": "usage",
+      "number": "05",
+      "viewport": "1120 × 780",
+      "title": "Usage",
+      "question": "Welche Darstellung hilft dir am schnellsten beim Lesen der drei Ergebnisgruppen? Die globalen Zahlen und Fehlerdefinitionen bleiben identisch.",
+      "options": [
+        {
+          "designId": "CO4rai9QEKy08yaYNjbT",
+          "sourceDesignId": "VFZv56jHJJ2zSdBAQhNG",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/e2eeeda7c7-d1e2a6bb15d2390d263a.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-20261024/review-VFZv56jHJJ2zSdBAQhNG.png",
+          "width": 1120,
+          "height": 780,
+          "kind": "USAGE-A",
+          "letter": "A",
+          "title": "Ergebnistabelle + Seitendetail",
+          "difference": "Der bisher geprüfte Entwurf: Ergebnisse links, lokaler Gruppenkontext rechts.",
+          "benefit": "Auswertung und gewählte Gruppe gleichzeitig sichtbar.",
+          "tradeoff": "Seitendetail nimmt Breite weg, selbst wenn es selten gebraucht wird.",
+          "verdict": "Gute Ausgangsbasis",
+          "review": "Praktisch bei häufigem Drilldown.",
+          "selectable": true
+        },
+        {
+          "designId": "hekNWAEELBmIywOWFhrk",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/9e5bcc62e0-1999b28b259c2e759fdf.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-alternatives-20261024/USAGE-B-reviewed.png",
+          "width": 1120,
+          "height": 780,
+          "kind": "USAGE-B",
+          "letter": "B",
+          "title": "Breite Tabelle + lokale Details",
+          "difference": "Die gewählte Gruppe klappt in der Tabelle auf; keine reservierte Seitenfläche.",
+          "benefit": "Zahlen sind leicht vergleichbar; mehr Breite für die Auswertung.",
+          "tradeoff": "Das geöffnete Detail braucht Höhe zwischen Ergebniszeilen.",
+          "verdict": "Meine Empfehlung",
+          "review": "Für kompakte Auswertungen mit gezielten Details.",
+          "selectable": true
+        },
+        {
+          "designId": "9XWHASBQIjHzEIKUdkiN",
+          "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/5de9cd0501-61fc711a0b0f68f8df49.png",
+          "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+          "image": "artifacts/uxpilot-alternatives-20261024/USAGE-C-reviewed.png",
+          "width": 1120,
+          "height": 780,
+          "kind": "USAGE-C",
+          "letter": "C",
+          "title": "Ergebniskarten pro Account",
+          "difference": "Drei gleichartige Karten mit Requests, Attempts, Completion errors und Tokens.",
+          "benefit": "Eine Gruppe lässt sich als Einheit erfassen.",
+          "tradeoff": "Zahlen über Karten hinweg langsamer vergleichbar; skaliert schlechter bei vielen Gruppen.",
+          "verdict": "Sinnvolle Alternative",
+          "review": "Für wenige Gruppen angenehm; bei vielen Accounts eher Tabelle.",
+          "selectable": true
+        }
+      ]
+    }
+  ],
+  "states": [
+    {
+      "designId": "N2fXeiT8Fbum5Tw03XRT",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/0be90c76f4-4143f046d3ef46e34db6.png",
+      "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+      "image": "artifacts/uxpilot-alternatives-20261024/EMPTY-reviewed.png",
+      "width": 1120,
+      "height": 780,
+      "kind": "EMPTY",
+      "title": "Noch kein Account verbunden",
+      "review": "Klarer Verbindungseinstieg, Modelle erst danach optional. Keine erfundene Quota oder Erfolgsanzeige."
+    },
+    {
+      "designId": "g3o3wZuXIyvUzWlZWMi8",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/65ac61044c-2db9b72a37c99a775d1d.png",
+      "sourceUrl": "https://uxpilot.ai/a/ui-design?page=RIYV8uJ5sbN92n08oTjz",
+      "image": "artifacts/uxpilot-alternatives-20261024/OFFLINE-reviewed.png",
+      "width": 1120,
+      "height": 780,
+      "kind": "OFFLINE",
+      "title": "Gateway offline mit letztem bekannten Stand",
+      "review": "Navigation und bisherige Werte bleiben erkennbar; Offlinewarnung statt Monitorwechsel. Hostaktionen sind nicht als ausführbar dargestellt."
+    }
+  ],
+  "references": [
+    {
+      "title": "Accounts · overview · verified",
+      "designId": "Rf8aun5CqK1jJDDEsy1R",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/b1eadb27fd-ca6b46d1cc733d82bce6.png",
+      "image": "artifacts/uxpilot-20261024/review-Rf8aun5CqK1jJDDEsy1R.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "title": "Accounts · lower inventory · before detail",
+      "designId": "e15bU4GJVZiLJqr1AD7h",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/d601e78de7-ab94876e73999bb1eb80.png",
+      "image": "artifacts/uxpilot-20261024/review-e15bU4GJVZiLJqr1AD7h.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "title": "Accounts · lower inventory · adjacent Z.ai",
+      "designId": "ZFjD7XKb3sOKSBNNikNQ",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/608961a4cc-e81f217127a57025db45.png",
+      "image": "artifacts/uxpilot-20261024/review-ZFjD7XKb3sOKSBNNikNQ.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "title": "Connect · provider chooser · final review",
+      "designId": "gzASp44CCY795jSZqF7i",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/9a7182b71e-cee26407888921cba413.png",
+      "image": "artifacts/uxpilot-20261024/review-gzASp44CCY795jSZqF7i.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "title": "Connect · Codex · start",
+      "designId": "VqOo9QWKoHTuPl2QFBA3",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/5e22731cb1-09b34665710fb42220ea.png",
+      "image": "artifacts/uxpilot-20261024/review-VqOo9QWKoHTuPl2QFBA3.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "title": "Connect · Codex · waiting",
+      "designId": "k0kGywZOHwQqiJP6M9dc",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/78b45ee8e0-176e6ed43c0b5167c437.png",
+      "image": "artifacts/uxpilot-20261024/review-k0kGywZOHwQqiJP6M9dc.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "title": "Connect · Kilo key target · final review",
+      "designId": "wQVdJZc3s1aOOHiSyLRP",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/c62665a2bd-842c927fa4e4b5e4a954.png",
+      "image": "artifacts/uxpilot-20261024/review-wQVdJZc3s1aOOHiSyLRP.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "title": "Connect · Codex · connected",
+      "designId": "XRRl0bWu3u4yabFGoOVB",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/214f80c426-83e06454b66bd5e30aef.png",
+      "image": "artifacts/uxpilot-20261024/review-XRRl0bWu3u4yabFGoOVB.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "title": "Models · reviewed inventory",
+      "designId": "XjprbmkRcPW8vOyOPOEr",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/7728cc3fab-765948b632df61864f57.png",
+      "image": "artifacts/uxpilot-20261024/review-XjprbmkRcPW8vOyOPOEr.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "title": "Profiles · reviewed Daily",
+      "designId": "tUQuAL5HzEst2g0t69B1",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/67c8981c4f-bd5b693112b2eae72baf.png",
+      "image": "artifacts/uxpilot-20261024/review-tUQuAL5HzEst2g0t69B1.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "title": "Profiles · global Apply review",
+      "designId": "qCI0uheft2XiFWKSBJmQ",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/efb39161af-bab38da2d7ee53d6eeeb.png",
+      "image": "artifacts/uxpilot-20261024/review-qCI0uheft2XiFWKSBJmQ.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "title": "Usage · reviewed results",
+      "designId": "VFZv56jHJJ2zSdBAQhNG",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/e2eeeda7c7-d1e2a6bb15d2390d263a.png",
+      "image": "artifacts/uxpilot-20261024/review-VFZv56jHJJ2zSdBAQhNG.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "title": "Live · reviewed ephemeral output",
+      "designId": "t41xl53MKsTLKcXbKOmb",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/1d28026e5f-0997900628577d6ce3a9.png",
+      "image": "artifacts/uxpilot-20261024/review-t41xl53MKsTLKcXbKOmb.png",
+      "width": 1120,
+      "height": 780
+    },
+    {
+      "title": "Settings · native checkboxes · reviewed",
+      "designId": "O63jRSAvsTNvo54maqIS",
+      "imageUrl": "https://storage.googleapis.com/uxpilot-auth.appspot.com/screenshots/09c5d8771c-96a53bdbe1b8213eeae7.png",
+      "image": "artifacts/uxpilot-20261024/review-O63jRSAvsTNvo54maqIS.png",
+      "width": 1120,
+      "height": 780
+    }
+  ]
+}
