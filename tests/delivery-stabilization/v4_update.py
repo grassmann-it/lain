@@ -22,7 +22,6 @@ actual = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(actual)
 require = actual.require
 upgrade = actual.upgrade
-PREVIOUS_SOURCE = '793822c17a9bfa6a950bf82c8d2cdb6afa648d7c'
 PRESERVED = ('configuration.json', 'active-profile.json', 'proxy/runtime.json', 'proxy/config.yaml',
              'proxy/bindings.json', 'proxy/events.jsonl', 'proxy/events.jsonl.source',
              'credentials', 'proxy/auth', 'proxy/auth-owned', 'ui/workspace-preferences.json')
@@ -47,9 +46,11 @@ def core_source(package):
 
 
 def package_plan(args):
-    require(re.fullmatch('[0-9a-f]{40}', args.new_source_commit) is not None, 'Pin the full new source commit')
+    for label, source in (('previous', args.previous_source_commit), ('new', args.new_source_commit)):
+        require(re.fullmatch('[0-9a-f]{40}', source or '') is not None, 'Pin the full ' + label + ' source commit')
+    require(args.new_source_commit != args.previous_source_commit, 'The update must contain a different application source')
     packages = {}
-    for prefix, source in (('new', args.new_source_commit), ('previous', PREVIOUS_SOURCE)):
+    for prefix, source in (('new', args.new_source_commit), ('previous', args.previous_source_commit)):
         for mode in ('monitor', 'gateway'):
             path = getattr(args, prefix + '_' + mode + '_package')
             pin = getattr(args, prefix + '_' + mode + '_manifest_sha256')
@@ -57,12 +58,13 @@ def package_plan(args):
             core = getattr(args, prefix + '_core_sha256') if mode == 'gateway' else None
             info = actual.package_info(path, pin, mode, core)
             require(info['sourceCommit'] == source, 'Package source differs from reviewed commit')
+            metadata = json.loads((path / 'package-metadata.json').read_text())
+            require(metadata.get('sourceCommit') == source, 'Package metadata source differs from reviewed commit')
             require(isinstance(info['components'], dict) and set(info['components']) == {'cli', 'host', 'desktop'},
                     'Complete application component identities are required')
             require(all(component.get('sourceCommit') == source for component in info['components'].values()),
                     'Component source differs from package commit')
             packages[prefix + mode.title()] = info
-    require(args.new_source_commit != PREVIOUS_SOURCE, 'The update must contain a different application source')
     for prefix in ('new', 'previous'):
         require(packages[prefix + 'Monitor']['components'] == packages[prefix + 'Gateway']['components'],
                 'Monitor and Gateway application components differ')
@@ -74,7 +76,8 @@ def package_plan(args):
         require((args.previous_gateway_package / 'proxy/qualification.json').read_bytes() ==
                 (args.new_gateway_package / 'proxy/qualification.json').read_bytes(),
                 'Reused Core requires the same existing qualification record')
-    return {'packages': packages, 'sameQualifiedCore': same, 'coreSources': {'previous': old_source, 'new': new_source}}
+    return {'sourceCommits': {'previous': args.previous_source_commit, 'new': args.new_source_commit},
+            'packages': packages, 'sameQualifiedCore': same, 'coreSources': {'previous': old_source, 'new': new_source}}
 
 
 def assert_app(home, package):
@@ -173,7 +176,7 @@ def run_mode(args, root, mode):
     seed(home, mode, host)
     before_start = fingerprints(home)
     with host:
-        assert_live(host, PREVIOUS_SOURCE, args.previous_core_sha256, mode)
+        assert_live(host, args.previous_source_commit, args.previous_core_sha256, mode)
     # Host management tokens are first created by baseline startup; grants/config must survive it.
     require(before_start['proxy/auth-owned'] == upgrade.fingerprint(home / 'proxy/auth-owned'), 'Baseline changed synthetic owned grants')
     preserved, history = fingerprints(home), database(home)
@@ -198,7 +201,7 @@ def run_mode(args, root, mode):
     assert_app(home, previous)
     require(fingerprints(home) == latest and database(home) == history, 'App-only return changed latest state')
     with host:
-        assert_live(host, PREVIOUS_SOURCE, args.previous_core_sha256, mode)
+        assert_live(host, args.previous_source_commit, args.previous_core_sha256, mode)
     require(fingerprints(home) == latest and database(home) == history, 'Previous v4 application cannot retain this fixture')
     actual.install(new, root, home)
     assert_app(home, new)
@@ -225,6 +228,7 @@ def main():
             parser.add_argument('--' + prefix + '-' + mode + '-package', required=True, type=Path)
             parser.add_argument('--' + prefix + '-' + mode + '-manifest-sha256', required=True)
         parser.add_argument('--' + prefix + '-core-sha256', required=True)
+    parser.add_argument('--previous-source-commit', required=True, help='Full reviewed previous package commit; no inferred baseline')
     parser.add_argument('--new-source-commit', required=True)
     parser.add_argument('--parent-netns', help='Trusted launcher identity captured before unshare: net:[digits]')
     parser.add_argument('--execute', action='store_true')

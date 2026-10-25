@@ -107,15 +107,19 @@ Host/Core or contact providers.
 ### Current schema4 update fixture
 
 `v4_update.py` is separate from `actual_packages.py`'s historical schema3
-conversion. It accepts pinned previous793822c Monitor/Gateway packages and pinned
-new Monitor/Gateway packages. The new source commit is explicit; no particular
-new commit is embedded. Default execution is plan-only and writes `not_run`.
+conversion. It accepts pinned previous Monitor/Gateway packages and pinned new
+Monitor/Gateway packages. Both source commits are mandatory full lowercase
+40-character pins; no historical baseline is inferred. The previous commit must
+match both packages, their metadata and every application component. In
+particular, a d7200d7 baseline requires its explicit full commit rather than
+793822c. Default execution is plan-only and writes `not_run`.
 Only `--execute` installs into temporary private paths and starts owned processes.
 It requires the same distinct loopback-only namespace/parent identity guard as
 `actual_packages.py`; a failed guard has no host-network fallback.
 
 ```sh
 python3 tests/delivery-stabilization/v4_update.py \
+  --previous-source-commit FULL_PREVIOUS_COMMIT \
   --previous-monitor-package /absolute/previous-monitor \
   --previous-monitor-manifest-sha256 FULL_SHA256 \
   --previous-gateway-package /absolute/previous-gateway \
@@ -137,10 +141,12 @@ qualification source and existing qualification record match exactly.
 
 Both runtime modes use synthetic desired19/applied2 state, an unknown legacy
 profile, schema4 history with durable source/cursor/digests and token components,
-and synthetic static/owned grant sentinels. Each path starts793822c, creates a
-fresh full stopped snapshot including an occupied `app.previous` fixture,
+and synthetic static/owned grant sentinels. Each path starts the explicitly pinned
+previous application, creates a fresh full stopped snapshot including an occupied
+`app.previous` fixture,
 archives that fixture without deletion, and invokes the actual new installer.
-It then returns only application binaries to793822c and updates forward again.
+It then returns only application binaries to that same previous source and
+updates forward again.
 A changed synthetic grant introduced after the first update must remain current
 through both operations; snapshot credentials are never restored. Monitor stays
 without Core throughout. Snapshot fingerprints stay private and are absent from
@@ -152,3 +158,20 @@ rotation, newer owner/recovery semantics, live providers, open UI draft
 preservation, or safety of restoring stale credentials. No real installation is
 accessed. At source integration, runtime remains **not_run** until separately
 executed against the final packages.
+
+
+### Source pin regression (filesystem only)
+
+Run `python3 tests/delivery-stabilization/test_v4_package_pins.py`. The fixture
+constructs disposable nonexecutable synthetic payloads and genuine checksum
+manifests; it never invokes an installer or application. It checks explicit
+current/historical source pins, missing/short/invalid pins, swapped or stale
+manifest hashes, resealed wrong build/metadata/component sources, cross-mode
+component differences, and exact qualified Core reuse versus altered source or
+qualification. It does not qualify real package execution.
+
+Reports now bind `sourceCommits.previous` and `sourceCommits.new` explicitly.
+Historical reports without these fields do not qualify a new cumulative update.
+The new baseline parameter is required even for a repeat of a historical 793 run.
+For the controlled d720 update and preservation gates see
+[`cumulative-delivery-2026-10-25.md`](../../docs/cumulative-delivery-2026-10-25.md).
