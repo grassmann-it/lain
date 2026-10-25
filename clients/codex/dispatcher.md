@@ -13,8 +13,12 @@ installed patched executable. The dispatcher does not edit Codex configuration,
 the upstream executable, or the upstream `current` symlink.
 
 All other invocations execute the original resolved binary using `os.execv`,
-the identical incoming `argv` including `argv[0]`, the same working directory,
-and the original environment. Because Python can add `LC_CTYPE` during startup,
+unchanged option/prompt arguments (`argv[1:]`), the same working directory,
+and the original environment. The Python shebang does **not** preserve the
+caller's original `argv[0]`: PATH lookup (`codex`) and a custom name supplied by
+`exec -a` become the entry script pathname. An absolute-path invocation happens
+to retain the same name. This launcher therefore does not promise a completely
+identical process invocation. Because Python can add `LC_CTYPE` during startup,
 the launcher restores the interpreter's initial environment from Linux
 `/proc/self/environ` immediately before exec. This requires a normal mounted
 proc filesystem and `/usr/bin/python3` (Python 3.11+ for the installer).
@@ -90,28 +94,44 @@ staged in a sibling directory; publication of the directory and the final entry
 symlink each use an atomic rename. The original executable is never copied over
 or modified. Original and patched inputs are hashed before installation, the
 staged patch is hashed again, and the original is rechecked before switching.
+The manifest records device/inode identities for the original, wrapper, previous
+entry and installed entry. Symlink target and identity are inspected before and
+directly after replacement; the original fallback hash and identity are checked
+before and after installation/rollback. An observed mismatch stops the operation.
 Existing state is never overwritten, including old audit state after rollback.
+Once state has been published, failures retain it for recovery. A failure after
+entry replacement can leave the launcher installed; inspect the entry and
+manifest before taking another action. No automatic rollback is attempted after
+evidence of a foreign update. An incomplete manifest also requires inspection.
 
 ```sh
 python3 scripts/clients/install_codex_dispatch.py uninstall
 python3 scripts/clients/install_codex_dispatch.py --apply uninstall
 ```
 
-Uninstall restores the exact old symlink target only while the Codex entry
-still points directly to this installation's wrapper and that wrapper still
-matches its recorded SHA256. If another updater replaced the Codex entry or
-someone modified the wrapper, uninstall stops without replacing it. The state
-directory is retained for inspection/recovery; archive it explicitly before a
-fresh installation.
+Uninstall checks that the Codex entry still points directly to this installation's
+wrapper with its recorded device/inode identity, and that the wrapper's own
+identity and SHA256 match. Recreating an entry or wrapper with the same target or
+bytes is detected through identity checks. A detected replacement/modification
+aborts. The saved symlink must still resolve to the pinned original fallback;
+an upstream `current` change also aborts. These are checks around the mutation,
+not a guarantee against a concurrent foreign installer. The state directory is
+retained for inspection/recovery; archive it explicitly before a fresh installation.
 
-Private install/uninstall commands use an exclusive `flock`. Symlink ownership
-is checked twice immediately before atomic replacement. A foreign updater does
-not share this lock, so do not run installation/rollback concurrently with an
-upstream Codex update: a final external change between the check and rename
-cannot be excluded by this userspace check. Upstream `current` updates after
-installation do not change the dispatcher's embedded original release path;
-uninstall first before changing/requalifying the upstream release. The saved
-original `current` symlink is restored verbatim on rollback.
+Private install/uninstall commands use an exclusive `flock`. A foreign updater
+does not share this lock. Concurrent foreign installation/updates are unsupported:
+perform apply/rollback only in a quiet, known launcher state. The symlink checks
+are not a compare-and-swap operation. A foreign change between the last check and
+`os.replace` can still be overwritten without being detected; post-checks cannot
+establish that no such intermediate change happened. If checks find evidence of
+an update, the operation aborts and leaves recovery state rather than trying an
+automatic second mutation. Independently inspect the entry, wrapper/original
+identities and fallback hash immediately before and after a live operation.
+
+Upstream `current` updates after installation do not change the dispatcher's
+embedded original release path. Uninstall before changing/requalifying the
+upstream release. In the supported quiet setup, rollback restores the saved
+original symlink target verbatim.
 
 ## Offline verification
 
@@ -122,6 +142,10 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/clients/test_codex_dispatch.py -v
 Tests run serially, use temporary fixtures only, and perform no build, network
 request or live installation. They verify CLI false positives and subcommands,
 read-only dry run, SHA pin rejection, unchanged original file, exact rollback,
-refusal to overwrite a foreign replacement or edited wrapper, and normal exec
-argv/cwd/environment including Python locale coercion. They do not replace the
-required real patched-binary native TUI check.
+aborting on observed foreign replacements, edited/recreated wrappers, original
+fallback changes and a simulated post-replacement foreign update. Process tests
+verify `argv[1:]`/cwd/environment including Python locale coercion. PATH and
+custom-`argv[0]` tests explicitly demonstrate the shebang name change against
+direct execution of the original binary. These checks are implementation tests;
+they are not independent acceptance of actual P2 scope or the required real
+patched-binary native TUI check.

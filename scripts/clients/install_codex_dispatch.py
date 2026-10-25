@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import tempfile
 import uuid
 
@@ -25,23 +26,43 @@ def checked_binary(path, expected):
     return resolved
 
 
-def current_link(path):
-    if not path.is_symlink():
+def file_identity(path):
+    details = path.lstat()
+    return {"device": details.st_dev, "inode": details.st_ino}
+
+
+def link_snapshot(path):
+    before = path.lstat()
+    if not stat.S_ISLNK(before.st_mode):
         raise ValueError(f"refusing to replace a non-symlink: {path}")
-    return os.readlink(path)
+    target = os.readlink(path)
+    identity = file_identity(path)
+    if identity != {"device": before.st_dev, "inode": before.st_ino}:
+        raise ValueError("Codex symlink changed while inspecting it; aborting")
+    return {"target": target, "identity": identity}
+
+
+def current_link(path):
+    return link_snapshot(path)["target"]
 
 
 def replace_link(path, target, expected):
-    """Atomically replace the directory entry, after checking its current owner."""
-    if current_link(path) != expected:
+    """Replace only in a quiet setup; checks detect changes but provide no CAS."""
+    if link_snapshot(path) != expected:
         raise ValueError(f"Codex symlink changed; leaving it untouched: {path}")
     temporary = path.parent / (".lain-codex-link-" + uuid.uuid4().hex)
     try:
         temporary.symlink_to(target)
+        replacement = link_snapshot(temporary)
         # Recheck after preparing the replacement, as updaters do not use our lock.
-        if current_link(path) != expected:
+        if link_snapshot(path) != expected:
             raise ValueError("Codex symlink changed during operation; leaving it untouched")
         os.replace(temporary, path)
+        if link_snapshot(path) != replacement:
+            # No rollback: evidence of a foreign updater makes another mutation
+            # unsafe. Keep the private state for explicit recovery/inspection.
+            raise ValueError("Codex symlink changed after replacement; stop other updaters and inspect state")
+        return replacement
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -51,8 +72,10 @@ def install(args):
     state = args.state.absolute()
     if state.exists() or state.is_symlink():
         raise ValueError(f"state already exists; uninstall or inspect it first: {state}")
-    old_target = current_link(entry)
+    old_entry = link_snapshot(entry)
+    old_target = old_entry["target"]
     original = checked_binary(entry, args.original_sha256)
+    original_identity = file_identity(original)
     patched = checked_binary(args.patched, args.patched_sha256)
     if original == patched or state in original.parents or state in patched.parents:
         raise ValueError("original and patched binary must be separate, outside the install state")
@@ -67,7 +90,8 @@ def install(args):
     wrapper = state / "dispatch.py"
     installed_patch = state / "codex-lain"
     source = template.replace('"@LAIN_ORIGINAL@"', json.dumps(str(original))).replace('"@LAIN_PATCHED@"', json.dumps(str(installed_patch)))
-    manifest = {"schema": 1, "entry": str(entry), "previousSymlink": old_target,
+    manifest = {"schema": 2, "entry": str(entry), "previousSymlink": old_target,
+                "previousEntry": old_entry, "originalIdentity": original_identity,
                 "original": str(original), "originalSha256": args.original_sha256.lower(),
                 "patchedSha256": args.patched_sha256.lower(), "dispatcher": str(wrapper),
                 "dispatcherSha256": hashlib.sha256(source.encode()).hexdigest()}
@@ -83,18 +107,22 @@ def install(args):
         checked_binary(stage / "codex-lain", args.patched_sha256)
         (stage / "dispatch.py").write_text(source)
         (stage / "dispatch.py").chmod(0o700)
+        manifest["dispatcherIdentity"] = file_identity(stage / "dispatch.py")
         (stage / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
         # The exact previous target is a separate reviewable rollback artifact.
         (stage / "previous-symlink.json").write_text(json.dumps({"target": old_target}) + "\n")
         checked_binary(original, args.original_sha256)
-        if current_link(entry) != old_target or entry.resolve(strict=True) != original:
+        if link_snapshot(entry) != old_entry or entry.resolve(strict=True) != original or file_identity(original) != original_identity:
             raise ValueError("Original Codex changed while staging; aborting")
         os.rename(stage, state)
-        try:
-            replace_link(entry, str(wrapper), old_target)
-        except Exception:
-            shutil.rmtree(state)
-            raise
+        manifest["installedEntry"] = replace_link(entry, str(wrapper), old_entry)
+        checked_binary(original, args.original_sha256)
+        if file_identity(original) != original_identity or file_identity(wrapper) != manifest["dispatcherIdentity"] or sha256(wrapper) != manifest["dispatcherSha256"]:
+            raise ValueError("Original Codex or dispatcher changed after installation; inspect retained state")
+        (state / "manifest.json.next").write_text(json.dumps(manifest, indent=2) + "\n")
+        os.replace(state / "manifest.json.next", state / "manifest.json")
+        if link_snapshot(entry) != manifest["installedEntry"]:
+            raise ValueError("Codex symlink changed after installation; inspect retained state")
 
 
 def uninstall(args):
@@ -102,17 +130,24 @@ def uninstall(args):
     manifest = json.loads((state / "manifest.json").read_text())
     entry = Path(manifest["entry"])
     wrapper = state / "dispatch.py"
-    if manifest["schema"] != 1 or manifest["dispatcher"] != str(wrapper):
+    if manifest["schema"] != 2 or manifest["dispatcher"] != str(wrapper):
         raise ValueError("invalid manifest; no changes made")
-    if current_link(entry) != str(wrapper) or sha256(wrapper) != manifest["dispatcherSha256"]:
+    expected_entry = manifest["installedEntry"]
+    if link_snapshot(entry) != expected_entry or current_link(entry) != str(wrapper) or file_identity(wrapper) != manifest["dispatcherIdentity"] or sha256(wrapper) != manifest["dispatcherSha256"]:
         raise ValueError("Codex entry or launcher changed since installation; refusing to overwrite it")
     target = manifest["previousSymlink"]
     resolved = (entry.parent / target).resolve() if not Path(target).is_absolute() else Path(target).resolve()
     if resolved == wrapper.resolve() or state in resolved.parents:
         raise ValueError("backup would recurse into the dispatcher")
+    original = checked_binary(Path(manifest["original"]), manifest["originalSha256"])
+    if resolved != original or file_identity(original) != manifest["originalIdentity"]:
+        raise ValueError("Original fallback identity or saved symlink resolution changed; aborting")
     print(json.dumps({"operation": "uninstall", "apply": args.apply, "entry": str(entry), "restoreSymlink": target, "keepState": str(state)}, indent=2))
     if args.apply:
-        replace_link(entry, target, str(wrapper))
+        restored_entry = replace_link(entry, target, expected_entry)
+        checked_binary(original, manifest["originalSha256"])
+        if link_snapshot(entry) != restored_entry or entry.resolve(strict=True) != original or file_identity(original) != manifest["originalIdentity"]:
+            raise ValueError("Original fallback or symlink changed after rollback; inspect retained state")
         # Keep the manifest, backup and binary for audit/recovery; never delete a running executable.
 
 
@@ -132,8 +167,8 @@ def main():
         if not args.apply:
             (install if args.operation == "install" else uninstall)(args)
             return
-        # Own operations serialize. Other Codex installers are detected through
-        # symlink checks; they do not participate in this private lock.
+        # Own operations serialize. Other installers do not share this lock:
+        # concurrent foreign updates are unsupported, and checks are not CAS.
         args.state.absolute().parent.mkdir(parents=True, exist_ok=True)
         lock_path = args.state.absolute().parent / ".codex-profile-lain.lock"
         with lock_path.open("a") as lock:

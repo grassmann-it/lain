@@ -73,7 +73,7 @@ class ProfileParsing(unittest.TestCase):
                 with self.subTest(args=args):
                     self.assertFalse(dispatch.uses_lain(args))
 
-    def test_selected_binary_receives_identical_argv(self):
+    def test_selected_binary_receives_python_argv_without_mutation(self):
         with tempfile.TemporaryDirectory() as tmp:
             binary = Path(tmp) / "patch"
             binary.touch(mode=0o700)
@@ -162,6 +162,64 @@ class Installation(unittest.TestCase):
             self.uninstall()
         self.assertEqual(os.readlink(self.entry), str(self.state / "dispatch.py"))
 
+    def test_uninstall_refuses_recreated_entry_with_same_target(self):
+        self.install()
+        replacement = self.base / "foreign-entry"
+        replacement.symlink_to(os.readlink(self.entry))
+        os.replace(replacement, self.entry)
+        foreign_identity = installer.file_identity(self.entry)
+        with self.assertRaisesRegex(ValueError, "changed"):
+            self.uninstall()
+        self.assertEqual(installer.file_identity(self.entry), foreign_identity)
+
+    def test_uninstall_refuses_recreated_wrapper_with_same_hash(self):
+        self.install()
+        wrapper = self.state / "dispatch.py"
+        replacement = self.state / "foreign-wrapper"
+        replacement.write_bytes(wrapper.read_bytes())
+        replacement.chmod(0o700)
+        os.replace(replacement, wrapper)
+        with self.assertRaisesRegex(ValueError, "changed"):
+            self.uninstall()
+        self.assertEqual(os.readlink(self.entry), str(wrapper))
+
+    def test_uninstall_checks_original_fallback_hash_before_mutation(self):
+        self.install()
+        self.original.write_bytes(b"changed by a foreign updater")
+        with self.assertRaisesRegex(ValueError, "SHA256"):
+            self.uninstall()
+        self.assertEqual(os.readlink(self.entry), str(self.state / "dispatch.py"))
+
+    def test_install_detects_recreated_entry_and_keeps_recovery_state(self):
+        rename = os.rename
+
+        def recreate_after_staging(source, destination):
+            rename(source, destination)
+            replacement = self.base / "foreign-entry"
+            replacement.symlink_to("original")
+            os.replace(replacement, self.entry)
+
+        with mock.patch.object(os, "rename", side_effect=recreate_after_staging):
+            with self.assertRaisesRegex(ValueError, "changed"):
+                self.install()
+        self.assertEqual(os.readlink(self.entry), "original")
+        self.assertTrue((self.state / "manifest.json").exists())
+
+    def test_replacement_detects_foreign_change_after_mutation_without_rollback(self):
+        expected = installer.link_snapshot(self.entry)
+        replace = os.replace
+
+        def foreign_replace_after_ours(source, destination):
+            replace(source, destination)
+            replacement = self.base / "foreign-entry"
+            replacement.symlink_to("foreign-codex")
+            replace(replacement, self.entry)
+
+        with mock.patch.object(os, "replace", side_effect=foreign_replace_after_ours):
+            with self.assertRaisesRegex(ValueError, "changed after replacement"):
+                installer.replace_link(self.entry, "patched", expected)
+        self.assertEqual(os.readlink(self.entry), "foreign-codex")
+
     def test_missing_patch_only_breaks_lain(self):
         self.install()
         (self.state / "codex-lain").unlink()
@@ -174,7 +232,7 @@ class Installation(unittest.TestCase):
         self.assertEqual(special.returncode, 126)
         self.assertIn("patched binary is missing", special.stderr)
 
-    def test_exec_preserves_argv_cwd_and_environment(self):
+    def test_absolute_entry_preserves_arguments_cwd_and_environment(self):
         self.install()
         # /proc exposes the actual argv after exec, including argv[0]. Use -c as
         # Python's argument here: it is intentionally invalid as a Codex override.
@@ -186,6 +244,31 @@ class Installation(unittest.TestCase):
         self.assertEqual(actual["argv"], [str(self.entry), "-c", code, "tail"])
         self.assertEqual(actual["env"], env)
         self.assertEqual(actual["cwd"], str(self.base))
+
+    def check_shebang_argv0_boundary(self, name, use_path):
+        self.install()
+        code = "import json,os,pathlib;print(json.dumps({'argv':pathlib.Path('/proc/self/cmdline').read_bytes().decode().split(chr(0))[:-1], 'env':dict(os.environ), 'cwd':os.getcwd()}))"
+        env = {"LANG": "C", "MARKER": "exact value", "PATH": str(self.base) + ":/usr/bin:/bin", "PYTHONCOERCECLOCALE": "0"}
+        args = [name, "-c", code, "literal --profile=lain"]
+        baseline = subprocess.run(args, executable=str(self.original), env=env, cwd=self.base, capture_output=True, text=True)
+        actual = subprocess.run(args, executable=None if use_path else str(self.entry), env=env, cwd=self.base, capture_output=True, text=True)
+        self.assertEqual(baseline.returncode, 0, baseline.stderr)
+        self.assertEqual(actual.returncode, 0, actual.stderr)
+        before = json.loads(baseline.stdout)
+        after = json.loads(actual.stdout)
+        self.assertEqual(before["argv"][0], name)
+        self.assertEqual(after["argv"][0], str(self.entry))
+        self.assertNotEqual(after["argv"][0], before["argv"][0])
+        self.assertEqual(after["argv"][1:], before["argv"][1:])
+        self.assertEqual(after["env"], env)
+        self.assertEqual(after["cwd"], str(self.base))
+
+    def test_path_invocation_exhibits_shebang_argv0_limit(self):
+        self.check_shebang_argv0_boundary("codex", use_path=True)
+
+    def test_custom_argv0_exhibits_shebang_limit(self):
+        # subprocess executable= sets a distinct argv[0], like shell exec -a.
+        self.check_shebang_argv0_boundary("custom-codex-name", use_path=False)
 
     def test_dispatcher_refused_as_original(self):
         self.install()
