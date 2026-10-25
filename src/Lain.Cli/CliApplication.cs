@@ -396,6 +396,13 @@ public static partial class CliApplication
     private static long ParseLong(string value, string name) => long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed)
         ? parsed : throw new ArgumentException($"--{name} must be a nonnegative integer.");
 
+    private static async Task WriteLoginAuthorization(TextWriter output, LoginDto login, string uriPrefix = "")
+    {
+        var uri = string.IsNullOrWhiteSpace(login.Url) ? login.VerificationUri : login.Url;
+        if (!string.IsNullOrWhiteSpace(uri)) await output.WriteLineAsync(uriPrefix + Cell(uri));
+        if (!string.IsNullOrWhiteSpace(login.UserCode)) await output.WriteLineAsync("User code: " + Cell(login.UserCode));
+    }
+
     private static async Task Write(TextWriter output, object value, bool json, bool full = false)
     {
         if (json) { await output.WriteLineAsync(JsonSerializer.Serialize(value, value.GetType(), Json)); return; }
@@ -411,7 +418,7 @@ public static partial class CliApplication
                 await WriteAccounts(output, accounts); break;
             case LoginDto login:
                 await output.WriteLineAsync($"Login {Cell(login.Id)} ({Cell(login.Provider)}): {Cell(login.State)}");
-                if (login.Url is not null) await output.WriteLineAsync(Cell(login.Url));
+                await WriteLoginAuthorization(output, login);
                 break;
             case ModelCatalogDto models:
                 await WriteModels(output, models); break;

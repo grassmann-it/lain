@@ -5,6 +5,13 @@ using Lain.Client;
 using Lain.Cli;
 using Lain.Core;
 
+if (args.FirstOrDefault() == "--device-oauth-checks")
+{
+    var checks = await DeviceOAuthLoginChecks.RunAsync();
+    Console.WriteLine($"PASS: {checks} device OAuth CLI checks.");
+    return;
+}
+
 if (args.FirstOrDefault() == "--wizard-fixture")
 {
     Environment.ExitCode = await AccountWizardChecks.RunFixtureAsync(Console.Out, Console.Error);
@@ -406,6 +413,7 @@ assertions += await RouterCommandChecks.RunAsync();
 assertions += await HumanRenderingChecks.RunAsync();
 assertions += await SetupPresentationChecks.RunAsync();
 assertions += await AccountWizardChecks.RunAsync();
+assertions += await DeviceOAuthLoginChecks.RunAsync();
 assertions += await MonitorWizardChecks.RunAsync();
 assertions += await AccountUsageChecks.RunAsync();
 assertions += await UsageStyleChecks.RunAsync();

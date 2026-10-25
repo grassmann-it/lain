@@ -74,9 +74,9 @@ public static partial class CliApplication
                 var login = await client.LoginAsync(new LoginRequest(cfg.Revision, provider, method.Id, purposes, AccountId: reconnect?.Id, Binding: binding,
                     ExpectedGeneration: reconnect?.Generation, Name: name, IdempotencyKey: operationKey), ct);
                 activeLogin = login.Id;
-                while (login.State is "waiting" or "pending" or "resource-required" or "awaiting-resource")
+                while (login.State is "waiting" or "pending" or "authorizing" or "resource-required" or "awaiting-resource")
                 {
-                    if (login.Url is { } authorization) await output.WriteLineAsync("Continue in your browser: " + Cell(authorization));
+                    await WriteLoginAuthorization(output, login, "Continue in your browser: ");
                     if (login.Resources is { Length: > 0 } resources)
                     {
                         var resource = await WizardChoice(output, terminal, "Verified resource", resources,
