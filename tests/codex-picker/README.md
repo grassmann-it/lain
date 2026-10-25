@@ -17,7 +17,9 @@ Each case gets its own fresh synthetic home, `.codex/config.toml` sentinel, sepa
 `lain.config.toml` and `other.config.toml`, synthetic catalog, workspace, PTY, and bwrap
 PID/network/IPC/UTS namespaces. The original `HOME` value is preserved and the private home is
 bind-mounted at that existing path. `HOME` and `CODEX_HOME` are never reassigned. The environment
-is an explicit noncredential allowlist; no user shell or DISPLAY is inherited. The client is
+is an explicit noncredential allowlist; no user shell or DISPLAY is inherited. The harness
+compares actual network/PID namespace IDs to the host and verifies the mounted catalog hash.
+The client is
 started directly with `--no-daemon --no-alt-screen`, from the private trusted workspace.
 The source seed is the public tag's `codex-rs/models-manager/models.json` (the requested
 `core/models.json` does not exist in that tag); complete entries are copied before overriding
@@ -42,13 +44,18 @@ Seven cases cover the actual native TUI:
 6. Another profile with an invalid extension: upstream ignores it.
 7. `--profile lain` and another provider with an invalid extension: upstream ignores it.
 
-Deterministic actions use Home/Down/Enter and Escape. The native UI event path is exercised;
+Deterministic actions use Home/Down/Enter and Escape. The startup composer can appear before
+session configuration; only the same `/model` command is retried after the known startup-disabled
+warning. Membership assertions inspect the active popup region so the ordinary model header
+cannot create false failures. The native UI event path is exercised;
 there is no model-selection wrapper or synthetic AppEvent injection. The configured real router
 case and reasoning/persistence event details are covered by the Rust library tests; this fixture
 has no router and makes its disabled status explicit.
 
 Artifacts include exact binary SHA-256, per-case plans/results, raw PTY transcripts, current-screen
-text captures, stderr, provider-request logs, and the synthetic home files for inspection. The
+text captures, stderr, provider-request logs, and the synthetic home files for inspection.
+Provider-request and sentinel checks run after the private client is reaped; the outer supervisor
+independently validates each result and the final synthetic sentinel hash. The
 small VT recorder supports cursor movement, clears, line insertion/deletion, scrolling, SGR/OSC
 skipping and terminal query replies. It is an assertion recorder, not a screenshot or visual
 approval. Native startup/terminal incompatibilities fail with a retained final screen; do not

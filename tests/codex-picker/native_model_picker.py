@@ -20,6 +20,7 @@ import sys
 import termios
 import threading
 import time
+import tomllib
 import unicodedata
 
 COLS, ROWS = 120, 45
@@ -216,7 +217,10 @@ def prepare(args):
         (case / "codex").touch()
         shutil.copyfile(__file__, case / "native.py")
         plan = {"case": name, "profile": profile, "provider": provider, "grouped": name == "lain-groups",
-                "homePath": str(current_home), "mainSentinelSha256": digest(private / ".codex/config.toml")}
+                "homePath": str(current_home), "mainSentinelSha256": digest(private / ".codex/config.toml"),
+                "catalogSha256": digest(private / ".codex/models.json"),
+                "hostNetworkNamespace": os.readlink("/proc/self/ns/net"),
+                "hostPidNamespace": os.readlink("/proc/self/ns/pid")}
         (case / "plan.json").write_text(json.dumps(plan, indent=2) + "\n")
     (args.output / "prepared.json").write_text(json.dumps({"status": "prepared-not-executed", "binary": str(args.binary),
         "binarySha256": digest(args.binary), "source": str(args.source), "cases": [item[0] for item in cases]}, indent=2) + "\n")
@@ -226,15 +230,22 @@ def prepare(args):
 def inner():
     plan = json.loads(Path("/mnt/plan.json").read_text())
     home = Path(plan["homePath"])
+    if os.environ.get("HOME") != str(home):
+        raise RuntimeError("original HOME value was not preserved")
+    network_namespace = os.readlink("/proc/self/ns/net")
+    pid_namespace = os.readlink("/proc/self/ns/pid")
+    if network_namespace == plan["hostNetworkNamespace"] or pid_namespace == plan["hostPidNamespace"]:
+        raise RuntimeError("required network/PID namespace isolation is absent")
+    if digest(home / ".codex/models.json") != plan["catalogSha256"]:
+        raise RuntimeError("mounted home does not contain the exact synthetic fixture")
     requests = []
     class Deny(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
             requests.append({"method": self.command, "path": self.path})
             self.send_error(503, "Synthetic fixture denies all provider traffic")
-        do_POST = do_PUT = do_DELETE = do_PATCH = do_GET
+        do_POST = do_PUT = do_DELETE = do_PATCH = do_HEAD = do_OPTIONS = do_GET
         def log_message(self, *_): pass
     server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Deny)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
     env = {key: os.environ[key] for key in ("PATH", "HOME", "USER", "LOGNAME", "SHELL", "LANG", "LC_ALL", "TZ") if key in os.environ}
     # HOME retains its original value. bwrap mounts the private synthetic tree at that exact path.
     env.update(TERM="xterm-256color", LAIN_NATIVE_TEST_KEY="synthetic-no-inference")
@@ -245,6 +256,8 @@ def inner():
     if pid == 0:
         os.chdir("/mnt/work")
         os.execve(command[0], command, env)
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
     fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", ROWS, COLS, 0, 0))
     raw = Path("/mnt/session.ansi").open("wb")
     captures = []
@@ -266,56 +279,91 @@ def inner():
             pump()
         raise AssertionError(f"timed out waiting for {label}\n{screen.text()}")
     def send(data): os.write(master, data.encode() if isinstance(data, str) else data)
-    def has(*labels): return all(label in screen.text() for label in labels)
+    menu_titles = ["Modellgruppe wählen", "Free · Modell wählen", "IT Sec · Modell wählen",
+                   "Provider · Modell wählen", "Alle · Modell wählen", "Select Model"]
+    def menu(title):
+        text = screen.text()
+        position = text.rfind(title)
+        if position < 0: return ""
+        if any(text.rfind(other) > position for other in menu_titles if other != title): return ""
+        return text[position:]
+    def has_menu(title, *labels):
+        text = menu(title)
+        return bool(text) and all(label in text for label in labels)
     def choose(index): send(b"\x1b[H" + b"\x1b[B" * index + b"\r")
-    report = {"case": plan["case"], "status": "failed", "command": command, "captures": captures}
+    report = {"case": plan["case"], "status": "failed", "command": command, "captures": captures,
+              "networkNamespace": network_namespace, "pidNamespace": pid_namespace,
+              "hostNetworkNamespace": plan["hostNetworkNamespace"], "hostPidNamespace": plan["hostPidNamespace"],
+              "originalHomeValuePreserved": True, "mountedCatalogSha256": plan["catalogSha256"]}
     try:
         wait(lambda: "›" in screen.text(), "ready")
         send("/model\r")
+        # Startup renders the composer before session configuration completes. Retry only the
+        # same non-inference slash command after the documented disabled/updating warning.
+        startup_deadline = time.monotonic() + 40
+        next_retry = time.monotonic() + 1
+        while not menu("Modellgruppe wählen") and not menu("Select Model"):
+            if time.monotonic() >= startup_deadline: raise AssertionError("model menu did not become ready")
+            pump()
+            warnings = ("Model selection is disabled until startup completes.", "Models are being updated;")
+            if time.monotonic() >= next_retry and any(warning in screen.text() for warning in warnings):
+                send("/model\r"); next_retry = time.monotonic() + 1
         if plan["grouped"]:
-            wait(lambda: has("Modellgruppe wählen", "Free", "IT Sec", "Provider", "Alle"), "groups")
-            if has("Visible Free") or has("Hidden Model"): raise AssertionError("members leaked into group list")
+            wait(lambda: has_menu("Modellgruppe wählen", "Free", "IT Sec", "Provider", "Alle"), "groups")
+            if any(label in menu("Modellgruppe wählen") for label in ("Visible Free", "Hidden Model")): raise AssertionError("members leaked into group list")
             choose(0)
-            wait(lambda: has("Free · Modell wählen", "Automatisch", "Noch nicht eingerichtet", "Visible Free", "Shared Model"), "free")
-            if has("Hidden Model") or has("Security Model"): raise AssertionError("free membership/visibility mismatch")
+            wait(lambda: has_menu("Free · Modell wählen", "Automatisch", "Noch nicht eingerichtet", "Visible Free", "Shared Model"), "free")
+            if any(label in menu("Free · Modell wählen") for label in ("Hidden Model", "Security Model")): raise AssertionError("free membership/visibility mismatch")
             # Disabled Automatisch is skipped. First selectable model is Visible Free; next is Shared Model.
             choose(1)
             profile_file = home / ".codex/lain.config.toml"
-            wait(lambda: 'model = "synthetic/shared"' in profile_file.read_text(), "wire-slug-persisted")
+            wait(lambda: tomllib.loads(profile_file.read_text()).get("model") == "synthetic/shared", "wire-slug-persisted")
+            report["persistedProfileModel"] = tomllib.loads(profile_file.read_text())["model"]
+            report["profileSha256AfterSelection"] = digest(profile_file)
             send("/model\r")
-            wait(lambda: has("Modellgruppe wählen"), "groups-after-persist")
+            wait(lambda: has_menu("Modellgruppe wählen"), "groups-after-persist")
             choose(1)
-            wait(lambda: has("IT Sec · Modell wählen", "Shared Model", "Security Model"), "overlap")
-            if has("Visible Free") or has("Hidden Model"): raise AssertionError("IT Sec membership mismatch")
+            wait(lambda: has_menu("IT Sec · Modell wählen", "Shared Model", "Security Model"), "overlap")
+            if any(label in menu("IT Sec · Modell wählen") for label in ("Visible Free", "Hidden Model")): raise AssertionError("IT Sec membership mismatch")
             send(b"\x1b")
-            wait(lambda: has("Modellgruppe wählen"), "escape-to-groups")
+            wait(lambda: has_menu("Modellgruppe wählen"), "escape-to-groups")
             choose(2)
-            wait(lambda: has("Provider · Modell wählen", "Visible Free", "Shared Model", "Security Model"), "provider")
+            wait(lambda: has_menu("Provider · Modell wählen", "Visible Free", "Shared Model", "Security Model"), "provider")
             send(b"\x1b")
-            wait(lambda: has("Modellgruppe wählen"), "escape-provider")
+            wait(lambda: has_menu("Modellgruppe wählen"), "escape-provider")
             choose(3)
-            wait(lambda: has("Alle · Modell wählen", "Visible Free", "Shared Model", "Security Model", "Native review marker"), "all")
-            if has("Hidden Model"): raise AssertionError("hidden model appeared in Alle")
+            wait(lambda: has_menu("Alle · Modell wählen", "Visible Free", "Shared Model", "Security Model", "Native review marker"), "all")
+            if "Hidden Model" in menu("Alle · Modell wählen"): raise AssertionError("hidden model appeared in Alle")
         else:
-            wait(lambda: has("All models", "Native review marker"), "upstream-quick-picker")
-            if has("Modellgruppe wählen"): raise AssertionError("group extension escaped its exact profile/provider scope")
-        if digest(home / ".codex/config.toml") != plan["mainSentinelSha256"]:
-            raise AssertionError("synthetic ordinary config sentinel changed")
-        if requests: raise AssertionError(f"provider traffic attempted: {requests}")
+            wait(lambda: has_menu("Select Model", "All models", "Native review marker"), "upstream-quick-picker")
+            if menu("Modellgruppe wählen"): raise AssertionError("group extension escaped its exact profile/provider scope")
         report["status"] = "passed"
-        report["mainSentinelUnchanged"] = True
     except Exception as error:
         report["error"] = str(error)
     finally:
         Path("/mnt/final-screen.txt").write_text(screen.text())
-        report["providerRequests"] = requests
-        report["networkNamespace"] = "isolated"
-        Path("/mnt/result.json").write_text(json.dumps(report, indent=2) + "\n")
-        server.shutdown()
         try: os.killpg(pid, signal.SIGTERM)
         except ProcessLookupError: pass
-        try: os.waitpid(pid, 0)
-        except ChildProcessError: pass
+        exited = False
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            try: exited = os.waitpid(pid, os.WNOHANG)[0] == pid
+            except ChildProcessError: exited = True
+            if exited: break
+            time.sleep(0.05)
+        if not exited:
+            try: os.killpg(pid, signal.SIGKILL)
+            except ProcessLookupError: pass
+            try: os.waitpid(pid, 0)
+            except ChildProcessError: pass
+        server.shutdown(); server.server_close(); server_thread.join(timeout=2)
+        report["providerRequests"] = requests
+        report["mainSentinelSha256After"] = digest(home / ".codex/config.toml")
+        report["mainSentinelUnchanged"] = report["mainSentinelSha256After"] == plan["mainSentinelSha256"]
+        if requests or not report["mainSentinelUnchanged"]:
+            report["status"] = "failed"
+            report["error"] = "provider traffic attempted or ordinary config sentinel changed"
+        Path("/mnt/result.json").write_text(json.dumps(report, indent=2) + "\n")
         os.close(master); raw.close()
     return 0 if report["status"] == "passed" else 1
 
@@ -347,10 +395,19 @@ def main():
         try:
             result = subprocess.run(command, env=env, capture_output=True, timeout=100)
             (case / "supervisor.stderr").write_bytes(result.stderr)
-            statuses.append({"case": name, "exitCode": result.returncode})
-        except subprocess.TimeoutExpired:
-            statuses.append({"case": name, "exitCode": "timeout"})
-    summary = {"status": "passed" if all(item["exitCode"] == 0 for item in statuses) else "failed", "cases": statuses}
+            record = {"case": name, "exitCode": result.returncode}
+            result_path = case / "result.json"
+            if result_path.is_file():
+                report = json.loads(result_path.read_text())
+                record["verified"] = (report.get("case") == name and report.get("status") == "passed"
+                    and report.get("providerRequests") == [] and report.get("mainSentinelUnchanged") is True
+                    and digest(case / "private-home/.codex/config.toml") == report.get("mainSentinelSha256After"))
+            else: record["verified"] = False
+            statuses.append(record)
+        except subprocess.TimeoutExpired as error:
+            (case / "supervisor.stderr").write_bytes(error.stderr or b"")
+            statuses.append({"case": name, "exitCode": "timeout", "verified": False})
+    summary = {"status": "passed" if all(item["exitCode"] == 0 and item["verified"] for item in statuses) else "failed", "cases": statuses}
     (args.output / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary))
     return 0 if summary["status"] == "passed" else 1
