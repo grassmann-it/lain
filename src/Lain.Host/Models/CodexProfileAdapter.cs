@@ -106,7 +106,11 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
                 throw new ArgumentException("The lain Codex model picker requires single-line group IDs up to 256 UTF-8 bytes and names up to 1024 UTF-8 bytes. Stored names are preserved; shorten the affected group label before export.");
             groups.Add(new { id, name, router_model = routers.SingleOrDefault(router => router.GroupId == id)?.Alias, models = aliases });
         }
-        foreach (var group in DerivedModelGroups.Create(configuration, routes, catalog))
+        // Keep an explicit account router reachable after the profile shrinks to one
+        // account. Only this export profile's active routers influence derived views.
+        var preservedAccountIds = routers.Where(router => router.GroupId.StartsWith("account:", StringComparison.Ordinal))
+            .Select(router => router.GroupId[8..]).ToHashSet(StringComparer.Ordinal);
+        foreach (var group in DerivedModelGroups.Create(configuration, routes, catalog, preservedAccountIds))
             Add(group.Id, group.Name, group.RouteIds);
         foreach (var collection in configuration.Collections ?? [])
             Add("collection:" + collection.Id, collection.Name, collection.RouteIds);

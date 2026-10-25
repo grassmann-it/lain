@@ -91,6 +91,15 @@ internal static class AccountPickerCases
             var singleGroups = single.RootElement.GetProperty("lain_model_picker").GetProperty("groups").EnumerateArray().ToDictionary(group => group.GetProperty("id").GetString()!);
             Check(singleGroups.ContainsKey("provider:codex") && !singleGroups.ContainsKey("account:private") &&
                 singleGroups["provider:codex"].GetProperty("name").GetString() == "Codex", "Accounts outside the exported profile do not split a one-account provider");
+            state = service.PutCollectionRouter(state.Revision, new("account-router", "auto-private", "account:private", "profile"));
+            var singleAccountProof = CollectionRouterCompiler.CompileForExport(state, "profile", transport);
+            using var singleAccountRouter = JsonDocument.Parse(new CodexProfileAdapter(service, routerProof:singleAccountProof).Generate("profile", state.Revision,
+                "/opt/lain/lain", "/tmp/models.json", enableLainModelPicker:true).Catalog);
+            var singleAccountGroups = singleAccountRouter.RootElement.GetProperty("lain_model_picker").GetProperty("groups").EnumerateArray().ToDictionary(group => group.GetProperty("id").GetString()!);
+            Check(singleAccountGroups["account:private"].GetProperty("router_model").GetString() == "auto-private" &&
+                singleAccountGroups["account:private"].GetProperty("name").GetString() == "Codex (Private)" &&
+                !singleAccountGroups.ContainsKey("provider:codex"), "An explicitly configured account router remains reachable when its profile shrinks to one account");
+            state = service.DeleteCollectionRouter(state.Revision, "account-router");
             state = repository.Update(state.Revision, configuration => configuration with {
                 Routes = [.. configuration.Routes, new("single-pool", "single-pool-alias", "same-model", "codex", ["private"], Pooled:true)],
                 Profiles = [configuration.Profiles[0] with { RouteIds = ["single-pool"] , DefaultRouteId = "single-pool" }]

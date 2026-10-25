@@ -191,7 +191,8 @@ internal static class DerivedModelGroups
             ? account.Name + " · " + account.Id : account.Name;
     }
 
-    internal static ModelCollectionGroupDto[] Create(ConfigurationDto configuration, IEnumerable<RouteDto> routes, ProviderCatalogRegistry catalog)
+    internal static ModelCollectionGroupDto[] Create(ConfigurationDto configuration, IEnumerable<RouteDto> routes, ProviderCatalogRegistry catalog,
+        IReadOnlySet<string>? preservedAccountIds = null)
     {
         var groups = new List<ModelCollectionGroupDto>();
         foreach (var provider in routes.Where(route => IsSelectable(configuration, route))
@@ -200,7 +201,7 @@ internal static class DerivedModelGroups
         {
             var name = ProviderName(provider.Key, catalog);
             var accounts = Accounts(configuration, provider);
-            if (accounts.Length <= 1)
+            if (accounts.Length <= 1 && !accounts.Any(account => preservedAccountIds?.Contains(account.Id) == true))
             {
                 groups.Add(new("provider:" + provider.Key.ToLowerInvariant(), name, "provider", provider.Select(route => route.Id).ToArray(), provider.Key));
                 continue;

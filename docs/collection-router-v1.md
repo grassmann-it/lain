@@ -21,7 +21,9 @@ Groups are `collection:<id>`, `provider:<canonical-lowercase-provider>`,
 `account:<stableAccountId>` or `policy:free`. Automatic provider views appear first,
 sorted by their readable provider names, followed by custom collections in saved
 order (for example `1M` and `ITSec`); collection member order is retained. With one
-exported account, the provider label stays short. With multiple active exported
+exported account, the provider label stays short. An explicitly configured active
+account router retains its account group when the profile shrinks to one account,
+so its menu action remains available. With multiple active exported
 accounts, strict single-account routes are split into `Provider (Accountname)`
 groups. Pooled routes remain visible in a separate `Provider (Pool)` view and are
 never attributed to one account. Individual model labels also identify the account
