@@ -71,6 +71,15 @@ internal sealed partial class Scenario
             Named<TextBox>("lain command-line executable").Text = executable;
             Named<TextBox>("Destination parent folder").Text = scratch;
         }
+        Task WaitForEditor<T>(string name) where T : Control
+        {
+            var page = (ContentControl)type.GetField("_page", fields)!.GetValue(window)!;
+            var expected = (Control)page.Content!;
+            return Wait(() => Controls<T>().Any(control =>
+                (AutomationProperties.GetName(control) == name || control is Button button && Equals(button.Content, name))
+                && (ReferenceEquals(control, expected) || control.GetVisualAncestors().Contains(expected))),
+                "N05/N06 new editor control mounted: " + name);
+        }
         async Task Press(Control owner, string name)
         {
             var button = owner.GetVisualDescendants().OfType<Button>().First(value => Equals(value.Content, name) && value.IsEnabled);
@@ -88,7 +97,7 @@ internal sealed partial class Scenario
             Check(HasText("Model groups: 2", true), "N05 prepared scope comes from actual exported groups");
             var exportedBeforeReview = handler.Requests.Count;
             fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 }; Snapshot();
-            Invoke("RefreshProfileReviewState"); Invoke("ReviewDraft"); await Task.Delay(100);
+            Invoke("RefreshProfileReviewState"); Invoke("ReviewDraft"); await WaitForEditor<TextBox>("lain command-line executable");
             Check(Named<TextBox>("lain command-line executable").Text == executable
                 && Named<TextBox>("Destination parent folder").Text == scratch
                 && Named<ComboBox>("Codex installation target").SelectedIndex == 0
@@ -142,14 +151,14 @@ internal sealed partial class Scenario
                 "N05 installer writes separate lain files and preserves ordinary config");
             await Click("Back to profiles");
 
-            Snapshot(); Invoke("ShowProfileGroups", "p1"); await Task.Delay(100);
+            Snapshot(); Invoke("ShowProfileGroups", "p1"); await WaitForEditor<StackPanel>("Profile model groups");
             Check(HasText("multiple exported accounts", true), "N06 provider ambiguity explains explicit account repair");
             await Click("Create group"); Named<TextBox>("Custom model group name").Text = "Research";
             await Click("Add model gpt-lain-01 to group"); await Click("Add model gpt-lain-02 to group");
             // Shared menu/button action reorders identities, never clones routes.
             await Press(Controls<StackPanel>().Single(panel => Equals(panel.Tag, "r2")), "Move up");
             fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 }; Snapshot();
-            Invoke("ReviewDraft"); await Task.Delay(100);
+            Invoke("ReviewDraft"); await WaitForEditor<TextBox>("Custom model group name");
             Check(Named<TextBox>("Custom model group name").Text == "Research",
                 "N06 Review latest retains collection name alongside explicit membership draft");
             await Click("Save group");
@@ -161,7 +170,7 @@ internal sealed partial class Scenario
             await Click("Change group order");
             await Press(Controls<StackPanel>().Single(panel => Equals(panel.Tag, research.Id)), "Move group up");
             fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 }; Snapshot();
-            Invoke("ReviewDraft"); await Task.Delay(100);
+            Invoke("ReviewDraft"); await WaitForEditor<Button>("Save group order");
             await Click("Save group order");
             await Wait(() => fixture.Config.Collections![1].Id == research.Id, "N06 unsaved global collection permutation survives Review latest and persists");
 
@@ -177,9 +186,10 @@ internal sealed partial class Scenario
             Check(fixture.Config.CollectionRouters!.Single().Id == "provider-router", "N06 account repair preserves router identity");
 
             Invoke("EditProfileRouter", "p1", "provider-router");
+            await WaitForEditor<CheckBox>("Automatic target enabled");
             Named<CheckBox>("Automatic target enabled").IsChecked = false;
             fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 }; Snapshot();
-            Invoke("ReviewDraft"); await Task.Delay(100);
+            Invoke("ReviewDraft"); await WaitForEditor<CheckBox>("Automatic target enabled");
             Check(Named<CheckBox>("Automatic target enabled").IsChecked == false,
                 "N06 named enabled toggle survives router Review latest");
             await Click("Cancel");
@@ -188,6 +198,7 @@ internal sealed partial class Scenario
                 Collections = fixture.Config.Collections!.Select(value => value.Id == "one" ? value with { RouterTargetId = "referenced-router" } : value).ToArray(),
                 CollectionRouters = fixture.Config.CollectionRouters!.Append(new("referenced-router", "auto-collection", "collection:one", "p1")).ToArray() };
             Snapshot(); Invoke("EditProfileRouter", "p1", "referenced-router");
+            await WaitForEditor<ComboBox>("Automatic target group or account");
             var lockedTarget = Named<ComboBox>("Automatic target group or account");
             Check(!lockedTarget.IsEnabled && HasText("Target group locked", true), "N06 referenced target explains removal and recreation before retargeting");
             var routerWrites = handler.RouterWrites;
@@ -196,10 +207,12 @@ internal sealed partial class Scenario
             Check(handler.RouterWrites == routerWrites && HasText("Remove this automatic target first", true),
                 "N06 referenced retarget is refused before any invalid Host write");
             await Click("Cancel"); Invoke("RemoveProfileRouter", "p1", "referenced-router");
+            await WaitForEditor<Button>("Remove automatic target");
             await Click("Remove automatic target");
             await Wait(() => fixture.Config.Collections!.Single(value => value.Id == "one").RouterTargetId is null,
                 "N06 explicit automatic target removal clears its collection reference");
             Invoke("EditProfileRouter", "p1", null);
+            await WaitForEditor<TextBox>("Automatic target client name");
             Named<TextBox>("Automatic target client name").Text = "new-account-target";
             var replacementTarget = Named<ComboBox>("Automatic target group or account");
             replacementTarget.SelectedItem = replacementTarget.Items.Cast<object>().Single(value => value.ToString()!.Contains(" · a2", StringComparison.Ordinal));
@@ -208,6 +221,7 @@ internal sealed partial class Scenario
                 "N06 explicit recreation permits a new unreferenced account target");
 
             Invoke("EditProfileCollection", "p1", "one");
+            await WaitForEditor<TextBox>("Custom model group name");
             Named<TextBox>("Custom model group name").Text = "Unsaved retained name";
             var writes = handler.CollectionWrites;
             fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 }; Snapshot();
