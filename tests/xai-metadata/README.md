@@ -11,6 +11,10 @@ Production entry points:
 - `POST /api/v1/accounts/{id}/metadata/xai` with
   `{ "revision": N, "value": { "expectedGeneration": G } }` returns existing
   `ConfigurationDto`; the request contains no credential.
+- The ordinary `POST /accounts/connect` also supports reconnecting a confirmed
+  xAI account. `XaiCredentialReconnectService` independently reads metadata with
+  the newly supplied inference/model API key before publishing it. It never
+  treats the caller's binding/provenance or the old key's team as fresh proof.
 
 The service reads a saved `inference` or `models` API-key projection, never a
 quota-only management token. The sole remote operation is the existing fixed
@@ -27,6 +31,23 @@ builder.Services.AddSingleton(sp => new XaiKeyMetadataService(repository, secret
 // After builder.Build(), under the ordinary loopback/auth middleware:
 app.MapXaiKeyMetadata();
 ```
+
+For the ordinary connect endpoint, Root additionally registers
+`XaiCredentialReconnectService(repository, secrets, AccountService,
+ConnectionMethodCatalog, monitorAccess, providerHttp, mutations)` and delegates
+the existing `RevisionRequest<ConnectCredentialRequest>` POST to
+`ConnectAsync(request.Revision, request.Value, ct)`. This endpoint must also have
+`OwnsPublicationGate` metadata; otherwise middleware would hold the shared gate
+through provider HTTP. Other providers and new xAI accounts retain the existing
+local catalog connect behavior. `PrepareCredentialRequest` reuses that same
+method/resource/endpoint validation without publishing.
+
+For xAI reconnect, the returned team alone receives `provider-discovery`
+provenance. Subject, product and region are not copied into that proof. The common
+`ReserveConnect`/`CommitPrepared` authority still enforces any pre-existing scope
+and the target-removal fence. A different/absent team, failed read or stale target
+never replaces the old credential. Already unavailable old credentials may be
+repaired by independently proven replacements; no remote read uses the old key.
 
 The endpoint marks `OwnsPublicationGate`: the shared mutations gate is held only
 while capturing the account/credential and while checking/publishing the response.
@@ -52,6 +73,10 @@ unrelated revision/credential retirement, safe failures, unchanged credentials,
 and no routes/profiles/quota capabilities. A separate fixture checks existing
 Cloudflare inference-key reuse through MonitorAccessService → HostQuotaSource →
 the real adapter, with fake analytics HTTP and no invented remaining budget.
+The reconnect checks use ordinary typed `ConnectAccountAsync` over loopback
+HTTP and assert that the remote request carries the NEW key, then exercise same
+team success, unknown/different team, endpoint validation, unchanged capability
+purposes, legacy replacement rejection and account removal during the read.
 
 The synthetic native UI case is `tests/desktop/XaiMetadataCases.cs`:
 
@@ -63,3 +88,24 @@ Its existing runner requires private Xvfb and a private session bus. It prepares
 1120×780/800×560 screenshots, a visible Discover-team click, returned team text,
 xAI-only context commands, frozen revision/generation, disabled/offline guards
 and stale-action rejection. No native UI pass or screenshot is claimed here.
+
+## Reconnect caller audit
+
+Production caller inventory on `e48bc11` plus this feature:
+
+- `ConnectionMethodCatalog.Connect` is the only production caller of
+  `AccountService.ConnectCredential`. Desktop `MainWindow.AccountChooser` and
+  CLI `AccountWizard` both call typed `ConnectAccountAsync`, which targets this
+  same `/accounts/connect` endpoint. Their reconnect includes account ID,
+  generation and the prior binding; the asynchronous wrapper now proves the new
+  key before entering common publication.
+- `AccountService.ReplaceApiCredential` has no production caller or public
+  endpoint. Existing Foundation fixtures call it directly. It already rejects
+  replacing a key under a confirmed binding; the new fixture preserves that
+  invariant rather than adding a second key-replacement path.
+- `AddApi` can create a new key account or find an exact-key duplicate. Model
+  attachment checks the selected saved key is unchanged before merging transport
+  metadata; neither operation replaces an existing account with an arbitrary key.
+- Direct synchronous `ConnectCredential` remains intentionally unable to adopt a
+  caller-asserted verified binding. No trusted-verification boolean or public
+  provenance override was added to the account contract.

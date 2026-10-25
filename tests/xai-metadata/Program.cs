@@ -27,12 +27,25 @@ try
     using var provider = new ProviderHandler();
     using var providerHttp = new HttpClient(provider);
     var service = new XaiKeyMetadataService(repository, secrets, accounts, providerHttp, gate);
+    var monitors = new MonitorAccessService(repository, secrets, new(paths));
+    var methods = new ConnectionMethodCatalog(new Lain.Host.Providers.ProviderCatalogRegistry(), () => false, () => false, () => false);
+    var reconnect = new XaiCredentialReconnectService(repository, secrets, accounts, methods, monitors, providerHttp, gate);
     var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = [], EnvironmentName = "Production" });
     builder.Logging.ClearProviders();
     builder.WebHost.UseUrls("http://127.0.0.1:0");
     builder.Services.AddSingleton(service);
+    builder.Services.AddSingleton(reconnect);
     await using var app = builder.Build();
     app.MapXaiKeyMetadata();
+    app.MapPost(Api.Prefix + "/accounts/connect", async Task<IResult> (RevisionRequest<ConnectCredentialRequest> request,
+        XaiCredentialReconnectService connector, CancellationToken ct) =>
+    {
+        try { return Results.Ok(await connector.ConnectAsync(request.Revision, request.Value, ct)); }
+        catch (RevisionConflictException) { return Results.Conflict(new ApiError("revision_conflict", "Synthetic revision conflict")); }
+        catch (KeyNotFoundException) { return Results.NotFound(new ApiError("not_found", "Synthetic missing target")); }
+        catch (ArgumentException) { return Results.BadRequest(new ApiError("validation", "Synthetic validation failure")); }
+        catch (InvalidOperationException) { return Results.Conflict(new ApiError("operation_unavailable", "Synthetic unavailable reconnect")); }
+    });
     app.MapGet(Api.Prefix + "/configuration", () => repository.Snapshot);
     await app.StartAsync();
     var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
@@ -162,13 +175,72 @@ try
     exit = await CliApplication.RunAsync(["accounts", "discover", nonXai.Id, "--json"], output, error, () => new LainApiClient(http));
     Check(exit == 2 && provider.Calls == calls, "CLI refuses discovery for other providers");
 
+    var reconnectTarget = Add("Confirmed reconnect target");
+    var proven = await client.DiscoverXaiTeamAsync(repository.Snapshot.Revision, reconnectTarget.Id, reconnectTarget.Generation);
+    reconnectTarget = proven.Accounts.Single(a => a.Id == reconnectTarget.Id);
+    const string replacement = "replacement-explicit-fixture-key";
+    provider.ExpectedSecret = replacement;
+    var replacementRequest = new ConnectCredentialRequest(new("xai", "api-key", ["inference", "models"], AccountId: reconnectTarget.Id,
+        Binding: reconnectTarget.Binding, ExpectedGeneration: reconnectTarget.Generation), replacement, BaseUrl: "https://api.x.ai/v1");
+    var reconnected = await client.ConnectAccountAsync(proven.Revision, replacementRequest);
+    var afterReconnect = reconnected.Accounts.Single(a => a.Id == reconnectTarget.Id);
+    Check(afterReconnect.Id == reconnectTarget.Id && afterReconnect.Name == reconnectTarget.Name
+        && afterReconnect.Binding is { ResourceType: "team", ResourceId: "actual-team", Provenance: "provider-discovery" },
+        "ordinary typed ConnectAccount reconnect preserves confirmed target after proving NEW key team");
+    Check(afterReconnect.Generation == reconnectTarget.Generation + 1 && reconnected.Revision == proven.Revision + 1
+        && afterReconnect.Capabilities!.Select(c => c.Purpose).Order().SequenceEqual(reconnectTarget.Capabilities!.Select(c => c.Purpose).Order()),
+        "verified reconnect advances one generation without expanding capability purposes");
+    using (var json = JsonDocument.Parse(new CredentialResolver(repository, secrets).Resolve(afterReconnect.Id, "inference")!.PrivateJson))
+        Check(json.RootElement.GetProperty("apiKey").GetString() == replacement, "new supplied credential becomes selected only after independent metadata proof");
+    async Task ReconnectRejected(string name, string payload, HttpStatusCode expected)
+    {
+        provider.Response = _ => Task.FromResult(ProviderHandler.Json(payload));
+        var current = repository.Snapshot;
+        var account = current.Accounts.Single(a => a.Id == afterReconnect.Id);
+        var oldKey = new CredentialResolver(repository, secrets).Resolve(account.Id, "inference")!.PrivateJson;
+        using var result = await http.PostAsJsonAsync(Api.Prefix + "/accounts/connect", new RevisionRequest<ConnectCredentialRequest>(current.Revision,
+            replacementRequest with { Connection = replacementRequest.Connection with { ExpectedGeneration = account.Generation } }));
+        Check(result.StatusCode == expected && JsonSerializer.Serialize(current) == JsonSerializer.Serialize(repository.Snapshot)
+            && oldKey == new CredentialResolver(repository, secrets).Resolve(account.Id, "inference")!.PrivateJson,
+            name + " keeps old key, binding, routes and revisions unchanged");
+    }
+    await ReconnectRejected("replacement key with unknown team", "{\"api_key_id\":\"new-key-id\"}", HttpStatusCode.Conflict);
+    await ReconnectRejected("replacement key with different team despite claimed verified binding", "{\"team_id\":\"foreign-team\"}", HttpStatusCode.Conflict);
+    provider.Response = _ => Task.FromResult(ProviderHandler.Team());
+    var reconnectCalls = provider.Calls;
+    var beforeInvalid = repository.Snapshot;
+    using (var result = await http.PostAsJsonAsync(Api.Prefix + "/accounts/connect", new RevisionRequest<ConnectCredentialRequest>(beforeInvalid.Revision,
+        replacementRequest with { BaseUrl = "https://untrusted.invalid/v1", Connection = replacementRequest.Connection with { ExpectedGeneration = afterReconnect.Generation } })))
+        Check(result.StatusCode == HttpStatusCode.BadRequest && provider.Calls == reconnectCalls, "reconnect uses unchanged catalog endpoint validation before provider HTTP");
+    var legacyRejected = false;
+    try { accounts.ReplaceApiCredential(beforeInvalid.Revision, afterReconnect.Id, "unproved-legacy-key"); }
+    catch (InvalidOperationException) { legacyRejected = true; }
+    Check(legacyRejected && repository.Snapshot.Revision == beforeInvalid.Revision, "legacy replacement entry remains fail-closed for confirmed xAI identity");
+
+    var reconnectEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var reconnectRelease = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    provider.Response = async _ => { reconnectEntered.SetResult(); await reconnectRelease.Task; return ProviderHandler.Team(); };
+    var heldRevision = repository.Snapshot.Revision;
+    var held = http.PostAsJsonAsync(Api.Prefix + "/accounts/connect", new RevisionRequest<ConnectCredentialRequest>(heldRevision,
+        replacementRequest with { Connection = replacementRequest.Connection with { ExpectedGeneration = afterReconnect.Generation } }));
+    await reconnectEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    await gate.WaitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+    try { accounts.Remove(repository.Snapshot.Revision, afterReconnect.Id); }
+    finally { gate.Release(); }
+    var removedState = JsonSerializer.Serialize(repository.Snapshot);
+    reconnectRelease.SetResult();
+    using (var result = await held)
+        Check(result.StatusCode == HttpStatusCode.Conflict && JsonSerializer.Serialize(repository.Snapshot) == removedState,
+            "ordinary reconnect HTTP releases gate during provider wait and cannot resurrect removed target");
+    provider.ExpectedSecret = ProviderHandler.Secret;
+    provider.Response = _ => Task.FromResult(ProviderHandler.Team());
+
     var google = MonitorAccessCatalog.Options("gemini-api").Single().Description;
     var cloudflare = MonitorAccessCatalog.Options("cloudflare-workers-ai");
     Check(google.Contains("Google Cloud CLI") && google.Contains("broad permissions") && !google.Contains("not implemented"), "Google monitor instructions expose current renewable access and grant breadth");
     Check(cloudflare.All(o => o.Description.Contains("estimated") && !o.Description.Contains("not yet qualified")), "Cloudflare instructions describe implemented estimated neuron reads");
     var cfId = "0123456789abcdef0123456789abcdef";
     var cf = Add(providerId: "cloudflare-workers-ai", endpoint: "https://api.cloudflare.com/client/v4/accounts/" + cfId + "/ai/v1");
-    var monitors = new MonitorAccessService(repository, secrets, new(paths));
     var beforeMonitor = repository.Snapshot;
     monitors.Set(beforeMonitor.Revision, cf.Id, new("inference-key", null, cfId));
     var credential = await new HostQuotaSource(repository, secrets, monitors).GetCredentialAsync(cf.Id);
@@ -187,13 +259,14 @@ finally { Directory.Delete(root, true); }
 sealed class ProviderHandler : HttpMessageHandler
 {
     public const string Secret = "synthetic-xai-fixture-key";
+    public string ExpectedSecret = Secret;
     public int Calls;
     public Func<HttpRequestMessage, Task<HttpResponseMessage>> Response = _ => Task.FromResult(Team());
     public static HttpResponseMessage Json(string value) => new(HttpStatusCode.OK) { Content = new StringContent(value) };
     public static HttpResponseMessage Team() => Json("{\"team_id\":\"actual-team\",\"api_key_id\":\"actual-key\",\"acls\":[\"api-key:model:*\"]}");
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
-        if (request.Method != HttpMethod.Get || request.RequestUri?.AbsoluteUri != XaiKeyMetadataReader.Endpoint || request.Headers.Authorization?.Parameter != Secret)
+        if (request.Method != HttpMethod.Get || request.RequestUri?.AbsoluteUri != XaiKeyMetadataReader.Endpoint || request.Headers.Authorization?.Parameter != ExpectedSecret)
             throw new Exception("Metadata escaped its fixed endpoint or selected synthetic key.");
         Interlocked.Increment(ref Calls);
         return Response(request);

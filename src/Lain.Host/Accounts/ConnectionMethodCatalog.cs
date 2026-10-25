@@ -108,6 +108,27 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
     public ConfigurationDto Connect(long revision, ConnectCredentialRequest request, AccountService accounts,
         MonitorAccessService monitors, ConfigurationRepository repository)
     {
+        request = PrepareCredentialRequest(request);
+        var connection = request.Connection;
+        var binding = connection.Binding!;
+        if (RequireAvailable(connection, secret: true).Kind == "monitor-token")
+        {
+            var input = new MonitorAccessRequest(request.Kind, request.Secret, binding.ResourceId, request.ExpiresAt);
+            if (connection.AccountId is { } id)
+            {
+                var target = repository.Snapshot.Accounts.SingleOrDefault(a => a.Id == id) ?? throw new KeyNotFoundException();
+                if (Canonical(target.Provider) != Canonical(connection.Provider) || connection.ExpectedGeneration is { } generation && generation != target.Generation)
+                    throw new InvalidOperationException("Account connection changed.");
+                return monitors.Set(revision, id, input);
+            }
+            return monitors.Create(revision, connection.Name!, connection.Provider, input);
+        }
+        return accounts.ConnectCredential(revision, request);
+    }
+
+    /// <summary>Validate method/resource/endpoint without publishing a credential or changing state.</summary>
+    public ConnectCredentialRequest PrepareCredentialRequest(ConnectCredentialRequest request)
+    {
         var method = RequireAvailable(request.Connection, secret: true);
         if (request.Kind != method.SecretKind) throw new ArgumentException("Credential kind does not match the method.");
         var settings = request.Settings ?? [];
@@ -129,17 +150,7 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
         if (Canonical(request.Connection.Provider) == "codex") binding = binding with { Subject = binding.Subject ?? binding.ResourceId };
         var connection = request.Connection with { Binding = binding, Name = request.Connection.Name ?? Name(Canonical(request.Connection.Provider)) };
         if (method.Kind == "monitor-token")
-        {
-            var input = new MonitorAccessRequest(request.Kind, request.Secret, binding.ResourceId, request.ExpiresAt);
-            if (connection.AccountId is { } id)
-            {
-                var target = repository.Snapshot.Accounts.SingleOrDefault(a => a.Id == id) ?? throw new KeyNotFoundException();
-                if (Canonical(target.Provider) != Canonical(connection.Provider) || connection.ExpectedGeneration is { } generation && generation != target.Generation)
-                    throw new InvalidOperationException("Account connection changed.");
-                return monitors.Set(revision, id, input);
-            }
-            return monitors.Create(revision, connection.Name!, connection.Provider, input);
-        }
+            return request with { Connection = connection };
         var endpoint = method.DefaultBaseUrl;
         foreach (var field in method.RequiredSettings ?? [])
             if (endpoint is not null)
@@ -147,7 +158,7 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
         if (request.BaseUrl is not null && request.BaseUrl != method.DefaultBaseUrl && request.BaseUrl != endpoint)
             throw new ArgumentException("Endpoint differs from the selected connection.");
         var privateSettings = settings.Where(p => p.Key is "accountId" or "region" or "workspaceId" or "serviceDeploymentScope").ToDictionary(p => p.Key, p => p.Value);
-        return accounts.ConnectCredential(revision, request with { Connection = connection, BaseUrl = endpoint, Settings = privateSettings });
+        return request with { Connection = connection, BaseUrl = endpoint, Settings = privateSettings };
     }
 
     public static string Canonical(string value) => AccountService.CanonicalProviderId(value);
