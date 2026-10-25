@@ -66,7 +66,7 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         {
             ["models"] = routes.Select((route, index) => CatalogEntry(route.Alias, DisplayName(route, catalogRegistry),
                 Description(route, catalogRegistry), IsInternalReview(route), index))
-                .Concat(routers.Select((router, index) => CatalogEntry(router.Alias, "Automatisch", "Ordered selection for a new conversation; fixed model and account thereafter. No cross-route retry.", false, routes.Length + index))).ToArray()
+                .Concat(routers.Select((router, index) => CatalogEntry(router.Alias, "Automatisch · " + RouterGroupName(router, resolved.Configuration, catalogRegistry), "Ordered selection for a new conversation; fixed model and account thereafter. No cross-route retry.", false, routes.Length + index))).ToArray()
         };
         // Versioned lain client extension, not a native Codex catalog field. Callers opt in
         // only for the separately qualified patched CLI and its generated --profile lain.
@@ -106,10 +106,9 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
             Add("collection:" + collection.Id, collection.Name, collection.RouteIds);
         if (routers.SingleOrDefault(router => router.GroupId == "policy:free") is { } freeRouter)
             Add("policy:free", "Free", routerProof!.Routers[freeRouter.Alias].RouteIds);
-        // A derived Free view must reflect the effective execution policy AND a qualified
-        // transport binding. This adapter currently has no source-qualified binding seam;
-        // hypothetical evaluation under a different policy cannot make an alias free.
-        // Custom collection names retain their stored meaning without cost guarantees.
+        // Free is emitted only from the current compiler-created router proof above.
+        // A hypothetical policy override cannot make an existing alias free; custom
+        // collection names retain their stored meaning without cost guarantees.
         foreach (var provider in routes.GroupBy(route => route.Provider, StringComparer.OrdinalIgnoreCase)
             .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase))
             Add("provider:" + provider.Key.ToLowerInvariant(), ServiceName(provider.First(), catalog), provider.Select(route => route.Id));
@@ -121,6 +120,11 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
     // This is the native internal approval-review model, never a collection auto-router.
     // Match the upstream identity and canonical service, not a user-controlled alias.
     private static bool IsInternalReview(RouteDto route) => route.Provider == "codex" && route.UpstreamModel == "codex-auto-review";
+
+    private static string RouterGroupName(CollectionRouterDto router, ConfigurationDto configuration, ProviderCatalogRegistry catalog) =>
+        router.GroupId == "policy:free" ? "Free" : router.GroupId.StartsWith("collection:", StringComparison.Ordinal)
+            ? (configuration.Collections ?? []).Single(collection => "collection:" + collection.Id == router.GroupId).Name
+            : catalog.Find(router.GroupId[9..])?.Name ?? router.GroupId[9..];
 
     private static ProviderRouteDescriptorDto? PresentationModel(RouteDto route, ProviderCatalogRegistry catalog)
     {
