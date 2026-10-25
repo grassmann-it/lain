@@ -26,6 +26,7 @@ public sealed partial class MainWindow
     private readonly Dictionary<string, Vector> _profileDetailOffsets = new(StringComparer.Ordinal);
     private bool _profileNarrowDetail;
     private Button? _profileApplyFocus;
+    private EditorFocusTarget? _profileEditorFocusTarget;
     private ProfileReview? _profileReview;
     private Action? _refreshProfileStatusUi;
     private string? _profileUnconfirmedApplyId;
@@ -54,6 +55,7 @@ public sealed partial class MainWindow
     {
         var presentation = PresentationFor("Profiles");
         var create = Ui.IconButton("add", "Create profile", () => EditProfile(null));
+        create.Tag = new EditorFocusTarget("Profiles", null, "create");
         if (_configuration is not { } cfg)
             return Ui.Stack(ProfileHeader("Profiles", "Saved model menus.", create), Empty("Connect to the host to manage profiles."));
         var status = Ui.Text(AppliedProfileDescription(cfg), 12, Ui.Muted);
@@ -263,7 +265,9 @@ public sealed partial class MainWindow
         var details = new StackPanel { Spacing = 8 };
         var title = Ui.Stack(selectionState, Ui.Text($"{selected.RouteIds.Length} models · Saved revision {cfg.Revision}", 12, Ui.Muted));
         title.Spacing = 3;
-        var actions = ProfileWrap(apply, Ui.Button("Edit selection", () => EditProfile(selected)), moreButton);
+        var edit = Ui.Button("Edit selection", () => EditProfile(selected));
+        edit.Tag = new EditorFocusTarget("Profiles", selected.Id, "detail-edit");
+        var actions = ProfileWrap(apply, edit, moreButton);
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 10, RowSpacing = 6 };
         header.Children.Add(title); Grid.SetColumn(actions, 1); header.Children.Add(actions);
         header.SizeChanged += (_, _) =>
@@ -747,6 +751,9 @@ public sealed partial class MainWindow
             _selectedProfileId = current.Id;
         }
         var profileId = profile?.Id;
+        var returnFocus = CaptureEditorFocus("Profiles", profileId, profileId is null ? "create" : "detail-edit", _profileEditorFocusTarget);
+        _profileEditorFocusTarget = returnFocus;
+        var savedId = profileId;
         RegisterEditor(() =>
         {
             if (profileId is null) { EditProfile(null); return; }
@@ -865,7 +872,10 @@ public sealed partial class MainWindow
             _configuration = await _client.SaveProfileAsync(cfg.Revision,
                 original with { Name = name.Text.Trim(), RouteIds = ids, DefaultRouteId = defaultId, Policy = ResolvePolicy() }, _lifetime.Token);
             _selectedProfileId = savedProfileId;
-        }, "Profile saved.");
+            savedId = savedProfileId;
+            if (profileId is null) _profileNarrowDetail = true;
+        }, "Profile saved.", afterSuccess: () => RestoreEditorFocus(profileId is null
+            ? new("Profiles", savedId, "detail-edit") : returnFocus));
         save.Classes.Add("primary");
         var fields = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), ColumnSpacing = 14, RowSpacing = 10 };
         fields.Children.Add(Ui.Field("Profile name", name));
@@ -888,7 +898,7 @@ public sealed partial class MainWindow
             Ui.Card(Ui.Stack(fields, defaultHint, spending.Control, fallbackEditor,
                 Ui.Text("A profile can make routes stricter. Configured access never weakens a route's existing free-only rule.", 11, Ui.Muted),
                 SpendingPolicyCheck(spending, () => choices.Where(item => item.Box.IsChecked == true).Select(item => item.Route.Id).ToArray(), policyStatus), policyStatus)), Ui.Card(selection),
-            ProfileWrap(save, Ui.Button("Cancel", () => { _editing = false; Render(); })));
+            ProfileWrap(save, Ui.Button("Cancel", () => { _editing = false; Render(); RestoreEditorFocus(returnFocus); })));
     }
 
     private static Control ProfileHeader(string title, string description, Control? action = null)

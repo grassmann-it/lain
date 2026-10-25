@@ -302,17 +302,18 @@ public sealed partial class MainWindow : Window
         finally { _refreshing = false; _refresh.IsEnabled = !_busy; }
     }
 
-    private async Task RunAsync(Func<Task> operation, string success, bool stayOnPage = false)
+    private async Task RunAsync(Func<Task> operation, string success, bool stayOnPage = false, Action? afterSuccess = null)
     {
         if (_busy) return;
         var operationSection = _section;
         var operationEditor = _editing ? _page.Content as Control : null;
+        var completed = false;
         _busy = true; _notice.Text = "Working…";
         UpdateDraftStatus();
         _refresh.IsEnabled = false;
         _page.IsEnabled = false; _navigation.IsEnabled = false; _settingsButton.IsEnabled = false; _backButton.IsEnabled = false;
         foreach (var action in _actions) action.IsEnabled = false;
-        try { await operation(); _editing = stayOnPage; if (_notice.Text == "Working…") _notice.Text = success; }
+        try { await operation(); completed = true; _editing = stayOnPage; if (_notice.Text == "Working…") _notice.Text = success; }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { return; }
         catch (Exception ex) { _notice.Text = Friendly(ex); }
         finally { _busy = false; _refresh.IsEnabled = !_refreshing; _page.IsEnabled = true; _navigation.IsEnabled = true; _settingsButton.IsEnabled = true; _backButton.IsEnabled = _history.Count > 0; foreach (var action in _actions) action.IsEnabled = true; }
@@ -327,6 +328,9 @@ public sealed partial class MainWindow : Window
         }
         UpdateDraftStatus();
         UpdateServiceSummary();
+        // Editor callers resolve their stable trigger in the final enabled tree.
+        // Failed saves and unrelated commands never request focus restoration.
+        if (completed && _section == operationSection) afterSuccess?.Invoke();
     }
 
     private static string Friendly(Exception error) => error is LainApiException api
@@ -337,9 +341,9 @@ public sealed partial class MainWindow : Window
         : error is TaskCanceledException ? "The host took too long to respond. Refresh to check its current state."
         : error.Message;
 
-    private Button Action(string label, Func<Task> operation, string success, bool stayOnPage = false)
+    private Button Action(string label, Func<Task> operation, string success, bool stayOnPage = false, Action? afterSuccess = null)
     {
-        var button = Ui.Button(label, () => _ = RunAsync(operation, success, stayOnPage)); _actions.Add(button); return button;
+        var button = Ui.Button(label, () => _ = RunAsync(operation, success, stayOnPage, afterSuccess)); _actions.Add(button); return button;
     }
 
     private void RefreshPage(bool explicitRefresh)

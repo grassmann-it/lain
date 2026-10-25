@@ -29,6 +29,39 @@ public sealed partial class MainWindow
     private Vector _modelInventoryOffset;
     private readonly Dictionary<string, long> _modelPendingRevisions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, bool> _modelDetails = new(StringComparer.Ordinal);
+    private sealed record EditorFocusTarget(string Section, string? ObjectId, string EntryPoint);
+    private EditorFocusTarget? _modelEditorFocusTarget;
+
+    private EditorFocusTarget CaptureEditorFocus(string section, string? id, string fallback, EditorFocusTarget? retained)
+    {
+        if ((FocusManager?.GetFocusedElement() as Control)?.Tag is EditorFocusTarget focused
+            && focused.Section == section && focused.ObjectId == id) return focused;
+        // Rebuilding a stale editor keeps the original return target, not a field
+        // or menu item from the editor that is about to be replaced.
+        if (_editing && retained?.Section == section && retained.ObjectId == id) return retained;
+        return new(section, id, fallback);
+    }
+
+    private void RestoreEditorFocus(EditorFocusTarget target)
+    {
+        var page = _page.Content as Control;
+        var navigation = _workspaceNavigationGeneration;
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_editing || _busy || _section != target.Section || navigation != _workspaceNavigationGeneration
+                || page is null || !ReferenceEquals(_page.Content, page) || TopLevel.GetTopLevel(page) != this) return;
+            if (target.ObjectId is { } id && (target.Section == "Models" ? _selectedModelRouteId : _selectedProfileId) != id) return;
+            var candidates = page.GetVisualDescendants().OfType<Button>()
+                .Where(button => button.IsEffectivelyVisible && button.IsEffectivelyEnabled && button.Focusable
+                    && button.Tag is EditorFocusTarget key && key.Section == target.Section && key.ObjectId == target.ObjectId).ToArray();
+            // A resized window or menu entry can require the same object's other
+            // visible Edit action. Never substitute an alias or a different row.
+            var trigger = candidates.FirstOrDefault(button => Equals(button.Tag, target)) ?? candidates.FirstOrDefault();
+            if (trigger is null) return;
+            trigger.BringIntoView();
+            trigger.Focus();
+        }, DispatcherPriority.Loaded);
+    }
 
     private void ApplyModelsNavigation(WorkspaceNavigationRequest target)
     {
@@ -98,6 +131,7 @@ public sealed partial class MainWindow
         var root = new Grid { ColumnDefinitions = new ColumnDefinitions("*,0"), ColumnSpacing = 16 };
         var inventory = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*"), RowSpacing = 8 };
         var create = Ui.PrimaryButton("Add model access", () => EditRoute(null));
+        create.Tag = new EditorFocusTarget("Models", null, "create");
         inventory.Children.Add(Ui.PageHeader("Models", null, create));
         var search = Ui.Input(_routeSearch, "Search client names, provider models or accounts");
         AutomationProperties.SetName(search, "Search configured model access");
@@ -147,9 +181,10 @@ public sealed partial class MainWindow
             root.ColumnDefinitions = new ColumnDefinitions(wide ? "*,320" : "*");
             Grid.SetColumn(detail, wide ? 1 : 0);
         }
-        void ShowDetails(string id)
+        void ShowDetails(string id, bool openDetail = true)
         {
-            _selectedModelRouteId = id; _modelNarrowDetail = true;
+            _selectedModelRouteId = id;
+            if (openDetail) _modelNarrowDetail = true;
             foreach (var pair in rowBorders) pair.Value.Background = pair.Key == id ? Ui.AccentSurface : Brushes.Transparent;
             detail.Child = new ScrollViewer { Content = ModelAccessDetails(_configuration ?? cfg, id, () => {
                 _modelNarrowDetail = false; _selectedModelRouteId = null; UpdateLayout();
@@ -202,6 +237,7 @@ public sealed partial class MainWindow
                 ToolTip.SetTip(menuState, "Hidden removes the alias from client model menus; direct requests remain possible.");
                 Grid.SetColumn(menuState, 3); grid.Children.Add(menuState);
                 var edit = CompactRouteButton("Edit", () => EditRoute(route)); AutomationProperties.SetName(edit, "Edit model access " + route.Alias);
+                edit.Tag = new EditorFocusTarget("Models", route.Id, "inventory-edit");
                 Button more = null!;
                 var moreMenu = ModelAccessCommandMenu(route.Id, () => ShowDetails(route.Id), () => more, out var openMoreMenu);
                 more = CompactRouteButton("⋯", () => openMoreMenu(more)); more.ContextMenu = moreMenu;
@@ -248,7 +284,7 @@ public sealed partial class MainWindow
         state.SelectionChanged += (_, _) => { _routeState = state.SelectedItem as string ?? "All states"; Populate(); };
         root.SizeChanged += (_, e) => UpdateLayout(e.NewSize.Width);
         Populate();
-        if (_selectedModelRouteId is { } selected) ShowDetails(selected);
+        if (_selectedModelRouteId is { } selected) ShowDetails(selected, openDetail: false);
         else detail.Child = Ui.Stack(Ui.Text("Model configuration", 15), Ui.Text("Select a model to inspect its binding, profiles and provenance. Edit and actions are available in every row.", 12, Ui.Muted));
         UpdateLayout();
         var offset = _modelInventoryOffset;
@@ -340,6 +376,7 @@ public sealed partial class MainWindow
         if (cfg.Routes.FirstOrDefault(r => r.Id == id) is not { } route)
             return Ui.Stack(Ui.Text("Model access no longer exists", 16), Ui.Text("The selected stable ID was removed. No other model has been selected in its place.", 12, Ui.Muted), Ui.Button("Back to inventory", close));
         var edit = CompactRouteButton("Edit", () => EditRoute(route));
+        edit.Tag = new EditorFocusTarget("Models", route.Id, "detail-edit");
         AutomationProperties.SetName(edit, "Edit selected model access " + route.Alias);
         Button more = null!;
         var moreMenu = ModelAccessCommandMenu(route.Id, () => { }, () => more, out var openMoreMenu);
@@ -426,9 +463,14 @@ public sealed partial class MainWindow
                 _notice.Text = "This model access no longer exists. Return to the inventory and select an existing stable ID.";
                 return;
             }
-            route = current; _selectedModelRouteId = route.Id;
+            route = current;
         }
         var routeId = route?.Id;
+        var returnFocus = CaptureEditorFocus("Models", routeId,
+            routeId is null ? "create" : _modelNarrowDetail ? "detail-edit" : "inventory-edit", _modelEditorFocusTarget);
+        _modelEditorFocusTarget = returnFocus;
+        if (routeId is not null) _selectedModelRouteId = routeId;
+        var savedRouteId = routeId;
         RegisterEditor(() =>
         {
             if (routeId is null) { EditRoute(null); return; }
@@ -536,14 +578,17 @@ public sealed partial class MainWindow
             };
             _configuration = await _client.SaveRouteAsync(cfg.Revision, saved, _lifetime.Token);
             _selectedModelRouteId = saved.Id;
+            savedRouteId = saved.Id;
+            if (routeId is null) _modelNarrowDetail = true;
             _modelPendingRevisions[saved.Id] = _configuration.Revision;
-        }, "Model access saved.");
+        }, "Model access saved.", afterSuccess: () => RestoreEditorFocus(routeId is null
+            ? new("Models", savedRouteId, "detail-edit") : returnFocus));
         save.Classes.Add("primary");
         var editor = Ui.Stack(Heading(route is null ? "Add model access" : $"Edit model access {route.Alias}", "Choose the client name, provider model and account binding. Saved changes take effect after global Apply."));
         if (route is null && contextAccount is not null)
             editor.Children.Add(Ui.Button("Use " + contextAccount.Name + " provider templates instead", () => _ = ShowAccountModelsAsync(contextAccount.Id)));
         editor.Children.Add(new Border { BorderBrush = Ui.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(18), Child = form });
-        editor.Children.Add(OverviewActions(save, Ui.Button("Cancel", () => { _editing = false; Render(); })));
+        editor.Children.Add(OverviewActions(save, Ui.Button("Cancel", () => { _editing = false; Render(); RestoreEditorFocus(returnFocus); })));
         _page.Content = editor;
     }
     private sealed record RouteFallbackChoice(string Id, string Name)
