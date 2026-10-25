@@ -214,7 +214,7 @@ public sealed partial class MainWindow
                 };
                 details.Children.Add(manual);
             }
-            else
+            else if (login.State is not ("resource-required" or "awaiting-resource"))
                 details.Children.Add(Ui.Text("The host has not supplied an authorization link. You can cancel and try again from accounts.", 13, Ui.Muted));
         }
         if (login.Resources is { Length: > 0 } resources && waiting)
