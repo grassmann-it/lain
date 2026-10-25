@@ -6,6 +6,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Lain.Client;
 using Lain.Core;
 using Lain.Desktop.Presentation;
 
@@ -14,6 +15,7 @@ namespace Lain.Desktop;
 public sealed partial class MainWindow
 {
     private readonly Dictionary<string, bool> _accountTechnicalExpansion = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, bool> _accountBudgetExpansion = new(StringComparer.Ordinal);
     private string? _accountNavigationId;
 
     private void ApplyAccountNavigation(WorkspaceNavigationRequest target)
@@ -77,10 +79,8 @@ public sealed partial class MainWindow
                 var snapshots = _quotas.Where(quota => quota.AccountId == account.Id).ToArray();
                 if (displayedSnapshots is not null && snapshots.SequenceEqual(displayedSnapshots)) return;
                 displayedSnapshots = snapshots;
-                var budgets = new StackPanel { Spacing = compact ? 7 : 10 };
-                if (snapshots.Length == 0) budgets.Children.Add(AccountTileWindow(account, null));
-                foreach (var quota in snapshots) budgets.Children.Add(AccountTileWindow(account, quota, commonFreshness: true));
-                var observations = snapshots.Where(quota => !QuotaUnavailable(quota)).Select(quota => quota.LastSuccessAt).Distinct().ToArray();
+                var budgets = AccountQuotaSummary(account, snapshots, compact);
+                var observations = snapshots.Where(QuotaPresentation.HasReading).Select(quota => quota.LastSuccessAt).Distinct().ToArray();
                 if (observations.Length == 1 && observations[0] is { } checkedAt)
                     budgets.Children.Add(TileText("Checked " + checkedAt.ToLocalTime().ToString("dd MMM · HH:mm", CultureInfo.CurrentCulture) + " local time", 11, Ui.Muted));
                 windows.Content = budgets;
@@ -126,7 +126,7 @@ public sealed partial class MainWindow
             tile.BorderBrush = Ui.Edge;
             tile.Focusable = true;
             AutomationProperties.SetName(tile, $"Account budgets for {account.Name}");
-            AutomationProperties.SetHelpText(tile, "All reported windows. A window's empty balance does not prove that the whole account is exhausted.");
+            AutomationProperties.SetHelpText(tile, "Important quota windows first. Expand additional budgets for monthly limits, credits and other details. All reported values remain in account details. A window's empty balance does not prove that the whole account is exhausted.");
             tile.Loaded += (_, _) =>
             {
                 if (_accountNavigationId != account.Id) return;
@@ -143,6 +143,54 @@ public sealed partial class MainWindow
             tiles.Children.Add(tile);
         }
         return tiles;
+    }
+
+    private StackPanel AccountQuotaSummary(AccountDto account, IReadOnlyList<QuotaDto> snapshots, bool compact)
+    {
+        var panel = new StackPanel { Spacing = compact ? 7 : 10 };
+        if (snapshots.Count == 0)
+        {
+            panel.Children.Add(AccountTileWindow(account, null));
+            return panel;
+        }
+        var summary = QuotaPresentation.ForSummary(snapshots);
+        foreach (var quota in summary.Primary)
+            panel.Children.Add(AccountTileWindow(account, quota, commonFreshness: true));
+
+        // Accounts without readings still explain their connection state directly.
+        // With readings, setup guidance belongs below the actionable windows.
+        if (summary.Primary.Count == 0 && summary.Missing.Count > 0)
+            panel.Children.Add(AccountTileWindow(account, summary.Missing[0], commonFreshness: true));
+        var extra = summary.Additional.Concat(summary.Primary.Count == 0 ? summary.Missing.Skip(1) : summary.Missing).ToArray();
+        if (extra.Length > 0)
+        {
+            var body = new StackPanel { Spacing = compact ? 8 : 12 };
+            foreach (var quota in extra)
+                body.Children.Add(AccountTileWindow(account, quota, commonFreshness: true));
+            panel.Children.Add(AdditionalAccountBudgets(account, body, extra.Length));
+        }
+        if (summary.Primary.Count == 0 && summary.Missing.Count == 0)
+            panel.Children.Add(TileText("No active quota balance reported · see account details", 12, Ui.Muted));
+        return panel;
+    }
+
+    private Expander AdditionalAccountBudgets(AccountDto account, Control content, int count)
+    {
+        var more = new Expander
+        {
+            Header = $"More budgets & details ({count})",
+            IsExpanded = _accountBudgetExpansion.GetValueOrDefault(account.Id),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Content = new Border { Padding = new Thickness(0, 8, 0, 0), Child = content }
+        };
+        AutomationProperties.SetName(more, $"Additional budgets for {account.Name}");
+        AutomationProperties.SetHelpText(more, "Monthly limits, additional credits and quota access details. Each budget is separate.");
+        more.PropertyChanged += (_, args) =>
+        {
+            if (args.Property == Expander.IsExpandedProperty) _accountBudgetExpansion[account.Id] = more.IsExpanded;
+        };
+        return more;
     }
 
     private static TextBlock TileText(string value, double size, IBrush? color = null)
@@ -165,9 +213,7 @@ public sealed partial class MainWindow
                 ? BudgetAmount(rate, quota.Unit) + " observed" : "Rate not supplied", 12));
             panel.Children.Add(TileText("Sample " + Ui.When(quota.DataAsOf ?? quota.ObservedAt), 11, Ui.Muted));
             if (!string.IsNullOrWhiteSpace(quota.Error)) panel.Children.Add(TileText(quota.Error, 11, Ui.Warning));
-            var rateState = TileText(LastKnownQuota(quota) ? "Last known" : "", 11, Ui.Warning);
-            rateState.Height = 18;
-            panel.Children.Add(rateState);
+            if (LastKnownQuota(quota)) panel.Children.Add(TileText("Last known", 11, Ui.Warning));
             if (LastKnownQuota(quota)) panel.Children.Add(QuotaAccessActions(account, quota));
             return panel;
         }
@@ -228,9 +274,8 @@ public sealed partial class MainWindow
             var stateLabel = TileText(QuotaExhausted(quota)
                 ? QuotaWindowLabel(quota) + (lastKnown ? " empty · last known" : " empty") : state, 11,
                 QuotaExhausted(quota) && !lastKnown ? Ui.Danger : lastKnown ? Ui.Warning : Ui.Muted);
-            stateLabel.Height = 18;
-            panel.Children.Add(stateLabel);
-            var differentFreshness = _quotas.Where(q => q.AccountId == account.Id && !QuotaUnavailable(q)).Select(q => q.LastSuccessAt).Distinct().Count() > 1;
+            if (!string.IsNullOrWhiteSpace(stateLabel.Text)) panel.Children.Add(stateLabel);
+            var differentFreshness = _quotas.Where(q => q.AccountId == account.Id && QuotaPresentation.HasReading(q)).Select(q => q.LastSuccessAt).Distinct().Count() > 1;
             if (!commonFreshness || differentFreshness)
                 panel.Children.Add(TileText(quota.LastSuccessAt is { } success
                     ? "Checked " + success.ToLocalTime().ToString("dd MMM · HH:mm", CultureInfo.CurrentCulture) + " local time"

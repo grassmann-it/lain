@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Lain.Client;
 using Lain.Core;
 
 namespace Lain.Desktop;
@@ -62,13 +63,26 @@ public sealed partial class MainWindow
                 if (displayedSnapshots is not null && snapshots.SequenceEqual(displayedSnapshots)) return;
                 displayedSnapshots = snapshots;
                 var rows = new StackPanel { Spacing = 0 };
-                void AddWindow(QuotaDto? quota)
+                Control WindowRow(QuotaDto? quota)
                 {
-                    rows.Children.Add(new Border { Padding = new Thickness(10, 8), BorderBrush = Ui.Edge,
-                        BorderThickness = new Thickness(0, 0, 0, 1), Child = BudgetWindowRow(account, quota) });
+                    return new Border { Padding = new Thickness(10, 8), BorderBrush = Ui.Edge,
+                        BorderThickness = new Thickness(0, 0, 0, 1), Child = BudgetWindowRow(account, quota) };
                 }
-                if (snapshots.Length == 0) AddWindow(null);
-                foreach (var quota in snapshots) AddWindow(quota);
+                if (snapshots.Length == 0) rows.Children.Add(WindowRow(null));
+                var summary = QuotaPresentation.ForSummary(snapshots);
+                foreach (var quota in summary.Primary) rows.Children.Add(WindowRow(quota));
+                if (summary.Primary.Count == 0 && summary.Missing.Count > 0) rows.Children.Add(WindowRow(summary.Missing[0]));
+                var extra = summary.Additional.Concat(summary.Primary.Count == 0 ? summary.Missing.Skip(1) : summary.Missing).ToArray();
+                if (extra.Length > 0)
+                {
+                    var body = new StackPanel { Spacing = 0 };
+                    foreach (var quota in extra) body.Children.Add(WindowRow(quota));
+                    var moreBudgets = AdditionalAccountBudgets(account, body, extra.Length);
+                    moreBudgets.Margin = new Thickness(10, 4, 10, 8);
+                    rows.Children.Add(moreBudgets);
+                }
+                if (snapshots.Length > 0 && summary.Primary.Count == 0 && summary.Missing.Count == 0)
+                    rows.Children.Add(new Border { Padding = new Thickness(10, 8), Child = Ui.Text("No active quota balance reported · see account details", 12, Ui.Muted) });
                 windows.Content = rows;
             }
             ObserveAccountQuotaRefresh(windows, account.Id, UpdateWindows);
@@ -76,7 +90,7 @@ public sealed partial class MainWindow
                 Child = new StackPanel { Spacing = 0, Children = { header, windows } }, Focusable = true };
             row.Classes.Add("account-monitor-row");
             AutomationProperties.SetName(row, "Account budgets for " + account.Name);
-            AutomationProperties.SetHelpText(row, "All reported quota windows. Consumption bars share a 0 to 100 percent scale. Shared budgets are not added.");
+            AutomationProperties.SetHelpText(row, "Important quota windows first; expand additional budgets for further limits and credits. Consumption bars share a 0 to 100 percent scale. Shared budgets are not added.");
             row.ContextMenu = ObjectCommandMenu(() => AccountCommands(account, configuration.Revision, inventoryChanged));
             _accountCards[account.Id] = row;
             row.Loaded += (_, _) =>

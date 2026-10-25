@@ -209,7 +209,8 @@ public sealed partial class MainWindow
         var heading = Ui.PageHeader(AccountDisplayName(account), ProviderName(account), more, close);
         var content = new StackPanel { Spacing = 12 };
         if (!_quotas.Any(quota => quota.AccountId == accountId)) content.Children.Add(AccountTileWindow(account, null));
-        foreach (var quota in _quotas.Where(q => q.AccountId == accountId)) content.Children.Add(AccountTileWindow(account, quota));
+        foreach (var quota in Lain.Client.QuotaPresentation.Order(_quotas.Where(q => q.AccountId == accountId)))
+            content.Children.Add(AccountTileWindow(account, quota));
         content.Children.Add(AccountDetail(account, cfg.Revision));
         _accountInspectorScroll = new ScrollViewer { Content = content, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         AutomationProperties.SetName(_accountInspectorScroll, $"Account detail content for {account.Name}");

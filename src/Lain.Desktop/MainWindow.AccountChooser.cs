@@ -350,7 +350,7 @@ public sealed partial class MainWindow
         }
         var quotas = _quotas.Where(q => q.AccountId == accountId).ToArray();
         if (quotas.Length == 0) details.Children.Add(Ui.Text("Quota has not been observed. You can refresh it from the account.", 13, Ui.Muted));
-        foreach (var quota in quotas) details.Children.Add(AccountTileWindow(account, quota));
+        foreach (var quota in Lain.Client.QuotaPresentation.Order(quotas)) details.Children.Add(AccountTileWindow(account, quota));
         var done = Ui.PrimaryButton("Done", () => { _editing = false; Render(); });
         var actions = OverviewActions(done);
         if (!IsMonitorMode && account.Capabilities?.Any(c => c.Purpose == "inference" && c.State is "ready" or "available" or "unverified" or "connected") == true)
