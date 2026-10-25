@@ -18,8 +18,37 @@ ARCHIVE = ('writer-exclusion', 'original-unchanged', 'bounded-real-segments',
            'corruption-refused', 'actual-host-collector-resume-and-fresh-replay',
            'matching-whole-tree-snapshot-and-sqlite-restore')
 REPORTS = ('upgrade', 'process', 'providers', 'context', 'archive', 'go-unit')
-UPGRADE_MIN_CASES = dict(zip(UPGRADE[:-1], (15, 2, 15, 4, 2, 2, 2)))
+COHERE_RESPONSES = ('responses_json', 'responses_stream', 'responses_tool', 'responses_store_true',
+                    'responses_previous_response_id', 'responses_native_search',
+                    'responses_additional_native_search', 'responses_native_file_search')
+UPGRADE_FILES = {name: name + '.json' for name in UPGRADE[:-1]}
+UPGRADE_FILES['consumer-replay-10'] = 'consumer-replay.json'
+UPGRADE_CASES = {
+    'protocol-durability': ('same-alias-200-replay-restart', 'sse-tool-continuation', 'responses-tool-translation',
+        'strict-429', 'pool-429-retry', 'cancel', 'unknown-token-components', 'credential-lifecycle',
+        'deactivated-account', 'crash-inflight', 'journal-failures', 'startup-failures',
+        'terminal-write-failure', 'responses-terminal-write-failure', 'anthropic-messages-tools'),
+    'independent-auth-crash': ('management-and-inference-auth', 'kill-after-dispatch-restart'),
+    'inspector': ('management-auth-and-epoch', 'claude-worker-parent', 'codex-turn-metadata',
+        'thread-header-precedence', 'chat-singleton-tool-result', 'anthropic-singleton-tool-result',
+        'unknown-identities-common-prefix', 'untrusted-header-poison', 'claude-user-id-json-explicit-only',
+        'codex-explicit-thread-spawn', 'codex-ordinary-fork-is-not-worker',
+        'tool-continuation-one-conversation-one-turn-two-requests', 'client-cancellation-terminal-identity',
+        'credentials-absent-and-payload-not-durable', 'new-process-epoch-no-payload-replay-durable-usage-unchanged'),
+    'upgrade-boundaries': ('snapshot-no-refresh-import-boundary', 'copied-owned-file-never-borrowed',
+        'unqualified-free-only-fails-closed', 'gemini-native-bearer-and-default-key'),
+    'native-tool-boundary': ('native-image-generation-exclusion-and-positive-controls',
+        'final-payload-override-exclusion-and-recovery'),
+    'hostwriter-transports': ('openai-chat', 'openai-responses'),
+    'version-transition': ('journal-upgrade-and-rollback-read', 'mixed-version-consumer-replay-10'),
+}
+PYTHON_GATES = {
+    'upgrade-tests.txt': ('tests/acceptance', 'test_upgrade_probe.py', 'test_upgrade_probe', 12),
+    'legacy-tests.txt': ('tests/delivery-stabilization', 'test_legacy_rollback.py', 'test_legacy_rollback', 10),
+}
 GO_PACKAGES = {'lain.local/proxy/internal/freeonly', 'lain.local/proxy/internal/lain', 'lain.local/proxy/cmd/lain-proxy'}
+FIXED_BUILD_INPUTS = ('proxy/upstream.json', 'proxy/toolchain.json', 'proxy/LICENSE.upstream',
+                      'scripts/build-core.sh', 'scripts/build-core-verify.py', 'scripts/prepare-core.py')
 
 
 def require(value, description):
@@ -94,12 +123,35 @@ def named_checks(report, expected, key='name'):
     return checks
 
 
+def python_command(directory, pattern):
+    return ['python3', '-m', 'unittest', 'discover', '-s', directory, '-p', pattern, '-v']
+
+
 def git_bytes(repository, source, name):
     pin(source, 40)
     result = subprocess.run(['git', '-C', str(repository), 'show', source + ':' + name],
                             capture_output=True, timeout=30)
     require(result.returncode == 0, 'Pinned Git source input unavailable')
     return result.stdout
+
+
+def verify_git_inputs(repository, source_commit, declared):
+    require(isinstance(declared, dict) and declared, 'Core build input inventory missing')
+    result = subprocess.run(['git', '-C', str(repository), 'ls-tree', '-r', '-z', source_commit, '--',
+                             'proxy/adapter', 'proxy/patches', *FIXED_BUILD_INPUTS], capture_output=True, timeout=30)
+    require(result.returncode == 0, 'Pinned Git input inventory unavailable')
+    actual = set()
+    for entry in result.stdout.split(b'\0'):
+        if not entry:
+            continue
+        metadata, name = entry.split(b'\t', 1)
+        mode, kind, _ = metadata.split()
+        require(kind == b'blob' and mode in (b'100644', b'100755'), 'Core Git input must be a regular file')
+        actual.add(name.decode())
+    require(actual == set(declared), 'Committed Core input inventory differs from source manifest')
+    for name in sorted(actual):
+        require(hashlib.sha256(git_bytes(repository, source_commit, name)).hexdigest() == pin(declared[name]),
+                'Committed Core input bytes differ from source manifest')
 
 
 def seal(args):
@@ -119,6 +171,7 @@ def seal(args):
     for source_commit in (args.source_commit, args.go_unit_source_commit):
         require(hashlib.sha256(git_bytes(args.repository, source_commit, 'proxy/source-manifest.json')).hexdigest() == source_hash,
                 'Application/Go source commit does not contain the exact Core source manifest')
+        verify_git_inputs(args.repository, source_commit, source.get('buildInputs'))
     toolchain_bytes = git_bytes(args.repository, args.source_commit, 'proxy/toolchain.json')
     require(hashlib.sha256(toolchain_bytes).hexdigest() == source['buildInputs']['proxy/toolchain.json'],
             'Pinned toolchain is not bound by source manifest')
@@ -170,15 +223,13 @@ def seal(args):
 
     for check in named_checks(reports['upgrade'], UPGRADE):
         relative = Path(check.get('report', ''))
-        require(len(relative.parts) == 1 and relative.name.endswith('.json'), 'Unsafe/missing upgrade child report')
+        require(str(relative) == UPGRADE_FILES[check['name']], 'Upgrade summary references the wrong child report')
         child = report('upgrade/' + check['name'], args.upgrade_report.parent / relative)
         if check['name'] != 'consumer-replay-10':
             require(check.get('binaryHashMatches') is True, 'Upgrade summary lacks exact binary match')
             require(type(check.get('cases')) is int and check['cases'] > 0 and len(child.get('checks', [])) == check['cases'],
                     'Upgrade summary/inner case coverage differs')
-            require(check['cases'] >= UPGRADE_MIN_CASES[check['name']], 'Upgrade child lost required case coverage')
-            require(all(isinstance(row, dict) and row.get('passed') is True for row in child['checks']),
-                    'Upgrade child case did not explicitly pass')
+            named_checks(child, UPGRADE_CASES[check['name']], 'case' if check['name'] == 'inspector' else 'name')
         else:
             require(child.get('replays') == 10 and child.get('storeReopenedEachReplay') is True,
                     'SQLite consumer replay coverage differs')
@@ -191,6 +242,7 @@ def seal(args):
     expected_cases = {(provider, case) for provider in ('cohere', 'kilo') for case in
                       ('json', 'stream', 'tool', 'status_401', 'status_403', 'status_429', 'status_404', 'cancel', 'truncated')}
     expected_cases.add(('kilo', 'status_402'))
+    expected_cases.update(('cohere', case) for case in COHERE_RESPONSES)
     require(len(cases) == len(expected_cases) and {(c.get('provider'), c.get('case')) for c in cases} == expected_cases and
             all(c.get('passed') is True for c in cases), 'Provider transport coverage differs')
     cases = reports['context'].get('checks', [])
@@ -228,14 +280,31 @@ def seal(args):
     packages = summary.get('packages', [])
     require(len(packages) == len(GO_PACKAGES) and {p.get('Package') for p in packages} == GO_PACKAGES and
             all(p.get('Action') == 'pass' for p in packages), 'Go package coverage incomplete')
-    require(isinstance(unit.get('pythonResults'), list) and unit['pythonResults'] and
-            all(type(r.get('exitCode')) is int and r['exitCode'] == 0 for r in unit['pythonResults']), 'Go-associated Python gate failed')
+    python_results = unit.get('pythonResults')
+    require(isinstance(python_results, list) and len(python_results) == len(PYTHON_GATES), 'Required Python gate count differs')
+    python_logs = {}
+    for name, (directory, pattern, module, minimum) in PYTHON_GATES.items():
+        matches = [r for r in python_results if isinstance(r, dict) and r.get('command') == python_command(directory, pattern)]
+        require(len(matches) == 1 and type(matches[0].get('exitCode')) is int and matches[0]['exitCode'] == 0,
+                'Required exact Python command missing, duplicated or failed')
+        python_logs[name] = matches[0]
     raw_files = unit.get('rawFiles', {})
     require(set(raw_files) == {'go-test.jsonl', 'upgrade-tests.txt', 'legacy-tests.txt'}, 'Required Go raw evidence files missing')
     for name, value in raw_files.items():
         path = args.go_unit_report.parent / name
         content = inputs.read(path, value, as_json=False)
         evidence['go-unit/' + name] = {'file': str(path), 'sha256': inputs.files[path], 'scope': 'raw unit/command output'}
+        if name in PYTHON_GATES:
+            text = content.decode()
+            command_result = python_logs[name]
+            _, _, module, minimum = PYTHON_GATES[name]
+            require(isinstance(command_result.get('summary'), str) and command_result['summary'] == text[-500:],
+                    'Python summary does not match its exact raw log tail')
+            match = re.search(r'\nRan ([1-9][0-9]*) tests? in [0-9.]+s\n\nOK\s*$', text)
+            require(match is not None and int(match[1]) >= minimum and '(' + module + '.' in text,
+                    'Python raw log does not prove the expected successful suite')
+            evidence['go-unit/' + name]['command'] = command_result['command']
+            evidence['go-unit/' + name]['exitCode'] = command_result['exitCode']
         if name == 'go-test.jsonl':
             events = [decode(line) for line in content.splitlines() if line.strip()]
             require(events and all(e.get('Action') != 'fail' for e in events), 'Raw Go log contains failures')
