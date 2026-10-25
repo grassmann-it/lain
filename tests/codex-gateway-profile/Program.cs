@@ -2,6 +2,7 @@ using System.Text.Json;
 using Lain.Core;
 using Lain.Host.Models;
 using Lain.Host.Operations;
+using Lain.Host.Providers;
 
 var temporary = Path.Combine(Path.GetTempPath(), "lain-codex-gateway-" + Guid.NewGuid().ToString("N"));
 var assertions = 0;
@@ -24,6 +25,7 @@ try
     Check(!result.Configuration.Contains("mcp_servers") && !result.Configuration.Contains("plugins.") && !result.Configuration.Contains("multi_agent = false"), "MCP/plugins/agent capabilities are not silently removed");
     Check(result.Configuration.Contains("wire_api = \"responses\"") && result.Configuration.Contains("[model_providers.lain.auth]"), "Existing endpoint protocol and command auth remain intact");
     using var catalog = JsonDocument.Parse(result.Catalog);
+    Check(catalog.RootElement.EnumerateObject().Select(property => property.Name).SequenceEqual(new[] { "models" }), "Native catalog contains only the qualified models field");
     var entries = catalog.RootElement.GetProperty("models").EnumerateArray().ToArray();
     Check(entries.Select(m => m.GetProperty("slug").GetString()).SequenceEqual(new[] { "mimo-v2.6-flash", "mimo-v2.6-pro" }), "All selected routes remain in the model menu");
     foreach (var model in entries)
@@ -34,6 +36,50 @@ try
     }
     Check(repository.Snapshot.Revision == state.Revision && repository.Snapshot.Routes.Length == 2, "Pure export does not modify model/runtime configuration");
     Check(!File.Exists(Path.Combine(temporary, "config.toml")), "No Codex base config is written");
+
+    var metadata = new ProviderCatalogRegistry([new("fixture-service", "Readable Service", "Synthetic catalog", "https://fixture.invalid/", "https://fixture.invalid/docs",
+        [], [], [new("plan", "Unknown plan", "unknown", "model", "tokens")],
+        [new("template", "raw-model-id", "Readable Model", "https://fixture.invalid/v1", "openai", ["plan"], new(),
+            Manufacturer: "Model Maker", InferenceProvider: "Different Inference Operator")], [], [])]);
+    state = repository.Update(state.Revision, c => c with {
+        Accounts = c.Accounts.Concat(new AccountDto[] {
+            new("codex-account", "Private Codex Account", "codex", true, "oauth", "unverified"),
+            new("metadata-account", "Private Metadata Account", "fixture-service", true, "api-key", "unverified") }).ToArray(),
+        Routes = [new("review-route", "private-review-alias", "codex-auto-review", "codex", ["codex-account"]),
+            new("opaque-route", "preserved-alias", "raw-model-id", "fixture-service", ["metadata-account"], ProviderRouteId: "template"),
+            new("alias-only-review", "codex-auto-review", "ordinary-model", "codex", ["codex-account"]),
+            new("foreign-review", "foreign-review-alias", "codex-auto-review", "commandcode", ["synthetic-account"])],
+        Profiles = [new("fixture", "Fixture", ["review-route", "opaque-route", "alias-only-review", "foreign-review"])]
+    });
+    var metadataAdapter = new CodexProfileAdapter(new ModelsService(repository, new ProviderCostPolicy(metadata)), registry: metadata);
+    var presented = metadataAdapter.Generate("fixture", state.Revision, "/opt/lain/lain", "/tmp/lain.models.json");
+    using var presentedCatalog = JsonDocument.Parse(presented.Catalog);
+    var presentedModels = presentedCatalog.RootElement.GetProperty("models").EnumerateArray().ToDictionary(model => model.GetProperty("slug").GetString()!);
+    var readable = presentedModels["preserved-alias"];
+    Check(readable.GetProperty("display_name").GetString() == "Readable Model · Readable Service", "Display names use documented model and service while preserving the inference slug");
+    var description = readable.GetProperty("description").GetString()!;
+    Check(description.Contains("Model Maker") && description.Contains("Readable Service") && !description.Contains("opaque-route") &&
+        !description.Contains("Different Inference Operator"), "Description identifies the documented manufacturer and service without mixing inference operator or raw route ID");
+    Check(!presented.Catalog.Contains("Private Metadata Account") && !presented.Catalog.Contains("metadata-account"), "Readable metadata does not expose account names or identities");
+    Check(presented.Compatibility!.Routes.Single(route => route.RouteId == "opaque-route").Capabilities.Functions.State == "unknown", "Readable template names do not qualify transport capabilities");
+    Check(presentedModels["private-review-alias"].GetProperty("visibility").GetString() == "hide" &&
+        presentedModels["private-review-alias"].GetProperty("description").GetString()!.Contains("approval review"), "Internal review identity stays hidden even under an arbitrary alias");
+    Check(presentedModels["codex-auto-review"].GetProperty("visibility").GetString() == "list" &&
+        presentedModels["foreign-review-alias"].GetProperty("visibility").GetString() == "list", "Neither display aliases nor foreign services inherit internal review metadata");
+    Check(presented.Configuration.Contains("model = \"preserved-alias\""), "Implicit default skips the hidden internal review model");
+    Check(repository.Snapshot.Routes.Select(route => route.Id).SequenceEqual(state.Routes.Select(route => route.Id)), "Presentation preserves all original route identities");
+    state = repository.Update(state.Revision, c => c with { Profiles = [new("fixture", "Fixture", c.Routes.Select(route => route.Id).ToArray(), "review-route")] });
+    Reject(() => metadataAdapter.Generate("fixture", state.Revision, "/opt/lain/lain", "/tmp/lain.models.json"), "Explicit hidden review default gives a clear validation error");
+    state = repository.Update(state.Revision, c => c with { Profiles = [new("fixture", "Fixture", ["review-route"])] });
+    Reject(() => metadataAdapter.Generate("fixture", state.Revision, "/opt/lain/lain", "/tmp/lain.models.json"), "A review-only profile cannot export an inconsistent hidden default");
 }
 finally { if (Directory.Exists(temporary)) Directory.Delete(temporary, true); }
 Console.WriteLine($"{assertions} Codex Gateway profile export assertions passed; no installed config or provider access.");
+
+void Reject(Action action, string name)
+{
+    assertions++;
+    try { action(); }
+    catch (ArgumentException error) when (error.Message.Contains("internal Codex review model")) { return; }
+    throw new Exception(name);
+}

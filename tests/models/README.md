@@ -79,3 +79,15 @@ legacy bindings without this field default to visible.
 The optional `provider` field carries `RouteDto.Provider` so usage can identify
 the canonical provider even when its core transport uses a different provider
 code. Legacy bindings leave this field unspecified.
+
+Codex export presentation regression coverage also lives in
+`tests/codex-gateway-profile`: human-readable catalog model/service labels retain
+all inference slugs, manufacturer metadata stays distinct from the inference
+operator, and presentation does not qualify transport capabilities. The exact
+Codex `codex-auto-review` upstream identity keeps native `hide` visibility even
+when its route alias differs. A profile with that model as explicit default, or
+with no ordinary selectable model, fails export with a clear validation message;
+an implicit default uses the first ordinary selectable model. Same-named aliases
+or upstream models on other services do not inherit that internal role.
+These cases are synthetic fixtures; they do not establish provider acceptance or
+modify the normal Codex configuration.

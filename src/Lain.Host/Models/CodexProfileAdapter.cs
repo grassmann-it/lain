@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Globalization;
 using Lain.Core;
+using Lain.Host.Providers;
 
 namespace Lain.Host.Models;
 
@@ -10,7 +11,7 @@ public record CodexProfileArtifacts(string ConfigFileName, string Configuration,
     ModelCompatibilityManifestDto? Compatibility = null, string? ProfileId = null, string? GenerationId = null);
 
 /// <summary>Pure export: installation is an explicit caller operation. Never reads or changes Codex's base config.</summary>
-public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibilityCatalog? compatibility = null)
+public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibilityCatalog? compatibility = null, ProviderCatalogRegistry? registry = null)
 {
     public const string VerifiedVersion = ModelCompatibilityCatalog.ClientVersion;
 
@@ -25,7 +26,11 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         var resolved = models.ResolveForApply(profileId, revision);
         var routes = resolved.Routes.Where(x => x.Visible && x.Enabled).ToArray();
         var manifest = (compatibility ?? new ModelCompatibilityCatalog()).Manifest(routes);
-        var selected = routes.SingleOrDefault(x => x.Id == resolved.Profile.DefaultRouteId) ?? routes[0];
+        var selectable = routes.Where(route => !IsInternalReview(route)).ToArray();
+        if (selectable.Length == 0 || routes.Any(route => route.Id == resolved.Profile.DefaultRouteId && IsInternalReview(route)))
+            throw new ArgumentException("An internal Codex review model cannot be the profile's default model. Select a normal model.");
+        var selected = selectable.SingleOrDefault(x => x.Id == resolved.Profile.DefaultRouteId) ?? selectable[0];
+        var catalogRegistry = registry ?? new ProviderCatalogRegistry();
         // TOML basic strings accept these JSON escapes for the paths and labels we emit.
         static string Quote(string value) => JsonSerializer.Serialize(value);
         var config = $"""
@@ -54,10 +59,10 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         {
             models = routes.Select((route, index) => new
             {
-                slug = route.Alias, display_name = route.Alias,
-                description = $"lain route {route.Id} ({route.Provider})",
+                slug = route.Alias, display_name = DisplayName(route, catalogRegistry),
+                description = Description(route, catalogRegistry),
                 default_reasoning_level = "none", supported_reasoning_levels = Array.Empty<object>(),
-                shell_type = "unified_exec", visibility = "list", supported_in_api = true, priority = index,
+                shell_type = "unified_exec", visibility = IsInternalReview(route) ? "hide" : "list", supported_in_api = true, priority = index,
                 base_instructions = "You are a coding assistant.", supports_reasoning_summaries = false,
                 support_verbosity = false, truncation_policy = new { mode = "tokens", limit = 10000 },
                 supports_search_tool = false, tool_mode = (string?)null,
@@ -67,5 +72,36 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         var generation = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
             profileId + "\n" + revision.ToString(CultureInfo.InvariantCulture) + "\n" + config + "\n" + catalog))).ToLowerInvariant();
         return new("lain.config.toml", config, Path.GetFileName(absoluteCatalogPath), catalog, ["--no-daemon", "--profile", "lain"], revision, manifest, profileId, generation);
+    }
+
+    // This is the native internal approval-review model, never a collection auto-router.
+    // Match the upstream identity and canonical service, not a user-controlled alias.
+    private static bool IsInternalReview(RouteDto route) => route.Provider == "codex" && route.UpstreamModel == "codex-auto-review";
+
+    private static ProviderRouteDescriptorDto? PresentationModel(RouteDto route, ProviderCatalogRegistry catalog)
+    {
+        var provider = catalog.Find(route.Provider);
+        var template = provider?.Routes.SingleOrDefault(model => model.Id == route.ProviderRouteId);
+        if (template is not null) return template.Model == route.UpstreamModel ? template : null;
+        // Imported routes may use a documented name only when the model has one unambiguous template.
+        var candidates = provider?.Routes.Where(model => model.Model == route.UpstreamModel).ToArray();
+        return candidates?.Length == 1 ? candidates[0] : null;
+    }
+
+    private static string ServiceName(RouteDto route, ProviderCatalogRegistry catalog) => catalog.Find(route.Provider)?.Name ?? route.Provider switch
+    {
+        "codex" => "Codex", "commandcode" => "Command Code", "kimi" => "Kimi",
+        "xiaomi-mimo" => "Xiaomi MiMo", "zai" => "Z.ai", _ => route.Provider
+    };
+
+    private static string DisplayName(RouteDto route, ProviderCatalogRegistry catalog) =>
+        $"{(IsInternalReview(route) ? "Codex Auto Review" : PresentationModel(route, catalog)?.Name ?? route.UpstreamModel)} · {ServiceName(route, catalog)}";
+
+    private static string Description(RouteDto route, ProviderCatalogRegistry catalog)
+    {
+        if (IsInternalReview(route)) return "Internal Codex approval review model; unavailable for ordinary model selection.";
+        var model = PresentationModel(route, catalog);
+        var manufacturer = string.IsNullOrWhiteSpace(model?.Manufacturer) ? "" : $" Manufacturer: {model.Manufacturer}.";
+        return $"Model: {model?.Name ?? route.UpstreamModel}. Service: {ServiceName(route, catalog)}.{manufacturer}";
     }
 }
