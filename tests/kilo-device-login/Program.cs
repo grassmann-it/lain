@@ -227,9 +227,9 @@ async Task ActualLifecycle(bool alias = false)
     var oldLease = new CredentialResolver(repository, secrets).Resolve(accountId, "inference")!;
     var writer = new ProxyConfigurationWriter(paths, secrets); writer.Write(first);
     var usage = new SqliteUsageStore(Path.Combine(paths.Root, "history.sqlite"), clock);
-    var item = new JournalEvent(1, "source-fixture", 1, "event-start", "attempt_started", "request-fixture", "attempt-fixture", accountId,
+    var item = new JournalEvent(1, "source-fixture", 1, "source-fixture:1", "attempt_started", "request-fixture", "attempt-fixture", accountId,
         "credential-fixture", first.Routes.Single().Id, clock.GetUtcNow(), "kilo", "liquid/lfm-2.5-2.6b:free", "liquid/lfm-2.5-2.6b:free");
-    await usage.IngestAsync(new("source-fixture", [item, item with { Sequence = 2, EventId = "event-usage", Kind = "usage",
+    await usage.IngestAsync(new("source-fixture", [item, item with { Sequence = 2, EventId = "source-fixture:2", Kind = "usage",
         Outcome = "success", InputTokens = 1, OutputTokens = 2, TotalTokens = 3, UsageReported = true }], 2, 2));
     var query = new UsageQuery(From: clock.GetUtcNow().AddHours(-1), To: clock.GetUtcNow().AddHours(1), AccountId: accountId);
     var beforeHistory = await usage.AttemptsAsync(query);
