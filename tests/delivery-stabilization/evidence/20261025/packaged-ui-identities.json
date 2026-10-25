@@ -1,0 +1,25 @@
+{
+  "source": "d7200d7d700bd2d23abf8bf028d40526eb235bf7",
+  "manifestSha256": "ced56fffeecc3e29dcdeb02ae503ec71e0b31ee5234adce0e93afff2db42435c",
+  "productionAssemblies": {
+    "Lain.Desktop": "89d8d86ba1519f5154841de6f72c345643fd5a2d2e9f97f9668be812c48937d6",
+    "Lain.Client": "ec8ea1ff7e8864fafa21c296cf22cd972a9ecf2246f5fd422c8d04bb5a8b51ad",
+    "Lain.Core": "5a94aa3eb1162c143a77b8b66db06d8e875fd29e08502b4c02c3aca8b669e208"
+  },
+  "harnessSha256": "89bff8a48430ec392fd9b8ba2faf20849face29a311b925295981c6e372f301a",
+  "results": [
+    {
+      "scale": "1",
+      "exitCode": 0,
+      "output": "/home/tomka/.cache/lain-qualification-20261024/packaged-quota-state-ui/scale-1",
+      "log": "/home/tomka/.cache/lain-qualification-20261024/packaged-quota-state-ui/scale-1.log"
+    },
+    {
+      "scale": "1.25",
+      "exitCode": 0,
+      "output": "/home/tomka/.cache/lain-qualification-20261024/packaged-quota-state-ui/scale-1.25",
+      "log": "/home/tomka/.cache/lain-qualification-20261024/packaged-quota-state-ui/scale-1.25.log"
+    }
+  ],
+  "scope": "Exact shipped production assemblies; synthetic API, native XTEST, private Xvfb and private session D-Bus; no real provider calls or existing state changes"
+}

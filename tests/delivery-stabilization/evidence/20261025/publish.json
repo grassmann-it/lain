@@ -1,0 +1,23 @@
+{
+  "source": "d7200d7d700bd2d23abf8bf028d40526eb235bf7",
+  "results": [
+    {
+      "mode": "monitor",
+      "exitCode": 0,
+      "seconds": 66.1,
+      "package": "/home/tomka/Desktop/lain/artifacts/lain-linux-x64-monitor-quota-state-20261025",
+      "log": "/home/tomka/.cache/lain-qualification-20261024/quota-state-publish/monitor.log",
+      "manifestSha256": "58797665e1295f5296690f407b8dc45fd9691e2cff45edd3b821f5d76a4cf93d",
+      "archiveSha256": "aff589164495a444e1d277d104f94a07f3746cca2beaf5f52e7d5883e0be3570"
+    },
+    {
+      "mode": "gateway",
+      "exitCode": 0,
+      "seconds": 40.6,
+      "package": "/home/tomka/Desktop/lain/artifacts/lain-linux-x64-gateway-quota-state-20261025",
+      "log": "/home/tomka/.cache/lain-qualification-20261024/quota-state-publish/gateway.log",
+      "manifestSha256": "ced56fffeecc3e29dcdeb02ae503ec71e0b31ee5234adce0e93afff2db42435c",
+      "archiveSha256": "610a4d03a206f225a15c04e16b2e510120fec8821548ebe5bc7ccf2382c6b4db"
+    }
+  ]
+}

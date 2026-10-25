@@ -1,0 +1,68 @@
+{
+  "phase": "verified",
+  "newSource": "d7200d7d700bd2d23abf8bf028d40526eb235bf7",
+  "revision": 19,
+  "appliedRevision": 2,
+  "fullStoppedSnapshotRetained": true,
+  "selectedCurrentCredentialsUnchanged": true,
+  "frozenConfigurationRuntimeJournalUnchanged": true,
+  "rollbackAttempted": false,
+  "accountCount": 15,
+  "proxyReady": true,
+  "activeProfileId": null,
+  "historyRange": {
+    "from": "2026-09-24T00:00:00+00:00",
+    "to": "2026-10-25T00:00:00+00:00",
+    "timeZone": "UTC"
+  },
+  "historyCursor": 41,
+  "historyTotals": {
+    "requests": 14,
+    "attempts": 14,
+    "errors": 10,
+    "tokens": {
+      "input": null,
+      "output": null,
+      "cached": null,
+      "reasoning": null,
+      "total": null,
+      "cacheCreation": null
+    },
+    "unknownUsageAttempts": 10,
+    "measurements": {
+      "input": {
+        "knownReported": 346435,
+        "samples": 4,
+        "eligible": 14
+      },
+      "output": {
+        "knownReported": 546,
+        "samples": 4,
+        "eligible": 14
+      },
+      "cached": {
+        "knownReported": 5376,
+        "samples": 3,
+        "eligible": 14
+      },
+      "cacheCreation": {
+        "knownReported": 0,
+        "samples": 1,
+        "eligible": 14
+      },
+      "reasoning": {
+        "knownReported": 277,
+        "samples": 3,
+        "eligible": 14
+      },
+      "total": {
+        "knownReported": 346981,
+        "samples": 4,
+        "eligible": 14
+      }
+    }
+  },
+  "privateBackup": "/home/tomka/.local/share/lain-backups/20261025-quota-state-d7200d7",
+  "updaterSha256": "d16b41752d09d42b1456d19842f25879042a605e49598ce8edae0dc40e6419fd",
+  "realProviderInferencePerformed": false
+}

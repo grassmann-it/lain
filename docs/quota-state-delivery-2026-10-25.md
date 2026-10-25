@@ -58,9 +58,62 @@ privaten Ordner und zeigt dafür den vollständigen `CODEX_HOME=… codex …`-B
 
 ## Lieferung
 
-Paket- und Installationsnachweise folgen nach dem Einfrieren der endgültigen
-Quellen. Die installierte Ausgangsversion ist `793822c`, gewünschte/aktive
-Revision zuletzt 19/2. Beim Update werden die dann aktuellen Revisionen erneut
-erfasst; ein automatisches Apply gehört nicht dazu. Der eigene Dienst und der
-alte Proxy bleiben getrennt. Neue Pakete, isolierter v4-Updateversuch und echte
-Installation sind keine aus den obigen Offline-Suiten abgeleiteten Freigaben.
+Quellstand `d7200d7d700bd2d23abf8bf028d40526eb235bf7` ist als Monitor- und
+Gatewaypaket gebaut und als `1.0.0+d7200d7…` installiert. Die
+[kuratierten Lieferbelege](../tests/delivery-stabilization/evidence/20261025/)
+trennen Publish, synthetischen Updateversuch, exakte Paketoberfläche und reale
+Installation. Spätere Dokumentations- und Harnesscommits verändern diese
+ausgelieferten Produktionsassemblies nicht.
+
+| Paket unter `artifacts/` | SHA-256 des Archivs |
+| --- | --- |
+| `lain-linux-x64-monitor-quota-state-20261025.tar.gz` | `aff589164495a444e1d277d104f94a07f3746cca2beaf5f52e7d5883e0be3570` |
+| `lain-linux-x64-gateway-quota-state-20261025.tar.gz` | `610a4d03a206f225a15c04e16b2e510120fec8821548ebe5bc7ccf2382c6b4db` |
+
+Auf den exakten Gateway-Paket-DLLs bestanden 18/18 ausgewählte native Fälle bei
+100 % (377 Assertions, 46 Bilder) und 4/4 bei tatsächlichen 125 % (70 Assertions,
+zwölf Bilder). Der unabhängige Review prüfte sechs dieser X11-Bilder und die
+Paketidentitäten; Root sichtete drei. Diese Auswahl ist keine vollständige
+Accessibility- oder Modusmatrix. Der qualifizierte Core bleibt unverändert
+`8.0.41-lain-adapter.3`.
+
+Der ausgeführte isolierte v4-Update-/Rückkehrversuch bestand für Gateway und
+Monitor mit synthetischer Historie und aktuellen synthetischen Grants. Er
+erhielt 19/2 und den unbekannten aktiven Profilnamen; er verspricht keine
+allgemeine Downgradefähigkeit. Die eigene loopback-only Netzwerknamespace
+verhinderte reale Anbieterinferenz.
+
+Die reale Installation ist separat `verified`: Proxy ready, gewünschte/angewandte
+Revision weiterhin **19/2**, aktive Profilidentität weiterhin ausdrücklich
+unbekannt. Alle **15 Accounts** und **14 historischen Attempts** im festen
+UTC-Intervall 24.09.–25.10.2026 sind erhalten. Zehn Attempts haben unbekannte
+Usage; 346.981 gemeldete Tokens aus vier Messungen bleiben deshalb eine bekannte
+Teilsumme, kein vollständiger Gesamttokenwert. Ein frisches gestopptes Backup
+liegt unter `~/.local/share/lain-backups/20261025-quota-state-d7200d7/`.
+Ausgewählte aktuelle Credentials sowie eingefrorene Konfiguration, Runtime und
+Journal blieben beim Appupdate unverändert. Kein automatisches Apply, kein
+Codexexport und keine Änderung oder Neustart des alten Proxys wurden ausgeführt.
+
+Neue reale FREE-Modellproben und erfolgreiche Anmeldungen/Quotaabrufe aller
+Anbieter bleiben gesondert ausstehend; keine kostenpflichtige Probe wurde als
+Ersatz gesendet. Eine Kontingentquelle und eine bestandene synthetische Suite
+belegen allein noch keinen erfolgreichen Anbieterzugriff des Nutzeraccounts.
+
+Der gezielte anschließende [Read-only-Test der installierten UI](../tests/delivery-stabilization/evidence/20261025/installed-ui.json)
+bestand **100 Checks** mit acht Bildern bei 1120×780 und 800×560. Exakte
+installierte Assemblies, sichtbare Simple-Navigation mit fünf Bereichen plus More,
+Live-Quellidentität/Leerhinweis, unbekanntes angewandtes Profil und Erhalt von
+Host, Konfiguration und fester Historie über Schließen/Wiederöffnen wurden
+geprüft. Alle 23 HTTP-Aufrufe waren GET; Preferences, Xvfb und Session-D-Bus
+waren privat. Root sichtete beide Livebilder und das schmale Profilesbild.
+Die vorherige breite installierte Legacyfixture scheiterte an ihrer veralteten
+Fünf-Navigations-Erwartung; sie bleibt separat als Fehler erhalten. Der neue
+gezielte Modus macht daraus keinen Gesamtsuiten-Pass. Keine neue Inferenz oder
+reale Providerqualifikation wurde durch diese Beobachtung erzeugt. Reale
+Accountbilder und vollständige Antworten bleiben ausschließlich im privaten Backup.
+
+Nach Abschluss wurden zehn nicht mehr benötigte `bin`-/`obj`-Verzeichnisse
+entfernt (2.272 MiB logische Dateigröße). Quellen, externe Harnessprojekte und
+Locks, Pakete, Backups, Protokolle und Bildbelege bleiben erhalten. Die unten
+bzw. im Quellenbericht genannten Harness-Buildpfade beschreiben den Prüflauf;
+die gelöschten Assemblies lassen sich aus den festgehaltenen Inputs neu bauen.

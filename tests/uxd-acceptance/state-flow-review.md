@@ -94,3 +94,13 @@ same private runner. Suggested focused filter:
 That release-assembly result must remain separate from the source runs above.
 No broader clipboard, screenreader, real-provider, installed-service or release
 qualification is established by this source report.
+
+## Post-delivery cleanup
+
+After successful exact-package and installed-UI checks, the unused `bin`/`obj`
+outputs of the external `uxd22-build` projects and installed observer were
+removed, as requested. The reusable binary path above describes the original
+handoff and is no longer present. Source/project/lock inputs, original logs,
+manifests and all evidence images are retained. This cleanup does not change
+the historical results or hashes. The delivered production binaries remain in
+the installed application and qualified packages.

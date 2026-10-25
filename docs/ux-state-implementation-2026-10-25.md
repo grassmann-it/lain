@@ -50,7 +50,44 @@ Apply oder Änderung bestehender Accounts/normaler Codexkonfiguration durch Fixt
 
 ## Nachweisstand
 
-Aufnahme und Nutzerentscheidungen sind dokumentiert; die neuen Paketprüfungen
-sind noch nicht ausgeführt. Source, lokale/native Prüfung, exaktes Paket,
-Installation und reale Anbieterqualifikation werden getrennt fortgeschrieben.
-Die laufenden Quotaänderungen ersetzen keinen dieser UX-Nachweise.
+UXD-17–22 sind integriert und mit den bestätigten Varianten installiert.
+Der [native Quellenbericht](../tests/uxd-acceptance/state-flow-review.md)
+dokumentiert zuletzt erfolgreiche Ergebnisse für alle 35 ausgewählten
+Fallnamen über getrennte Läufe; der historische `native-final` bleibt 17/18,
+der korrigierte Statusfolgelauf 2/2. Das ist kein einzelner 35/35-Lauf.
+Accounts-/Monitor-/Models-Bereichsfixtures bestanden zusätzlich mit 34/28/18
+Checks. Der [unabhängige Review](uxd17-22-independent-state-review-2026-10-25.md)
+ordnet behobene Quellbefunde, persönlich gesichtete Bilder und Grenzen zu.
+
+Auf den exakten ausgelieferten DLLs des Quellstands `d7200d7…` bestanden
+18/18 ausgewählte native Fälle bei 100 % und 4/4 Layoutfälle bei tatsächlichen
+125 %. Die [Paketbelege](../tests/delivery-stabilization/evidence/20261025/packaged-ui-identities.json)
+halten die drei Produktions-DLL-Hashes fest. Ein unabhängiger Reviewer sichtete
+sechs zugehörige X11-Bilder; Root drei. Verwendet wurden privates Xvfb und eigener
+Session-D-Bus mit synthetischer API; das ist keine reale Providerprüfung.
+
+Die [Lieferung](quota-state-delivery-2026-10-25.md) dokumentiert den tatsächlich
+ausgeführten v4-Updateversuch und das verifizierte reale Update. Gewünschte und
+angewandte Revision bleiben 19/2, Accounts und persistente Historie erhalten.
+Es wurde kein automatisches Apply ausgeführt. Vollständige Accessibility,
+breite Bildschirm-/Modusmatrix und reale zusätzliche FREE-Anbieterproben werden
+aus diesen gezielten Nachweisen nicht abgeleitet.
+
+Der gezielte anschließende [Read-only-Test der installierten UI](../tests/delivery-stabilization/evidence/20261025/installed-ui.json)
+bestand **100 Checks** mit acht Bildern bei 1120×780 und 800×560. Exakte
+installierte Assemblies, sichtbare Simple-Navigation mit fünf Bereichen plus More,
+Live-Quellidentität/Leerhinweis, unbekanntes angewandtes Profil und Erhalt von
+Host, Konfiguration und fester Historie über Schließen/Wiederöffnen wurden
+geprüft. Alle 23 HTTP-Aufrufe waren GET; Preferences, Xvfb und Session-D-Bus
+waren privat. Root sichtete beide Livebilder und das schmale Profilesbild.
+Die vorherige breite installierte Legacyfixture scheiterte an ihrer veralteten
+Fünf-Navigations-Erwartung; sie bleibt separat als Fehler erhalten. Der neue
+gezielte Modus macht daraus keinen Gesamtsuiten-Pass. Keine neue Inferenz oder
+reale Providerqualifikation wurde durch diese Beobachtung erzeugt. Reale
+Accountbilder und vollständige Antworten bleiben ausschließlich im privaten Backup.
+
+Nach Abschluss wurden zehn nicht mehr benötigte `bin`-/`obj`-Verzeichnisse
+entfernt (2.272 MiB logische Dateigröße). Quellen, externe Harnessprojekte und
+Locks, Pakete, Backups, Protokolle und Bildbelege bleiben erhalten. Die unten
+bzw. im Quellenbericht genannten Harness-Buildpfade beschreiben den Prüflauf;
+die gelöschten Assemblies lassen sich aus den festgehaltenen Inputs neu bauen.
