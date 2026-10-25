@@ -22,13 +22,14 @@ Monitoringzugang an UXD-01/03 übergeben, nicht konkurrierend ändern.
 
 ## Aufgaben
 
-1. Breiten Entwurf als Vorschlag nachbilden: eine scrollbare Accountspalte und
+1. Bestätigten breiten Entwurf A nachbilden: eine scrollbare Accountspalte und
    dauerhaft reservierter 400-px-Inspector rechts bei 1120×780. Vor Auswahl kurze
    ruhige Hilfe rechts; öffnen/schließen ändert die verfügbare Inventarbreite nicht.
 2. Titel-/Detailtrigger wählt genau eine stabile Account-ID. Keine Expansion des
    Inventareintrags. Rechts eigener Scrollbereich, fester kompakter Kopf mit
-   Name, Close und gemeinsamen Commands. Schmal bei 800×560 Detail mit Back
-   gemäß UXD-01; kein Überdecken der weiterhin bedienbaren Liste.
+   Name, Close und gemeinsamen Commands. Schmal bei 800×560 gemäß gewähltem A
+   Liste und Detail nebeneinander (Referenz 340 px Liste, Rest Detail); kein
+   Überdecken und kein automatischer Wechsel auf eine separate Detailseite.
 3. Geschlossene Zusammenfassung verdichten: Name, gegebenenfalls Pin/Status,
    jedes gemeldete Fenster mit Rest/Reset und gültigem Verbrauchsmaß. Gemeinsame
    Aktualität einmal; lokale Abweichungen direkt an der betroffenen Zeile.
@@ -73,9 +74,10 @@ Designzeit 24.10.2026, 14:10 Europe/Berlin; diese Werte sind keine echten Anspr�
 
 ## Grenzen, offene Annahme und Übergabe
 
-400 px sind die breite Entwurfsannahme mit dem dokumentierten Platznachteil.
-Schmale neue Details sind noch nicht visuell abgenommen; UXD-01/09 schließen
-dies vor einer vollständigen UX-Abnahme. Keine Änderung an tatsächlichen Quota-
+400 px und das schmale Nebeneinander sind ausdrücklich gewählte Layouts mit dem
+dokumentierten Platznachteil. [Auswahl und Folgeprüfung](../uxpilot-selection-2026-10-24.md).
+Volle Expertenfelder, lange Namen und native Bedienung qualifizieren UXD-01/09
+vor einer vollständigen Produktabnahme. Keine Änderung an tatsächlichen Quota-
 oder Routingfähigkeiten, Credentialowner, Readern oder Kauf-/Fallbackverhalten.
 Fehlende Quellen auf Grundlage aktueller Fähigkeiten formulieren, nicht den
 synthetischen MiMo-Isttext pauschal in eine neuere Version übernehmen.

@@ -6,6 +6,10 @@ Abhängig von UXD-01/02 und dem aktuellen Policyvertrag aus UXD-00; F05.
 
 ## Referenz, Befund und Dateien
 
+Aktuelle Layoutentscheidung: ausdrücklich A, Tabelle mit benachbartem Detail.
+Schmale Experten-/Katalogfelder und Scrollnachweise ergänzt
+[UXD-10](10-selected-layouts-monitor.md); [Auswahl](../uxpilot-selection-2026-10-24.md).
+
 Frame 9 `XjprbmkRcPW8vOyOPOEr`,
 [PNG und Korrekturprotokoll](../uxpilot-design-results-2026-10-24.md).
 Heute rendert `MainWindow.Routes.cs` hohe Karten; Filter, kontextuelle Route-ID,

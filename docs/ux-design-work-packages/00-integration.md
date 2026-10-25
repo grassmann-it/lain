@@ -36,9 +36,13 @@ Gezielt lesen: `src/Lain.Core/Contracts.cs`, `ConnectionContracts.cs`,
    | Applyvorschau / Recovery | `ProfileApplyPreviewDto`, `ProfileApplicationStatusDto`, Previewservice vorhanden; im gelesenen Endpoint-/Clientpfad noch kein Vorschauanschluss | ST-02 liefert erreichbaren, revisionsgebundenen Vorschau-/Statuspfad; bestehenden Apply nicht mit erfundener Vorschau beschriften |
    | Teilmessungen / Attribution | Usage-/Observabilityclient und neue DTOfelder vorhanden | Vorhandene Felder mit ST-03 abgleichen, Missing/null und Abdeckung in Fixtures festschreiben |
 
-3. Vorläufige Layoutannahmen aus der Übersicht als Entscheidungen oder weiter
-   offene Vorschläge dokumentieren: reservierte Accountsbreite, Simple-Live,
-   schmaler Detailwechsel, Barebonesnavigation. Bei offenem Punkt nur abhängige
+3. Bestätigte [A/B/C-Auswahl](../uxpilot-selection-2026-10-24.md) übernehmen:
+   breite reservierte Accountsfläche, auch schmal nebeneinander, Models/Usage A,
+   Monitor B mit langen Balken unter den Zahlen (Folgeauswahl A), feste
+   Apply-Reviewfläche im Profildetail (B) und dauerhafte schmale Live-Liste links
+   neben der Ausgabe (A). Die spätere Nutzerwahl setzt Simple-Live direkt (A)
+   und Draftnavigation B mit bleibendem Hinweis; übrige Barebonesfragen bleiben
+   getrennt zu bewerten. Bei offenem Punkt nur abhängige
    Produktgestaltung zurückhalten; technische Vorarbeit weiterführen.
 4. Mit UXD-01 den Seitenvertrag festlegen: eigenständige Scrollflächen,
    Seiten-/Objekt-ID, Detailzustand, Filterdraft, Backziel, Fokusanker,

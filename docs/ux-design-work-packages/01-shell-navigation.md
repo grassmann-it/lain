@@ -52,8 +52,9 @@ Exklusiv: diese beiden Dateien, `Ui.cs`, `Design/Workspace.axaml`,
 7. Typohierarchie vereinheitlichen: Inter für Werte/Controls, vorhandene Heading-
    und Brandfamilien in ihrer Rolle. Keine kleineren unlesbaren Werte als
    Ersatz für Hierarchie. Fokus und Status nicht ausschließlich farblich zeigen.
-8. Layoutverhalten für 1120×780 und 800×560 bereitstellen. Schmaler Detailwechsel
-   erhält den Hauptkontext und sichtbares Back; keine automatische Fensteränderung.
+8. Layoutverhalten für 1120×780 und 800×560 bereitstellen. Accounts behalten auch
+   schmal gemäß bestätigtem A Liste und Detail nebeneinander. Andere Seitenwechsel
+   erhalten Hauptkontext und sichtbaren Rückweg; keine automatische Fensteränderung.
    Eine kleinere Monitor-Mindestgröße bleibt ein gesonderter Vorschlag.
 
 ## Abnahme

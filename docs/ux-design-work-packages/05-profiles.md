@@ -24,8 +24,10 @@ UXD-04, Shellzustand UXD-01, neue Clientverträge UXD-00, Artefaktinstallation S
 3. Auswahl, Speichern, Apply, Export und Clientsetup klar trennen. Auswahl
    verursacht keinen Request zur Runtimeänderung. Export ist keine Installation;
    gespeicherter Stand ist nicht automatisch aktiver oder exportierter Stand.
-4. Applyconfirmation als kompakten nativen Dialog über demselben Profilkontext
-   zeigen. Echte aktuelle Vorschau aus ST-02 verwenden: von/zu, Revision,
+4. Gemäß bestätigter Folgeauswahl B die Applyconfirmation als feste Reviewfläche
+   im Profildetail zeigen; Profilliste bleibt sichtbar. Der frühere Dialogvorschlag
+   ist ersetzt; [UXD-12](12-profiles-apply-recovery.md) konkretisiert die Übergänge.
+   Echte aktuelle Vorschau aus ST-02 verwenden: von/zu, Revision,
    betroffene Routen/Accounts/Clients und tatsächliches Streamverhalten.
    Globalen Proxyumfang und mögliche Unterbrechung laufender Requests nennen.
 5. Zwischen Vorschau und Commit Revision erneut prüfen. Veraltete Vorschau
@@ -44,7 +46,7 @@ UXD-04, Shellzustand UXD-01, neue Clientverträge UXD-00, Artefaktinstallation S
 - Applyfixture: Workspace 2 → Daily; zwei gespeicherte Änderungen
   (`gpt-lain-02 disabled`, Dailydefault geändert), globaler Umfang sichtbar.
   Keine erfundenen Policy-/Synchronisationswerte oder isolierte Profilruntime.
-- Cancel schließt den Dialog ohne Mutation und stellt Fokus wieder her.
+- Cancel verlässt die Reviewfläche ohne Mutation und stellt Fokus wieder her.
   Confirm sendet genau eine aktuelle, revisionsgebundene Aktion.
 - Revisionkonflikt nach Vorschau, unbekannter aktiver Stand, fehlgeschlagenes
   Apply und Recovery bleiben verständlich; Viewing wird nicht als Erfolg Applied.
@@ -53,8 +55,9 @@ UXD-04, Shellzustand UXD-01, neue Clientverträge UXD-00, Artefaktinstallation S
 - Export und Clientsetup sind einzeln prüfbar und werden nicht als Applyerfolg
   behandelt. Angezeigte Dateistände/Revisionen entsprechen den echten Ergebnissen.
 - In 800×560 bleiben Master/Detail-Rückweg, Default, Modellzugriff und Aktionen
-  erreichbar; Dialogbuttons werden nicht abgeschnitten. Tastaturfokus bleibt
-  im Dialog und kehrt danach zum Trigger zurück.
+  erreichbar; Reviewbuttons werden nicht abgeschnitten. Profilwechsel kann keine
+  alte Vorschau auf das neue Ziel übertragen. Keine modale Fokusfalle in dieser
+  Reviewfläche; nach Abbruch kehrt Fokus zum Trigger zurück.
 
 ## Grenzen und Übergabe
 
@@ -63,5 +66,5 @@ Darstellung. Fehlender ST-02-Anschluss blockiert nur diese vollständige Strecke
 nicht die kompakte Master-/Detailvorbereitung. Keine neue Clientruntime,
 Installationslogik oder stillschweigende Anwendung gespeicherter Änderungen.
 
-Liefern: Profil-/Dialogzustände mit echter APIzuordnung, Konflikt-/Recoveryfälle,
+Liefern: Profil-/Reviewzustände mit echter APIzuordnung, Konflikt-/Recoveryfälle,
 Nachweis erhaltener Expertenfelder und getrennte Export-/Setupnachweise.

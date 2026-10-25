@@ -1,7 +1,9 @@
 # Arbeitspakete für die geprüften UX-Pilot-Entwürfe
 
-Stand: 24.10.2026. Auftrag: aus den bewerteten Entwürfen konkrete Arbeitspakete
-machen. **Planung abgeschlossen bedeutet hier weder Designabnahme noch Beginn
+Aktueller Implementierungsstand: [kumulative Qualifikation vom 25.10.](../cumulative-implementation-2026-10-25.md). Der folgende Text hält den ursprünglichen Planauftrag und seine Folgerunden fest. Die beiden später beantworteten Nutzerfragen sind geklärt: Draftnavigation B (direkter Wechsel, bleibender Hinweis/Rückweg/Verwerfen) und Simple-Live A (direkt in der Hauptnavigation); Profiles bleibt direkt erreichbar. Frühere offene Fragen sind damit keine aktuellen Sperren.
+
+Stand: 25.10.2026; Grundpakete vom 24.10. Auftrag: aus den bewerteten Entwürfen
+konkrete Arbeitspakete machen. **Planung abgeschlossen bedeutet hier weder Designabnahme noch Beginn
 der Produktimplementierung.** In diesem Auftrag keine Produktcodeänderungen,
 Builds, Installation, Dienstneustarts oder echten Provideraktionen.
 
@@ -14,7 +16,15 @@ Settings mit derselben Informationshierarchie und Bedienung überarbeitet.
 
 Maßgebliche Referenzen:
 
+- [Bedienabläufe und Randzustände vom 25.10.](../uxpilot-flows-2026-10-25.md),
+  [neue Auswahlgalerie](../uxpilot-flows-2026-10-25.html) und
+  [Übergabe UXD-16 mit sechs Paketen UXD-17–22](16-state-continuity.md).
+  Die zunächst offenen Fragen zu Draftnavigation und Simple-Live sind wie oben
+  bestätigt beantwortet. Die übrigen bestätigten Layouts bleiben gesetzt.
 - [Geprüfte Entwürfe, alle 14 Frame-IDs und direkt erreichbare PNGs](../uxpilot-design-results-2026-10-24.md).
+- [Bestätigte Auswahl und abgeschlossene Folgeprüfung](../uxpilot-selection-2026-10-24.md),
+  [neue Offlinegalerie](../uxpilot-followup-2026-10-24.html),
+  [29 Bilder mit IDs, Quellen und Bewertungen](../uxpilot-followup-2026-10-24.json).
 - [UX-Pilot-Canvas](https://uxpilot.ai/a/ui-design?page=5a6Hhb1aH085Fs6REXW4),
   finale Gruppe `g1Jnn1lQgyMCgUK2X7tx`. Referenzen oben, Ergebnisse
   nebeneinander, verworfene Iterationen darunter. Nur die finale Gruppe verwenden.
@@ -33,6 +43,14 @@ Die acht Models-Beispielzeilen sind keine Datenquelle für weitere 37 Modelle.
 
 ## Feste Vorgaben und noch offene Übernahmen
 
+**Aktualisierung nach ausdrücklicher A/B/C-Auswahl:**
+[Bestätigte Entscheidungen und Folgeprüfung](../uxpilot-selection-2026-10-24.md)
+haben für die dort genannten Layouts Vorrang. Accounts breit A und schmal A
+(nebeneinander), Models A, Usage A sowie Monitor B mit ergänzten Verbrauchsbalken
+sind gewählt. Die Folgeauswahl bestätigt zusätzlich Monitorbalken A (lang unter
+den Zahlen), Apply B (Reviewfläche im Profildetail) und Live schmal A (dauerhafte
+linke Requestliste). Dies bestätigt keine anderen Navigations- oder Fehlerentwürfe.
+
 Fest sind Originalkatze, dunkler Grün-/Schwarzlook, Mintakzent und native
 Avalonia/Semi/Ursa-Anmutung. Accounts starten zuerst. Profiles bleiben im Gateway
 direkt erreichbar, auch in Barebones. Genau ein Informationsmodusdropdown steht
@@ -46,17 +64,21 @@ unbestätigt. Gemeinsame Budgets nicht addieren, leere Einzelbudgets nicht als
 accountweite Sperre ausgeben. Keine erfundenen Quotas, Preise, Fähigkeiten,
 Logins oder automatischen kostenpflichtigen Fallbacks.
 
-Die positive Rückmeldung „sieht eigentlich gut aus“ und der Paketauftrag geben
-die Ausarbeitung frei. Folgende **Vorschläge** bleiben zur konkreten Abnahme
-sichtbar; sie werden durch diesen Plan nicht zu bestätigten Produktentscheidungen:
+Die frühere positive Rückmeldung gab zunächst die Ausarbeitung frei. Inzwischen
+hat der Nutzer die unten entsprechend markierten Layouts ausdrücklich gewählt.
+Andere Punkte bleiben Vorschläge; eine pauschale Designfreigabe folgt daraus nicht:
 
 | Punkt | Planungsannahme und Nutzen | Preis / Alternative | Zuständig |
 | --- | --- | --- | --- |
-| Breite Accounts | Dauerhaft reservierter Inspector rechts mit 400 px bei 1120×780; links eine Inventarspalte | Weniger Accounts gleichzeitig, freie rechte Spalte vor Auswahl. Overlay ist nur bei neuem Auftrag zur Revision zu prüfen, da es Inhalte verdecken kann. | UXD-00/02 |
-| Schmale Details | Bei 800×560 eigene Detailfläche mit Back statt zwei zu enger Spalten; Ursprung samt Scroll/Fokus erhalten | Kein gleichzeitiger Überblick. Noch kein geprüfter neuer Designframe; Grenzbreite nach Messung festlegen. | UXD-01/02, Prüfung UXD-09 |
-| Navigation | Simple: Accounts, Models, Profiles, Usage, More mit Live; Advanced: Live direkt; Barebones: Accounts, Profiles, Usage direkt | Live benötigt in Simple einen zusätzlichen Schritt. Bei täglicher Live-Nutzung fünf direkte Ziele als Alternative vorhalten. | UXD-00/01 |
-| Models | Tabelle mit lokaler Auswahl/Detail statt hoher Karten | Lange Namen und vollständige Editoren brauchen schmale Abnahme. | UXD-04 |
-| Übrige Seiten | Verdichtetes Profiles-Master/Detail, sofort sichtbare Usagezeilen, Live-Liste neben Ausgabe, drei Settingsgruppen | Schmal, Monitor, Offline und vollständige Expertbedienung sind visuell noch unqualifiziert. | UXD-05–09 |
+| Breite Accounts, bestätigt A | Dauerhaft reservierter Inspector rechts mit 400 px bei 1120×780; links eine Inventarspalte | Weniger Accounts gleichzeitig, freie rechte Spalte vor Auswahl; bewusst gewählt. | UXD-00/02 |
+| Schmale Accounts, bestätigt A | Bei 800×560 Liste und Detail nebeneinander; Referenz 340 px Liste und verbleibende Detailbreite | Engere Controls; lange Namen, volle Quotas und Expertenaktionen qualifizieren. Frühere Backseite ersetzt. | UXD-01/02, Prüfung UXD-09 |
+| Navigation, Nutzerwahl bestätigt | Simple A: Live direkt. Profiles bleibt direkt. Draftnavigation B erhält den Entwurf beim unmittelbaren Wechsel mit Hinweis/Rückweg/Verwerfen. Die übrige Modusmatrix bleibt gemäß UXD-01 getrennt zu bewerten. | Kein neuer A/B-Umschalter; direkte Navigation und erhaltene Entwürfe nativ prüfen. | UXD-00/01/17 |
+| Models, bestätigt A | Tabelle mit benachbartem Detail statt hoher Karten | Lange Namen und vollständige Editoren brauchen native schmale Abnahme. | UXD-04 |
+| Usage, bestätigt A | Ergebnistabelle mit Seitendetail | Weniger Tabellenbreite; Scope und partielle Werte müssen trotzdem lesbar bleiben. | UXD-06 |
+| Monitor, bestätigt B mit Balken A | Tabelle aller Quotafenster mit langen Verbrauchsbalken unter den Zahlen | Mehr Zeilenhöhe als Inline-B ist akzeptiert; ohne Nenner oder bei unbekannten Werten kein Prozentbalken. | UXD-01/02/10, Prüfung UXD-09 |
+| Apply, bestätigt B | Feste Reviewfläche im Profildetail, Profilliste bleibt sichtbar | Explizite Bestätigung und Revisionsschutz; Profilwechsel invalidiert die Vorschau statt sie auf ein neues Ziel umzuhängen. Frühere Dialogempfehlung ersetzt. | UXD-05/12 |
+| Live schmal, bestätigt A | Auch bei 800×560 dauerhafte Requestliste links und Ausgabe rechts, Referenz 200 px Liste | Weniger Ausgabebreite ist akzeptiert; kein automatischer Selector-/Seitenwechsel. Simple zeigt Live gemäß späterer Nutzerwahl direkt. | UXD-07/14 |
+| Übrige Seiten, Vorschläge | Verdichtetes Profiles-Master/Detail und drei Settingsgruppen, weitere Fehlerdarstellungen | Keine pauschale Freigabe; native Fehler-/Expertenabnahme bleibt erforderlich. | UXD-05/07–09 |
 
 Offene Übernahmen hindern den lesenden Integrationsabgleich und die Ausarbeitung
 unabhängiger Fälle nicht. Von ihnen abhängige Gestaltung bleibt ein prüfbarer
@@ -72,7 +94,13 @@ Parallel sind insbesondere Providerdokumentation und Hostdateien in Bearbeitung.
 Vor Umsetzung aktuellen HEAD und betroffene Dateien erneut abgleichen. Bereits
 gelieferte Arbeit erhalten; weder fremde Änderungen überschreiben noch mitstagen.
 
-Schon vorhanden sind Präferenzspeicherung, Draft-/Navigationszustand,
+Der folgende Befund gehört zum ursprünglichen Paketzuschnitt vom 24.10.; er ist
+kein aktueller Mangelkatalog. Den fortgeschrittenen Implementierungs-/Abnahmestand
+im [Ausführungsbericht](../work-packages-execution-2026-10-24.md) und den gezielten
+Quellabgleich auf `5c6dfc7c1178a64b83ec4f852c1eb5b1662d9ec6` in
+[UXD-16](16-state-continuity.md) vor neuen Änderungen berücksichtigen.
+
+Schon vorhanden waren Präferenzspeicherung, Draft-/Navigationszustand,
 kontextueller Rückweg, Quotahelpers, Login-Lifecycle und eigenständige Usage-/
 Liveviews. Diese Mechanismen weiterverwenden. Kritische Unterschiede zum Ziel:
 
@@ -87,11 +115,55 @@ Liveviews. Diese Mechanismen weiterverwenden. Kritische Unterschiede zum Ziel:
 
 ## Pakete und Reihenfolge
 
+Nach ausdrücklicher [Auswahl und Vertiefungsrunde](../uxpilot-selection-2026-10-24.md)
+ergänzen UXD-10–15 die ursprünglichen Pakete. Als Deltas gegen den aktuellen
+Umsetzungsstand anwenden; bereits erledigte Arbeit nicht erneut aufbauen.
+Dieser Design-/Planauftrag startet keine Produktimplementierung oder Agenten.
+
+Folgeprüfung und Folgeauswahl abgeschlossen: 24 neue finale Bilder;
+Monitorbalken A, Applypräsentation B und schmale Liveansicht A sind ausdrücklich
+bestätigt. Frühere Empfehlungen A/A/B bleiben Bewertungshistorie; die fünf zuvor
+gewählten Grundmuster bleiben verbindlich. Verbrauch
+dieser Zusatzrunde 72/400 Credits, kumulativ 210. Native Nachweise in den Paketen
+sind geplante Abnahme, keine ausgeführten Produktprüfungen.
+
+| Folgepaket | Ergebnis | Grundlage / bestehender Owner |
+| --- | --- | --- |
+| [UXD-10](10-selected-layouts-monitor.md) | Gewählte Panels beider Größen; Monitortabelle mit Verbrauchsbalken | UXD-00/01/02/04/06 |
+| [UXD-11](11-connect-interruptions.md) | Ablauf, Cancel und Reconnect derselben Accountidentität | UXD-03, AC-02/09 |
+| [UXD-12](12-profiles-apply-recovery.md) | Revisionskonflikt, unbekannter Applyausgang, volle Profileditoren | UXD-05, ST-02 |
+| [UXD-13](13-usage-partial-scope.md) | Teilmessung, globaler Scope, Filterdraft und Quellenfehler | UXD-06, ST-03 |
+| [UXD-14](14-live-pause-source.md) | Schmale Liveausgabe, Pause/Retention und Sourceidentität | UXD-07 |
+| [UXD-15](15-settings-and-native-gates.md) | Settingsrollback und native integrierte Nachweise | UXD-08/09, Seitenowner |
+| [UXD-16](16-state-continuity.md) | Gemeinsame Übergabe und Reihenfolge für UXD-17–22; kein zusätzliches Implementierungspaket | Bestehende Owner und AC-/ST-Verträge |
+| [UXD-17](17-navigation-drafts.md) | Abschnittsentwurf erhalten, gewählte Draft-/Simple-Live-Präsentation und Rückweg | UXD-01; Draft B und Simple-Live A bestätigt |
+| [UXD-18](18-account-snapshots.md) | Erster Snapshot, leeres Inventar, lokale Aktualisierung und vollständige Zusammenfassungen | UXD-02, Shell UXD-01 |
+| [UXD-19](19-model-command-identity.md) | IDgebundene Commands, Referenzsperre, Filterleere und verschwundene Auswahl | UXD-04, Policy-/Referenzowner |
+| [UXD-20](20-connect-client-setup.md) | Loginvoraussetzungen und getrenntes Prepare/Install/Apply | UXD-03/05, AC-/ST-Anschlüsse |
+| [UXD-21](21-apply-status-consistency.md) | Veraltetes Review und unbekannter Applyausgang in Detail, Liste und Shell | UXD-05/12, Shell UXD-01, ST-02 |
+| [UXD-22](22-flow-acceptance.md) | Native Eingabe-, Request- und Bildnachweise für die Zustandsfolgen | UXD-09/15 und Seitenowner |
+
+Weitere Zustandsrunde vom 25.10. abgeschlossen: 18 finale Entwürfe, 50 neue
+Credits, damit 122/400 Zusatzcredits und 260 kumulativ. Die Galerie enthält
+21 Bilder. Auf weiteren Nutzerauftrag ist UXD-16 jetzt in sechs eigenständige
+Pakete UXD-17–22 aufgeteilt. Jedes enthält Ergebnis, Dateien/Owner, vorhandene
+Mechanismen, konkrete Deltas, Abhängigkeiten und geplante Abnahme. Zuerst
+bereits erfüllte Fälle prüfen, dann Accounts als ersten Fachdurchstich;
+Connect/Models/Profiles folgen mit den bestehenden Ownern. UXD-20 und UXD-21
+berühren dieselbe Profilesdatei und werden vom selben Owner nacheinander bearbeitet.
+UXD-22 bereitet früh vor und schließt nach den jeweiligen Fachfällen ab.
+Keine neuen Produktprüfungen oder Implementierung in diesem Planauftrag.
+
+UXD-10 zuerst auf die bestehenden Owner verteilen; danach berührte Fachstrecken
+UXD-11–14 anschließen. UXD-15-Settings kann nach der gemeinsamen Shell unabhängig
+vorbereitet werden; die integrierte UXD-09-Abnahme folgt nach den betroffenen
+Seiten. Kein harter Rückverweis von einem Fachpaket auf die fertige Abnahme.
+
 UXD konkretisiert die bestehenden UX-01–03 aus dem
 [Ausführungsplan](../work-packages-execution-2026-10-24.md). AC-00–10 und ST-01–05
 behalten ihre fachlichen Zuständigkeiten; dieser Plan startet sie nicht neu.
 
-Übergabereife: UXD-00 ist als lesender Vorlauf konkret beschrieben. Die
+Übergabereife der ursprünglichen Planung: UXD-00 ist als lesender Vorlauf konkret beschrieben. Die
 Seitenpakete sind unter den benannten Layoutannahmen ausgearbeitet; gemeinsame
 Verträge aus UXD-00/01 und tatsächliche AC-/ST-Anschlüsse sind vor der jeweils
 abhängigen Umsetzung nachzuweisen. UXD-09 hat einen fertigen Prüfkatalog, aber
@@ -167,7 +239,7 @@ Polling erhält ID, Auswahl, Draft, Fokus und benutzten Scrollanker. Sichtbares
 Die Prüfungen in den Einzelpaketen sind **geplant, in diesem Planauftrag nicht
 ausgeführt**. Für diese Übergabe wurden Quellen/Abhängigkeiten, Referenzabdeckung,
 lokale Dokumentlinks und Whitespace geprüft; keine Produktabnahme behauptet.
-Gegenprüfung: zehn eindeutige Paket-IDs, alle 14 finalen Frame-IDs und F01–F11
+Gegenprüfung der ursprünglichen Übergabe: zehn eindeutige Paket-IDs, alle 14 finalen Frame-IDs und F01–F11
 zugeordnet, keine Kreise in den harten Paketabhängigkeiten; 98 lokale Links über
 13 Dokumente auflösbar. Whitespaceprüfung einschließlich unversionierter
 Dokumente ohne Befund. Keine weiteren UX-Pilot-Credits verbraucht.

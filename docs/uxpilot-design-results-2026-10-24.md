@@ -4,6 +4,10 @@ Status: Entwurfsauftrag abgeschlossen. **14 selbst gesichtete Ergebnisframes,
 70 von 500 freigegebenen Credits verbraucht.** Alle Ergebnisse bleiben Vorschläge;
 keine Freigabe für Produktarchitektur oder Implementierung.
 
+Folgerunde: [A/B/C-Vergleich mit Offline-HTML und weiteren Zuständen](uxpilot-comparison-2026-10-24.md).
+Zusätzlich 68 Credits, insgesamt **138 von 500**; die 70 unten betreffen diese
+ursprüngliche Runde. Die bisherigen Entwürfe und ihre Seite bleiben erhalten.
+
 ## Öffnen und vergleichen
 
 - [UX-Pilot-Seite: lain · UX design review · 2026-10-24](https://uxpilot.ai/a/ui-design?page=5a6Hhb1aH085Fs6REXW4)

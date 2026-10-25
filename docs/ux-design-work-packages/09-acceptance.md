@@ -38,17 +38,21 @@ verwenden; verworfene Generatorstände sind keine Abnahmevorlage.
 
 ## Noch fehlende Designqualifikation
 
-Die breite Gatewayserie deckt folgende Fälle nicht ab. Diese sind verbindliche
-Aufgaben dieses Pakets zusammen mit dem jeweiligen Seitenowner; es gibt dafür
-keinen behaupteten fertigen UX-Pilot-Frame:
+Die ursprüngliche breite Gatewayserie deckt folgende Fälle nicht vollständig ab.
+Die [Folgeprüfung und bestätigte Auswahl A/B/A](../uxpilot-selection-2026-10-24.md)
+liefert inzwischen ergänzende Designframes. Die native Qualifikation bleibt
+verbindliche Aufgabe dieses Pakets mit den jeweiligen Seitenownern:
 
-1. **800×560:** Accounts-Detailwechsel mit Back statt zu enger Doppelspalte;
-   Models mit langen Aliasnamen; Profiles und Applydialog; Usagefilter/Ergebnis;
-   Live-Auswahl/Ausgabe; Settings. Native Screens prüfen und sichtbare
+1. **800×560:** bestätigtes Accounts-A mit Liste und Detail nebeneinander;
+   Models mit langen Aliasnamen; Profiles mit fester Apply-Reviewfläche im Detail
+   (Folgeauswahl B); Usagefilter/Ergebnis; Live mit dauerhafter linker Requestliste
+   neben der Ausgabe (A); Settings. Native Screens prüfen und sichtbare
    Abweichungen mit Grund festhalten. Breakpoints an realem Inhalt messen.
 2. **Monitor/Barebones:** eigenständiger Monitor ohne Core, mit/ohne echte lokale
    History; Gateway in Barebones mit direktem Profileszugriff. Advanced schaltet
    keine Fähigkeit frei. Fenster springt beim Moduswechsel nicht auf eine andere Größe.
+   Gewählte Monitortabelle B mit langen Verbrauchsbalken unter den Zahlen (A)
+   einschließlich oberer/unterer Scrollposition und vollständiger Quotas prüfen.
    Unter 800×560 liegende Mindestgrößen sind ein gesonderter Vorschlag.
 3. **Offline/Fehler:** bewusst gewählter Monitor vs. Gateway ohne Setup vs.
    gestörtes eingerichtetes Gateway; nicht erreichbarer Host mit letztem Stand;

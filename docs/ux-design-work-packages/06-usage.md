@@ -6,6 +6,10 @@ Ziel: Auswertung sofort erfassen, danach gezielt filtern und Messgrundlagen
 
 ## Referenz, Befund und Dateien
 
+Aktuelle Layoutentscheidung: ausdrücklich A, Ergebnistabelle mit Seitendetail.
+Die frühere Empfehlung für B ist nicht gewählt. Teilmessung/Scope präzisiert
+[UXD-13](13-usage-partial-scope.md); [Auswahl](../uxpilot-selection-2026-10-24.md).
+
 Frame 12 `VFZv56jHJJ2zSdBAQhNG`,
 [PNG und Zahlenprüfung](../uxpilot-design-results-2026-10-24.md).
 `Usage/UsageView.cs` und `UsageView.Analysis.cs` besitzen Filterdrafts, angewendete

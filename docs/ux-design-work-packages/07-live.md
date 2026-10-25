@@ -22,9 +22,12 @@ beim Backendowner; Navigation/Presentationwechsel bei UXD-01, Client bei UXD-00.
    Lücken und Zustand in kurzer Zeile; technische Ereignisdetails lokal.
    Toolbar-/Footerhöhe von der verfügbaren Ausgabehöhe abziehen, keine festen
    Rendererhöhen aus dem UX-Pilot-HTML übernehmen.
-2. Schmalen Listen-/Outputwechsel mit sichtbarem Rückweg entwickeln. Requestauswahl,
-   Scroll und lokaler Filter bleiben erhalten; Ausgabe nicht hinter Toolbar
-   oder horizontal unzugänglichen Controls verstecken.
+2. Gemäß bestätigter Folgeauswahl A auch bei 800×560 die Requestliste links
+   dauerhaft neben der Ausgabe zeigen (Referenz 200 px). Der frühere schmale
+   Listen-/Outputseitenwechsel ist ersetzt; [UXD-14](14-live-pause-source.md)
+   konkretisiert die Abnahme. Requestauswahl, getrennte Scrollpositionen und
+   lokaler Filter bleiben erhalten; Ausgabe nicht hinter Toolbar oder horizontal
+   unzugänglichen Controls verstecken.
 3. Nur belegte Conversationgruppen zeigen, darin lokaler Requestpicker. Sonst
    Requestliste; keine Gruppe aus ähnlichem Text, Modell oder Zeitnähe erfinden.
    Provenienz, Identitäten und Widersprüche im Expertbereich erhalten.
