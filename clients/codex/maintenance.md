@@ -176,3 +176,20 @@ lock. Other installers do not share it; quiet operation and pre/post inspection
 remain required. It is not a filesystem compare-and-swap guarantee. No service,
 Rust version, legacy proxy, Host/CLI delivery helper or external user file is
 modified by these operations.
+
+### Legacy lock permissions
+
+An older installation may leave `STATE_PARENT/.codex-profile-lain.lock` at
+`0644`. Maintenance requires `0600` and refuses that lock before changing client
+state; a successful read-only rebind plan does not acquire or validate the lock.
+For the default state, inspect
+`~/.local/share/lain/clients/.codex-profile-lain.lock`.
+
+A manual correction is appropriate only after confirming quiet operation, an
+owned protected parent directory, and an empty regular file owned by the current
+user, with one link, no symlink, and the same inspected device/inode. Open it
+without following symlinks, obtain a nonblocking exclusive `flock`, recheck the
+descriptor/path identity, then use `fchmod` on that same descriptor to tighten its
+mode to `0600` and `fsync` it. If any check or the lock acquisition fails, stop for
+inspection. Do not unlink/recreate the lock or repair an unknown lock
+automatically. Review status and the manifest pin again before an explicit retry.

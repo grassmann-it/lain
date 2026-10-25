@@ -14,6 +14,9 @@ for the same qualified 0.164.0 bytes. Its [qualification note](../../docs/next-q
 separates temporary Python fixtures from the remaining installed/native check.
 It neither introduces another Rust version nor upgrades an installed dispatcher
 automatically.
+An older `0644` maintenance lock can block migration before client state changes;
+see [legacy lock permissions](maintenance.md#legacy-lock-permissions) for the
+manual inspection and permission correction required before retrying.
 
 This is a small patch over the public `rust-v0.164.0` source, not a selection wrapper.
 It changes the real TUI `/model` path in `tui/src/chatwidget/model_popups.rs`.
