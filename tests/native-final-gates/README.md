@@ -1,10 +1,12 @@
 # Targeted native editor gates
 
 Source base `e48bc118a5ecd2ada80648370ed2b8ef102fd01e`. Independent harness; no
-production code or existing test is changed. The first qualification on integrated
-source `9307ea1` is complete with **eight open product focus-return failures**;
-see `review.md` and `evidence-summary.json`. Only the coordinator may allocate the
-serial build/runtime slot. Subsequent source changes need their own binary run.
+production code or existing test is changed. The latest source qualification on
+`ef507a7` passed **4/4 cases and 282/282 assertions**, closing all eight functional
+focus-return failures; see `focus-fixed-review.md` and `focus-fixed-evidence.json`.
+It predates the separate visual focus-ring fix `7d6d425`, which needs exact-package
+qualification. The original failures in `review.md` and `evidence-summary.json`
+remain historical evidence. Only the coordinator may allocate build/runtime slots.
 
 Four cases cover Models/Profiles at 1120×780 and 800×560. Real XTEST pointer input
 opens the page; all editor traversal, expansion, typing, Save and Cancel use real

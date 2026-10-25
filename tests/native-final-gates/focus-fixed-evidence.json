@@ -1,0 +1,231 @@
+{
+  "status": "four-focused-source-cases-pass-before-visual-ring-fix",
+  "sourceCommit": "ef507a77aa8ab92864e2c58e43c83d4ec88c8671",
+  "manifest": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/focus-fixed/evidence.json",
+  "manifestSha256": "6ae5dfdedc70213b60079fa8e4f937d297cc99773336109a040b4dc5121f0b7e",
+  "assemblies": [
+    {
+      "path": "/home/tomka/Desktop/lain-native-final-gates/tests/native-final-gates/bin/Debug/net10.0/linux-x64/NativeFinalGates.dll",
+      "sha256": "b02760ef77ecb11ef18b03ac92eb59608a550c87e3f20d05984713026844a48d"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-native-final-gates/tests/native-final-gates/bin/Debug/net10.0/linux-x64/Lain.Desktop.dll",
+      "sha256": "c75a4e9cfbbec02008bee1f9a1836f9322cae081522355fd77b81d4e8137709f"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-native-final-gates/tests/native-final-gates/bin/Debug/net10.0/linux-x64/Lain.Client.dll",
+      "sha256": "b6a2381d88a3e978e1deb8f983d7498f768e899f1b8c2551eb3364a64b29db8d"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-native-final-gates/tests/native-final-gates/bin/Debug/net10.0/linux-x64/Lain.Core.dll",
+      "sha256": "63b96ef0e0c4e157a7968f6009c32daa9fa4db46268e97af822d4ceb7c545a27"
+    }
+  ],
+  "cases": [
+    {
+      "name": "native-models-editor-1120x780",
+      "result": "pass",
+      "assertions": 33
+    },
+    {
+      "name": "native-models-editor-800x560",
+      "result": "pass",
+      "assertions": 33
+    },
+    {
+      "name": "native-profiles-editor-1120x780",
+      "result": "pass",
+      "assertions": 108
+    },
+    {
+      "name": "native-profiles-editor-800x560",
+      "result": "pass",
+      "assertions": 108
+    }
+  ],
+  "assertions": {
+    "pass": 282,
+    "fail": 0
+  },
+  "focusReturns": [
+    {
+      "caseName": "native-models-editor-1120x780",
+      "phase": "model Cancel",
+      "control": "Edit model access gpt-lain-01",
+      "type": "Button"
+    },
+    {
+      "caseName": "native-models-editor-1120x780",
+      "phase": "model Save",
+      "control": "Edit model access native-model-saved",
+      "type": "Button"
+    },
+    {
+      "caseName": "native-models-editor-800x560",
+      "phase": "model Cancel",
+      "control": "Edit model access gpt-lain-01",
+      "type": "Button"
+    },
+    {
+      "caseName": "native-models-editor-800x560",
+      "phase": "model Save",
+      "control": "Edit model access native-model-saved",
+      "type": "Button"
+    },
+    {
+      "caseName": "native-profiles-editor-1120x780",
+      "phase": "profile Cancel",
+      "control": "Edit selection",
+      "type": "Button"
+    },
+    {
+      "caseName": "native-profiles-editor-1120x780",
+      "phase": "profile Save",
+      "control": "Edit selection",
+      "type": "Button"
+    },
+    {
+      "caseName": "native-profiles-editor-800x560",
+      "phase": "profile Cancel",
+      "control": "Edit selection",
+      "type": "Button"
+    },
+    {
+      "caseName": "native-profiles-editor-800x560",
+      "phase": "profile Save",
+      "control": "Edit selection",
+      "type": "Button"
+    }
+  ],
+  "themeSampleCount": 365,
+  "disabledSamples": [
+    {
+      "caseName": "native-models-editor-1120x780",
+      "phase": "model-free-only-disabled",
+      "text": "Allow paid or unknown-price fallbacks",
+      "foreground": "#fff9f9f9",
+      "foregroundOpacity": 0.35,
+      "effectiveVisualOpacity": 1,
+      "compositedForeground": "#ff5a5c5b",
+      "compositedBackground": "#ff050706",
+      "solidLayerContrast": 2.9983007211539303,
+      "FontSize": 13,
+      "effectivelyEnabled": false,
+      "bounds": {
+        "x": 612,
+        "y": 612,
+        "width": 234,
+        "height": 16
+      },
+      "layers": [
+        {
+          "type": "MainWindow",
+          "color": "#ff050706",
+          "brushOpacity": 1,
+          "cumulativeVisualOpacity": 1
+        }
+      ]
+    },
+    {
+      "caseName": "native-models-editor-800x560",
+      "phase": "model-free-only-disabled",
+      "text": "Allow paid or unknown-price fallbacks",
+      "foreground": "#fff9f9f9",
+      "foregroundOpacity": 0.35,
+      "effectiveVisualOpacity": 1,
+      "compositedForeground": "#ff5a5c5b",
+      "compositedBackground": "#ff050706",
+      "solidLayerContrast": 2.9983007211539303,
+      "FontSize": 13,
+      "effectivelyEnabled": false,
+      "bounds": {
+        "x": 452,
+        "y": 392,
+        "width": 234,
+        "height": 16
+      },
+      "layers": [
+        {
+          "type": "MainWindow",
+          "color": "#ff050706",
+          "brushOpacity": 1,
+          "cumulativeVisualOpacity": 1
+        }
+      ]
+    }
+  ],
+  "mutationSummary": [
+    {
+      "case": "native-models-editor-1120x780",
+      "method": "PUT",
+      "path": "/api/v1/routes/r1",
+      "configurationRevision": 2
+    },
+    {
+      "case": "native-models-editor-800x560",
+      "method": "PUT",
+      "path": "/api/v1/routes/r1",
+      "configurationRevision": 2
+    },
+    {
+      "case": "native-profiles-editor-1120x780",
+      "method": "PUT",
+      "path": "/api/v1/profiles/p1",
+      "configurationRevision": 2
+    },
+    {
+      "case": "native-profiles-editor-800x560",
+      "method": "PUT",
+      "path": "/api/v1/profiles/p1",
+      "configurationRevision": 2
+    }
+  ],
+  "imagesGenerated": 22,
+  "personallyViewed": [
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/focus-fixed/native-models-editor-800x560-disabled-x11.png",
+      "sha256": "10b6eb348c091c0d2a5a46d6db8a9c3b1c13fcff84c9200351e4d0ed1435ccbb",
+      "finding": "Disabled paid permission fully visible, Check spending policy has a native keyboard focus ring."
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/focus-fixed/native-models-editor-1120x780-disabled-x11.png",
+      "sha256": "edbefab0374a0ec2d2744caa04d8fa2e49a1c9dd804fd8cab45bdc9e8c95d524",
+      "finding": "Wide disabled caption and focused next action fully visible; muted-state distinction preserved."
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/focus-fixed/native-models-editor-1120x780-saved-x11.png",
+      "sha256": "3f4bb313bb3b6494a9ab37845576dd128a2c4d0be045d4c70e69c6200f10af72",
+      "finding": "Renamed stable model row visible, saved/pending distinct; returned Edit focus is functional but no distinct tab ring."
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/focus-fixed/native-models-editor-800x560-saved-x11.png",
+      "sha256": "6215f0c7f51b7be29eec7dad6c349345b674714bd09d2d86282c8eaad79a9898",
+      "finding": "Inventory preserved, renamed row/r1 Edit reachable, pending separate; no distinct returned tab ring."
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/focus-fixed/native-profiles-editor-800x560-saved-x11.png",
+      "sha256": "cb245a2067d141824a15962309ec623557806c6314a21c5c9cfb96572f336c86",
+      "finding": "Saved p1 name and active Workspace2 remain separate; Edit selection reachable but no distinct returned tab ring."
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/focus-fixed/native-profiles-editor-800x560-action-19-x11.png",
+      "sha256": "06436a7a10a39cd40af65143d7c7ddcc11843c4018ce0a7d198525d8f0ba5c84",
+      "finding": "Save and Cancel fully visible above footer after physical traversal; Save has native focus decoration."
+    }
+  ],
+  "terminal": {
+    "buildSession": 48114,
+    "buildExit": 0,
+    "runtimeSession": 6698,
+    "runtimeExit": 0,
+    "scopes": "inactive/dead; slot explicitly released"
+  },
+  "limits": [
+    "Tests predate 7d6d425 visual focus-ring fix; do not qualify that newer binary.",
+    "Eight functional focus returns fixed; Saved PNG ring remains a separately identified visual issue.",
+    "Ratios use actual solid runtime brushes and alpha/ancestor composition; no generic accessibility or antialiased pixel certification.",
+    "Disabled caption contrast is a disabled-state observation, not an enabled-text pass.",
+    "Historical source-run and models-r2 failure manifests remain unchanged.",
+    "Exact-package overlay and its final focus-ring PNG review remain separate gates."
+  ]
+}
