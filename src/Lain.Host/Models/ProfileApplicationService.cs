@@ -20,7 +20,8 @@ public sealed class ProfileApplicationService(
     OwnStatePaths paths, ConfigurationRepository repository, ModelsService models,
     Func<CancellationToken, Task> drainAndStop,
     Func<ConfigurationDto, ProfileDto, CancellationToken, Task> writeAndStart,
-    Func<CancellationToken, Task> stopAfterFailure)
+    Func<CancellationToken, Task> stopAfterFailure,
+    Action<ConfigurationDto, ProfileDto>? validateRuntime = null)
 {
     public const string StreamBehavior = "Apply waits for active requests to finish. If the drain deadline expires, apply is refused and the previous runtime is retained. All clients share one runtime.";
     private readonly SemaphoreSlim gate = new(1, 1);
@@ -121,6 +122,9 @@ public sealed class ProfileApplicationService(
             var activeRoutes = selected.Routes.Where(x => x.Enabled).ToArray();
             var accounts = activeRoutes.SelectMany(x => x.AccountIds).ToHashSet(StringComparer.Ordinal);
             var runtime = selected.Configuration with { Routes = activeRoutes, Accounts = selected.Configuration.Accounts.Where(x => accounts.Contains(x.Id)).ToArray() };
+            // Reject invalid credentials/transports/imported options before any
+            // operation marker or admission change touches the working runtime.
+            validateRuntime?.Invoke(runtime, selected.Profile);
             previousOperation = File.Exists(OperationPath) ? File.ReadAllText(OperationPath) : null;
             operation = new(Guid.NewGuid().ToString("N"), id, revision, "draining");
             Write(OperationPath, operation);

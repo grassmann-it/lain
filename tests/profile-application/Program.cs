@@ -131,11 +131,12 @@ try
         Profiles = [new("profile", "Profile", ["first", "second"], "first"), new("other", "Other", ["second"], "second")]
     });
     var models = new ModelsService(repository);
-    var starts = 0; var stops = 0; var running = false; var refuseDrain = false; var uncertainDrain = false;
+    var starts = 0; var stops = 0; var drains = 0; var running = false; var refuseDrain = false; var uncertainDrain = false; var refusePreflight = false;
     TaskCompletionSource? drainEntered = null; TaskCompletionSource? allowDrain = null;
     var service = new ProfileApplicationService(paths, repository, models,
         async ct =>
         {
+            drains++;
             drainEntered?.TrySetResult();
             if (allowDrain is not null) await allowDrain.Task.WaitAsync(ct);
             if (refuseDrain) throw new InvalidOperationException("Synthetic drain timeout");
@@ -143,7 +144,15 @@ try
             running = false;
         },
         (runtime, profile, ct) => { starts++; running = true; return Task.CompletedTask; },
-        ct => { stops++; running = false; return Task.CompletedTask; });
+        ct => { stops++; running = false; return Task.CompletedTask; },
+        validateRuntime: (runtime, profile) =>
+        {
+            if (!refusePreflight) return;
+            Check(runtime.Routes.Length == 1 && runtime.Routes[0].Id == "first" && runtime.Routes[0].Alias == "changed" &&
+                runtime.Accounts.Select(account => account.Id).SequenceEqual(["one"]) && profile.Id == "profile",
+                "preflight receives the exact selected enabled runtime and profile");
+            throw new InvalidDataException("Synthetic invalid imported runtime option");
+        });
     var preview = service.Preview("profile", configuration.Revision);
     Check(!preview.BaselineKnown && preview.AddedRouteIds.Length == 2 && preview.AffectedAccountIds.Length == 2, "first preview explicitly has no applied comparison baseline");
     Check(repository.Snapshot.AppliedRevision == 0 && starts == 0, "preview never applies");
@@ -165,6 +174,18 @@ try
     Check(starts == 1 && repository.Snapshot.AppliedRevision < configuration.Revision, "two route saves remain pending and do not apply unrelated changes");
     preview = service.Preview("profile", configuration.Revision);
     Check(preview.ChangedRouteIds.SequenceEqual(["first"]) && preview.RemovedRouteIds.SequenceEqual(["second"]) && preview.AffectedAccountIds.SequenceEqual(["one", "two"]), "preview includes all pending effective route/account changes");
+    var beforePreflight = Directory.GetFiles(paths.Root, "*", SearchOption.AllDirectories).ToDictionary(path => path, File.ReadAllBytes);
+    var appliedBeforePreflight = repository.Snapshot.AppliedRevision;
+    refusePreflight = true;
+    await RejectAsync(() => service.ApplyAsync("profile", configuration.Revision));
+    Check(running && drains == 1 && starts == 1 && stops == 0 && service.Status.State == "completed" &&
+        repository.Snapshot.AppliedRevision == appliedBeforePreflight,
+        "preflight refusal never drains, writes/starts, stops or invalidates the prior completed runtime");
+    Check(Directory.GetFiles(paths.Root, "*", SearchOption.AllDirectories).Length == beforePreflight.Count &&
+        beforePreflight.All(pair => File.ReadAllBytes(pair.Key).SequenceEqual(pair.Value)),
+        "preflight refusal leaves every prior runtime, configuration and operation marker byte-identical");
+    service.RequireCompletedRuntime();
+    refusePreflight = false;
     refuseDrain = true;
     await RejectAsync(() => service.ApplyAsync("profile", configuration.Revision));
     Check(running && starts == 1 && stops == 0 && service.Status.State == "completed", "drain refusal leaves prior running runtime and transaction proof intact");
