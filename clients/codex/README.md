@@ -65,8 +65,8 @@ preparation and any build must run in the root's bounded serial lane.
 
 ## Verification status
 
-Prepared: five Core tests cover optional routers/overlap, strict validation, unchanged legacy
-catalog loading, exact profile/provider gating, and invalid extensions outside scope. Eight TUI
+Prepared: six Core tests cover optional routers/overlap, strict validation, unchanged legacy
+catalog loading, Unicode labels, exact profile/provider gating, and invalid extensions outside scope. Eight TUI
 tests cover both menu levels and Escape, real-router slug persistence, disabled missing router,
 unfiltered Alle, refresh after a router disappears, removed groups, Reserve restrictions,
 provider opt-in, and missing/other profiles despite provider `lain`.

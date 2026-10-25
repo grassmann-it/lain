@@ -1,9 +1,9 @@
 diff --git a/codex-rs/core/src/config/lain_model_picker.rs b/codex-rs/core/src/config/lain_model_picker.rs
 new file mode 100644
-index 0000000..a7aa68a
+index 0000000..6c56c11
 --- /dev/null
 +++ b/codex-rs/core/src/config/lain_model_picker.rs
-@@ -0,0 +1,179 @@
+@@ -0,0 +1,188 @@
 +//! Explicit, local catalog extension for lain's two-stage TUI model picker.
 +//! This metadata changes presentation only; every selectable slug must already exist in the catalog.
 +
@@ -89,8 +89,8 @@ index 0000000..a7aa68a
 +        let slugs: HashSet<&str> = slugs.collect();
 +        let mut ids = HashSet::new();
 +        for group in &self.groups {
-+            for label in [&group.id, &group.name] {
-+                if label.trim().is_empty() || label.len() > 256 || label.chars().any(char::is_control) {
++            for (label, maximum_bytes) in [(&group.id, 256), (&group.name, 1024)] {
++                if label.trim().is_empty() || label.len() > maximum_bytes || label.chars().any(char::is_control) {
 +                    return Err(invalid("group ids and names must be nonempty, single-line labels"));
 +                }
 +            }
@@ -131,6 +131,15 @@ index 0000000..a7aa68a
 +        assert!(picker.validate_slugs(["model-a"].into_iter()).is_ok());
 +        picker.groups[0].router_model = Some("router-a".to_string());
 +        assert!(picker.validate_slugs(["model-a", "router-a"].into_iter()).is_ok());
++    }
++
++    #[test]
++    fn metadata_accepts_bounded_unicode_group_names_without_truncation() {
++        let mut picker = picker();
++        picker.groups[0].name = "界".repeat(256);
++        assert!(picker.validate_slugs(["model-a"].into_iter()).is_ok());
++        picker.groups[0].name = "界".repeat(342);
++        assert!(picker.validate_slugs(["model-a"].into_iter()).is_err());
 +    }
 +
 +    #[test]
