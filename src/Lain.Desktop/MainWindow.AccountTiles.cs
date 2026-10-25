@@ -184,6 +184,11 @@ public sealed partial class MainWindow
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Content = new Border { Padding = new Thickness(0, 8, 0, 0), Child = content }
         };
+        // Keep expanded bars on the same scale and alignment as primary windows.
+        more.Resources["ExpanderHeaderPadding"] = new Thickness(0, 8);
+        more.Resources["ExpanderHeaderMargin"] = new Thickness(0);
+        more.Resources["ExpanderContentPadding"] = new Thickness(0);
+        more.Resources["ExpanderContentMinLength"] = 0d;
         AutomationProperties.SetName(more, $"Additional budgets for {account.Name}");
         AutomationProperties.SetHelpText(more, "Monthly limits, additional credits and quota access details. Each budget is separate.");
         more.PropertyChanged += (_, args) =>

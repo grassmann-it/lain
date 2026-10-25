@@ -78,7 +78,8 @@ public sealed partial class MainWindow
                     var body = new StackPanel { Spacing = 0 };
                     foreach (var quota in extra) body.Children.Add(WindowRow(quota));
                     var moreBudgets = AdditionalAccountBudgets(account, body, extra.Length);
-                    moreBudgets.Margin = new Thickness(10, 4, 10, 8);
+                    moreBudgets.Margin = new Thickness(0, 4, 0, 8);
+                    moreBudgets.Resources["ExpanderHeaderPadding"] = new Thickness(10, 8);
                     rows.Children.Add(moreBudgets);
                 }
                 if (snapshots.Length > 0 && summary.Primary.Count == 0 && summary.Missing.Count == 0)
