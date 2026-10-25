@@ -17,8 +17,9 @@ The evidence directory must not exist. The script snapshots and hashes the
 supplied executable before starting any child, and reports its SHA256 in
 `summary.json`. Each scenario gets a fresh private runtime, synthetic config,
 two synthetic credentials, two distinct upstream models and a new loopback
-server. HOME/XDG paths are private; child environment excludes inherited proxy
-settings and credentials. Parent HTTP requests explicitly disable proxies.
+server. Core config, auth, bindings and journal paths are explicitly private;
+XDG paths are private as well. The allowlisted child environment neither sets
+nor inherits HOME/CODEX_HOME, proxy settings or credentials. Parent HTTP requests explicitly disable proxies.
 Only child PIDs created by the harness are terminated. No user config, account
 store or existing Core is opened.
 

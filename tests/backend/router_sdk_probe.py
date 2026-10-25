@@ -123,11 +123,13 @@ class RouterProvider(FakeProvider):
 class RouterRun(Run):
     def __init__(self, core):
         super().__init__(core, retry=1, provider=RouterProvider())
-        # Explicitly isolate discovery/home as well as credentials/config.
-        home = self.root / "home"
-        home.mkdir(mode=0o700)
-        self.env.update(HOME=str(home), XDG_CONFIG_HOME=str(home / "config"),
-                        XDG_CACHE_HOME=str(home / "cache"), XDG_DATA_HOME=str(home / "data"))
+        # Run already supplies explicit private --config/--bindings/--journal
+        # and auth-dir paths and constructs an allowlisted child environment.
+        # Do not assign HOME/CODEX_HOME or inherit them from the caller.
+        fixture_xdg = self.root / "xdg"
+        fixture_xdg.mkdir(mode=0o700)
+        self.env.update(XDG_CONFIG_HOME=str(fixture_xdg / "config"),
+                        XDG_CACHE_HOME=str(fixture_xdg / "cache"), XDG_DATA_HOME=str(fixture_xdg / "data"))
         config = self.root / "core.yaml"
         config.write_text(config.read_text().replace(
             f"      - name: {MODEL}\n        alias: {MODEL}\n",
