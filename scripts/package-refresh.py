@@ -6,6 +6,7 @@ retained under a fresh backup. No credentials, databases or integration files
 are replaced, and rollback reverses application files only.
 """
 import argparse
+import ctypes
 from contextlib import contextmanager
 import fcntl
 import hashlib
@@ -85,6 +86,25 @@ def no_payloads(common, app):
                  'Unreadable application candidate; replacement refused')
 
 
+def exchange(left, right):
+    renameat2 = ctypes.CDLL(None, use_errno=True).renameat2
+    renameat2.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+    renameat2.restype = ctypes.c_int
+    if renameat2(-100, os.fsencode(left), -100, os.fsencode(right), 2):
+        error = ctypes.get_errno()
+        raise OSError(error, os.strerror(error))
+
+
+def sync_tree(common, root):
+    for path in sorted(root.rglob('*')):
+        if path.is_file():
+            with path.open('rb') as stream: os.fsync(stream.fileno())
+    for path in sorted((p for p in root.rglob('*') if p.is_dir()), reverse=True):
+        common.sync_directory(path)
+    common.sync_directory(root)
+    common.sync_directory(root.parent)
+
+
 def install(args):
     package, home, backup = safe(args.package), safe(args.home), safe(args.backup)
     pinned(package / 'SHA256SUMS', args.manifest_sha256)
@@ -94,7 +114,7 @@ def install(args):
     need((app / '.lain-package').is_file(), 'Managed installed application required')
     need(sha(app / 'SHA256SUMS') == args.baseline_manifest_sha256, 'Installed predecessor manifest differs')
     base = common.verify(app)
-    need(home in backup.parents and app != backup and app not in backup.parents and not backup.exists(),
+    need(home in backup.parents and app != backup and app not in backup.parents and backup.parent.is_dir() and not backup.exists(),
          'Fresh backup inside home and outside app required')
     need(package != home and home not in package.parents and package not in home.parents, 'Package/home overlap')
     print(json.dumps({'operation': 'full-app-replacement', 'apply': args.apply,
@@ -106,29 +126,69 @@ def install(args):
     with lease(home):
         no_payloads(common, app)
         need(common.verify(app) == base and common.verify(package) == target, 'Inputs changed before copy')
-        with tempfile.TemporaryDirectory(prefix='.package-refresh-', dir=home) as temporary:
-            prepared = Path(temporary) / 'app'
+        temporary = Path(tempfile.mkdtemp(prefix='.package-refresh-', dir=home))
+        safe_to_remove = False
+        try:
+            prepared = temporary / 'app'
             shutil.copytree(package, prepared)
             (prepared / '.lain-package').touch(mode=0o600)
             need(common.verify(prepared) == target, 'Prepared package differs')
             no_payloads(common, app)
             need(common.verify(app) == base and common.verify(package) == target, 'Inputs changed before replacement')
+            # Persist the complete prepared payload and its parent before any
+            # app rename. The first journal is durable before the atomic swap.
+            sync_tree(common, prepared)
+            common.sync_directory(home)  # Persist the temporary root entry even for nested backups.
             backup.mkdir(mode=0o700)
-            moved_old = moved_new = False
+            common.sync_directory(backup.parent)
+            journal = {'format': 1, 'kind': 'full-app-file-transaction', 'status': 'prepared',
+                       'base': base['SHA256SUMS'], 'target': target['SHA256SUMS'],
+                       'activeApp': str(app), 'preparedApp': str(prepared),
+                       'previousApp': str(backup / 'app'),
+                       'recovery': 'Inspect exact manifests at active/prepared/previous paths; never restore credentials or start a service automatically.'}
+            common.write(backup / 'transaction.json', journal)
+            exchanged = False
+            old_location = prepared
             try:
-                app.rename(backup / 'app'); moved_old = True
-                prepared.rename(app); moved_new = True
-                need(common.verify(app) == target, 'Installed target differs')
-                common.write(backup / 'transaction.json', {'status': 'installed', 'base': base['SHA256SUMS'], 'target': target['SHA256SUMS']})
+                no_payloads(common, app)
+                need(common.verify(app) == base and common.verify(prepared) == target and
+                     common.verify(package) == target, 'Inputs changed before atomic exchange')
+                exchange(app, prepared)
+                exchanged = True
+                common.sync_directory(app.parent)
+                common.sync_directory(prepared.parent)
+                common.write(backup / 'transaction.json', dict(journal, status='app-exchanged'))
+                need(common.verify(app) == target and common.verify(prepared) == base,
+                     'Exchanged application differs')
+                prepared.rename(backup / 'app')
+                old_location = backup / 'app'
+                common.sync_directory(prepared.parent)
+                common.sync_directory(backup)
+                common.write(backup / 'transaction.json', dict(journal, status='installed'))
+                safe_to_remove = True
             except BaseException as error:
                 try:
-                    if moved_new: app.rename(backup / 'failed-target')
-                    if moved_old: (backup / 'app').rename(app)
+                    if exchanged:
+                        # Atomic reverse of app files only, never a state/grant restore.
+                        exchange(app, old_location)
+                        common.sync_directory(app.parent)
+                        common.sync_directory(old_location.parent)
+                        if old_location == prepared:
+                            old_location.rename(backup / 'failed-target')
+                            common.sync_directory(old_location.parent)
+                            common.sync_directory(backup)
                     need(common.verify(app) == base, 'Reversed application differs')
-                    common.write(backup / 'transaction.json', {'status': 'file-transaction-reversed', 'error': str(error)})
+                    common.write(backup / 'transaction.json', dict(journal,
+                                 status='file-transaction-reversed' if exchanged else 'failed-before-exchange', error=str(error)))
+                    safe_to_remove = True
                 except BaseException as reversal:
                     raise RuntimeError(str(error) + '; application reversal failed: ' + str(reversal)) from error
                 raise
+        finally:
+            # A failed reverse may leave the only previous app at preparedApp.
+            # Never let automatic temporary-directory cleanup destroy it.
+            if safe_to_remove:
+                shutil.rmtree(temporary)
 
 
 def main():

@@ -215,7 +215,7 @@ def plan(config, fresh=True, installed="baseline"):
     need((not fresh or not backup.exists()) and backup.parent.is_dir() and STATE not in backup.parents and
          backup != STATE and backup not in STATE.parents, 'Fresh outer full-backup destination required')
     need(STATE in app_backup.parents and STATE / 'app' not in app_backup.parents and
-         app_backup != STATE / 'app' and (not fresh or not app_backup.exists()), 'Fresh app delta backup must be inside home outside app')
+         app_backup != STATE / 'app' and app_backup.parent.is_dir() and (not fresh or not app_backup.exists()), 'Fresh app delta backup must be inside home outside app')
     for left in (backup, app_backup, STATE / 'app'):
         for right in (package, baseline):
             need(left != right and left not in right.parents and right not in left.parents, 'Input/backup/install overlap refused')

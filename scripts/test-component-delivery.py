@@ -124,6 +124,12 @@ class PortablePlanFixtures(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'env -u LAIN_HOME'):
                 self.plan()
 
+    def test_missing_app_backup_parent_refused_in_plan(self):
+        self.config['appDeltaBackup'] = str(Path(self.config['installation']['home']) / 'missing-parent/delta')
+        with self.assertRaisesRegex(RuntimeError, 'Fresh app delta backup'):
+            self.plan()
+        self.assertFalse(Path(self.config['backup']).exists())
+
     def test_unqualified_report_refused_before_mutation(self):
         path = Path(self.config['qualification']['path'])
         report = common.load(path)
@@ -251,14 +257,68 @@ class PortablePlanFixtures(unittest.TestCase):
         self.assertEqual(common.inventory(self.f.root), before)
         self.assertFalse((self.f.root / '__pycache__').exists())
 
+    def full_installer_args(self):
+        home = Path(self.config['installation']['home'])
+        return SimpleNamespace(package=self.f.out, home=home, backup=home / 'full-delta',
+            manifest_sha256=self.config['package']['manifestSha256'],
+            baseline_manifest_sha256=self.config['baseline']['manifestSha256'],
+            helper=HERE / 'core-refresh.py', helper_sha256=api.sha(HERE / 'core-refresh.py'), apply=True, stopped=True)
+
+    def test_full_exchange_follows_payload_sync_and_durable_prepared_journal(self):
+        self.full_package()
+        package = module('package-refresh')
+        args = self.full_installer_args()
+        (args.home / 'backups').mkdir(mode=0o700)
+        args.backup = args.home / 'backups/nested-delta'
+        synced = set()
+        original_sync, original_exchange = package.os.fsync, package.exchange
+        def fsync(fd):
+            synced.add(package.os.readlink('/proc/self/fd/' + str(fd)))
+            return original_sync(fd)
+        def exchange(left, right):
+            journal = common.load(args.backup / 'transaction.json')
+            self.assertEqual(journal['status'], 'prepared')
+            self.assertTrue({str(path) for path in right.rglob('*') if path.is_file()} <= synced)
+            self.assertIn(str(right), synced)
+            self.assertIn(str(right.parent), synced)
+            self.assertIn(str(args.backup), synced)
+            self.assertIn(str(args.backup.parent), synced)
+            self.assertIn(str(args.home), synced)
+            original_exchange(left, right)
+        with patch.object(package, 'no_payloads'), patch.object(package.os, 'fsync', side_effect=fsync), \
+             patch.object(package, 'exchange', side_effect=exchange), contextlib.redirect_stdout(io.StringIO()):
+            package.install(args)
+        self.assertEqual(common.load(args.backup / 'transaction.json')['status'], 'installed')
+
+    def test_lost_exchange_completion_retains_old_app_and_prepared_journal(self):
+        self.full_package()
+        package = module('package-refresh')
+        args = self.full_installer_args()
+        before = common.verify(args.home / 'app')
+        actual_exchange = package.exchange
+        def lost_completion(left, right):
+            actual_exchange(left, right)
+            raise OSError('synthetic lost exchange completion')
+        with patch.object(package, 'no_payloads'), patch.object(package, 'exchange', side_effect=lost_completion), \
+             contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(RuntimeError, 'lost exchange completion'):
+                package.install(args)
+        journal = common.load(args.backup / 'transaction.json')
+        self.assertEqual(journal['status'], 'prepared')
+        self.assertEqual(common.verify(Path(journal['preparedApp'])), before)
+        self.assertEqual(common.verify(args.home / 'app'), common.verify(self.f.out))
+        self.assertEqual((args.home / 'configuration.json').read_bytes(), b'private synthetic data must remain unchanged')
+
     def test_full_app_transaction_writefault_reverses_only_app(self):
         self.full_package()
         package = module('package-refresh')
         home = Path(self.config['installation']['home'])
         before = common.verify(home / 'app')
         original_rename = Path.rename
+        failed = {'once': False}
         def rename(path, target):
-            if path.name == 'app' and path.parent.name.startswith('.package-refresh-'):
+            if path.name == 'app' and path.parent.name.startswith('.package-refresh-') and not failed['once']:
+                failed['once'] = True
                 raise OSError('synthetic full-app writefault')
             return original_rename(path, target)
         args = SimpleNamespace(package=self.f.out, home=home, backup=home / 'full-delta',

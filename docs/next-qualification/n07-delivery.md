@@ -44,8 +44,13 @@ The implementation is ported from the already reviewed private publish binder,
 model-picker mixed operator, cumulative own-update primitives and finite
 platform-process proof. There are no personal home/cache paths or imports from
 private evidence directories. The full-package application transaction is in `scripts/package-refresh.py`: it
-replaces only `HOME/app`, keeps the exact previous app under `appDeltaBackup/app`,
-reverses an interrupted file replacement and never changes external integration.
+fsyncs prepared payload files/directories and a prepared transaction journal before
+atomically exchanging `HOME/app`, keeps the exact previous app under
+`appDeltaBackup/app`, reverses a caught file replacement failure and never changes external integration.
+The prepared journal records active/prepared/previous paths and exact manifests;
+an interrupted/lost exchange completion retains both app trees for explicit
+recovery, with no automatic deletion of a possibly sole previous app. Backup
+parents must exist and are checked during plan, before service stop.
 Its installer/helper are explicit pinned source inputs; they need not be silently
 injected into the target package.
 
@@ -179,8 +184,8 @@ merged. The current operator already retains its own private failure root.
 
 ## Verification and remaining gates
 
-Executed 51 temporary-file and mocked drain/failure fixtures (16 mixed refresh,
-15 drain/failure, 20 portable binding/plan/recovery/lifecycle):
+Executed 54 temporary-file and mocked drain/failure fixtures (16 mixed refresh,
+15 drain/failure, 23 portable binding/plan/recovery/lifecycle):
 
 ```sh
 python3 scripts/test-host-cli-core-refresh.py
@@ -222,3 +227,13 @@ The old preflight refusal is retained by regression alongside successful target
 postflight. Review also found the new-backend traffic/cleanup race and inherited
 `LAIN_HOME` backup refusal; the changes and lifecycle fixtures above close those
 source defects. Exact package runtime qualification remains required.
+
+Independent targeted re-review by `account_model_groups` closed all findings in
+this source/tempfixture scope: target-bound postflight; new-backend drain before
+cleanup; inherited-home refusal; durable full-app preparation/journal and atomic
+exchange; explicit home/temp-root fsync even with nested backup; early backup
+parent validation; and retaining both trees after uncertain reverse. The reviewer
+independently ran all 23 portable fixtures successfully and checked whitespace.
+This authorizes subsequent exact-package qualification only, not live/package
+acceptance. Worker total remains 54 green bounded fixtures; no real services or
+builds were executed.
