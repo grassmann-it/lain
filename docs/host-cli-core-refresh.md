@@ -89,9 +89,22 @@ The pinned independently reviewed publish report requires `kind` equal to
 `host-cli-core-publish-qualification`, `passed: true`, `sourceCommit`,
 `baseManifestSha256`, `coreManifestSha256`, `sourceEvidenceFiles`, `cliFiles` and
 `hostFiles`. Those fields must match the complete exact inputs above. Additional
-fields should describe actual checks and limits. The helper checks the main DLL's
-full version attribute and bindings, but cannot reconstruct a compiler's source
-history from binary bytes; frozen build/provenance review remains necessary.
+fields should describe actual checks and limits. `assemblyMetadata` is also
+required, with one record for each of `cli` and `host`:
+
+```json
+{"assemblyMetadata":{"cli":{"method":"dotnet-reflection","attribute":"System.Reflection.AssemblyInformationalVersionAttribute","dllSha256":"EXACT_PUBLISHED_CLI_DLL_HASH","informationalVersion":"1.0.0+FULL_FINAL_COMMIT","passed":true},"host":{"method":"assembly-metadata-reader","attribute":"System.Reflection.AssemblyInformationalVersionAttribute","dllSha256":"EXACT_PUBLISHED_HOST_DLL_HASH","informationalVersion":"1.0.0+FULL_FINAL_COMMIT","passed":true}}}
+```
+
+The independently reviewed report must come from an actual .NET Reflection or
+assembly-metadata-reader inspection of those exact published DLLs. Root performs
+that read in its later serialized .NET lane and retains the reader/output
+evidence; a report label alone is not proof that a read happened. The helper's
+own cheap DLL byte-blob search is only a version **marker** sanity check. It is
+not a PE/.NET metadata reader or an attribute validation: appending the marker
+to an old DLL could satisfy that local check. A marker-only report is rejected.
+Nor can this helper reconstruct a compiler's source history from binary bytes;
+frozen build/provenance review remains necessary.
 A true report over fake or old artifacts is not a qualification of new artifacts.
 
 Run the following only in Root's later preparation window:
@@ -155,10 +168,15 @@ python3 /absolute/new-combined-package/host-cli-core-refresh.py install \
 Only the separately authorized Root operator adds `--apply --stopped`. The
 helper rechecks exact inventories and refuses running installed Host/Core/CLI/
 Desktop payloads. It stages replacements on the same filesystem, fsyncs them,
-journals each exchange and verifies the complete installed target. Its private
-file-operation lock does not replace the operator's shared lease. Concurrent
-foreign updates are unsupported. Private data paths and external Codex/legacy/
-integration files are outside its write set.
+journals each exchange and verifies the complete installed target. Every newly
+created backup ancestor and its parent directory entry are fsynced before the
+first exchange, so journal recovery does not depend on an unflushed new directory
+entry. Its private file-operation lock uses no-follow/close-on-exec descriptors,
+exclusive creation and an owned 0600 regular single-link file; descriptor/path
+identity is checked around the nonblocking exclusive flock. Symlink/hardlink or
+foreign/open-permission lock files are refused. This lock does not replace the
+operator's shared lease. Concurrent foreign updates are unsupported. Private data
+paths and external Codex/legacy/integration files are outside its write set.
 
 7. Recheck the installed manifest, unchanged Desktop and all private/external
    preservation invariants before starting only own `lain.service`. No daemon
@@ -183,4 +201,8 @@ inspection are explicitly mocked; no binary, service, DB, credential or provider
 operation occurs. The fixtures cover no-write plans, strict input pins, publish/
 dependency tampering, protected Desktop changes, exact target installation,
 private sentinels and reversal after an injected interrupted journal write.
-They are not real Core, P2, combined-package or live-state acceptance.
+Further fixtures refuse unsafe/contended locks without changing a symlink target,
+check parent-directory sync ordering, and reject missing/marker-only/mismatched
+metadata-read report fields. Synthetic report fields exercise schema checks;
+they do not constitute an actual metadata read. These fixtures are not real
+Core, P2, combined-package or live-state acceptance.

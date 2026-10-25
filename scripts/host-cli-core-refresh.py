@@ -5,6 +5,7 @@ No operation runs payloads, builds, opens databases, reads credentials, or edits
 external integration/Codex files. Both stage and install are dry-run by default.
 """
 import argparse
+from contextlib import contextmanager
 import ctypes
 import fcntl
 import hashlib
@@ -14,6 +15,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import tempfile
 
 DESKTOP_SOURCE = '67fb26ce83f0f4aa2627fdde57d95ab8a1574355'
@@ -45,6 +47,35 @@ def pin(path, expected):
     path = safe(path)
     need(re.fullmatch('[0-9a-f]{64}', expected) and sha(path) == expected, 'Input SHA256 pin differs')
     return path
+
+
+@contextmanager
+def updater_lock(home):
+    """Open only an owned private regular single-link lock, never follow links."""
+    path = home / '.host-cli-core-refresh.lock'
+    parent = home.stat()
+    need(stat.S_ISDIR(parent.st_mode) and parent.st_uid == os.getuid() and not parent.st_mode & 0o022,
+         'Updater lock directory must be owned and protected from other writers')
+    flags = os.O_RDWR | os.O_NOFOLLOW | os.O_CLOEXEC
+    try:
+        descriptor = os.open(path, flags | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        descriptor = os.open(path, flags)
+    try:
+        def check():
+            details = os.fstat(descriptor)
+            current = path.lstat()
+            need(stat.S_ISREG(details.st_mode) and details.st_uid == os.getuid()
+                 and details.st_nlink == 1 and stat.S_IMODE(details.st_mode) == 0o600,
+                 'Updater lock must be an owned private regular file with one link')
+            need(stat.S_ISREG(current.st_mode) and (details.st_dev, details.st_ino) == (current.st_dev, current.st_ino),
+                 'Updater lock path changed; aborting')
+        check()
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        check()
+        yield
+    finally:
+        os.close(descriptor)
 
 
 def load_helper(expected):
@@ -96,7 +127,9 @@ def check_publish(common, base, component, record, commit):
          'External dependency graph changed; retained notices are insufficient')
     version = record['informationalVersion']
     need(version.partition('+')[2] == commit, 'Publish version must identify the full frozen source commit')
-    need(version_blob(version) in (path / (project + '.dll')).read_bytes(), 'Publish assembly version differs')
+    # This cheap marker check is not a PE/.NET metadata or attribute reader.
+    # Actual metadata reads must be independently recorded in the pinned report.
+    need(version_blob(version) in (path / (project + '.dll')).read_bytes(), 'Publish version marker missing')
     need(os.access(path / project, os.X_OK), 'Publish apphost must be executable')
     return path, actual
 
@@ -143,6 +176,15 @@ def stage(args):
                        'cliFiles': publishes['cli'][1], 'hostFiles': publishes['host'][1]}
     need(all(report.get(key) == value for key, value in expected_report.items()),
          'Qualification does not bind these exact baseline/Core/Host/CLI inputs')
+    metadata = report.get('assemblyMetadata', {})
+    for name, project in (('cli', 'Lain.Cli'), ('host', 'Lain.Host')):
+        read = metadata.get(name, {})
+        need(read.get('method') in ('dotnet-reflection', 'assembly-metadata-reader')
+             and read.get('attribute') == 'System.Reflection.AssemblyInformationalVersionAttribute'
+             and read.get('dllSha256') == config[name]['files'][project + '.dll']
+             and read.get('informationalVersion') == config[name]['informationalVersion']
+             and read.get('passed') is True,
+             'Pinned publish report must record an actual metadata read of each exact DLL')
     out = safe(config['output'])
     need(not out.exists(), 'Output must not exist')
     for source in (base, core, evidence, inputs_path, report_path, *(item[0] for item in publishes.values()), Path(__file__).resolve().parents[1]):
@@ -300,10 +342,19 @@ def install(args):
         return
     need(args.stopped, 'Explicit --stopped acknowledgement is required for apply')
     os.umask(0o077)
-    with (home / '.host-cli-core-refresh.lock').open('a') as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    with updater_lock(home):
         refuse_running_payloads(common, app)
+        missing = []
+        ancestor = backup
+        while not ancestor.exists():
+            missing.append(ancestor)
+            ancestor = ancestor.parent
         backup.mkdir(parents=True, mode=0o700)
+        # Persist each newly created directory AND the parent entry naming it.
+        # Without parent fsync, a power loss could orphan the recovery journal.
+        for created in reversed(missing):
+            common.sync_directory(created)
+            common.sync_directory(created.parent)
         need(backup.stat().st_dev == app.stat().st_dev, 'Backup and app must share filesystem')
         prepared = backup / 'previous'
         prepared.mkdir(mode=0o700)

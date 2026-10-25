@@ -4,6 +4,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import shutil
 import tempfile
@@ -94,7 +95,13 @@ class RefreshFixtures(unittest.TestCase):
         report = {'kind': 'host-cli-core-publish-qualification', 'passed': True, 'sourceCommit': self.commit,
                   'baseManifestSha256': self.config['base']['manifestSha256'], 'coreManifestSha256': self.config['corePackage']['manifestSha256'],
                   'cliFiles': self.config['cli']['files'], 'hostFiles': self.config['host']['files'],
-                  'sourceEvidenceFiles': self.config['sourceEvidence']['files']}
+                  'sourceEvidenceFiles': self.config['sourceEvidence']['files'],
+                  # Synthetic schema claims only, not a real metadata read.
+                  'assemblyMetadata': {name: {'method': 'assembly-metadata-reader',
+                      'attribute': 'System.Reflection.AssemblyInformationalVersionAttribute',
+                      'dllSha256': self.config[name]['files']['Lain.' + project + '.dll'],
+                      'informationalVersion': self.version, 'passed': True}
+                      for name, project in (('cli', 'Cli'), ('host', 'Host'))}}
         self.report = self.root / 'qualification.json'
         common.write(self.report, report)
         self.config['qualification'] = {'path': str(self.report), 'sha256': api.sha(self.report)}
@@ -213,6 +220,90 @@ class RefreshFixtures(unittest.TestCase):
                 self.install(home, True)
         self.assertEqual(common.verify(home / 'app'), self.before)
         self.assertEqual(common.load(home / 'backups/update/transaction.json')['status'], 'file-transaction-reversed')
+
+    def test_apply_refuses_symlink_lock_without_touching_target(self):
+        self.stage()
+        home = self.installed_fixture()
+        target = self.root / 'foreign-lock-target'
+        target.write_bytes(b'foreign target must stay byte-identical')
+        target.chmod(0o600)
+        before = target.stat()
+        (home / '.host-cli-core-refresh.lock').symlink_to(target)
+        with self.assertRaises(OSError):
+            self.install(home, True)
+        self.assertEqual(target.read_bytes(), b'foreign target must stay byte-identical')
+        self.assertEqual(target.stat().st_mtime_ns, before.st_mtime_ns)
+        self.assertEqual(common.verify(home / 'app'), self.before)
+        self.assertFalse((home / 'backups').exists())
+
+    def test_lock_refuses_hardlink_and_open_permissions(self):
+        home = self.root / 'lock-home'
+        home.mkdir(mode=0o700)
+        lock = home / '.host-cli-core-refresh.lock'
+        original = self.root / 'hardlinked-file'
+        original.write_bytes(b'no writes')
+        original.chmod(0o600)
+        os.link(original, lock)
+        with self.assertRaisesRegex(RuntimeError, 'one link'):
+            with api.updater_lock(home):
+                self.fail('unsafe hardlink lock accepted')
+        lock.unlink()
+        lock.write_bytes(b'no writes')
+        lock.chmod(0o644)
+        with self.assertRaisesRegex(RuntimeError, 'private regular'):
+            with api.updater_lock(home):
+                self.fail('unsafe permissions accepted')
+        self.assertEqual(original.read_bytes(), b'no writes')
+        self.assertEqual(lock.read_bytes(), b'no writes')
+
+    def test_lock_reuses_owned_private_file_and_refuses_contender(self):
+        home = self.root / 'lock-home'
+        home.mkdir(mode=0o700)
+        with api.updater_lock(home):
+            with self.assertRaises(BlockingIOError):
+                with api.updater_lock(home):
+                    self.fail('concurrent lock accepted')
+        with api.updater_lock(home):
+            self.assertEqual((home / '.host-cli-core-refresh.lock').stat().st_mode & 0o777, 0o600)
+
+    def test_new_backup_ancestor_entries_synced_before_first_exchange(self):
+        self.stage()
+        home = self.installed_fixture()
+        events = []
+        sync = common.sync_directory
+        replace = api.replace_items
+
+        def sync_record(path):
+            events.append(('sync', Path(path)))
+            return sync(path)
+
+        def replace_record(*args):
+            events.append(('exchange', None))
+            return replace(*args)
+
+        with mock.patch.object(common, 'sync_directory', side_effect=sync_record), mock.patch.object(api, 'replace_items', side_effect=replace_record):
+            self.install(home, True)
+        before = events[:events.index(('exchange', None))]
+        for directory in (home, home / 'backups', home / 'backups/update'):
+            self.assertIn(('sync', directory), before)
+
+    def test_report_requires_exact_dll_metadata_read_claims(self):
+        original = common.load(self.report)
+        mutations = [
+            lambda value: value.pop('assemblyMetadata'),
+            lambda value: value['assemblyMetadata']['cli'].update(method='byte-marker-only'),
+            lambda value: value['assemblyMetadata']['host'].update(dllSha256='0' * 64),
+            lambda value: value['assemblyMetadata']['host'].update(informationalVersion='old-version'),
+        ]
+        for mutate in mutations:
+            value = json.loads(json.dumps(original))
+            mutate(value)
+            common.write(self.report, value)
+            self.config['qualification']['sha256'] = api.sha(self.report)
+            self.save_inputs()
+            with self.assertRaisesRegex(RuntimeError, 'actual metadata read'):
+                self.stage()
+            self.assertFalse(self.out.exists())
 
 
 if __name__ == '__main__':
