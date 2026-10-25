@@ -1,0 +1,594 @@
+diff --git a/codex-rs/core/src/config/lain_model_picker.rs b/codex-rs/core/src/config/lain_model_picker.rs
+new file mode 100644
+index 0000000..68e138b
+--- /dev/null
++++ b/codex-rs/core/src/config/lain_model_picker.rs
+@@ -0,0 +1,115 @@
++//! Explicit, local catalog extension for lain's two-stage TUI model picker.
++//! This metadata changes presentation only; every selectable slug must already exist in the catalog.
++
++use codex_protocol::openai_models::ModelsResponse;
++use serde::Deserialize;
++use std::collections::HashSet;
++use std::io;
++
++#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
++#[serde(deny_unknown_fields)]
++pub struct LainModelPicker {
++    pub schema_version: u32,
++    pub groups: Vec<LainModelGroup>,
++}
++
++#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
++#[serde(deny_unknown_fields)]
++pub struct LainModelGroup {
++    pub id: String,
++    pub name: String,
++    #[serde(default)]
++    pub router_model: Option<String>,
++    pub models: Vec<String>,
++}
++
++#[derive(Deserialize)]
++pub(super) struct CatalogEnvelope {
++    #[serde(flatten)]
++    pub catalog: ModelsResponse,
++    #[serde(default)]
++    pub lain_model_picker: Option<LainModelPicker>,
++}
++
++impl LainModelPicker {
++    pub(super) fn validate(&self, catalog: &ModelsResponse) -> io::Result<()> {
++        self.validate_slugs(catalog.models.iter().map(|model| model.slug.as_str()))
++    }
++
++    fn validate_slugs<'a>(&self, slugs: impl Iterator<Item = &'a str>) -> io::Result<()> {
++        let invalid = |message: &str| io::Error::new(io::ErrorKind::InvalidData,
++            format!("invalid lain_model_picker: {message}"));
++        if self.schema_version != 1 {
++            return Err(invalid("unsupported schema_version (expected 1)"));
++        }
++        if self.groups.len() > 128 {
++            return Err(invalid("too many groups (maximum 128)"));
++        }
++        let slugs: HashSet<&str> = slugs.collect();
++        let mut ids = HashSet::new();
++        for group in &self.groups {
++            for label in [&group.id, &group.name] {
++                if label.trim().is_empty() || label.len() > 256 || label.chars().any(char::is_control) {
++                    return Err(invalid("group ids and names must be nonempty, single-line labels"));
++                }
++            }
++            if !ids.insert(group.id.as_str()) {
++                return Err(invalid("duplicate group id"));
++            }
++            if group.router_model.as_ref().is_some_and(|model| !slugs.contains(model.as_str())) {
++                return Err(invalid("router_model must reference an existing catalog slug"));
++            }
++            let mut members = HashSet::new();
++            for model in &group.models {
++                if !slugs.contains(model.as_str()) {
++                    return Err(invalid("group member must reference an existing catalog slug"));
++                }
++                if !members.insert(model.as_str()) {
++                    return Err(invalid("duplicate model in group"));
++                }
++            }
++        }
++        Ok(())
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn picker() -> LainModelPicker {
++        serde_json::from_str(r#"{"schema_version":1,"groups":[{"id":"free","name":"Free","router_model":null,"models":["model-a"]}]}"#).unwrap()
++    }
++
++    #[test]
++    fn metadata_allows_absent_router_and_overlapping_collections() {
++        let mut picker = picker();
++        let mut other = picker.groups[0].clone();
++        other.id = "security".to_string();
++        picker.groups.push(other);
++        assert!(picker.validate_slugs(["model-a"].into_iter()).is_ok());
++        picker.groups[0].router_model = Some("router-a".to_string());
++        assert!(picker.validate_slugs(["model-a", "router-a"].into_iter()).is_ok());
++    }
++
++    #[test]
++    fn metadata_rejects_unknown_router_member_version_and_duplicate_ids() {
++        let mut p = picker();
++        p.groups[0].router_model = Some("invented-router".to_string());
++        assert!(p.validate_slugs(["model-a"].into_iter()).is_err());
++        assert!(picker().validate_slugs(["other-model"].into_iter()).is_err());
++        p = picker(); p.schema_version = 2;
++        assert!(p.validate_slugs(["model-a"].into_iter()).is_err());
++        p = picker(); p.groups.push(p.groups[0].clone());
++        assert!(p.validate_slugs(["model-a"].into_iter()).is_err());
++    }
++
++    #[test]
++    fn catalog_without_extension_retains_upstream_models() {
++        let input = include_str!("../../../models-manager/models.json");
++        let upstream: ModelsResponse = serde_json::from_str(input).unwrap();
++        let envelope: CatalogEnvelope = serde_json::from_str(input).unwrap();
++        assert_eq!(envelope.catalog, upstream);
++        assert!(envelope.lain_model_picker.is_none());
++    }
++}
+diff --git a/codex-rs/core/src/config/mod.rs b/codex-rs/core/src/config/mod.rs
+index 3f6c1cc..c6640a9 100644
+--- a/codex-rs/core/src/config/mod.rs
++++ b/codex-rs/core/src/config/mod.rs
+@@ -163,6 +163,7 @@ use toml_edit::DocumentMut;
+ 
+ mod auth_keyring;
+ pub mod edit;
++pub mod lain_model_picker;
+ mod managed_features;
+ mod metrics;
+ mod network_config;
+@@ -1055,6 +1056,9 @@ pub struct Config {
+     /// When set, this replaces the bundled catalog for the current process.
+     pub model_catalog: Option<ModelsResponse>,
+ 
++    /// Optional lain-only picker metadata from the same catalog snapshot.
++    pub lain_model_picker: Option<lain_model_picker::LainModelPicker>,
++
+     /// Optional verbosity control for GPT-5 models (Responses API `text.verbosity`).
+     pub model_verbosity: Option<Verbosity>,
+ 
+@@ -2215,9 +2219,9 @@ pub fn validate_feature_requirements_for_config_toml(
+     managed_features::validate_feature_requirements_in_config_toml(cfg, feature_requirements)
+ }
+ 
+-fn load_catalog_json(path: &AbsolutePathBuf) -> std::io::Result<ModelsResponse> {
++fn load_catalog_json(path: &AbsolutePathBuf) -> std::io::Result<(ModelsResponse, Option<lain_model_picker::LainModelPicker>)> {
+     let file_contents = std::fs::read_to_string(path)?;
+-    let catalog = serde_json::from_str::<ModelsResponse>(&file_contents).map_err(|err| {
++    let envelope = serde_json::from_str::<lain_model_picker::CatalogEnvelope>(&file_contents).map_err(|err| {
+         std::io::Error::new(
+             ErrorKind::InvalidData,
+             format!(
+@@ -2226,6 +2230,10 @@ fn load_catalog_json(path: &AbsolutePathBuf) -> std::io::Result<ModelsResponse>
+             ),
+         )
+     })?;
++    let catalog = envelope.catalog;
++    if let Some(picker) = envelope.lain_model_picker.as_ref() {
++        picker.validate(&catalog)?;
++    }
+     if catalog.models.is_empty() {
+         return Err(std::io::Error::new(
+             ErrorKind::InvalidData,
+@@ -2235,15 +2243,16 @@ fn load_catalog_json(path: &AbsolutePathBuf) -> std::io::Result<ModelsResponse>
+             ),
+         ));
+     }
+-    Ok(catalog)
++    Ok((catalog, envelope.lain_model_picker))
+ }
+ 
+ fn load_model_catalog(
+     model_catalog_json: Option<AbsolutePathBuf>,
+-) -> std::io::Result<Option<ModelsResponse>> {
+-    model_catalog_json
+-        .map(|path| load_catalog_json(&path))
+-        .transpose()
++) -> std::io::Result<(Option<ModelsResponse>, Option<lain_model_picker::LainModelPicker>)> {
++    match model_catalog_json {
++        Some(path) => load_catalog_json(&path).map(|(catalog, picker)| (Some(catalog), picker)),
++        None => Ok((None, None)),
++    }
+ }
+ 
+ fn filter_mcp_servers_by_requirements(
+@@ -4240,7 +4249,7 @@ impl Config {
+         let review_model = override_review_model.or(cfg.review_model);
+ 
+         let check_for_update_on_startup = cfg.check_for_update_on_startup.unwrap_or(true);
+-        let model_catalog = load_model_catalog(cfg.model_catalog_json.clone())?;
++        let (model_catalog, lain_model_picker) = load_model_catalog(cfg.model_catalog_json.clone())?;
+ 
+         let log_dir = cfg
+             .log_dir
+@@ -4597,6 +4606,7 @@ impl Config {
+             plan_mode_reasoning_effort: cfg.plan_mode_reasoning_effort,
+             model_reasoning_summary: cfg.model_reasoning_summary,
+             model_catalog,
++            lain_model_picker,
+             model_verbosity: cfg.model_verbosity,
+             chatgpt_base_url: cfg
+                 .chatgpt_base_url
+diff --git a/codex-rs/thread-manager-sample/src/main.rs b/codex-rs/thread-manager-sample/src/main.rs
+index af50bd5..c454817 100644
+--- a/codex-rs/thread-manager-sample/src/main.rs
++++ b/codex-rs/thread-manager-sample/src/main.rs
+@@ -352,6 +352,7 @@ async fn new_config(
+         plan_mode_reasoning_effort: None,
+         model_reasoning_summary: None,
+         model_catalog: None,
++        lain_model_picker: None,
+         model_verbosity: None,
+         chatgpt_base_url: auth_config
+             .chatgpt_base_url
+diff --git a/codex-rs/tui/src/app/event_dispatch.rs b/codex-rs/tui/src/app/event_dispatch.rs
+index 6687d05..23f3088 100644
+--- a/codex-rs/tui/src/app/event_dispatch.rs
++++ b/codex-rs/tui/src/app/event_dispatch.rs
+@@ -2361,6 +2361,9 @@ impl App {
+                 self.chat_widget
+                     .open_plan_reasoning_scope_prompt(model, effort);
+             }
++            AppEvent::OpenLainModelGroupPopup { group_id } => {
++                self.chat_widget.open_lain_model_group_popup(&group_id);
++            }
+             AppEvent::OpenAllModelsPopup => {
+                 self.chat_widget.open_all_models_popup();
+             }
+diff --git a/codex-rs/tui/src/app_event.rs b/codex-rs/tui/src/app_event.rs
+index e2b86c9..e6c6f9a 100644
+--- a/codex-rs/tui/src/app_event.rs
++++ b/codex-rs/tui/src/app_event.rs
+@@ -1384,6 +1384,9 @@ pub(crate) enum AppEvent {
+     /// Open the full model picker (non-auto models).
+     OpenAllModelsPopup,
+ 
++    /// Open an opt-in lain catalog group using current, refreshed model inventory.
++    OpenLainModelGroupPopup { group_id: String },
++
+     /// Open the confirmation prompt before enabling full access mode.
+     OpenFullAccessConfirmation {
+         preset: ApprovalPreset,
+diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
+index 4b9d285..af61300 100644
+--- a/codex-rs/tui/src/chatwidget.rs
++++ b/codex-rs/tui/src/chatwidget.rs
+@@ -553,6 +553,8 @@ pub(crate) struct ChatWidget {
+     worktree_popup_request_id: Option<uuid::Uuid>,
+     permission_profiles_menu_opened: bool,
+     model_popup_model_ids: Vec<String>,
++    model_popup_group_id: Option<String>,
++    model_popup_group_model_ids: Vec<String>,
+     session_telemetry: SessionTelemetry,
+     session_header: SessionHeader,
+     pub(crate) initial_user_message: Option<UserMessage>,
+diff --git a/codex-rs/tui/src/chatwidget/constructor.rs b/codex-rs/tui/src/chatwidget/constructor.rs
+index 8d4bbbd..eca6e45 100644
+--- a/codex-rs/tui/src/chatwidget/constructor.rs
++++ b/codex-rs/tui/src/chatwidget/constructor.rs
+@@ -135,6 +135,8 @@ impl ChatWidget {
+             worktree_popup_request_id: None,
+             permission_profiles_menu_opened: false,
+             model_popup_model_ids: Vec::new(),
++            model_popup_group_id: None,
++            model_popup_group_model_ids: Vec::new(),
+             session_telemetry,
+             session_header: SessionHeader::new(header_model),
+             initial_user_message,
+diff --git a/codex-rs/tui/src/chatwidget/model_popup_state.rs b/codex-rs/tui/src/chatwidget/model_popup_state.rs
+index 15f99f8..b0ec085 100644
+--- a/codex-rs/tui/src/chatwidget/model_popup_state.rs
++++ b/codex-rs/tui/src/chatwidget/model_popup_state.rs
+@@ -3,6 +3,7 @@
+ 
+ use super::model_popups::ALL_MODELS_SELECTION_VIEW_ID;
+ use super::model_popups::MODEL_SELECTION_VIEW_ID;
++use super::model_popups::LAIN_GROUP_SELECTION_VIEW_ID;
+ use super::*;
+ 
+ impl ChatWidget {
+@@ -18,7 +19,7 @@ impl ChatWidget {
+     }
+ 
+     fn model_popup_view_id(&self) -> Option<&'static str> {
+-        [MODEL_SELECTION_VIEW_ID, ALL_MODELS_SELECTION_VIEW_ID]
++        [LAIN_GROUP_SELECTION_VIEW_ID, MODEL_SELECTION_VIEW_ID, ALL_MODELS_SELECTION_VIEW_ID]
+             .into_iter()
+             .find(|view_id| {
+                 self.bottom_pane
+@@ -59,6 +60,11 @@ impl ChatWidget {
+     pub(super) fn refresh_open_model_picker(&mut self) {
+         // Refresh an existing parent without reopening it or interrupting its reasoning child.
+         match self.model_popup_view_id() {
++            Some(LAIN_GROUP_SELECTION_VIEW_ID) => {
++                if let Some(group_id) = self.model_popup_group_id.clone() {
++                    self.open_lain_model_group_popup(&group_id);
++                }
++            }
+             Some(MODEL_SELECTION_VIEW_ID) => self.open_model_popup_with_presets(
+                 self.model_catalog.try_list_models().unwrap_or_default(),
+             ),
+@@ -75,11 +81,20 @@ impl ChatWidget {
+         let selected_index = params
+             .view_id
+             .and_then(|view_id| self.bottom_pane.selected_index_for_present_view(view_id));
+-        let selected_model = selected_index.and_then(|index| self.model_popup_model_ids.get(index));
++        let previous_ids = if params.view_id == Some(LAIN_GROUP_SELECTION_VIEW_ID) {
++            &self.model_popup_group_model_ids
++        } else {
++            &self.model_popup_model_ids
++        };
++        let selected_model = selected_index.and_then(|index| previous_ids.get(index));
+         params.initial_selected_idx = model_ids
+             .iter()
+             .position(|model| Some(model) == selected_model);
+-        self.model_popup_model_ids = model_ids;
++        if params.view_id == Some(LAIN_GROUP_SELECTION_VIEW_ID) {
++            self.model_popup_group_model_ids = model_ids;
++        } else {
++            self.model_popup_model_ids = model_ids;
++        }
+         if let Some(view_id) = params.view_id.filter(|_| selected_index.is_some()) {
+             self.bottom_pane
+                 .replace_selection_view_if_present(view_id, params);
+diff --git a/codex-rs/tui/src/chatwidget/model_popups.rs b/codex-rs/tui/src/chatwidget/model_popups.rs
+index aa5de8b..2edd86d 100644
+--- a/codex-rs/tui/src/chatwidget/model_popups.rs
++++ b/codex-rs/tui/src/chatwidget/model_popups.rs
+@@ -9,6 +9,7 @@ use crate::model_catalog::LUNA_RESERVE_MODEL;
+ const ULTRA_REASONING_CONCURRENCY_WARNING_THRESHOLD: usize = 8;
+ pub(super) const MODEL_SELECTION_VIEW_ID: &str = "model-selection";
+ pub(super) const ALL_MODELS_SELECTION_VIEW_ID: &str = "all-models-selection";
++pub(super) const LAIN_GROUP_SELECTION_VIEW_ID: &str = "lain-group-selection";
+ 
+ impl ChatWidget {
+     /// Open a popup to choose a quick auto model. Selecting "All models"
+@@ -89,6 +90,11 @@ impl ChatWidget {
+             .filter(|preset| preset.show_in_picker)
+             .collect();
+ 
++        if self.lain_picker_enabled() {
++            self.open_lain_model_groups_popup(presets);
++            return;
++        }
++
+         let current_model = self.current_model();
+         let current_label = presets
+             .iter()
+@@ -197,6 +203,86 @@ impl ChatWidget {
+         );
+     }
+ 
++    fn lain_picker_enabled(&self) -> bool {
++        self.config.model_provider_id == "lain" && self.config.lain_model_picker.is_some()
++    }
++
++    fn lain_picker_groups(&self) -> Vec<codex_core::config::lain_model_picker::LainModelGroup> {
++        let mut groups = self.config.lain_model_picker.as_ref()
++            .map(|picker| picker.groups.clone()).unwrap_or_default();
++        if !groups.iter().any(|group| group.id == "all") {
++            groups.push(codex_core::config::lain_model_picker::LainModelGroup {
++                id: "all".to_string(), name: "Alle".to_string(),
++                router_model: None, models: Vec::new(),
++            });
++        }
++        groups
++    }
++
++    fn open_lain_model_groups_popup(&mut self, presets: Vec<ModelPreset>) {
++        self.model_popup_group_id = None;
++        let current = self.current_model();
++        let groups = self.lain_picker_groups();
++        let model_ids = groups.iter().map(|group| group.id.clone()).collect();
++        let items = groups.into_iter().map(|group| {
++            let is_current = group.router_model.as_deref() == Some(current)
++                || group.models.iter().any(|model| model == current);
++            let count = presets.iter().filter(|preset| group.id == "all"
++                || group.models.contains(&preset.model)).count();
++            let group_id = group.id;
++            SelectionItem {
++                name: group.name,
++                description: Some(format!("{count} Modelle")),
++                is_current,
++                actions: vec![Box::new(move |tx| {
++                    tx.send(AppEvent::OpenLainModelGroupPopup { group_id: group_id.clone() });
++                })],
++                dismiss_on_select: false,
++                dismiss_parent_on_child_accept: true,
++                ..Default::default()
++            }
++        }).collect();
++        let header = self.model_menu_header("Modellgruppe wählen", "Sammlung oder Anbieter auswählen.");
++        self.show_model_selection_view(model_ids, SelectionViewParams {
++            view_id: Some(MODEL_SELECTION_VIEW_ID), items, header,
++            ..SelectionViewParams::picker()
++        });
++    }
++
++    pub(crate) fn open_lain_model_group_popup(&mut self, group_id: &str) {
++        if !self.lain_picker_enabled() || self.restrict_model_picker_to_luna_reserve() {
++            return;
++        }
++        let Some(group) = self.lain_picker_groups().into_iter().find(|group| group.id == group_id) else {
++            return;
++        };
++        let available: Vec<ModelPreset> = self.model_catalog.try_list_models().unwrap_or_default()
++            .into_iter().filter(|preset| preset.show_in_picker).collect();
++        let router = group.router_model.as_ref().and_then(|model| available.iter()
++            .find(|preset| &preset.model == model)).cloned();
++        let missing_router = router.is_none();
++        let mut presets = router.into_iter().map(|mut preset| {
++            preset.display_name = "Automatisch".to_string();
++            preset
++        }).collect::<Vec<_>>();
++        if group.id == "all" {
++            // Alle is the unfiltered visible inventory; never infer routing from a name.
++            presets.extend(available.into_iter().filter(|preset|
++                group.router_model.as_ref() != Some(&preset.model)));
++        } else {
++            // Preserve exported member order and never let metadata introduce a new wire model.
++            for model in &group.models {
++                if group.router_model.as_ref() != Some(model)
++                    && let Some(preset) = available.iter().find(|preset| &preset.model == model) {
++                    presets.push(preset.clone());
++                }
++            }
++        }
++        self.model_popup_group_id = Some(group.id);
++        let title = format!("{} · Modell wählen", group.name);
++        self.open_model_presets_popup(presets, LAIN_GROUP_SELECTION_VIEW_ID, &title, missing_router);
++    }
++
+     pub(super) fn is_auto_model(model: &str) -> bool {
+         model.starts_with("codex-auto-")
+     }
+@@ -233,7 +319,17 @@ impl ChatWidget {
+         presets: Vec<ModelPreset>,
+         view_id: &'static str,
+     ) {
+-        if presets.is_empty() {
++        self.open_model_presets_popup(presets, view_id, "Select Model and Effort", false);
++    }
++
++    fn open_model_presets_popup(
++        &mut self,
++        presets: Vec<ModelPreset>,
++        view_id: &'static str,
++        title: &str,
++        missing_router: bool,
++    ) {
++        if presets.is_empty() && !missing_router {
+             self.bottom_pane.dismiss_view_by_id(view_id);
+             self.add_info_message(
+                 "No additional models are available right now.".to_string(),
+@@ -243,7 +339,17 @@ impl ChatWidget {
+         }
+ 
+         let mut items: Vec<SelectionItem> = Vec::new();
+-        let model_ids = presets.iter().map(|preset| preset.model.clone()).collect();
++        let mut model_ids = Vec::new();
++        if missing_router {
++            model_ids.push(String::new());
++            items.push(SelectionItem {
++                name: "Automatisch".to_string(),
++                description: Some("Noch nicht eingerichtet".to_string()),
++                is_disabled: true,
++                ..Default::default()
++            });
++        }
++        model_ids.extend(presets.iter().map(|preset| preset.model.clone()));
+         for preset in presets.into_iter() {
+             let description =
+                 (!preset.description.is_empty()).then_some(preset.description.to_string());
+@@ -276,7 +382,7 @@ impl ChatWidget {
+             });
+         }
+ 
+-        let header = self.model_menu_header("Select Model and Effort", "");
++        let header = self.model_menu_header(title, "");
+         self.show_model_selection_view(
+             model_ids,
+             SelectionViewParams {
+diff --git a/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs b/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs
+index 613c1b2..43b6a6d 100644
+--- a/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs
++++ b/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs
+@@ -18,3 +18,104 @@ async fn model_picker_compact_hint_and_actions_follow_configured_bindings() {
+     chat.handle_key_event(KeyEvent::from(KeyCode::F(2)));
+     assert!(chat.no_modal_or_popup_active());
+ }
++
++fn configure_lain_picker(chat: &mut ChatWidget, router: bool) {
++    use codex_core::config::lain_model_picker::LainModelGroup;
++    use codex_core::config::lain_model_picker::LainModelPicker;
++    let mut template = get_available_model(chat, "gpt-5.5");
++    template.default_reasoning_effort = ReasoningEffortConfig::None;
++    template.supported_reasoning_efforts.clear();
++    let presets = [("member-a", "Member A"), ("member-b", "Member B"), ("router-free", "Free router")]
++        .into_iter().map(|(slug, label)| {
++            let mut preset = template.clone();
++            preset.id = slug.to_string(); preset.model = slug.to_string();
++            preset.display_name = label.to_string(); preset.show_in_picker = true;
++            preset
++        }).collect();
++    chat.model_catalog = Arc::new(ModelCatalog::new(presets));
++    chat.config.model_provider_id = "lain".to_string();
++    chat.config.lain_model_picker = Some(LainModelPicker {
++        schema_version: 1,
++        groups: vec![LainModelGroup { id: "free".to_string(), name: "Free".to_string(),
++            router_model: router.then(|| "router-free".to_string()),
++            models: vec!["member-a".to_string()] }],
++    });
++}
++
++#[tokio::test]
++async fn lain_picker_opens_group_then_members_and_escape_returns_to_groups() {
++    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("member-a")).await;
++    configure_lain_picker(&mut chat, false);
++    chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
++    let root = render_bottom_popup(&chat, 80);
++    assert!(root.contains("Free") && root.contains("Alle"));
++    assert!(!root.contains("Member A"));
++    chat.handle_key_event(KeyCode::Enter.into());
++    let group_id = assert_matches!(rx.try_recv(), Ok(AppEvent::OpenLainModelGroupPopup { group_id }) => group_id);
++    assert_eq!(group_id, "free");
++    chat.open_lain_model_group_popup(&group_id);
++    let members = render_bottom_popup(&chat, 80);
++    assert!(members.contains("Automatisch") && members.contains("Noch nicht eingerichtet"));
++    assert!(members.contains("Member A") && !members.contains("Member B"));
++    chat.handle_key_event(KeyCode::Esc.into());
++    assert!(render_bottom_popup(&chat, 80).contains("Modellgruppe wählen"));
++    assert!(rx.try_recv().is_err());
++}
++
++#[tokio::test]
++async fn lain_router_selection_preserves_wire_slug_and_existing_persistence() {
++    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("member-a")).await;
++    configure_lain_picker(&mut chat, true);
++    chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
++    chat.handle_key_event(KeyCode::Enter.into());
++    let group_id = assert_matches!(rx.try_recv(), Ok(AppEvent::OpenLainModelGroupPopup { group_id }) => group_id);
++    chat.open_lain_model_group_popup(&group_id);
++    let members = render_bottom_popup(&chat, 80);
++    assert!(members.find("Automatisch").unwrap() < members.find("Member A").unwrap());
++    chat.handle_key_event(KeyCode::Home.into());
++    chat.handle_key_event(KeyCode::Enter.into());
++    let preset = assert_matches!(rx.try_recv(), Ok(AppEvent::OpenReasoningPopup { model }) => model);
++    assert_eq!(preset.model, "router-free");
++    chat.open_reasoning_popup(preset);
++    assert_matches!(rx.try_recv(), Ok(AppEvent::UpdateModel(model)) if model == "router-free");
++    assert_matches!(rx.try_recv(), Ok(AppEvent::UpdateReasoningEffort(Some(ReasoningEffortConfig::None))));
++    assert_matches!(rx.try_recv(), Ok(AppEvent::PersistModelSelection { model, .. }) if model == "router-free");
++    assert!(chat.no_modal_or_popup_active());
++}
++
++#[tokio::test]
++async fn lain_missing_router_cannot_be_selected_and_alle_keeps_all_visible_models() {
++    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("member-a")).await;
++    configure_lain_picker(&mut chat, false);
++    chat.open_lain_model_group_popup("free");
++    chat.handle_key_event(KeyCode::Home.into());
++    chat.handle_key_event(KeyCode::Enter.into());
++    assert_matches!(rx.try_recv(), Ok(AppEvent::OpenReasoningPopup { model }) if model.model == "member-a");
++    chat.open_lain_model_group_popup("all");
++    let all = render_bottom_popup(&chat, 80);
++    assert!(all.contains("Member A") && all.contains("Member B") && all.contains("Free router"));
++}
++
++#[tokio::test]
++async fn lain_group_refresh_stays_scoped_and_disables_disappeared_router() {
++    let (mut chat, _rx, _ops) = make_chatwidget_manual(Some("member-a")).await;
++    configure_lain_picker(&mut chat, true);
++    chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
++    chat.open_lain_model_group_popup("free");
++    Arc::make_mut(&mut chat.model_catalog).models.retain(|preset| preset.model != "router-free");
++    chat.refresh_open_model_picker();
++    let popup = render_bottom_popup(&chat, 80);
++    assert!(popup.contains("Free · Modell wählen") && popup.contains("Noch nicht eingerichtet"));
++    assert!(popup.contains("Member A") && !popup.contains("Member B"));
++}
++
++#[tokio::test]
++async fn lain_metadata_is_opt_in_and_other_providers_keep_upstream_picker() {
++    let (mut chat, _rx, _ops) = make_chatwidget_manual(Some("member-a")).await;
++    configure_lain_picker(&mut chat, false);
++    chat.config.model_provider_id = "openai".to_string();
++    chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
++    let popup = render_bottom_popup(&chat, 80);
++    assert!(popup.contains("Select Model and Effort"));
++    assert!(!popup.contains("Modellgruppe wählen"));
++}

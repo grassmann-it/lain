@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/openai/codex",
+  "tag": "rust-v0.164.0",
+  "tagObject": "fe3b29455488c2e189e43ad5526a107900c5e1b7",
+  "commit": "6aaac694803004a63c6f393d153c96d22521a6b9",
+  "archiveUrl": "https://codeload.github.com/openai/codex/tar.gz/refs/tags/rust-v0.164.0",
+  "archiveSha256": "57f8c2f88fe5b6eaf08672212b6372362ca044bee43d6e57b6ad032152be772e",
+  "archiveRoot": "codex-rust-v0.164.0",
+  "rustToolchain": "1.99.1",
+  "patches": ["patches/0001-lain-model-picker.patch"]
+}
