@@ -91,3 +91,19 @@ so the same Host executable could operate on a different LAIN_HOME. Require the
 exact loaded own state path and fail closed on unresolved environment files.
 No claim about the real unit's configuration is made. No helper execution or
 private state inspection was performed.
+
+## Own-state guard closure, SHA-256 `692691c6ab7924d602bd641dedbd0b747ce28852f9505a89aef12eeab054b312`
+
+Independently read and hashed the final helper revision. The remaining specific
+service-boundary finding is closed at source level: own_unit requires all loaded
+environment metadata, rejects EnvironmentFiles, parses Environment privately,
+requires exactly one LAIN_HOME equal to the fixed STATE, and rejects any
+UnsetEnvironment rule for that key. Environment fields are removed from the
+returned/persisted unit record. The existing exact unit/executable/PID checks and
+recheck before each stop/start remain present; stopped MainPID zero is accepted
+for the intended subsequent start.
+
+All three concrete findings in this review are now addressed in source. This is
+not an execution result or authorization to update: exact-package qualification,
+runtime guards and the orchestrator's execution decision remain separate. The
+reviewer did not invoke the helper or read the installed unit/state.
