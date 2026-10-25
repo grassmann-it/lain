@@ -43,7 +43,7 @@ def inner():
     expect(os.environ.get("HOME") == str(home), "original HOME value changed")
     expect(os.readlink("/proc/self/ns/net") != plan["outerNetNamespace"], "network namespace isolation missing")
     expect(os.readlink("/proc/self/ns/pid") != plan["outerPidNamespace"], "PID namespace isolation missing")
-    root, package = Path("/mnt"), Path("/package")
+    root, package = Path("/mnt"), Path("/mnt/package")
     data, prefix = root / "data", home / ".local"
     sentinel = home / ".codex/config.toml"
     expect(digest(sentinel) == plan["sentinelSha256"], "synthetic main config missing")
@@ -52,7 +52,7 @@ def inner():
     env.update(LAIN_HOME=str(data), LAIN_SYSTEMD_DIR=str(root / "units"),
                LAIN_DESKTOP_DATA_DIR=str(root / "desktop"),
                XDG_CONFIG_HOME=str(root / "xdg/config"), XDG_CACHE_HOME=str(root / "xdg/cache"),
-               XDG_DATA_HOME=str(root / "xdg/data"), DOTNET_CLI_TELEMETRY_OPTOUT="1")
+               XDG_DATA_HOME=str(root / "xdg/data"), TMPDIR=str(root / "tmp"), DOTNET_CLI_TELEMETRY_OPTOUT="1")
     opener = build_opener(ProxyHandler({}))
     host = None
     provider = None
@@ -273,6 +273,8 @@ def main():
     if not home.is_absolute() or home == Path("/"):
         parser.error("refusing unsafe home mount")
     output.mkdir(parents=True, mode=0o700, exist_ok=False)
+    (output / "package").mkdir(mode=0o700)
+    (output / "tmp").mkdir(mode=0o700)
     private = output / "private-home"
     (private / ".codex").mkdir(parents=True, mode=0o700)
     sentinel = private / ".codex/config.toml"
@@ -301,7 +303,7 @@ def main():
         return 0
     command = ["bwrap", "--die-with-parent", "--new-session", "--unshare-pid", "--unshare-net", "--unshare-ipc", "--unshare-uts",
                "--ro-bind", "/", "/", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp",
-               "--bind", str(private), str(home), "--bind", str(output), "/mnt", "--ro-bind", str(package), "/package",
+               "--bind", str(private), str(home), "--bind", str(output), "/mnt", "--ro-bind", str(package), "/mnt/package",
                "--chdir", "/mnt", sys.executable, "/mnt/harness/host_model_groups.py", "--inner"]
     env = {key: os.environ[key] for key in ("PATH", "HOME", "USER", "LOGNAME", "LANG", "LC_ALL", "TZ") if key in os.environ}
     summary = {"status": "failed", "package": plan["package"]}
