@@ -1,0 +1,2385 @@
+{
+  "format": "lain-live-account-qualification-v1",
+  "recordedAt": "2026-10-25T02:09:50.864852+00:00",
+  "installedVersion": "1.0.0+d7200d7d700bd2d23abf8bf028d40526eb235bf7",
+  "finalConfiguration": {
+    "revision": 35,
+    "appliedRevision": 35,
+    "proxyReady": true,
+    "activeProfileId": "lain",
+    "profileRoutes": 58,
+    "removedOnlyUnpreparedSyntheticCandidate": true,
+    "allAccountsUnchanged": true,
+    "allProfilesUnchanged": true,
+    "allOtherRoutesUnchanged": true,
+    "ordinaryCodexConfigUnchanged": true,
+    "newInferenceRequests": 0
+  },
+  "summary": {
+    "clientReports": 22,
+    "persistedAttempts": 21,
+    "clientCompletedCalls": 13,
+    "distinctAccountsWithCompletedClientSample": 12,
+    "sampledRealAccounts": 14,
+    "recordedErrors": 5,
+    "newDeltaReports": 2,
+    "newInferenceCallsByReviewer": 0
+  },
+  "window": {
+    "from": "2026-10-25T01:50:08.326487+00:00",
+    "to": "2026-10-25T02:06:17.595590+00:00",
+    "timeZone": "UTC"
+  },
+  "independentInitialReview": {
+    "format": 1,
+    "reviewedAt": "2026-10-25T02:04:57.040520+00:00",
+    "reviewStatus": "complete_with_known_failures_and_telemetry_discrepancies",
+    "scope": "Independent read-only CLI/API reconciliation of existing real calls. No new inference, provider refresh, UI/service action, DB/queue/secret access; only this sanitized report written.",
+    "coverageClaim": "One selected-model sample per14nonSynthetic accounts plus six follow-ups. Not all models/routes, subscriptions, budgets or protocols qualified.",
+    "window": {
+      "from": "2026-10-25T01:50:08.326487+00:00",
+      "to": "2026-10-25T02:00:15.052871+00:00",
+      "timeZone": "UTC",
+      "selection": "Minimum client startedAt through maximum client finishedAt; exact worker equality"
+    },
+    "coarseCrossCheck": {
+      "from": "2026-10-25T01:50:00Z",
+      "to": "2026-10-25T02:05:00Z",
+      "attempts": 19,
+      "cursor": 107,
+      "matchesTightWindowAttemptCount": true,
+      "futureTailAtObservation": true
+    },
+    "status": {
+      "version": "1.0.0+d7200d7d700bd2d23abf8bf028d40526eb235bf7",
+      "state": "running",
+      "proxyReady": true,
+      "revision": 34,
+      "appliedRevision": 34,
+      "activeProfileId": "lain",
+      "activeProfileRevision": 34,
+      "runtimeMode": "gateway",
+      "observedAt": "2026-10-25T02:04:50.7177439+00:00"
+    },
+    "activeProfileRouteCount": 58,
+    "summary": {
+      "configuredAccounts": 15,
+      "sampledRealAccounts": 14,
+      "initialCalls": 14,
+      "followupCalls": 6,
+      "clientReports": 20,
+      "clientCompletedCalls": 12,
+      "accountsWithAtLeastOneCompletedClientSample": 11,
+      "initialClientStates": {
+        "incomplete_or_failed": 1,
+        "passed": 9,
+        "http_error": 4
+      },
+      "persistedAttempts": 19,
+      "persistedStates": {
+        "success": 15,
+        "failed": 4
+      },
+      "missingAttemptWorkers": [
+        "lain-account-test-cohere"
+      ],
+      "allPerWorkerFilteredQueriesMatch": true,
+      "duplicateAttemptWorkers": [],
+      "newInferenceCallsByReviewer": 0
+    },
+    "history": {
+      "from": "2026-10-25T01:50:08.326487+00:00",
+      "to": "2026-10-25T02:00:15.052871+00:00",
+      "timeZone": "UTC",
+      "cursor": 107,
+      "complete": true,
+      "totals": {
+        "requests": 19,
+        "attempts": 19,
+        "errors": 4,
+        "tokens": {
+          "input": null,
+          "output": null,
+          "cached": null,
+          "reasoning": null,
+          "total": null,
+          "cacheCreation": null
+        },
+        "unknownUsageAttempts": 6,
+        "measurements": {
+          "input": {
+            "knownReported": 1432,
+            "samples": 14,
+            "eligible": 19
+          },
+          "output": {
+            "knownReported": 4732,
+            "samples": 14,
+            "eligible": 19
+          },
+          "cached": {
+            "knownReported": 4,
+            "samples": 12,
+            "eligible": 19
+          },
+          "cacheCreation": {
+            "knownReported": 0,
+            "samples": 6,
+            "eligible": 19
+          },
+          "reasoning": {
+            "knownReported": 1443,
+            "samples": 11,
+            "eligible": 19
+          },
+          "total": {
+            "knownReported": 5675,
+            "samples": 13,
+            "eligible": 19
+          }
+        }
+      }
+    },
+    "historyInterpretation": "Nullable complete token totals remain null; knownReported measurements are partial with samples/eligible. Four persisted errors exclude the first unrecorded Cohere400 and the incorrectly successful Cloudflare Attempts.",
+    "matrix": [
+      {
+        "batch": "initial14",
+        "report": "all-accounts/cloudflare-workers-ai.json",
+        "workerId": "lain-account-test-cloudflare-workers-ai",
+        "accountId": "acct-df5e9277799bfecce9e5c23a531a6cbb",
+        "provider": "cloudflare-workers-ai",
+        "requestedModelOrAlias": "@cf/zai-org/glm-4.7-flash",
+        "routeId": "route-976685002540cd1e2ee01d5fcf4899fa",
+        "client": {
+          "startedAt": "2026-10-25T01:50:48.309184+00:00",
+          "finishedAt": "2026-10-25T01:51:00.486482+00:00",
+          "state": "incomplete_or_failed",
+          "httpStatus": 200,
+          "terminalType": "error",
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "e1484f1a-aaef-4a5f-b30e-e189d146f620",
+            "requestId": "a0f46452-8942-4538-81d8-207b53a48177",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-df5e9277799bfecce9e5c23a531a6cbb",
+            "routeId": "route-976685002540cd1e2ee01d5fcf4899fa",
+            "provider": "cloudflare-workers-ai",
+            "requestedModel": "@cf/zai-org/glm-4.7-flash",
+            "model": "@cf/zai-org/glm-4.7-flash",
+            "startedAt": "2026-10-25T01:50:49.571+00:00",
+            "finishedAt": "2026-10-25T01:51:00.48+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-cloudflare-workers-ai",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": [
+          "KNOWN BUG: client terminal SSE error and zero visible output while durable Attempt/completionState say success. This is not a passed model check."
+        ]
+      },
+      {
+        "batch": "codex-visible",
+        "report": "all-accounts/codex-visible.json",
+        "workerId": "lain-account-test-codex-visible",
+        "accountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+        "provider": "codex",
+        "requestedModelOrAlias": "gpt-6-luna",
+        "routeId": "route-07a732b0e03f16bc93b31c9133a54a63",
+        "client": {
+          "startedAt": "2026-10-25T01:55:38.457406+00:00",
+          "finishedAt": "2026-10-25T01:55:41.159243+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 451,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "914080cb-c21d-4452-8afb-a164dec02a96",
+            "requestId": "95b4566b-0930-4083-b44b-0329195693b3",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+            "routeId": "route-07a732b0e03f16bc93b31c9133a54a63",
+            "provider": "codex",
+            "requestedModel": "gpt-6-luna",
+            "model": "gpt-6-luna",
+            "startedAt": "2026-10-25T01:55:38.864+00:00",
+            "finishedAt": "2026-10-25T01:55:41.155+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-codex-visible",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/codex.json",
+        "workerId": "lain-account-test-codex",
+        "accountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+        "provider": "codex",
+        "requestedModelOrAlias": "gpt-6-luna",
+        "routeId": "route-07a732b0e03f16bc93b31c9133a54a63",
+        "client": {
+          "startedAt": "2026-10-25T01:50:25.687910+00:00",
+          "finishedAt": "2026-10-25T01:50:32.715081+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 386,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "23d07f41-e303-46a7-91ad-24f90cf425d6",
+            "requestId": "3b232a6b-0164-4896-bd3d-1b7e2b3c0a97",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+            "routeId": "route-07a732b0e03f16bc93b31c9133a54a63",
+            "provider": "codex",
+            "requestedModel": "gpt-6-luna",
+            "model": "gpt-6-luna",
+            "startedAt": "2026-10-25T01:50:26.553+00:00",
+            "finishedAt": "2026-10-25T01:50:32.71+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-codex",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/cohere.json",
+        "workerId": "lain-account-test-cohere",
+        "accountId": "acct-5eb472a003b44f6cbcddb025df01decc",
+        "provider": "cohere",
+        "requestedModelOrAlias": "command-a-plus-05-2026",
+        "routeId": "route-b5cd16ff67f035270a9ae7b3cd08bcf9",
+        "client": {
+          "startedAt": "2026-10-25T01:51:03.858504+00:00",
+          "finishedAt": "2026-10-25T01:51:04.901931+00:00",
+          "state": "http_error",
+          "httpStatus": 400,
+          "terminalType": null,
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 0,
+        "attempts": [],
+        "notes": [
+          "First Cohere HTTP400 has no durable Attempt for this exact worker/time window; no success inferred."
+        ]
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/commandcode.json",
+        "workerId": "lain-account-test-commandcode",
+        "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+        "provider": "commandcode",
+        "requestedModelOrAlias": "cmd-claude-haiku-5-5",
+        "routeId": "route-a4e0f99fcbd3215e36450b92de449f1e",
+        "client": {
+          "startedAt": "2026-10-25T01:50:54.447103+00:00",
+          "finishedAt": "2026-10-25T01:50:58.829093+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 680,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "a09ae9a0-26ed-4385-a8a8-06258cd59d70",
+            "requestId": "f33aad3a-3784-45b1-ba30-e979628a217f",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+            "routeId": "route-a4e0f99fcbd3215e36450b92de449f1e",
+            "provider": "commandcode",
+            "requestedModel": "cmd-claude-haiku-5-5",
+            "model": "claude-haiku-5-5",
+            "startedAt": "2026-10-25T01:50:55.177+00:00",
+            "finishedAt": "2026-10-25T01:50:58.822+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-commandcode",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/gemini-api.json",
+        "workerId": "lain-account-test-gemini-api",
+        "accountId": "acct-d2b1e8155203626a2c7561e51768c97f",
+        "provider": "gemini-api",
+        "requestedModelOrAlias": "gemini-3.5-flash-lite",
+        "routeId": "route-d87c2936567226c8831df7d4cfb593e7",
+        "client": {
+          "startedAt": "2026-10-25T01:51:02.793425+00:00",
+          "finishedAt": "2026-10-25T01:51:07.424484+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 857,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "227f6322-c2de-4430-9fc3-eaadd8daa8bb",
+            "requestId": "cfccf730-a380-409b-8657-a372f66a9c29",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-d2b1e8155203626a2c7561e51768c97f",
+            "routeId": "route-d87c2936567226c8831df7d4cfb593e7",
+            "provider": "gemini-api",
+            "requestedModel": "gemini-3.5-flash-lite",
+            "model": "gemini-3.5-flash-lite",
+            "startedAt": "2026-10-25T01:51:04.081+00:00",
+            "finishedAt": "2026-10-25T01:51:07.416+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-gemini-api",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/groq.json",
+        "workerId": "lain-account-test-groq",
+        "accountId": "acct-2b9c36564450c05d2631b10e95dc2a67",
+        "provider": "groq",
+        "requestedModelOrAlias": "groq-gpt-oss-20b",
+        "routeId": "route-4dd88e3c2e4e8d7205977b5c85f62cae",
+        "client": {
+          "startedAt": "2026-10-25T01:51:08.368420+00:00",
+          "finishedAt": "2026-10-25T01:51:11.311743+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 746,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "ec08371a-398d-47c8-a7aa-2a20a65d018e",
+            "requestId": "a2a1af10-0abe-4ab2-a8d4-10d403508db6",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-2b9c36564450c05d2631b10e95dc2a67",
+            "routeId": "route-4dd88e3c2e4e8d7205977b5c85f62cae",
+            "provider": "groq",
+            "requestedModel": "groq-gpt-oss-20b",
+            "model": "openai/gpt-oss-20b",
+            "startedAt": "2026-10-25T01:51:09.349+00:00",
+            "finishedAt": "2026-10-25T01:51:11.3+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-groq",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/kilo.json",
+        "workerId": "lain-account-test-kilo",
+        "accountId": "acct-6a13fc77ee8a945333d61033232bc0f3",
+        "provider": "kilo",
+        "requestedModelOrAlias": "google/gemma-4-26b-a4b-it:free",
+        "routeId": "route-0cf5dee9da39b17cb410b3c18609cd8f",
+        "client": {
+          "startedAt": "2026-10-25T01:50:52.301713+00:00",
+          "finishedAt": "2026-10-25T01:50:54.396179+00:00",
+          "state": "http_error",
+          "httpStatus": 404,
+          "terminalType": null,
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "15e3d6d6-4c8f-4015-8206-841e9dc39fa1",
+            "requestId": "e83478c2-a059-4aa4-a1f9-90d0941eb263",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-6a13fc77ee8a945333d61033232bc0f3",
+            "routeId": "route-0cf5dee9da39b17cb410b3c18609cd8f",
+            "provider": "kilo",
+            "requestedModel": "google/gemma-4-26b-a4b-it:free",
+            "model": "google/gemma-4-26b-a4b-it:free",
+            "startedAt": "2026-10-25T01:50:53.22+00:00",
+            "finishedAt": "2026-10-25T01:50:54.387+00:00",
+            "statusCode": 404,
+            "state": "failed",
+            "completionState": "failed",
+            "workerId": "lain-account-test-kilo",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": "unknown"
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/kimi.json",
+        "workerId": "lain-account-test-kimi",
+        "accountId": "acct-b2f4491f4456aa30b7debe2247df99aa",
+        "provider": "kimi",
+        "requestedModelOrAlias": "k3",
+        "routeId": "route-7273812967201314fc261d1439b7f95e",
+        "client": {
+          "startedAt": "2026-10-25T01:50:08.326487+00:00",
+          "finishedAt": "2026-10-25T01:50:17.980651+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 711,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "086e36a7-7720-4229-8235-25db0fd548b3",
+            "requestId": "91787d16-d183-42c1-bc3f-9b052c578758",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-b2f4491f4456aa30b7debe2247df99aa",
+            "routeId": "route-7273812967201314fc261d1439b7f95e",
+            "provider": "kimi",
+            "requestedModel": "k3",
+            "model": "k3",
+            "startedAt": "2026-10-25T01:50:09.348+00:00",
+            "finishedAt": "2026-10-25T01:50:17.975+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-kimi",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/nvidia-build.json",
+        "workerId": "lain-account-test-nvidia-build",
+        "accountId": "acct-0ffc26cb2679d1f25d760276eb205087",
+        "provider": "nvidia-build",
+        "requestedModelOrAlias": "nvidia-step-5-preview",
+        "routeId": "route-nvidia-step-5-preview",
+        "client": {
+          "startedAt": "2026-10-25T01:50:26.662635+00:00",
+          "finishedAt": "2026-10-25T01:50:45.146300+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 453,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "2a0ac20b-4121-4199-9061-7db6999ea191",
+            "requestId": "c3b32773-cfe2-452c-82d4-27525a12e141",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-0ffc26cb2679d1f25d760276eb205087",
+            "routeId": "route-nvidia-step-5-preview",
+            "provider": "nvidia-build",
+            "requestedModel": "nvidia-step-5-preview",
+            "model": "stepfun-ai/step-5-preview",
+            "startedAt": "2026-10-25T01:50:27.36+00:00",
+            "finishedAt": "2026-10-25T01:50:45.14+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-nvidia-build",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/openrouter.json",
+        "workerId": "lain-account-test-openrouter",
+        "accountId": "acct-b7b52ac3d1e6917acddf0c2f53c7c6e4",
+        "provider": "openrouter",
+        "requestedModelOrAlias": "openrouter-llama-3.3-free",
+        "routeId": "route-9550a269337c0e66c797ced8f9a3ba01",
+        "client": {
+          "startedAt": "2026-10-25T01:50:40.437789+00:00",
+          "finishedAt": "2026-10-25T01:50:43.330393+00:00",
+          "state": "http_error",
+          "httpStatus": 404,
+          "terminalType": null,
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "236053a0-55e0-4251-88e3-4159cfe023d9",
+            "requestId": "105cf16c-c71b-42b4-9d48-f2a3b9073e5c",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-b7b52ac3d1e6917acddf0c2f53c7c6e4",
+            "routeId": "route-9550a269337c0e66c797ced8f9a3ba01",
+            "provider": "openrouter",
+            "requestedModel": "openrouter-llama-3.3-free",
+            "model": "meta-llama/llama-3.3-70b-instruct:free",
+            "startedAt": "2026-10-25T01:50:41.416+00:00",
+            "finishedAt": "2026-10-25T01:50:43.322+00:00",
+            "statusCode": 404,
+            "state": "failed",
+            "completionState": "failed",
+            "workerId": "lain-account-test-openrouter",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": "unknown"
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/sambanova.json",
+        "workerId": "lain-account-test-sambanova",
+        "accountId": "acct-80c6cf6d697b42528278ee5f0535f927",
+        "provider": "sambanova",
+        "requestedModelOrAlias": "Meta-Llama-3.3-70B-Instruct",
+        "routeId": "route-984e197e065d9a8446cf17f1b513ac91",
+        "client": {
+          "startedAt": "2026-10-25T01:50:59.247133+00:00",
+          "finishedAt": "2026-10-25T01:51:01.836211+00:00",
+          "state": "http_error",
+          "httpStatus": 429,
+          "terminalType": null,
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "d1bb752c-fa35-4ec3-83b0-5ae2de39ebfc",
+            "requestId": "0d91b5c9-6ad9-4844-8c3a-85984f2e9eac",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-80c6cf6d697b42528278ee5f0535f927",
+            "routeId": "route-984e197e065d9a8446cf17f1b513ac91",
+            "provider": "sambanova",
+            "requestedModel": "Meta-Llama-3.3-70B-Instruct",
+            "model": "Meta-Llama-3.3-70B-Instruct",
+            "startedAt": "2026-10-25T01:51:00.143+00:00",
+            "finishedAt": "2026-10-25T01:51:01.83+00:00",
+            "statusCode": 429,
+            "state": "failed",
+            "completionState": "failed",
+            "workerId": "lain-account-test-sambanova",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": "rate_limited"
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/upstage.json",
+        "workerId": "lain-account-test-upstage",
+        "accountId": "acct-f78e5ad239a74891a1dc7e0b4c198d77",
+        "provider": "upstage",
+        "requestedModelOrAlias": "solar-mini4-260922",
+        "routeId": "route-9c41238e240ed6bc2410a97b56dab8d8",
+        "client": {
+          "startedAt": "2026-10-25T01:51:18.483543+00:00",
+          "finishedAt": "2026-10-25T01:51:23.063693+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 457,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "8dc1bb2d-e707-4870-b9cb-ab8e546750fb",
+            "requestId": "ec7b257a-41f2-4907-a432-cd1c56865a5a",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-f78e5ad239a74891a1dc7e0b4c198d77",
+            "routeId": "route-9c41238e240ed6bc2410a97b56dab8d8",
+            "provider": "upstage",
+            "requestedModel": "solar-mini4-260922",
+            "model": "solar-mini4-260922",
+            "startedAt": "2026-10-25T01:51:19.666+00:00",
+            "finishedAt": "2026-10-25T01:51:23.041+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-upstage",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/xiaomi-mimo.json",
+        "workerId": "lain-account-test-xiaomi-mimo",
+        "accountId": "acct-3b8f7ca3a3add5fee0676e31fac70a64",
+        "provider": "xiaomi-mimo",
+        "requestedModelOrAlias": "mimo-v2.6-flash",
+        "routeId": "route-17391321808696e3eecfe053cb7d2067",
+        "client": {
+          "startedAt": "2026-10-25T01:50:37.021365+00:00",
+          "finishedAt": "2026-10-25T01:50:48.850723+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 1010,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "733d83d4-670f-40d5-afbe-1a2584b7c458",
+            "requestId": "3c72d63d-5261-485a-8325-22fd2af6f806",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-3b8f7ca3a3add5fee0676e31fac70a64",
+            "routeId": "route-17391321808696e3eecfe053cb7d2067",
+            "provider": "xiaomi-mimo",
+            "requestedModel": "mimo-v2.6-flash",
+            "model": "mimo-v2.6-flash",
+            "startedAt": "2026-10-25T01:50:37.828+00:00",
+            "finishedAt": "2026-10-25T01:50:48.806+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-xiaomi-mimo",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/zai.json",
+        "workerId": "lain-account-test-zai",
+        "accountId": "acct-ae1c396a0e93a312ac1dcfd6531bd188",
+        "provider": "zai",
+        "requestedModelOrAlias": "glm-5.3-flash",
+        "routeId": "route-23e826e88b53eaa51fe5c7f4de08d7dd",
+        "client": {
+          "startedAt": "2026-10-25T01:50:19.191271+00:00",
+          "finishedAt": "2026-10-25T01:50:34.265675+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 725,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "bc9c1808-2424-4111-a5a4-cee8eb7e99d5",
+            "requestId": "13b8bf31-e6e8-42a4-8e3b-219d06769633",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-ae1c396a0e93a312ac1dcfd6531bd188",
+            "routeId": "route-23e826e88b53eaa51fe5c7f4de08d7dd",
+            "provider": "zai",
+            "requestedModel": "glm-5.3-flash",
+            "model": "glm-5.3-flash",
+            "startedAt": "2026-10-25T01:50:20.586+00:00",
+            "finishedAt": "2026-10-25T01:50:34.258+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-zai",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "current-free-four",
+        "report": "current-free/cloudflare-alternate.json",
+        "workerId": "lain-current-free-cloudflare-alternate",
+        "accountId": "acct-df5e9277799bfecce9e5c23a531a6cbb",
+        "provider": "cloudflare-workers-ai",
+        "requestedModelOrAlias": "@cf/google/gemma-4-26b-a4b-it",
+        "routeId": "route-4c06ab2607979673410c4548e6e62724",
+        "client": {
+          "startedAt": "2026-10-25T01:58:25.978187+00:00",
+          "finishedAt": "2026-10-25T01:58:35.739239+00:00",
+          "state": "incomplete_or_failed",
+          "httpStatus": 200,
+          "terminalType": "error",
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "503c8d09-ebbb-4569-ad3d-b755701fa0ba",
+            "requestId": "e3738432-8b17-4dc7-a475-0aa5b155ae30",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-df5e9277799bfecce9e5c23a531a6cbb",
+            "routeId": "route-4c06ab2607979673410c4548e6e62724",
+            "provider": "cloudflare-workers-ai",
+            "requestedModel": "@cf/google/gemma-4-26b-a4b-it",
+            "model": "@cf/google/gemma-4-26b-a4b-it",
+            "startedAt": "2026-10-25T01:58:26.404+00:00",
+            "finishedAt": "2026-10-25T01:58:35.729+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-current-free-cloudflare-alternate",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": [
+          "KNOWN BUG: client terminal SSE error and zero visible output while durable Attempt/completionState say success. This is not a passed model check."
+        ]
+      },
+      {
+        "batch": "current-free-four",
+        "report": "current-free/cohere-compatible.json",
+        "workerId": "lain-current-free-cohere-compatible",
+        "accountId": "acct-5eb472a003b44f6cbcddb025df01decc",
+        "provider": "cohere",
+        "requestedModelOrAlias": "command-a-plus-05-2026",
+        "routeId": "route-b5cd16ff67f035270a9ae7b3cd08bcf9",
+        "client": {
+          "startedAt": "2026-10-25T01:58:22.471779+00:00",
+          "finishedAt": "2026-10-25T01:58:23.185456+00:00",
+          "state": "http_error",
+          "httpStatus": 400,
+          "terminalType": null,
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "6d0895e8-ce82-4989-933a-b580174ec7c4",
+            "requestId": "30ffdfa6-df1d-42b5-a2ba-58220b9d10f1",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-5eb472a003b44f6cbcddb025df01decc",
+            "routeId": "route-b5cd16ff67f035270a9ae7b3cd08bcf9",
+            "provider": "cohere",
+            "requestedModel": "command-a-plus-05-2026",
+            "model": "command-a-plus-05-2026",
+            "startedAt": "2026-10-25T01:58:23.079+00:00",
+            "finishedAt": "2026-10-25T01:58:23.111+00:00",
+            "statusCode": 400,
+            "state": "failed",
+            "completionState": "failed",
+            "workerId": "lain-current-free-cohere-compatible",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": "invalid_request"
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "current-free-native-chat",
+        "report": "current-free/cohere-native-chat.json",
+        "workerId": "lain-current-free-cohere-chat",
+        "accountId": "acct-5eb472a003b44f6cbcddb025df01decc",
+        "provider": "cohere",
+        "requestedModelOrAlias": "command-a-plus-05-2026",
+        "routeId": "route-b5cd16ff67f035270a9ae7b3cd08bcf9",
+        "client": {
+          "startedAt": "2026-10-25T02:00:13.100311+00:00",
+          "finishedAt": "2026-10-25T02:00:15.052871+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "outputCharacters": 182,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0,
+          "protocol": "chat-completions",
+          "done": true
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "263927a8-a9f5-44b9-857c-1ecd0699928b",
+            "requestId": "f4d51f7a-87df-484f-b642-28e2549ea0e5",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-5eb472a003b44f6cbcddb025df01decc",
+            "routeId": "route-b5cd16ff67f035270a9ae7b3cd08bcf9",
+            "provider": "cohere",
+            "requestedModel": "command-a-plus-05-2026",
+            "model": "command-a-plus-05-2026",
+            "startedAt": "2026-10-25T02:00:13.201+00:00",
+            "finishedAt": "2026-10-25T02:00:14.968+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-current-free-cohere-chat",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": [
+          "Native chat-completions passed; incompatible Responses-shaped400 calls remain failed."
+        ]
+      },
+      {
+        "batch": "current-free-four",
+        "report": "current-free/kilo-current.json",
+        "workerId": "lain-current-free-kilo-current",
+        "accountId": "acct-6a13fc77ee8a945333d61033232bc0f3",
+        "provider": "kilo",
+        "requestedModelOrAlias": "kilo-liquid-lfm-free",
+        "routeId": "route-kilo-liquid-lfm-free",
+        "client": {
+          "startedAt": "2026-10-25T01:58:31.350185+00:00",
+          "finishedAt": "2026-10-25T01:58:34.371045+00:00",
+          "state": "incomplete_or_failed",
+          "httpStatus": 200,
+          "terminalType": "response.incomplete",
+          "outputCharacters": 97,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "18ec48e8-55a1-405a-880a-550b90359aaa",
+            "requestId": "ca445a86-8fdb-4a37-bb07-6d7f5cc107bf",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-6a13fc77ee8a945333d61033232bc0f3",
+            "routeId": "route-kilo-liquid-lfm-free",
+            "provider": "kilo",
+            "requestedModel": "kilo-liquid-lfm-free",
+            "model": "liquid/lfm-2.5-2.6b:free",
+            "startedAt": "2026-10-25T01:58:31.702+00:00",
+            "finishedAt": "2026-10-25T01:58:34.361+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-current-free-kilo-current",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": [
+          "Partial output at configured cap: response.incomplete with97characters; Attempt/completionState success does not establish complete output."
+        ]
+      },
+      {
+        "batch": "current-free-four",
+        "report": "current-free/openrouter-current.json",
+        "workerId": "lain-current-free-openrouter-current",
+        "accountId": "acct-b7b52ac3d1e6917acddf0c2f53c7c6e4",
+        "provider": "openrouter",
+        "requestedModelOrAlias": "openrouter/free",
+        "routeId": "route-800ce96983b958ffbe503bfe6ff9ed2b",
+        "client": {
+          "startedAt": "2026-10-25T01:58:17.127995+00:00",
+          "finishedAt": "2026-10-25T01:58:25.934536+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 546,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "23cee689-9d4b-4cac-9dfb-580517e33649",
+            "requestId": "68c2928f-8804-4c68-9e48-5ae8542e09f9",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-b7b52ac3d1e6917acddf0c2f53c7c6e4",
+            "routeId": "route-800ce96983b958ffbe503bfe6ff9ed2b",
+            "provider": "openrouter",
+            "requestedModel": "openrouter/free",
+            "model": "dots-studio/dots-3-note-preview:free",
+            "startedAt": "2026-10-25T01:58:18.265+00:00",
+            "finishedAt": "2026-10-25T01:58:25.882+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-current-free-openrouter-current",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": [
+          "Current free router completed; requested router alias differs from recorded resolved upstream model."
+        ]
+      }
+    ],
+    "notTested": [
+      {
+        "accountId": "acct-f4557611f5904d8ea4579591e32c2501",
+        "provider": "synthetic",
+        "reason": "Explicit user exclusion: no subscription/unknown availability; no sample sent"
+      }
+    ],
+    "codexOrdinaryConfigEvidence": {
+      "artifact": "all-accounts/codex-install-result.json",
+      "exitCode": 0,
+      "revision": 31,
+      "installerAttestsOrdinaryConfigUnchanged": true,
+      "independentlyReadOrRehashedOrdinaryConfig": false,
+      "scope": "Existing revision31 installer hash-check attestation; source artifact retains a boolean, no raw before/after hashes."
+    },
+    "inspector": {
+      "currentSnapshot": {
+        "sourceId": "e340491222e147c9989f168aa2b5dce3",
+        "observedAt": "2026-10-25T02:04:51.8554244+00:00",
+        "state": "live",
+        "complete": false,
+        "cursor": 153,
+        "earliestCursor": 154,
+        "droppedEvents": 153,
+        "limits": {
+          "maxStreams": 256,
+          "maxEvents": 8192,
+          "contentBytes": 33554432,
+          "perStreamBytes": 1048576,
+          "maxEventBytes": 262144,
+          "contentTtlSeconds": 120,
+          "terminalTtlSeconds": 60,
+          "maxPageSize": 500,
+          "contentPolicy": "redacted_output_only_v1"
+        },
+        "error": null
+      },
+      "currentStreamCount": 0,
+      "currentEvents": {
+        "sourceId": "e340491222e147c9989f168aa2b5dce3",
+        "nextCursor": 153,
+        "highWatermark": 153,
+        "earliestCursor": 154,
+        "droppedEvents": 153,
+        "truncated": true,
+        "gapReason": "stream_expired"
+      },
+      "currentEventCount": 0,
+      "savedCaptureMetadata": [
+        {
+          "artifact": "all-accounts/inspector-first.json",
+          "sourceId": "c9cde2f8b964491fbf659779e18eecd9",
+          "observedAt": "2026-10-25T01:50:48.5231861+00:00",
+          "state": "live",
+          "complete": true,
+          "cursor": 120,
+          "earliestCursor": 1,
+          "droppedEvents": 0,
+          "streamCount": 6,
+          "workerIds": [
+            "lain-account-test-codex",
+            "lain-account-test-kimi",
+            "lain-account-test-nvidia-build",
+            "lain-account-test-openrouter",
+            "lain-account-test-xiaomi-mimo",
+            "lain-account-test-zai"
+          ]
+        },
+        {
+          "artifact": "all-accounts/inspector-current.json",
+          "sourceId": "c9cde2f8b964491fbf659779e18eecd9",
+          "observedAt": "2026-10-25T01:54:50.1130491+00:00",
+          "state": "live",
+          "complete": false,
+          "cursor": 222,
+          "earliestCursor": 223,
+          "droppedEvents": 222,
+          "streamCount": 0,
+          "workerIds": []
+        },
+        {
+          "artifact": "all-accounts/codex-visible-inspector.json",
+          "sourceId": "c9cde2f8b964491fbf659779e18eecd9",
+          "observedAt": "2026-10-25T01:56:39.923471+00:00",
+          "state": "live",
+          "complete": false,
+          "cursor": 235,
+          "earliestCursor": 223,
+          "droppedEvents": 222,
+          "streamCount": 1,
+          "workerIds": [
+            "lain-account-test-codex-visible"
+          ]
+        },
+        {
+          "artifact": "current-free/snapshot.json",
+          "sourceId": "e340491222e147c9989f168aa2b5dce3",
+          "observedAt": "2026-10-25T01:59:14.73694+00:00",
+          "state": "live",
+          "complete": true,
+          "cursor": 134,
+          "earliestCursor": 1,
+          "droppedEvents": 0,
+          "streamCount": 4,
+          "workerIds": [
+            "lain-current-free-cloudflare-alternate",
+            "lain-current-free-cohere-compatible",
+            "lain-current-free-kilo-current",
+            "lain-current-free-openrouter-current"
+          ]
+        },
+        {
+          "artifact": "all-accounts/events-first.json",
+          "sourceId": "c9cde2f8b964491fbf659779e18eecd9",
+          "nextCursor": 100,
+          "highWatermark": 125,
+          "earliestCursor": 1,
+          "droppedEvents": 0,
+          "truncated": false,
+          "gapReason": null,
+          "eventCount": 100,
+          "pageReachesHighWatermark": false
+        },
+        {
+          "artifact": "current-free/events.json",
+          "sourceId": "e340491222e147c9989f168aa2b5dce3",
+          "nextCursor": 134,
+          "highWatermark": 134,
+          "earliestCursor": 1,
+          "droppedEvents": 0,
+          "truncated": false,
+          "gapReason": null,
+          "eventCount": 134,
+          "pageReachesHighWatermark": true
+        }
+      ],
+      "interpretation": "Live ring is transient. Current empty page reports stream_expired; source+cursor retained. Saved live sources differ between batches, so cursors cannot be merged. First saved event page ends before its high watermark and cannot establish full initial-batch coverage. No saved payload copied."
+    },
+    "limitations": [
+      "No full-model or58-route coverage claim.",
+      "Reported no-retry/no-fallback flags are not an independent provider-side audit.",
+      "Completion does not establish free-only controls, remaining budget, subscription or future availability.",
+      "Cloudflare known SSE/Attempt success bug remains; Kilo partial output is not a completed client response."
+    ]
+  },
+  "independentFinalReview": {
+    "format": 1,
+    "reviewedAt": "2026-10-25T02:07:38.283707+00:00",
+    "reviewStatus": "delta_verified_with_remaining_failures",
+    "previousReview": {
+      "path": "independent-live-account-review.json",
+      "sha256": "a50f228abe6a8587dc275c23a2c1ff069357ea9bc2a11a59bbc6f261f5d26ddb",
+      "unchanged": true,
+      "clientReports": 20
+    },
+    "scope": "Read-only delta review: exactly two new worker-filtered Attempts queries and one full-window server History aggregate; no20old worker filters repeated, no inference/provider refresh/configuration/service/UI/DB/queue/secret access.",
+    "window": {
+      "from": "2026-10-25T01:50:08.326487+00:00",
+      "to": "2026-10-25T02:06:17.595590+00:00",
+      "timeZone": "UTC"
+    },
+    "summary": {
+      "clientReports": 22,
+      "persistedAttempts": 21,
+      "clientCompletedCalls": 13,
+      "distinctAccountsWithCompletedClientSample": 12,
+      "sampledRealAccounts": 14,
+      "recordedErrors": 5,
+      "newDeltaReports": 2,
+      "newInferenceCallsByReviewer": 0
+    },
+    "deltaMatrix": [
+      {
+        "batch": "roomier-budget-followup",
+        "report": "current-free/kilo-roomier.json",
+        "workerId": "lain-current-free-kilo-roomier",
+        "accountId": "acct-6a13fc77ee8a945333d61033232bc0f3",
+        "provider": "kilo",
+        "requestedModelOrAlias": "kilo-liquid-lfm-free",
+        "routeId": "route-kilo-liquid-lfm-free",
+        "client": {
+          "startedAt": "2026-10-25T02:05:40.807590+00:00",
+          "finishedAt": "2026-10-25T02:05:42.235357+00:00",
+          "state": "http_error",
+          "httpStatus": 429,
+          "terminalType": null,
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0,
+          "maxOutputTokens": 2048,
+          "elapsedSeconds": 1.43,
+          "usage": null
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "f2a62448-1705-4a69-8eaf-b24eb5f50819",
+            "accountId": "acct-6a13fc77ee8a945333d61033232bc0f3",
+            "routeId": "route-kilo-liquid-lfm-free",
+            "provider": "kilo",
+            "model": "liquid/lfm-2.5-2.6b:free",
+            "startedAt": "2026-10-25T02:05:41.665+00:00",
+            "finishedAt": "2026-10-25T02:05:42.212+00:00",
+            "statusCode": 429,
+            "state": "failed",
+            "completionState": "failed",
+            "errorCategory": "rate_limited",
+            "workerId": "lain-current-free-kilo-roomier",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true
+          }
+        ],
+        "notes": [
+          "HTTP429/rate_limited; no successful complete Kilo sample established. Earlier capped partial output remains partial."
+        ]
+      },
+      {
+        "batch": "roomier-budget-followup",
+        "report": "current-free/cloudflare-roomier.json",
+        "workerId": "lain-current-free-cloudflare-roomier",
+        "accountId": "acct-df5e9277799bfecce9e5c23a531a6cbb",
+        "provider": "cloudflare-workers-ai",
+        "requestedModelOrAlias": "@cf/google/gemma-4-26b-a4b-it",
+        "routeId": "route-4c06ab2607979673410c4548e6e62724",
+        "client": {
+          "startedAt": "2026-10-25T02:05:45.707671+00:00",
+          "finishedAt": "2026-10-25T02:06:17.595590+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 421,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0,
+          "maxOutputTokens": 2048,
+          "elapsedSeconds": 31.89,
+          "usage": {
+            "input_tokens": 88,
+            "output_tokens": 1664,
+            "total_tokens": 1752
+          }
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "2e56ec6c-b70f-4f0f-8661-bc85da2e05ef",
+            "accountId": "acct-df5e9277799bfecce9e5c23a531a6cbb",
+            "routeId": "route-4c06ab2607979673410c4548e6e62724",
+            "provider": "cloudflare-workers-ai",
+            "model": "@cf/google/gemma-4-26b-a4b-it",
+            "startedAt": "2026-10-25T02:05:46.993+00:00",
+            "finishedAt": "2026-10-25T02:06:17.585+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "errorCategory": null,
+            "reportedTokenUsage": {
+              "input": 88,
+              "output": 1664,
+              "total": 1752,
+              "reasoning": null
+            },
+            "workerId": "lain-current-free-cloudflare-roomier",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true
+          }
+        ],
+        "notes": [
+          "PASS with output cap2048:421visible characters in31.89seconds; reported1752total tokens. Earlier512budget was exhausted by reasoning; do not describe this as a connection failure. Earlier SSEerror/Attemptsuccess telemetry mismatch remains a separate known bug."
+        ]
+      }
+    ],
+    "combinedMatrix": [
+      {
+        "batch": "initial14",
+        "report": "all-accounts/cloudflare-workers-ai.json",
+        "workerId": "lain-account-test-cloudflare-workers-ai",
+        "accountId": "acct-df5e9277799bfecce9e5c23a531a6cbb",
+        "provider": "cloudflare-workers-ai",
+        "requestedModelOrAlias": "@cf/zai-org/glm-4.7-flash",
+        "routeId": "route-976685002540cd1e2ee01d5fcf4899fa",
+        "client": {
+          "startedAt": "2026-10-25T01:50:48.309184+00:00",
+          "finishedAt": "2026-10-25T01:51:00.486482+00:00",
+          "state": "incomplete_or_failed",
+          "httpStatus": 200,
+          "terminalType": "error",
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "e1484f1a-aaef-4a5f-b30e-e189d146f620",
+            "requestId": "a0f46452-8942-4538-81d8-207b53a48177",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-df5e9277799bfecce9e5c23a531a6cbb",
+            "routeId": "route-976685002540cd1e2ee01d5fcf4899fa",
+            "provider": "cloudflare-workers-ai",
+            "requestedModel": "@cf/zai-org/glm-4.7-flash",
+            "model": "@cf/zai-org/glm-4.7-flash",
+            "startedAt": "2026-10-25T01:50:49.571+00:00",
+            "finishedAt": "2026-10-25T01:51:00.48+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-cloudflare-workers-ai",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": [
+          "KNOWN BUG: client terminal SSE error and zero visible output while durable Attempt/completionState say success. This is not a passed model check."
+        ]
+      },
+      {
+        "batch": "codex-visible",
+        "report": "all-accounts/codex-visible.json",
+        "workerId": "lain-account-test-codex-visible",
+        "accountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+        "provider": "codex",
+        "requestedModelOrAlias": "gpt-6-luna",
+        "routeId": "route-07a732b0e03f16bc93b31c9133a54a63",
+        "client": {
+          "startedAt": "2026-10-25T01:55:38.457406+00:00",
+          "finishedAt": "2026-10-25T01:55:41.159243+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 451,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "914080cb-c21d-4452-8afb-a164dec02a96",
+            "requestId": "95b4566b-0930-4083-b44b-0329195693b3",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+            "routeId": "route-07a732b0e03f16bc93b31c9133a54a63",
+            "provider": "codex",
+            "requestedModel": "gpt-6-luna",
+            "model": "gpt-6-luna",
+            "startedAt": "2026-10-25T01:55:38.864+00:00",
+            "finishedAt": "2026-10-25T01:55:41.155+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-codex-visible",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/codex.json",
+        "workerId": "lain-account-test-codex",
+        "accountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+        "provider": "codex",
+        "requestedModelOrAlias": "gpt-6-luna",
+        "routeId": "route-07a732b0e03f16bc93b31c9133a54a63",
+        "client": {
+          "startedAt": "2026-10-25T01:50:25.687910+00:00",
+          "finishedAt": "2026-10-25T01:50:32.715081+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 386,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "23d07f41-e303-46a7-91ad-24f90cf425d6",
+            "requestId": "3b232a6b-0164-4896-bd3d-1b7e2b3c0a97",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-694dc5623f4e1bae9cfa4521a722c0a0",
+            "routeId": "route-07a732b0e03f16bc93b31c9133a54a63",
+            "provider": "codex",
+            "requestedModel": "gpt-6-luna",
+            "model": "gpt-6-luna",
+            "startedAt": "2026-10-25T01:50:26.553+00:00",
+            "finishedAt": "2026-10-25T01:50:32.71+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-codex",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/cohere.json",
+        "workerId": "lain-account-test-cohere",
+        "accountId": "acct-5eb472a003b44f6cbcddb025df01decc",
+        "provider": "cohere",
+        "requestedModelOrAlias": "command-a-plus-05-2026",
+        "routeId": "route-b5cd16ff67f035270a9ae7b3cd08bcf9",
+        "client": {
+          "startedAt": "2026-10-25T01:51:03.858504+00:00",
+          "finishedAt": "2026-10-25T01:51:04.901931+00:00",
+          "state": "http_error",
+          "httpStatus": 400,
+          "terminalType": null,
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 0,
+        "attempts": [],
+        "notes": [
+          "First Cohere HTTP400 has no durable Attempt for this exact worker/time window; no success inferred."
+        ]
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/commandcode.json",
+        "workerId": "lain-account-test-commandcode",
+        "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+        "provider": "commandcode",
+        "requestedModelOrAlias": "cmd-claude-haiku-5-5",
+        "routeId": "route-a4e0f99fcbd3215e36450b92de449f1e",
+        "client": {
+          "startedAt": "2026-10-25T01:50:54.447103+00:00",
+          "finishedAt": "2026-10-25T01:50:58.829093+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 680,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "a09ae9a0-26ed-4385-a8a8-06258cd59d70",
+            "requestId": "f33aad3a-3784-45b1-ba30-e979628a217f",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-9285cf785075f27839a7ebd10550c705",
+            "routeId": "route-a4e0f99fcbd3215e36450b92de449f1e",
+            "provider": "commandcode",
+            "requestedModel": "cmd-claude-haiku-5-5",
+            "model": "claude-haiku-5-5",
+            "startedAt": "2026-10-25T01:50:55.177+00:00",
+            "finishedAt": "2026-10-25T01:50:58.822+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-commandcode",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/gemini-api.json",
+        "workerId": "lain-account-test-gemini-api",
+        "accountId": "acct-d2b1e8155203626a2c7561e51768c97f",
+        "provider": "gemini-api",
+        "requestedModelOrAlias": "gemini-3.5-flash-lite",
+        "routeId": "route-d87c2936567226c8831df7d4cfb593e7",
+        "client": {
+          "startedAt": "2026-10-25T01:51:02.793425+00:00",
+          "finishedAt": "2026-10-25T01:51:07.424484+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 857,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "227f6322-c2de-4430-9fc3-eaadd8daa8bb",
+            "requestId": "cfccf730-a380-409b-8657-a372f66a9c29",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-d2b1e8155203626a2c7561e51768c97f",
+            "routeId": "route-d87c2936567226c8831df7d4cfb593e7",
+            "provider": "gemini-api",
+            "requestedModel": "gemini-3.5-flash-lite",
+            "model": "gemini-3.5-flash-lite",
+            "startedAt": "2026-10-25T01:51:04.081+00:00",
+            "finishedAt": "2026-10-25T01:51:07.416+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-gemini-api",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/groq.json",
+        "workerId": "lain-account-test-groq",
+        "accountId": "acct-2b9c36564450c05d2631b10e95dc2a67",
+        "provider": "groq",
+        "requestedModelOrAlias": "groq-gpt-oss-20b",
+        "routeId": "route-4dd88e3c2e4e8d7205977b5c85f62cae",
+        "client": {
+          "startedAt": "2026-10-25T01:51:08.368420+00:00",
+          "finishedAt": "2026-10-25T01:51:11.311743+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 746,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "ec08371a-398d-47c8-a7aa-2a20a65d018e",
+            "requestId": "a2a1af10-0abe-4ab2-a8d4-10d403508db6",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-2b9c36564450c05d2631b10e95dc2a67",
+            "routeId": "route-4dd88e3c2e4e8d7205977b5c85f62cae",
+            "provider": "groq",
+            "requestedModel": "groq-gpt-oss-20b",
+            "model": "openai/gpt-oss-20b",
+            "startedAt": "2026-10-25T01:51:09.349+00:00",
+            "finishedAt": "2026-10-25T01:51:11.3+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-groq",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/kilo.json",
+        "workerId": "lain-account-test-kilo",
+        "accountId": "acct-6a13fc77ee8a945333d61033232bc0f3",
+        "provider": "kilo",
+        "requestedModelOrAlias": "google/gemma-4-26b-a4b-it:free",
+        "routeId": "route-0cf5dee9da39b17cb410b3c18609cd8f",
+        "client": {
+          "startedAt": "2026-10-25T01:50:52.301713+00:00",
+          "finishedAt": "2026-10-25T01:50:54.396179+00:00",
+          "state": "http_error",
+          "httpStatus": 404,
+          "terminalType": null,
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "15e3d6d6-4c8f-4015-8206-841e9dc39fa1",
+            "requestId": "e83478c2-a059-4aa4-a1f9-90d0941eb263",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-6a13fc77ee8a945333d61033232bc0f3",
+            "routeId": "route-0cf5dee9da39b17cb410b3c18609cd8f",
+            "provider": "kilo",
+            "requestedModel": "google/gemma-4-26b-a4b-it:free",
+            "model": "google/gemma-4-26b-a4b-it:free",
+            "startedAt": "2026-10-25T01:50:53.22+00:00",
+            "finishedAt": "2026-10-25T01:50:54.387+00:00",
+            "statusCode": 404,
+            "state": "failed",
+            "completionState": "failed",
+            "workerId": "lain-account-test-kilo",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": "unknown"
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/kimi.json",
+        "workerId": "lain-account-test-kimi",
+        "accountId": "acct-b2f4491f4456aa30b7debe2247df99aa",
+        "provider": "kimi",
+        "requestedModelOrAlias": "k3",
+        "routeId": "route-7273812967201314fc261d1439b7f95e",
+        "client": {
+          "startedAt": "2026-10-25T01:50:08.326487+00:00",
+          "finishedAt": "2026-10-25T01:50:17.980651+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 711,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "086e36a7-7720-4229-8235-25db0fd548b3",
+            "requestId": "91787d16-d183-42c1-bc3f-9b052c578758",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-b2f4491f4456aa30b7debe2247df99aa",
+            "routeId": "route-7273812967201314fc261d1439b7f95e",
+            "provider": "kimi",
+            "requestedModel": "k3",
+            "model": "k3",
+            "startedAt": "2026-10-25T01:50:09.348+00:00",
+            "finishedAt": "2026-10-25T01:50:17.975+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-kimi",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/nvidia-build.json",
+        "workerId": "lain-account-test-nvidia-build",
+        "accountId": "acct-0ffc26cb2679d1f25d760276eb205087",
+        "provider": "nvidia-build",
+        "requestedModelOrAlias": "nvidia-step-5-preview",
+        "routeId": "route-nvidia-step-5-preview",
+        "client": {
+          "startedAt": "2026-10-25T01:50:26.662635+00:00",
+          "finishedAt": "2026-10-25T01:50:45.146300+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 453,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "2a0ac20b-4121-4199-9061-7db6999ea191",
+            "requestId": "c3b32773-cfe2-452c-82d4-27525a12e141",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-0ffc26cb2679d1f25d760276eb205087",
+            "routeId": "route-nvidia-step-5-preview",
+            "provider": "nvidia-build",
+            "requestedModel": "nvidia-step-5-preview",
+            "model": "stepfun-ai/step-5-preview",
+            "startedAt": "2026-10-25T01:50:27.36+00:00",
+            "finishedAt": "2026-10-25T01:50:45.14+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-nvidia-build",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/openrouter.json",
+        "workerId": "lain-account-test-openrouter",
+        "accountId": "acct-b7b52ac3d1e6917acddf0c2f53c7c6e4",
+        "provider": "openrouter",
+        "requestedModelOrAlias": "openrouter-llama-3.3-free",
+        "routeId": "route-9550a269337c0e66c797ced8f9a3ba01",
+        "client": {
+          "startedAt": "2026-10-25T01:50:40.437789+00:00",
+          "finishedAt": "2026-10-25T01:50:43.330393+00:00",
+          "state": "http_error",
+          "httpStatus": 404,
+          "terminalType": null,
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "236053a0-55e0-4251-88e3-4159cfe023d9",
+            "requestId": "105cf16c-c71b-42b4-9d48-f2a3b9073e5c",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-b7b52ac3d1e6917acddf0c2f53c7c6e4",
+            "routeId": "route-9550a269337c0e66c797ced8f9a3ba01",
+            "provider": "openrouter",
+            "requestedModel": "openrouter-llama-3.3-free",
+            "model": "meta-llama/llama-3.3-70b-instruct:free",
+            "startedAt": "2026-10-25T01:50:41.416+00:00",
+            "finishedAt": "2026-10-25T01:50:43.322+00:00",
+            "statusCode": 404,
+            "state": "failed",
+            "completionState": "failed",
+            "workerId": "lain-account-test-openrouter",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": "unknown"
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/sambanova.json",
+        "workerId": "lain-account-test-sambanova",
+        "accountId": "acct-80c6cf6d697b42528278ee5f0535f927",
+        "provider": "sambanova",
+        "requestedModelOrAlias": "Meta-Llama-3.3-70B-Instruct",
+        "routeId": "route-984e197e065d9a8446cf17f1b513ac91",
+        "client": {
+          "startedAt": "2026-10-25T01:50:59.247133+00:00",
+          "finishedAt": "2026-10-25T01:51:01.836211+00:00",
+          "state": "http_error",
+          "httpStatus": 429,
+          "terminalType": null,
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "d1bb752c-fa35-4ec3-83b0-5ae2de39ebfc",
+            "requestId": "0d91b5c9-6ad9-4844-8c3a-85984f2e9eac",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-80c6cf6d697b42528278ee5f0535f927",
+            "routeId": "route-984e197e065d9a8446cf17f1b513ac91",
+            "provider": "sambanova",
+            "requestedModel": "Meta-Llama-3.3-70B-Instruct",
+            "model": "Meta-Llama-3.3-70B-Instruct",
+            "startedAt": "2026-10-25T01:51:00.143+00:00",
+            "finishedAt": "2026-10-25T01:51:01.83+00:00",
+            "statusCode": 429,
+            "state": "failed",
+            "completionState": "failed",
+            "workerId": "lain-account-test-sambanova",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": "rate_limited"
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/upstage.json",
+        "workerId": "lain-account-test-upstage",
+        "accountId": "acct-f78e5ad239a74891a1dc7e0b4c198d77",
+        "provider": "upstage",
+        "requestedModelOrAlias": "solar-mini4-260922",
+        "routeId": "route-9c41238e240ed6bc2410a97b56dab8d8",
+        "client": {
+          "startedAt": "2026-10-25T01:51:18.483543+00:00",
+          "finishedAt": "2026-10-25T01:51:23.063693+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 457,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "8dc1bb2d-e707-4870-b9cb-ab8e546750fb",
+            "requestId": "ec7b257a-41f2-4907-a432-cd1c56865a5a",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-f78e5ad239a74891a1dc7e0b4c198d77",
+            "routeId": "route-9c41238e240ed6bc2410a97b56dab8d8",
+            "provider": "upstage",
+            "requestedModel": "solar-mini4-260922",
+            "model": "solar-mini4-260922",
+            "startedAt": "2026-10-25T01:51:19.666+00:00",
+            "finishedAt": "2026-10-25T01:51:23.041+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-upstage",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/xiaomi-mimo.json",
+        "workerId": "lain-account-test-xiaomi-mimo",
+        "accountId": "acct-3b8f7ca3a3add5fee0676e31fac70a64",
+        "provider": "xiaomi-mimo",
+        "requestedModelOrAlias": "mimo-v2.6-flash",
+        "routeId": "route-17391321808696e3eecfe053cb7d2067",
+        "client": {
+          "startedAt": "2026-10-25T01:50:37.021365+00:00",
+          "finishedAt": "2026-10-25T01:50:48.850723+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 1010,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "733d83d4-670f-40d5-afbe-1a2584b7c458",
+            "requestId": "3c72d63d-5261-485a-8325-22fd2af6f806",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-3b8f7ca3a3add5fee0676e31fac70a64",
+            "routeId": "route-17391321808696e3eecfe053cb7d2067",
+            "provider": "xiaomi-mimo",
+            "requestedModel": "mimo-v2.6-flash",
+            "model": "mimo-v2.6-flash",
+            "startedAt": "2026-10-25T01:50:37.828+00:00",
+            "finishedAt": "2026-10-25T01:50:48.806+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-xiaomi-mimo",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "initial14",
+        "report": "all-accounts/zai.json",
+        "workerId": "lain-account-test-zai",
+        "accountId": "acct-ae1c396a0e93a312ac1dcfd6531bd188",
+        "provider": "zai",
+        "requestedModelOrAlias": "glm-5.3-flash",
+        "routeId": "route-23e826e88b53eaa51fe5c7f4de08d7dd",
+        "client": {
+          "startedAt": "2026-10-25T01:50:19.191271+00:00",
+          "finishedAt": "2026-10-25T01:50:34.265675+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 725,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "bc9c1808-2424-4111-a5a4-cee8eb7e99d5",
+            "requestId": "13b8bf31-e6e8-42a4-8e3b-219d06769633",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-ae1c396a0e93a312ac1dcfd6531bd188",
+            "routeId": "route-23e826e88b53eaa51fe5c7f4de08d7dd",
+            "provider": "zai",
+            "requestedModel": "glm-5.3-flash",
+            "model": "glm-5.3-flash",
+            "startedAt": "2026-10-25T01:50:20.586+00:00",
+            "finishedAt": "2026-10-25T01:50:34.258+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-account-test-zai",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "current-free-four",
+        "report": "current-free/cloudflare-alternate.json",
+        "workerId": "lain-current-free-cloudflare-alternate",
+        "accountId": "acct-df5e9277799bfecce9e5c23a531a6cbb",
+        "provider": "cloudflare-workers-ai",
+        "requestedModelOrAlias": "@cf/google/gemma-4-26b-a4b-it",
+        "routeId": "route-4c06ab2607979673410c4548e6e62724",
+        "client": {
+          "startedAt": "2026-10-25T01:58:25.978187+00:00",
+          "finishedAt": "2026-10-25T01:58:35.739239+00:00",
+          "state": "incomplete_or_failed",
+          "httpStatus": 200,
+          "terminalType": "error",
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "503c8d09-ebbb-4569-ad3d-b755701fa0ba",
+            "requestId": "e3738432-8b17-4dc7-a475-0aa5b155ae30",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-df5e9277799bfecce9e5c23a531a6cbb",
+            "routeId": "route-4c06ab2607979673410c4548e6e62724",
+            "provider": "cloudflare-workers-ai",
+            "requestedModel": "@cf/google/gemma-4-26b-a4b-it",
+            "model": "@cf/google/gemma-4-26b-a4b-it",
+            "startedAt": "2026-10-25T01:58:26.404+00:00",
+            "finishedAt": "2026-10-25T01:58:35.729+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-current-free-cloudflare-alternate",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": [
+          "KNOWN BUG: client terminal SSE error and zero visible output while durable Attempt/completionState say success. This is not a passed model check."
+        ]
+      },
+      {
+        "batch": "current-free-four",
+        "report": "current-free/cohere-compatible.json",
+        "workerId": "lain-current-free-cohere-compatible",
+        "accountId": "acct-5eb472a003b44f6cbcddb025df01decc",
+        "provider": "cohere",
+        "requestedModelOrAlias": "command-a-plus-05-2026",
+        "routeId": "route-b5cd16ff67f035270a9ae7b3cd08bcf9",
+        "client": {
+          "startedAt": "2026-10-25T01:58:22.471779+00:00",
+          "finishedAt": "2026-10-25T01:58:23.185456+00:00",
+          "state": "http_error",
+          "httpStatus": 400,
+          "terminalType": null,
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "6d0895e8-ce82-4989-933a-b580174ec7c4",
+            "requestId": "30ffdfa6-df1d-42b5-a2ba-58220b9d10f1",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-5eb472a003b44f6cbcddb025df01decc",
+            "routeId": "route-b5cd16ff67f035270a9ae7b3cd08bcf9",
+            "provider": "cohere",
+            "requestedModel": "command-a-plus-05-2026",
+            "model": "command-a-plus-05-2026",
+            "startedAt": "2026-10-25T01:58:23.079+00:00",
+            "finishedAt": "2026-10-25T01:58:23.111+00:00",
+            "statusCode": 400,
+            "state": "failed",
+            "completionState": "failed",
+            "workerId": "lain-current-free-cohere-compatible",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": "invalid_request"
+          }
+        ],
+        "notes": []
+      },
+      {
+        "batch": "current-free-native-chat",
+        "report": "current-free/cohere-native-chat.json",
+        "workerId": "lain-current-free-cohere-chat",
+        "accountId": "acct-5eb472a003b44f6cbcddb025df01decc",
+        "provider": "cohere",
+        "requestedModelOrAlias": "command-a-plus-05-2026",
+        "routeId": "route-b5cd16ff67f035270a9ae7b3cd08bcf9",
+        "client": {
+          "startedAt": "2026-10-25T02:00:13.100311+00:00",
+          "finishedAt": "2026-10-25T02:00:15.052871+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "outputCharacters": 182,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0,
+          "protocol": "chat-completions",
+          "done": true
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "263927a8-a9f5-44b9-857c-1ecd0699928b",
+            "requestId": "f4d51f7a-87df-484f-b642-28e2549ea0e5",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-5eb472a003b44f6cbcddb025df01decc",
+            "routeId": "route-b5cd16ff67f035270a9ae7b3cd08bcf9",
+            "provider": "cohere",
+            "requestedModel": "command-a-plus-05-2026",
+            "model": "command-a-plus-05-2026",
+            "startedAt": "2026-10-25T02:00:13.201+00:00",
+            "finishedAt": "2026-10-25T02:00:14.968+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-current-free-cohere-chat",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": [
+          "Native chat-completions passed; incompatible Responses-shaped400 calls remain failed."
+        ]
+      },
+      {
+        "batch": "current-free-four",
+        "report": "current-free/kilo-current.json",
+        "workerId": "lain-current-free-kilo-current",
+        "accountId": "acct-6a13fc77ee8a945333d61033232bc0f3",
+        "provider": "kilo",
+        "requestedModelOrAlias": "kilo-liquid-lfm-free",
+        "routeId": "route-kilo-liquid-lfm-free",
+        "client": {
+          "startedAt": "2026-10-25T01:58:31.350185+00:00",
+          "finishedAt": "2026-10-25T01:58:34.371045+00:00",
+          "state": "incomplete_or_failed",
+          "httpStatus": 200,
+          "terminalType": "response.incomplete",
+          "outputCharacters": 97,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "18ec48e8-55a1-405a-880a-550b90359aaa",
+            "requestId": "ca445a86-8fdb-4a37-bb07-6d7f5cc107bf",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-6a13fc77ee8a945333d61033232bc0f3",
+            "routeId": "route-kilo-liquid-lfm-free",
+            "provider": "kilo",
+            "requestedModel": "kilo-liquid-lfm-free",
+            "model": "liquid/lfm-2.5-2.6b:free",
+            "startedAt": "2026-10-25T01:58:31.702+00:00",
+            "finishedAt": "2026-10-25T01:58:34.361+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-current-free-kilo-current",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": [
+          "Partial output at configured cap: response.incomplete with97characters; Attempt/completionState success does not establish complete output."
+        ]
+      },
+      {
+        "batch": "current-free-four",
+        "report": "current-free/openrouter-current.json",
+        "workerId": "lain-current-free-openrouter-current",
+        "accountId": "acct-b7b52ac3d1e6917acddf0c2f53c7c6e4",
+        "provider": "openrouter",
+        "requestedModelOrAlias": "openrouter/free",
+        "routeId": "route-800ce96983b958ffbe503bfe6ff9ed2b",
+        "client": {
+          "startedAt": "2026-10-25T01:58:17.127995+00:00",
+          "finishedAt": "2026-10-25T01:58:25.934536+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 546,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "23cee689-9d4b-4cac-9dfb-580517e33649",
+            "requestId": "68c2928f-8804-4c68-9e48-5ae8542e09f9",
+            "sourceId": "22fe42fc-2795-4ce3-9c45-38a89569ef94",
+            "accountId": "acct-b7b52ac3d1e6917acddf0c2f53c7c6e4",
+            "routeId": "route-800ce96983b958ffbe503bfe6ff9ed2b",
+            "provider": "openrouter",
+            "requestedModel": "openrouter/free",
+            "model": "dots-studio/dots-3-note-preview:free",
+            "startedAt": "2026-10-25T01:58:18.265+00:00",
+            "finishedAt": "2026-10-25T01:58:25.882+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "workerId": "lain-current-free-openrouter-current",
+            "parentWorkerId": "lain-account-test-coordinator",
+            "profileId": "lain",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true,
+            "errorCategory": null
+          }
+        ],
+        "notes": [
+          "Current free router completed; requested router alias differs from recorded resolved upstream model."
+        ]
+      },
+      {
+        "batch": "roomier-budget-followup",
+        "report": "current-free/kilo-roomier.json",
+        "workerId": "lain-current-free-kilo-roomier",
+        "accountId": "acct-6a13fc77ee8a945333d61033232bc0f3",
+        "provider": "kilo",
+        "requestedModelOrAlias": "kilo-liquid-lfm-free",
+        "routeId": "route-kilo-liquid-lfm-free",
+        "client": {
+          "startedAt": "2026-10-25T02:05:40.807590+00:00",
+          "finishedAt": "2026-10-25T02:05:42.235357+00:00",
+          "state": "http_error",
+          "httpStatus": 429,
+          "terminalType": null,
+          "outputCharacters": 0,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0,
+          "maxOutputTokens": 2048,
+          "elapsedSeconds": 1.43,
+          "usage": null
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "f2a62448-1705-4a69-8eaf-b24eb5f50819",
+            "accountId": "acct-6a13fc77ee8a945333d61033232bc0f3",
+            "routeId": "route-kilo-liquid-lfm-free",
+            "provider": "kilo",
+            "model": "liquid/lfm-2.5-2.6b:free",
+            "startedAt": "2026-10-25T02:05:41.665+00:00",
+            "finishedAt": "2026-10-25T02:05:42.212+00:00",
+            "statusCode": 429,
+            "state": "failed",
+            "completionState": "failed",
+            "errorCategory": "rate_limited",
+            "workerId": "lain-current-free-kilo-roomier",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true
+          }
+        ],
+        "notes": [
+          "HTTP429/rate_limited; no successful complete Kilo sample established. Earlier capped partial output remains partial."
+        ]
+      },
+      {
+        "batch": "roomier-budget-followup",
+        "report": "current-free/cloudflare-roomier.json",
+        "workerId": "lain-current-free-cloudflare-roomier",
+        "accountId": "acct-df5e9277799bfecce9e5c23a531a6cbb",
+        "provider": "cloudflare-workers-ai",
+        "requestedModelOrAlias": "@cf/google/gemma-4-26b-a4b-it",
+        "routeId": "route-4c06ab2607979673410c4548e6e62724",
+        "client": {
+          "startedAt": "2026-10-25T02:05:45.707671+00:00",
+          "finishedAt": "2026-10-25T02:06:17.595590+00:00",
+          "state": "passed",
+          "httpStatus": 200,
+          "terminalType": "response.completed",
+          "outputCharacters": 421,
+          "requestCount": 1,
+          "automaticRetries": 0,
+          "automaticFallbacks": 0,
+          "maxOutputTokens": 2048,
+          "elapsedSeconds": 31.89,
+          "usage": {
+            "input_tokens": 88,
+            "output_tokens": 1664,
+            "total_tokens": 1752
+          }
+        },
+        "attemptCount": 1,
+        "attempts": [
+          {
+            "id": "2e56ec6c-b70f-4f0f-8661-bc85da2e05ef",
+            "accountId": "acct-df5e9277799bfecce9e5c23a531a6cbb",
+            "routeId": "route-4c06ab2607979673410c4548e6e62724",
+            "provider": "cloudflare-workers-ai",
+            "model": "@cf/google/gemma-4-26b-a4b-it",
+            "startedAt": "2026-10-25T02:05:46.993+00:00",
+            "finishedAt": "2026-10-25T02:06:17.585+00:00",
+            "statusCode": 200,
+            "state": "success",
+            "completionState": "success",
+            "errorCategory": null,
+            "reportedTokenUsage": {
+              "input": 88,
+              "output": 1664,
+              "total": 1752,
+              "reasoning": null
+            },
+            "workerId": "lain-current-free-cloudflare-roomier",
+            "identityMatchesSpec": true,
+            "insideClientTimeEnvelope": true
+          }
+        ],
+        "notes": [
+          "PASS with output cap2048:421visible characters in31.89seconds; reported1752total tokens. Earlier512budget was exhausted by reasoning; do not describe this as a connection failure. Earlier SSEerror/Attemptsuccess telemetry mismatch remains a separate known bug."
+        ]
+      }
+    ],
+    "history": {
+      "from": "2026-10-25T01:50:08.326487+00:00",
+      "to": "2026-10-25T02:06:17.59559+00:00",
+      "timeZone": "UTC",
+      "cursor": 113,
+      "complete": true,
+      "totals": {
+        "requests": 21,
+        "attempts": 21,
+        "errors": 5,
+        "tokens": {
+          "input": null,
+          "output": null,
+          "cached": null,
+          "reasoning": null,
+          "total": null,
+          "cacheCreation": null
+        },
+        "unknownUsageAttempts": 7,
+        "measurements": {
+          "input": {
+            "knownReported": 1520,
+            "samples": 15,
+            "eligible": 21
+          },
+          "output": {
+            "knownReported": 6396,
+            "samples": 15,
+            "eligible": 21
+          },
+          "cached": {
+            "knownReported": 4,
+            "samples": 13,
+            "eligible": 21
+          },
+          "cacheCreation": {
+            "knownReported": 0,
+            "samples": 6,
+            "eligible": 21
+          },
+          "reasoning": {
+            "knownReported": 1443,
+            "samples": 11,
+            "eligible": 21
+          },
+          "total": {
+            "knownReported": 7427,
+            "samples": 14,
+            "eligible": 21
+          }
+        }
+      }
+    },
+    "interpretation": {
+      "cloudflare": "Selected Gemma call completed with cap2048; earlier512reasoning-budget exhaustion is not evidence of a connection failure. Success does not erase the earlier client-SSE-error/Attempt-success logging bug.",
+      "kilo": "Earlier404, later capped partial response, now429 rate_limited. No complete-client-success claim.",
+      "sambanova": "Earlier429 remains unresolved; no new sample.",
+      "cohere": "Native Chat completed; Responses400 compatibility failures and missing first400Attempt remain documented.",
+      "synthetic": "Explicitly not tested: user has no subscription/availability unknown.",
+      "coverage": "Selected-model samples per account plus follow-ups only; not all models/routes/subscriptions/budgets qualified.",
+      "inspector": "No fresh Inspector query in this delta. Prior review retention/source/gap evidence remains historical; no new live coverage claimed.",
+      "codexConfiguration": "Prior revision31 installer attestation unchanged; ordinary configuration not read or mutated by this review."
+    },
+    "limitations": [
+      "Complete token totals retain server null/partial measurements; no totals invented.",
+      "Two new worker filters each returned exactly one matching Attempt.",
+      "Earlier20call review is byte-identical and has not been overwritten."
+    ],
+    "userObservation": {
+      "workerId": "lain-account-test-codex-visible",
+      "statement": "Ja, Request und Ausgabe sichtbar",
+      "requestVisible": true,
+      "outputVisible": true,
+      "evidenceType": "Explicit user observation relayed by coordinator",
+      "independentGuiScreenshot": false,
+      "scope": "Confirms visible Request and output for this Codex follow-up only; no wider GUI/model coverage inferred."
+    }
+  },
+  "sourceFixesInstalled": false,
+  "fullModelCatalogQualified": false,
+  "freeOnlyGuaranteeClaimed": false,
+  "providerCredentialsOrPayloadsIncluded": false
+}
