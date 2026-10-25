@@ -290,7 +290,7 @@ public sealed partial class UsageView
         _detailScroll.Offset = detailOffset;
         if (dimension.Groups.Length == 0) _dimensionGroups.Children.Add(Label("No matching groups in this range.", Muted));
         if (focusedName is not null && _analysisButtons.TryGetValue(focusedName, out var focusedButton)
-            && focusedButton.GetVisualRoot() is not null) focusedButton.Focus();
+            && TopLevel.GetTopLevel(focusedButton) is not null) focusedButton.Focus();
     }
 
     private void ShowGroupDetailMessage(string message)
