@@ -59,7 +59,7 @@ public sealed partial class MainWindow
             var trigger = candidates.FirstOrDefault(button => Equals(button.Tag, target)) ?? candidates.FirstOrDefault();
             if (trigger is null) return;
             trigger.BringIntoView();
-            trigger.Focus();
+            trigger.Focus(NavigationMethod.Tab);
         }, DispatcherPriority.Loaded);
     }
 
