@@ -58,13 +58,50 @@ internal static class RouterCommandChecks
         var staleArgs = saveArgs.ToArray(); staleArgs[12] = "6";
         var stale = await Run(staleArgs);
         Require(stale.Exit == 5 && stale.Error.Contains("revision_conflict") && calls.SequenceEqual(new[] { "GET /api/v1/configuration" }), "stale edit cannot mutate a newer snapshot"); checks++;
+        foreach (var accountId in new[] { "Account_Team-7", new string('a', 100) })
+        {
+            var accountGroup = "account:" + accountId;
+            var expectedRouter = new CollectionRouterDto("account-work", "auto-account-work", accountGroup, "host-work", "configured");
+            var accountConfiguration = configuration with
+            {
+                Accounts = [new(accountId, "Work account", "codex", true, "api-key", "ready")],
+                Routes = [new("account-route", "account-model", "fixture-model", "codex", [accountId])],
+                Profiles = [new("host-work", "Work", ["account-route"])], CollectionRouters = []
+            };
+            handler.Respond = request =>
+            {
+                calls.Add(request.Method + " " + request.RequestUri!.PathAndQuery);
+                if (request.Method == HttpMethod.Get)
+                {
+                    Require(request.RequestUri!.AbsolutePath == "/api/v1/configuration", "account router reads the exact CAS snapshot");
+                    return Ok(accountConfiguration);
+                }
+                Require(request.Method == HttpMethod.Put && request.RequestUri!.AbsolutePath == "/api/v1/collection-routers/account-work",
+                    "account router save uses the typed router PUT endpoint");
+                var payload = JsonSerializer.Deserialize<RevisionRequest<CollectionRouterDto>>(
+                    request.Content!.ReadAsStringAsync().GetAwaiter().GetResult(), new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                Require(payload is not null && payload.Revision == 7 && payload.Value == expectedRouter,
+                    "typed account router PUT preserves the stable account ID, case, profile, policy and CAS revision");
+                return Ok(accountConfiguration with { Revision = 8, CollectionRouters = [expectedRouter] });
+            };
+            calls.Clear();
+            var accountSaved = await Run(["routers", "save", "account-work", "--alias", "auto-account-work", "--group", accountGroup,
+                "--profile", "host-work", "--cost", "configured", "--revision", "7", "--json"]);
+            using var accountJson = JsonDocument.Parse(accountSaved.Output);
+            Require(accountSaved.Exit == 0 && accountSaved.Error == "" &&
+                accountJson.RootElement.GetProperty("router").GetProperty("groupId").GetString() == accountGroup &&
+                calls.SequenceEqual(new[] { "GET /api/v1/configuration", "PUT /api/v1/collection-routers/account-work" }),
+                "account routers save their exact definition without apply, export, account creation or inference"); checks++;
+        }
         List<string[]> invalidArgs =
         [
             ["routers", "delete", "security"],
             ["routers", "delete", "invalid/id", "--revision", "7"],
             ["routers", "list", "--revision", "7"]
         ];
-        foreach (var (index, value) in new[] { (2, "bad/id"), (4, ""), (6, "IT Sec"), (6, "provider:OpenAI"), (6, "collection:"), (6, "policy:free"), (8, "Work name"), (10, "cheapest"), (12, "-1") })
+        foreach (var (index, value) in new[] { (2, "bad/id"), (4, ""), (6, "IT Sec"), (6, "provider:OpenAI"), (6, "collection:"), (6, "account:"), (6, "account:bad/id"),
+            (6, "account:provider:codex"), (6, "account:Work name"), (6, "account:ä"),
+            (6, "Account:valid-id"), (6, "account:" + new string('a', 101)), (6, "policy:free"), (8, "Work name"), (10, "cheapest"), (12, "-1") })
         {
             var invalid = saveArgs.ToArray(); invalid[index] = value; invalidArgs.Add(invalid);
         }

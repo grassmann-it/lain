@@ -30,14 +30,15 @@ public static partial class CliApplication
         RouterIdentity(profile, "host profile ID");
         if (options.Get("cost") is not ("configured" or "free_only")) throw new ArgumentException("--cost must be configured or free_only.");
         var group = options.Get("group");
-        if (group is null) throw new ArgumentException("--group requires an exact group ID: collection:ID, provider:ID or policy:free.");
+        if (group is null) throw new ArgumentException("--group requires an exact group ID: collection:ID, account:ID, provider:ID or policy:free.");
         if (group.StartsWith("collection:", StringComparison.Ordinal)) RouterIdentity(group[11..], "collection group ID");
+        else if (group.StartsWith("account:", StringComparison.Ordinal)) RouterIdentity(group[8..], "account group ID");
         else if (group.StartsWith("provider:", StringComparison.Ordinal))
         {
             RouterIdentity(group[9..], "provider group ID");
             if (group != group.ToLowerInvariant()) throw new ArgumentException("Provider group IDs must use the canonical lowercase provider ID.");
         }
-        else if (group != "policy:free") throw new ArgumentException("--group must be collection:ID, provider:ID or policy:free.");
+        else if (group != "policy:free") throw new ArgumentException("--group must be collection:ID, account:ID, provider:ID or policy:free.");
         if (group == "policy:free" && options.Get("cost") != "free_only") throw new ArgumentException("policy:free requires --cost free_only.");
     }
 
