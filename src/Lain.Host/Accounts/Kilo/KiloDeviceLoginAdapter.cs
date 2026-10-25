@@ -182,7 +182,9 @@ public sealed class KiloDeviceLoginAdapter : IAccountLoginAdapter, IAsyncDisposa
         if (!Token(token)) return Uncertain();
         var email = Email(Text(approved, "userEmail"));
         var binding = new ResourceBindingDto(Provider, email, Product: "gateway", ResourceType: "personal", Provenance: "unverified");
-        var credential = Credential(attempt, token!, binding);
+        // The token is durable evidence, but confers no adoptable purpose until
+        // this personal profile is confirmed. Recovery must not bypass that gate.
+        var credential = Credential(attempt, token!, binding) with { Purposes = [] };
         // Save before optional identity reads; a valid issued token must never be lost to a metadata or local CAS failure.
         try { await context.CheckpointCredentialAsync!(credential, CancellationToken.None); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or OperationCanceledException)
@@ -204,8 +206,7 @@ public sealed class KiloDeviceLoginAdapter : IAccountLoginAdapter, IAsyncDisposa
                 || root.TryGetProperty("hasPersonalAccount", out var personal) && personal.ValueKind != JsonValueKind.True && personal.ValueKind != JsonValueKind.Null)
                 return Recovery(credential, "Kilo did not confirm the same personal account. Organization access was not selected; review recovery.");
             binding = binding with { Subject = observed, Provenance = "observed" };
-            credential = Credential(attempt, token!, binding);
-            return Matches(context.Request.Binding, binding) ? new("prepared", Credential: credential)
+            return Matches(context.Request.Binding, binding) ? new("prepared", Credential: Credential(attempt, token!, binding))
                 : Recovery(credential, "The Kilo login belongs to another account or resource. Review its saved result before reconnecting.");
         }
         catch (Exception error) when (Boundary(error))
