@@ -516,8 +516,10 @@ internal sealed partial class Acceptance(IClassicDesktopStyleApplicationLifetime
             if (!capture.WaitForExit(3000)) { capture.Kill(); throw new TimeoutException("Private X11 screenshot"); }
             if (capture.ExitCode != 0) throw new InvalidOperationException("Private X11 screenshot failed: " + capture.StandardError.ReadToEnd());
         }
-        images.Add(new { file, currentCase, fixtureSession = fixture.SessionId, page, runtimeMode = fixture.Config.RuntimeMode, informationLevel = level.ToString(),
-            density = density.ToString(), width = target.ClientSize.Width, height = target.ClientSize.Height,
+        var actualPage = typeof(MainWindow).GetField("_section", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(window) as string ?? page;
+        var preferences = ((WorkspacePreferencesStore)typeof(MainWindow).GetField("_preferencesStore", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!).Current;
+        images.Add(new { file, currentCase, fixtureSession = fixture.SessionId, page = actualPage, runtimeMode = fixture.Config.RuntimeMode, informationLevel = preferences.Level.ToString(),
+            density = preferences.Densities.GetValueOrDefault(actualPage, ViewDensity.Normal).ToString(), width = target.ClientSize.Width, height = target.ClientSize.Height,
             fixture = "five-accounts-45-routes-three-profiles", visualReview = "REQUIRED", nativeScreen, nativeInput = nativeInputTrace.Any(value => value.StartsWith(currentCase + ": ", StringComparison.Ordinal)),
             renderScaling = target.RenderScaling, scaleMethod = "AVALONIA_GLOBAL_SCALE_FACTOR",
             requestedScale = Environment.GetEnvironmentVariable("AVALONIA_GLOBAL_SCALE_FACTOR") });

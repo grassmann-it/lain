@@ -1,5 +1,5 @@
 {
-  "status": "IN_PROGRESS; mandatory final cases pending",
+  "status": "Selected source state-flow matrix functionally qualified across separate runs; exact-package GUI qualification remains separate.",
   "runs": [
     {
       "run": "native-r1",
@@ -216,6 +216,268 @@
       "assertions": 199,
       "images": 24,
       "visualResult": "PARTIALLY_REVIEWED; no overall visual pass"
+    },
+    {
+      "run": "native-final",
+      "manifest": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-final/evidence.json",
+      "manifestSha256": "2ebd9149324f81441948362065c712291fc7b0eab0eb7b0b83534fd4f5836d23",
+      "commit": "5af70cbcc3108f30fc7c844c6074535d400a387e",
+      "assemblySha256": "689A91279225725BCBA4EE9BDE43434731408DBFB3C1920BA1D8F44A05A62D3E",
+      "cases": [
+        {
+          "name": "native-state-draft-1120x780",
+          "fixtureSession": "cc6b868cdbb84c7fbaa0d4a983a9a9bc",
+          "functionalResult": "PASS",
+          "assertions": 40,
+          "elapsedMs": 4355
+        },
+        {
+          "name": "native-state-apply-1120x780",
+          "fixtureSession": "bd1a981c05ba4c8398e7f689153b782f",
+          "functionalResult": "PASS",
+          "assertions": 32,
+          "elapsedMs": 2808
+        },
+        {
+          "name": "native-state-apply-late-preview-1120x780",
+          "fixtureSession": "462866b4321245d595a71dc62fd8e471",
+          "functionalResult": "PASS",
+          "assertions": 6,
+          "elapsedMs": 1123
+        },
+        {
+          "name": "native-state-apply-rejected-1120x780",
+          "fixtureSession": "11999ec0a83940d6b78242b7cf5a9f38",
+          "functionalResult": "PASS",
+          "assertions": 12,
+          "elapsedMs": 1771
+        },
+        {
+          "name": "native-state-connect-late-1120x780",
+          "fixtureSession": "c9e9654d08c04a7c852c419917fdd000",
+          "functionalResult": "PASS",
+          "assertions": 10,
+          "elapsedMs": 2006
+        },
+        {
+          "name": "native-state-status-late-1120x780",
+          "fixtureSession": "8032c950f20b44259dfdd53d21eceee7",
+          "functionalResult": "PASS",
+          "assertions": 10,
+          "elapsedMs": 1573
+        },
+        {
+          "name": "native-state-browse-1120x780",
+          "fixtureSession": "dc8c503b5566401084fbdfabb55eab2e",
+          "functionalResult": "PASS",
+          "assertions": 5,
+          "elapsedMs": 1973
+        },
+        {
+          "name": "native-layout-monitor-table-1120x780",
+          "fixtureSession": "de0839473dc346a6b96d9e9b856a712a",
+          "functionalResult": "PASS",
+          "assertions": 8,
+          "elapsedMs": 981
+        },
+        {
+          "name": "native-layout-live-left-1120x780",
+          "fixtureSession": "b6d269d8a1e4477bb7e0e7786efad66e",
+          "functionalResult": "PASS",
+          "assertions": 19,
+          "elapsedMs": 2292
+        },
+        {
+          "name": "native-state-draft-800x560",
+          "fixtureSession": "ed81fc1ef5854ef4aa0cdee6db3c402b",
+          "functionalResult": "PASS",
+          "assertions": 40,
+          "elapsedMs": 3943
+        },
+        {
+          "name": "native-state-apply-800x560",
+          "fixtureSession": "19b61ade6f1748ab8637815ff4c7ab5b",
+          "functionalResult": "PASS",
+          "assertions": 32,
+          "elapsedMs": 2971
+        },
+        {
+          "name": "native-state-apply-late-preview-800x560",
+          "fixtureSession": "7c377eea36914297b5e36036fbde573c",
+          "functionalResult": "PASS",
+          "assertions": 6,
+          "elapsedMs": 1001
+        },
+        {
+          "name": "native-state-apply-rejected-800x560",
+          "fixtureSession": "0b658ee3df1a49428f418d0ca8348f2d",
+          "functionalResult": "PASS",
+          "assertions": 12,
+          "elapsedMs": 1422
+        },
+        {
+          "name": "native-state-connect-late-800x560",
+          "fixtureSession": "b1475f3f4b784345a492554376948cc9",
+          "functionalResult": "PASS",
+          "assertions": 10,
+          "elapsedMs": 2101
+        },
+        {
+          "name": "native-state-status-late-800x560",
+          "fixtureSession": "c03e2d29b3bb4f1486b623ea875b4c07",
+          "functionalResult": "FAIL",
+          "error": "System.InvalidOperationException: Missing reachable Button: Select profile Workspace 3\n   at Acceptance.Need[T](String name) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 534\n   at Acceptance.NativeLateStatusFlow() in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/StateFlows.cs:line 353\n   at Acceptance.Case(String name, Func`1 action) in /home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-integrated/tests/uxd-acceptance/Program.cs:line 159",
+          "elapsedMs": 1120
+        },
+        {
+          "name": "native-state-browse-800x560",
+          "fixtureSession": "fb10a2dd2123459f87e1e8288afb7d3c",
+          "functionalResult": "PASS",
+          "assertions": 5,
+          "elapsedMs": 2985
+        },
+        {
+          "name": "native-layout-monitor-table-800x560",
+          "fixtureSession": "182efbb198694632b80ec3bd50154171",
+          "functionalResult": "PASS",
+          "assertions": 8,
+          "elapsedMs": 698
+        },
+        {
+          "name": "native-layout-live-left-800x560",
+          "fixtureSession": "e26d7870587944c68a709787ff1a9347",
+          "functionalResult": "PASS",
+          "assertions": 19,
+          "elapsedMs": 1909
+        }
+      ],
+      "assertions": 352,
+      "images": 46,
+      "actualRenderScales": [
+        1
+      ],
+      "visualResult": "SELECTED PNGS PERSONALLY REVIEWED; not every generated image"
+    },
+    {
+      "run": "native-status-final",
+      "manifest": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-status-final/evidence.json",
+      "manifestSha256": "e4ec5e1b9d0b95d79f3b6c35d6de3c033fe641ea5652a8998961d43320f0fc73",
+      "commit": "5af70cbcc3108f30fc7c844c6074535d400a387e",
+      "assemblySha256": "689A91279225725BCBA4EE9BDE43434731408DBFB3C1920BA1D8F44A05A62D3E",
+      "cases": [
+        {
+          "name": "native-state-status-late-1120x780",
+          "fixtureSession": "7830842e310041aab3f8d79d7cc7d334",
+          "functionalResult": "PASS",
+          "assertions": 10,
+          "elapsedMs": 1684
+        },
+        {
+          "name": "native-state-status-late-800x560",
+          "fixtureSession": "31dcac7a3f824d8cbc39192736159e22",
+          "functionalResult": "PASS",
+          "assertions": 11,
+          "elapsedMs": 1534
+        }
+      ],
+      "assertions": 29,
+      "images": 2,
+      "actualRenderScales": [
+        1
+      ],
+      "visualResult": "SELECTED PNGS PERSONALLY REVIEWED; not every generated image"
+    },
+    {
+      "run": "native-scale125",
+      "manifest": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-scale125/evidence.json",
+      "manifestSha256": "6cd537989ddde1a5f7db0e5780b1ce095a6d6b22498821928c30f376c8cf7b15",
+      "commit": "5af70cbcc3108f30fc7c844c6074535d400a387e",
+      "assemblySha256": "689A91279225725BCBA4EE9BDE43434731408DBFB3C1920BA1D8F44A05A62D3E",
+      "cases": [
+        {
+          "name": "native-state-draft-1120x780",
+          "fixtureSession": "83c99724934a4bd09dedbea505786a46",
+          "functionalResult": "PASS",
+          "assertions": 40,
+          "elapsedMs": 4086
+        },
+        {
+          "name": "native-state-model-menu-1120x780",
+          "fixtureSession": "5a7703ad9f7f455a89469fc048d865c4",
+          "functionalResult": "PASS",
+          "assertions": 11,
+          "elapsedMs": 2102
+        },
+        {
+          "name": "native-state-setup-1120x780",
+          "fixtureSession": "7b4c9bb6af1c406398736d3fbddd4b11",
+          "functionalResult": "PASS",
+          "assertions": 18,
+          "elapsedMs": 2708
+        },
+        {
+          "name": "native-layout-monitor-table-1120x780",
+          "fixtureSession": "61fd3481938f467cad935d21821be653",
+          "functionalResult": "PASS",
+          "assertions": 8,
+          "elapsedMs": 1168
+        },
+        {
+          "name": "native-layout-live-left-1120x780",
+          "fixtureSession": "b37c6b3e3ff24cfa8cd12136b2d65949",
+          "functionalResult": "PASS",
+          "assertions": 19,
+          "elapsedMs": 2007
+        },
+        {
+          "name": "native-state-draft-800x560",
+          "fixtureSession": "a8e9a186d1c14123bcba459581d049c9",
+          "functionalResult": "PASS",
+          "assertions": 40,
+          "elapsedMs": 3958
+        },
+        {
+          "name": "native-state-model-menu-800x560",
+          "fixtureSession": "2b3131a3a4ba4ee289378b9b45b7a0f7",
+          "functionalResult": "PASS",
+          "assertions": 11,
+          "elapsedMs": 1962
+        },
+        {
+          "name": "native-state-setup-800x560",
+          "fixtureSession": "f41ed3978c1f4b05a09ec4b6a05d65e8",
+          "functionalResult": "PASS",
+          "assertions": 18,
+          "elapsedMs": 2827
+        },
+        {
+          "name": "native-layout-monitor-table-800x560",
+          "fixtureSession": "b2fda58eb00e47378c0f154cfaa4abd3",
+          "functionalResult": "PASS",
+          "assertions": 8,
+          "elapsedMs": 710
+        },
+        {
+          "name": "native-layout-live-left-800x560",
+          "fixtureSession": "a3f2cfb12bd0441fb6bbef4237d0dbe1",
+          "functionalResult": "PASS",
+          "assertions": 19,
+          "elapsedMs": 2540
+        },
+        {
+          "name": "model-long-name-and-policies",
+          "fixtureSession": "e6ca0b3cca714e45ba6ee3e0d5301b2a",
+          "functionalResult": "PASS",
+          "assertions": 3,
+          "elapsedMs": 761
+        }
+      ],
+      "assertions": 238,
+      "images": 34,
+      "actualRenderScales": [
+        1.25
+      ],
+      "visualResult": "SELECTED PNGS PERSONALLY REVIEWED; not every generated image"
     }
   ],
   "reviewedImages": [
@@ -266,6 +528,120 @@
       "sha256": "c5a10a71a99072ba1b344fffda26bec0c66d03067bd6151a3158bc732155a391",
       "finding": "Discard correctly returns saved selected model detail; fixture must use selected Edit action.",
       "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-first-snapshot-data-800x560-data.png",
+      "sha256": "543d3f8c7ac506c34205f049e5d46772f6fbe8de75c20315d6ab82d315c85f82",
+      "finding": "Distinct data/empty/error presentation, reserved adjacent account detail and reachable footer.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-first-snapshot-empty-800x560-empty.png",
+      "sha256": "8a51faf0613814c5baea2a80f9926432294447e1eeab8a5d7216dec9f1963a8f",
+      "finding": "Distinct data/empty/error presentation, reserved adjacent account detail and reachable footer.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-first-snapshot-error-800x560-error.png",
+      "sha256": "dd2def37bbf19622b35fc7f6a5588bdb463d86b3bb72cce0eece5aae01cc6ffe",
+      "finding": "Distinct data/empty/error presentation, reserved adjacent account detail and reachable footer.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-first-snapshot-data-1120x780-data.png",
+      "sha256": "ae951c55724fc8846083f2853b2de43053b406f25f5851bd1ff897b4c67e2e85",
+      "finding": "Distinct data/empty/error presentation, reserved adjacent account detail and reachable footer.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-first-snapshot-empty-1120x780-empty.png",
+      "sha256": "0c80fea25b246ca9e0bc2f8f265afc3aa181e9aa9fdf22f9f0c787c246d2b588",
+      "finding": "Distinct data/empty/error presentation, reserved adjacent account detail and reachable footer.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-first-snapshot-error-1120x780-error.png",
+      "sha256": "a37c1e9fc66cdf34a6785f950a1f900040e1da6ec58fe79f7f79a700db42243a",
+      "finding": "Distinct data/empty/error presentation, reserved adjacent account detail and reachable footer.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-first-snapshot-data-800x560-pending.png",
+      "sha256": "9b82c2fd6536d7fde4bb15161a2487a510e258247b547e3dd6119f087dd50b78",
+      "finding": "Explicit loading state without empty inventory or fabricated quota.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r2/native-state-model-menu-1120x780-pointer-menu-x11.png",
+      "sha256": "4c23daaeb3efa05a0150244bf6ed057ae2c1b950c275f3e92a32c4505e9cdf22",
+      "finding": "Corrected pointer popup now shows all nine commands.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r2/native-state-model-menu-800x560-keyboard-menu-x11.png",
+      "sha256": "ee4da456895bfc42c2533dc6e8786aa89ebc89bfdae692214076f9c3dcd53ced",
+      "finding": "Native keyboard popup shows same nine commands; separate native popup may extend beyond main window.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-apply-rejected-800x560-rejected.png",
+      "sha256": "9a9678baa84c1125c2f46033cce32df7ead7326ac3e2d7e675f8ace28e6921ce",
+      "finding": "Confirmed runtime_busy rejection retains Workspace2; new preview explicit; no unknown claim.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-r1/native-state-browse-800x560-picker-open-x11.png",
+      "sha256": "3e3a81a5331a60e4861221639d72d73458c01b2048615c3e1626b43e8fe45bcb",
+      "finding": "INSUFFICIENT: old early capture lacks visible picker; superseded by strict visible-window final capture.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-final/native-state-browse-800x560-picker-open-x11.png",
+      "sha256": "fbffb721fdd62b370a389f511684d9b3872a7a063d36792bcb122d5eb3f44c64",
+      "finding": "Actual native folder picker visibly open; escaped with native input and destination focus restored.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-final/native-state-apply-800x560-confirmed.png",
+      "sha256": "c96c5baeefee501e7fdcae49db2d136cd81efde99fbbfb7492391e7098c778d6",
+      "finding": "Corrected all displays: Daily3, saved3/proxy3, no stale pending label.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-status-final/native-state-status-late-800x560-confirmed-after-navigation.png",
+      "sha256": "c06b37389bcffb2a317e0e1a64903bdaf721cba6191ec5ca75c4010fddf87d09",
+      "finding": "Viewing Workspace3 retained while applied Daily2/saved2/proxy2 update after delayed status.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-scale125/native-layout-live-left-800x560-selected-x11.png",
+      "sha256": "2e51f39b9a04188ca515a9138913b2c31955d79c40eb0334f16e7905d212a0d6",
+      "finding": "Actual 125% X11 rendering; persistent left list, selected output, actions and footer remain visible.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-final/native-layout-monitor-table-800x560-selected.png",
+      "sha256": "cbee8c090868536b7627b2397809adf5c8104cb19ac1d85aefcfa321a8741d0a",
+      "finding": "Monitor quota table uses long bars below values with adjacent selected detail.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-final/native-layout-live-left-800x560-selected.png",
+      "sha256": "9dc473cb1633856dd59cd102db22c87854b3d8231751d7131403ffcf6fb977fa",
+      "finding": "Persistent left request list and right output; toolbar/footer reachable.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-final/native-layout-monitor-table-1120x780-selected.png",
+      "sha256": "9764a6d3f4c3beca14b41e3aa83b1f5d12fc9cde1f52a8add620cf8cacd5b3c8",
+      "finding": "Monitor quota table uses long bars below values with adjacent selected detail.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
+    },
+    {
+      "path": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/native-final/native-layout-live-left-1120x780-selected.png",
+      "sha256": "0e7639a0ec35fdf56e052ab6cfad9faec0cbc63b6f8f059670eb9ffc45e317e7",
+      "finding": "Persistent left request list and right output; toolbar/footer reachable.",
+      "reviewMethod": "opened with view_image by UXD22 owner"
     }
   ],
   "buildNotes": [
@@ -275,10 +651,50 @@
     "Owner18/19 structural run not executed: Uxd18AccountsCases GetVisualRoot compile error fixed in subsequent ebb120a."
   ],
   "pending": [
-    "Final narrow draft selector rerun",
-    "New delayed Connect/status navigation and confirmed metadata cases",
-    "Monitor table and persistent-left Live layout",
-    "125% rendering scale and representative final PNG review",
-    "Owner18/19 structural fixtures"
-  ]
+    "Exact published assembly/package GUI and installation qualification belongs to Root.",
+    "Exhaustive screenreader/accessibility, clipboard, real provider/auth/inference and all historical broad suite cases are not qualified here."
+  ],
+  "structuralRuns": [
+    {
+      "name": "account-snapshots",
+      "log": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/account-snapshots/run.log",
+      "sha256": "bd2215cadba91d5fce580469b3cab36abc478f49c33605af978033264e4db84e",
+      "passLines": 34,
+      "result": "PASS",
+      "inputMethod": "production control/command invocation and synthetic HTTP; not OS-input qualification"
+    },
+    {
+      "name": "monitor-table",
+      "log": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/monitor-table/run.log",
+      "sha256": "be500683cbbf8aeec20a3c7efda27fc7ebe7fc01e86dd7166e6774ed3bec3f1b",
+      "passLines": 28,
+      "result": "PASS",
+      "inputMethod": "production control/command invocation and synthetic HTTP; not OS-input qualification"
+    },
+    {
+      "name": "model-identity-final",
+      "log": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/model-identity-final/run.log",
+      "sha256": "c9218b3fbcada54454885b6aa4e09242b2108b2986c2e2f1e677f41f70826d00",
+      "passLines": 18,
+      "result": "PASS",
+      "inputMethod": "production control/command invocation and synthetic HTTP; not OS-input qualification"
+    }
+  ],
+  "historicalStructuralFailure": {
+    "log": "/home/tomka/Desktop/lain-implementation-worktrees/20261025/uxd22-evidence/model-identity/failure.txt",
+    "cause": "Fixture read visual tree before render layout; owner fix5306991, corrected run separate."
+  },
+  "evidenceBoundaries": [
+    "First-snapshot cases use held HTTP and actual native rendering, without user input; request records explicitly identify fixture sessions.",
+    "Model captured-command selection/reorder/revision, missing-ID Save and reference locks are structurally exercised by production commands; native menu/filter and retained-A/B-save cases are separate.",
+    "Only enumerated reviewedImages were personally opened. Native or functional PASS never marks all PNGs or accessibility accepted.",
+    "Native-final historical17/18 remains unchanged; later native-status-final2/2 resolves its narrow fixture navigation failure.",
+    "Scale11/11 includes10 OS-input state/layout cases and1 programmatic long-label/editor layout case; actualRenderScaling1.25."
+  ],
+  "finalHarness": {
+    "directory": "/home/tomka/.cache/lain-qualification-20261024/uxd22-build/acceptance/bin/Debug/net10.0/linux-x64",
+    "harnessSha256": "89bff8a48430ec392fd9b8ba2faf20849face29a311b925295981c6e372f301a",
+    "desktopSha256": "689a91279225725bcba4ee9bde43434731408dbfb3c1920ba1d8f44a05a62d3e",
+    "recommendedPackageFilter": "native-state-draft,native-state-retained-model-command,native-state-connect-late,native-state-status-late,native-state-apply,native-layout"
+  }
 }

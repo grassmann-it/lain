@@ -350,6 +350,7 @@ internal sealed partial class Acceptance
         await NativePress(input, Need<Button>("Check current status"));
         await Wait(() => held.Entered.Task.IsCompleted);
         await NativePress(input, Need<Button>("Cancel review"));
+        if (Find<Button>("Select profile Workspace 3") is null) await NativePress(input, Need<Button>("Back to profiles"));
         await NativePress(input, Need<Button>("Select profile Workspace 3"));
         held.Complete(CurrentFixtureStatus());
         await Wait(() => Need<TextBlock>("Applied proxy profile status").Text?.Contains("Applied to proxy: Daily") == true);
@@ -405,9 +406,10 @@ internal sealed partial class Acceptance
         await NativePress(input, Need<Button>("Select profile Daily"));
         await NativePress(input, Need<Button>("Set up Codex client…"));
         var folder = Need<TextBox>("Destination parent folder");
-        var before = input.FocusedWindow();
+        var before = input.VisibleTopLevels();
         await NativePress(input, Need<Button>("Browse…"));
-        await Wait(() => input.FocusedWindow() != before);
+        await Wait(() => input.VisibleTopLevels().Except(before).Any());
+        await Task.Delay(180);
         Capture(FlowImage("picker-open"));
         input.Key(0xff1b);
         await Wait(() => folder.IsFocused);

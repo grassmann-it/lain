@@ -46,6 +46,39 @@ internal sealed class NativeInput : IDisposable
         return focused;
     }
 
+    public nint[] VisibleTopLevels()
+    {
+        AssertPrivateDisplay();
+        if (XQueryTree(display, XDefaultRootWindow(display), out _, out _, out var children, out var count) == 0) return [];
+        var result = new List<nint>();
+        try
+        {
+            for (var i = 0; i < count; i++)
+            {
+                var child = Marshal.ReadIntPtr(children, i * IntPtr.Size);
+                if (XGetWindowAttributes(display, child, out var attributes) != 0 && attributes.MapState == 2
+                    && attributes.Width > 160 && attributes.Height > 120) result.Add(child);
+            }
+        }
+        finally { if (children != 0) XFree(children); }
+        return result.ToArray();
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WindowAttributes
+    {
+        public int X, Y, Width, Height, BorderWidth, Depth;
+        public nint Visual, Root;
+        public int Class, BitGravity, WinGravity, BackingStore;
+        public nuint BackingPlanes, BackingPixel;
+        public int SaveUnder;
+        public nint Colormap;
+        public int MapInstalled, MapState;
+        public nint AllEventMasks, YourEventMask, DoNotPropagateMask;
+        public int OverrideRedirect;
+        public nint Screen;
+    }
+
     public void Focus(Window window)
     {
         AssertPrivateDisplay();
@@ -92,6 +125,10 @@ internal sealed class NativeInput : IDisposable
     }
     public void Dispose() { if (display != 0) XCloseDisplay(display); }
 
+    [DllImport("libX11.so.6")] private static extern nint XDefaultRootWindow(nint display);
+    [DllImport("libX11.so.6")] private static extern int XQueryTree(nint display, nint window, out nint root, out nint parent, out nint children, out uint count);
+    [DllImport("libX11.so.6")] private static extern int XGetWindowAttributes(nint display, nint window, out WindowAttributes attributes);
+    [DllImport("libX11.so.6")] private static extern int XFree(nint data);
     [DllImport("libX11.so.6")] private static extern nint XOpenDisplay(string? name);
     [DllImport("libX11.so.6")] private static extern int XCloseDisplay(nint display);
     [DllImport("libX11.so.6")] private static extern int XFlush(nint display);
