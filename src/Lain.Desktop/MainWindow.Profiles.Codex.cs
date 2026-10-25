@@ -183,13 +183,13 @@ public sealed partial class MainWindow
                         var inspection = CodexArtifactInstaller.Inspect(destination,
                             ProfileApplyOutcomeUnknown ? null : _status?.ActiveProfileId, ProfileApplyOutcomeUnknown ? null : _status?.ActiveProfileRevision);
                         if (inspection.State != "installed") throw new InvalidOperationException(inspection.RecoveryAction ?? "Client installation needs recovery.");
-                        var launch = await CodexLaunchCommandAsync(destination, shared, groups, preparedProof, _lifetime.Token);
+                        var launch = await CodexLaunchCommandAsync(destination, shared, groups, preparedProof, result, _lifetime.Token);
                         var command = Ui.Text(launch.Command ?? launch.Message, 12, launch.Command is null ? Ui.Warning : Ui.Muted);
                         var copy = Ui.Button("Copy command", async () =>
                         {
                             try
                             {
-                                var fresh = await CodexLaunchCommandAsync(destination, shared, groups, preparedProof, _lifetime.Token);
+                                var fresh = await CodexLaunchCommandAsync(destination, shared, groups, preparedProof, result, _lifetime.Token);
                                 if (fresh.Command is null) { command.Text = fresh.Message; return; }
                                 if (Clipboard is not { } clipboard) throw new InvalidOperationException("Clipboard is unavailable. Select the command below.");
                                 await clipboard.SetTextAsync(fresh.Command); _notice.Text = "Launch command copied.";
@@ -230,15 +230,17 @@ public sealed partial class MainWindow
     }
 
     private async Task<(string? Command, string Message)> CodexLaunchCommandAsync(string destination, bool shared, bool groups,
-        CodexDispatcherCheck? prepared, CancellationToken ct)
+        CodexDispatcherCheck? prepared, CodexInstallResult expected, CancellationToken ct)
     {
         string Quote(string value) => "'" + value.Replace("'", "'\\''") + "'";
+        var inspection = CodexArtifactInstaller.Inspect(destination);
+        if (inspection.State != "installed") return (null, inspection.RecoveryAction ?? "Installed artifacts need review.");
+        if (inspection.ProfileId != expected.ProfileId || inspection.Revision != expected.Revision || inspection.GenerationId != expected.GenerationId)
+            return (null, "The installed lain files changed since this setup. Review the installation before launching this connection.");
         if (!shared && !groups) return ($"CODEX_HOME={Quote(destination)} codex --no-daemon --profile lain", "");
         var latest = await _codexDispatcherProbe(ct);
         if (!latest.Ready || latest.Receipt != prepared?.Receipt)
             return (null, "Files are installed, but the dispatcher no longer matches the checked prerequisite. Check and prepare the client setup again. " + latest.Message);
-        var inspection = CodexArtifactInstaller.Inspect(destination);
-        if (inspection.State != "installed") return (null, inspection.RecoveryAction ?? "Installed artifacts need review.");
         // Pin the checked entry, not an unrelated executable resolved via PATH.
         // Explicit home selection also makes an inherited CODEX_HOME harmless.
         return ($"CODEX_HOME={Quote(destination)} {Quote(latest.Entry!)} --no-daemon --profile lain", "");
