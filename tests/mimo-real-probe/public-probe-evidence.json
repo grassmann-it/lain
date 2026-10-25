@@ -1,0 +1,64 @@
+{
+  "result": "blocked-before-production-open",
+  "runtimeLaneReleased": true,
+  "attempts": [
+    {
+      "unit": "lain-mimo-public-authgate-e1b6433.service",
+      "execSession": 71458,
+      "exitCode": 1,
+      "stage": "restore",
+      "reason": "private DOTNET_CLI_HOME changed implicit NuGet cache; required runtime packages unavailable from empty offline feed",
+      "buildOrBrowserStarted": false,
+      "sdkFirstRunNote": "Restore log recorded SDK first-run ASP.NET development certificate installation. DOTNET_CLI_HOME was task-private. No certificate-store inspection or removal performed."
+    },
+    {
+      "unit": "lain-mimo-public-authgate-e1b6433-r2.service",
+      "execSession": 1422,
+      "exitCode": 2,
+      "restore": "pass",
+      "build": "pass",
+      "buildDurationSeconds": 4.02,
+      "warnings": 0,
+      "errors": 0,
+      "runtimeSeconds": 6.232,
+      "cpuSeconds": 5.669,
+      "memoryPeakBytes": 458334208,
+      "swapPeakBytes": 0,
+      "stop": "production-browser-read-or-start-rejected",
+      "productionOpenSucceeded": false,
+      "fixedReadsAttempted": 0,
+      "ownedProfileErased": true,
+      "ownedProcessesRemaining": 0,
+      "signInPerformed": false,
+      "accountPublished": false
+    }
+  ],
+  "productionHostSha256": "9021bde8b76aecd4400191b1c96357684d4673f7702ada0b4903f86b18453860",
+  "productionHostSource": "9d4f708e59fffe0a52076f3620d313ad846bcb90",
+  "interpretation": "No successful public-console opening, visible authgate, identity, usage, quota or authenticated-monitor qualification. Generic sanitized InvalidOperationException category is the terminal observed stop; no broader browser or auth diagnosis performed.",
+  "artifacts": {
+    "prepared-inputs.json": "a3a32fe96be0020b171f785aca4f212216ca335cb3a5f28c2a663d757244efc4",
+    "qualify.sh": "b454e7115d255787077b3b0e58896803b47aba5be46d63e6e4ef01e3c4076e72",
+    "restore.log": "fab52aac0bdb4d46e6d1feadd71fe9e965832dd6a6caae258be34fbdff4de5b0",
+    "unit.log": "c1b0247752493ce5bd5897836eb3d4971f61cdfaccee05cbc5d65e187179bff4",
+    "restore-r2.log": "186bd6b33556f8a6c8e84b36a3d8dfb5efcd976fdd7f69da2df9b07211271753",
+    "build-r2.log": "21b217a1611ad6bd95fd9497c9673d47f6e5d73a9dddd3cae409ee2ea5d4554c",
+    "unit-r2.log": "b8d9b800dc08b9c8c8f99261ae061fbc456bcc18200c76049e5e90220575ecca",
+    "public-1/evidence.json": "6cd84090e66b7f104b497b5004889e72492260668b00a3c255da334064cea8f9",
+    "public-1/run.log": "d8c100a3cd56d57d710e7714f9963d2ba35d162877f3b727745fbfd53f9da056",
+    "public-1/dbus.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "public-1/xvfb.log": "05fe467c3cab97878a158106835840c24bb5be1431703ab408a32efa8766e0b7"
+  },
+  "sourceOnlyStartReview": {
+    "scope": "Only existing runner/qualification script and exact production-source revision inspected. No build, browser start, user browser state, credentials, or system changes.",
+    "clearHarnessEnvironmentDefectProven": false,
+    "observations": [
+      "Probe account identifier is valid; supported-browser/private-display IsAvailable branch passed.",
+      "Runner unsets WAYLAND_DISPLAY and inherited display/session bus, then supplies private DISPLAY, XAUTHORITY, XDG homes, runtime directory and private bus. HOME is not overridden.",
+      "Unit invocation has only memory/CPU resource controls and nice/ionice; no explicit network/home/process sandbox restriction.",
+      "Production uses its fresh --user-data-dir and loopback ephemeral DevTools port. Chromium backend selection is not explicitly pinned by --ozone-platform; GDK_BACKEND is not proof of Chromium backend selection.",
+      "Production drains and discards browser stdout/stderr. Sanitized InvalidOperationException category cannot identify early browser exit versus other Process/receipt/endpoint rejection."
+    ],
+    "conclusion": "OpenAsync start failure with unknown cause; no authgate or network-status conclusion. Defer any targeted startup diagnosis to a separately scoped, allocated run; do not change Host source speculatively."
+  }
+}

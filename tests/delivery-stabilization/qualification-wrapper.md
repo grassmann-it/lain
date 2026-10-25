@@ -2,8 +2,9 @@
 
 `qualification_wrapper.py` consumes already produced evidence. It never builds,
 executes Core/.NET/Go, starts a service, invokes a provider or touches installed
-state. Its only child command is read-only `git show` for explicitly pinned source
-commits. Root reviews the source and concrete artifacts before use.
+state. Its only child commands are read-only `git show` and `git ls-tree` for
+explicitly pinned source commits. Root reviews the source and concrete artifacts
+before use.
 
 All input paths are explicit; input SHA-256 pins are mandatory. Choose a new
 absolute output path. No pass artifact is written on validation failure, and an
@@ -121,8 +122,8 @@ and a temporary Git repository. They cover distinct application/Go commits with
 the same manifest, missing reports, bad source/binary/build/prepared/report pins,
 strict passed types, incomplete/duplicate upgrade children, hidden child failures,
 raw Go failures, changed manifest lineage, lost context/archive cases, filtered
-  unit commands, report/command/log substitution, stale-manifest adapter changes
-  or added/removed inputs, and duplicate JSON keys. They never execute product binaries,
+unit commands, report/command/log substitution, stale-manifest adapter changes
+or added/removed inputs, and duplicate JSON keys. They never execute product binaries,
 SDKs, services or providers. Source preparation is not an executed test result.
 
 The resulting wrapper qualifies synthetic Core boundaries only. Live providers,

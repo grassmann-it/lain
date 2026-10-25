@@ -1,6 +1,7 @@
 # AC08a: real MiMo public-console/auth-gate probe
 
-Prepared against source `6d9af6a`; **not built or run**. This is a real network
+Prepared against source `6d9af6a`; the executed attempt below stopped before
+opening the console. This is a real network
 probe, separate from the synthetic `tests/console-connections` suite. It opens
 the public console in production `MiMoConsoleBrowser.OpenAsync`, with fresh
 lain-owned state/profile on private Xvfb and a private D-Bus. It performs no
@@ -67,3 +68,19 @@ explicitly associate the discovered UID/region. Production must verify supported
 CN/EU identity and usable Individual Token Plan usage before publishing monitoring.
 The current probe neither requests credentials nor leaves a sign-in session open.
 SGP, Team and PAYG remain outside this qualification.
+
+## Executed attempt, 25 October 2026
+
+[Evidence](public-probe-evidence.json) records the bounded run against production
+Host source `9d4f708` (Host/Core inputs unchanged in the integrated candidate).
+Reference-only harness restore/build passed with zero warnings/errors. Production
+`OpenAsync` then returned a sanitized start/read rejection in less than a second:
+no completed browser opening, API reads, screenshot or visible auth gate was
+observed. The owned profile was erased and all owned processes stopped.
+
+The underlying startup cause remains unknown: production discards browser stderr,
+and source/runner review found no conclusive environment error. This is an open
+browser-start diagnosis, **not successful MiMo login or quota qualification**.
+No sign-in, existing cookies, account mutation or inference occurred. The initial
+offline restore-cache failure is retained separately in the evidence. Further
+authenticated qualification still requires the user action described above.
