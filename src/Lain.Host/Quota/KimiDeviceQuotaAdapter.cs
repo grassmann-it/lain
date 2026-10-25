@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Lain.Core;
+using Lain.Host.Accounts;
 using Lain.Host.Accounts.Managed;
 
 namespace Lain.Host.Quota;
@@ -29,7 +30,8 @@ public sealed class KimiDeviceQuotaAdapter : IQuotaAdapter, IDisposable
             || string.IsNullOrEmpty(subject) || credential.ProviderAccountId != subject || string.IsNullOrEmpty(providerRegion) || device is null
             || !Guid.TryParseExact(device, "N", out _) || !KimiDeviceProtocol.Token(credential.BearerToken)
             || credential.BaseUrl != KimiDeviceProtocol.Endpoints(region).Api || credential.ExpiresAt is null || credential.ExpiresAt <= clock.GetUtcNow()
-            || account.Binding is not { Provider: "kimi", Product: KimiDeviceProtocol.Product, ResourceType: "user" } binding
+            || account.Binding is not { Product: KimiDeviceProtocol.Product, ResourceType: "user" } binding
+            || AccountService.CanonicalProviderId(binding.Provider) != "kimi"
             || binding.Region != region || binding.Subject != subject || binding.ResourceId != subject)
             throw new QuotaFetchException("Kimi monitoring requires an unexpired, subject-bound grant on its original region and official host.");
         try
@@ -47,6 +49,7 @@ public sealed class KimiDeviceQuotaAdapter : IQuotaAdapter, IDisposable
             var observed = clock.GetUtcNow();
             var rows = KimiQuotaAdapter.Normalize(response.Body).Select(row => row with
             {
+                Source = credential.BaseUrl + "/usages#" + row.Source.Split('#').Last(),
                 WindowId = row.Source.Split('#').Last(), Scope = "kimi-code-user", ScopeId = subject,
                 MeasurementKind = "reported-quota", BudgetPoolId = "kimi-code:" + region + ":" + subject,
                 InheritAccountPool = false, ObservedAt = observed, SourceUrl = credential.BaseUrl + "/usages"

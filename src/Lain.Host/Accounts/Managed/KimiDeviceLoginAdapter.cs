@@ -63,10 +63,14 @@ public sealed class KimiDeviceLoginAdapter : IAccountLoginAdapter, ICredentialOw
         try
         {
             if (attempt.Result is not null) return attempt.Result;
-            if (attempt.Cancelled || clock.GetUtcNow() >= context.ExpiresAt) return attempt.Result = new("cancelled");
+            if (attempt.Cancelled) return attempt.Result = new("cancelled");
+            if (clock.GetUtcNow() >= context.ExpiresAt) return attempt.Result = Expired();
             if (context.Request.Binding?.Region is not { } region)
-                return new("resource-required", Resources: [new(Provider, Product: KimiDeviceProtocol.Product, Region: "global"),
-                    new(Provider, Product: KimiDeviceProtocol.Product, Region: "mainland-cn")]);
+            {
+                var known = context.Request.Binding ?? new(Provider);
+                return new("resource-required", Resources: [known with { Product = KimiDeviceProtocol.Product, Region = "global" },
+                    known with { Product = KimiDeviceProtocol.Product, Region = "mainland-cn" }]);
+            }
             _ = KimiDeviceProtocol.Endpoints(region);
             if (attempt.Region is not null && attempt.Region != region) throw new InvalidDataException("Kimi region changed during authorization.");
             attempt.Region = region;
@@ -89,7 +93,7 @@ public sealed class KimiDeviceLoginAdapter : IAccountLoginAdapter, ICredentialOw
                 attempt.NextPoll = now.AddSeconds(attempt.Interval);
                 return attempt.Cancelled ? attempt.Result = new("cancelled") : Waiting(attempt);
             }
-            if (clock.GetUtcNow() >= attempt.ExpiresAt) return attempt.Result = Failure("Kimi device authorization expired. Start a new explicit login when ready.");
+            if (clock.GetUtcNow() >= attempt.ExpiresAt) return attempt.Result = Expired();
             if (clock.GetUtcNow() < attempt.NextPoll) return Waiting(attempt);
             ct.ThrowIfCancellationRequested();
             // One potentially issuing exchange completes independently of UI cancellation.
@@ -111,8 +115,8 @@ public sealed class KimiDeviceLoginAdapter : IAccountLoginAdapter, ICredentialOw
                     attempt.NextPoll = clock.GetUtcNow().AddSeconds(attempt.Interval);
                     return attempt.Cancelled ? attempt.Result = new("cancelled") : Waiting(attempt);
                 }
+                if (error == "expired_token") return attempt.Result = Expired();
                 return attempt.Result = Failure(error == "access_denied" ? "Kimi authorization was declined. Existing access is preserved."
-                    : error == "expired_token" ? "Kimi device authorization expired. Start a new explicit login when ready."
                     : "Kimi device authorization could not be completed. No existing access was replaced.");
             }
             attempt.Grant = ParseToken(token.Body, region, attempt.DeviceId, started);
@@ -146,7 +150,7 @@ public sealed class KimiDeviceLoginAdapter : IAccountLoginAdapter, ICredentialOw
         if (context.Handle.Owner != Owner || !context.Handle.Purposes.SequenceEqual(["quota"]) || grant.Kind != KimiDeviceProtocol.Kind
             || grant.Provider != Provider || grant.ClientId != KimiDeviceProtocol.ClientId || !KimiDeviceProtocol.Token(grant.RefreshToken)
             || !Guid.TryParseExact(grant.DeviceId, "N", out _)
-            || grant.BaseUrl != KimiDeviceProtocol.Endpoints(grant.Region).Api || binding.Provider != Provider
+            || grant.BaseUrl != KimiDeviceProtocol.Endpoints(grant.Region).Api || AccountService.CanonicalProviderId(binding.Provider) != Provider
             || binding.Product != KimiDeviceProtocol.Product || binding.Region != grant.Region || binding.Subject != grant.Subject
             || binding.ResourceId != grant.Subject || binding.ResourceType != "user" || string.IsNullOrEmpty(grant.Subject)
             || string.IsNullOrEmpty(grant.ProviderRegion)) throw new InvalidDataException("Kimi owner/client/subject/region binding changed.");
@@ -168,7 +172,8 @@ public sealed class KimiDeviceLoginAdapter : IAccountLoginAdapter, ICredentialOw
             var actual = KimiDeviceProtocol.Identity(me.Body, grant.Region);
             var providerRegion = KimiDeviceProtocol.RequiredText(me.Body, "region", 80);
             renewed = renewed with { Subject = actual.Subject, ProviderRegion = providerRegion };
-            return Credential(renewed, actual, actual == binding && providerRegion == grant.ProviderRegion ? ["quota"] : []);
+            return Credential(renewed, actual, KimiDeviceProtocol.Matches(binding, actual) && KimiDeviceProtocol.Matches(actual, binding)
+                && providerRegion == grant.ProviderRegion ? ["quota"] : []);
         }
         catch (Exception error) when (error is HttpRequestException or IOException or InvalidDataException or JsonException or OperationCanceledException)
         { return Credential(renewed, binding, []); }
@@ -204,12 +209,13 @@ public sealed class KimiDeviceLoginAdapter : IAccountLoginAdapter, ICredentialOw
     private static LoginAdapterResult Waiting(Attempt attempt) => new("authorizing", attempt.Url,
         UserCode: attempt.UserCode, VerificationUri: attempt.Verification);
     private static LoginAdapterResult Failure(string message) => new("failed", Error: message);
+    private static LoginAdapterResult Expired() => new("expired", Error: "Kimi device authorization expired. Start a new explicit login when ready.");
     private static LoginAdapterResult Recovery(PreparedLoginCredential credential) => new("recovery-required", Credential: credential,
         Error: "Kimi issued access, but its account/region could not be verified. The private result is retained; existing access was preserved.", NextAction: "review-recovery");
     private static void Validate(LoginOperationContext context)
     {
-        if (context.Request.Provider != "kimi" || context.Request.Method != "kimi-device" || !context.Request.Purposes.SequenceEqual(["quota"])
-            || context.Request.Binding is { } binding && (binding.Provider != "kimi" || binding.Product is not (null or KimiDeviceProtocol.Product)
+        if (AccountService.CanonicalProviderId(context.Request.Provider) != "kimi" || context.Request.Method != "kimi-device" || !context.Request.Purposes.SequenceEqual(["quota"])
+            || context.Request.Binding is { } binding && (AccountService.CanonicalProviderId(binding.Provider) != "kimi" || binding.Product is not (null or KimiDeviceProtocol.Product)
                 || binding.Region is not (null or "global" or "mainland-cn")) || context.CheckpointCredentialAsync is null)
             throw new ArgumentException("Kimi device authorization requires its own quota-only context and explicit region.");
     }

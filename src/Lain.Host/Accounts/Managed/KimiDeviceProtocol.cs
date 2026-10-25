@@ -55,7 +55,8 @@ public static class KimiDeviceProtocol
         return new("kimi", subject, Product, region, "user", subject, "provider-discovery");
     }
     internal static bool Matches(ResourceBindingDto? expected, ResourceBindingDto actual) => expected is null ||
-        expected.Provider == actual.Provider && (expected.Subject is null || expected.Subject == actual.Subject)
+        AccountService.CanonicalProviderId(expected.Provider) == AccountService.CanonicalProviderId(actual.Provider)
+        && (expected.Subject is null || expected.Subject == actual.Subject)
         && (expected.Product is null || expected.Product == actual.Product) && (expected.Region is null || expected.Region == actual.Region)
         && (expected.ResourceType is null || expected.ResourceType == actual.ResourceType) && (expected.ResourceId is null || expected.ResourceId == actual.ResourceId);
 

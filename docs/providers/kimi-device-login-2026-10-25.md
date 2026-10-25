@@ -53,6 +53,11 @@ Vor dem ersten Provideraufruf wählt der Nutzer die Region über die gemeinsame
 | `global` | `https://auth.kimi.ai` | `https://api.kimi.ai/coding/v1` |
 | `mainland-cn` | `https://auth.kimi.com` | `https://api.kimi.com/coding/v1` |
 
+Regionkandidaten verfeinern vorhandene Bindungsfelder; bekannte Subject- und
+Ressourcenidentität sowie unterstützte Provideraliases bleiben erhalten.
+Ein Quota-Reconnect erhält bestehende Inference-Credentials und die lokale
+Accountidentität. Providerablauf, Device-TTL und Operationsfrist liefern `expired`.
+
 Der Adapter sendet Form-POSTs an `/api/oauth/device_authorization` und
 `/api/oauth/token`; Device-Grant ist
 `urn:ietf:params:oauth:grant-type:device_code`, Erneuerung `refresh_token`.
@@ -80,6 +85,8 @@ dem gebundenen API-Host. Native 5h-, 7d- und Monatsfenster bleiben eigenständig
 ungültige Werte sind unbekannt, gemessene Null bleibt Null. Kein Tokenbudget,
 Wallet, Inferenzrecht, Modell oder Profil wird daraus abgeleitet. Bestehende
 API-Key-Quotas werden unverändert an `KimiQuotaAdapter` delegiert.
+OAuth-Werte tragen im `Source` und `SourceUrl` den tatsächlich ausgewählten
+regionalen API-Host; ihre nativen Fenster-IDs bleiben erhalten.
 
 ## Integration und Prüfung
 

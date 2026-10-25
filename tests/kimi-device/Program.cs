@@ -90,8 +90,21 @@ foreach (var code in new[] { "access_denied", "expired_token" })
     var context = Context(clock, new("kimi", Region: "global"));
     await adapter.BeginAsync(context, default); clock.Advance(5);
     var denied = await adapter.StatusAsync(context, default); await adapter.StatusAsync(context, default);
-    Check(denied.State == "failed" && denied.Url is null && !denied.Error!.Contains("fixture-raw-secret") && handler.Calls.Count == 2,
+    Check(denied.State == (code == "expired_token" ? "expired" : "failed") && denied.Url is null && denied.UserCode is null
+        && !denied.Error!.Contains("fixture-raw-secret") && handler.Calls.Count == 2,
         "Denied/expired grants clear instructions and cannot be polled again");
+}
+foreach (var seconds in new[] { 10, 600 })
+{
+    var clock = new FakeClock(now); using var handler = new Handler();
+    handler.Add("/api/oauth/device_authorization", deviceJson.Replace("\"expires_in\":600", "\"expires_in\":" + seconds, StringComparison.Ordinal));
+    using var adapter = new KimiDeviceLoginAdapter(handler, clock);
+    var context = Context(clock, new("kimi", Region: "global"));
+    await adapter.BeginAsync(context, default); clock.Advance(seconds);
+    var expired = await adapter.StatusAsync(context, default); await adapter.StatusAsync(context, default);
+    await adapter.ReleaseAsync(context, default);
+    Check(expired.State == "expired" && expired.Url is null && expired.UserCode is null && handler.Calls.Count == 1,
+        "Provider TTL and operation deadline expire without another token request");
 }
 foreach (var malformed in new[] { Token("bad").Replace("3600", "0", StringComparison.Ordinal), Token("bad").Replace("Bearer", "Basic", StringComparison.Ordinal), "{}" })
 {
@@ -142,6 +155,45 @@ foreach (var malformed in new[] { Token("bad").Replace("3600", "0", StringCompar
         "Late grant is privately retained after cancellation without profile read, usage read, logout or publication");
 }
 // Shared persistence, redacted access lease, genuine usage HTTP, restart, serialized generation renewal.
+// A quota reconnect refines a known alias/subject/resource binding and preserves inference material.
+var reconnectRoot = Path.Combine(Path.GetTempPath(), "lain-kimi-reconnect-fixture-" + Guid.NewGuid().ToString("N"));
+try
+{
+    var paths = new OwnStatePaths(reconnectRoot); var repository = new ConfigurationRepository(paths); var secrets = new SecretStore(paths);
+    var accounts = new AccountService(repository, secrets); var clock = new FakeClock(now);
+    var known = new ResourceBindingDto("api.kimi.com", Subject: "fixture-subject", ResourceType: "user", ResourceId: "fixture-subject");
+    accounts.Connect(repository.Snapshot.Revision, new("kimi", "api-key", ["inference"], Binding: known),
+        new("static-key", ["inference"], known, """{"kind":"api-key","apiKey":"fixture-existing-inference","provider":"kimi","baseUrl":"https://api.kimi.com/coding/v1"}"""));
+    var existing = repository.Snapshot.Accounts.Single(); var inference = existing.Credentials!.Single();
+    using var handler = new Handler(); handler.Add("/api/oauth/device_authorization", deviceJson); handler.Add("/api/oauth/device_authorization", deviceJson);
+    handler.Add("/api/oauth/token", Token("reconnect")); handler.Add("/coding/v1/me", meJson);
+    using var adapter = new KimiDeviceLoginAdapter(handler, clock);
+    await using var service = new LoginOperationService(configuration: repository, accounts: accounts, secrets: secrets, accountAdapters: [adapter], timeProvider: clock);
+    var request = new ConnectAccountRequest("kimi", "kimi-device", ["quota"], AccountId: existing.Id, ExpectedGeneration: existing.Generation);
+    var offered = await service.BeginAsync(repository.Snapshot.Revision, request);
+    Check(offered.State == "resource-required" && offered.Resources!.All(candidate => candidate == (known with { Product = "coding", Region = candidate.Region }))
+        && handler.Calls.Count == 0, "Reconnect region candidates retain known subject, resource, alias and provenance");
+    await service.SelectResourceAsync(offered.Id, offered.Resources![0]);
+    Check((await service.StatusAsync(offered.Id)).State == "authorizing", "Selected refined binding retains operation account and generation guards");
+    Check((await service.CancelAsync(offered.Id)).State == "cancelled" && repository.Snapshot.Accounts.Single().Generation == existing.Generation,
+        "Cancel and adapter cleanup accept the refined reconnect binding without account mutation");
+    var login = await service.BeginAsync(repository.Snapshot.Revision, request);
+    await service.SelectResourceAsync(login.Id, login.Resources![0]); await service.StatusAsync(login.Id); clock.Advance(5);
+    Check((await service.StatusAsync(login.Id)).State == "completed", "Known subject/resource with missing region can reconnect through exact shared resource selection");
+    var connected = repository.Snapshot.Accounts.Single();
+    Check(connected.Id == existing.Id && connected.Provider == existing.Provider && connected.Binding!.Provider == known.Provider
+        && connected.Generation == existing.Generation + 1 && connected.Credentials!.Single(handle => handle.Id == inference.Id).Generation == inference.Generation
+        && connected.Capabilities!.Single(capability => capability.Purpose == "inference").CredentialId == inference.Id
+        && new CredentialResolver(repository, secrets, clock).Resolve(connected.Id, "inference")!.PrivateJson.Contains("fixture-existing-inference"),
+        "Quota reconnect retains local account, alias display and existing inference credential/capability");
+    var source = new HostQuotaSource(repository, secrets, new MonitorAccessService(repository, secrets, new MonitorCredentialStore(paths)));
+    using var quotaHandler = new Handler(); quotaHandler.Add("/coding/v1/me", meJson); quotaHandler.Add("/coding/v1/usages", usageJson);
+    using var legacyHttp = new HttpClient(new Handler()); using var quota = new KimiDeviceQuotaAdapter(legacyHttp, quotaHandler, clock);
+    var measured = await quota.FetchAsync(connected, (await source.GetCredentialAsync(connected.Id))!);
+    Check(measured.Readings.All(row => row.Source == "https://api.kimi.ai/coding/v1/usages#" + row.WindowId),
+        "Supported legacy provider aliases retain actual global OAuth usage source");
+}
+finally { if (Directory.Exists(reconnectRoot)) Directory.Delete(reconnectRoot, true); }
 var root = Path.Combine(Path.GetTempPath(), "lain-kimi-device-fixture-" + Guid.NewGuid().ToString("N"));
 try
 {
@@ -168,6 +220,16 @@ try
     Check(measured.Support?.Kind == "api" && measured.Readings.Count == 3 && measured.Readings[0].UsedPercent == 25 && measured.Readings[1].UsedPercent == 0 && measured.Readings[2].UsedPercent is null,
         "Actual OAuth HTTP path reads independent native windows and preserves invalid versus measured zero");
     Check(measured.Readings.All(row => row.ScopeId == "fixture-subject" && row.Scope == "kimi-code-user" && row.BudgetPoolId == "kimi-code:global:fixture-subject"), "Quota observations retain region/subject pool identity");
+    Check(measured.Readings.All(row => row.Source == "https://api.kimi.ai/coding/v1/usages#" + row.WindowId
+        && row.SourceUrl == "https://api.kimi.ai/coding/v1/usages"), "Global observation source and URL report the actual regional API");
+    using var mainlandHandler = new Handler(); mainlandHandler.Add("/coding/v1/me", meJson.Replace("REGION_OVERSEA", "REGION_CN", StringComparison.Ordinal)); mainlandHandler.Add("/coding/v1/usages", usageJson);
+    using var mainlandQuota = new KimiDeviceQuotaAdapter(legacyHttp, mainlandHandler, clock);
+    var mainlandSettings = new Dictionary<string, string>(credential.Settings) { ["region"] = "mainland-cn", ["providerRegion"] = "REGION_CN" };
+    var mainland = await mainlandQuota.FetchAsync(account with { Binding = account.Binding! with { Region = "mainland-cn" } },
+        new(credential.BearerToken, credential.ProviderAccountId, credential.ExpiresAt, "https://api.kimi.com/coding/v1", mainlandSettings, credentialKind: "kimi-oauth"));
+    Check(mainland.Readings.All(row => row.Source == "https://api.kimi.com/coding/v1/usages#" + row.WindowId
+        && row.SourceUrl == "https://api.kimi.com/coding/v1/usages") && mainlandHandler.Calls.All(call => call.Host == "api.kimi.com"),
+        "Mainland observation source and requests remain on the selected regional API");
     await Reject(() => quota.FetchAsync(account with { Binding = account.Binding! with { Region = "mainland-cn" } }, credential), "Cross-region lease cannot leave process");
     Check(quotaHandler.Calls.Count == 2, "Mismatched binding sends no provider call");
     var restarted = new ConfigurationRepository(paths);
