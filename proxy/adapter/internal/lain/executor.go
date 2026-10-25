@@ -403,6 +403,9 @@ func (t *guardedTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		t.integration.observeCohereFinalEffort(req.Context(), t.cohereReasoningEffort)
 	}
 	response, err := t.next.RoundTrip(req)
+	if err == nil {
+		boundRequestErrorResponse(response)
+	}
 	if err == nil && response != nil && t.integration != nil {
 		t.integration.observeQuotaResponse(req, t.auth, response)
 	}
