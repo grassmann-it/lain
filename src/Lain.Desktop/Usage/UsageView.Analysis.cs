@@ -305,7 +305,7 @@ public sealed partial class UsageView
         foreach (var (key, button) in _groupSelections)
         {
             button.BorderBrush = key == _selectedAnalysisGroup ? Accent : Ui.Edge;
-            button.BorderThickness = new Thickness(key == _selectedAnalysisGroup ? 2 : 1);
+            button.BorderThickness = new Thickness(2);
         }
         if (_selectedAnalysisGroup is not { } selected || !_groupDetails.TryGetValue(selected, out var group))
         {

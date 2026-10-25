@@ -957,7 +957,17 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         Check(new[] { "a2", "a3", "a4", "a5", "a-new" }.All(id => Controls<Button>().Any(button => AutomationProperties.GetName(button) == $"Inspect inactive account {id}")),
             "configured accounts with no matching observed activity remain discoverable");
 
-        await CaptureBoth("usage-analysis", () => Named<StackPanel>("Usage performance").BringIntoView());
+        await CaptureBoth("usage-analysis", () => Named<StackPanel>("Usage performance").BringIntoView(), () =>
+        {
+            var table = Named<ScrollViewer>("Usage table scroll");
+            var detail = Named<ScrollViewer>("Usage detail scroll");
+            var tableOrigin = table.TranslatePoint(default, window)!.Value;
+            var detailOrigin = detail.TranslatePoint(default, window)!.Value;
+            Check(detailOrigin.X >= tableOrigin.X + table.Bounds.Width && Math.Abs(detailOrigin.Y - tableOrigin.Y) < 2,
+                "usage keeps independent table and selected-detail panes adjacent at both window sizes");
+            Check(Named<TextBlock>("Usage selected group name").Text == "Unknown",
+                "usage resize retains the selected group rather than selecting the first sorted row");
+        });
         var compare = Named<ComboBox>("Compare by");
         compare.SelectedIndex = 2;
         await Wait(() => Controls<Grid>().Any(x => AutomationProperties.GetName(x) == "Analysis group manufacturer fixture-manufacturer"), "usage can compare manufacturer separately from route and inference provider");
