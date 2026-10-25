@@ -26,9 +26,9 @@ internal static class CrashProcess
                 using var handler = new SocketsHttpHandler { UseProxy = false, AllowAutoRedirect = false };
                 using var client = new HttpClient(handler) { BaseAddress = address, Timeout = TimeSpan.FromSeconds(15) };
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "lain-synthetic-private-management-token");
-                var store = new SqliteUsageStore(args[3]);
-                using var collector = new JournalUsageCollector(client, store, NullLogger<JournalUsageCollector>.Instance);
-                if (!await collector.PollAsync() || await store.GetCursorAsync(batch.SourceId) != batch.HighWatermark)
+                var collectorStore = new SqliteUsageStore(args[3]);
+                using var collector = new JournalUsageCollector(client, collectorStore, NullLogger<JournalUsageCollector>.Instance);
+                if (!await collector.PollAsync() || await collectorStore.GetCursorAsync(batch.SourceId) != batch.HighWatermark)
                     throw new InvalidDataException("Archive collector did not reach the expected unchanged source/cursor.");
             }
             var query = new Lain.Core.UsageQuery(batch.Events.Min(e => e.ObservedAt).AddSeconds(-1), batch.Events.Max(e => e.ObservedAt).AddSeconds(1));
