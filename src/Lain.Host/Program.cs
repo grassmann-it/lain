@@ -145,7 +145,7 @@ builder.Services.AddSingleton(sp => new ProfileApplicationService(paths, reposit
    profileId: profile.Id, qualifiedProviderRouteIds: writer.QualifiedProviderRouteIds, transportBindings: writer.TransportBindings);
   using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(30));
   await proxy.StartAsync(deadline.Token);
- }, async _ => { using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10)); await proxy.StopAsync(deadline.Token); }));
+ }, async _ => { using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10)); await proxy.StopAfterFailureAsync(deadline.Token); }));
 builder.Services.AddSingleton<SqliteUsageStore>(_ => new(Path.Combine(paths.Root, "usage.db")));
 builder.Services.AddSingleton<IUsageStore>(sp => sp.GetRequiredService<SqliteUsageStore>());
 builder.Services.AddSingleton<IUsageAnalysisStore>(sp => sp.GetRequiredService<SqliteUsageStore>());

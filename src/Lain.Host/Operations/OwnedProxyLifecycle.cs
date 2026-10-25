@@ -145,10 +145,21 @@ public sealed class OwnedProxyLifecycle(OwnStatePaths paths, SecretStore secrets
         }
         finally { gate.Release(); }
     }
-    public async Task<ProxyProcessStatus> StopAsync(CancellationToken ct = default)
+    public Task<ProxyProcessStatus> StopAsync(CancellationToken ct = default) => StopCoreAsync(false, ct);
+
+    /// <summary>Fail closed after Apply without erasing the safe diagnostic from its failed Core start.</summary>
+    public Task<ProxyProcessStatus> StopAfterFailureAsync(CancellationToken ct = default) => StopCoreAsync(true, ct);
+
+    private async Task<ProxyProcessStatus> StopCoreAsync(bool preserveStartupError, CancellationToken ct)
     {
         await gate.WaitAsync(ct);
-        try { await StopOwnedProcessAsync(); startupError = null; admissionRecoveryRequired = false; return Status; }
+        try
+        {
+            await StopOwnedProcessAsync();
+            if (!preserveStartupError) startupError = null;
+            admissionRecoveryRequired = false;
+            return Status;
+        }
         finally { gate.Release(); }
     }
     public async Task<ProxyProcessStatus> RestartAsync(CancellationToken ct = default)

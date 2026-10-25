@@ -9,6 +9,34 @@ var root = Path.Combine(Path.GetTempPath(), "lain-profile-application-" + Guid.N
 var checks = 0;
 try
 {
+    // The real lifecycle rejects qualification before touching a process or port.
+    // Exercise Apply's fail-closed cleanup, where an ordinary Stop used to hide
+    // the original safe startup diagnostic from subsequent status reads.
+    var failedPaths = new OwnStatePaths(Path.Combine(root, "startup-diagnostic"));
+    var failedRepository = new ConfigurationRepository(failedPaths);
+    var failedConfiguration = failedRepository.Update(0, state => state with
+    {
+        Accounts = [new("one", "One", "commandcode", true, "api-key", "unverified")],
+        Routes = [new("first", "first", "model-1", "commandcode", ["one"])],
+        Profiles = [new("profile", "Profile", ["first"], "first")]
+    });
+    await using (var failedProxy = new OwnedProxyLifecycle(failedPaths, new SecretStore(failedPaths), new("unused", "unused")))
+    {
+        var failedApplication = new ProfileApplicationService(failedPaths, failedRepository, new ModelsService(failedRepository),
+            failedProxy.DrainAndStopAsync,
+            async (_, _, ct) => { await failedProxy.StartAsync(ct); },
+            async ct => { await failedProxy.StopAfterFailureAsync(ct); });
+        await RejectAsync(() => failedApplication.ApplyAsync("profile", failedConfiguration.Revision));
+        Check(failedApplication.Status.State == "recovery-required" && failedRepository.Snapshot.AppliedRevision == 0 &&
+            failedProxy.Status is { State: "stopped", Ready: false, Pid: null },
+            "failed Core startup leaves Apply closed and unapplied");
+        Check(failedProxy.Status.Error == "Proxy backend qualification has not passed.",
+            "Apply cleanup preserves the original safe Core startup failure");
+        Reject(failedApplication.RequireCompletedRuntime);
+        await failedProxy.StopAsync();
+        Check(failedProxy.Status.Error is null, "an explicit stop still clears an obsolete startup diagnostic");
+    }
+
     // Upgrade compatibility: the previously applied runtime is independent of pending saves.
     var legacyPaths = new OwnStatePaths(Path.Combine(root, "legacy"));
     var legacyRepository = new ConfigurationRepository(legacyPaths);
