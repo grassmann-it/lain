@@ -18,7 +18,6 @@ import shutil
 import stat
 import tempfile
 
-DESKTOP_SOURCE = '67fb26ce83f0f4aa2627fdde57d95ab8a1574355'
 ITEMS = ['cli', 'host', 'proxy', 'notices/go', 'core-source-provenance',
          'core-refresh.py', 'core-refresh.json', 'host-cli-core-provenance',
          'host-cli-core-refresh.py', 'host-cli-core-refresh.json',
@@ -140,6 +139,8 @@ def stage(args):
     need(config.get('format') == 1 and config.get('kind') == 'host-cli-core-refresh-inputs', 'Unsupported input manifest')
     commit = config['sourceCommit']
     need(re.fullmatch('[0-9a-f]{40}', commit), 'Full frozen source commit required')
+    desktop_source = config['desktopSourceCommit']
+    need(re.fullmatch('[0-9a-f]{40}', desktop_source), 'Full retained Desktop source required')
     common = load_helper(config['helperSha256'])
     base = safe(config['base']['path'])
     core = safe(config['corePackage']['path'])
@@ -153,7 +154,7 @@ def stage(args):
     common.protected(before, core_files)
     common.check_core(core)
     info = common.load(base / 'build-info.json')
-    need(info['componentSourceCommits']['desktop'] == DESKTOP_SOURCE, 'Unexpected retained Desktop source')
+    need(info['componentSourceCommits']['desktop'] == desktop_source, 'Unexpected retained Desktop source')
     for component, project in (('cli', 'Lain.Cli'), ('host', 'Lain.Host'), ('desktop', 'Lain.Desktop')):
         need(info['components'][component]['assemblySha256'] == sha(base / component / (project + '.dll')),
              'Baseline component provenance differs')
@@ -191,7 +192,7 @@ def stage(args):
         need(out != source and out not in source.parents and source not in out.parents, 'Output overlaps input or checkout')
     plan = {'operation': 'stage', 'apply': args.apply, 'sourceCommit': commit,
             'inputManifestSha256': args.inputs_sha256, 'baseManifestSha256': before['SHA256SUMS'],
-            'coreManifestSha256': core_files['SHA256SUMS'], 'desktopSourceCommit': DESKTOP_SOURCE,
+            'coreManifestSha256': core_files['SHA256SUMS'], 'desktopSourceCommit': desktop_source,
             'desktopUnchanged': True, 'output': str(out), 'serviceRestartRequired': True}
     print(json.dumps(plan, indent=2))
     if not args.apply:
@@ -202,7 +203,11 @@ def stage(args):
         shutil.rmtree(out / name)
         shutil.copytree(publish, out / name)
     provenance = out / 'host-cli-core-provenance'
-    need(not provenance.exists(), 'Nested previous combined-refresh provenance is unsupported')
+    # Previous provenance is an owned delta item. Its exact bytes remain bound by
+    # baseFiles and the separately pinned baseline; retain only this delivery's
+    # source evidence here so repeated refreshes do not accumulate nesting.
+    if provenance.exists():
+        shutil.rmtree(provenance)
     provenance.mkdir()
     shutil.copyfile(inputs_path, provenance / 'inputs.json')
     shutil.copyfile(report_path, provenance / 'publish-qualification.json')
@@ -232,7 +237,7 @@ def stage(args):
     common.write(out / 'host-cli-core-refresh.json', {'format': 1, 'kind': 'host-cli-core-only',
                  'items': ITEMS, 'baseFiles': before, 'helperSha256': config['helperSha256'],
                  'installerSha256': sha(out / 'host-cli-core-refresh.py'), 'sourceCommit': commit,
-                 'desktopSourceCommit': DESKTOP_SOURCE, 'inputManifestSha256': args.inputs_sha256})
+                 'desktopSourceCommit': desktop_source, 'inputManifestSha256': args.inputs_sha256})
     common.manifest(out)
     target = common.verify(out)
     protected(before, target)
@@ -330,9 +335,11 @@ def install(args):
     protected(base, target)
     common.check_core(package)
     old, new = common.load(app / 'build-info.json'), common.load(package / 'build-info.json')
+    desktop_source = delta['desktopSourceCommit']
+    need(re.fullmatch('[0-9a-f]{40}', desktop_source), 'Full retained Desktop source required')
     for key in ('componentSourceCommits', 'componentInformationalVersions', 'components'):
         need(old[key]['desktop'] == new[key]['desktop'], 'Desktop provenance changed')
-    need(new['componentSourceCommits']['desktop'] == DESKTOP_SOURCE and subset(base, 'desktop') == subset(target, 'desktop'), 'Desktop source/bytes changed')
+    need(new['componentSourceCommits']['desktop'] == desktop_source and subset(base, 'desktop') == subset(target, 'desktop'), 'Desktop source/bytes changed')
     need(home in backup.parents and app not in backup.parents and backup != app and not backup.exists(), 'Fresh backup must be inside home and outside app')
     need(package != app and app not in package.parents and package not in app.parents and backup not in package.parents and package not in backup.parents, 'Package overlaps installation or backup')
     print(json.dumps({'operation': 'install', 'apply': args.apply, 'baseManifestSha256': base['SHA256SUMS'],

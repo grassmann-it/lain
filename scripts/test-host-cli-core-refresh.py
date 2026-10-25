@@ -66,7 +66,7 @@ class RefreshFixtures(unittest.TestCase):
         (self.base / 'notices/app.txt').write_text('retained app notice')
         (self.base / 'packaging').mkdir()
         (self.base / 'packaging/launcher').write_text('retained external integration asset')
-        info = {'componentSourceCommits': {'cli': 'b' * 40, 'host': 'b' * 40, 'desktop': api.DESKTOP_SOURCE},
+        info = {'componentSourceCommits': {'cli': 'b' * 40, 'host': 'b' * 40, 'desktop': 'c' * 40},
                 'componentInformationalVersions': {'cli': 'old', 'host': 'old', 'desktop': 'retained'}, 'components': components}
         common.write(self.base / 'build-info.json', info)
         common.write(self.base / 'gate-status.json', {'releaseQualified': True})
@@ -84,7 +84,7 @@ class RefreshFixtures(unittest.TestCase):
         self.config = {'format': 1, 'kind': 'host-cli-core-refresh-inputs', 'sourceCommit': self.commit,
                        'base': {'path': str(self.base), 'manifestSha256': api.sha(self.base / 'SHA256SUMS')},
                        'corePackage': {'path': str(self.core), 'manifestSha256': api.sha(self.core / 'SHA256SUMS')},
-                       'helperSha256': api.sha(ROOT / 'scripts/core-refresh.py'), 'output': str(self.out),
+                       'desktopSourceCommit': 'c' * 40, 'helperSha256': api.sha(ROOT / 'scripts/core-refresh.py'), 'output': str(self.out),
                        'sourceEvidence': {'path': str(self.evidence), 'files': common.inventory(self.evidence)}}
         for name, project in (('cli', 'Cli'), ('host', 'Host')):
             folder = self.root / ('fresh-' + name)
@@ -140,6 +140,28 @@ class RefreshFixtures(unittest.TestCase):
         self.stage()
         self.assertEqual(common.inventory(self.root), before)
         self.assertFalse(self.out.exists())
+
+    def test_repeated_delivery_replaces_owned_previous_provenance(self):
+        for package in (self.base, self.core):
+            previous = package / 'host-cli-core-provenance'
+            previous.mkdir()
+            (previous / 'old-evidence').write_text('retained in exact baseline input')
+        common.manifest(self.base)
+        self.before = common.verify(self.base)
+        common.write(self.core / 'core-refresh.json', {'kind': 'schema2-core-only', 'baseFiles': self.before})
+        common.manifest(self.core)
+        self.config['base']['manifestSha256'] = api.sha(self.base / 'SHA256SUMS')
+        self.config['corePackage']['manifestSha256'] = api.sha(self.core / 'SHA256SUMS')
+        report = common.load(self.report)
+        report.update(baseManifestSha256=self.config['base']['manifestSha256'],
+                      coreManifestSha256=self.config['corePackage']['manifestSha256'])
+        common.write(self.report, report)
+        self.config['qualification']['sha256'] = api.sha(self.report)
+        self.save_inputs()
+        self.stage()
+        self.assertFalse((self.out / 'host-cli-core-provenance/old-evidence').exists())
+        self.assertTrue((self.out / 'host-cli-core-provenance/inputs.json').is_file())
+        self.assertTrue((self.base / 'host-cli-core-provenance/old-evidence').is_file())
 
     def test_stage_protects_desktop_and_notices(self):
         self.stage()
