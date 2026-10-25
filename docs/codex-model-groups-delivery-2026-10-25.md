@@ -175,8 +175,10 @@ Saved group changes never silently replace the normal Codex configuration.
 
 ## Desktop cleanup requested after delivery
 
-Removed 133 old clean worktrees through Git's worktree command and 78 known,
-ignored `bin`/`obj` build-output directories. Every removed checkout's commit is
+Removed 133 old clean worktrees through Git's worktree command and 110 known,
+ignored `bin`/`obj` build-output directories plus two Python caches. This includes
+the generated outputs of the fifteen preserved worktrees; those are deleted,
+not retained in the cache alongside the source edits. Every removed checkout's commit is
 still referenced; the one detached review was first given an archive branch.
 Fifteen worktrees with uncommitted work were moved atomically to
 `~/.cache/lain-worktrees/preserved-desktop-20261025/`; their HEAD, index and Git
@@ -192,4 +194,6 @@ allocated-size estimate was 19.082 GiB; that is not a claim about exclusive
 physical space reclaimed. No build directory was moved elsewhere to hide it.
 Private evidence: `desktop-cleanup-execution-r1.json`,
 `desktop-cleanup-completed-r1.md` (all old/new paths), and
-`desktop-preserved-content-manifest-r1.json` (explicitly post-move hashes).
+`desktop-preserved-content-manifest-r1.json` (explicitly post-move hashes), and
+`desktop-cleanup-build-addendum-r1.json` (source/index unchanged after deleting
+the preserved worktrees' generated outputs).
