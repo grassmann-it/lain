@@ -1,0 +1,72 @@
+{
+  "result": "PASS",
+  "clientSourceCommit": "67fb26ce83f0f4aa2627fdde57d95ab8a1574355",
+  "retainedHostSourceCommit": "5f41fba5324e1cf1e58e2229d6c35c90ba800846",
+  "installedManifestSha256": "9bd1dafcfcb6d681d52c6ab29aa21f09dc454ff1882dcd44c260323ed08c15ce",
+  "componentAssemblies": {
+    "desktop": {
+      "Lain.Desktop.dll": "6275b3930c499c7dd84f9fdaa59bdc5ff93a77bc19cd9a0c163da15255d24a80",
+      "Lain.Client.dll": "723a553be1a4315558a93419e92735357e3b95d55e02d40210aa252f6204c610",
+      "Lain.Core.dll": "fb9ab7e6569d7ca070457c53abdce15708f3fed0fa0b7889eae953c6823b4e9f"
+    },
+    "cli": {
+      "Lain.Cli.dll": "55eb2b2f2df444ce76151d638df620963e4a354504958ca0c35d1ecacc5241da",
+      "Lain.Client.dll": "723a553be1a4315558a93419e92735357e3b95d55e02d40210aa252f6204c610",
+      "Lain.Core.dll": "fb9ab7e6569d7ca070457c53abdce15708f3fed0fa0b7889eae953c6823b4e9f"
+    }
+  },
+  "checks": {
+    "sharedPolicy": 38,
+    "cliSource": 234,
+    "nativeHierarchyFinal": 94,
+    "nativeMonitorFinal": 29,
+    "frozenFiveHourEarlier": 48,
+    "accountSnapshotsEarlier": 35,
+    "exactPackageHierarchy": 94,
+    "exactPackageCli": 234,
+    "updaterFilesystem": 14,
+    "platformProcessProof": 12
+  },
+  "installedState": {
+    "proxyReady": true,
+    "revision": 35,
+    "appliedRevision": 35,
+    "activeProfileId": "lain",
+    "runtimeMode": "gateway"
+  },
+  "accountCount": 15,
+  "profileCount": 3,
+  "accountModelProfileSnapshotsUnchanged": true,
+  "hostCoreProcessesUnchanged": true,
+  "installedUsage": {
+    "accounts": 15,
+    "compactLines": 47,
+    "fullLines": 209,
+    "quotaAccountsBeforeMissing": true,
+    "zeroAdditionalCreditsHidden": true,
+    "fullContainsOriginalCreditRows": true,
+    "jsonFullByteIdentical": true
+  },
+  "deletedBuildBytes": 1084944123,
+  "limits": {
+    "publicReleaseQualified": false,
+    "newProviderQualification": false,
+    "newInferenceRequests": 0
+  },
+  "originalFailuresRetained": [
+    "legacy Expander-only test selector returned zero Border cards",
+    "expanded Monitor bars had narrower width before alignment fix",
+    "pre-write installer refused unreadable systemd identity",
+    "read-only platform proof rejected native direct get-property scalar responses before parser fix"
+  ],
+  "evidenceSha256": {
+    "nativeHierarchy": "8c525663a8e9f24a354d4f297c0883269230764a72829132b825e4564fbbfa66",
+    "nativeMonitor": "642bb761ba11843216fad19e9f1f820b8875ac3376bc0b324abef2ae0ec2872e",
+    "exactUi": "e8e051d5fdf031af08584b3ead4a525a1a9b6eabd262cb230a8b4c5f03ba777b",
+    "exactCli": "99c15f3973aeba91b0f3d1fbd62a8d952d384dbd9bb6598b8e418122bf6a98cc",
+    "installedAfter": "8057246a86652aa046099c40e10bb90ab75dee75709e78ef271d331072cf1572",
+    "install": "f628b08e99abdf5fa966029256d1a67d6d4d19fe7d619e147645c2dea905db3d",
+    "guard": "f66f259b9c5e6d0f8152709887a817094a4a16610d9b8a313912a9fade747229",
+    "cleanup": "fbcfb30d2fde387dd339a830a55d7874fcb83c77ee0f325ec8389edfb9959316"
+  }
+}
