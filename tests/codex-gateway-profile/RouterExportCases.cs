@@ -115,6 +115,11 @@ internal static class RouterExportCases
             Reject(() => CollectionRouterCompiler.CompileForExport(state, "host-work", mismatched with { QualifiedProviderRouteIds = new HashSet<string>() }, catalog), "A Free route without qualified catalog transport and enforcement cannot create executable proof");
             var relabeled = state with { Routes = state.Routes.Select(route => route.Id == "free" ? route with { Policy = new("configured") } : route).ToArray() };
             Reject(() => Proof(relabeled), "A Free router cannot strengthen a configured alias merely by relabeling its group");
+            state = repository.Update(state.Revision, _ => relabeled);
+            using var manualOnly = JsonDocument.Parse(Export(false).Catalog);
+            Check(!manualOnly.RootElement.TryGetProperty("lain_model_picker", out _) &&
+                manualOnly.RootElement.GetProperty("models").EnumerateArray().Any(model => model.GetProperty("slug").GetString() == "alias-configured"),
+                "An enabled router with no eligible candidates never blocks ordinary model export when the picker opt-in is off");
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
         return assertions;
