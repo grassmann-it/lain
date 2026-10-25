@@ -58,12 +58,12 @@ internal static class RouterCommandChecks
         var staleArgs = saveArgs.ToArray(); staleArgs[12] = "6";
         var stale = await Run(staleArgs);
         Require(stale.Exit == 5 && stale.Error.Contains("revision_conflict") && calls.SequenceEqual(new[] { "GET /api/v1/configuration" }), "stale edit cannot mutate a newer snapshot"); checks++;
-        var invalidArgs = new List<string[]>
-        {
+        List<string[]> invalidArgs =
+        [
             ["routers", "delete", "security"],
             ["routers", "delete", "invalid/id", "--revision", "7"],
             ["routers", "list", "--revision", "7"]
-        };
+        ];
         foreach (var (index, value) in new[] { (2, "bad/id"), (4, ""), (6, "IT Sec"), (6, "provider:OpenAI"), (6, "collection:"), (6, "policy:free"), (8, "Work name"), (10, "cheapest"), (12, "-1") })
         {
             var invalid = saveArgs.ToArray(); invalid[index] = value; invalidArgs.Add(invalid);
