@@ -88,6 +88,8 @@ def legacy_state(state):
     need(cfg.get('Revision') == 11 and cfg.get('AppliedRevision') == 2 and cfg.get('RuntimeMode', 'gateway') == 'gateway', 'Expected unchanged legacy desired11/applied2 Gateway')
     need(not any(a.get('Credentials') or a.get('Capabilities') or a.get('Generation', 0) for a in cfg['Accounts']), 'Modern accounts block old Host')
     need(not any((state / 'credentials' / name).exists() for name in ('generations', 'operations', 'quarantine', 'recovery', 'material')), 'Modern credential metadata blocks old Host')
+    need(not (state / 'proxy/events.jsonl').is_dir(),
+         'Segmented journal: run lain-proxy journal-export-flat to a NEW destination first; preserve the full current archive. All remaining legacy rollback gates still apply.')
     source = (state / 'proxy/events.jsonl.source').read_text()
     journal = (state / 'proxy/events.jsonl').read_text()
     need(not journal or journal.endswith('\n'), 'Journal has an incomplete final record')

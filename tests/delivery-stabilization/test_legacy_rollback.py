@@ -103,6 +103,17 @@ class LegacyRollback(unittest.TestCase):
                 rebase(('auth-dir: auth\n' + extra).encode(), self.state,
                        self.root / 'staged', True)
 
+    def test_segmented_journal_requires_explicit_export_before_source_read(self):
+        journal = self.state / 'proxy/events.jsonl'
+        journal.unlink(); journal.mkdir()
+        fixture.write(journal, 'manifest.json', {"version": 1})
+        (self.state / 'proxy/events.jsonl.source').unlink()
+        before = fixture.upgrade.fingerprint(self.state)
+        legacy_state = runpy.run_path(str(HELPER))['legacy_state']
+        with self.assertRaisesRegex(ValueError, 'journal-export-flat to a NEW destination'):
+            legacy_state(self.state)
+        self.assertEqual(before, fixture.upgrade.fingerprint(self.state))
+
     def test_reject_new_event(self):
         with (self.state / 'proxy/events.jsonl').open('a') as stream: stream.write('{}\n')
         self.invoke('prepare', self.root / 'rejected')

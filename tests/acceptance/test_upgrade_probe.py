@@ -125,6 +125,20 @@ class UpgradeProbeTests(unittest.TestCase):
         self.assertEqual(before, probe.fingerprint(self.state))
         self.assertEqual(self.transitions, [])
 
+    def test_segmented_journal_rejected_before_services_or_state_mutation(self):
+        journal = self.state / 'proxy/events.jsonl'
+        journal.unlink(); journal.mkdir()
+        self.write(journal / 'manifest.json', '{"version":1}')
+        (self.state / 'proxy/events.jsonl.source').unlink()
+        before = probe.fingerprint(self.state)
+        for execute in (False, True):
+            self.options.execute = execute
+            with patch.object(probe, 'own_service', side_effect=AssertionError('service access before format guard')):
+                with self.assertRaisesRegex(probe.GuardError, 'journal-export-flat to a NEW destination'):
+                    probe.upgrade(self.options)
+            self.assertEqual(before, probe.fingerprint(self.state))
+            self.assertEqual(self.transitions, [])
+
     def test_ready_accepts_healthy_pending_configuration(self):
         api = self.real_api(self.state)
         pending = {'proxyReady': True, 'revision': 4, 'appliedRevision': 2, 'state': 'pending-application'}

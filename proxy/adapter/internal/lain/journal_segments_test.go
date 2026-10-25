@@ -531,3 +531,56 @@ func TestJournalSegmentsRecoverTornActiveIntoExactFlatPrefix(t *testing.T) {
 		t.Fatal("interior corruption recovered")
 	}
 }
+
+func TestJournalSegmentsSparseCheckpointsWithinSealedAndActiveSegments(t *testing.T) {
+	original, archive, _ := archiveFixture(t, 620, 1<<20)
+	flat := mustOpenArchive(t, original)
+	j := mustOpenArchive(t, archive)
+	if len(j.segments.sealed) != 1 || len(j.segments.sealed[0].offsets) < 3 {
+		t.Fatal("fixture did not cross two sparse strides inside a real segment")
+	}
+	for _, after := range []int64{0, 254, 255, 256, 257, 510, 511, 512, 513, 619, 620} {
+		want, _ := flat.Read(after, 17)
+		got, err := j.Read(after, 17)
+		if err != nil || !reflect.DeepEqual(want, got) {
+			t.Fatal(after, err, want, got)
+		}
+	}
+	for n := 0; n < 530; n++ {
+		if err := j.Append(Event{Kind: "post-copy"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(j.segments.active.offsets) < 3 {
+		t.Fatal("active sparse stride was not exercised")
+	}
+	for _, after := range []int64{620 + 254, 620 + 255, 620 + 256, 620 + 257, 620 + 510, 620 + 511, 620 + 512} {
+		page, err := j.Read(after, 13)
+		if err != nil || page.NextCursor != after+13 || page.Events[0].Sequence != after+1 {
+			t.Fatal(after, page, err)
+		}
+	}
+	// Force a real rotation after those active checkpoints without changing
+	// the manifest cap or manufacturing fake concatenated archive files.
+	if err := j.Append(Event{Kind: strings.Repeat("z", 900000)}); err != nil {
+		t.Fatal(err)
+	}
+	if len(j.segments.sealed) < 2 {
+		t.Fatal("large event failed to rotate prior checkpointed active")
+	}
+	before := archiveReadAll(t, j, 193)
+	j.Close()
+	j = mustOpenArchive(t, archive)
+	if !reflect.DeepEqual(before, archiveReadAll(t, j, 257)) {
+		t.Fatal("sparse segmented restart replay changed")
+	}
+	j.Close()
+	report, err := ExportJournalFlat(archive, filepath.Join(t.TempDir(), "rollback"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	exported := mustOpenArchive(t, report.Destination)
+	if !reflect.DeepEqual(before, archiveReadAll(t, exported, 257)) {
+		t.Fatal("sparse segmented flat rollback changed")
+	}
+}

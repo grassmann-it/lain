@@ -1,6 +1,8 @@
 using Lain.Host.Usage;
 using Microsoft.Data.Sqlite;
 using System.Text.Json;
+using System.Net.Http.Headers;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Lain.Usage.Tests;
 
@@ -8,6 +10,32 @@ internal static class CrashProcess
 {
     public static async Task Main(string[] args)
     {
+        if (args.Length == 4 && args[0] == "--collect-journal")
+        {
+            if (!Uri.TryCreate(args[1], UriKind.Absolute, out var address) || address.Scheme != "http" ||
+                address.Host != "127.0.0.1" || address.Port is 18417 or 18418 || address.AbsolutePath != "/" ||
+                address.Query.Length != 0 || address.Fragment.Length != 0 || address.UserInfo.Length != 0)
+                throw new ArgumentException("Archive collector fixture requires its explicit private HTTP loopback URL.");
+            var batch = JsonSerializer.Deserialize<JournalBatch>(await File.ReadAllTextAsync(args[2]), JournalJson.Options)!;
+            if (batch.Events.Length == 0 || batch.Events.Length != batch.HighWatermark || batch.NextCursor != batch.HighWatermark ||
+                !Path.IsPathFullyQualified(args[3])) throw new ArgumentException("Complete synthetic envelope and absolute database path required.");
+            for (var replay = 0; replay < 3; replay++)
+            {
+                // Use the actual Host collector, reopening its real SQLite store
+                // and resuming the durable per-source cursor every time.
+                using var handler = new SocketsHttpHandler { UseProxy = false, AllowAutoRedirect = false };
+                using var client = new HttpClient(handler) { BaseAddress = address, Timeout = TimeSpan.FromSeconds(15) };
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "lain-synthetic-private-management-token");
+                var store = new SqliteUsageStore(args[3]);
+                using var collector = new JournalUsageCollector(client, store, NullLogger<JournalUsageCollector>.Instance);
+                if (!await collector.PollAsync() || await store.GetCursorAsync(batch.SourceId) != batch.HighWatermark)
+                    throw new InvalidDataException("Archive collector did not reach the expected unchanged source/cursor.");
+            }
+            var query = new Lain.Core.UsageQuery(batch.Events.Min(e => e.ObservedAt).AddSeconds(-1), batch.Events.Max(e => e.ObservedAt).AddSeconds(1));
+            var summary = await new SqliteUsageStore(args[3]).SummaryAsync(query);
+            Console.WriteLine(JsonSerializer.Serialize(new { summary.Cursor, summary.Complete, summary.Totals, Days = summary.Daily.Length, Accounts = summary.Accounts.Length, Models = summary.Models.Length }, JournalJson.Options));
+            return;
+        }
         if (args.Length == 3 && args[0] == "--ingest-journal")
         {
             var batch = JsonSerializer.Deserialize<JournalBatch>(await File.ReadAllTextAsync(args[1]), JournalJson.Options)!;

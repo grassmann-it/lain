@@ -79,3 +79,13 @@ cursor. The background worker marks failed collection as incomplete and retries.
 Only sanitized event metadata, token counts, timing, stable identities and
 deduplication digests are stored. No credential content, HTTP headers, prompts or
 response bodies are persisted by this store.
+
+
+The archive qualification also uses the fresh test assembly's
+`--collect-journal http://127.0.0.1:<private-port>/ envelope.json /absolute/fixture.db`
+mode. It calls the actual Host `JournalUsageCollector` against the synthetic Core
+with the fixture-only management token, reopening/polling SQLite three times.
+Only explicit private loopback URLs are accepted; product ports are refused.
+`tests/core-stabilization/archive_gate.py` coordinates source/cursor/sum comparisons,
+real segment files, sparse strides, matching full-tree fixture restore and flat
+export. Supplying this mode is not evidence that the gate was executed.

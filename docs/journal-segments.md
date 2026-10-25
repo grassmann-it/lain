@@ -124,7 +124,11 @@ Alle seit der ersten Konvertierung hinzugekommenen und rotierten Events sind
 enthalten. Die ursprüngliche alte Flatdatei allein wäre inzwischen veraltet und
 ist **kein** zulässiger Rollbackstand. Export bestätigt nur Journalformatkompatibilität;
 weitere Host-, Schema-, Credential- und Eventfeldgrenzen des Zielreleases gelten
-unverändert. Insbesondere wird `prepare-legacy-rollback.py` nicht umgangen.
+unverändert. Insbesondere wird `prepare-legacy-rollback.py` nicht umgangen. Es verweigert ein
+Segmentverzeichnis vor dem Lesen der Flat-Source-Datei mit der konkreten
+Exportanweisung. Das bestehende `upgrade_probe.py`-Verfahren ist weiterhin nur für
+Flatjournale qualifiziert und verweigert Segmentverzeichnisse bereits vor jeder
+Serviceaktion; seine weiteren Prüfungen werden nicht aufgeweicht.
 
 ## Nachweise und Grenzen
 
@@ -140,6 +144,16 @@ als ausgeführt.
 `tests/core-stabilization/archive_gate.py` prüft zusätzlich die echte Core-CLI und
 HTTP-Replay-/Append-/Restartpfade in einem privaten Netzwerknamespace mit ausschließlich
 Loopback. Der Bericht bindet Core-Binary, Sourcemanifest und Harness per SHA-256.
-Die Probe verwendet eigene synthetische Stateverzeichnisse. Sie behauptet weder
-die Ausführung eines alten Binaries noch eine wiederholte vollständige Host-/SQLite-
-Backupabnahme; diese bestehenden Qualifikationen bleiben getrennte Belege.
+Die Probe verwendet eigene synthetische Stateverzeichnisse und mehr als 600
+Records, einschließlich 600 Records in einem tatsächlich getrennten Segment.
+Ein erweitertes `tests/usage/CrashProcess.cs --collect-journal` ruft den echten
+`JournalUsageCollector` mit `SqliteUsageStore` auf: bestehender Flatcursor,
+Sparsearchiv, viele kleine Archive, weitere Events, abrupter Restart, frischer
+Collector und Flat-Export müssen dieselben Source-/Cursor-/Summen liefern.
+Die bestehenden Whole-tree-Backup-/Restorefunktionen werden für das gestoppte
+synthetische Verzeichnis einschließlich Archiv und echter Collector-SQLite
+wiederverwendet; die wiederhergestellte Kombination wird erneut eingelesen.
+Core-, Sourcemanifest-, Helper- und sämtliche Sealed-Hashes werden gebunden.
+Die Probe behauptet weder die Ausführung eines alten Binaries noch eine neue
+vollständige Host-Lifecycle-/Credential-Restoreabnahme. Diese bestehenden
+Qualifikationen bleiben getrennte Belege.

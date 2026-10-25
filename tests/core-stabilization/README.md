@@ -144,6 +144,10 @@ After fresh verified preparation/build, the serialized integrator slot can run:
 unshare -Urn sh -c 'ip link set lo up && exec python3 \
   tests/core-stabilization/archive_gate.py \
   --core /absolute/private-build/lain-proxy \
+  --core-sha256 <frozen-core-sha256> \
+  --source-manifest-sha256 <frozen-source-manifest-sha256> \
+  --usage-helper /absolute/private-build/Lain.Usage.Tests.dll \
+  --dotnet /absolute/dotnet \
   --report /absolute/private-evidence/journal-archives.json'
 ```
 

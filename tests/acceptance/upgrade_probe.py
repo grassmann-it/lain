@@ -331,6 +331,8 @@ def lock_state(state):
 
 def upgrade(options):
     state, package = options.state_home, options.package
+    require(not (state / 'proxy/events.jsonl').is_dir(),
+            'This upgrade workflow is qualified for flat journals only. Before using it, stop the owned runtime separately, run lain-proxy journal-export-flat to a NEW destination, preserve the full current archive, and explicitly review/adopt the matching flat state. No service action was taken by this workflow; other upgrade gates still apply.')
     package_info = package_check(package, options.package_manifest_sha256, options.core_sha256, options.allow_unreleased)
     require((state / 'app/.lain-package').is_file(), 'Existing installation is not an owned lain package.')
     require(state.stat().st_uid == os.getuid() and stat.S_IMODE(state.stat().st_mode) & 0o077 == 0,
