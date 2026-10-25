@@ -9,6 +9,12 @@ binary pins and boundaries. The preparation handoff below records its earlier
 stage; it does not supersede that delivery. Remaining maintenance is in
 [N08](../../docs/next-work-packages-2026-10-25.md).
 
+N08 source now provides a [versioned status/receipt and explicit rebind](maintenance.md)
+for the same qualified 0.164.0 bytes. Its [qualification note](../../docs/next-qualification/n08-codex.md)
+separates temporary Python fixtures from the remaining installed/native check.
+It neither introduces another Rust version nor upgrades an installed dispatcher
+automatically.
+
 This is a small patch over the public `rust-v0.164.0` source, not a selection wrapper.
 It changes the real TUI `/model` path in `tui/src/chatwidget/model_popups.rs`.
 The original installed Codex binary and configuration are not changed by preparation or build.

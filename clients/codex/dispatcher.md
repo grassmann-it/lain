@@ -6,6 +6,10 @@ pins and scope are in the [delivery report](../../docs/codex-model-groups-delive
 For a new installation, source preparation or a successful build alone still
 does not install the launcher; installation remains an explicit separate step.
 
+N08 adds [qualified maintenance and the Profiles receipt contract](maintenance.md).
+Its schema-3 source/fixtures are prepared; this worker has not migrated the
+existing schema-2 user installation. Status detects that migration requirement.
+
 The Linux-only launcher replaces the existing `~/.local/bin/codex` **symlink**.
 It recognizes interactive root invocations such as `codex --profile lain`,
 `codex --profile=lain`, `codex -p lain`, `codex -p=lain` and `codex -plain`.
@@ -29,6 +33,11 @@ The launcher adds no flags, including `--no-daemon`. Native isolation tests must
 pass `--no-daemon` explicitly. An existing shared daemon can otherwise run its
 own previously started executable. No config/profile contents are interpreted
 by the dispatcher.
+
+The schema-3 wrapper also checks the selected executable's pinned SHA before
+exec. Changed/missing selected bytes exit 126 with maintenance guidance; they
+are never accepted as an unknown upstream update. See the maintenance contract
+for the streaming-hash overhead and the unchanged concurrency boundary.
 
 ## CLI boundary
 
@@ -74,6 +83,8 @@ cannot recursively resolve through the Codex entry symlink.
 The installer is `scripts/clients/install_codex_dispatch.py`. By default it
 prints a JSON dry run and writes nothing. It requires explicit SHA256 pins for
 both the current original binary and the already built patched executable.
+The pair must also occur in `qualified-releases.json` with the implemented
+`codex-0.164.0` grammar; explicit hashes alone do not qualify an unknown version.
 Read and review the hashes from the actual qualified artifacts; no placeholder
 hash or source-archive hash is accepted in place of the binary hash.
 
@@ -100,7 +111,9 @@ The manifest records device/inode identities for the original, wrapper, previous
 entry and installed entry. Symlink target and identity are inspected before and
 directly after replacement; the original fallback hash and identity are checked
 before and after installation/rollback. An observed mismatch stops the operation.
-Existing state is never overwritten, including old audit state after rollback.
+Fresh install refuses existing state, including old audit state after rollback.
+Explicit maintenance can replace only its managed files while preserving a
+verified prior snapshot and all earlier audit transactions.
 Once state has been published, failures retain it for recovery. A failure after
 entry replacement can leave the launcher installed; inspect the entry and
 manifest before taking another action. No automatic rollback is attempted after
@@ -111,12 +124,15 @@ python3 scripts/clients/install_codex_dispatch.py uninstall
 python3 scripts/clients/install_codex_dispatch.py --apply uninstall
 ```
 
-Uninstall checks that the Codex entry still points directly to this installation's
+Initially uninstall restores the exact saved symlink target. After an explicit
+rebind it restores that consciously selected Original's canonical path, keeping
+the initial symlink backup for audit. Uninstall checks that the Codex entry still points directly to this installation's
 wrapper with its recorded device/inode identity, and that the wrapper's own
 identity and SHA256 match. Recreating an entry or wrapper with the same target or
 bytes is detected through identity checks. A detected replacement/modification
 aborts. The saved symlink must still resolve to the pinned original fallback;
-an upstream `current` change also aborts. These are checks around the mutation,
+an upstream `current` change before rebind can therefore abort the initial
+rollback. These are checks around the mutation,
 not a guarantee against a concurrent foreign installer. The state directory is
 retained for inspection/recovery; archive it explicitly before a fresh installation.
 
@@ -131,9 +147,10 @@ automatic second mutation. Independently inspect the entry, wrapper/original
 identities and fallback hash immediately before and after a live operation.
 
 Upstream `current` updates after installation do not change the dispatcher's
-embedded original release path. Uninstall before changing/requalifying the
-upstream release. In the supported quiet setup, rollback restores the saved
-original symlink target verbatim.
+embedded original release path. Status reports that drift. A conscious rebind
+can choose only a qualified original; unknown upstream versions first need a
+separate qualification and parser review. Neither status nor rebind rebuilds
+or silently adopts an upstream release.
 
 ## Offline verification
 
