@@ -101,9 +101,6 @@ await using var googleCli = new GoogleGcloudLoginAdapter(Path.Combine(paths.Root
  return handle?.Owner == "google-gcloud" ? secrets.Generations.Read(accountId, handle).PrivateJson : null;
 });
 var googleCliRetention = new GoogleGcloudProfileRetention(repository, secrets, paths, googleCli);
-await mutations.WaitAsync();
-try { await googleCliRetention.StartupReconcileAsync(); }
-finally { mutations.Release(); }
 async Task CloseDetachedGoogle(AccountDto account, CancellationToken ct)
 {
  // Grant retirement must observe a stable published selection, including recovery.
@@ -181,6 +178,13 @@ var quota = new QuotaService(quotaSource, quotaSource,
    new GroqEnterpriseUsageReader(providerHttp))]);
 builder.Services.AddSingleton(quota);
 var app = builder.Build();
+var loginOperations = app.Services.GetRequiredService<LoginOperationService>();
+// Retire removed targets before general profile retention examines their owners.
+// Provider cleanup owns its bounded pass; never hold the publication gate here.
+await loginOperations.CleanupRemovedRecoveriesAsync();
+await mutations.WaitAsync();
+try { await googleCliRetention.StartupReconcileAsync(); }
+finally { mutations.Release(); }
 var application = app.Services.GetRequiredService<ProfileApplicationService>();
 app.Use(async (context, next) => {
  if (context.Connection.RemoteIpAddress is not { } remote || !IPAddress.IsLoopback(remote)) { context.Response.StatusCode = 403; return; }
@@ -349,14 +353,22 @@ if (GatewayMode() && restoreReady && File.Exists(Path.Combine(paths.Root, "activ
 var quotaLoop = referenceWithoutQuota ? Task.CompletedTask : quota.RunAsync(shutdown.Token);
 var credentialRefreshLoop = referenceWithoutQuota ? Task.CompletedTask :
  app.Services.GetRequiredService<OwnedCredentialRefreshService>().RunAsync(shutdown.Token);
+var recoveryCleanupLoop = RunRecoveryCleanupAsync(loginOperations, shutdown.Token);
 try { await app.RunAsync(); }
 finally
 {
  shutdown.Cancel();
- try { await Task.WhenAll(quotaLoop, credentialRefreshLoop); } catch (OperationCanceledException) { }
+ try { await Task.WhenAll(quotaLoop, credentialRefreshLoop, recoveryCleanupLoop); } catch (OperationCanceledException) { }
  await proxy.DisposeAsync();
  foreach (var login in cloudLogins) login.Dispose();
  providerHttp.Dispose();
+}
+
+static async Task RunRecoveryCleanupAsync(LoginOperationService operations, CancellationToken ct)
+{
+ using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
+ while (await timer.WaitForNextTickAsync(ct))
+  await operations.CleanupRemovedRecoveriesAsync(ct);
 }
 
 static UsageQuery ParseQuery(HttpRequest request)
