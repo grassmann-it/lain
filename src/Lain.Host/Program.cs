@@ -13,6 +13,7 @@ using Lain.Host.Inspector;
 using Lain.Host.Models;
 using Lain.Host.Operations;
 using Lain.Host.Providers;
+using Lain.Host.Providers.Xai;
 using Lain.Host.Quota;
 using Lain.Host.Usage;
 
@@ -158,6 +159,8 @@ builder.Services.AddSingleton<JournalUsageCollector>(sp => {
 builder.Services.AddHostedService(sp => sp.GetRequiredService<JournalUsageCollector>());
 builder.Services.AddInspector(managementToken, coreAddress: new Uri($"http://127.0.0.1:{paths.GatewayPort}/"), shouldCollect: CollectCore);
 var providerHttp = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(20) };
+builder.Services.AddSingleton(sp => new XaiKeyMetadataService(repository, secrets,
+ sp.GetRequiredService<AccountService>(), providerHttp, mutations));
 using var quotaCoreHttp = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false })
  { BaseAddress = new Uri($"http://127.0.0.1:{paths.GatewayPort}/"), Timeout = TimeSpan.FromSeconds(10) };
 quotaCoreHttp.DefaultRequestHeaders.Authorization = new("Bearer", managementToken);
@@ -248,6 +251,7 @@ app.MapPut(Api.Prefix + "/runtime-mode", async (RuntimeModeRequest request, Canc
  return Status();
 });
 app.MapGet(Api.Prefix + "/connection-methods", (string? provider, ConnectionMethodCatalog methods) => methods.Snapshot(provider));
+app.MapXaiKeyMetadata();
 app.MapPost(Api.Prefix + "/accounts/connect", (RevisionRequest<ConnectCredentialRequest> request, AccountService accounts, ConnectionMethodCatalog methods) =>
  methods.Connect(request.Revision, request.Value, accounts, monitorAccess, repository));
 app.MapPost(Api.Prefix + "/accounts/{id}/models", (string id, RevisionRequest<AttachAccountModelsRequest> request, AccountService accounts) => {
