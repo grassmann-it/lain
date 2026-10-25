@@ -81,8 +81,12 @@ internal sealed class Gates(IClassicDesktopStyleApplicationLifetime lifetime)
             window.Show(); using var native = new NativeInput(); input = native;
             try
             {
-                await Wait(() => All<Button>().Any(c => Label(c) == "Models"));
-                input.Focus(window); input.Click(Find<Button>(page)); await Task.Delay(140);
+                await Wait(() => fixture.StatusCalls > 0 && FindOrNull<Button>("Open account details for Personal Codex") is not null
+                    && FindOrNull<Button>(page) is { Bounds.Width: > 20, Bounds.Height: > 10 });
+                window.UpdateLayout(); await Task.Delay(100);
+                input.Focus(window); input.Click(Find<Button>(page));
+                await Wait(() => page == "Models" ? FindOrNull<Button>("Edit model access gpt-lain-01") is not null
+                    : FindOrNull<Button>("Select profile Daily") is not null || FindOrNull<Button>("Edit selection") is not null);
                 if (page == "Models") await Model(); else await Profile();
                 Check(fixture.ApplyCalls == 0 && fixture.ExportCalls == 0, "editor flow sends no Apply or client export");
                 Check(fixture.Unexpected.Count == 0, "all requests remain in the synthetic fixture allowlist");
@@ -114,6 +118,13 @@ internal sealed class Gates(IClassicDesktopStyleApplicationLifetime lifetime)
         var spending = Find<ComboBox>("Spending policy");
         await TabTo(spending); input.Key(0xff54, 0xffe9); input.Key(0xff50); input.Key(0xff54); input.Key(0xff0d); await Task.Delay(120);
         Check(!Find<CheckBox>("Allow paid fallback routes").IsEnabled, "native free-only selection disables paid-fallback permission");
+        // The disabled checkbox cannot receive Tab focus. Its following real
+        // action scrolls the same production editor far enough to expose it.
+        await TabTo(Find<Button>("Check spending policy")); await Task.Delay(60);
+        var disabledPermission = Find<CheckBox>("Allow paid fallback routes");
+        var disabledPoint = disabledPermission.TranslatePoint(default, window);
+        Check(disabledPoint is { } dp && dp.Y >= 0 && dp.Y + disabledPermission.Bounds.Height <= window.Bounds.Height,
+            "disabled paid-fallback control is fully inside the native viewport for measurement");
         MeasureTheme("model-free-only-disabled"); Capture("disabled");
         await TabTo(spending); input.Key(0xff54, 0xffe9); input.Key(0xff50); input.Key(0xff0d); await Task.Delay(100);
         var paid = Find<CheckBox>("Allow paid fallback routes");

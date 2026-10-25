@@ -1,0 +1,221 @@
+{
+  "status": "open-eight-product-focus-failures",
+  "runs": [
+    {
+      "name": "source-run",
+      "manifest": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/source-run/evidence.json",
+      "manifestSha256": "1d39a191dfa21fb52cb16b4b5ad4a11fd5c30b98f6bfa86cfce3655e649f4878",
+      "sourceCommit": "9307ea1dd1691cf1d80f55726e5e2f00897e6b19",
+      "harnessProgramSha256": "7dde88c762dd7a69b750b53eee829cd602f6fb23f0e3f7b211402194c1c0718d",
+      "productionAssemblies": [
+        {
+          "path": "/home/tomka/Desktop/lain-native-final-gates/tests/native-final-gates/bin/Debug/net10.0/linux-x64/Lain.Desktop.dll",
+          "sha256": "d4d9266f7ad90b5b4a9279adc39c98df7e1854e6cf9eb6f31419526f9141cbf1"
+        },
+        {
+          "path": "/home/tomka/Desktop/lain-native-final-gates/tests/native-final-gates/bin/Debug/net10.0/linux-x64/Lain.Client.dll",
+          "sha256": "0586c81eafe97e7f5d459a4c2c2108742a139501afa116610f2083b7f82d2732"
+        },
+        {
+          "path": "/home/tomka/Desktop/lain-native-final-gates/tests/native-final-gates/bin/Debug/net10.0/linux-x64/Lain.Core.dll",
+          "sha256": "8ae291eb1fdedce27fcb90d4b9188592fbf92fa609a8ba16ba572086fd5d2471"
+        }
+      ],
+      "harnessAssembly": {
+        "path": "/home/tomka/Desktop/lain-native-final-gates/tests/native-final-gates/bin/Debug/net10.0/linux-x64/NativeFinalGates.dll",
+        "sha256": "a72e73f6838b34ea3026b136b81a7279d9abc0cbd08178fa8106d9d7b03a68ad"
+      },
+      "cases": [
+        {
+          "name": "native-models-editor-1120x780",
+          "result": "error",
+          "error": "InvalidOperationException",
+          "message": "Missing mounted control Edit model access gpt-lain-01"
+        },
+        {
+          "name": "native-models-editor-800x560",
+          "result": "error",
+          "error": "InvalidOperationException",
+          "message": "Missing mounted control Edit model access gpt-lain-01"
+        },
+        {
+          "name": "native-profiles-editor-1120x780",
+          "result": "fail",
+          "assertions": 108
+        },
+        {
+          "name": "native-profiles-editor-800x560",
+          "result": "fail",
+          "assertions": 108
+        }
+      ],
+      "passedAssertions": 212,
+      "failedAssertions": [
+        {
+          "caseName": "native-profiles-editor-1120x780",
+          "condition": false,
+          "claim": "profile Cancel restores focus to the current stable editor trigger"
+        },
+        {
+          "caseName": "native-profiles-editor-1120x780",
+          "condition": false,
+          "claim": "profile Save restores focus to the current stable editor trigger"
+        },
+        {
+          "caseName": "native-profiles-editor-800x560",
+          "condition": false,
+          "claim": "profile Cancel restores focus to the current stable editor trigger"
+        },
+        {
+          "caseName": "native-profiles-editor-800x560",
+          "condition": false,
+          "claim": "profile Save restores focus to the current stable editor trigger"
+        }
+      ],
+      "focusAfterAction": [
+        {
+          "caseName": "native-profiles-editor-1120x780",
+          "phase": "profile Cancel",
+          "control": "<none>",
+          "type": null
+        },
+        {
+          "caseName": "native-profiles-editor-1120x780",
+          "phase": "profile Save",
+          "control": "<none>",
+          "type": null
+        },
+        {
+          "caseName": "native-profiles-editor-800x560",
+          "phase": "profile Cancel",
+          "control": "<none>",
+          "type": null
+        },
+        {
+          "caseName": "native-profiles-editor-800x560",
+          "phase": "profile Save",
+          "control": "<none>",
+          "type": null
+        }
+      ],
+      "themeSamples": 206,
+      "disabledThemeSamples": 0
+    },
+    {
+      "name": "models-r2",
+      "manifest": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/models-r2/evidence.json",
+      "manifestSha256": "4eedd664da8541fde5aadb2bea91a2e4cc3965eb77fcc5e2944b72ffe6ed4f10",
+      "sourceCommit": "9307ea1dd1691cf1d80f55726e5e2f00897e6b19",
+      "harnessProgramSha256": "b2f75fb0191fcab56c2d29a248b4ee87f3f50a41504ac5fb9c605a5ea9f926a5",
+      "productionAssemblies": [
+        {
+          "path": "/home/tomka/Desktop/lain-native-final-gates/tests/native-final-gates/bin/Debug/net10.0/linux-x64/Lain.Desktop.dll",
+          "sha256": "d4d9266f7ad90b5b4a9279adc39c98df7e1854e6cf9eb6f31419526f9141cbf1"
+        },
+        {
+          "path": "/home/tomka/Desktop/lain-native-final-gates/tests/native-final-gates/bin/Debug/net10.0/linux-x64/Lain.Client.dll",
+          "sha256": "0586c81eafe97e7f5d459a4c2c2108742a139501afa116610f2083b7f82d2732"
+        },
+        {
+          "path": "/home/tomka/Desktop/lain-native-final-gates/tests/native-final-gates/bin/Debug/net10.0/linux-x64/Lain.Core.dll",
+          "sha256": "8ae291eb1fdedce27fcb90d4b9188592fbf92fa609a8ba16ba572086fd5d2471"
+        }
+      ],
+      "harnessAssembly": {
+        "path": "/home/tomka/Desktop/lain-native-final-gates/tests/native-final-gates/bin/Debug/net10.0/linux-x64/NativeFinalGates.dll",
+        "sha256": "14aec7d0ec1f3ccf4bceded6c0d2c3b80a3aa9b3a1d2b3d470b91acf08b17d3d"
+      },
+      "cases": [
+        {
+          "name": "native-models-editor-1120x780",
+          "result": "fail",
+          "assertions": 32
+        },
+        {
+          "name": "native-models-editor-800x560",
+          "result": "fail",
+          "assertions": 32
+        }
+      ],
+      "passedAssertions": 60,
+      "failedAssertions": [
+        {
+          "caseName": "native-models-editor-1120x780",
+          "condition": false,
+          "claim": "model Cancel restores focus to the current stable editor trigger"
+        },
+        {
+          "caseName": "native-models-editor-1120x780",
+          "condition": false,
+          "claim": "model Save restores focus to the current stable editor trigger"
+        },
+        {
+          "caseName": "native-models-editor-800x560",
+          "condition": false,
+          "claim": "model Cancel restores focus to the current stable editor trigger"
+        },
+        {
+          "caseName": "native-models-editor-800x560",
+          "condition": false,
+          "claim": "model Save restores focus to the current stable editor trigger"
+        }
+      ],
+      "focusAfterAction": [
+        {
+          "caseName": "native-models-editor-1120x780",
+          "phase": "model Cancel",
+          "control": "<none>",
+          "type": null
+        },
+        {
+          "caseName": "native-models-editor-1120x780",
+          "phase": "model Save",
+          "control": "<none>",
+          "type": null
+        },
+        {
+          "caseName": "native-models-editor-800x560",
+          "phase": "model Cancel",
+          "control": "<none>",
+          "type": null
+        },
+        {
+          "caseName": "native-models-editor-800x560",
+          "phase": "model Save",
+          "control": "<none>",
+          "type": null
+        }
+      ],
+      "themeSamples": 170,
+      "disabledThemeSamples": 0
+    }
+  ],
+  "personallyViewedPngs": [
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/source-run/native-models-editor-1120x780-failure-x11.png",
+      "sha256": "7d66e58ad475adcd8077626b757872f5f51cf43879622a1876a9a84a1972af9d",
+      "finding": "Initial native navigation fired before layout; image remains Accounts. Harness readiness corrected; not a model product failure."
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/source-run/native-profiles-editor-800x560-editor-x11.png",
+      "sha256": "3ed109faf2bb8a46541df4097ef710495f331dff031ef9b2adf538aade04ae1e",
+      "finding": "Native name focus visible; full editor scrolls, nested fallback list retains its scroll after physical traversal."
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/source-run/native-profiles-editor-1120x780-saved-x11.png",
+      "sha256": "1386f48a442e685be691b83e7f70b8bd74e7c96190c6de11e61bf87dda64dd43",
+      "finding": "Saved profile p1 and unchanged active Workspace2 visibly distinct; Edit selection has no restored focus."
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/models-r2/native-models-editor-800x560-disabled-x11.png",
+      "sha256": "27634b02889bab546f06d6b9f7a74cc6ec1eef384d994c43cf2f9ba0791f8657",
+      "finding": "Free-only selected, but disabled paid caption is below viewport. Insufficient disabled visual/contrast evidence."
+    },
+    {
+      "path": "/home/tomka/.cache/lain-qualification-20261024/native-final-gates/models-r2/native-models-editor-1120x780-editor-x11.png",
+      "sha256": "70e036db7df987eaa27aa3a58663ea6cafcba9a8a64f50a4332ca79217f5cf70",
+      "finding": "Two-column native editor with visible focused name, suggestions/provenance, account binding and explicit fallback controls; lower controls reached by native traversal."
+    }
+  ],
+  "scope": "Four native editor cases across two sizes, historical first two model attempts are harness errors. No provider calls or real Host. Disabled contrast still not measured; next harness version positions it using real Tab."
+}

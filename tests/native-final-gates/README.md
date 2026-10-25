@@ -1,8 +1,10 @@
 # Targeted native editor gates
 
 Source base `e48bc118a5ecd2ada80648370ed2b8ef102fd01e`. Independent harness; no
-production code or existing test is changed. Current status: **not built/not run**.
-Only the coordinator may allocate the serial build/runtime slot.
+production code or existing test is changed. The first qualification on integrated
+source `9307ea1` is complete with **eight open product focus-return failures**;
+see `review.md` and `evidence-summary.json`. Only the coordinator may allocate the
+serial build/runtime slot. Subsequent source changes need their own binary run.
 
 Four cases cover Models/Profiles at 1120×780 and 800×560. Real XTEST pointer input
 opens the page; all editor traversal, expansion, typing, Save and Cancel use real
