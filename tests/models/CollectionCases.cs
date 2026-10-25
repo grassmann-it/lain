@@ -71,7 +71,7 @@ internal static class CollectionCases
             state = repository.Update(state.Revision, configuration => configuration with
                 { Routes = configuration.Routes.Where(route => route.Id != "route-b").ToArray() });
             Check(state.Collections!.Single(collection => collection.Id == "security").RouteIds.SequenceEqual(new[] { "route-a" }) &&
-                state.Collections.Single(collection => collection.Id == "free").RouteIds.Length == 0,
+                state.Collections!.Single(collection => collection.Id == "free").RouteIds.Length == 0,
                 "repository prunes removed routes atomically across every collection");
             Throws<ArgumentException>(() => repository.Update(state.Revision, configuration => configuration with
                 { Collections = [new("unknown", "Unknown", ["never-existed"])] }));

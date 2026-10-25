@@ -81,6 +81,7 @@ internal static class RouterCases
         var configuration = new ConfigurationDto(1, 0, [account], [route], [new("codex-profile", "Fixture", [route.Id])], CollectionRouters:[router]);
         foreach (var kind in new[] { "codex-owned", "codex-access-snapshot" })
         {
+            configuration = configuration with { Accounts = [account with { CredentialKind = kind }] };
             secrets.WriteAccount(account.Id, JsonSerializer.Serialize(new { kind, accessToken = "synthetic-access-token", ownedAuthFile = "fixture.json" }));
             var transport = new ProxyConfigurationWriter(paths, secrets).Describe(configuration);
             if (transport.QualifiedProviderRouteIds.Count != 0 || transport.TransportBindings[route.Id].UpstreamProtocol != "responses")
