@@ -207,6 +207,18 @@ def inner():
                groups[3]["router_model"] is None, "second custom collection was changed")
         expect(sum(model["slug"] == "package-auto" for model in catalog["models"]) == 1, "router virtual model missing/duplicated")
         expect(sum(model["slug"] == "package-account-auto" for model in catalog["models"]) == 1, "account router virtual model missing/duplicated")
+        labels = {}
+        for suffix in ("a", "b"):
+            model = next(model for model in catalog["models"] if model["slug"] == "package-model-" + suffix)
+            labels[suffix] = model["display_name"]
+            expect("Package synthetic " + suffix in labels[suffix] and "fixture" in labels[suffix].lower(),
+                   "real model display label lost readable account/provider distinction")
+        expect(labels["a"] != labels["b"], "same upstream model has indistinguishable account labels")
+        account_model = next(model for model in catalog["models"] if model["slug"] == "package-account-auto")
+        expect("Package synthetic a" in account_model["display_name"] and "fixture" in account_model["display_name"].lower(),
+               "account autorouter display label lost readable account/provider distinction")
+        report["accountModelDisplayNames"] = {"package-model-a": labels["a"], "package-model-b": labels["b"],
+                                             "package-account-auto": account_model["display_name"]}
         report["exportedGroups"] = groups
         save(root / "host-export.json", exported)
         installed = cli("profiles", "install-codex", "package-profile", "--model-groups", "--revision", str(config["revision"]), "--json")
@@ -263,7 +275,7 @@ def inner():
         expect(len(final_pins["pins"]) == 2 and len(new_pins) == 1 and new_pins[0]["routeId"] == "package-route-a" and
                new_pins[0]["accountId"] == account_ids["a"], "account router pin has the wrong scope")
         report.update(collectionRouterUsage=usage, collectionRouterAttempts=attempts,
-                      usage=account_usage, attempts=all_attempts, finalPins=final_pins)
+                      usage=account_usage, attempts=all_attempts, providerRequests=rows, finalPins=final_pins)
         before = api("/configuration")
         try:
             api("/collection-routers/package-router", "PUT", {"revision": stale_revision, "value": router})
