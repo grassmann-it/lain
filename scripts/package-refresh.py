@@ -44,7 +44,7 @@ def load_helper(path, expected):
     path = pinned(path, expected)
     spec = importlib.util.spec_from_file_location('full_package_core_helper', path)
     common = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(common)
+    exec(compile(path.read_bytes(), str(path), 'exec'), common.__dict__)
     return common
 
 

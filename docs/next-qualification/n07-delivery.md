@@ -179,8 +179,8 @@ merged. The current operator already retains its own private failure root.
 
 ## Verification and remaining gates
 
-Executed 50 temporary-file and mocked drain/failure fixtures (16 mixed refresh,
-15 drain/failure, 19 portable binding/plan/recovery/lifecycle):
+Executed 51 temporary-file and mocked drain/failure fixtures (16 mixed refresh,
+15 drain/failure, 20 portable binding/plan/recovery/lifecycle):
 
 ```sh
 python3 scripts/test-host-cli-core-refresh.py

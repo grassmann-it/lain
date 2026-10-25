@@ -23,7 +23,8 @@ def main():
     args = parser.parse_args()
     spec = importlib.util.spec_from_file_location('portable_update', HERE / 'service-update.py')
     api = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(api)
+    source = HERE / 'service-update.py'
+    exec(compile(source.read_bytes(), str(source), 'exec'), api.__dict__)
     source, destination = api.safe(args.snapshot), api.safe(args.destination)
     api.pinned(source / 'snapshot.json', args.snapshot_manifest_sha256)
     helper = api.module(HERE / 'lain-maintenance.py', args.helper_sha256, 'pinned_recovery')

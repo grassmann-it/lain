@@ -242,6 +242,15 @@ class PortablePlanFixtures(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'qualification missing'):
             self.plan()
 
+    def test_pinned_package_helper_import_does_not_write_bytecode(self):
+        package = module('package-refresh')
+        helper = self.f.root / 'isolated-core-refresh.py'
+        shutil.copyfile(HERE / 'core-refresh.py', helper)
+        before = common.inventory(self.f.root)
+        package.load_helper(helper, api.sha(helper))
+        self.assertEqual(common.inventory(self.f.root), before)
+        self.assertFalse((self.f.root / '__pycache__').exists())
+
     def test_full_app_transaction_writefault_reverses_only_app(self):
         self.full_package()
         package = module('package-refresh')
@@ -440,6 +449,11 @@ class PortablePlanFixtures(unittest.TestCase):
         args = ['service-recovery.py', '--snapshot', str(snapshot), '--snapshot-manifest-sha256',
                 api.sha(snapshot / 'snapshot.json'), '--helper-sha256', api.sha(HERE / 'lain-maintenance.py'),
                 '--destination', str(destination)]
+        isolated = self.f.root / 'isolated-operator-source'
+        isolated.mkdir()
+        for name in ('service-update.py', 'lain-maintenance.py'):
+            shutil.copyfile(HERE / name, isolated / name)
+        recovery.HERE = isolated
         before = common.inventory(self.f.root)
         with patch('sys.argv', args), contextlib.redirect_stdout(io.StringIO()):
             recovery.main()
