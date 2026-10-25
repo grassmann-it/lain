@@ -68,3 +68,26 @@ application, schema or credential rollback is authorized by this fixture.
 `python3 tests/delivery-stabilization/test_v4_package_pins.py` uses only disposable
 synthetic package files and plan-only CLI calls. It never runs payloads, installers,
 services, UI, providers or builds and does not access installed user state.
+
+## Additional private updater guards
+
+The prepared cumulative helper additionally rejects loaded `LAIN_PROXY_PATH`
+values other than its exact own `app/proxy/lain-proxy` path or no assignment,
+any loaded `LAIN_REFERENCE_` assignment, and nonempty or unavailable
+`ExecStartPre`, `ExecStartPost`, `ExecStop` or `ExecStopPost` metadata. Cleaning
+the updater child's environment alone does not validate a systemd service.
+The complete installed old-app package is checked again immediately before the
+installer, after the potentially long stopped snapshot and previous-app archive.
+Failed child diagnostics persist only a bounded command basename and exit code;
+arbitrary stdout/stderr and command arguments are excluded.
+
+`test_updater_guards.py` and its JSON fixture check these bounded guards from an
+explicitly hashed private source using AST-selected pure code, fake child results
+and disposable files. They never import or start the helper's full module or
+invoke actual systemd, services, installer, UI, credentials or provider operations.
+An independent reviewer must still assess the exact private helper hash.
+
+These changes do not add a drain/activity check before stopping the own service.
+Stable history/journal reads do not prove an empty admitted-request set. Root's
+controlled update slot must establish any required quiet state separately; this
+guard delta makes no uninterrupted in-flight-stream guarantee.

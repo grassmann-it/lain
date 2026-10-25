@@ -1,0 +1,25 @@
+{
+  "scope": "Synthetic loaded-unit fields only; never query systemd or execute a unit.",
+  "base": {
+    "Environment": "LAIN_HOME={STATE}",
+    "UnsetEnvironment": "",
+    "ExecStartPre": "",
+    "ExecStartPost": "",
+    "ExecStop": "",
+    "ExecStopPost": ""
+  },
+  "cases": [
+    {"name": "no-core-override", "accept": true, "replace": {}},
+    {"name": "exact-owned-core", "accept": true, "replace": {"Environment": "LAIN_HOME={STATE} LAIN_PROXY_PATH={STATE}/app/proxy/lain-proxy"}},
+    {"name": "foreign-core", "accept": false, "replace": {"Environment": "LAIN_HOME={STATE} LAIN_PROXY_PATH=/synthetic/foreign-core"}},
+    {"name": "duplicate-core", "accept": false, "replace": {"Environment": "LAIN_HOME={STATE} LAIN_PROXY_PATH={STATE}/app/proxy/lain-proxy LAIN_PROXY_PATH={STATE}/app/proxy/lain-proxy"}},
+    {"name": "reference-port", "accept": false, "replace": {"Environment": "LAIN_HOME={STATE} LAIN_REFERENCE_PORT=12345"}},
+    {"name": "reference-empty", "accept": false, "replace": {"Environment": "LAIN_HOME={STATE} LAIN_REFERENCE_UNUSED="}},
+    {"name": "start-pre", "accept": false, "replace": {"ExecStartPre": "synthetic hook"}},
+    {"name": "start-post", "accept": false, "replace": {"ExecStartPost": "synthetic hook"}},
+    {"name": "stop", "accept": false, "replace": {"ExecStop": "synthetic hook"}},
+    {"name": "stop-post", "accept": false, "replace": {"ExecStopPost": "synthetic hook"}},
+    {"name": "missing-hook-metadata", "accept": false, "replace": {}, "remove": ["ExecStopPost"]},
+    {"name": "unset-own-home", "accept": false, "replace": {"UnsetEnvironment": "LAIN_HOME"}}
+  ]
+}

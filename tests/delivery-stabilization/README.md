@@ -175,3 +175,26 @@ Historical reports without these fields do not qualify a new cumulative update.
 The new baseline parameter is required even for a repeat of a historical 793 run.
 For the controlled d720 update and preservation gates see
 [`cumulative-delivery-2026-10-25.md`](../../docs/cumulative-delivery-2026-10-25.md).
+
+### Private updater guard fixtures (no services)
+
+The private live updater is outside version control. After its independent source
+review, test an explicit source path and SHA-256 without importing its module:
+
+```sh
+python3 tests/delivery-stabilization/test_updater_guards.py \
+  --helper /absolute/reviewed-private-updater.py \
+  --helper-sha256 REVIEWED_FULL_SHA256
+```
+
+The runner parses that source and evaluates only the selected pure validator,
+`need`, `Update.run` and `Update.require_previous_app`. It supplies temporary
+files and fake subprocess/package readers; it never evaluates module top-level
+code, imports the private module or calls service/process/install/update paths.
+`fixtures/updater-unit-guards.json` defines accepted/rejected loaded environment
+and lifecycle-hook cases. Additional checks cover output-free child-error
+diagnostics, changed application bytes after an earlier check, and the AST
+placement of the final complete app pin immediately before the installer.
+Missing hook metadata is refused, not interpreted as proof of no hook. These
+checks do not establish actual systemd property output, loaded environment,
+process quiescence, snapshot consistency or successful installation.
