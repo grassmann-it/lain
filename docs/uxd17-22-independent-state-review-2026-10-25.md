@@ -304,3 +304,32 @@ genannten Befunden:
 
 Der unabhängige Bildumfang beträgt damit neun r1-PNGs. Ein korrigierter
 Folgelauf wird eigenständig zugeordnet, nicht in den ersten Lauf eingerechnet.
+
+## Gezielter nativer Folgelauf r2
+
+Manifest `native-r2/evidence.json` im oben genannten Evidenzverzeichnis:
+Commit `87e82135ad9d9648897b1c00628da91fd031b5fb`, Desktopassembly SHA-256
+`8C2713EDFF27D06DA9445A735FEB6DA11BE405F9FCFAECEF88155678369F0301`.
+Die gezielte Teilmenge hat 7/8 Fälle PASS, 199 Assertions und 24 Bilddatensätze;
+der gesamte Teilmengenlauf bleibt korrekt FAIL. Das ist noch kein Nachweis
+für die nachfolgenden Monitor-/Live-/Applystatuskorrekturen.
+
+Vier weitere PNGs wurden unabhängig geöffnet:
+
+- `native-state-model-menu-800x560-pointer-menu-x11.png` und
+  `native-state-model-menu-800x560-keyboard-menu-x11.png`: vollständige separate
+  native Popupfläche, dieselben neun Commands einschließlich tatsächlichem
+  Accountbezug. Das Popup darf über das Appfenster hinausragen und ist deshalb
+  im X11-Bild, nicht allein im Avalonia-Seitenrender, zu beurteilen.
+- `native-state-retained-model-command-800x560-blocked-edit-b.png`: der
+  erhaltene Models-A-Draft ist benannt; Continue/Discard bleiben sichtbar,
+  während der geschützte Eintritt in B erklärt wird.
+- `native-state-draft-800x560-failure.png`: gültiges Detail für gpt-lain-01 mit
+  sichtbarem Editbutton. Der fehlgeschlagene Test sucht den Inventarbutton
+  `Edit model access …`, obwohl im schmalen Detail
+  `Edit selected model access …` angezeigt wird. Die Quelle und das Bild
+  stützen einen Locatorfehler; der native Folgetest muss den real sichtbaren
+  Einstieg verwenden. Der fehlgeschlagene Fall wird nicht als PASS umgedeutet.
+
+Zusammen sind jetzt 13 konkrete PNGs aus zwei getrennten Läufen gesichtet.
+Die native Endqualifikation bleibt noch offen.
