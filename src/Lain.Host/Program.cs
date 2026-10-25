@@ -144,7 +144,11 @@ builder.Services.AddSingleton(sp => new ProfileApplicationService(paths, reposit
   using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(30));
   await proxy.StartAsync(deadline.Token);
  }, async _ => { using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10)); await proxy.StopAfterFailureAsync(deadline.Token); },
- validateRuntime: (runtime, _) => { sp.GetRequiredService<ProxyConfigurationWriter>().Describe(runtime); }));
+ validateRuntime: (runtime, profile) => {
+  var description = sp.GetRequiredService<ProxyConfigurationWriter>().Describe(runtime);
+  RouteBindings.Compile(runtime, description.CredentialIds, description.RouteCredentials,
+   sp.GetRequiredService<ProviderCatalogRegistry>(), profile.Id, description.QualifiedProviderRouteIds, description.TransportBindings);
+ }));
 builder.Services.AddSingleton<SqliteUsageStore>(_ => new(Path.Combine(paths.Root, "usage.db")));
 builder.Services.AddSingleton<IUsageStore>(sp => sp.GetRequiredService<SqliteUsageStore>());
 builder.Services.AddSingleton<IUsageAnalysisStore>(sp => sp.GetRequiredService<SqliteUsageStore>());

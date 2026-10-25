@@ -28,9 +28,10 @@ type Route struct {
 	Selection           string            `json:"selection"`
 }
 type Bindings struct {
-	AccountDimensions map[string]*Dimensions `json:"accountDimensions,omitempty"`
-	Accounts          map[string]string      `json:"accounts"`
-	Routes            map[string]Route       `json:"routes"`
+	Routers           map[string]CollectionRouter `json:"routers,omitempty"`
+	AccountDimensions map[string]*Dimensions      `json:"accountDimensions,omitempty"`
+	Accounts          map[string]string           `json:"accounts"`
+	Routes            map[string]Route            `json:"routes"`
 }
 type selection struct {
 	Route   Route
@@ -47,17 +48,19 @@ type attempt struct {
 	captureExpires time.Time
 }
 type Integration struct {
-	Login        *LoginManager
-	Journal      *Journal
-	Bindings     Bindings
-	Inspector    *Inspector
-	Quotas       *quotaObservations
-	mu           sync.Mutex
-	active       map[string]*attempt
-	captureSlots int
-	activityMu   sync.Mutex
-	draining     bool
-	requests     int64
+	routerPins     *routerPins
+	routerPinError error
+	Login          *LoginManager
+	Journal        *Journal
+	Bindings       Bindings
+	Inspector      *Inspector
+	Quotas         *quotaObservations
+	mu             sync.Mutex
+	active         map[string]*attempt
+	captureSlots   int
+	activityMu     sync.Mutex
+	draining       bool
+	requests       int64
 }
 type dispatchError struct{ message string }
 
@@ -79,6 +82,9 @@ func closed(err error) error {
 	return &dispatchError{err.Error()}
 }
 func New(j *Journal, b Bindings) (*Integration, error) {
+	if err := validateRouters(b); err != nil {
+		return nil, err
+	}
 	seen := map[string]string{}
 	for account, credential := range b.Accounts {
 		if account == "" || credential == "" || seen[credential] != "" {
@@ -115,7 +121,11 @@ func New(j *Journal, b Bindings) (*Integration, error) {
 			}
 		}
 	}
-	return &Integration{Journal: j, Bindings: b, Inspector: newInspector(), Quotas: openQuotaObservations(j.basePath + ".quota-observations.json"), active: map[string]*attempt{}}, nil
+	integration := &Integration{Journal: j, Bindings: b, Inspector: newInspector(), Quotas: openQuotaObservations(j.basePath + ".quota-observations.json"), active: map[string]*attempt{}}
+	if len(b.Routers) > 0 {
+		integration.routerPins, integration.routerPinError = openRouterPins(j, b.Routers)
+	}
+	return integration, nil
 }
 func routeSelection(ctx context.Context) (selection, bool) {
 	if c, ok := ctx.Value("gin").(*gin.Context); ok && c != nil {
@@ -134,6 +144,9 @@ func (i *Integration) Before(ctx context.Context, a *auth.Auth, req executor.Req
 	selected, ok := routeSelection(ctx)
 	if !ok || a == nil || !selected.Allowed[a.ID] {
 		return closed(errors.New("dispatch identity is outside the selected route"))
+	}
+	if i.isRouterDispatch(ctx) && req.Model != selected.Route.Model {
+		return closed(errors.New("router dispatch differs from pinned model"))
 	}
 	if err := validateCostDispatch(ctx, selected.Route, a, req.Model); err != nil {
 		return closed(err)

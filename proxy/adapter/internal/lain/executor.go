@@ -402,7 +402,18 @@ func (t *guardedTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	if t.integration != nil && t.cohereReasoningEffort != "" {
 		t.integration.observeCohereFinalEffort(req.Context(), t.cohereReasoningEffort)
 	}
+	if t.integration != nil {
+		if err := t.integration.validateRouterFinal(req); err != nil {
+			return nil, err
+		}
+	}
 	response, err := t.next.RoundTrip(req)
+	if t.integration != nil && t.integration.isRouterDispatch(req.Context()) && err == nil && response != nil && response.StatusCode >= 300 && response.StatusCode < 400 {
+		if response.Body != nil {
+			_ = response.Body.Close()
+		}
+		return nil, closed(errors.New("router inference redirects are disabled"))
+	}
 	if err == nil {
 		boundRequestErrorResponse(response)
 	}

@@ -15,6 +15,10 @@ public static class ModelEndpoints
         app.MapGet(Api.Prefix + "/profiles", (ModelsService models) => models.Snapshot.Profiles);
         app.MapGet(Api.Prefix + "/models", (ModelsService models) => models.ConfiguredModels());
         app.MapGet(Api.Prefix + "/collections", (ModelsService models) => models.Snapshot.Collections);
+        app.MapGet(Api.Prefix + "/collection-routers", (ModelsService models) => models.Snapshot.CollectionRouters);
+        app.MapPut(Api.Prefix + "/collection-routers/{id}", (string id, RevisionRequest<CollectionRouterDto> request, ModelsService models) =>
+            Execute(() => request.Value is not null && id == request.Value.Id ? Results.Ok(models.PutCollectionRouter(request.Revision, request.Value)) : Results.BadRequest(new ApiError("invalid_router", "Path and router identity differ."))));
+        app.MapDelete(Api.Prefix + "/collection-routers/{id}", (string id, long revision, ModelsService models) => Execute(() => Results.Ok(models.DeleteCollectionRouter(revision, id))));
         app.MapGet(Api.Prefix + "/model-groups", (ModelsService models) => models.CollectionGroups());
         app.MapPut(Api.Prefix + "/collections/{id}", (string id, RevisionRequest<ModelCollectionDto> request, ModelsService models) =>
             Execute(() => request.Value is not null && id == request.Value.Id ? Results.Ok(models.PutCollection(request.Revision, request.Value)) : Results.BadRequest(new ApiError("invalid_collection", "Path and collection identity differ."))));
@@ -33,7 +37,9 @@ public static class ModelEndpoints
                 var resolved = models.ResolveForApply(id, request.Revision);
                 var description = compiler.Describe(resolved.Configuration with { Routes = resolved.Routes });
                 var compatibility = new ModelCompatibilityCatalog(registry, description.QualifiedProviderRouteIds, description.TransportBindings);
-                return Results.Ok(new CodexProfileAdapter(models, compatibility, registry).Generate(id, request.Revision, request.ExecutablePath, request.CatalogPath, compiler.InferenceBaseUrl, request.EnableLainModelPicker));
+                var bindings = RouteBindings.Compile(resolved.Configuration with { Routes = resolved.Routes }, description.CredentialIds,
+                    description.RouteCredentials, registry, id, description.QualifiedProviderRouteIds, description.TransportBindings);
+                return Results.Ok(new CodexProfileAdapter(models, compatibility, registry, bindings.Routers).Generate(id, request.Revision, request.ExecutablePath, request.CatalogPath, compiler.InferenceBaseUrl, request.EnableLainModelPicker));
             }));
     }
 

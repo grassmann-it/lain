@@ -148,7 +148,7 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 				if !ready {
 					status = 503
 				}
-				c.AbortWithStatusJSON(status, gin.H{"ready": ready, "journalHealthy": i.Journal.Health() == nil, "version": "8.0.41-lain-adapter.3"})
+				c.AbortWithStatusJSON(status, gin.H{"ready": ready, "journalHealthy": i.Journal.Health() == nil, "version": "8.0.41-lain-adapter.4", "routersReady": i.routerPinError == nil})
 			default:
 				c.AbortWithStatus(404)
 			}
@@ -171,6 +171,10 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 				if route.Visible != nil && !*route.Visible {
 					continue
 				}
+				aliases = append(aliases, alias)
+			}
+			sort.Strings(aliases)
+			for alias := range i.Bindings.Routers {
 				aliases = append(aliases, alias)
 			}
 			sort.Strings(aliases)
@@ -227,6 +231,31 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 			return
 		}
 		route, ok := i.Bindings.Routes[alias]
+		if router, isRouter := i.Bindings.Routers[alias]; isRouter {
+			authorized := false
+			authorization := c.GetHeader("Authorization")
+			if strings.HasPrefix(authorization, "Bearer ") {
+				for _, token := range inferenceTokens {
+					if token != "" && subtle.ConstantTimeCompare([]byte(strings.TrimPrefix(authorization, "Bearer ")), []byte(token)) == 1 {
+						authorized = true
+					}
+				}
+			}
+			if !authorized {
+				c.AbortWithStatus(401)
+				return
+			}
+			if path != "/v1/responses" {
+				c.AbortWithStatusJSON(400, gin.H{"error": "router supports full-history Responses only"})
+				return
+			}
+			route, err = i.routerRoute(router, alias, body, c.Request.Header, manager)
+			if err != nil {
+				c.AbortWithStatusJSON(409, gin.H{"error": gin.H{"code": "router_unavailable", "message": err.Error()}})
+				return
+			}
+			ok = true
+		}
 		if !ok {
 			c.AbortWithStatusJSON(400, gin.H{"error": "unknown model route"})
 			return

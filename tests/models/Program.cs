@@ -4,6 +4,7 @@ using Lain.Host.Models;
 using Lain.Host.Operations;
 
 await CollectionCases.RunAsync();
+RouterCases.Run();
 
 var directory = Path.Combine(Path.GetTempPath(), "lain-models-" + Guid.NewGuid().ToString("N"));
 try

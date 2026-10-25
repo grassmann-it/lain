@@ -5,7 +5,7 @@ public record AccountDto(string Id, string Name, string Provider, bool Enabled, 
     long Generation = 0, ResourceBindingDto? Binding = null, CredentialHandleDto[]? Credentials = null, AccountCapabilityDto[]? Capabilities = null);
 public record RouteDto(string Id, string Alias, string UpstreamModel, string Provider, string[] AccountIds, bool Pooled = false, bool Visible = true, bool Enabled = true, string? ProviderRouteId = null, RoutingPolicyDto? Policy = null);
 public record ProfileDto(string Id, string Name, string[] RouteIds, string? DefaultRouteId = null, RoutingPolicyDto? Policy = null);
-public record ConfigurationDto(long Revision, long AppliedRevision, AccountDto[] Accounts, RouteDto[] Routes, ProfileDto[] Profiles, string RuntimeMode = "gateway", ModelCollectionDto[]? Collections = null);
+public record ConfigurationDto(long Revision, long AppliedRevision, AccountDto[] Accounts, RouteDto[] Routes, ProfileDto[] Profiles, string RuntimeMode = "gateway", ModelCollectionDto[]? Collections = null, CollectionRouterDto[]? CollectionRouters = null);
 public record RevisionRequest<T>(long Revision, T Value);
 public record AccountMetadataDiscoveryRequest(long ExpectedGeneration);
 public record StatusDto(int ContractVersion, string Version, string State, bool ProxyReady, long Revision, long AppliedRevision, DateTimeOffset ObservedAt, string? Error = null,

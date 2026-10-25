@@ -15,6 +15,23 @@ public sealed class ModelsService(ConfigurationRepository repository, ProviderCo
     private readonly ProviderCostPolicy policy = costPolicy ?? ProviderCostPolicy.Embedded();
     public ConfigurationDto Snapshot => repository.Snapshot;
 
+    public ConfigurationDto PutCollectionRouter(long revision, CollectionRouterDto router) => repository.Update(revision, config =>
+    {
+        ArgumentNullException.ThrowIfNull(router);
+        var routers = config.CollectionRouters ?? [];
+        return config with { CollectionRouters = routers.Where(item => item.Id != router.Id).Append(router).ToArray() };
+    });
+
+    public ConfigurationDto DeleteCollectionRouter(long revision, string id) => repository.Update(revision, config =>
+    {
+        if (!(config.CollectionRouters ?? []).Any(router => router.Id == id)) throw new KeyNotFoundException("Router does not exist.");
+        return config with {
+            CollectionRouters = (config.CollectionRouters ?? []).Where(router => router.Id != id).ToArray(),
+            Collections = (config.Collections ?? []).Select(collection => collection.RouterTargetId == id
+                ? collection with { RouterTargetId = null } : collection).ToArray()
+        };
+    });
+
     public ConfigurationDto PutCollection(long revision, ModelCollectionDto collection) => repository.Update(revision, config =>
     {
         ArgumentNullException.ThrowIfNull(collection);

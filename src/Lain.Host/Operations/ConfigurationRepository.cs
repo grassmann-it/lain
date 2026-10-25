@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Lain.Core;
+using Lain.Host.Models;
 
 namespace Lain.Host.Operations;
 
@@ -76,7 +77,9 @@ public sealed class ConfigurationRepository
         Profiles = value.Profiles.Select(x => x with { RouteIds = x.RouteIds.ToArray(), Policy = ClonePolicy(x.Policy) }).ToArray(),
         Collections = (value.Collections ?? []).Select(collection => collection is null
             ? throw new ArgumentException("Invalid collection.")
-            : collection with { RouteIds = collection.RouteIds?.ToArray()! }).ToArray()
+            : collection with { RouteIds = collection.RouteIds?.ToArray()! }).ToArray(),
+        CollectionRouters = (value.CollectionRouters ?? []).Select(router => router is null
+            ? throw new ArgumentException("Invalid collection router.") : router with { }).ToArray()
     };
     private static RoutingPolicyDto? ClonePolicy(RoutingPolicyDto? policy) => policy is null ? null : policy with { FallbackRouteIds = policy.FallbackRouteIds?.ToArray() };
 
@@ -96,8 +99,8 @@ public sealed class ConfigurationRepository
             if (collection.RouteIds is null || collection.RouteIds.Distinct(StringComparer.Ordinal).Count() != collection.RouteIds.Length)
                 throw new ArgumentException("Collection route IDs must be distinct.");
             if (collection.RouteIds.Any(id => !routeIds.Contains(id))) throw new ArgumentException("Collection references an unknown route.");
-            if (collection.RouterTargetId is not null) throw new ArgumentException("Collection routing is not yet qualified.");
         }
+        CollectionRouterCompiler.Validate(value);
     }
 
     private static string ReadInitialMode(OwnStatePaths paths)

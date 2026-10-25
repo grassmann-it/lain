@@ -23,6 +23,17 @@ type compatibilityPolicy struct {
 	mimoBridge, glyph, beam bool
 }
 
+func compatibilityPolicyForRoute(route Route, responses bool) compatibilityPolicy {
+	p := compatibilityPolicy{model: route.Model}
+	if route.UpstreamProtocol != "openai" {
+		return p
+	}
+	p.mimoBridge = responses && route.Provider == "xiaomi-mimo" && (route.Model == "mimo-v2.6-pro" || route.Model == "mimo-v2.6-flash")
+	p.glyph = route.Provider == "commandcode" && route.Model == "stealth/glyph-cluster:free"
+	p.beam = route.Provider == "commandcode" && route.Model == "reflection/beam:free"
+	return p
+}
+
 type compatibilityError struct{ code, category, message string }
 
 func (e *compatibilityError) Error() string       { return e.code + ": " + e.message }

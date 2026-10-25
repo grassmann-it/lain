@@ -106,7 +106,7 @@ public sealed class ProfileApplicationService(
             .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
         return new(Api.Version, id, revision, active.Id, active.Revision, added, changed, removed, accounts,
             ["all gateway clients", "Codex exports may require regeneration"], StreamBehavior, previous is not null, selected.Profile.DefaultRouteId, previous?.Profile.DefaultRouteId,
-            previous is null || !Same(previous.Profile, selected.Profile));
+            previous is null || !Same(previous.Profile, selected.Profile) || !Same(previous.Routers ?? [], RouterSnapshot(selected.Configuration, selected.Profile)));
     }
 
     public async Task<ConfigurationDto> ApplyAsync(string id, long revision, CancellationToken ct = default)
@@ -140,7 +140,7 @@ public sealed class ProfileApplicationService(
             Volatile.Write(ref currentOperation, operation with { State = "publishing" });
             Write(OperationPath, operation with { State = "publishing" });
             await writeAndStart(runtime, selected.Profile, CancellationToken.None);
-            Write(SnapshotPath, new AppliedSnapshot(revision, operation.Id, selected.Profile, activeRoutes, runtime.Accounts));
+            Write(SnapshotPath, new AppliedSnapshot(revision, operation.Id, selected.Profile, activeRoutes, runtime.Accounts, RouterSnapshot(selected.Configuration, selected.Profile)));
             Write(ActivePath, new { id, revision, generationId = operation.Id });
             repository.MarkApplied(revision);
             Write(RuntimePath, new { valid = true, revision, profileId = id, generationId = operation.Id });
@@ -197,5 +197,9 @@ public sealed class ProfileApplicationService(
     private static void Write<T>(string path, T value) => OwnStatePaths.WritePrivate(path, JsonSerializer.Serialize(value, Json));
     private static void TryWrite<T>(string path, T value) { try { Write(path, value); } catch (Exception error) when (error is IOException or UnauthorizedAccessException) { } }
     private sealed record ApplicationOperation(string Id, string ProfileId, long Revision, string State);
-    private sealed record AppliedSnapshot(long Revision, string GenerationId, ProfileDto Profile, RouteDto[] Routes, AccountDto[] Accounts);
+    private static AppliedRouter[] RouterSnapshot(ConfigurationDto configuration, ProfileDto profile) =>
+        (configuration.CollectionRouters ?? []).Where(router => router.ProfileId == profile.Id).Select(router =>
+            new AppliedRouter(router, CollectionRouterCompiler.MemberIds(configuration, profile, router))).ToArray();
+    private sealed record AppliedRouter(CollectionRouterDto Router, string[] Members);
+    private sealed record AppliedSnapshot(long Revision, string GenerationId, ProfileDto Profile, RouteDto[] Routes, AccountDto[] Accounts, AppliedRouter[]? Routers = null);
 }

@@ -11,7 +11,8 @@ public record CodexProfileArtifacts(string ConfigFileName, string Configuration,
     ModelCompatibilityManifestDto? Compatibility = null, string? ProfileId = null, string? GenerationId = null);
 
 /// <summary>Pure export: installation is an explicit caller operation. Never reads or changes Codex's base config.</summary>
-public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibilityCatalog? compatibility = null, ProviderCatalogRegistry? registry = null)
+public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibilityCatalog? compatibility = null, ProviderCatalogRegistry? registry = null,
+    IReadOnlyDictionary<string, CoreCollectionRouter>? compiledRouters = null)
 {
     public const string VerifiedVersion = ModelCompatibilityCatalog.ClientVersion;
 
@@ -31,6 +32,10 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
             throw new ArgumentException("An internal Codex review model cannot be the profile's default model. Select a normal model.");
         var selected = selectable.SingleOrDefault(x => x.Id == resolved.Profile.DefaultRouteId) ?? selectable[0];
         var catalogRegistry = registry ?? new ProviderCatalogRegistry();
+        var routers = enableLainModelPicker ? (resolved.Configuration.CollectionRouters ?? []).Where(r => r.Enabled && r.ProfileId == profileId).ToArray() : [];
+        foreach (var router in routers)
+            if (compiledRouters is null || !compiledRouters.TryGetValue(router.Alias, out var binding) || binding.Id != router.Id || binding.ProfileId != profileId)
+                throw new ArgumentException("Router catalog export requires the current qualified profile bindings.");
         // TOML basic strings accept these JSON escapes for the paths and labels we emit.
         static string Quote(string value) => JsonSerializer.Serialize(value);
         var config = $"""
@@ -57,29 +62,32 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         // Supported model metadata can be added by a qualified catalog source later.
         var catalogDocument = new Dictionary<string, object>
         {
-            ["models"] = routes.Select((route, index) => new
-            {
-                slug = route.Alias, display_name = DisplayName(route, catalogRegistry),
-                description = Description(route, catalogRegistry),
-                default_reasoning_level = "none", supported_reasoning_levels = Array.Empty<object>(),
-                shell_type = "unified_exec", visibility = IsInternalReview(route) ? "hide" : "list", supported_in_api = true, priority = index,
-                base_instructions = "You are a coding assistant.", supports_reasoning_summaries = false,
-                support_verbosity = false, truncation_policy = new { mode = "tokens", limit = 10000 },
-                supports_search_tool = false, tool_mode = (string?)null,
-                experimental_supported_tools = Array.Empty<string>(), input_modalities = new[] { "text" }
-            }).ToArray()
+            ["models"] = routes.Select((route, index) => CatalogEntry(route.Alias, DisplayName(route, catalogRegistry),
+                Description(route, catalogRegistry), IsInternalReview(route), index))
+                .Concat(routers.Select((router, index) => CatalogEntry(router.Alias, "Automatisch", "Ordered selection for a new conversation; fixed model and account thereafter. No cross-route retry.", false, routes.Length + index))).ToArray()
         };
         // Versioned lain client extension, not a native Codex catalog field. Callers opt in
         // only for the separately qualified patched CLI and its generated --profile lain.
         if (enableLainModelPicker)
-            catalogDocument["lain_model_picker"] = new { schema_version = 1, groups = PickerGroups(resolved.Configuration, selectable, catalogRegistry) };
+            catalogDocument["lain_model_picker"] = new { schema_version = 1, groups = PickerGroups(resolved.Configuration, selectable, catalogRegistry, routers) };
         var catalog = JsonSerializer.Serialize(catalogDocument, new JsonSerializerOptions { WriteIndented = true });
         var generation = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
             profileId + "\n" + revision.ToString(CultureInfo.InvariantCulture) + "\n" + config + "\n" + catalog))).ToLowerInvariant();
         return new("lain.config.toml", config, Path.GetFileName(absoluteCatalogPath), catalog, ["--no-daemon", "--profile", "lain"], revision, manifest, profileId, generation);
     }
 
-    private static object[] PickerGroups(ConfigurationDto configuration, RouteDto[] routes, ProviderCatalogRegistry catalog)
+    private static object CatalogEntry(string slug, string label, string description, bool hidden, int priority) => new
+    {
+        slug, display_name = label, description,
+        default_reasoning_level = "none", supported_reasoning_levels = Array.Empty<object>(),
+        shell_type = "unified_exec", visibility = hidden ? "hide" : "list", supported_in_api = true, priority,
+        base_instructions = "You are a coding assistant.", supports_reasoning_summaries = false,
+        support_verbosity = false, truncation_policy = new { mode = "tokens", limit = 10000 },
+        supports_search_tool = false, tool_mode = (string?)null,
+        experimental_supported_tools = Array.Empty<string>(), input_modalities = new[] { "text" }
+    };
+
+    private object[] PickerGroups(ConfigurationDto configuration, RouteDto[] routes, ProviderCatalogRegistry catalog, CollectionRouterDto[] routers)
     {
         var byId = routes.ToDictionary(route => route.Id, StringComparer.Ordinal);
         var groups = new List<object>();
@@ -90,10 +98,12 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
             if (Encoding.UTF8.GetByteCount(id) > 256 || Encoding.UTF8.GetByteCount(name) > 1024 ||
                 string.IsNullOrWhiteSpace(name) || id.Any(char.IsControl) || name.Any(char.IsControl))
                 throw new ArgumentException("The lain Codex model picker requires single-line group IDs up to 256 UTF-8 bytes and names up to 1024 UTF-8 bytes. Stored names are preserved; shorten the affected group label before export.");
-            groups.Add(new { id, name, router_model = (string?)null, models = aliases });
+            groups.Add(new { id, name, router_model = routers.SingleOrDefault(router => router.GroupId == id)?.Alias, models = aliases });
         }
         foreach (var collection in configuration.Collections ?? [])
             Add("collection:" + collection.Id, collection.Name, collection.RouteIds);
+        if (routers.SingleOrDefault(router => router.GroupId == "policy:free") is { } freeRouter)
+            Add("policy:free", "Free", compiledRouters![freeRouter.Alias].RouteIds);
         // A derived Free view must reflect the effective execution policy AND a qualified
         // transport binding. This adapter currently has no source-qualified binding seam;
         // hypothetical evaluation under a different policy cannot make an alias free.

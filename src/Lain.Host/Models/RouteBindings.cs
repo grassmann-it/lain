@@ -24,7 +24,8 @@ public record CoreRouteDimensions(
     [property: JsonPropertyName("mode"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Mode = null,
     [property: JsonPropertyName("profileId"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ProfileId = null);
 public record CoreBindings([property: JsonPropertyName("accounts")] IReadOnlyDictionary<string, string> Accounts,
-    [property: JsonPropertyName("routes")] IReadOnlyDictionary<string, CoreRouteBinding> Routes);
+    [property: JsonPropertyName("routes")] IReadOnlyDictionary<string, CoreRouteBinding> Routes,
+    [property: JsonPropertyName("routers"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, CoreCollectionRouter>? Routers = null);
 
 public sealed class RouteBindingsWriter(OwnStatePaths paths)
 {
@@ -101,6 +102,6 @@ public static class RouteBindings
                 throw new ArgumentException("A core credential identity cannot belong to multiple logical accounts.");
             owners[entry.Value] = entry.Key;
         }
-        return new(defaults, routes);
+        return new(defaults, routes, CollectionRouterCompiler.Compile(config, profileId, routes, qualifiedProviderRouteIds));
     }
 }
