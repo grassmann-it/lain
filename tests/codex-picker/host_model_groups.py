@@ -177,7 +177,12 @@ def inner():
         config = api("/collection-routers/package-router", "PUT", {"revision": stale_revision, "value": router})
         account_router = {"id": "package-account-router", "alias": "package-account-auto", "groupId": "account:" + account_ids["a"],
                           "profileId": "package-profile", "costPolicy": "configured", "enabled": True}
-        config = api("/collection-routers/package-account-router", "PUT", {"revision": config["revision"], "value": account_router})
+        account_saved = cli("routers", "save", account_router["id"], "--alias", account_router["alias"],
+                            "--group", account_router["groupId"], "--profile", account_router["profileId"],
+                            "--cost", account_router["costPolicy"], "--revision", str(config["revision"]))
+        expect(account_saved["revision"] == config["revision"] + 1 and account_saved["id"] == account_router["id"],
+               "typed CLI account router save did not acknowledge the exact CAS write")
+        config = api("/configuration")
         report["configuration"] = config
         report["checks"].append("Host API CAS creates two synthetic accounts/routes, profile, ordered collection and router")
         routers = cli("routers", "--json")
