@@ -99,6 +99,10 @@ def inner():
     require(os.readlink("/proc/self/ns/net") != plan["outerNetNamespace"] and
             os.readlink("/proc/self/ns/pid") != plan["outerPidNamespace"], "Private network/PID namespaces absent")
     require(artifact_inventory(root / "artifacts") == plan["artifacts"], "Mounted artifacts differ from reviewed inventory")
+    # This is the namespace-owned /tmp tmpfs, never the user's X11 socket dir.
+    x11_sockets = Path("/tmp/.X11-unix")
+    x11_sockets.mkdir(mode=0o1777)
+    x11_sockets.chmod(0o1777)
     env = selected_environment(os.environ)
     runtime = root / "runtime"
     for name in ("xdg", "config", "cache", "data", "lain"):
@@ -109,7 +113,9 @@ def inner():
                GDK_BACKEND="x11", QT_QPA_PLATFORM="xcb", AVALONIA_USE_WAYLAND="0",
                AVALONIA_GLOBAL_SCALE_FACTOR=plan["scale"], LAIN_TEST_SCALE=plan["scale"],
                LAIN_TEST_COMMIT=plan["sourceCommit"], LAIN_TEST_OUTPUT="/mnt/evidence",
-               DOTNET_CLI_TELEMETRY_OPTOUT="1")
+               DOTNET_CLI_TELEMETRY_OPTOUT="1", LIBGL_ALWAYS_SOFTWARE="1",
+               GALLIUM_DRIVER="llvmpipe",
+               __EGL_VENDOR_LIBRARY_FILENAMES="/usr/share/glvnd/egl_vendor.d/50_mesa.json")
     if plan["uxdFilter"]:
         env["LAIN_UXD_ONLY"] = plan["uxdFilter"]
     if plan["nativeEditorFilter"]:
@@ -126,7 +132,7 @@ def inner():
     display_read, display_write = os.pipe()
     try:
         xvfb = subprocess.Popen(["Xvfb", "-displayfd", str(display_write), "-screen", "0", "1920x1400x24",
-                                 "-nolisten", "tcp", "-auth", str(authority)],
+                                 "-nolisten", "tcp", "-extension", "GLX", "-auth", str(authority)],
                                 env=env, stdout=logs[0], stderr=logs[0], pass_fds=(display_write,))
         os.close(display_write)
         display_write = None
