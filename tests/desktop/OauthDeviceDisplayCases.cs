@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -19,6 +21,9 @@ internal sealed partial class Scenario
         window = new MainWindow(new LainApiClient(http), Path.Combine(Output, "oauth-device-preferences.json")) { Width = 1120, Height = 780 };
         lifetime.MainWindow = window; window.Show();
         await Wait(() => HasText("ready", true), "device display fixture ready");
+        var requestedScale = double.Parse(Environment.GetEnvironmentVariable("LAIN_TEST_SCALE") ?? "1", CultureInfo.InvariantCulture);
+        Check(Math.Abs(window.RenderScaling - requestedScale) < 0.001,
+            $"device display actual RenderScaling {window.RenderScaling} matches requested {requestedScale}");
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         var type = typeof(MainWindow);
         object? Invoke(string method, params object?[] args) => type.GetMethod(method, flags)!.Invoke(window, args);
@@ -125,6 +130,9 @@ internal sealed partial class Scenario
         await File.WriteAllTextAsync(Path.Combine(Output, "oauth-device-display-evidence.json"), JsonSerializer.Serialize(new
         {
             result = "PASS", checks, screenshots, requests = fixture.Requests, opened,
+            requestedScale, renderScaling = window.RenderScaling,
+            assembly = typeof(MainWindow).Assembly.Location,
+            assemblySha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(typeof(MainWindow).Assembly.Location))).ToLowerInvariant(),
             scope = "Production MainWindow with in-memory HTTP and injected browser; synthetic public instructions only. No external browser, provider, credentials or host."
         }, new JsonSerializerOptions { WriteIndented = true }));
         window.Close(); foreach (var transport in transports) transport.Dispose();
