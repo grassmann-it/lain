@@ -1,19 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 unset DISPLAY WAYLAND_DISPLAY DBUS_SESSION_BUS_ADDRESS DBUS_STARTER_ADDRESS DBUS_STARTER_BUS_TYPE
-if [[ $# != 3 || $1 != --real-mimo-authgate || ${LAIN_MIMO_PROBE_SLOT:-0} != 1 ]]; then
-  echo 'Assigned serial slot required: --real-mimo-authgate /absolute/probe.dll /absolute/new-evidence-directory' >&2
+if [[ $# != 3 || ( $1 != --real-mimo-authgate && $1 != --startup-only ) || ${LAIN_MIMO_PROBE_SLOT:-0} != 1 ]]; then
+  echo 'Assigned serial slot required: --startup-only or --real-mimo-authgate /absolute/probe.dll /absolute/new-evidence-directory' >&2
   exit 2
 fi
+mode=$1
 probe=$(realpath -e -- "$2")
 output=$(realpath -m -- "$3")
 [[ "$output" = /* && ! -e "$output" && -f "$probe" && ${LAIN_MIMO_PROBE_HOST_SHA256:-} =~ ^[0-9a-fA-F]{64}$ ]] || exit 2
-for dependency in dotnet Xvfb xauth dbus-daemon import timeout; do
+dependencies=(dotnet Xvfb xauth dbus-daemon timeout python3)
+if [[ "$mode" == --real-mimo-authgate ]]; then dependencies+=(import); fi
+for dependency in "${dependencies[@]}"; do
   command -v "$dependency" >/dev/null || { echo "Missing dependency: $dependency" >&2; exit 2; }
 done
 umask 077
 mkdir -p -- "$output"
-runtime=$(mktemp -d /tmp/lain-mimo-real-probe-XXXXXXXX)
+private_root="$HOME/.cache/lain-build-tmp"
+mkdir -p -- "$private_root"
+runtime=$(mktemp -d "$private_root/lain-mimo-real-probe-XXXXXXXX")
 xvfb_pid=
 dbus_pid=
 probe_pid=
@@ -77,7 +82,7 @@ export XDG_CONFIG_HOME="$runtime/xdg/config" XDG_DATA_HOME="$runtime/xdg/data" X
 export LAIN_HOME="$runtime/lain" LAIN_MIMO_PROBE_RUNTIME="$runtime"
 export LAIN_TEST_XVFB_PID="$xvfb_pid" LAIN_TEST_DISPLAY="$DISPLAY"
 export GDK_BACKEND=x11 QT_QPA_PLATFORM=xcb AVALONIA_USE_WAYLAND=0
-timeout --signal=TERM --kill-after=5s 90s dotnet "$probe" --real-mimo-authgate "$output" >"$output/run.log" 2>&1 &
+timeout --signal=TERM --kill-after=5s 90s dotnet "$probe" "$mode" "$output" >"$output/run.log" 2>&1 &
 probe_pid=$!
 captured=0
 while kill -0 "$probe_pid" 2>/dev/null; do

@@ -22,6 +22,22 @@ and report the actual page/stop condition separately. Exit 0 means the bounded
 probe completed, both reads were attempted and its profile was erased; it does
 not mean authentication, valid UID, plan entitlement or usable quota.
 
+## Startup-only mode for N03
+
+After the reviewed N03 Host build, `--startup-only` calls only production
+`OpenAsync` and immediate `CloseAsync(erase: true)`. It attempts zero connector
+API reads, login/MFA interactions or screenshots. Ordinary public-console page
+resources can still load in the browser. Fixed startup reasons and numeric
+exit/OS codes are recorded without raw browser output. The runner uses fresh
+state under `~/.cache/lain-build-tmp` with private Xvfb/D-Bus/XDG directories;
+`HOME` is unchanged. The historical failed attempt below remains unchanged and
+its underlying cause is still unknown.
+
+Use the same explicit slot/hash opt-ins below, replacing `--real-mimo-authgate`
+with `--startup-only`. Exit0 in this mode means only opened and erased; it proves
+neither authentication nor monitoring. See
+[N03 qualification](../../docs/next-qualification/n03-mimo.md) for the exact plan.
+
 ## Build handoff: assigned serial slot only
 
 `/usr/bin/chromium` was found by read-only inventory. Existing Main Host DLLs
