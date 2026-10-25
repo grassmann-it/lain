@@ -112,7 +112,7 @@ async Task TerminalStates()
     foreach (var fixture in new[] { ("{}", HttpStatusCode.Forbidden, "failed"), ("{}", HttpStatusCode.Gone, "expired"),
         ("""{"status":"denied"}""", HttpStatusCode.OK, "failed"), ("""{"status":"expired"}""", HttpStatusCode.OK, "expired"),
         ("{}", HttpStatusCode.BadGateway, "recovery-required"), ("not-json", HttpStatusCode.OK, "recovery-required"),
-        ("""{"status":"approved","token":"short"}""", HttpStatusCode.OK, "recovery-required") })
+        ("""{"status":"approved"}""", HttpStatusCode.OK, "recovery-required") })
     {
         var clock = new Clock();
         var handler = new Handler((request, _) => Task.FromResult(request.Method == HttpMethod.Post ? Initiation() : Json(fixture.Item1, fixture.Item2)));
@@ -209,6 +209,7 @@ async Task ActualLifecycle()
     imported["transports"] = new JsonArray(imported.DeepClone(), second);
     first = accounts.Connect(first.Revision, new("kilo", "manual-fixture", ["inference", "quota"], AccountId: accountId),
         new("static-key", ["inference", "quota"], new("kilo"), imported.ToJsonString()));
+    first = repository.Update(first.Revision, state => state with { Profiles = [new("profile-keep", "Keep my profile", [state.Routes.Single().Id], state.Routes.Single().Id)] });
     var oldLease = new CredentialResolver(repository, secrets).Resolve(accountId, "inference")!;
     var writer = new ProxyConfigurationWriter(paths, secrets); writer.Write(first);
     var usage = new SqliteUsageStore(Path.Combine(paths.Root, "history.sqlite"), clock);
@@ -217,7 +218,9 @@ async Task ActualLifecycle()
     await usage.IngestAsync(new("source-fixture", [item, item with { Sequence = 2, EventId = "event-usage", Kind = "usage",
         Outcome = "success", InputTokens = 1, OutputTokens = 2, TotalTokens = 3, UsageReported = true }], 2, 2));
     var query = new UsageQuery(From: clock.GetUtcNow().AddHours(-1), To: clock.GetUtcNow().AddHours(1), AccountId: accountId);
-    var history = JsonSerializer.Serialize(await usage.AttemptsAsync(query));
+    var beforeHistory = await usage.AttemptsAsync(query);
+    Check(beforeHistory.Total == 1 && beforeHistory.Items.Single().AccountId == accountId, "History fixture contains a real existing attempt");
+    var history = JsonSerializer.Serialize(beforeHistory);
     var routes = JsonSerializer.Serialize(first.Routes); var profiles = JsonSerializer.Serialize(first.Profiles);
     var handler = new Handler((request, _) => Task.FromResult(request.Method == HttpMethod.Post ? Initiation()
         : request.RequestUri!.AbsoluteUri == KiloDeviceLoginAdapter.ProfileEndpoint ? Json("""{"email":"same@example.invalid"}""") : Approval()));

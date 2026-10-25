@@ -270,7 +270,7 @@ public sealed class KiloDeviceLoginAdapter : IAccountLoginAdapter, IAsyncDisposa
     private static bool Boundary(Exception e) => e is HttpRequestException or IOException or OperationCanceledException or JsonException or ArgumentException or InvalidOperationException;
     private static string? Text(JsonElement element, string name) => element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     private static bool UserCode(string? value) => value is { Length: >= 4 and <= 64 } && value.All(c => char.IsAsciiLetterOrDigit(c) || c == '-');
-    private static bool Token(string? value) => value is { Length: >= 11 and <= 16384 } && !value.Any(c => char.IsWhiteSpace(c) || char.IsControl(c));
+    private static bool Token(string? value) => value is { Length: >= 1 and <= 16384 } && !value.Any(c => char.IsWhiteSpace(c) || char.IsControl(c));
     private static string? Email(string? value) => value is { Length: >= 3 and <= 320 } && value.Contains('@')
         && !value.Any(c => char.IsWhiteSpace(c) || char.IsControl(c)) ? value.ToLowerInvariant() : null;
     private static bool Verification(string? value) => value is { Length: <= 2048 } && Uri.TryCreate(value, UriKind.Absolute, out var uri)
