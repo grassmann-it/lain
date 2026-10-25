@@ -94,6 +94,20 @@ internal static class CloudflareDiagnosticCases
                 "optional diagnostic failure cannot replace the primary usage failure or demand a login");
         }
 
+        foreach (var failure in new IOException[] {
+            new IOException("fixture-stream-secret"),
+            new HttpIOException(HttpRequestError.ResponseEnded, "fixture-stream-secret")
+        })
+        {
+            var calls = 0;
+            using var handler = new Handler(_ => Task.FromResult(++calls == 1 ? Handler.Json(unknown)
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new BrokenReadStream(failure)) }));
+            using var adapter = new CloudflareQuotaAdapter(handler: handler, clock: new Clock(now));
+            var result = await adapter.FetchAsync(account, credential);
+            Check(handler.Calls == 2 && result.Error == unknownResult.Error && result.Support == unknownResult.Support,
+                "broken optional response streams retain the primary GraphQL reason without exposing stream errors");
+        }
+
         using (var handler = new Handler(async request => {
             var body = await request.Content!.ReadAsStringAsync();
             if (body.Contains("__type")) return Handler.Json(new { data = new { __type = new { fields = new[] { new { name = CloudflareWorkersAiReader.Dataset } } } } });
@@ -161,5 +175,10 @@ internal static class CloudflareDiagnosticCases
     {
         public Task<IReadOnlyList<AccountDto>> GetAccountsAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<AccountDto>>([account]);
         public Task<QuotaCredential?> GetCredentialAsync(string accountId, CancellationToken ct = default) => Task.FromResult<QuotaCredential?>(credential);
+    }
+
+    private sealed class BrokenReadStream(IOException failure) : MemoryStream([1])
+    {
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => throw failure;
     }
 }

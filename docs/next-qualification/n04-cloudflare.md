@@ -45,6 +45,13 @@ Worker checks: `git diff --check` only; C# fixtures **not built or executed**.
 Root's serial slot must run the focused Cloudflare suite and any required
 shared quota/UI/CLI regressions before source/runtime acceptance is claimed.
 
+Independent source review found that an optional diagnostic stream could throw
+`IOException`/`HttpIOException` and replace the primary GraphQL failure. The
+diagnostic filter now also covers I/O failures. Two fixtures interrupt the
+optional response body with those exceptions and require the original safe
+Support/Error to survive. Existing caller-cancellation propagation is retained.
+This follow-up is source-prepared only, awaiting the same serial test slot.
+
 ## Later read-only live qualification
 
 A narrow probe is technically possible using the existing saved monitoring

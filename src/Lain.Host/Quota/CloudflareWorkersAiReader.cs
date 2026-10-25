@@ -110,7 +110,8 @@ public sealed class CloudflareWorkersAiReader(CloudProviderHttp http)
             using var request = Request(token, query);
             return await http.ReadAsync(request, deadline);
         }
-        catch (Exception error) when (error is CloudProviderException or JsonException or InvalidDataException or HttpRequestException)
+        catch (Exception error) when (error is CloudProviderException or JsonException or InvalidDataException or HttpRequestException
+            || error is IOException)
         { return null; } // Failed optional diagnostics must not overwrite the original usage error.
         catch (OperationCanceledException) when (!caller.IsCancellationRequested) { return null; }
     }
