@@ -118,3 +118,29 @@ expliziten Vorgängerbaseline überein (1205 Dateien, Manifest `3ea1444b…`). D
 portablen exakten Paket-/PE-/Drainharnesses sind integriert und im engen
 Quellenreview freigegeben. Frische Gateway-/Monitorpakete, deren Laufzeit und
 eine eigene Dienstaktualisierung sind noch nicht als bestanden ausgewiesen.
+
+Fortschreibung nach der exakten Paketlane: Gateway und Monitor aus `09cb8a5`
+wurden frisch gebaut; Core blieb bytegleich `191f4f17…`. Elf exakte
+Paket-/Transaktionsfälle, der Core-Streaming-/Draintest und neun
+Host-Modellgruppenchecks bestanden. Der erste isolierte Lauf scheiterte an der
+fremden Prozesssicht; der erfolgreiche zweite Lauf verwendet zusätzlich eine
+eigene PID-Namespace und frisches `/proc`. Beide Ergebnisse bleiben erhalten.
+Keine eigene Dienstaktualisierung daraus ausgeführt.
+
+Die exakten Desktopbytes dieses Pakets bestanden Profiles mit jeweils 111 und
+N01 mit jeweils 15 Checks bei 100/125 %. Die fokussierten nativen Zustandsabläufe
+bestanden ebenfalls bei beiden Skalierungen; zwei Modellfälle bei 125 % wurden
+nach Korrektur der Popup-Positionierung im Harness gezielt wiederholt. Frühere
+Fixturefehler werden nicht als Produktpass umbenannt. Unabhängige Bildreviews
+haben die erfolgreichen Zustände geprüft; eine nicht blockierende Abweichung
+zwischen Popup-Capture und Renderbild bleibt dokumentiert.
+
+Die Quota-Matrix bei 100 % meldet **12 PASS und 3 FAIL**: Bei Monitor 640×420
+bleibt die zweispaltige Darstellung zu eng, der lange Accountbutton wird
+abgeschnitten und Quota ist im ersten Blick nicht sichtbar. Dies ist ein echter
+Produktbefund in allen drei Informationsstufen. Eine begrenzte responsive
+Korrektur läuft; die Assertions werden dafür nicht abgeschwächt. Quota bei
+125 %, tatsächliche CLI-PTY-Aufnahmen und die reale MiMo-Startprobe bleiben
+offen. Erst nach Korrektur werden neue vollständige Pakete erstellt und deren
+betroffene Gates erneut geprüft. Das `09cb8a5`-Paket wird nicht als fertige
+Lieferung installiert.
