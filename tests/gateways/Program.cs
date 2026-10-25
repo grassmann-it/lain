@@ -17,7 +17,9 @@ Check(handler.Calls == 1 && handler.Method == HttpMethod.Get && handler.Url == O
 Check(handler.Authorization == "Bearer mock-key", "current API bearer credential");
 Check(handler.AccountHeader is null, "no unrelated account identity header");
 var daily = result.Readings.Single(r => r.Unit == "requests");
-Check(daily.Used == 10 && daily.Limit == 50 && daily.Remaining == 40 && daily.ResetsAt is null, "reported counter preserved, no inferred ceiling/reset");
+Check(daily.Used == 10 && daily.Limit == 50 && daily.Remaining == 40 && daily.ResetsAt is not null
+    && daily.ResetsAt == daily.WindowEnd && daily.WindowEnd - daily.WindowStart == TimeSpan.FromDays(1),
+    "reported counter preserved with observation-bound UTC-day policy reset");
 var cap = result.Readings.Single(r => r.Source.EndsWith("key-spend-cap"));
 Check(cap.Used == 30 && cap.Limit == 100 && cap.Remaining == 70 && cap.Unit == "usd", "current key window separate from lifetime and account balance");
 Check(result.Readings.Count == 3 && result.Readings.All(r => !r.InheritAccountPool), "overlapping constraints separate, effective duplicate ignored, no shared-pool invention");

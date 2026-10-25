@@ -6,8 +6,9 @@ using Lain.Core;
 namespace Lain.Host.Quota;
 
 /// <summary>Reads the current key; never purchases credits or performs inference.</summary>
-public sealed class OpenRouterQuotaAdapter(HttpClient client) : IQuotaAdapter
+public sealed class OpenRouterQuotaAdapter(HttpClient client, TimeProvider? timeProvider = null) : IQuotaAdapter
 {
+    private readonly TimeProvider clock = timeProvider ?? TimeProvider.System;
     public const string Endpoint = "https://openrouter.ai/api/v1/key";
     public string Source => Endpoint;
     public bool Supports(string provider) => provider.Equals("openrouter", StringComparison.OrdinalIgnoreCase);
@@ -18,8 +19,11 @@ public sealed class OpenRouterQuotaAdapter(HttpClient client) : IQuotaAdapter
             throw new QuotaFetchException("OpenRouter quota requires an API key.");
         if (!IsOfficialBaseUrl(credential.BaseUrl))
             throw new QuotaFetchException("OpenRouter quota requires its official API base URL.");
+        // A read spanning UTC midnight cannot establish which day's Free counter
+        // the provider returned. Never re-anchor it to the later response time.
+        var observedAt = clock.GetUtcNow();
         using var doc = await QuotaHttp.GetAsync(client, Endpoint, credential, ct, userAgent: "lain/0.1.0");
-        var rows = Normalize(doc.RootElement);
+        var rows = Normalize(doc.RootElement, observedAt, clock.GetUtcNow());
         return new(rows, rows.Count == 0 ? "No recognized OpenRouter budgets; remaining budget unknown." : null);
     }
 
@@ -31,16 +35,29 @@ public sealed class OpenRouterQuotaAdapter(HttpClient client) : IQuotaAdapter
 
     // Official key/limits documentation, checked 2026-10-24. No tier-to-balance inference:
     // is_free_tier does not identify the purchased-credit threshold or requests left.
-    public static IReadOnlyList<QuotaReading> Normalize(JsonElement root)
+    public static IReadOnlyList<QuotaReading> Normalize(JsonElement root) => Normalize(root, DateTimeOffset.UtcNow);
+
+    public static IReadOnlyList<QuotaReading> Normalize(JsonElement root, DateTimeOffset observedAt, DateTimeOffset? receivedAt = null)
     {
         var rows = new List<QuotaReading>();
         var data = JsonFields.Object(root, "data");
         if (data.ValueKind != JsonValueKind.Object) return rows;
         var daily = JsonFields.Object(data, "free_model_daily_requests");
         if (daily.ValueKind == JsonValueKind.Object)
-            rows.Add(new(Endpoint + "#free-model-daily-requests", "requests", JsonFields.Number(daily, "used"),
-                JsonFields.Number(daily, "limit"), JsonFields.Number(daily, "remaining"),
-                InheritAccountPool: false, WindowLabel: "Free models · account · UTC day"));
+        {
+            observedAt = observedAt.ToUniversalTime();
+            var start = new DateTimeOffset(observedAt.Year, observedAt.Month, observedAt.Day, 0, 0, 0, TimeSpan.Zero);
+            var end = start.AddDays(1);
+            var currentDay = (receivedAt ?? observedAt) >= start && (receivedAt ?? observedAt) < end;
+            var freshUntil = observedAt.AddMinutes(5);
+            // Reset is derived from the documented UTC-day policy, not a provider
+            // timestamp or a wallet refill. No identity or shared pool is inferred.
+            rows.Add(new(Endpoint + "#free-model-daily-requests", "requests", currentDay ? JsonFields.Number(daily, "used") : null,
+                JsonFields.Number(daily, "limit"), currentDay ? JsonFields.Number(daily, "remaining") : null, end,
+                InheritAccountPool: false, WindowLabel: "Free models · account · UTC day",
+                WindowId: "free-model-daily-requests", MeasurementKind: "quota", Scope: "account", SourceUrl: Endpoint,
+                ObservedAt: observedAt, WindowStart: start, WindowEnd: end, FreshUntil: freshUntil < end ? freshUntil : end));
+        }
 
         var reset = JsonFields.String(data, "limit_reset");
         var usageKey = reset switch { "daily" => "usage_daily", "weekly" => "usage_weekly", "monthly" => "usage_monthly", null => "usage", _ => null };

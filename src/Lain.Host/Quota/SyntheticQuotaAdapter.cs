@@ -61,7 +61,7 @@ public sealed class SyntheticQuotaAdapter(HttpClient client) : IQuotaAdapter
             rows.Add(new(Endpoint + "#rolling-five-hour", "units", Limit: maximumRolling, Remaining: remainingRolling,
                 InheritAccountPool: false, WindowLabel: "Rolling five-hour quota (provider units)", WindowId: "rolling-five-hour",
                 MeasurementKind: "subscription", Scope: "account", SourceUrl: Endpoint,
-                NextRegenerationAt: JsonFields.Date(rolling, "nextTickAt"), NextRegenerationPercent: Percent(rolling, "tickPercent")));
+                NextRegenerationAt: JsonFields.Date(rolling, "nextTickAt"), NextRegenerationPercent: RatioPercent(rolling, "tickPercent")));
         if (hasWeekly) return rows;
 
         // Preserve the prior documented subscription contract as a fallback.
@@ -79,6 +79,10 @@ public sealed class SyntheticQuotaAdapter(HttpClient client) : IQuotaAdapter
     }
 
     private static double? Percent(JsonElement root, string name) => JsonFields.Number(root, name) is { } value && value <= 100 ? value : null;
+
+    // The rolling contract reports a ratio; planWeeklyLimit.nextRegenPercent
+    // already reports percentage points and must not pass through this conversion.
+    private static double? RatioPercent(JsonElement root, string name) => JsonFields.Number(root, name) is { } value && value <= 1 ? value * 100 : null;
 
     private static string? ExactCredits(JsonElement root, string name)
     {
