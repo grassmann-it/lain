@@ -1375,7 +1375,8 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         Check(!Controls<ComboBox>().Any(x => AutomationProperties.GetName(x) == "Request within this group"), "restarted singleton live source uses only one picker");
         fixture.InspectorEmpty = true;
         await Click("Refresh inspector");
-        await Wait(() => HasText("No observed streams yet.", true), "empty live source explains how to get an observed stream");
+        await Wait(() => HasText("No requests are currently retained.", true), "empty retention after a selected request acknowledges earlier observed requests");
+        Check(!HasText("No observed streams yet.", true), "expired selection never implies that no earlier request was observed");
         await CaptureBoth("live-source-empty");
         fixture.InspectorEmpty = false;
         await Click("Refresh inspector");

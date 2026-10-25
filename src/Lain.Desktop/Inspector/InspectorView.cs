@@ -528,7 +528,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         var selected = visible.FirstOrDefault(group => group.Key == _selectedGroup);
         var hasFilter = search.Length > 0 || _activity.SelectedIndex > 0;
         _selectionMatchesFilter = selected is not null || !hasFilter;
-        _listStatus.Text = grouped.Length == 0 ? "No observed streams yet."
+        _listStatus.Text = grouped.Length == 0 ? _selectedRequest is null ? "No observed streams yet." : "No requests are currently retained."
             : visible.Count == 0 ? "No requests match these filters. Clear the search or change activity."
             : $"{visible.Count:N0} observed groups · {_snapshot.Streams.Length:N0} streams · source bounded";
         _empty.Text = grouped.Length == 0 ? EmptyLiveExplanation
@@ -618,7 +618,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         var streams = _snapshot.Streams.Where(x => x.RequestId == _selectedRequest).ToArray();
         if (streams.Length == 0)
         {
-            _selection.Text = (_snapshot.Streams.Length == 0 ? "No observed streams yet. " : "")
+            _selection.Text = (_snapshot.Streams.Length == 0 ? "No requests are currently retained. " : "")
                 + "Selected request metadata expired · choose a current request from Observed requests. Already received output still expires.";
             ToolTip.SetTip(_selection, _selection.Text);
             _requestField.IsVisible = false; _navigation.Children.Clear(); _navigationKey = null;
