@@ -50,6 +50,21 @@ observed usage before its separate terminal fact. The narrowly corrected probes
 passed without changing Core bytes, counts, identities or unknown measurements.
 Final package publication must reproduce the exact qualified Core bytes.
 
+The first cumulative package pair, source `ae79589`, built successfully and
+reproduced that Core. The strict four-package runtime gate then rejected a new
+empty `credentials/recovery` directory created by passive startup scanning.
+[The isolated diagnostic](../tests/delivery-stabilization/startup-recovery-delta-20261025.json)
+confirms this as the only path difference and `databaseChanged: false`.
+These packages have **not** qualified for installation. Product fix `b7cbe22`
+keeps missing recovery/removal paths absent during reads, preserves link/path
+validation and creates parents only on actual writes. Independent source review
+found no major defect. The focused rerun from `c8f84b6` passed **210 assertions**
+with zero build warnings/errors; its only follow-up change unlinks synthetic
+dangling paths correctly during fixture cleanup. [The retained summary](../tests/delivery-stabilization/startup-recovery-foundation-20261025.json)
+records exact assembly/log hashes and actual CPU/memory limits. New application
+packages and a complete unchanged four-package runtime gate are still required.
+The Core is unchanged, so its prior exact-byte evidence remains separately valid.
+
 Builds and native runs use one serialized lane with CPU/memory limits. GUI
 automation uses private Xvfb and D-Bus, never the user's window or retained
 drafts. The old proxy, its queue, ordinary Codex configuration and existing

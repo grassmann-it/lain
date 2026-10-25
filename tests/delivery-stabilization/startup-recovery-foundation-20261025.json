@@ -1,0 +1,42 @@
+{
+  "sourceCommit": "c8f84b62f98d239a9e9615789d951a7870378359",
+  "productionFixCommit": "a95941f73c4ddeced3602e75e56a0771c6d444be",
+  "fixtureCleanupCommit": "c8f84b62f98d239a9e9615789d951a7870378359",
+  "productionDeltaFromFix": "",
+  "suite": "Account connect foundation",
+  "assertionsPassed": 210,
+  "buildWarnings": 0,
+  "buildErrors": 0,
+  "report": "/home/tomka/.cache/lain-qualification-20261025/foundation-readonly-c8f84b6-r2/report.json",
+  "reportSha256": "f3137a309501a7a0591bb9060a9acdb11a060a4193ade68afe1e58d09a480d7c",
+  "buildLogSha256": "09e9da5ef97397a3f12609088138246d992817ab5ca110ffd5fe21d968d20109",
+  "runLogSha256": "98daf2dd25939a94940903a6902dcd82c75ff4fa2a0d6f729f43a8ebed80fc2d",
+  "artifact": {
+    "path": "/home/tomka/.cache/lain-qualification-20261025/foundation-readonly-c8f84b6-r2/artifacts/bin/AccountConnectFoundation.Tests/debug_linux-x64/AccountConnectFoundation.Tests.dll",
+    "sha256": "8f437411a3cd043c0073571750a57002d1cf52c500a833f7f49c5a64201bb4d7",
+    "productionAssemblies": {
+      "Lain.Core.dll": "ca23bf62d62e265199b8ac9460ee12b8b9c995fb705a0083080b352d1bc32660",
+      "Lain.Host.dll": "de56a6d47e05cbc890f9164d1053b5fe6db595f903a81b730b9f0e353f3d0be0"
+    }
+  },
+  "sourceHeadAtCompletion": "c8f84b62f98d239a9e9615789d951a7870378359",
+  "productionLocksUnchanged": true,
+  "credentialGenerationStoreSha256": "0e3b2e77697836b1409901080f79f54e12db6b82f968c71268b8421b8bb17256",
+  "durableRemovalChecksSha256": "1c4f05a174c6a3273f2842054ab648fb2850cd4e40f9056f3622d85528c58931",
+  "actualCgroupLimits": {
+    "cpu.max": "150000 100000",
+    "memory.high": "1610612736",
+    "memory.max": "2147483648",
+    "memory.swap.max": "268435456",
+    "pids.max": "128"
+  },
+  "networkInterfaces": [
+    "lo"
+  ],
+  "scope": "lain-foundation-readonly-c8f84b6-r2.scope",
+  "scopeTerminal": "ActiveState=inactive\nSubState=dead\nControlGroup=",
+  "sessionExitCode": 0,
+  "slotReleased": true,
+  "earlierFailedAttempt": "/home/tomka/.cache/lain-qualification-20261025/foundation-readonly-a95941f/report.json",
+  "failureWasFixtureCleanupOnly": true
+}

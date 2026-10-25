@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "guard": "New Host changed protected fixture state/history",
+  "preservedPaths": {
+    "credentials": {
+      "beforeSha256": "289e8690e7b0cb52dc74ccd158a3973a41cf755586794d024f0f0e9c25993819",
+      "afterSha256": "445fa2fb2f5ed19d81ac84135c3bb8115acf252a1efdd1e24a96ec5fe149ced5"
+    }
+  },
+  "changedEntries": {
+    "credentials/recovery": {
+      "beforeSha256": "dc937b59892604f5a86ac96936cd7ff09e25f18ae6b758e8014a24c7fa039e91",
+      "afterSha256": "f548080c92542793ccf284af61ad139b273a304c17a89d8496817064913fc0f9"
+    }
+  },
+  "databaseChanged": false,
+  "databaseTables": {},
+  "scope": "Synthetic fixture only; no raw values"
+}
