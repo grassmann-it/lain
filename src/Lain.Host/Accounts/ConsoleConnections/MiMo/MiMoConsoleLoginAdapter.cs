@@ -26,7 +26,9 @@ public sealed class MiMoConsoleLoginAdapter(IMiMoConsoleBrowser browser, TimePro
         Validate(context);
         if (!IsAvailable) return new("failed", Error: "Install Chromium or Chrome and open lain in a desktop session to connect MiMo monitoring.");
         if (attempts.ContainsKey(context.OperationId)) return new("waiting");
-        var profile = await browser.OpenAsync(context.AccountId, ct);
+        string profile;
+        try { profile = await browser.OpenAsync(context.AccountId, ct); }
+        catch (MiMoConsoleBrowserStartException error) { return new("failed", Error: error.PublicMessage); }
         if (!attempts.TryAdd(context.OperationId, new(context, profile)))
             await browser.CloseAsync(profile, true, ct);
         return new("waiting");

@@ -20,59 +20,136 @@ public interface IMiMoConsoleBrowser
 
 public sealed record MiMoConsoleReconciliation(int Examined, int Removed, int Retained, int Failed, bool Truncated);
 
-public sealed class MiMoConsoleBrowser(OwnStatePaths paths) : IMiMoConsoleBrowser, IAsyncDisposable
+public sealed class MiMoConsoleBrowser : IMiMoConsoleBrowser, IAsyncDisposable
 {
     public const int MaximumReconciliationProfiles = 512;
     private sealed record ProcessReceipt(int Pid, long StartedAt, int? HostPid, long? HostStartedAt);
-    private sealed class Session(Process process, string directory)
+    private sealed class Session(IMiMoBrowserProcess process, string directory)
     {
-        public Process Process = process;
+        public IMiMoBrowserProcess Process = process;
         public string Directory = directory;
         public int Port;
+        public volatile bool Released;
         public SemaphoreSlim Gate = new(1);
         public CancellationTokenSource Lifetime = new();
     }
     private readonly ConcurrentDictionary<string, Session> sessions = new();
-    private static string? Executable => new[] { "/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome", "/opt/google/chrome/chrome" }.FirstOrDefault(File.Exists);
-    public bool IsAvailable => OperatingSystem.IsLinux() && Executable is not null &&
-        (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY")) || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")));
+    private readonly OwnStatePaths paths;
+    private readonly IMiMoBrowserRuntime runtime;
+    private readonly TimeSpan startupTimeout;
+    private readonly object lifecycle = new();
+    private bool disposed;
+
+    public MiMoConsoleBrowser(OwnStatePaths paths) : this(paths, new MiMoBrowserRuntime(), TimeSpan.FromSeconds(15)) { }
+    internal MiMoConsoleBrowser(OwnStatePaths paths, IMiMoBrowserRuntime runtime, TimeSpan startupTimeout)
+    {
+        if (startupTimeout <= TimeSpan.Zero || startupTimeout > TimeSpan.FromSeconds(15)) throw new ArgumentOutOfRangeException(nameof(startupTimeout));
+        this.paths = paths; this.runtime = runtime; this.startupTimeout = startupTimeout;
+    }
+    public bool IsAvailable => runtime.Executable is not null && runtime.HasDesktop;
     public async Task<string> OpenAsync(string accountId, CancellationToken ct)
     {
-        if (!MiMoConsoleIdentity.IsIdentifier(accountId) || !IsAvailable) throw new InvalidOperationException("MiMo monitoring requires an installed Chromium browser and a desktop session.");
+        if (!MiMoConsoleIdentity.IsIdentifier(accountId)) throw new ArgumentException("Invalid MiMo account identifier.");
+        ct.ThrowIfCancellationRequested();
+        lock (lifecycle) ObjectDisposedException.ThrowIf(disposed, this);
+        var executable = runtime.Executable ?? throw new MiMoConsoleBrowserStartException(MiMoBrowserStartReason.BrowserUnavailable);
+        if (!runtime.HasDesktop) throw new MiMoConsoleBrowserStartException(MiMoBrowserStartReason.DesktopUnavailable);
         var profile = Guid.NewGuid().ToString("N");
         var directory = Path.Combine(paths.Credentials, "console", "mimo", profile);
-        OwnStatePaths.EnsurePrivateDirectory(directory);
-        OwnStatePaths.WritePrivate(Path.Combine(directory, "Default", "Preferences"), "{\"credentials_enable_service\":false,\"profile\":{\"password_manager_enabled\":false}}");
-        var start = new ProcessStartInfo(Executable!) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
-        foreach (var argument in new[] { "--user-data-dir=" + directory, "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0",
-            "--no-first-run", "--no-default-browser-check", "--disable-sync", "--disable-extensions", "--new-window", "https://platform.xiaomimimo.com/" }) start.ArgumentList.Add(argument);
-        var process = Process.Start(start) ?? throw new InvalidOperationException("The MiMo browser could not start.");
-        _ = DrainAsync(process.StandardOutput); _ = DrainAsync(process.StandardError);
-        var session = new Session(process, directory);
-        sessions[profile] = session;
+        IMiMoBrowserProcess? process = null;
+        Session? session = null;
+        Task[] drains = [];
+        var diagnostic = new MiMoBrowserStartupDiagnostic();
+        var stage = "owned-state";
         try
         {
+            // Allocation, Process.Start and receipt publication belong to the same cleanup scope.
+            OwnStatePaths.EnsurePrivateDirectory(directory);
+            OwnStatePaths.WritePrivate(Path.Combine(directory, "Default", "Preferences"), "{\"credentials_enable_service\":false,\"profile\":{\"password_manager_enabled\":false}}");
+            var start = new ProcessStartInfo(executable) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+            foreach (var argument in new[] { "--user-data-dir=" + directory, "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0",
+                "--no-first-run", "--no-default-browser-check", "--disable-sync", "--disable-extensions", "--new-window", "https://platform.xiaomimimo.com/" }) start.ArgumentList.Add(argument);
+            stage = "process-launch";
+            ct.ThrowIfCancellationRequested();
+            process = runtime.Start(start);
+            drains = [DrainAsync(process.StandardOutput), DrainAsync(process.StandardError, diagnostic)];
+            session = new Session(process, directory);
+            lock (lifecycle)
+            {
+                ObjectDisposedException.ThrowIf(disposed, this);
+                sessions[profile] = session;
+            }
+            stage = "process-receipt";
+            if (process.HasExited) throw new MiMoConsoleBrowserStartException(MiMoBrowserStartReason.ProcessExited);
             using var host = Process.GetCurrentProcess();
             OwnStatePaths.WritePrivate(Path.Combine(directory, "lain-process.json"), JsonSerializer.Serialize(new {
                 kind = "lain-mimo-console-profile", pid = process.Id, startedAt = process.StartTime.ToUniversalTime().Ticks,
                 hostPid = host.Id, hostStartedAt = host.StartTime.ToUniversalTime().Ticks }));
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeout.CancelAfter(TimeSpan.FromSeconds(15));
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct, session.Lifetime.Token);
+            timeout.CancelAfter(startupTimeout);
+            stage = "endpoint";
             while (true)
             {
                 timeout.Token.ThrowIfCancellationRequested();
-                if (process.HasExited) throw new InvalidOperationException("The MiMo browser could not start.");
+                if (process.HasExited) throw new MiMoConsoleBrowserStartException(MiMoBrowserStartReason.ProcessExited);
                 var portPath = Path.Combine(directory, "DevToolsActivePort");
                 if (File.Exists(portPath))
                 {
-                    if (new FileInfo(portPath).LinkTarget is not null || new FileInfo(portPath).Length > 4096) throw new InvalidOperationException("Invalid owned browser endpoint.");
-                    var first = (await File.ReadAllLinesAsync(portPath, timeout.Token)).FirstOrDefault();
-                    if (int.TryParse(first, out var port) && port is > 1024 and <= 65535) { session.Port = port; return profile; }
+                    if (new FileInfo(portPath).LinkTarget is not null || new FileInfo(portPath).Length > 4096)
+                        throw new MiMoConsoleBrowserStartException(MiMoBrowserStartReason.EndpointInvalid);
+                    var lines = await File.ReadAllLinesAsync(portPath, timeout.Token);
+                    if (lines.Length < 2 || lines[1].Length == 0) { await Task.Delay(100, timeout.Token); continue; }
+                    if (lines.Length != 2 || !int.TryParse(lines[0], out var port) || port is <= 1024 or > 65535
+                        || !lines[1].StartsWith("/devtools/browser/", StringComparison.Ordinal)
+                        || lines[1].Length > 128 || lines[1].Any(char.IsControl))
+                        throw new MiMoConsoleBrowserStartException(MiMoBrowserStartReason.EndpointInvalid);
+                    ct.ThrowIfCancellationRequested();
+                    lock (lifecycle)
+                    {
+                        ObjectDisposedException.ThrowIf(disposed, this);
+                        if (session.Lifetime.IsCancellationRequested || process.HasExited) throw new MiMoConsoleBrowserStartException(MiMoBrowserStartReason.ProcessExited);
+                        session.Port = port;
+                        return profile;
+                    }
                 }
                 await Task.Delay(100, timeout.Token);
             }
         }
-        catch { await CloseAsync(profile, true, CancellationToken.None); throw; }
+        catch (Exception error) when (error is not OutOfMemoryException and not StackOverflowException)
+        {
+            var cancelled = error is OperationCanceledException && ct.IsCancellationRequested;
+            var reason = error switch
+            {
+                MiMoConsoleBrowserStartException known => known.Reason,
+                OperationCanceledException when session?.Lifetime.IsCancellationRequested == true => MiMoBrowserStartReason.StartupInterrupted,
+                OperationCanceledException => MiMoBrowserStartReason.EndpointTimeout,
+                System.ComponentModel.Win32Exception when stage == "process-launch" => MiMoBrowserStartReason.ProcessLaunchFailed,
+                IOException or UnauthorizedAccessException => MiMoBrowserStartReason.OwnedStateUnavailable,
+                InvalidOperationException when stage == "process-receipt" => MiMoBrowserStartReason.ProcessReceiptUnavailable,
+                _ => MiMoBrowserStartReason.StartupRejected
+            };
+            int? exitCode = null;
+            try { if (process?.HasExited == true) exitCode = process.ExitCode; } catch (InvalidOperationException) { }
+            var native = error is System.ComponentModel.Win32Exception win32 ? win32.NativeErrorCode : (int?)null;
+            try
+            {
+                using var cleanup = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                if (sessions.ContainsKey(profile)) await CloseAsync(profile, true, cleanup.Token);
+                else if (session?.Released != true)
+                {
+                    if (process is not null) { if (!process.HasExited) { process.Kill(entireProcessTree: true); await process.WaitForExitAsync(cleanup.Token); } process.Dispose(); }
+                    if (Directory.Exists(directory)) { OwnStatePaths.EnsurePrivateDirectory(directory); Directory.Delete(directory, recursive: true); }
+                }
+                try { await Task.WhenAll(drains).WaitAsync(TimeSpan.FromMilliseconds(250)); }
+                catch (TimeoutException) { } // Draining remains bounded; raw text is never exposed.
+            }
+            catch (Exception cleanupError) when (cleanupError is not OutOfMemoryException and not StackOverflowException)
+            { throw new MiMoConsoleBrowserStartException(MiMoBrowserStartReason.CleanupIncomplete, exitCode, native); }
+            if (cancelled) throw;
+            if (reason == MiMoBrowserStartReason.ProcessReceiptUnavailable && exitCode is not null) reason = MiMoBrowserStartReason.ProcessExited;
+            if (reason == MiMoBrowserStartReason.ProcessExited) reason = diagnostic.ExitReason();
+            throw new MiMoConsoleBrowserStartException(reason, exitCode, native);
+        }
     }
     public async Task<JsonDocument> ReadAsync(string profile, ConsoleReadOperation operation, CancellationToken ct)
     {
@@ -149,12 +226,14 @@ public sealed class MiMoConsoleBrowser(OwnStatePaths paths) : IMiMoConsoleBrowse
         await session.Gate.WaitAsync(ct);
         try
         {
-            if (!sessions.TryRemove(profile, out _)) return;
+            if (!sessions.TryGetValue(profile, out var current) || !ReferenceEquals(current, session)) return;
             try { if (!session.Process.HasExited) { session.Process.Kill(entireProcessTree: true); await session.Process.WaitForExitAsync(ct); } }
             catch (InvalidOperationException) { }
             session.Process.Dispose();
             // Only our randomly allocated directory; never a user's browser profile.
-            if (erase && Directory.Exists(session.Directory)) Directory.Delete(session.Directory, recursive: true);
+            if (erase && Directory.Exists(session.Directory)) { OwnStatePaths.EnsurePrivateDirectory(session.Directory); Directory.Delete(session.Directory, recursive: true); }
+            session.Released = true;
+            sessions.TryRemove(profile, out _);
         }
         finally { session.Gate.Release(); }
     }
@@ -219,7 +298,12 @@ public sealed class MiMoConsoleBrowser(OwnStatePaths paths) : IMiMoConsoleBrowse
         catch (ArgumentException) { return false; }
         catch (InvalidOperationException) { return false; }
     }
-    private static async Task DrainAsync(StreamReader reader) { try { var buffer = new char[4096]; while (await reader.ReadAsync(buffer) > 0) { } } catch (IOException) { } }
+    private static async Task DrainAsync(TextReader reader, MiMoBrowserStartupDiagnostic? diagnostic = null)
+    {
+        try { var buffer = new char[4096]; int count; while ((count = await reader.ReadAsync(buffer)) > 0) diagnostic?.Append(buffer.AsSpan(0, count)); }
+        catch (IOException) { }
+        catch (ObjectDisposedException) { }
+    }
     private static async Task<byte[]> ReadBoundedAsync(Stream stream, int cap, CancellationToken ct)
     {
         using var output = new MemoryStream(); var buffer = new byte[8192]; int count;
@@ -231,5 +315,10 @@ public sealed class MiMoConsoleBrowser(OwnStatePaths paths) : IMiMoConsoleBrowse
         using var output = new MemoryStream(); var buffer = new byte[8192];
         while (true) { var result = await socket.ReceiveAsync(buffer.AsMemory(), ct); if (result.MessageType != WebSocketMessageType.Text || output.Length + result.Count > 2 * 1024 * 1024) throw new InvalidOperationException("Invalid browser response."); output.Write(buffer, 0, result.Count); if (result.EndOfMessage) return output.ToArray(); }
     }
-    public async ValueTask DisposeAsync() { foreach (var profile in sessions.Keys.ToArray()) await CloseAsync(profile, true, CancellationToken.None); }
+    public async ValueTask DisposeAsync()
+    {
+        string[] profiles;
+        lock (lifecycle) { disposed = true; profiles = sessions.Keys.ToArray(); }
+        foreach (var profile in profiles) await CloseAsync(profile, true, CancellationToken.None);
+    }
 }
