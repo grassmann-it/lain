@@ -60,9 +60,14 @@ internal sealed partial class Scenario
             probe.SetValue(window, Expression.Lambda(probe.FieldType, Expression.Constant(task, task.GetType()), parameter).Compile());
             return () => pendingType.GetMethod("SetResult")!.Invoke(pending, [proof]);
         }
-        void Setup()
+        async Task Setup()
         {
             Snapshot(); Invoke("ShowCodexExport", fixture.Config.Profiles[0]);
+            var page = (ContentControl)type.GetField("_page", fields)!.GetValue(window)!;
+            var expected = (Control)page.Content!;
+            await Wait(() => new[] { "lain command-line executable", "Destination parent folder" }.All(name =>
+                Controls<TextBox>().Any(input => AutomationProperties.GetName(input) == name && input.GetVisualAncestors().Contains(expected))),
+                "N05 current setup fields are mounted before editing");
             Named<TextBox>("lain command-line executable").Text = executable;
             Named<TextBox>("Destination parent folder").Text = scratch;
         }
@@ -73,7 +78,7 @@ internal sealed partial class Scenario
         }
         try
         {
-            await Click("Profiles"); InjectDispatcher("proof-a"); Setup();
+            await Click("Profiles"); InjectDispatcher("proof-a"); await Setup();
             Named<CheckBox>("Include Codex model groups").IsChecked = true;
             var filesBefore = Directory.GetFileSystemEntries(scratch).Order().ToArray();
             await Click("Prepare Codex files");
@@ -98,7 +103,7 @@ internal sealed partial class Scenario
             await Click("Cancel");
             Check(Directory.GetFileSystemEntries(scratch).Order().SequenceEqual(filesBefore), "N05 prepared Cancel does not install files");
 
-            Setup(); await Click("Prepare Codex files");
+            await Setup(); await Click("Prepare Codex files");
             await Wait(() => HasText("No files installed yet"), "N05 private ordinary export prepared");
             Check(handler.LastExport?.EnableLainModelPicker == false, "N05 ordinary export keeps model groups off");
             fixture.Config = fixture.Config with { Revision = fixture.Config.Revision + 1 };
@@ -108,19 +113,19 @@ internal sealed partial class Scenario
             Check(Directory.GetFileSystemEntries(scratch).Order().SequenceEqual(filesBefore), "N05 stale preparation writes no files");
             await Click("Cancel");
 
-            Setup(); handler.RejectExport = true; await Click("Prepare Codex files");
+            await Setup(); handler.RejectExport = true; await Click("Prepare Codex files");
             await Wait(() => HasText("draft is kept", true), "N05 HTTP 409 remains visible in setup draft");
             Check(Named<TextBox>("Destination parent folder").Text == scratch, "N05 revision conflict preserves target inputs");
             handler.RejectExport = false; await Click("Cancel");
 
-            Setup(); Named<CheckBox>("Include Codex model groups").IsChecked = true;
+            await Setup(); Named<CheckBox>("Include Codex model groups").IsChecked = true;
             await Click("Prepare Codex files"); await Wait(() => HasText("No files installed yet"), "N05 receipt-bound setup prepared");
             InjectDispatcher("proof-b"); await Click("Install client files");
             await Wait(() => HasText("prerequisite changed", true), "N05 changed dispatcher receipt prevents installation");
             Check(Directory.GetFileSystemEntries(scratch).Order().SequenceEqual(filesBefore), "N05 changed dispatcher writes no files");
             await Click("Cancel");
 
-            Setup(); Named<CheckBox>("Include Codex model groups").IsChecked = true;
+            await Setup(); Named<CheckBox>("Include Codex model groups").IsChecked = true;
             await Click("Prepare Codex files"); await Wait(() => HasText("No files installed yet"), "N05 cancel-during-probe preparation ready");
             var releaseProbe = HoldDispatcher("proof-b");
             await Click("Install client files"); await Click("Cancel");
@@ -129,7 +134,7 @@ internal sealed partial class Scenario
                 "N05 Cancel while Install checks the dispatcher prevents every subsequent file write");
             InjectDispatcher("proof-b");
 
-            Setup(); await Click("Prepare Codex files"); await Click("Install client files");
+            await Setup(); await Click("Prepare Codex files"); await Click("Install client files");
             await Wait(() => HasText("Codex files installed"), "N05 explicit private installation completed");
             Check(Directory.GetDirectories(scratch).Length == 1, "N05 explicit Install creates one private target");
             var installedRoot = Directory.GetDirectories(scratch).Single();
