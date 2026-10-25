@@ -57,6 +57,8 @@ def package_plan(args):
             core = getattr(args, prefix + '_core_sha256') if mode == 'gateway' else None
             info = actual.package_info(path, pin, mode, core)
             require(info['sourceCommit'] == source, 'Package source differs from reviewed commit')
+            require(isinstance(info['components'], dict) and set(info['components']) == {'cli', 'host', 'desktop'},
+                    'Complete application component identities are required')
             require(all(component.get('sourceCommit') == source for component in info['components'].values()),
                     'Component source differs from package commit')
             packages[prefix + mode.title()] = info
@@ -124,7 +126,8 @@ def assert_live(host, source, core_hash, mode):
     require((status['revision'], status['appliedRevision']) == (19, 2), 'Desired19/applied2 changed')
     require(status['runtimeMode'] == mode and bool(status['proxyReady']) == (mode == 'gateway'),
             'Saved runtime intent/Core readiness changed')
-    require(status.get('activeProfileId') is None, 'Unknown legacy profile was invented')
+    require(status.get('activeProfileId') is None and status.get('activeProfileRevision') is None,
+            'Unknown legacy profile was invented')
     if mode == 'gateway':
         require((status.get('application') or {}).get('state') == 'legacy-preserved', 'Legacy runtime was not preserved')
         children = (Path('/proc') / str(host.process.pid) / 'task' / str(host.process.pid) / 'children').read_text().split()
