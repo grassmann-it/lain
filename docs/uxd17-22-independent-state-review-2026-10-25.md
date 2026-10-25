@@ -460,3 +460,71 @@ geöffnet. Die Paketläufe ersetzen keine historische 45-Fälle-Matrix; aus ihre
 begrenzten Auswahl folgt keine pauschale Accessibility-, Provider- oder
 Releasefreigabe. Quellen und Laufzeit wurden durch diesen Reviewer nicht geändert
 und keine Builds oder Tests ausgeführt.
+
+## Installierter Current-state-Lauf: Quelle und unabhängige Schlusssichtung
+
+Quellreview von `6f7c79f`, integriert als `a4c29a3`: kein neuer materieller
+Transport- oder Isolationsbefund. Der neue Opt-in-Weg verwendet durchgehend den
+bestehenden injizierten Client und dessen GET-Allowlist für HTTP
+`127.0.0.1:18418`; Redirects, Proxies, Requestbodies und nicht freigegebene
+Endpunkte bleiben gesperrt. GET quotas liest vorhandene Snapshots; Refresh,
+Login, Apply, Export und Serviceaktionen werden nicht ausgelöst. `ProbeApp`
+übernimmt Ressourcen, startet aber nicht die eigene ungeschützte App-/Tray-
+Laufzeit. Der Preferencespfad liegt ausdrücklich im frischen privaten Runtime-
+Verzeichnis; Simple und normales Schließen werden dort gesetzt und auf
+unveränderte Bytes geprüft. Privates Xvfb und eigene Authority bleiben erhalten.
+Der gelesene äußere Runner `check-installed-quota-ui.py` stellt für diesen
+konkreten Lauf zusätzlich einen eigenen Sessionbus bereit; der Repositoryrunner
+allein entfernt lediglich den geerbten Bus. Kein Anspruch auf eine OS-Netzsandbox.
+
+Privates Manifest:
+`/home/tomka/.local/share/lain-backups/20261025-quota-state-d7200d7/installed-state-ui/evidence.json`.
+Sanitierte Zusammenfassung:
+`tests/delivery-stabilization/evidence/20261025/installed-ui.json`.
+Der Integrator führte den Lauf aus. Ergebnis: PASS, Modus
+`current-state-read-only`, 100 aufgezeichnete Checks, acht gerenderte PNGs,
+23 erfolgreiche GETs und keine geblockte Anfrage. Die Requests verteilen sich
+auf status (8), configuration (6), usage (3), quotas (2), models (2) und
+inspector (2). Keine frische Inferenz durch diesen Lauf.
+
+Die beiden selbst geöffneten realen Bilder zeigen:
+
+- `current-live-800x560.png`: verbundene eigene Quelle, null Streams, null Drops,
+  sichtbare linke Liste und lesbarer Leerzustand. Flüchtige Ausgabe und erhaltene
+  Usage → Attempts werden ausdrücklich unterschieden; ein Neustart spielt keine
+  historische Ausgabe nach. Der private Snapshot bestätigt State live, Complete
+  true, Cursor 0 und keinen Fehler; der Lauf gleicht außerdem die Source-ID ab.
+- `current-profiles-800x560.png`: Applied profile not reported by the host,
+  saved 19 / proxy 2 und Changes pending stimmen mit den realen Statusdaten
+  überein. Die ausgewählte Profilzeile wird nicht als tatsächlich angewendet
+  ausgegeben; ActiveProfileId und ActiveProfileRevision sind null.
+
+Alle acht PNG-Hashes wurden gegen das private Manifest geprüft. Die vier
+installierten Quelldateien Desktop, Client, Core und Avalonia.Controls wurden
+erneut selbst gehasht und stimmen mit den aufgezeichneten geladenen Assemblies
+überein. Desktop bleibt der geprüfte Paketstand `d7200d7` mit SHA `89d8…37d6`.
+Der Program.cs-Hash ist zwischen Originalcommit, Integrationscommit und Summary
+identisch. Summarydaten, privater Manifesthash und der Eintrag der Summary in
+`SHA256SUMS` stimmen ebenfalls überein; die alte Legacyfailure bleibt separat.
+
+Der feste UTC-Zeitraum 24.09.2026 bis ausschließlich 25.10.2026 enthält vor und nach Close/Reopen
+dieselben 14 Requests und 14 Attempts. From/To/TimeZone, Complete, Totals sowie
+Daily-/Account-/Modelgruppen sind direkt verglichen identisch; Cursor bleibt
+auch tatsächlich 41. Der Harness prüft diese Gleichheit zusätzlich im
+geschlossenen Zustand und die unveränderte Konfiguration. Die drei gespeicherten
+Hoststatus zeigen jeweils ProxyReady sowie Revisionen 19/2. Das belegt die
+beobachtete Usage-Zusammenfassung, keinen neuen Attempts-Seiten-, Datenbank- oder
+Hostneustarttest.
+
+Die 100 Checks sind eine Rohzählung einschließlich wiederholter Geometriechecks.
+Die acht generischen Settings-/About-Meldungen prüfen hier leere Controllisten
+und liefern keinen Nachweis dieser Seiten. Tatsächlich besucht werden Accounts,
+Live und Profiles; die übrigen Hauptziele und More werden auf sichtbare
+Navigation geprüft. Die Bilder sind RenderTargetBitmap-Aufnahmen nach gerouteten
+Controlevents, keine erneute native Pointer-/XTEST-Abnahme.
+
+Kein neuer visueller oder materieller Abweichungsbefund in dieser Schlusssichtung.
+Der eigene Bildumfang beträgt jetzt 34 konkrete PNGs aus sieben getrennten
+Läufen. Ausschließlich dieser Reviewbericht wurde ergänzt; kein Build,
+Produktlauf, Providerzugriff oder anderer Rootbeleg wurde durch den Reviewer
+verändert beziehungsweise ausgeführt.
