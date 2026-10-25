@@ -20,6 +20,8 @@ public static class ModelEndpoints
             Execute(() => request.Value is not null && id == request.Value.Id ? Results.Ok(models.PutCollectionRouter(request.Revision, request.Value)) : Results.BadRequest(new ApiError("invalid_router", "Path and router identity differ."))));
         app.MapDelete(Api.Prefix + "/collection-routers/{id}", (string id, long revision, ModelsService models) => Execute(() => Results.Ok(models.DeleteCollectionRouter(revision, id))));
         app.MapGet(Api.Prefix + "/model-groups", (ModelsService models) => models.CollectionGroups());
+        app.MapPost(Api.Prefix + "/collections/order", (RevisionRequest<CollectionOrderRequest> request, ModelsService models) =>
+            Execute(() => Results.Ok(models.ReorderCollections(request.Revision, request.Value?.CollectionIds!))));
         app.MapPut(Api.Prefix + "/collections/{id}", (string id, RevisionRequest<ModelCollectionDto> request, ModelsService models) =>
             Execute(() => request.Value is not null && id == request.Value.Id ? Results.Ok(models.PutCollection(request.Revision, request.Value)) : Results.BadRequest(new ApiError("invalid_collection", "Path and collection identity differ."))));
         app.MapDelete(Api.Prefix + "/collections/{id}", (string id, long revision, ModelsService models) => Execute(() => Results.Ok(models.DeleteCollection(revision, id))));
@@ -51,6 +53,7 @@ public static class ModelEndpoints
         catch (InvalidDataException) { return Results.BadRequest(new ApiError("invalid_transport", "The selected inference transport is invalid; reconnect the affected account.")); }
         catch (IOException) { return Results.BadRequest(new ApiError("missing_credential", "The selected inference credential cannot be read; reconnect the affected account.")); }
         catch (InvalidOperationException) { return Results.BadRequest(new ApiError("invalid_transport", "The selected inference transport is unavailable or ambiguous.")); }
-        catch (ArgumentException ex) { return Results.BadRequest(new ApiError("validation", ex.Message)); }
+        catch (CollectionRouterValidationException ex) { return Results.BadRequest(ex.ToApiError()); }
+        catch (ArgumentException) { return Results.BadRequest(new ApiError("validation", "Invalid model configuration; check identities, membership and the complete collection order.")); }
     }
 }

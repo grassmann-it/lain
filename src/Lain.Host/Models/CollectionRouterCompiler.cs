@@ -130,8 +130,8 @@ public static class CollectionRouterCompiler
                 (route.UpstreamProtocol is "openai" or "responses") &&
                 !(route.Provider == "codex" && route.Model == "codex-auto-review") &&
                 (router.CostPolicy != "free_only" || qualifiedRoutes?.Contains(id) == true && route.CostPolicy == "free_only" && route.FreeOnlyEnforcement is not null)).ToArray();
-            if (members.Length == 0) throw new ArgumentException("Router has no visible, strict, qualified profile members under its cost policy.");
-            if (routes.ContainsKey(router.Alias)) throw new ArgumentException("Router alias collides with a model route.");
+            if (members.Length == 0) throw new CollectionRouterValidationException(CollectionRouterFailureReason.NoEligibleMembers, router);
+            if (routes.ContainsKey(router.Alias)) throw new CollectionRouterValidationException(CollectionRouterFailureReason.AliasConflict, router);
             result.Add(router.Alias, new(router.Id, router.ProfileId, Selection, router.CostPolicy, members,
                 members.ToDictionary(id => id, id => Fingerprint(byId[id]), StringComparer.Ordinal)));
         }
@@ -147,7 +147,7 @@ public static class CollectionRouterCompiler
         var members = configuration.Routes.Where(route => profile.RouteIds.Contains(route.Id) &&
             string.Equals(route.Provider, provider, StringComparison.OrdinalIgnoreCase));
         if (DerivedModelGroups.Accounts(configuration, members).Length > 1)
-            throw new ArgumentException("Provider router '" + router.GroupId + "' spans multiple exported accounts. Select an account:<stableAccountId> group or an explicit custom collection before compiling or exporting this profile.");
+            throw new CollectionRouterValidationException(CollectionRouterFailureReason.ProviderAccountsAmbiguous, router);
     }
 
     private static string Fingerprint(CoreRouteBinding route) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(

@@ -91,7 +91,7 @@ internal static class CollectionCommandChecks
         handler.Respond = _ => new(HttpStatusCode.Conflict) { Content = JsonContent.Create(new ApiError("revision_conflict", "Reload first.")) };
         var rejected = await Run(["collections", "delete", "it-sec", "--revision", "7", "--json"]);
         Require(rejected.Exit == 5 && rejected.Output == "" && rejected.Error.Contains("revision_conflict"), "server conflict is preserved without success output"); checks++;
-        return checks;
+        return checks + await CollectionOrderClientChecks.RunAsync();
 
         async Task<(int Exit, string Output, string Error)> Run(string[] args)
         {

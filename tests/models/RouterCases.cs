@@ -99,6 +99,27 @@ internal static class RouterCases
         var ambiguous = configuration with { CollectionRouters = [providerRouter] };
         CollectionRouterCompiler.Validate(ambiguous); // Structural writes/account creation remain allowed.
         Reject(() => CollectionRouterCompiler.Compile(ambiguous, profile.Id, bindings, null, transports));
+        try { CollectionRouterCompiler.Compile(ambiguous, profile.Id, bindings, null, transports); throw new Exception("Ambiguous router accepted"); }
+        catch (CollectionRouterValidationException error)
+        {
+            Check(error.Reason == CollectionRouterFailureReason.ProviderAccountsAmbiguous && error.Code == "router_provider_accounts_ambiguous" &&
+                error.RouterId == router.Id && error.ProfileId == profile.Id && error.GroupId == "provider:fixture" && error.ToApiError().Message.Contains("account:<stableAccountId>"), "Multiple-account failure has a typed safe reason and concrete references");
+        }
+        try { CollectionRouterCompiler.Compile(configuration, profile.Id, bindings, null); throw new Exception("Unproved router accepted"); }
+        catch (CollectionRouterValidationException error) { Check(error.Code == "router_no_eligible_members", "Missing router transport evidence has a concrete safe reason"); }
+        try { CollectionRouterCompiler.Compile(configuration with { CollectionRouters = [router with { Alias = "alias-a" }] }, profile.Id, bindings, null, transports); throw new Exception("Colliding router accepted"); }
+        catch (CollectionRouterValidationException error) { Check(error.Code == "router_alias_conflict", "Runtime alias collision has a typed safe reason"); }
+        const string privateProvider = "fixture?api_key=PRIVATE-SECRET\nAuthorization: Bearer token";
+        var unsafeRouter = providerRouter with { Id = "PRIVATE-SECRET\n", GroupId = "provider:" + privateProvider };
+        var unsafeConfiguration = ambiguous with {
+            Accounts = ambiguous.Accounts.Select(account => account with { Provider = privateProvider }).ToArray(),
+            Routes = ambiguous.Routes.Select(route => route with { Provider = privateProvider }).ToArray(), CollectionRouters = [unsafeRouter]
+        };
+        try { CollectionRouterCompiler.Compile(unsafeConfiguration, profile.Id, bindings, null, transports); throw new Exception("Unsafe router accepted"); }
+        catch (CollectionRouterValidationException error)
+        {
+            Check(error.RouterId is null && error.GroupId is null && !JsonSerializer.Serialize(error.ToApiError()).Contains("PRIVATE-SECRET"), "Public router diagnostics discard untrusted identities and never echo transport or credential text");
+        }
         var singleProfile = profile with { RouteIds = ["a"] };
         Check(CollectionRouterCompiler.Compile(ambiguous with { Profiles = [singleProfile] }, profile.Id, bindings, null, transports)![router.Alias].RouteIds.SequenceEqual(new[] { "a" }), "An account outside the export profile cannot make its provider router ambiguous");
         var hiddenSecond = ambiguous with { Routes = routes.Select(route => route.Id is "b" or "pool" ? route with { Visible = false } : route).ToArray() };

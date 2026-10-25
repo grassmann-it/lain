@@ -80,6 +80,7 @@ internal static class CollectionCases
                 JsonSerializer.Serialize(state.Routes) == JsonSerializer.Serialize(JsonSerializer.Deserialize<RouteDto[]>(originalRoutes)!.Take(1)),
                 "collection mutations preserve account identities, aliases and profile selection");
             await CheckEndpointsAsync(paths, models);
+            await CollectionOrderCases.RunAsync();
             Console.WriteLine("PASS model collections: legacy JSON, revisions, overlap, isolation, persistence, validation, route deletion and HTTP CRUD");
         }
         finally { Directory.Delete(directory, true); }

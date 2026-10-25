@@ -8,6 +8,8 @@ public sealed partial class LainApiClient
     public Task<ModelCollectionGroupsDto> ModelGroupsAsync(CancellationToken ct = default) => Get<ModelCollectionGroupsDto>("model-groups", ct);
     public Task<ConfigurationDto> SaveCollectionAsync(long revision, ModelCollectionDto collection, CancellationToken ct = default) =>
         Send<ConfigurationDto>(HttpMethod.Put, $"collections/{Id(collection.Id)}", new RevisionRequest<ModelCollectionDto>(revision, collection), ct);
+    public Task<ConfigurationDto> ReorderCollectionsAsync(long revision, string[] collectionIds, CancellationToken ct = default) =>
+        Send<ConfigurationDto>(HttpMethod.Post, "collections/order", new RevisionRequest<CollectionOrderRequest>(revision, new(collectionIds)), ct);
     public Task<ConfigurationDto> RemoveCollectionAsync(long revision, string id, CancellationToken ct = default) =>
         Send<ConfigurationDto>(HttpMethod.Delete, $"collections/{Id(id)}?revision={revision}", null, ct);
 }

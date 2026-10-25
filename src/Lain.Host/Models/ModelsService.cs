@@ -41,6 +41,18 @@ public sealed class ModelsService(ConfigurationRepository repository, ProviderCo
             : [.. collections, collection] };
     });
 
+    public ConfigurationDto ReorderCollections(long revision, string[] collectionIds) => repository.Update(revision, config =>
+    {
+        var collections = config.Collections ?? [];
+        if (collectionIds is null || collectionIds.Length != collections.Length ||
+            collectionIds.Any(string.IsNullOrEmpty) || collectionIds.Distinct(StringComparer.Ordinal).Count() != collectionIds.Length)
+            throw new ArgumentException("Collection order must contain every existing collection ID exactly once.");
+        var byId = collections.ToDictionary(collection => collection.Id, StringComparer.Ordinal);
+        if (collectionIds.Any(id => !byId.ContainsKey(id)))
+            throw new ArgumentException("Collection order must contain every existing collection ID exactly once.");
+        return config with { Collections = collectionIds.Select(id => byId[id]).ToArray() };
+    });
+
     public ConfigurationDto DeleteCollection(long revision, string id) => repository.Update(revision, config =>
     {
         if (!(config.Collections ?? []).Any(collection => collection.Id == id)) throw new KeyNotFoundException("Collection does not exist.");
