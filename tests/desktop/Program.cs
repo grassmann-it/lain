@@ -482,8 +482,8 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         Check(fixture.UsageCalls > pollStart && UsageConnected(), "usage refreshes after five seconds");
         Check(usageInput.IsFocused && usageInput.Text == unsubmittedFilter && fixture.UsageQueries.Last()["from"] == appliedFromBeforePoll,
             "usage input focus and unapplied date draft survive polling without silently applying the draft");
-        Check(Controls<Expander>().Any(b => AutomationProperties.GetName(b) == "Analysis group modelFamily fixture-family" && b.IsExpanded),
-            "selected usage breakdown detail expansion survives polling");
+        Check(Named<TextBlock>("Usage selected group name").Text == "fixture-family",
+            "selected usage breakdown side detail survives polling");
         await Click("Details for attempt attempt-fixture");
         var details = Controls<Button>().Single(b => AutomationProperties.GetName(b) == "Details for attempt attempt-fixture");
         details.Focus();
@@ -642,7 +642,7 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         var choices = compare.Items.Cast<object>().ToArray();
         compare.SelectedIndex = Array.FindIndex(choices, x => x.ToString() == label);
         Check(compare.SelectedIndex >= 0, $"usage offers {label} in its single breakdown selector");
-        await Wait(() => Controls<Expander>().Any(x => AutomationProperties.GetName(x) == $"Analysis group {dimension} {key}"),
+        await Wait(() => Controls<Grid>().Any(x => AutomationProperties.GetName(x) == $"Analysis group {dimension} {key}"),
             $"usage loads the {label} breakdown");
         Check(Controls<ComboBox>().Count(x => AutomationProperties.GetName(x) == "Compare by") == 1,
             "usage exposes one main configurable breakdown");
@@ -893,14 +893,14 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
                 && query["timeZone"] == "UTC" && query["offset"] == "0" && query["statusCode"] == "200", $"{label} applies its UTC calendar range and preserves the status filter");
         }
         await SelectUsageBreakdown("Account", "accountId", "Personal Codex updated");
-        Named<Expander>("Analysis group accountId Personal Codex updated").IsExpanded = true;
+        await Click("Select analysis group accountId Personal Codex updated");
         await Task.Delay(80);
         var errorRate = (400d / 132).ToString("N1", System.Globalization.CultureInfo.CurrentCulture) + "% error rate";
         Check(HasText(errorRate, true) && HasText("Tokens:", true), "account and model details show token fields and errors per attempt");
         await Click("Filter to account a1");
         Check(fixture.UsageQueries.Last().GetValueOrDefault("accountId") == "a1", "account drilldown applies its stable account ID");
         await SelectUsageBreakdown("Actual model", "model", "gpt-model");
-        Named<Expander>("Analysis group model gpt-model").IsExpanded = true;
+        await Click("Select analysis group model gpt-model");
         await Task.Delay(80);
         await Click("Filter to model gpt-model");
         var scoped = fixture.UsageQueries.Last();
@@ -934,13 +934,13 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
             "performance exposes the host's measured percentiles and rate basis");
         Check(HasText("P50/P95 use all matching stored measurements", true) && HasText("Costs are not reported by this source.", true),
             "performance defines its population and does not invent cost estimates");
-        var known = Named<Expander>("Analysis group modelFamily fixture-family");
-        known.IsExpanded = true;
+        await Click("Select analysis group modelFamily fixture-family");
+        var known = Named<StackPanel>("Usage selected group detail");
         await Task.Delay(100);
         Check(known.GetVisualDescendants().OfType<TextBlock>().Any(x => x.Text?.Contains("80 of 88 eligible measured", StringComparison.Ordinal) == true),
-            "expanded model family group retains its own measurement denominator");
-        var unknown = Named<Expander>("Analysis group modelFamily Unknown");
-        unknown.IsExpanded = true;
+            "selected model family side detail retains its own measurement denominator");
+        await Click("Select analysis group modelFamily Unknown");
+        var unknown = Named<StackPanel>("Usage selected group detail");
         await Task.Delay(100);
         Check(!unknown.GetVisualDescendants().OfType<Button>().Any(x => AutomationProperties.GetName(x)?.StartsWith("Filter ", StringComparison.Ordinal) == true),
             "unknown group is not given an invented filter identity");
@@ -948,9 +948,11 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         var reads = fixture.AnalysisCalls;
         order.SelectedIndex = 1;
         Check(fixture.AnalysisCalls == reads
-            && Controls<Expander>().First(x => AutomationProperties.GetName(x)?.StartsWith("Analysis group modelFamily ", StringComparison.Ordinal) == true) is { } first
+            && Controls<Grid>().First(x => AutomationProperties.GetName(x)?.StartsWith("Analysis group modelFamily ", StringComparison.Ordinal) == true) is { } first
             && AutomationProperties.GetName(first) == "Analysis group modelFamily Unknown",
             "least-used ordering reorders loaded groups without a new analysis request");
+        Check(Named<TextBlock>("Usage selected group name").Text == "Unknown",
+            "sorting keeps the selected group identity in the side detail");
         order.SelectedIndex = 0;
         Check(new[] { "a2", "a3", "a4", "a5", "a-new" }.All(id => Controls<Button>().Any(button => AutomationProperties.GetName(button) == $"Inspect inactive account {id}")),
             "configured accounts with no matching observed activity remain discoverable");
@@ -958,9 +960,8 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         await CaptureBoth("usage-analysis", () => Named<StackPanel>("Usage performance").BringIntoView());
         var compare = Named<ComboBox>("Compare by");
         compare.SelectedIndex = 2;
-        await Wait(() => Controls<Expander>().Any(x => AutomationProperties.GetName(x) == "Analysis group manufacturer fixture-manufacturer"), "usage can compare manufacturer separately from route and inference provider");
-        var manufacturer = Named<Expander>("Analysis group manufacturer fixture-manufacturer");
-        manufacturer.IsExpanded = true;
+        await Wait(() => Controls<Grid>().Any(x => AutomationProperties.GetName(x) == "Analysis group manufacturer fixture-manufacturer"), "usage can compare manufacturer separately from route and inference provider");
+        await Click("Select analysis group manufacturer fixture-manufacturer");
         await Task.Delay(100);
         await Click("Filter manufacturer fixture-manufacturer");
         Check(fixture.UsageQueries.Last().GetValueOrDefault("manufacturer") == "fixture-manufacturer"
@@ -984,8 +985,8 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         await Click("Last 7 days");
         more.IsExpanded = false;
         compare.SelectedIndex = 0;
-        await Wait(() => Controls<Expander>().Any(x => AutomationProperties.GetName(x) == "Analysis group modelFamily fixture-family"), "usage analysis recovers its initial grouping");
-        Named<Expander>("Analysis group modelFamily fixture-family").IsExpanded = true;
+        await Wait(() => Controls<Grid>().Any(x => AutomationProperties.GetName(x) == "Analysis group modelFamily fixture-family"), "usage analysis recovers its initial grouping");
+        await Click("Select analysis group modelFamily fixture-family");
     }
 
     private static readonly (string Account, (string Label, double Percent)[] Windows)[] ExpectedProviderWindows =

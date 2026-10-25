@@ -31,7 +31,10 @@ public sealed partial class UsageView
     private readonly TextBlock _analysisStatus = Label("Waiting for complete-range analysis", Muted);
     private readonly TextBlock _analysisNotice = Label("Waiting for breakdown", Muted);
     private readonly HashSet<string> _configuredAccounts = new(StringComparer.Ordinal);
-    private readonly HashSet<string> _expandedAnalysisGroups = new(StringComparer.Ordinal);
+    private string? _selectedAnalysisGroup;
+    private readonly StackPanel _selectedGroupDetail = new() { Spacing = 6 };
+    private readonly Dictionary<string, (string Name, Control Detail)> _groupDetails = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Button> _groupSelections = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Button> _analysisButtons = new(StringComparer.Ordinal);
     private UsageAnalysisDto? _analysis;
     private UsageQuery? _analysisQuery;
@@ -62,6 +65,7 @@ public sealed partial class UsageView
         _dimension.SelectionChanged += async (_, _) =>
         {
             if (_restoringNavigation || _lifetime is null) return;
+            _selectedAnalysisGroup = null;
             _query = _query with { GroupBy = (_dimension.SelectedItem as FilterChoice)?.Key };
             await RefreshAsync(_lifetime.Token);
         };
@@ -74,7 +78,10 @@ public sealed partial class UsageView
         _performanceDetails.Content = new StackPanel { Spacing = 6, Children = { _performance,
             Label("Output rate is reported output tokens ÷ full attempt duration, including response startup. P50/P95 use all matching stored measurements; each metric reports measured/eligible attempts. Missing measurements stay —. Costs are not reported by this source.", Muted) } };
         _dimensionGroups.MinWidth = 640;
-        return UsageSection("Breakdown", "Completion errors · expand a row for measurements and context", new StackPanel
+        AutomationProperties.SetName(_dimensionGroups, "Usage breakdown table");
+        AutomationProperties.SetName(_selectedGroupDetail, "Usage selected group detail");
+        ShowGroupDetailMessage("Select a group to inspect its measurements and context.");
+        return UsageSection("Breakdown", "Completion errors · select a row for details on the right", new StackPanel
         {
             Spacing = 6, Children = { controls, _analysisNotice,
                 new ScrollViewer { Content = _dimensionGroups, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled },
@@ -133,12 +140,18 @@ public sealed partial class UsageView
                 _analysisQuery = null;
                 _dimensionGroups.Children.Clear();
                 _dimensionGroups.Children.Add(Label("No analysis snapshot for the applied filters.", Muted));
+                _groupDetails.Clear(); _groupSelections.Clear();
+                ShowGroupDetailMessage("No group snapshot for the applied filters.");
                 _performance.Children.Clear();
                 _performance.Children.Add(Label("No performance snapshot for the applied filters.", Muted));
             }
             _analysisStatus.Text = "Analysis unavailable" + (error is null ? "" : " · " + error) + (_analysis is null ? "" : " · showing the last analysis snapshot\n" + AnalysisSnapshotLabel(_analysis));
             _analysisStatus.Foreground = Ui.Warning;
-            if (_analysis is not null) _analysisNotice.Text += " · showing the last known analysis";
+            if (_analysis is not null)
+            {
+                _analysisNotice.Text += " · showing the last known analysis";
+                ShowSelectedGroup();
+            }
             return;
         }
         _analysis = analysis;
@@ -148,7 +161,7 @@ public sealed partial class UsageView
         _analysisStatus.Foreground = analysis.Complete && error is null ? Muted : Ui.Warning;
         _performance.Children.Clear();
         _performanceDetails.Header = ResultScope(_analysisQuery ?? _query) + " · first output & timing";
-        var metrics = new UniformGrid { Columns = _wideResults || Bounds.Width < 620 ? 1 : 3 };
+        var metrics = new UniformGrid { Columns = 1 };
         metrics.Children.Add(PerformanceMetric("First output", analysis.Performance.FirstOutputLatencyMs, Milliseconds));
         metrics.Children.Add(PerformanceMetric("Total duration", analysis.Performance.TotalDurationMs, Milliseconds));
         metrics.Children.Add(PerformanceMetric("Output / total time", analysis.Performance.OutputTokensPerSecond, TokenRate));
@@ -156,14 +169,23 @@ public sealed partial class UsageView
 
         var dimensionKey = _analysisQuery?.GroupBy ?? (_dimension.SelectedItem as FilterChoice)?.Key;
         var dimension = analysis.Dimensions.FirstOrDefault(x => x.Dimension == dimensionKey);
-        var focusedName = _dimensionGroups.GetVisualDescendants().OfType<Control>().Where(x => x.IsFocused).Select(AutomationProperties.GetName).FirstOrDefault();
+        var focusedName = this.GetVisualDescendants().OfType<Control>().Where(x => x.IsFocused).Select(AutomationProperties.GetName).FirstOrDefault();
+        var tableOffset = _tableScroll.Offset;
+        var detailOffset = _detailScroll.Offset;
         _analysisButtons.Clear();
+        _groupDetails.Clear(); _groupSelections.Clear();
+        _selectedGroupDetail.Children.Clear();
         _dimensionGroups.Children.Clear();
-        if (dimension is null) { _dimensionGroups.Children.Add(Label("This grouping is not reported by the host.", Muted)); return; }
+        if (dimension is null)
+        {
+            _dimensionGroups.Children.Add(Label("This grouping is not reported by the host.", Muted));
+            ShowGroupDetailMessage("This grouping is not reported by the host.");
+            return;
+        }
         if (dimension.Truncated) _dimensionGroups.Children.Add(Label("Only a limited set of groups was returned; ordering applies to those groups.", Ui.Warning));
         var columns = AnalysisCells("Group", "Requests", "Attempts", "Completion errors", "Reported tokens", "Unknown", true);
-        // Match the native disclosure header's content inset and trailing chevron.
-        columns.Margin = new Thickness(16, 0, 108, 0);
+        // Match the selectable row's native padding and reserved action column.
+        columns.Margin = new Thickness(8, 0, 76, 0);
         _dimensionGroups.Children.Add(TableRow(columns, true));
         IEnumerable<UsageDimensionGroupDto> groups = _dimensionOrder.SelectedIndex switch
         {
@@ -223,18 +245,30 @@ public sealed partial class UsageView
                     detail.Children.Add(link);
                 }
             }
-            // Attach the completed header once. Giving its cells to the Expander first
-            // and then moving them into a Grid breaks Avalonia's logical-parent lifecycle.
-            var expander = new Expander { Content = detail, IsExpanded = _expandedAnalysisGroups.Contains(stateKey),
-                HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
-            var commands = new List<ObjectCommand> { new("details", "Token and measurement details", () => expander.IsExpanded = true) };
+            _groupDetails[stateKey] = (name, detail);
+            var select = new Button
+            {
+                Content = header, Padding = new Thickness(8, 4),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch
+            };
+            AutomationProperties.SetName(select, $"Select analysis group {dimension.Dimension} {name}");
+            select.Click += (_, _) =>
+            {
+                _selectedAnalysisGroup = stateKey;
+                ShowSelectedGroup();
+                _detailScroll.Offset = default;
+            };
+            _groupSelections[stateKey] = select;
+            _analysisButtons[AutomationProperties.GetName(select)!] = select;
+            var commands = new List<ObjectCommand> { new("details", "Token and measurement details", () => select.RaiseEvent(new RoutedEventArgs(Button.ClickEvent))) };
             commands.AddRange(detail.Children.OfType<Button>().Select((button, index) => new ObjectCommand("action-" + index, button.Content?.ToString() ?? "Open context", () => button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)))));
-            expander.ContextMenu = ObjectCommands.Menu(commands);
             var menu = ObjectCommands.Menu(commands);
             var more = Ui.Button("⋯", () => menu.Open()); more.ContextMenu = menu;
             AutomationProperties.SetName(more, $"Actions for usage group {name}");
-            var groupHeader = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
-            var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2 };
+            _analysisButtons[AutomationProperties.GetName(more)!] = more;
+            var groupRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,68"), ContextMenu = ObjectCommands.Menu(commands) };
+            var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2, HorizontalAlignment = HorizontalAlignment.Right };
             if (groupFilter is { } filterAction)
             {
                 var drill = new Button { Content = "→", Padding = new Thickness(7, 2), MinWidth = 28 };
@@ -245,22 +279,48 @@ public sealed partial class UsageView
                 actions.Children.Add(drill);
             }
             actions.Children.Add(more);
-            groupHeader.Children.Add(header); Grid.SetColumn(actions, 1); groupHeader.Children.Add(actions);
-            expander.Header = groupHeader;
-            expander.Classes.Add("account-tile");
-            AutomationProperties.SetName(expander, $"Analysis group {dimension.Dimension} {name}");
-            expander.TemplateApplied += (_, args) =>
-            {
-                if (args.NameScope.Find<ToggleButton>("ExpanderHeader") is not { } toggle) return;
-                var toggleName = $"Toggle analysis group {dimension.Dimension} {name}";
-                AutomationProperties.SetName(toggle, toggleName);
-                if (focusedName == toggleName) toggle.Focus();
-            };
-            expander.PropertyChanged += (_, args) => { if (args.Property == Expander.IsExpandedProperty) { if (expander.IsExpanded) _expandedAnalysisGroups.Add(stateKey); else _expandedAnalysisGroups.Remove(stateKey); } };
-            _dimensionGroups.Children.Add(TableRow(expander));
+            groupRow.Children.Add(select); Grid.SetColumn(actions, 1); groupRow.Children.Add(actions);
+            AutomationProperties.SetName(groupRow, $"Analysis group {dimension.Dimension} {name}");
+            _dimensionGroups.Children.Add(TableRow(groupRow));
         }
+        if (_selectedAnalysisGroup is null && _groupDetails.Count > 0)
+            _selectedAnalysisGroup = _groupDetails.Keys.First();
+        ShowSelectedGroup();
+        _tableScroll.Offset = tableOffset;
+        _detailScroll.Offset = detailOffset;
         if (dimension.Groups.Length == 0) _dimensionGroups.Children.Add(Label("No matching groups in this range.", Muted));
-        if (focusedName is not null && _analysisButtons.TryGetValue(focusedName, out var focusedButton)) focusedButton.Focus();
+        if (focusedName is not null && _analysisButtons.TryGetValue(focusedName, out var focusedButton)
+            && focusedButton.GetVisualRoot() is not null) focusedButton.Focus();
+    }
+
+    private void ShowGroupDetailMessage(string message)
+    {
+        _selectedGroupDetail.Children.Clear();
+        _selectedGroupDetail.Children.Add(Label(message, Muted));
+    }
+
+    private void ShowSelectedGroup()
+    {
+        _selectedGroupDetail.Children.Clear();
+        foreach (var (key, button) in _groupSelections)
+        {
+            button.BorderBrush = key == _selectedAnalysisGroup ? Accent : Ui.Edge;
+            button.BorderThickness = new Thickness(key == _selectedAnalysisGroup ? 2 : 1);
+        }
+        if (_selectedAnalysisGroup is not { } selected || !_groupDetails.TryGetValue(selected, out var group))
+        {
+            ShowGroupDetailMessage(_selectedAnalysisGroup is null
+                ? "No matching groups in this range."
+                : "The selected group is not in this result. Select a visible row to inspect another group.");
+            return;
+        }
+        var title = Label(group.Name, Ui.Ink);
+        AutomationProperties.SetName(title, "Usage selected group name");
+        _selectedGroupDetail.Children.Add(title);
+        _selectedGroupDetail.Children.Add(Label(_analysisError is null
+            ? "Group measurements · applied filters"
+            : "Last known group measurements · analysis unavailable", _analysisError is null ? Muted : Ui.Warning));
+        _selectedGroupDetail.Children.Add(group.Detail);
     }
 
     private void RenderUnobservedAccounts(UsageSummaryDto summary, UsageQuery query)

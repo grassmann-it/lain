@@ -43,7 +43,11 @@ public sealed partial class UsageView : UserControl, IPresentationView
     private readonly Expander _historyDetails = new() { Header = "Attempt history & errors", IsExpanded = true, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
     private readonly StackPanel _layout = new() { Spacing = 8 };
     private readonly ScrollViewer _scroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-    private readonly Grid _resultsLayout = new() { ColumnDefinitions = new ColumnDefinitions("*"), RowDefinitions = new RowDefinitions("Auto,Auto") };
+    private readonly Grid _resultsLayout = new() { ColumnDefinitions = new ColumnDefinitions("*,280"), Height = 360 };
+    private readonly ScrollViewer _tableScroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+    private readonly ScrollViewer _detailScroll = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+    private Vector? _restoreTableOffset;
+    private Vector? _restoreDetailOffset;
     private readonly StackPanel _primaryResults = new() { Spacing = 8 };
     private readonly StackPanel _secondaryResults = new() { Spacing = 8 };
     private readonly TextBlock _context = Label("Waiting for the applied range", Muted);
@@ -54,7 +58,6 @@ public sealed partial class UsageView : UserControl, IPresentationView
     private readonly Stack<Action> _drilldownHistory = new();
     private Vector? _restoreOffset;
     private string? _restoreFocus;
-    private bool _wideResults;
     private bool _journalContinuityUnknown;
     private readonly List<Border> _sections = [];
     private readonly Dictionary<Expander, bool> _detailOverrides = [];
@@ -188,13 +191,18 @@ public sealed partial class UsageView : UserControl, IPresentationView
         _layout.Children.Add(new WrapPanel { Children = { _coverage, _reportedTotal } });
         _primaryResults.Children.Add(BuildAnalysisSection());
         _primaryResults.Children.Add(UsagePanel(_historyDetails));
+        _secondaryResults.Children.Add(UsageSection("Selected group", "Measurements for this group only", _selectedGroupDetail));
         _secondaryResults.Children.Add(UsageSection("Daily activity", "Historical errors · unknown values stay —", new StackPanel { Spacing = 6, Children = { _dailyScope, measure, _daily } }));
         _secondaryResults.Children.Add(UsagePanel(_performanceDetails));
         _secondaryResults.Children.Add(UsagePanel(_dailyDetails));
         _secondaryResults.Children.Add(UsagePanel(_tokenDetails));
         _secondaryResults.Children.Add(UsagePanel(_sourceDetails));
-        _resultsLayout.Children.Add(_primaryResults);
-        Grid.SetRow(_secondaryResults, 1); _resultsLayout.Children.Add(_secondaryResults);
+        _tableScroll.Content = _primaryResults;
+        _detailScroll.Content = _secondaryResults;
+        AutomationProperties.SetName(_tableScroll, "Usage table scroll");
+        AutomationProperties.SetName(_detailScroll, "Usage detail scroll");
+        _resultsLayout.Children.Add(_tableScroll);
+        Grid.SetColumn(_detailScroll, 1); _resultsLayout.Children.Add(_detailScroll);
         _layout.Children.Add(_resultsLayout);
         _layout.Children.Add(new Expander
         {
@@ -205,6 +213,7 @@ public sealed partial class UsageView : UserControl, IPresentationView
         var viewport = new Grid(); viewport.Children.Add(_scroll); Content = viewport;
         HorizontalAlignment = HorizontalAlignment.Stretch; VerticalAlignment = VerticalAlignment.Stretch;
         SizeChanged += (_, _) => ApplyResponsiveLayout();
+        _resultsLayout.LayoutUpdated += (_, _) => UpdateResultsHeight();
         foreach (var input in new[] { _from, _to, _zone, _status }.Concat(_dimensionFilters.Values))
             input.TextChanged += (_, _) => UpdateDraftState();
         _account.SelectionChanged += (_, _) => UpdateDraftState();
@@ -266,6 +275,8 @@ public sealed partial class UsageView : UserControl, IPresentationView
     {
         var query = _query;
         var scrollOffset = _scroll.Offset;
+        var tableOffset = _tableScroll.Offset;
+        var detailOffset = _detailScroll.Offset;
         var focused = this.GetVisualDescendants().OfType<Control>().FirstOrDefault(control => control.IsFocused);
         var focusedName = focused is null ? null : AutomationProperties.GetName(focused);
         var drilldowns = _drilldownHistory.Reverse().ToArray();
@@ -283,7 +294,7 @@ public sealed partial class UsageView : UserControl, IPresentationView
         var filterError = _filterError.Text;
         var filterErrorVisible = _filterError.IsVisible;
         var attempts = _expandedAttempts.ToArray();
-        var groups = _expandedAnalysisGroups.ToArray();
+        var selectedGroup = _selectedAnalysisGroup;
         var disclosures = DetailSections.Select(details => details.IsExpanded).ToArray();
         var detailOverrides = DetailSections.Select(details => _detailOverrides.TryGetValue(details, out var expanded) ? (bool?)expanded : null).ToArray();
         return () =>
@@ -296,6 +307,7 @@ public sealed partial class UsageView : UserControl, IPresentationView
                 _query = query;
                 _hasAppliedQuery = hasAppliedQuery;
                 _restoreOffset = scrollOffset; _restoreFocus = focusedName;
+                _restoreTableOffset = tableOffset; _restoreDetailOffset = detailOffset;
                 _drilldownHistory.Clear(); foreach (var restore in drilldowns) _drilldownHistory.Push(restore);
                 _usageBack.IsVisible = _drilldownHistory.Count > 0;
                 _from.Text = from;
@@ -310,8 +322,7 @@ public sealed partial class UsageView : UserControl, IPresentationView
                 _dailyMetric.SelectedIndex = dailyMeasure;
                 _expandedAttempts.Clear();
                 _expandedAttempts.UnionWith(attempts);
-                _expandedAnalysisGroups.Clear();
-                _expandedAnalysisGroups.UnionWith(groups);
+                _selectedAnalysisGroup = selectedGroup;
                 var details = DetailSections;
                 _detailOverrides.Clear();
                 for (var index = 0; index < details.Length; index++)
@@ -348,6 +359,7 @@ public sealed partial class UsageView : UserControl, IPresentationView
         _attempts.Children.Add(Label("Waiting for restored attempt history", Muted));
         _dimensionGroups.Children.Clear();
         _dimensionGroups.Children.Add(Label("Waiting for the restored breakdown", Muted));
+        ShowGroupDetailMessage("Waiting for the restored breakdown.");
         _performance.Children.Clear();
         _performance.Children.Add(Label("Waiting for restored measurements", Muted));
         _unobservedAccounts.Children.Clear();
@@ -852,30 +864,42 @@ public sealed partial class UsageView : UserControl, IPresentationView
     private void ApplyResponsiveLayout()
     {
         var wide = Bounds.Width >= 1000;
-        if (_wideResults != wide)
-        {
-            _wideResults = wide;
-            _resultsLayout.ColumnDefinitions = new ColumnDefinitions(wide ? "*,320" : "*");
-            _resultsLayout.RowDefinitions = new RowDefinitions(wide ? "Auto" : "Auto,Auto");
-            Grid.SetColumn(_secondaryResults, wide ? 1 : 0);
-            Grid.SetRow(_secondaryResults, wide ? 0 : 1);
-            _secondaryResults.Margin = wide ? new Thickness(12, 0, 0, 0) : new Thickness(0, 8, 0, 0);
-        }
+        // Keep the accepted table + adjacent detail at every supported window size.
+        // The table owns horizontal scrolling; narrow layouts never replace it with cards.
+        var detailWidth = wide ? 320 : 280;
+        if (_resultsLayout.ColumnDefinitions[1].Width.Value != detailWidth)
+            _resultsLayout.ColumnDefinitions = new ColumnDefinitions($"*,{detailWidth}");
+        _detailScroll.Margin = new Thickness(8, 0, 0, 0);
         _totals.Columns = Bounds.Width is > 0 and < 540 ? 2 : 4;
-        _tokenTotals.Columns = Bounds.Width is > 0 and < 620 || wide ? 2 : 4;
-        foreach (var metrics in _performance.Children.OfType<UniformGrid>()) metrics.Columns = wide || Bounds.Width < 620 ? 1 : 3;
+        _tokenTotals.Columns = 2;
+        foreach (var metrics in _performance.Children.OfType<UniformGrid>()) metrics.Columns = 1;
+        UpdateResultsHeight();
+    }
+
+    private void UpdateResultsHeight()
+    {
+        if (Bounds.Height <= 0) return;
+        // More filters can grow above the results; the outer page scroll then keeps
+        // both filters and a useful bounded master/detail area reachable.
+        var height = Math.Max(240, Bounds.Height - _resultsLayout.Bounds.Y - 8);
+        if (Math.Abs(_resultsLayout.Height - height) > 1) _resultsLayout.Height = height;
     }
 
     private void RestoreViewport(Vector offset)
     {
         var focus = _restoreFocus;
+        var tableOffset = _restoreTableOffset ?? _tableScroll.Offset;
+        var detailOffset = _restoreDetailOffset ?? _detailScroll.Offset;
         _restoreOffset = null; _restoreFocus = null;
+        _restoreTableOffset = null; _restoreDetailOffset = null;
         Dispatcher.UIThread.Post(() =>
         {
             if (_lifetime is null) return;
             if (focus is not null)
                 this.GetVisualDescendants().OfType<Control>().FirstOrDefault(control => AutomationProperties.GetName(control) == focus)?.Focus();
             _scroll.Offset = offset;
+            _tableScroll.Offset = tableOffset;
+            _detailScroll.Offset = detailOffset;
         }, DispatcherPriority.Loaded);
     }
 
