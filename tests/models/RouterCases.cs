@@ -56,7 +56,7 @@ internal static class RouterCases
             var export = new CodexProfileAdapter(service, routerProof:proof).Generate("profile", configuration.Revision, "/opt/lain/lain", "/tmp/models.json", enableLainModelPicker:true);
             using var doc = JsonDocument.Parse(export.Catalog);
             Check(doc.RootElement.GetProperty("models").EnumerateArray().Count(m => m.GetProperty("slug").GetString() == router.Alias) == 1, "Router must be one real virtual model");
-            Check(doc.RootElement.GetProperty("lain_model_picker").GetProperty("groups")[0].GetProperty("router_model").GetString() == router.Alias, "Collection must reference compiled router slug");
+            Check(doc.RootElement.GetProperty("lain_model_picker").GetProperty("groups").EnumerateArray().Single(group => group.GetProperty("id").GetString() == "collection:security").GetProperty("router_model").GetString() == router.Alias, "Collection must reference compiled router slug");
             Check(export.Configuration.Contains("model = \"alias-a\""), "Router export changed pinned default");
             Check(before == JsonSerializer.Serialize(repository.Snapshot), "Export mutated state");
             Reject(() => new CodexProfileAdapter(service).Generate("profile", configuration.Revision, "/opt/lain/lain", "/tmp/models.json", enableLainModelPicker:true));
@@ -66,9 +66,43 @@ internal static class RouterCases
             Reject(() => CollectionRouterCompiler.Compile(strictConfig, "profile", bindings, qualified, transports));
             configuration = service.DeleteCollectionRouter(configuration.Revision, router.Id);
             Check(configuration.CollectionRouters!.Length == 0 && configuration.Routes.Length == 3, "Router deletion changed real routes");
+            CheckAccountRouters();
             CheckNativeCodexTransport(Path.Combine(path, "codex"));
         }
         finally { Directory.Delete(path, true); }
+    }
+
+    private static void CheckAccountRouters()
+    {
+        static void Check(bool value, string message) { if (!value) throw new Exception(message); }
+        static void Reject(Action action) { try { action(); } catch (ArgumentException) { return; } throw new Exception("Invalid account router accepted"); }
+        var first = new AccountDto("private", "Private", "fixture", true, "api-key", "ready");
+        var second = first with { Id = "work", Name = "Work" };
+        var routes = new RouteDto[] {
+            new("a", "alias-a", "same-model", "fixture", [first.Id]),
+            new("b", "alias-b", "same-model", "fixture", [second.Id]),
+            new("pool", "alias-pool", "same-model", "fixture", [first.Id, second.Id], Pooled:true)
+        };
+        var profile = new ProfileDto("profile", "Fixture", ["b", "pool", "a"]);
+        var router = new CollectionRouterDto("router", "auto-private", "account:private", profile.Id);
+        var configuration = new ConfigurationDto(1, 0, [first, second], routes, [profile], CollectionRouters:[router]);
+        CollectionRouterCompiler.Validate(configuration);
+        Check(CollectionRouterCompiler.MemberIds(configuration, profile, router).SequenceEqual(new[] { "a" }), "Account groups must not include another account or pooled route");
+        Reject(() => CollectionRouterCompiler.MemberIds(configuration, profile, router with { GroupId = "account:missing" }));
+        var bindings = routes.ToDictionary(route => route.Alias, route => new CoreRouteBinding(route.Id, route.UpstreamModel, route.AccountIds,
+            route.Pooled ? "pool" : "strict", Provider:route.Provider, UpstreamProtocol:"responses"));
+        var transports = routes.ToDictionary(route => route.Id, route => new ModelCompatibilityTransportBinding(route.Provider, route.UpstreamModel, "responses", "synthetic:account-router"));
+        Check(CollectionRouterCompiler.Compile(configuration, profile.Id, bindings, null, transports)![router.Alias].RouteIds.SequenceEqual(new[] { "a" }), "Account router preserves existing strict route identity and transport proof");
+        Reject(() => CollectionRouterCompiler.Compile(configuration, profile.Id, bindings, null));
+        Reject(() => CollectionRouterCompiler.Compile(configuration with { Accounts = [first with { Enabled = false }, second] }, profile.Id, bindings, null, transports));
+        var providerRouter = router with { GroupId = "provider:fixture" };
+        var ambiguous = configuration with { CollectionRouters = [providerRouter] };
+        CollectionRouterCompiler.Validate(ambiguous); // Structural writes/account creation remain allowed.
+        Reject(() => CollectionRouterCompiler.Compile(ambiguous, profile.Id, bindings, null, transports));
+        var singleProfile = profile with { RouteIds = ["a"] };
+        Check(CollectionRouterCompiler.Compile(ambiguous with { Profiles = [singleProfile] }, profile.Id, bindings, null, transports)![router.Alias].RouteIds.SequenceEqual(new[] { "a" }), "An account outside the export profile cannot make its provider router ambiguous");
+        var hiddenSecond = ambiguous with { Routes = routes.Select(route => route.Id is "b" or "pool" ? route with { Visible = false } : route).ToArray() };
+        Check(CollectionRouterCompiler.Compile(hiddenSecond, profile.Id, bindings.Where(pair => pair.Value.Id == "a").ToDictionary(pair => pair.Key, pair => pair.Value), null, transports)![router.Alias].RouteIds.SequenceEqual(new[] { "a" }), "Hidden accounts do not create provider ambiguity");
     }
 
     private static void CheckNativeCodexTransport(string path)

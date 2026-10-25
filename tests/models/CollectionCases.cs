@@ -42,7 +42,7 @@ internal static class CollectionCases
             Check(state.AppliedRevision == 4 && state.Collections!.Length == 2 && state.Routes.Length == 2 && state.Accounts.Length == 1,
                 "overlapping views never duplicate routes or accounts or apply configuration");
             var groups = models.CollectionGroups();
-            Check(groups.Revision == state.Revision && groups.Groups.Single(group => group.Id == "provider:codex").RouteIds.SequenceEqual(new[] { "route-a", "route-b" }) &&
+            Check(groups.Revision == state.Revision && groups.Groups.Single(group => group.Id == "provider:codex").RouteIds.SequenceEqual(new[] { "route-a" }) &&
                 groups.Groups.Single(group => group.Id == "collection:security").RouteIds.SequenceEqual(new[] { "route-b", "route-a" }) &&
                 groups.Groups.All(group => group.RouterTargetId is null), "groups retain central route identities and member ordering without a router");
             var staleRevision = state.Revision;

@@ -43,7 +43,7 @@ internal static class PickerCases
             Check(picker.GetProperty("schema_version").GetInt32() == 1 && picker.EnumerateObject().Count() == 2, "The opt-in extension uses the exact versioned lain schema");
             var groups = picker.GetProperty("groups").EnumerateArray().ToDictionary(group => group.GetProperty("id").GetString()!);
             string[] Members(string id) => groups[id].GetProperty("models").EnumerateArray().Select(model => model.GetString()!).ToArray();
-            Check(groups.Keys.SequenceEqual(new[] { "collection:security", "collection:overlap", "provider:codex", "provider:commandcode", "provider:openrouter" }), "Custom group order is preserved before provider groups; empty views are omitted");
+            Check(groups.Keys.SequenceEqual(new[] { "provider:codex", "provider:commandcode", "provider:openrouter", "collection:security", "collection:overlap" }), "Readable provider names sort first; stored custom group order follows and empty views are omitted");
             Check(Members("collection:security").SequenceEqual(new[] { "alias-b", "alias-a", "unknown-alias" }), "Custom membership preserves order while excluding hidden, disabled, off-profile and internal review routes");
             Check(Members("collection:overlap").SequenceEqual(new[] { "alias-a", "alias-b" }) && Members("provider:openrouter").SequenceEqual(new[] { "alias-b" }), "Overlapping custom and service groups reference the same existing inference aliases");
             Check(groups["provider:commandcode"].GetProperty("name").GetString() == "Command Code" && Members("provider:codex").SequenceEqual(new[] { "alias-a" }), "Provider group names are readable and omit the internal review model");
@@ -78,7 +78,7 @@ internal static class PickerCases
             });
             using var bounded = JsonDocument.Parse(Export(true).Catalog);
             var boundedGroups = bounded.RootElement.GetProperty("lain_model_picker").GetProperty("groups");
-            Check(boundedGroups.GetArrayLength() == 128 && boundedGroups[0].GetProperty("name").GetString() == unicodeName,
+            Check(boundedGroups.GetArrayLength() == 128 && boundedGroups[3].GetProperty("name").GetString() == unicodeName,
                 "Exactly 128 non-empty groups and the complete 256-character Unicode name fit the aligned client limits");
             state = repository.Update(state.Revision, configuration => configuration with
             {

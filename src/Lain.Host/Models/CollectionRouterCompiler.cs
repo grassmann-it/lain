@@ -89,6 +89,14 @@ public static class CollectionRouterCompiler
         if (router.GroupId.StartsWith("collection:", StringComparison.Ordinal))
             ids = (configuration.Collections ?? []).SingleOrDefault(c => "collection:" + c.Id == router.GroupId)?.RouteIds
                 ?? throw new ArgumentException("Router references an unknown collection.");
+        else if (router.GroupId.StartsWith("account:", StringComparison.Ordinal))
+        {
+            var accountId = router.GroupId[8..];
+            _ = configuration.Accounts.SingleOrDefault(account => account.Id == accountId)
+                ?? throw new ArgumentException("Router references an unknown account group.");
+            ids = profile.RouteIds.Where(id => configuration.Routes.Any(route => route.Id == id &&
+                !route.Pooled && route.AccountIds.Length == 1 && route.AccountIds[0] == accountId));
+        }
         else if (router.GroupId.StartsWith("provider:", StringComparison.Ordinal))
         {
             var provider = router.GroupId[9..];
@@ -111,8 +119,11 @@ public static class CollectionRouterCompiler
         var result = new Dictionary<string, CoreCollectionRouter>(StringComparer.Ordinal);
         foreach (var router in routers)
         {
+            EnsureUnambiguousProvider(configuration, profile, router);
             var members = MemberIds(configuration, profile, router).Where(id => byId.TryGetValue(id, out var route) &&
                 route.Visible && route.Selection == "strict" && route.Accounts.Length == 1 &&
+                (!router.GroupId.StartsWith("account:", StringComparison.Ordinal) ||
+                    route.Accounts[0] == router.GroupId[8..] && configuration.Accounts.Any(account => account.Id == route.Accounts[0] && account.Enabled)) &&
                 transports is not null && transports.TryGetValue(id, out var transport) &&
                 transport.Provider == route.Provider && transport.UpstreamModel == route.Model &&
                 transport.UpstreamProtocol == route.UpstreamProtocol && !string.IsNullOrWhiteSpace(transport.Source) &&
@@ -125,6 +136,18 @@ public static class CollectionRouterCompiler
                 members.ToDictionary(id => id, id => Fingerprint(byId[id]), StringComparer.Ordinal)));
         }
         return result;
+    }
+
+    // Configuration validation remains structural: adding an account must not be blocked by
+    // an older provider router. Only compiling/exporting that ambiguous router fails closed.
+    internal static void EnsureUnambiguousProvider(ConfigurationDto configuration, ProfileDto profile, CollectionRouterDto router)
+    {
+        if (!router.GroupId.StartsWith("provider:", StringComparison.Ordinal)) return;
+        var provider = router.GroupId[9..];
+        var members = configuration.Routes.Where(route => profile.RouteIds.Contains(route.Id) &&
+            string.Equals(route.Provider, provider, StringComparison.OrdinalIgnoreCase));
+        if (DerivedModelGroups.Accounts(configuration, members).Length > 1)
+            throw new ArgumentException("Provider router '" + router.GroupId + "' spans multiple exported accounts. Select an account:<stableAccountId> group or an explicit custom collection before compiling or exporting this profile.");
     }
 
     private static string Fingerprint(CoreRouteBinding route) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(

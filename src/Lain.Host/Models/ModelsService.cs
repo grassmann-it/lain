@@ -50,10 +50,7 @@ public sealed class ModelsService(ConfigurationRepository repository, ProviderCo
     public ModelCollectionGroupsDto CollectionGroups()
     {
         var config = Snapshot;
-        var providerGroups = config.Routes.GroupBy(route => route.Provider, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
-            .Select(group => new ModelCollectionGroupDto("provider:" + group.Key.ToLowerInvariant(),
-                policy.Catalog.Find(group.Key)?.Name ?? group.Key, "provider", group.Select(route => route.Id).ToArray(), group.Key));
+        var providerGroups = DerivedModelGroups.Create(config, config.Routes, policy.Catalog);
         var customGroups = (config.Collections ?? []).Select(collection => new ModelCollectionGroupDto(
             "collection:" + collection.Id, collection.Name, "custom", collection.RouteIds.ToArray(), RouterTargetId: collection.RouterTargetId));
         return new(Api.Version, config.Revision, providerGroups.Concat(customGroups).ToArray());
@@ -166,5 +163,58 @@ public sealed class ModelsService(ConfigurationRepository repository, ProviderCo
     private static void Text(string value, string label)
     {
         if (string.IsNullOrWhiteSpace(value) || value.Length > 256 || value.Any(char.IsControl)) throw new ArgumentException($"Invalid {label}.");
+    }
+}
+
+/// <summary>Revisionless views over existing routes, shared by discovery and profile export.</summary>
+internal static class DerivedModelGroups
+{
+    internal static bool IsSelectable(ConfigurationDto configuration, RouteDto route) =>
+        route.Enabled && route.Visible && !(route.Provider == "codex" && route.UpstreamModel == "codex-auto-review") &&
+        route.AccountIds.All(id => configuration.Accounts.Any(account => account.Id == id && account.Enabled));
+
+    internal static AccountDto[] Accounts(ConfigurationDto configuration, IEnumerable<RouteDto> routes) =>
+        routes.Where(route => IsSelectable(configuration, route)).SelectMany(route => route.AccountIds).Distinct(StringComparer.Ordinal)
+            .Select(id => configuration.Accounts.Single(account => account.Id == id)).ToArray();
+
+    internal static string ProviderName(string provider, ProviderCatalogRegistry catalog) => catalog.Find(provider)?.Name ?? provider switch
+    {
+        "codex" => "Codex", "commandcode" => "Command Code", "kimi" => "Kimi",
+        "xiaomi-mimo" => "Xiaomi MiMo", "zai" => "Z.ai", _ => provider
+    };
+
+    internal static string AccountName(ConfigurationDto configuration, AccountDto account)
+    {
+        // Equal user labels remain distinguishable without changing their stable identities.
+        return configuration.Accounts.Count(other => other.Enabled &&
+            string.Equals(other.Provider, account.Provider, StringComparison.OrdinalIgnoreCase) && other.Name == account.Name) > 1
+            ? account.Name + " · " + account.Id : account.Name;
+    }
+
+    internal static ModelCollectionGroupDto[] Create(ConfigurationDto configuration, IEnumerable<RouteDto> routes, ProviderCatalogRegistry catalog)
+    {
+        var groups = new List<ModelCollectionGroupDto>();
+        foreach (var provider in routes.Where(route => IsSelectable(configuration, route))
+            .GroupBy(route => route.Provider, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => ProviderName(group.Key, catalog), StringComparer.OrdinalIgnoreCase).ThenBy(group => group.Key, StringComparer.Ordinal))
+        {
+            var name = ProviderName(provider.Key, catalog);
+            var accounts = Accounts(configuration, provider);
+            if (accounts.Length <= 1)
+            {
+                groups.Add(new("provider:" + provider.Key.ToLowerInvariant(), name, "provider", provider.Select(route => route.Id).ToArray(), provider.Key));
+                continue;
+            }
+            foreach (var account in accounts.OrderBy(account => account.Name, StringComparer.OrdinalIgnoreCase).ThenBy(account => account.Id, StringComparer.Ordinal))
+            {
+                var members = provider.Where(route => !route.Pooled && route.AccountIds.Length == 1 && route.AccountIds[0] == account.Id).Select(route => route.Id).ToArray();
+                if (members.Length > 0)
+                    groups.Add(new("account:" + account.Id, name + " (" + AccountName(configuration, account) + ")", "account", members, provider.Key));
+            }
+            var pooled = provider.Where(route => route.Pooled || route.AccountIds.Length != 1).Select(route => route.Id).ToArray();
+            if (pooled.Length > 0)
+                groups.Add(new("provider:" + provider.Key.ToLowerInvariant(), name + " (Pool)", "provider", pooled, provider.Key));
+        }
+        return groups.ToArray();
     }
 }

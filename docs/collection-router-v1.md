@@ -17,8 +17,25 @@ and `enabled` (default true). GET `/api/v1/collection-routers`, PUT
 path with `?revision=N` use the shared configuration revision gate. Writes are
 saved only; applying a profile and regenerating its Codex export remain separate.
 
-Groups are `collection:<id>`, `provider:<canonical-lowercase-provider>` or
-`policy:free`. Collection order comes from its existing RouteIds; provider and
+Groups are `collection:<id>`, `provider:<canonical-lowercase-provider>`,
+`account:<stableAccountId>` or `policy:free`. Automatic provider views appear first,
+sorted by their readable provider names, followed by custom collections in saved
+order (for example `1M` and `ITSec`); collection member order is retained. With one
+exported account, the provider label stays short. With multiple active exported
+accounts, strict single-account routes are split into `Provider (Accountname)`
+groups. Pooled routes remain visible in a separate `Provider (Pool)` view and are
+never attributed to one account. Individual model labels also identify the account
+in this case; inference aliases stay unchanged. Disabled, hidden, internal-review
+and foreign-profile routes do not create extra exported account groups.
+
+Account groups are revisionless derived views over existing route IDs. A saved
+provider router becomes ambiguous when a second eligible account enters its
+profile: compile, apply and grouped export fail closed with an account-group
+selection error, while account creation and ordinary export remain available.
+Explicit custom collections may span providers or accounts. No automatic provider
+router silently joins private and work accounts.
+
+Collection order comes from its existing RouteIds; provider, account and
 Free order comes from the profile. A free group requires `free_only`. A router
 may reference only enabled, visible, single-account strict routes in its own
 profile with matching compiled transport provenance and OpenAI Chat or Responses

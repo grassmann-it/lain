@@ -33,11 +33,15 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         var selected = selectable.SingleOrDefault(x => x.Id == resolved.Profile.DefaultRouteId) ?? selectable[0];
         var catalogRegistry = registry ?? new ProviderCatalogRegistry();
         var routers = enableLainModelPicker ? (resolved.Configuration.CollectionRouters ?? []).Where(r => r.Enabled && r.ProfileId == profileId).ToArray() : [];
+        foreach (var router in routers)
+            CollectionRouterCompiler.EnsureUnambiguousProvider(resolved.Configuration, resolved.Profile, router);
         if (routers.Length > 0 && (routerProof is null || !routerProof.Matches(resolved.Configuration with { Routes = resolved.Routes }, profileId)))
             throw new ArgumentException("Router catalog export proof is missing or stale; recompile this profile's current transports.");
         foreach (var router in routers)
+        {
             if (routerProof is null || !routerProof.Routers.TryGetValue(router.Alias, out var binding) || binding.Id != router.Id || binding.ProfileId != profileId)
                 throw new ArgumentException("Router catalog export requires the current qualified profile bindings.");
+        }
         // TOML basic strings accept these JSON escapes for the paths and labels we emit.
         static string Quote(string value) => JsonSerializer.Serialize(value);
         var config = $"""
@@ -64,7 +68,7 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         // Supported model metadata can be added by a qualified catalog source later.
         var catalogDocument = new Dictionary<string, object>
         {
-            ["models"] = routes.Select((route, index) => CatalogEntry(route.Alias, DisplayName(route, catalogRegistry),
+            ["models"] = routes.Select((route, index) => CatalogEntry(route.Alias, DisplayName(route, catalogRegistry, resolved.Configuration, selectable),
                 Description(route, catalogRegistry), IsInternalReview(route), index))
                 .Concat(routers.Select((router, index) => CatalogEntry(router.Alias, "Automatisch · " + RouterGroupName(router, resolved.Configuration, catalogRegistry), "Ordered selection for a new conversation; fixed model and account thereafter. No cross-route retry.", false, routes.Length + index))).ToArray()
         };
@@ -102,6 +106,8 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
                 throw new ArgumentException("The lain Codex model picker requires single-line group IDs up to 256 UTF-8 bytes and names up to 1024 UTF-8 bytes. Stored names are preserved; shorten the affected group label before export.");
             groups.Add(new { id, name, router_model = routers.SingleOrDefault(router => router.GroupId == id)?.Alias, models = aliases });
         }
+        foreach (var group in DerivedModelGroups.Create(configuration, routes, catalog))
+            Add(group.Id, group.Name, group.RouteIds);
         foreach (var collection in configuration.Collections ?? [])
             Add("collection:" + collection.Id, collection.Name, collection.RouteIds);
         if (routers.SingleOrDefault(router => router.GroupId == "policy:free") is { } freeRouter)
@@ -109,9 +115,6 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         // Free is emitted only from the current compiler-created router proof above.
         // A hypothetical policy override cannot make an existing alias free; custom
         // collection names retain their stored meaning without cost guarantees.
-        foreach (var provider in routes.GroupBy(route => route.Provider, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase))
-            Add("provider:" + provider.Key.ToLowerInvariant(), ServiceName(provider.First(), catalog), provider.Select(route => route.Id));
         if (groups.Count > 128)
             throw new ArgumentException("The lain Codex model picker supports at most 128 non-empty groups. Reduce the selected profile's provider or collection views.");
         return groups.ToArray();
@@ -121,10 +124,18 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
     // Match the upstream identity and canonical service, not a user-controlled alias.
     private static bool IsInternalReview(RouteDto route) => route.Provider == "codex" && route.UpstreamModel == "codex-auto-review";
 
-    private static string RouterGroupName(CollectionRouterDto router, ConfigurationDto configuration, ProviderCatalogRegistry catalog) =>
-        router.GroupId == "policy:free" ? "Free" : router.GroupId.StartsWith("collection:", StringComparison.Ordinal)
-            ? (configuration.Collections ?? []).Single(collection => "collection:" + collection.Id == router.GroupId).Name
-            : catalog.Find(router.GroupId[9..])?.Name ?? router.GroupId[9..];
+    private static string RouterGroupName(CollectionRouterDto router, ConfigurationDto configuration, ProviderCatalogRegistry catalog)
+    {
+        if (router.GroupId == "policy:free") return "Free";
+        if (router.GroupId.StartsWith("collection:", StringComparison.Ordinal))
+            return (configuration.Collections ?? []).Single(collection => "collection:" + collection.Id == router.GroupId).Name;
+        if (router.GroupId.StartsWith("account:", StringComparison.Ordinal))
+        {
+            var account = configuration.Accounts.Single(account => "account:" + account.Id == router.GroupId);
+            return DerivedModelGroups.ProviderName(account.Provider, catalog) + " (" + DerivedModelGroups.AccountName(configuration, account) + ")";
+        }
+        return DerivedModelGroups.ProviderName(router.GroupId[9..], catalog);
+    }
 
     private static ProviderRouteDescriptorDto? PresentationModel(RouteDto route, ProviderCatalogRegistry catalog)
     {
@@ -136,14 +147,21 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         return candidates?.Length == 1 ? candidates[0] : null;
     }
 
-    private static string ServiceName(RouteDto route, ProviderCatalogRegistry catalog) => catalog.Find(route.Provider)?.Name ?? route.Provider switch
-    {
-        "codex" => "Codex", "commandcode" => "Command Code", "kimi" => "Kimi",
-        "xiaomi-mimo" => "Xiaomi MiMo", "zai" => "Z.ai", _ => route.Provider
-    };
+    private static string ServiceName(RouteDto route, ProviderCatalogRegistry catalog) => DerivedModelGroups.ProviderName(route.Provider, catalog);
 
-    private static string DisplayName(RouteDto route, ProviderCatalogRegistry catalog) =>
-        $"{(IsInternalReview(route) ? "Codex Auto Review" : PresentationModel(route, catalog)?.Name ?? route.UpstreamModel)} · {ServiceName(route, catalog)}";
+    private static string DisplayName(RouteDto route, ProviderCatalogRegistry catalog, ConfigurationDto configuration, RouteDto[] selectable)
+    {
+        var service = ServiceName(route, catalog);
+        var accounts = DerivedModelGroups.Accounts(configuration, selectable.Where(member => string.Equals(member.Provider, route.Provider, StringComparison.OrdinalIgnoreCase)));
+        if (route.Pooled || route.AccountIds.Length != 1) service += " (Pool)";
+        else if (accounts.Length > 1)
+            service += " (" + DerivedModelGroups.AccountName(configuration, configuration.Accounts.Single(account => account.Id == route.AccountIds[0])) + ")";
+        var label = IsInternalReview(route) ? "Codex Auto Review" : PresentationModel(route, catalog)?.Name ?? route.UpstreamModel;
+        if (selectable.Any(other => other.Id != route.Id && other.Provider == route.Provider && other.UpstreamModel == route.UpstreamModel &&
+            other.Pooled == route.Pooled && other.AccountIds.Order(StringComparer.Ordinal).SequenceEqual(route.AccountIds.Order(StringComparer.Ordinal))))
+            label += " (" + route.Alias + ")";
+        return $"{label} · {service}";
+    }
 
     private static string Description(RouteDto route, ProviderCatalogRegistry catalog)
     {
