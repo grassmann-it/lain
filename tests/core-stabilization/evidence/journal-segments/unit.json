@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "sourceCommit": "6adbf89624b7afc631ca5dcc9261e479a18ef518",
+  "sourceManifestSha256": "9c6bed3c8be2af1c3f98942b8402e7b49d6cbaae2ea96cde8132e1b3046739b1",
+  "preparedManifestSha256": "88fffb020cdb68a9b0fcacda7d3597be92f41baa0cb414d4fa15f1ac72be3cde",
+  "goVersion": "go1.27.2",
+  "goCommand": [
+    "/home/tomka/.local/share/model-usage/toolchain/go/bin/go",
+    "test",
+    "-json",
+    "-mod=readonly",
+    "-p=1",
+    "./internal/...",
+    "./cmd/lain-proxy",
+    "-count=1",
+    "-timeout=90s"
+  ],
+  "goExitCode": 0,
+  "goElapsedSeconds": 42.172866695000266,
+  "summary": {
+    "testPasses": 208,
+    "topLevelPasses": 95,
+    "packages": [
+      {
+        "Time": "2026-10-25T10:55:03.177988999+01:00",
+        "Action": "pass",
+        "Package": "lain.local/proxy/internal/freeonly",
+        "Elapsed": 0.004
+      },
+      {
+        "Time": "2026-10-25T10:55:41.718598656+01:00",
+        "Action": "pass",
+        "Package": "lain.local/proxy/internal/lain",
+        "Elapsed": 3.431
+      },
+      {
+        "Time": "2026-10-25T10:55:43.32170451+01:00",
+        "Action": "pass",
+        "Package": "lain.local/proxy/cmd/lain-proxy",
+        "Elapsed": 0.042
+      }
+    ],
+    "failures": [],
+    "skips": [
+      {
+        "Time": "2026-10-25T10:55:38.587602888+01:00",
+        "Action": "skip",
+        "Package": "lain.local/proxy/internal/lain",
+        "Test": "TestJournalBoundedGrowthMeasurement",
+        "Elapsed": 0
+      }
+    ],
+    "journalTopLevelPasses": [
+      "TestJournalSegmentsExactLegacyExportAndCrossBoundaryReplay",
+      "TestJournalSegmentsRotationRestartAndQuotaSidecar",
+      "TestJournalSegmentsConcurrentAppendAndReplay",
+      "TestJournalSegmentsPublicationFailuresRetainAcknowledgedPrefix",
+      "TestJournalSegmentsAbruptPublicationCrash",
+      "TestJournalSegmentsRejectCorruptionAndTornActive",
+      "TestJournalSegmentsDetectPostOpenArchiveCorruption",
+      "TestJournalSegmentsOfflineWriterExclusionAndNoReplaceRace",
+      "TestJournalSegmentsOversizedEventAndSyncFailureVisibility",
+      "TestJournalSegmentsRecoverTornActiveIntoExactFlatPrefix",
+      "TestJournalSegmentsSparseCheckpointsWithinSealedAndActiveSegments",
+      "TestOfflineArchiveCommandsPreserveBytesAndRejectWrongFlags"
+    ]
+  },
+  "pythonResults": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/acceptance",
+        "-p",
+        "test_upgrade_probe.py",
+        "-v"
+      ],
+      "exitCode": 0,
+      "summary": "ests.test_segmented_journal_rejected_before_services_or_state_mutation) ... ok\ntest_upgrade_and_rollback_preserve_pending_revision_pair (test_upgrade_probe.UpgradeProbeTests.test_upgrade_and_rollback_preserve_pending_revision_pair) ... ok\ntest_upgrade_and_rollback_restore_paired_app_and_database (test_upgrade_probe.UpgradeProbeTests.test_upgrade_and_rollback_restore_paired_app_and_database) ... ok\n\n----------------------------------------------------------------------\nRan 12 tests in 0.808s\n\nOK\n"
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/delivery-stabilization",
+        "-p",
+        "test_legacy_rollback.py",
+        "-v"
+      ],
+      "exitCode": 0,
+      "summary": "est_legacy_rollback.LegacyRollback.test_reject_unrecognized_schema) ... ok\ntest_segmented_journal_requires_explicit_export_before_source_read (test_legacy_rollback.LegacyRollback.test_segmented_journal_requires_explicit_export_before_source_read) ... ok\ntest_staged_only_current_grants_and_forward_schema (test_legacy_rollback.LegacyRollback.test_staged_only_current_grants_and_forward_schema) ... ok\n\n----------------------------------------------------------------------\nRan 10 tests in 3.941s\n\nOK\n"
+    }
+  ],
+  "bounds": {
+    "memoryHigh": "1536M",
+    "memoryMax": "2G",
+    "memorySwapMax": "256M",
+    "cpuQuota": "150%",
+    "gomaxprocs": 2,
+    "gomemlimit": "1GiB",
+    "nice": 10,
+    "ioniceClass": 2,
+    "ionicePriority": 7,
+    "network": "private-loopback-only",
+    "moduleFetching": "off",
+    "tmpFilesystem": "btrfs-SSD"
+  },
+  "rawFiles": {
+    "go-test.jsonl": "ad3d08ddbbb36eb84aa1959ddceae6e3dc847abe86e95bc4db716a42390d6d01",
+    "upgrade-tests.txt": "9b73940438b997b0002d9729222714cd9a7e4680f07b44fea79e5888acad2a62",
+    "legacy-tests.txt": "49f0c20cf885175916968e61767f59ac8c0aa134538f2def6c69c87ecc52b4cd"
+  },
+  "qualification": "synthetic unit/command guard tests; no built Core process or real provider qualification claimed"
+}

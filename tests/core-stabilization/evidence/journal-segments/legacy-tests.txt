@@ -1,0 +1,15 @@
+test_absolute_auth_rebase_is_explicit_and_exact (test_legacy_rollback.LegacyRollback.test_absolute_auth_rebase_is_explicit_and_exact) ... ok
+test_reject_ambiguous_auth_mappings (test_legacy_rollback.LegacyRollback.test_reject_ambiguous_auth_mappings) ... ok
+test_reject_cursor_change (test_legacy_rollback.LegacyRollback.test_reject_cursor_change) ... ok
+test_reject_error_data (test_legacy_rollback.LegacyRollback.test_reject_error_data) ... ok
+test_reject_new_event (test_legacy_rollback.LegacyRollback.test_reject_new_event) ... ok
+test_reject_pending_recovery (test_legacy_rollback.LegacyRollback.test_reject_pending_recovery) ... ok
+test_reject_symlink (test_legacy_rollback.LegacyRollback.test_reject_symlink) ... ok
+test_reject_unrecognized_schema (test_legacy_rollback.LegacyRollback.test_reject_unrecognized_schema) ... ok
+test_segmented_journal_requires_explicit_export_before_source_read (test_legacy_rollback.LegacyRollback.test_segmented_journal_requires_explicit_export_before_source_read) ... ok
+test_staged_only_current_grants_and_forward_schema (test_legacy_rollback.LegacyRollback.test_staged_only_current_grants_and_forward_schema) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 3.941s
+
+OK

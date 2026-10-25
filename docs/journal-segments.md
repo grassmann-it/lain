@@ -157,3 +157,16 @@ Core-, Sourcemanifest-, Helper- und sämtliche Sealed-Hashes werden gebunden.
 Die Probe behauptet weder die Ausführung eines alten Binaries noch eine neue
 vollständige Host-Lifecycle-/Credential-Restoreabnahme. Diese bestehenden
 Qualifikationen bleiben getrennte Belege.
+
+
+Am 25.10.2026 wurden die integrierten Go-Tests auf Source `6adbf89` mit
+Sourcemanifest `9c6bed3c8be2af1c3f98942b8402e7b49d6cbaae2ea96cde8132e1b3046739b1`
+ausgeführt: **95 Top-level-Tests, 208 Passereignisse, drei Pakete, keine Fehler**;
+der bestehende opt-in-Messlauf wurde erwartungsgemäß übersprungen. Alle elf
+Segmentjournaltests und der neue CLI-Test einschließlich Crashsubprozessen und
+Sparsegrenzen bestanden. Zwölf Upgrade- und zehn Legacy-Pythonregressionen
+bestanden ebenfalls. [Beleg und Rohlogs](../tests/core-stabilization/evidence/journal-segments/unit.json).
+Go 1.27.2, `-mod=readonly -p=1 -count=1 -timeout=90s`, private SSD-Vorbereitung,
+Loopback-Namespace und Ressourcenlimits wurden verwendet; die vorbereiteten
+Quellen wurden danach unverändert verifiziert. Die tatsächliche Core-/Collector-
+Prozessprobe bleibt ein eigener, erst nach frischem Binarybuild ausführbarer Gate.
