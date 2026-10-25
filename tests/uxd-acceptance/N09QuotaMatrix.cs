@@ -13,10 +13,13 @@ internal sealed partial class Acceptance
     private async Task RunN09QuotaMatrix()
     {
         Fixture? template = null;
-        foreach (var monitor in new[] { false, true })
-        foreach (var (width, height) in monitor
-            ? new[] { (1120, 780), (800, 560), (640, 420) }
-            : new[] { (1120, 780), (800, 560) })
+        // Exercise the previously failing compact cells first, while keeping
+        // one unchanged synthetic snapshot for all fifteen cells in this run.
+        foreach (var (monitor, width, height) in new[]
+        {
+            (true, 640, 420), (false, 1120, 780), (false, 800, 560),
+            (true, 1120, 780), (true, 800, 560)
+        })
         foreach (var information in Enum.GetValues<InformationLevel>())
         {
             var name = $"native-n09-quota-{(monitor ? "monitor" : "gateway")}-{information}-{width}x{height}";
@@ -117,7 +120,7 @@ internal sealed partial class Acceptance
         Check(Windows(detail).SequenceEqual(labels), "selected long-name account retains all six original windows including zero credits");
         Check(Fits(Need<Button>(closeName)) && Fits(detail),
             "selected account detail viewport and Close remain reachable at the permitted window size");
-        CheckN09QuotaGeometry("selected-detail");
+        CheckN09QuotaGeometry("selected-detail", singlePaneDetail: monitor && width < 800);
         Capture(FlowImage("long-name-selected"));
 
         // The same selected identity must survive presentation changes. Menus
@@ -138,6 +141,9 @@ internal sealed partial class Acceptance
         input.Key(0xff1b); await Task.Delay(120);
         Check(Find<ScrollViewer>(detailName) is null && Need<Button>(openName).IsFocused,
             "native Escape closes selected details and restores the original long-name account focus");
+        Check(Fits(Need<Button>(openName)) && Find<TextBox>("Search accounts") is not null,
+            "closing details restores the visible inventory and reachable original account action");
+        CheckN09QuotaGeometry("inventory-after-close");
 
         var missing = Need<Border>("Account budgets for A Missing MiMo");
         var failed = Need<Border>("Account budgets for B Failed Cloudflare");
@@ -182,15 +188,26 @@ internal sealed partial class Acceptance
 
     private Border[] N09QuotaCards() => Controls<Border>().Where(value => AutomationProperties.GetName(value)?.StartsWith("Account budgets for ", StringComparison.Ordinal) == true).ToArray();
 
-    private void CheckN09QuotaGeometry(string stage)
+    private void CheckN09QuotaGeometry(string stage, bool singlePaneDetail = false)
     {
         var cards = N09QuotaCards();
-        Check(cards.All(value => value.Bounds.Width > 0 && value.Bounds.Height > 0), "quota cards retain positive physical bounds: " + stage);
-        Check(cards.SelectMany((left, index) => cards.Skip(index + 1).Select(right => (a: Bounds(left), b: Bounds(right))))
-            .All(pair => Math.Min(pair.a.Right, pair.b.Right) - Math.Max(pair.a.Left, pair.b.Left) <= 1
-                || Math.Min(pair.a.Bottom, pair.b.Bottom) - Math.Max(pair.a.Top, pair.b.Top) <= 1),
-            "physical account budget cards do not overlap: " + stage);
-        geometry.Add(new { currentCase, stage, mode = fixture.Config.RuntimeMode, information = level.ToString(),
+        if (singlePaneDetail)
+        {
+            var detail = Need<ScrollViewer>("Account detail content for " + N09LongAccount);
+            Check(cards.Length == 0 && Find<TextBox>("Search accounts") is null
+                && Fits(detail) && Fits(Need<Button>("Close account details for " + N09LongAccount)),
+                "compact selected view shows reachable detail scrolling and Close with inventory hidden: " + stage);
+        }
+        else
+        {
+            Check(cards.Length == 7 && cards.All(value => value.Bounds.Width > 0 && value.Bounds.Height > 0),
+                "all seven quota cards retain positive physical bounds: " + stage);
+            Check(cards.SelectMany((left, index) => cards.Skip(index + 1).Select(right => (a: Bounds(left), b: Bounds(right))))
+                .All(pair => Math.Min(pair.a.Right, pair.b.Right) - Math.Max(pair.a.Left, pair.b.Left) <= 1
+                    || Math.Min(pair.a.Bottom, pair.b.Bottom) - Math.Max(pair.a.Top, pair.b.Top) <= 1),
+                "physical account budget cards do not overlap: " + stage);
+        }
+        geometry.Add(new { currentCase, stage, singlePaneDetail, mode = fixture.Config.RuntimeMode, information = level.ToString(),
             width = window.ClientSize.Width, height = window.ClientSize.Height, scale = window.RenderScaling,
             fixture = "quota-hierarchy-seven-accounts-long-custom-name", savedAccountIds = fixture.Config.Accounts.Select(value => value.Id).ToArray(),
             cards = cards.Select(value => new { name = AutomationProperties.GetName(value), bounds = Bounds(value).ToString(), visibleInViewport = IntersectsViewport(value) }).ToArray() });
