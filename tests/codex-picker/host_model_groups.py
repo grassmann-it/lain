@@ -116,13 +116,13 @@ def inner():
                 continue
         raise AssertionError("Host did not launch the exact staged Core as its owned child")
 
-    def inference(thread, continuation=False):
+    def inference(thread, continuation=False, alias="package-auto"):
         user = {"role": "user", "content": marker("text", "package-first")}
         inputs = [user]
         if continuation:
             inputs += [{"role": "assistant", "content": "synthetic response"},
                        {"role": "user", "content": "second synthetic turn"}]
-        body = {"model": "package-auto", "input": inputs, "store": False, "stream": False}
+        body = {"model": alias, "input": inputs, "store": False, "stream": False}
         token = (data / "credentials/inference.token").read_text().strip()
         request = Request("http://127.0.0.1:18417/v1/responses", json.dumps(body).encode(),
             {"Authorization": "Bearer " + token, "Content-Type": "application/json", "Thread-Id": thread})
@@ -168,22 +168,46 @@ def inner():
         config = api("/profiles/package-profile", "PUT", {"revision": config["revision"], "value": profile})
         collection = {"id": "package-security", "name": "IT Sec", "routeIds": ["package-route-b", "package-route-a"]}
         config = api("/collections/package-security", "PUT", {"revision": config["revision"], "value": collection})
+        # Its alphabetically earlier label must not reorder the saved custom views.
+        second_collection = {"id": "package-second", "name": "A second stored collection", "routeIds": ["package-route-a"]}
+        config = api("/collections/package-second", "PUT", {"revision": config["revision"], "value": second_collection})
         router = {"id": "package-router", "alias": "package-auto", "groupId": "collection:package-security",
                   "profileId": "package-profile", "costPolicy": "configured", "enabled": True}
         stale_revision = config["revision"]
         config = api("/collection-routers/package-router", "PUT", {"revision": stale_revision, "value": router})
+        account_router = {"id": "package-account-router", "alias": "package-account-auto", "groupId": "account:" + account_ids["a"],
+                          "profileId": "package-profile", "costPolicy": "configured", "enabled": True}
+        config = api("/collection-routers/package-account-router", "PUT", {"revision": config["revision"], "value": account_router})
         report["configuration"] = config
         report["checks"].append("Host API CAS creates two synthetic accounts/routes, profile, ordered collection and router")
         routers = cli("routers", "--json")
-        expect(routers["revision"] == config["revision"] and routers["routers"] == [router], "staged typed CLI router view differs from Host")
+        expect(routers["revision"] == config["revision"] and routers["routers"] == [router, account_router], "staged typed CLI router view differs from Host")
         report["cliRouters"] = routers
         export_request = {"revision": config["revision"], "executablePath": str(prefix / "bin/lain"),
                           "catalogPath": str(home / ".codex/lain.models.json"), "enableLainModelPicker": True}
         exported = api("/profiles/package-profile/codex/export", "POST", export_request)
         catalog = json.loads(exported["catalog"])
-        group = next(group for group in catalog["lain_model_picker"]["groups"] if group["id"] == "collection:package-security")
-        expect(group["router_model"] == "package-auto" and group["models"] == ["package-model-b", "package-model-a"], "export lost collection order/router alias")
+        groups = catalog["lain_model_picker"]["groups"]
+        account_group_ids = {"account:" + account_id for account_id in account_ids.values()}
+        expect(len(groups) == 4 and {group["id"] for group in groups[:2]} == account_group_ids and
+               [group["id"] for group in groups[2:]] == ["collection:package-security", "collection:package-second"],
+               "export must put exactly two account groups first, then custom collections in saved order")
+        for suffix in ("a", "b"):
+            account_group = next(group for group in groups if group["id"] == "account:" + account_ids[suffix])
+            expect(account_group["models"] == ["package-model-" + suffix], "strict account group leaked another account's model")
+            expect("Package synthetic " + suffix in account_group["name"] and "fixture" in account_group["name"].lower(),
+                   "account group label lost readable account/provider identity")
+            expect(account_group["router_model"] == ("package-account-auto" if suffix == "a" else None),
+                   "account group attached another account's router")
+        expect(len({group["name"] for group in groups[:2]}) == 2, "account groups have indistinguishable labels")
+        group = groups[2]
+        expect(group["name"] == "IT Sec" and group["router_model"] == "package-auto" and
+               group["models"] == ["package-model-b", "package-model-a"], "export lost IT Sec name/order/router alias")
+        expect(groups[3]["name"] == second_collection["name"] and groups[3]["models"] == ["package-model-a"] and
+               groups[3]["router_model"] is None, "second custom collection was changed")
         expect(sum(model["slug"] == "package-auto" for model in catalog["models"]) == 1, "router virtual model missing/duplicated")
+        expect(sum(model["slug"] == "package-account-auto" for model in catalog["models"]) == 1, "account router virtual model missing/duplicated")
+        report["exportedGroups"] = groups
         save(root / "host-export.json", exported)
         installed = cli("profiles", "install-codex", "package-profile", "--model-groups", "--revision", str(config["revision"]), "--json")
         expect(json.loads(Path(installed["catalogPath"]).read_text()) == catalog, "CLI installed catalog differs from real Host export")
@@ -191,7 +215,7 @@ def inner():
         report["cliInstall"] = installed
         ordinary = api("/profiles/package-profile/codex/export", "POST", {**export_request, "enableLainModelPicker": False})
         expect("lain_model_picker" not in json.loads(ordinary["catalog"]) and
-               all(model["slug"] != "package-auto" for model in json.loads(ordinary["catalog"])["models"]), "ordinary export leaked opt-in router UI")
+               all(model["slug"] not in {"package-auto", "package-account-auto"} for model in json.loads(ordinary["catalog"])["models"]), "ordinary export leaked opt-in router UI")
         applied = api("/profiles/package-profile/apply", "POST", {"revision": config["revision"]})
         expect(applied["appliedRevision"] == config["revision"], "actual package profile apply failed")
         report["runningCoreBeforeRestart"] = verify_core_process()
@@ -222,6 +246,24 @@ def inner():
         rows = provider.snapshot()
         expect(len(rows) == 2 and all(row["account"] == "account-b" and row["model"] == MODEL for row in rows), "real upstream sends escaped sticky account/model")
         report.update(usage=usage, attempts=attempts, providerRequests=rows, pinsAfterRestart=json.loads(pin_path.read_text()))
+        account_thread = str(uuid.uuid4())
+        report["accountRouterResponse"] = inference(account_thread, alias="package-account-auto")
+        account_usage, all_attempts = wait_usage(3)
+        routed_attempts = [row for row in all_attempts if row["requestedModel"] == "package-account-auto"]
+        expect(len(routed_attempts) == 1 and routed_attempts[0]["routeId"] == "package-route-a" and
+               routed_attempts[0]["accountId"] == account_ids["a"] and routed_attempts[0]["model"] == MODEL,
+               "account router did not retain its own real route/account identity")
+        expect(account_usage["totals"]["requests"] == 3 and account_usage["totals"]["errors"] == 0 and
+               cli("history", "--json")["totals"] == account_usage["totals"], "account-router Host/CLI usage differs")
+        rows = provider.snapshot()
+        expect(len(rows) == 3 and rows[-1]["account"] == "account-a" and rows[-1]["model"] == MODEL,
+               "account router dispatched through a different account")
+        final_pins = json.loads(pin_path.read_text())
+        new_pins = [pin for pin in final_pins["pins"] if pin["threadId"] == account_thread]
+        expect(len(final_pins["pins"]) == 2 and len(new_pins) == 1 and new_pins[0]["routeId"] == "package-route-a" and
+               new_pins[0]["accountId"] == account_ids["a"], "account router pin has the wrong scope")
+        report.update(collectionRouterUsage=usage, collectionRouterAttempts=attempts,
+                      usage=account_usage, attempts=all_attempts, finalPins=final_pins)
         before = api("/configuration")
         try:
             api("/collection-routers/package-router", "PUT", {"revision": stale_revision, "value": router})
@@ -233,7 +275,9 @@ def inner():
         expect(api("/configuration") == before, "stale CAS changed saved configuration")
         report["checks"] += ["real grouped Host export equals staged CLI installed catalog", "ordinary export stays outside group opt-in",
             "actual staged Core dispatches two Responses turns on first ordered account", "Host restart preserves durable pins and usage",
-            "staged CLI and Host usage agree on real identities", "stale CAS returns409 without mutation"]
+            "staged CLI and Host usage agree on real identities", "stale CAS returns409 without mutation",
+            "two readable strict-account groups precede custom collections in saved order",
+            "explicit account router exports and dispatches only its own account"]
         report["status"] = "passed"
     except Exception as error:
         report["error"] = f"{type(error).__name__}: {error}"

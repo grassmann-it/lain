@@ -29,8 +29,11 @@ synthetic home and retained evidence mount; no systemd command is run. Network
 access is limited to the isolated namespace's loopback fixture.
 
 The real staged Host API creates two fake-key loopback accounts, two strict
-routes, one profile, an explicitly ordered collection and an enabled router
-using revision CAS. The test checks the staged typed CLI's router view, real
+routes, one profile, two explicitly ordered collections and collection/account
+routers using revision CAS. Exactly two readable `account:ID` groups must come
+first, each containing only that strict account's alias. Custom collections
+follow in saved order even when their names sort differently; IT Sec keeps its
+name, member order and router. The test checks the staged typed CLI's router view, real
 Host grouped export, and `profiles install-codex --model-groups` output. It also
 verifies that ordinary export omits the extension and virtual router model.
 
@@ -38,7 +41,9 @@ Profile application must start the **exact staged Core**: the harness checks
 the Host child's `/proc/PID/exe` path and executable hash. It then sends one
 Responses request, stops/restarts the staged Host, verifies the unchanged
 durable pin and sends a second full-history turn with the same Thread-Id. Both
-must hit the collection's first real account. Host usage and staged CLI history
+must hit the collection's first real account. A third request through the explicit
+account router must hit the other selected account and create its separate pin.
+Host usage and staged CLI history
 must agree; RequestedModel keeps the router alias while account/route/model
 fields identify the real upstream. Finally a stale router CAS must return 409
 without mutation, and the main Codex config sentinel must remain byte-identical.
