@@ -18,8 +18,19 @@ wallet remains visible, as does a real exhausted main balance. Missing readings
 stay unknown and never become zero. When a main reading exists, unknown
 secondary windows are deferred to `--full`.
 
-Narrow terminals wrap as needed. Known consumed-percentage bars, native remaining
-balances, reset times and concise shared-budget tags remain visible. Disabled
+Account names are highlighted, repeated provider names are omitted, and status
+colours belong to consumption bars and warnings rather than whole rows. Window
+labels align within each account. Accounts without readings form a quiet second
+group, with short setup/status guidance instead of full connection instructions.
+Detailed instructions and unabridged error messages remain in `--full`.
+
+Narrow terminals wrap at field boundaries, with indented continuations; below
+48 columns the bar gives way to its explicit percentage. Long names and words
+wrap without dropping text. Known consumed percentages, native remaining
+balances, reset times and concise shared-budget tags remain visible. Resets use
+the system's local timezone, named in the heading, with an explicit UTC offset
+on each future reset (including repeated hours at daylight-saving transitions).
+`--full` and JSON retain the original UTC timestamps. Disabled
 accounts retain their reported values. Missing credentials, expiry and unavailable
 quota diagnostics remain visible for accounts without readings. Refresh errors
 and last-known warnings remain visible even when their quota window is deferred. Stale/overdue displayed

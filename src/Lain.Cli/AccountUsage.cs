@@ -19,8 +19,9 @@ public static partial class CliApplication
             quotas.Where(quota => quota.AccountId == account.Id).ToArray())).ToArray());
     }
 
-    internal static Task WriteAccountUsage(TextWriter output, AccountUsageOverview overview, HumanOutputContext? context = null, bool full = false) =>
-        full ? WriteFullAccountUsage(output, overview, context) : WriteCompactAccountUsage(output, overview, context);
+    internal static Task WriteAccountUsage(TextWriter output, AccountUsageOverview overview, HumanOutputContext? context = null,
+        bool full = false, TimeZoneInfo? timeZone = null) =>
+        full ? WriteFullAccountUsage(output, overview, context) : WriteCompactAccountUsage(output, overview, context, timeZone);
 
     private static async Task WriteFullAccountUsage(TextWriter output, AccountUsageOverview overview, HumanOutputContext? context)
     {
