@@ -7,6 +7,7 @@ public record RouteDto(string Id, string Alias, string UpstreamModel, string Pro
 public record ProfileDto(string Id, string Name, string[] RouteIds, string? DefaultRouteId = null, RoutingPolicyDto? Policy = null);
 public record ConfigurationDto(long Revision, long AppliedRevision, AccountDto[] Accounts, RouteDto[] Routes, ProfileDto[] Profiles, string RuntimeMode = "gateway");
 public record RevisionRequest<T>(long Revision, T Value);
+public record AccountMetadataDiscoveryRequest(long ExpectedGeneration);
 public record StatusDto(int ContractVersion, string Version, string State, bool ProxyReady, long Revision, long AppliedRevision, DateTimeOffset ObservedAt, string? Error = null,
     string? ActiveProfileId = null, long? ActiveProfileRevision = null,
     string RuntimeMode = "gateway", HostCapabilitiesDto? Capabilities = null, ProfileApplicationStatusDto? Application = null);

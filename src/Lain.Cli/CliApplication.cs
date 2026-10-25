@@ -21,6 +21,7 @@ public static partial class CliApplication
           accounts login PROVIDER [--method ID] [--purpose quota,inference]
                    [--account ID] [--name NAME] [--revision N] [--json]
           accounts login-status|login-cancel|check ID [--json]
+          accounts discover ID [--revision N] [--json]  Read the saved xAI key's team identity; no budget read
           accounts enable|disable|remove ID [--revision N] [--json]
           accounts add-api --name NAME --provider PROVIDER --base-url URL
                    (--key-env ENVNAME | --key-stdin) [--provider-route ID]
@@ -247,9 +248,9 @@ public static partial class CliApplication
                     options.RequireOnly("json", "revision", "method", "purpose", "account", "name");
                     if (options.Get("purpose") is { } purposes && purposes.Split(',', StringSplitOptions.TrimEntries).Any(p => p is not ("quota" or "inference" or "cost" or "models"))) throw new ArgumentException("Unknown connection purpose.");
                 }
-                else if (action is "enable" or "disable" or "remove") options.RequireOnly("json", "revision");
+                else if (action is "enable" or "disable" or "remove" or "discover") options.RequireOnly("json", "revision");
                 else if (action is "check" or "login-status" or "login-cancel") options.RequireOnly("json");
-                else throw new ArgumentException("Account action must be add, add-api, monitor, login, login-status, login-cancel, enable, disable, remove or check.");
+                else throw new ArgumentException("Account action must be add, add-api, monitor, login, login-status, login-cancel, enable, disable, remove, discover or check.");
             }
             if (options.Get("revision") is { } revision) _ = ParseLong(revision, "revision");
             return;
@@ -293,6 +294,17 @@ public static partial class CliApplication
         if (action == "login-status") return await client.GetLoginAsync(options.Positionals[1], ct);
         if (action == "login-cancel") return await client.CancelLoginAsync(options.Positionals[1], ct);
         if (action == "check") return await client.CheckAccountAsync(options.Positionals[1], ct);
+        if (action == "discover")
+        {
+            var config = await client.GetConfigurationAsync(ct);
+            var account = config.Accounts.SingleOrDefault(a => a.Id == options.Positionals[1])
+                ?? throw new ArgumentException("The account is not configured.");
+            if (account.Provider != "xai") throw new ArgumentException("Team discovery is available only for xAI accounts.");
+            var expected = options.Get("revision") is { } text ? ParseLong(text, "revision") : config.Revision;
+            if (expected != config.Revision)
+                throw new LainApiException(HttpStatusCode.Conflict, "revision_conflict", "Configuration changed; reload before discovering the team again.");
+            return await client.DiscoverXaiTeamAsync(expected, account.Id, account.Generation, ct);
+        }
         var settings = action == "add-api" ? ParseAccountSettings(options) : null;
         if (settings is not null) await ValidateAccountSettings(client, options.Get("provider")!, settings, ct);
         string? apiKey = null;

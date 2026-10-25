@@ -38,6 +38,9 @@ public sealed partial class LainApiClient : IDisposable
         Send<ConfigurationDto>(HttpMethod.Delete, $"accounts/{Id(id)}?revision={revision}", null, ct);
     public Task<AccountDto> CheckAccountAsync(string id, CancellationToken ct = default) =>
         Send<AccountDto>(HttpMethod.Post, $"accounts/{Id(id)}/check", null, ct);
+    public Task<ConfigurationDto> DiscoverXaiTeamAsync(long revision, string accountId, long expectedGeneration, CancellationToken ct = default) =>
+        Send<ConfigurationDto>(HttpMethod.Post, $"accounts/{Id(accountId)}/metadata/xai",
+            new RevisionRequest<AccountMetadataDiscoveryRequest>(revision, new(expectedGeneration)), ct);
     public Task<MonitorAccessDto> MonitorAccessAsync(string accountId, CancellationToken ct = default) =>
         Get<MonitorAccessDto>($"accounts/{Id(accountId)}/monitor", ct);
     public Task<ConfigurationDto> SetMonitorAccessAsync(long revision, string accountId, MonitorAccessRequest value, CancellationToken ct = default) =>

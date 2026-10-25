@@ -39,12 +39,13 @@ internal static class Program
         }
         SmokeApp.MonitorTableOnly = args.Contains("--monitor-table-smoke", StringComparer.Ordinal);
         SmokeApp.AccountSnapshotsOnly = args.Contains("--account-snapshots-smoke", StringComparer.Ordinal);
+        SmokeApp.XaiMetadataOnly = args.Contains("--xai-metadata-smoke", StringComparer.Ordinal);
         SmokeApp.ModelIdentityOnly = args.Contains("--model-identity-smoke", StringComparer.Ordinal);
         SmokeApp.AccountSortOnly = args.Contains("--account-sort-smoke", StringComparer.Ordinal);
         SmokeApp.ProviderSetupOnly = args.Contains("--provider-setup-smoke", StringComparer.Ordinal);
         SmokeApp.InspectorOnly = args.Contains("--inspector-smoke", StringComparer.Ordinal);
         return AppBuilder.Configure<SmokeApp>().UsePlatformDetect().WithInterFont()
-            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--model-identity-smoke" or "--monitor-table-smoke" or "--inspector-smoke")).ToArray());
+            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--xai-metadata-smoke" or "--model-identity-smoke" or "--monitor-table-smoke" or "--inspector-smoke")).ToArray());
     }
 }
 
@@ -52,6 +53,7 @@ internal sealed class SmokeApp : Application
 {
     public static bool MonitorTableOnly { get; set; }
     public static bool AccountSnapshotsOnly { get; set; }
+    public static bool XaiMetadataOnly { get; set; }
     public static bool ModelIdentityOnly { get; set; }
     public static bool AccountSortOnly { get; set; }
     public static bool ProviderSetupOnly { get; set; }
@@ -83,6 +85,7 @@ internal sealed class SmokeApp : Application
                 if (InspectorOnly) await scenario.RunInspectorSmoke();
                 else if (MonitorTableOnly) await scenario.RunMonitorTableSmoke();
                 else if (AccountSnapshotsOnly) await scenario.RunAccountSnapshotsSmoke();
+                else if (XaiMetadataOnly) await scenario.RunXaiMetadataSmoke();
                 else if (ModelIdentityOnly) await scenario.RunModelIdentitySmoke();
                 else if (ProviderSetupOnly) await scenario.RunProviderSetupSmoke();
                 else if (AccountSortOnly) await scenario.RunAccountSortSmoke();

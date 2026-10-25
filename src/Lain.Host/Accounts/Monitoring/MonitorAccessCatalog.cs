@@ -35,16 +35,16 @@ public static class MonitorAccessCatalog
         [
             new("access-token-snapshot", "Google Monitoring access-token snapshot", true, "Google project ID",
                 "The Google Cloud project used by this Gemini inference account.", GoogleMonitoringDocs, [GoogleMonitoringScope],
-                "Usage only when the project exports matching metrics. Requires a future token expiry, Monitoring API access and monitoring.timeSeries.list permission. External tokens are never refreshed or revoked; desktop OAuth setup is not implemented.")
+                "Reads project/model usage and available effective limits when the project exports matching metrics; delayed usage does not establish remaining capacity. Requires a future token expiry, Monitoring API access and monitoring.timeSeries.list permission. External snapshots are never refreshed or revoked. For renewable access, use Connect with Google Cloud CLI in its separate private profile; its standard Google Cloud grant has broad permissions. The separate browser method requires a maintainer-qualified public client.")
         ],
         "cloudflare-workers-ai" =>
         [
             new("inference-key", "Use existing Cloudflare API token", false, "Cloudflare account ID",
                 "The 32-character account ID must match this account's inference route.", CloudflareAnalyticsDocs, ["Account Analytics Read"],
-                "Authentication capability only: a Workers AI usage dataset and reader are not yet qualified. An existing token with this permission needs no replacement."),
+                "Reads account-wide estimated Workers AI neurons for the UTC day when this token has Account > Account Analytics > Read and the account exposes the dataset. Reuses the saved inference token without copying or replacing it. Analytics may be sampled or delayed; no exact remaining allowance is inferred."),
             new("api-token", "Separate Cloudflare Analytics token", true, "Cloudflare account ID",
                 "Restrict the token to this account and Account > Account Analytics > Read.", CloudflareAnalyticsDocs, ["Account Analytics Read"],
-                "Optional least-privilege analytics access. A Workers AI usage dataset and reader are not yet qualified; saving this token does not enable reporting.")
+                "Optional separate analytics access for this account, including a standalone monitor. Use the existing token instead when it already has Account > Account Analytics > Read. Reads estimated UTC-day neurons where available; dataset access and coverage depend on the account. No exact remaining allowance is inferred.")
         ],
         _ => []
     };

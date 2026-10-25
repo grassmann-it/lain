@@ -155,6 +155,11 @@ public sealed partial class MainWindow
             new("credential", "Check local credential", () => Run(async () => { var check = await _client.CheckAccountAsync(account.Id, _lifetime.Token); _notice.Text = $"Local credential: {check.State}. Provider access was not tested."; }, "Local credential checked.")),
             new("reconnect", "Reconnect account…", () => { CloseAccountInspector(false); _ = BeginProviderConnectionAsync(account.Provider, account); }),
             new("monitor", "Monitoring access", () => Run(() => OpenMonitorSetupAsync(account), "Review monitoring access.", true)),
+            .. (account.Provider == "xai" ? new ObjectCommand[] {
+                new("discover-team", "Discover team", () => Run(async () =>
+                    _configuration = await _client.DiscoverXaiTeamAsync(revision, account.Id, account.Generation, _lifetime.Token),
+                    "xAI team identity checked. No budget was read."), account.Enabled, "Enable this account before discovering its team.")
+            } : []),
             new("pin", IsAccountPinned(account) ? "Unpin account" : "Pin account", () => {
                 SavePreferences(p => p with { PinnedAccountIds = IsAccountPinned(account) ? p.PinnedAccountIds.Where(id => id != account.Id).ToArray() : p.PinnedAccountIds.Append(account.Id).ToArray() }, false);
                 if (inventoryChanged is null) Render();
@@ -171,18 +176,18 @@ public sealed partial class MainWindow
                 _notice.Text = "This account is no longer configured. Reload the inventory before choosing another action.";
                 return;
             }
-            if (command.Key is "enabled" or "remove" or "reconnect" or "monitor" && _configuration.Revision != revision)
+            if (command.Key is "enabled" or "remove" or "reconnect" or "monitor" or "discover-team" && _configuration.Revision != revision)
             {
                 _notice.Text = "Configuration changed while these actions were open. Reopen account details to review the current account before changing it.";
                 return;
             }
-            if (command.Key is "refresh" or "enabled" or "credential" or "reconnect" or "monitor" or "remove" && !_hostAvailable)
+            if (command.Key is "refresh" or "enabled" or "credential" or "reconnect" or "monitor" or "remove" or "discover-team" && !_hostAvailable)
             { _notice.Text = "The host is offline. The last known account remains visible; reload status before changing it."; return; }
             if (command.Key == "models" && IsMonitorMode) { _notice.Text = "Choose Gateway to configure model access."; return; }
             if (command.Key == "refresh" && IsAccountQuotaRefreshing(account.Id)) return;
             if (command.Available) command.Execute();
         }, Available = command.Available && (_hostAvailable || command.Key is "detail" or "usage" or "models" or "pin"),
-            Reason = !_hostAvailable && command.Key is "refresh" or "enabled" or "credential" or "reconnect" or "monitor" or "remove"
+            Reason = !_hostAvailable && command.Key is "refresh" or "enabled" or "credential" or "reconnect" or "monitor" or "remove" or "discover-team"
                 ? "The local host is offline." : command.Reason }).ToArray();
     }
 

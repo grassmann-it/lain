@@ -360,7 +360,7 @@ public sealed partial class MainWindow
             content.Children.Add(Ui.Text("This account uses a provider budget pool. Balances can be shared across accounts using that pool; do not assume separate capacity.", 12, Ui.Muted));
         var commands = AccountCommands(account, revision, inventoryChanged);
         var actions = OverviewActions();
-        foreach (var command in commands.Where(command => command.Key is "refresh" or "usage" or "models"
+        foreach (var command in commands.Where(command => command.Key is "refresh" or "usage" or "models" or "discover-team"
             || command.Key == "reconnect" && AccountCredentialWarning(account) is not null))
         {
             var button = Ui.Button(command.Label, command.Execute);
@@ -373,6 +373,13 @@ public sealed partial class MainWindow
         var more = Ui.Button("More account actions…", () => menu.Open()); more.ContextMenu = menu;
         actions.Children.Add(more);
         content.Children.Add(actions);
+
+        if (account.Provider == "xai")
+        {
+            content.Children.Add(Ui.Text(account.Binding is { ResourceType: "team", ResourceId: { } team }
+                ? "Team: " + team : "Team identity has not been discovered.", 12, Ui.Muted));
+            content.Children.Add(Ui.Text("Discover team uses the saved xAI key to read its identity. It does not read billing or a remaining budget.", 11, Ui.Muted));
+        }
 
         if (account.ExpiresAt is { } expiry) content.Children.Add(Ui.Text($"Credential expires {expiry.ToLocalTime():dd MMM · HH:mm} local time", 11, expiry <= DateTimeOffset.UtcNow ? Ui.Warning : Ui.Muted));
         var boundRoutes = _configuration?.Routes.Count(route => route.AccountIds.Contains(account.Id, StringComparer.Ordinal)) ?? 0;
