@@ -1,7 +1,7 @@
 {
   "id": "kilo",
   "name": "Kilo Gateway",
-  "summary": "Personal Kilo Gateway account with one explicit free-model Chat route. Exhausted credit remains a reported account state; no top-up or paid fallback is required.",
+  "summary": "Personal Kilo Gateway account with explicit concrete free-model Chat routes. Public catalogue observations do not establish account access, remaining credit or strict free-only enforcement.",
   "accountUrl": "https://app.kilo.ai/profile",
   "documentationUrl": "https://kilo.ai/docs/gateway/api-reference",
   "credentials": [
@@ -21,9 +21,9 @@
       "url": "https://app.kilo.ai/profile"
     },
     {
-      "title": "Confirm the explicit free model",
-      "description": "Check that google/gemma-4-26b-a4b-it:free is still offered and review its data handling. Availability changes; do not substitute a paid or auto route.",
-      "url": "https://kilo.ai/models/google-gemma-4-26b-a4b-it-free"
+      "title": "Confirm a current concrete free model",
+      "description": "The 2026-10-25 public models endpoint lists liquid/lfm-2.5-2.6b:free. Confirm the exact ID and review data handling; the previous Gemma free ID is absent from this observation. Do not substitute paid or auto routes.",
+      "url": "https://ai-gateway.kilo.ai/api/v1/models"
     },
     {
       "title": "Keep the exhausted account unchanged",
@@ -49,14 +49,48 @@
           "notes": "Documented shared IP free-model ceiling, not observed remaining requests or account credit."
         }
       ],
-      "notes": "Only the pinned :free route is prepared. Exhausted account credit does not prove that this model is usable; provider availability, data policies and rate limits still apply."
+      "notes": "Only explicitly pinned concrete free models are prepared. Account credit, current model availability and request rate limits remain separate; a public zero-price observation does not prove account usability."
     }
   ],
   "routes": [
     {
+      "id": "kilo/liquid/lfm-2.5-2.6b:free",
+      "model": "liquid/lfm-2.5-2.6b:free",
+      "name": "LFM 2.5 2.6B · free",
+      "baseUrl": "https://ai-gateway.kilo.ai/api/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free-models"
+      ],
+      "capabilities": {
+        "contextWindow": 65536,
+        "tools": true
+      },
+      "modelFamily": "lfm-2.5",
+      "manufacturer": "Liquid AI",
+      "inferenceProvider": null,
+      "gateway": "Kilo Gateway",
+      "pricingClass": "free",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://ai-gateway.kilo.ai/api/v1/models",
+          "title": "Kilo Gateway public models metadata",
+          "checkedAt": "2026-10-25T01:53:55.931571+00:00",
+          "notes": "Public unauthenticated model-list GET lists this exact model with zero prompt/completion prices, 65,536 context and tools/reasoning parameter names. This is metadata, not an inference, entitlement or remaining-quota check. Concrete reasoning effort levels, streaming and maximum output remain unverified."
+        }
+      ],
+      "restrictions": [
+        "Exact concrete model ID only; no auto router, random router, paid sibling, BYOK or fallback is selected.",
+        "Public model metadata advertises tools; no credential-backed tool continuation, streaming, reasoning level or remaining account allowance is inferred."
+      ]
+    },
+    {
       "id": "kilo/google/gemma-4-26b-a4b-it:free",
       "model": "google/gemma-4-26b-a4b-it:free",
-      "name": "Gemma 4 26B A4B \u00b7 free",
+      "name": "Gemma 4 26B A4B · free · legacy catalogue entry",
       "baseUrl": "https://ai-gateway.kilo.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
@@ -92,13 +126,20 @@
           "title": "Free-model billing and account limits",
           "checkedAt": "2026-10-24T15:47:23Z",
           "notes": "Free :free models have zero Kilo cost; IP limits and account/provider policies still apply; BYOK may incur external charges."
+        },
+        {
+          "url": "https://ai-gateway.kilo.ai/api/v1/models",
+          "title": "Public models catalogue absence observation",
+          "checkedAt": "2026-10-25T01:53:55.931571+00:00",
+          "notes": "This exact historical model ID is absent from the observed public list. Existing account configuration and historical model identity are preserved."
         }
       ],
       "restrictions": [
         "Exact :free ID only; no kilo-auto/*, paid sibling, model list fallback or upstream BYOK is configured.",
         "Model-specific tools and streaming are not advertised without an executed route qualification.",
         "Free-model pricing alone does not qualify the strict free_only runtime policy.",
-        "Free-model data collection and upstream trial terms must be reviewed before sending personal or confidential data."
+        "Free-model data collection and upstream trial terms must be reviewed before sending personal or confidential data.",
+        "Historical catalogue entry retained for existing configurations and history. This exact model ID was absent from the public models endpoint observed on 2026-10-25; do not infer current availability or silently replace existing routes."
       ]
     }
   ],
@@ -138,6 +179,12 @@
       "title": "Kilo exact Gemma free model catalog entry",
       "checkedAt": "2026-10-24T15:47:23Z",
       "notes": "Official catalog lists exact model ID, zero input/output pricing, 262,144 context and 32,768 output tokens. Public page only; not an account entitlement or live inference check."
+    },
+    {
+      "url": "https://ai-gateway.kilo.ai/api/v1/models",
+      "title": "Kilo Gateway public models metadata",
+      "checkedAt": "2026-10-25T01:53:55.931571+00:00",
+      "notes": "Public unauthenticated model-list GET lists this exact model with zero prompt/completion prices, 65,536 context and tools/reasoning parameter names. This is metadata, not an inference, entitlement or remaining-quota check. Concrete reasoning effort levels, streaming and maximum output remain unverified."
     }
   ],
   "restrictions": [
@@ -145,7 +192,8 @@
     "Personal-key scope only; organization ID headers and short-lived organization token refresh are outside this package.",
     "No independent quota/balance API implemented; dashboard is the manual account credit source.",
     "Published free pricing and IP rate limits are not observed remaining account quota.",
-    "BYOK can be billed externally and is not a free alternative. No strict free_only eligibility is claimed."
+    "BYOK can be billed externally and is not a free alternative. No strict free_only eligibility is claimed.",
+    "Model availability is a dated public catalogue observation. Existing configured routes are not rewritten, deleted or automatically redirected; 429 request-limit responses remain authoritative."
   ],
   "adapterState": "prepared",
   "liveVerification": "not_tested",

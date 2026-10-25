@@ -1,0 +1,88 @@
+{
+  "kind": "public-free-model-catalogue-observation",
+  "model": "liquid/lfm-2.5-2.6b:free",
+  "observations": [
+    {
+      "source": "https://openrouter.ai/api/v1/models",
+      "fetchedAt": "2026-10-25T01:53:12.609439+00:00",
+      "catalogModelCount": 467,
+      "absentPreviousIds": [
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "qwen/qwen3-coder:free"
+      ],
+      "model": {
+        "id": "liquid/lfm-2.5-2.6b:free",
+        "pricing": {
+          "prompt": "0",
+          "completion": "0"
+        },
+        "context_length": 65536,
+        "kind": "concrete-text-model",
+        "concreteTextCandidate": true,
+        "supported_parameters": [
+          "frequency_penalty",
+          "include_reasoning",
+          "logprobs",
+          "max_completion_tokens",
+          "max_tokens",
+          "min_p",
+          "presence_penalty",
+          "reasoning",
+          "repetition_penalty",
+          "response_format",
+          "seed",
+          "stop",
+          "structured_outputs",
+          "temperature",
+          "tool_choice",
+          "tools",
+          "top_k",
+          "top_logprobs"
+        ]
+      }
+    },
+    {
+      "source": "https://ai-gateway.kilo.ai/api/v1/models",
+      "fetchedAt": "2026-10-25T01:53:55.931571+00:00",
+      "catalogModelCount": 401,
+      "absentPreviousIds": [
+        "google/gemma-4-26b-a4b-it:free"
+      ],
+      "model": {
+        "id": "liquid/lfm-2.5-2.6b:free",
+        "pricing": {
+          "prompt": "0",
+          "completion": "0"
+        },
+        "context_length": 65536,
+        "kind": "concrete-text-model",
+        "concreteTextCandidate": true,
+        "supported_parameters": [
+          "frequency_penalty",
+          "include_reasoning",
+          "logprobs",
+          "max_completion_tokens",
+          "max_tokens",
+          "min_p",
+          "presence_penalty",
+          "reasoning",
+          "repetition_penalty",
+          "response_format",
+          "seed",
+          "stop",
+          "structured_outputs",
+          "temperature",
+          "tool_choice",
+          "tools",
+          "top_k",
+          "top_logprobs"
+        ]
+      }
+    }
+  ],
+  "limits": [
+    "Public metadata only. No credentials, private account IDs, request payloads or live usage logs.",
+    "Zero prompt/completion pricing is not a remaining quota, entitlement, strict cost-enforcement or inference success claim.",
+    "Only tools advertisement and context window are copied into capability claims; effort levels, maximum output and streaming remain unknown."
+  ]
+}

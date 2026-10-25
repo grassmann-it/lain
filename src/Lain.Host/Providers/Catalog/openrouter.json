@@ -59,9 +59,43 @@
   ],
   "routes": [
     {
+      "id": "openrouter-liquid-lfm-2.5-2.6b-free",
+      "model": "liquid/lfm-2.5-2.6b:free",
+      "name": "LFM 2.5 2.6B · free",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free-models"
+      ],
+      "capabilities": {
+        "contextWindow": 65536,
+        "tools": true
+      },
+      "modelFamily": "lfm-2.5",
+      "manufacturer": "Liquid AI",
+      "inferenceProvider": null,
+      "gateway": "OpenRouter",
+      "pricingClass": "free",
+      "freeOnlyEligible": true,
+      "freeOnlyEnforcementKind": "free_model_pin",
+      "freeOnlyEnforcement": "Runtime requires the exact allowlisted :free model, no fallback or paid extras, zero provider price caps, and fresh same-key proof of a numeric zero USD key cap including BYOK before every dispatch. Zero-cap keys may also deny free calls; public catalogue metadata does not establish live usability. Both Host and final outgoing dispatch allowlists must qualify this exact model.",
+      "sources": [
+        {
+          "url": "https://openrouter.ai/api/v1/models",
+          "title": "OpenRouter public models metadata",
+          "checkedAt": "2026-10-25T01:53:12.609439+00:00",
+          "notes": "Public unauthenticated model-list GET lists this exact model with zero prompt/completion prices, 65,536 context and tools/reasoning parameter names. This is metadata, not an inference, entitlement or remaining-quota check. Concrete reasoning effort levels, streaming and maximum output remain unverified."
+        }
+      ],
+      "restrictions": [
+        "Exact concrete model ID only; no auto router, random router, paid sibling, BYOK or fallback is selected.",
+        "Public model metadata advertises tools; no credential-backed tool continuation, streaming, reasoning level or remaining account allowance is inferred."
+      ]
+    },
+    {
       "id": "openrouter-llama-3.3-70b-free",
       "model": "meta-llama/llama-3.3-70b-instruct:free",
-      "name": "Llama 3.3 70B · free",
+      "name": "Llama 3.3 70B · free · legacy catalogue entry",
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
@@ -84,15 +118,23 @@
           "title": "Llama 3.3 free route",
           "checkedAt": "2026-10-23T22:13:17.697734+00:00",
           "notes": null
+        },
+        {
+          "url": "https://openrouter.ai/api/v1/models",
+          "title": "Public models catalogue absence observation",
+          "checkedAt": "2026-10-25T01:53:12.609439+00:00",
+          "notes": "This exact historical model ID is absent from the observed public list. Existing account configuration and historical model identity are preserved."
         }
       ],
-      "restrictions": [],
+      "restrictions": [
+        "Historical catalogue entry retained for existing configurations and history. This exact model ID was absent from the public models endpoint observed on 2026-10-25; do not infer current availability or silently replace existing routes."
+      ],
       "freeOnlyEnforcementKind": "free_model_pin"
     },
     {
       "id": "openrouter-qwen3-coder-free",
       "model": "qwen/qwen3-coder:free",
-      "name": "Qwen3 Coder · free",
+      "name": "Qwen3 Coder · free · legacy catalogue entry",
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
@@ -114,9 +156,17 @@
           "title": "Qwen3 Coder free route",
           "checkedAt": "2026-10-23T22:13:17.697734+00:00",
           "notes": null
+        },
+        {
+          "url": "https://openrouter.ai/api/v1/models",
+          "title": "Public models catalogue absence observation",
+          "checkedAt": "2026-10-25T01:53:12.609439+00:00",
+          "notes": "This exact historical model ID is absent from the observed public list. Existing account configuration and historical model identity are preserved."
         }
       ],
-      "restrictions": [],
+      "restrictions": [
+        "Historical catalogue entry retained for existing configurations and history. This exact model ID was absent from the public models endpoint observed on 2026-10-25; do not infer current availability or silently replace existing routes."
+      ],
       "freeOnlyEnforcementKind": "free_model_pin"
     },
     {
@@ -188,13 +238,20 @@
       "url": "https://openrouter.ai/blog/insights/governing-team-ai-spend/",
       "title": "Hard per-key spending caps and BYOK boundaries",
       "checkedAt": "2026-10-23T22:31:43.946962+00:00"
+    },
+    {
+      "url": "https://openrouter.ai/api/v1/models",
+      "title": "OpenRouter public models metadata",
+      "checkedAt": "2026-10-25T01:53:12.609439+00:00",
+      "notes": "Public unauthenticated model-list GET lists this exact model with zero prompt/completion prices, 65,536 context and tools/reasoning parameter names. This is metadata, not an inference, entitlement or remaining-quota check. Concrete reasoning effort levels, streaming and maximum output remain unverified."
     }
   ],
   "restrictions": [
     "Inference provider varies by served endpoint; a model author prefix is not proof of the actual inference operator.",
     "No credentials provisioned; real access remains untested.",
     "Free route request quota, USD credit balance and key/organization spend caps must not be added together.",
-    "Strict free-only runtime relies on the documented provider-side hard zero key cap, freshly checked each dispatch; external key-policy changes are outside local control. Live free-model access with that cap remains untested."
+    "Strict free-only runtime relies on the documented provider-side hard zero key cap, freshly checked each dispatch; external key-policy changes are outside local control. Live free-model access with that cap remains untested.",
+    "Model availability is a dated public catalogue observation. Existing configured routes are not rewritten, deleted or automatically redirected; 429 request-limit responses remain authoritative."
   ],
   "adapterState": "prepared",
   "liveVerification": "not_tested",
