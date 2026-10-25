@@ -29,16 +29,16 @@
       "requiredEvidence": ["native input trace", "viewport and scale coverage", "mutation count unchanged", "PNG review at each required size/scale"]
     },
     {
-      "id": "N09-M01", "owner": "n09", "state": "native-extension-pending",
-      "operator": "tests/uxd-acceptance native model command flow plus focused physical-order extension",
+      "id": "N09-M01", "owner": "n09", "state": "source-ready-runtime-pending",
+      "operator": "tests/uxd-acceptance: LAIN_UXD_ONLY=native-n09-model-identity",
       "reuse": ["tests/desktop/Uxd19ModelsCases.cs", "tests/uxd-acceptance/StateFlows.cs", "tests/uxd-acceptance/NativeInput.cs"],
       "fixture": "45 model aliases, stable r1 references in multiple profiles, one hidden and one disabled route; reordered inventory, stale revision and same-alias replacement with another ID.",
       "assertions": ["Physical inventory position matches displayed sort/order without retargeting selected stable ID", "Pointer, context menu and keyboard use the same command", "Named references disable removal", "Revision change or removed ID blocks frozen action without a PUT to another route", "Save conflict retains mounted inputs and review route", "No global visibility change is presented as removing one group member"],
       "requiredEvidence": ["physical bounds/order", "native input trace", "route IDs and request bodies", "conflict and lock screenshots"]
     },
     {
-      "id": "N09-P01", "owner": "codex_picker_impl", "state": "owner-cases-pending",
-      "operator": "tests/desktop/Program.cs --n05n06-profiles-smoke",
+      "id": "N09-P01", "owner": "codex_picker_impl", "state": "native-source-ready-runtime-and-review-fix-pending",
+      "operator": "tests/desktop/Program.cs --n05n06-profiles-smoke; tests/uxd-acceptance LAIN_UXD_ONLY=native-n09-prepared-",
       "reuse": ["tests/desktop/Fixture.cs", "tests/uxd-acceptance/StateFlows.cs"],
       "fixture": "Daily viewed while Workspace 2 is applied; explicit group opt-in; two installation targets and synthetic executable; immutable generation/export revision; delayed export and stale configuration.",
       "assertions": ["Prepare sends explicit group flag and installs no files or client", "Cancel and target/profile change cause no install or Apply and retain unrelated draft", "Known revision change requires new preparation", "HTTP409 retains draft and offers recovery", "Install uses the exact prepared generation/revision", "Only qualified target shows the matching start command", "Missing or changed dispatcher is explained, never overwritten", "Ordinary Codex sentinel unchanged"],

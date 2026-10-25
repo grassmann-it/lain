@@ -98,3 +98,28 @@ Paket geprüft, installiert und real geprüft werden getrennt nachgetragen.
 Noch keine dieser vorbereiteten Reviewlisten bedeutet, dass ein späterer
 Workercommit unabhängig abgenommen wurde. Konkrete Findings gehen mit Quelle
 und Reproduktion an den jeweiligen Owner; kein pauschaler neuer Layoutauftrag.
+
+## Focused physical state-flow additions
+
+`tests/uxd-acceptance/N09StateFlows.cs` registers these filters with the existing
+UXD `Open`/`Case`/fixture/native-input mechanism (1120×780 and 800×560, Simple):
+
+- `native-n09-model-identity`: actual row geometry after reversed Host inventory
+  and native rename; exact ID/revision request; named removal locks; delayed
+  snapshot while a real menu remains open and a stale native action; HTTP409
+  draft retention; removed-ID Save with a same-alias replacement.
+- `native-n09-prepared-cancel-target`: native Prepare, Change, shared/private
+  target selection and parent A/B reprepare, then Tab/Shift+Tab/Enter Cancel.
+  Both target trees remain empty and an unrelated Models draft survives. Shared
+  target selection is checked without Prepare, so no dispatcher check is invoked.
+- `native-n09-prepared-review`: regression for Shell Review latest from the
+  prepared view. The original setup inputs are then absent from the logical
+  subtree; the initial N05 implementation loses them during generic snapshot
+  capture/rebuild. This case asserts preserved inputs and no implicit export,
+  installation or Apply. Product fix and native execution remain pending.
+
+These are source additions, **not executed passes**. Existing `NativePress`
+uses BringIntoView only to position a target; actions and text use XTEST. Native
+scrolling, the complete Q02 viewport/mode matrix, provider gates and any images
+not individually reviewed remain outside these claims. Run the assembly with
+`--uxd-filter=native-n09-` through the N09 runner after Root allocates a slot.
