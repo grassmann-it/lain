@@ -437,6 +437,8 @@ async Task ModelAttachment()
     var catalog = new ProviderCatalogRegistry();
     var provider = catalog.Find("kilo")!;
     var connection = provider.Connections!.Single();
+    const string selectedTemplate = "kilo/google/gemma-4-26b-a4b-it:free";
+    var selectedModel = provider.Routes.Single(route => route.Id == selectedTemplate).Model;
     var key = "same-key-distinct-accounts";
     var other = f.Accounts.ConnectCredential(0, new(new("kilo", "manual", ["inference"], Name: "Other account"), key, BaseUrl: connection.BaseUrl)).Accounts.Single();
     var target = f.Accounts.ConnectCredential(1, new(new("kilo", "manual", ["inference"], Name: "Chosen target"), key,
@@ -444,18 +446,18 @@ async Task ModelAttachment()
     f.Accounts.Connect(2, new("kilo", "separate-monitor", ["quota"], AccountId: target.Id), Key("target-monitor-key", provider: "kilo"));
     var before = f.Repository.Snapshot.Accounts.Single(a => a.Id == target.Id);
     var quotaId = before.Capabilities!.Single(c => c.Purpose == "quota").CredentialId;
-    var configured = f.Accounts.AttachModels(3, target.Id, before.Generation, connection.Id, [connection.ProviderRouteIds[0]]);
+    var configured = f.Accounts.AttachModels(3, target.Id, before.Generation, connection.Id, [selectedTemplate]);
     var attached = configured.Accounts.Single(a => a.Id == target.Id);
     Check(configured.Accounts.Length == 2 && configured.Routes.Single().AccountIds.SequenceEqual(new[] { target.Id }),
         "model attachment targets exact account even when another identity shares its key");
     Check(attached.Name == "Chosen target" && attached.Capabilities!.Single(c => c.Purpose == "quota").CredentialId == quotaId &&
         configured.Accounts.Single(a => a.Id == other.Id).Generation == other.Generation, "model attachment preserves names, independent monitor and other accounts");
-    Check(f.Secrets.ReadAccount(target.Id).Contains(connection.ProviderRouteIds[0]), "qualified model transport is published through immutable current inference reference");
+    Check(f.Secrets.ReadAccount(target.Id).Contains(selectedTemplate), "qualified model transport is published through immutable current inference reference");
     Check((await f.Source.GetCredentialAsync(target.Id))?.BearerToken == "target-monitor-key", "model attachment leaves separate quota source unchanged");
-    ThrowsSync<InvalidOperationException>(() => f.Accounts.AttachModels(configured.Revision, target.Id, before.Generation, connection.Id, [connection.ProviderRouteIds[0]]),
+    ThrowsSync<InvalidOperationException>(() => f.Accounts.AttachModels(configured.Revision, target.Id, before.Generation, connection.Id, [selectedTemplate]),
         "stale account generation cannot attach model routes");
     new ProxyConfigurationWriter(f.Paths, f.Secrets).Write(configured);
-    Check(File.ReadAllText(f.Paths.ProxyConfig).Contains(provider.Routes[0].Model), "later optional model compiles using selected qualified transport");
+    Check(File.ReadAllText(f.Paths.ProxyConfig).Contains(selectedModel), "later optional model compiles using selected qualified transport");
 }
 
 async Task PublicationGate()
