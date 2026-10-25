@@ -113,7 +113,9 @@ foreach (var status in new[] { HttpStatusCode.Unauthorized, HttpStatusCode.Forbi
     using var handler = new Handler(_ => Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent("fixture-secret") }));
     using var adapter = new CloudflareQuotaAdapter(handler: handler, clock: new Clock(now));
     var result = await adapter.FetchAsync(account, credential);
-    Check(result.Readings.Count == 0 && result.Error is not null && result.Support?.Kind == "setup-required" && !result.Error.Contains("fixture-secret"), "auth failures actionable and sanitized");
+    Check(result.Readings.Count == 0 && result.Error is not null
+        && result.Support?.Kind == (status == HttpStatusCode.Unauthorized ? "setup-required" : "unavailable")
+        && !result.Error.Contains("fixture-secret"), "auth rejection differs from ambiguous 403 and remains sanitized");
 }
 
 using (var handler = new Handler(async request =>
@@ -158,6 +160,7 @@ using (var adapter = new CloudflareQuotaAdapter(handler: handler, clock: new Clo
     Check(cancelledCorrectly, "caller cancellation propagates");
 }
 
+checks += await CloudflareDiagnosticCases.Run();
 Console.WriteLine($"Cloudflare quota: {checks} checks passed.");
 sealed class Clock(DateTimeOffset now) : TimeProvider { public override DateTimeOffset GetUtcNow() => now; }
 sealed class Handler(Func<HttpRequestMessage, Task<HttpResponseMessage>> send) : HttpMessageHandler

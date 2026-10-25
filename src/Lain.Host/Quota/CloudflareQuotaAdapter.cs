@@ -29,21 +29,22 @@ public sealed class CloudflareQuotaAdapter : IQuotaAdapter, IDisposable
         // credentials must never fall back to the saved inference credential.
         var access = usesInference ? credential.BearerToken : credential.Monitor!.Secret;
         var now = clock.GetUtcNow();
+        if (account.Binding?.ResourceId is { } pinned && pinned != accountId
+            || credential.Settings.GetValueOrDefault("accountId") is { } configured && configured != accountId)
+            return Setup("Cloudflare monitoring selects a different account from this connection. Select the same Cloudflare account ID in monitor access; no request was sent and no credential was replaced.");
         if (!CloudResourceDiscovery.CloudflareAccount(accountId) || string.IsNullOrWhiteSpace(access)
             || access.Length > 32768 || access.Any(char.IsWhiteSpace) || access.Any(char.IsControl)
             || credential.Monitor is { Kind: "inference-key", Secret: not null }
             || credential.Monitor?.ExpiresAt is { } expiry && expiry <= now
-            || credential.ExpiresAt is { } bearerExpiry && usesInference && bearerExpiry <= now
-            || account.Binding?.ResourceId is { } pinned && pinned != accountId
-            || credential.Settings.GetValueOrDefault("accountId") is { } configured && configured != accountId)
+            || credential.ExpiresAt is { } bearerExpiry && usesInference && bearerExpiry <= now)
             return Setup("Bind an unexpired monitoring grant to the same Cloudflare account as this connection. An existing API token with " + AnalyticsPermission + " can be used; a separate read token is optional.");
         try { return await reader.ReadAsync(access, accountId!, now, ct); }
         catch (CloudProviderException error) when (error.Status == HttpStatusCode.Unauthorized)
         { return Failure("Cloudflare rejected this analytics credential. Reconnect or replace the monitoring access for this account.", "setup-required"); }
         catch (CloudProviderException error) when (error.Status == HttpStatusCode.Forbidden)
-        { return Failure("Cloudflare denied analytics access. Grant " + AnalyticsPermission + " for the selected account to the existing API token, or attach a separate read token.", "setup-required"); }
+        { return Failure("Cloudflare denied this analytics request (HTTP 403). Check the selected account and the token's " + AnalyticsPermission + "; if both are correct, check Workers AI dataset access. This response alone does not identify a missing permission, an unavailable dataset or a required plan. Reconnect only if the monitoring grant changed.", "unavailable"); }
         catch (CloudProviderException error) when (error.Status == HttpStatusCode.NotFound)
-        { return Unavailable("Workers AI analytics is not available for the selected account. Check its Workers AI dashboard and account selection."); }
+        { return Unavailable("Cloudflare did not find this analytics endpoint (HTTP 404). Check Cloudflare's GraphQL service status and Workers AI dashboard; account entitlement and usage remain unknown."); }
         catch (CloudProviderException error) { throw new QuotaFetchException(error.Message); }
         catch (Exception error) when (error is JsonException or InvalidDataException or HttpRequestException)
         { throw new QuotaFetchException("Cloudflare analytics could not be read. Retry later; no usage or balance was inferred."); }
@@ -56,11 +57,18 @@ public sealed class CloudflareQuotaAdapter : IQuotaAdapter, IDisposable
         if (!CloudResourceDiscovery.CloudflareAccount(accountId) || start != CloudflareWorkersAiReader.UtcDayStart(observed) || start >= observed)
             throw new ArgumentException("Invalid Cloudflare usage selection.");
         if (CloudflareWorkersAiReader.HasGraphQlErrors(root))
-            return Failure("Cloudflare reported a GraphQL dataset or permission error. Check " + AnalyticsPermission + " for this account. Partial data is not complete usage.", "unavailable");
+            return CloudflareWorkersAiReader.AnalyticsPermissionDenied(root)
+                ? Failure("Cloudflare explicitly reported missing or denied Account Analytics permission. Check " + AnalyticsPermission + " on the existing monitoring token for this account; reconnect only if its grant changed. Partial data is not complete usage.", "setup-required")
+                : Failure("Cloudflare rejected the Workers AI analytics query. Account access, dataset availability and query support are not distinguished by this response. Check the account ID and " + AnalyticsPermission + ", then the account's Workers AI dataset settings. Partial data is not complete usage; no plan requirement was inferred.", "unavailable");
         var accounts = JsonFields.Object(JsonFields.Object(JsonFields.Object(root, "data"), "viewer"), "accounts");
+        if (accounts.ValueKind == JsonValueKind.Array && accounts.GetArrayLength() == 1
+            && JsonFields.String(accounts[0], "accountTag") is { } returned && returned != accountId)
+            return Failure("Cloudflare analytics returned a different account. Verify the monitor's account binding before reading again; that account's data was discarded.", "setup-required");
         if (accounts.ValueKind != JsonValueKind.Array || accounts.GetArrayLength() != 1 || JsonFields.String(accounts[0], "accountTag") != accountId)
-            return Failure("Workers AI analytics did not return the selected account. Verify account access and selection.", "unavailable");
+            return Failure("Cloudflare did not return one identifiable selected account. Verify the account ID and token access; an empty account selection does not distinguish a wrong ID from denied access.", "unavailable");
         var groups = JsonFields.Object(accounts[0], CloudflareWorkersAiReader.Dataset);
+        if (groups.ValueKind == JsonValueKind.Array && groups.GetArrayLength() == 0)
+            return Unavailable("Cloudflare accepted the analytics query for the selected account but returned no neuron samples for this UTC interval. Usage remains unknown, not zero. Compare the same interval in Workers AI usage and retry after reporting catches up; no login or plan change is implied.");
         if (groups.ValueKind != JsonValueKind.Array || groups.GetArrayLength() != 1)
             return Failure("No single account-wide neuron aggregate was returned. Missing or grouped data does not prove zero usage.", "unavailable");
         // Dimension-bearing fixtures/responses cannot silently masquerade as an account aggregate.

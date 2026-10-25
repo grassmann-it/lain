@@ -20,9 +20,17 @@ partial data and return only fixed sanitized diagnostics.
 
 A valid response qualifies schema and access for this telemetry read. It does
 **not** qualify billing completeness, sampling accuracy, plan, or source freshness.
-A schema rejection triggers at most one official introspection request for
-`__type(name: "Account") { fields { name } }`, distinguishing an absent dataset
-from an unresolved schema/entitlement problem. Introspection does not substitute
+A failed query may trigger an account-bound diagnostic read of
+`settings { aiInferenceAdaptiveGroups { enabled availableFields } }`. An explicit
+`enabled: false` or a field list without `sum.totalNeurons` identifies what this
+requester can currently access, not why it is restricted. An explicit named
+Account Analytics permission denial directs review of that token's grant.
+Generic GraphQL denials remain unresolved between account access, dataset and
+query support. A schema rejection can additionally trigger one official
+introspection request for `__type(name: "Account") { fields { name } }`.
+At most three requests run, sequentially, within the original operation deadline.
+Failed optional diagnostics retain the original safe query error, and caller
+cancellation propagates. Neither settings nor introspection substitute
 for a successful account-scoped usage response. HTTP responses are capped at 1 MiB
 and depth 32, each request at 20 seconds, the complete operation at 30 seconds.
 No redirects, cookies, or arbitrary endpoints are enabled.
@@ -36,7 +44,12 @@ and are never silently replaced with an inference token when absent/expired.
 The `inference-key` monitor kind instead explicitly references the saved inference
 credential: its monitor secret is null, its bearer comes from `HostQuotaSource`,
 and the saved inference expiry remains enforced. No duplicate key entry is needed.
-HTTP 401/403 directs the user to renew/review that access. Discovery and binding
+HTTP 401 directs the user to review rejected credentials. Generic HTTP 403 leaves
+the precise access/dataset restriction unknown and asks for account and Analytics
+permission checks; it does not establish a paid-plan or new-login requirement.
+A successful empty usage result says no samples were returned for the interval;
+it never creates measured zero and retains earlier observations as stale.
+Known local account-binding conflicts are rejected before any request. Discovery and binding
 remain in the shared cloud connection flow; this reader never guesses an account
 from a token or switches to another accessible account.
 
