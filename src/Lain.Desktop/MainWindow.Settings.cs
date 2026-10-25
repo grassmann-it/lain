@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Lain.Desktop.Presentation;
 
 namespace Lain.Desktop;
@@ -15,9 +16,59 @@ public sealed partial class MainWindow
     private TextBlock? _settingsTrayHint;
     private TextBlock? _settingsDensityLabel;
     private readonly Dictionary<CheckBox, Func<WorkspacePreferences, bool>> _settingsToggles = new();
+    private readonly Dictionary<string, (StackPanel Panel, TextBlock Message)> _settingsSaveFeedback = new(StringComparer.Ordinal);
+    private SettingsSaveAttempt? _settingsSaveAttempt;
+    private sealed record SettingsSaveAttempt(string Key, string Label, string Requested,
+        Func<WorkspacePreferences, WorkspacePreferences> Change, string? Error = null);
+
+    private Control SettingsSaveFeedback(string key)
+    {
+        var message = Ui.Text("", 12, Ui.Warning);
+        AutomationProperties.SetName(message, key + " save error");
+        AutomationProperties.SetLiveSetting(message, AutomationLiveSetting.Polite);
+        var retry = Ui.Button("Retry saving", () => {
+            if (_settingsSaveAttempt is { } attempt && attempt.Key == key) SaveSettingsPreference(attempt);
+        });
+        AutomationProperties.SetName(retry, "Retry saving " + key);
+        var panel = new StackPanel { Spacing = 4, IsVisible = false, Children = { message, retry } };
+        _settingsSaveFeedback[key] = (panel, message);
+        return panel;
+    }
+
+    private void SaveSettingsPreference(SettingsSaveAttempt attempt)
+    {
+        var previousError = _settingsSaveAttempt?.Error;
+        if (SavePreferences(attempt.Change, render: false))
+        {
+            _settingsSaveAttempt = null;
+            if (_notice.Text == previousError) _notice.Text = "";
+        }
+        else
+        {
+            _settingsSaveAttempt = attempt with { Error = _preferencesStore.Error ?? "Settings could not be saved." };
+            // Settings explain the failure beside its control, rather than duplicating it in the shell.
+            if (_notice.Text == _settingsSaveAttempt.Error) _notice.Text = "";
+        }
+        SynchronizeSettingsSaveFeedback();
+        if (_settingsSaveAttempt is { } pending && _settingsSaveFeedback.TryGetValue(pending.Key, out var feedback))
+            Dispatcher.UIThread.Post(() => feedback.Panel.BringIntoView(), DispatcherPriority.Loaded);
+    }
+
+    private void SynchronizeSettingsSaveFeedback()
+    {
+        foreach (var (key, feedback) in _settingsSaveFeedback)
+        {
+            var attempt = _settingsSaveAttempt;
+            feedback.Panel.IsVisible = attempt?.Key == key;
+            feedback.Message.Text = attempt?.Key == key
+                ? $"{attempt.Label} could not be saved. Requested: {attempt.Requested}. {attempt.Error} Retry saves this requested choice."
+                : "";
+        }
+    }
 
     private Control SettingsPage()
     {
+        _settingsSaveFeedback.Clear();
         var section = new ComboBox
         {
             ItemsSource = DensitySections, SelectedItem = _settingsDensitySection,
@@ -43,15 +94,16 @@ public sealed partial class MainWindow
         {
             if (_viewOptionsUpdating || density.SelectedIndex < 0) return;
             var selected = (ViewDensity)density.SelectedIndex;
-            SavePreferences(p => p with
+            var selectedSection = _settingsDensitySection;
+            SaveSettingsPreference(new("density", "Density for " + selectedSection, selected.ToString(), p => p with
             {
                 Densities = new Dictionary<string, ViewDensity>(p.Densities, StringComparer.Ordinal)
-                    { [_settingsDensitySection] = selected }
-            }, render: false);
+                    { [selectedSection] = selected }
+            }));
         };
 
         _settingsToggles.Clear();
-        CheckBox BackgroundOption(string label, string description, Func<WorkspacePreferences, bool> value,
+        Control BackgroundOption(string label, string description, Func<WorkspacePreferences, bool> value,
             Func<WorkspacePreferences, bool, WorkspacePreferences> change)
         {
             var labelContent = new StackPanel { Spacing = 1, Children = { Ui.Text(label), Ui.Text(description, 12, Ui.Muted) } };
@@ -62,9 +114,10 @@ public sealed partial class MainWindow
             toggle.IsCheckedChanged += (_, _) =>
             {
                 if (_viewOptionsUpdating) return;
-                SavePreferences(p => change(p, toggle.IsChecked == true), render: false);
+                var requested = toggle.IsChecked == true;
+                SaveSettingsPreference(new(label, label, requested ? "On" : "Off", p => change(p, requested)));
             };
-            return toggle;
+            return new StackPanel { Spacing = 4, Children = { toggle, SettingsSaveFeedback(label) } };
         }
         var minimize = BackgroundOption("Minimize to tray", "Hide this window when minimized, when a tray is available.", p => p.MinimizeToTray, (p, value) => p with { MinimizeToTray = value });
         var close = BackgroundOption("Close to tray", "Keep the UI in the tray when its window is closed.", p => p.CloseToTray, (p, value) => p with { CloseToTray = value });
@@ -83,7 +136,7 @@ public sealed partial class MainWindow
             help.Children.Add(button);
         }
         var densityGroup = Ui.Section("View density", new StackPanel { Spacing = 5, Children = {
-            densityRow, Ui.Text("Saved locally for each page; also available in that page's View menu.", 12, Ui.Muted) } });
+            densityRow, SettingsSaveFeedback("density"), Ui.Text("Saved locally for each page; also available in that page's View menu.", 12, Ui.Muted) } });
         var windowGroup = Ui.Section("Window and notifications", new StackPanel { Spacing = 4,
             Children = { minimize, close, alerts, _settingsTrayHint } });
         var helpGroup = Ui.Section("Help and application", new StackPanel { Spacing = 5, Children = {
@@ -147,6 +200,7 @@ public sealed partial class MainWindow
             if (_settingsDensityLabel is not null) _settingsDensityLabel.Text = "Density for " + _settingsDensitySection;
             _settingsDensity.SelectedIndex = (int)preferences.Densities.GetValueOrDefault(_settingsDensitySection, ViewDensity.Normal);
             foreach (var (toggle, value) in _settingsToggles) toggle.IsChecked = value(preferences);
+            SynchronizeSettingsSaveFeedback();
             if (_settingsTrayHint is not null)
                 _settingsTrayHint.Text = _trayController?.TrayAvailable == true
                     ? "Tray available. Minimize and close use your independent choices. Hiding or closing the UI does not stop the host."

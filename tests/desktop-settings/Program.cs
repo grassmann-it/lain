@@ -72,7 +72,8 @@ internal sealed class SettingsScenario(IClassicDesktopStyleApplicationLifetime l
             var found = window.GetVisualDescendants().OfType<TextBlock>().FirstOrDefault(t =>
                 t.Text?.Contains(text, StringComparison.Ordinal) == true && t.IsEffectivelyVisible
                 && t.Bounds.Width > 0 && t.Bounds.Height > 0);
-            if (found is not null) return found;
+            if (found is not null && found.TranslatePoint(default, window) is { } position
+                && position.Y >= 0 && position.Y + found.Bounds.Height <= window.Bounds.Height) return found;
             await Task.Delay(20);
         }
         return null;
@@ -134,18 +135,29 @@ internal sealed class SettingsScenario(IClassicDesktopStyleApplicationLifetime l
         await Click("Review host mode change"); await Click("Cancel");
         Check(JsonSerializer.Serialize(fixture.Config) == initialHost && fixture.Requests.Count(x => !x.StartsWith("GET ", StringComparison.Ordinal)) == mutations,
             "local settings and cancelled host review make no host mutation");
+        Named<CheckBox>("Close to tray").IsChecked = false;
         // A real filesystem error against this runner's synthetic state only.
         var file = Path.Combine(Environment.GetEnvironmentVariable("LAIN_HOME")!, "ui/workspace-preferences.json");
         var savedBytes = File.ReadAllBytes(file);
         File.Move(file, file + ".saved"); Directory.CreateDirectory(file);
         try {
-            Named<CheckBox>("Usage and rate-limit alerts").IsChecked = true;
-            Check(Named<CheckBox>("Usage and rate-limit alerts").IsChecked == false, "failed save restores authoritative checkbox value");
-            var errorNotice = await VisibleText("could not be saved");
-            Check(errorNotice is not null, "save failure visible");
+            Named<CheckBox>("Close to tray").IsChecked = true;
+            Check(Named<CheckBox>("Close to tray").IsChecked == false, "failed save restores authoritative checkbox value");
+            var errorNotice = await VisibleText("Close to tray could not be saved. Requested: On.");
+            Check(errorNotice is not null && AutomationProperties.GetName(errorNotice) == "Close to tray save error",
+                "save failure names the requested choice beside its setting");
             var noticePosition = errorNotice!.TranslatePoint(default, window)!.Value;
             Check(noticePosition.Y >= 0 && noticePosition.Y + errorNotice.Bounds.Height <= window.Bounds.Height,
-                "save failure notice is inside the actual viewport");
+                "inline save failure is scrolled into the narrow viewport");
+            var retry = Named<Button>("Retry saving Close to tray");
+            var retryPosition = retry.TranslatePoint(default, window)!.Value;
+            Check(retry.IsEffectivelyVisible && retry.IsEnabled && retryPosition.Y >= 0
+                && retryPosition.Y + retry.Bounds.Height < window.Bounds.Height - 30,
+                "explicit retry is reachable beside failed setting in the narrow viewport");
+            await Click("Retry saving Close to tray");
+            Check(Named<CheckBox>("Close to tray").IsChecked == false
+                && Named<TextBlock>("Close to tray save error").IsEffectivelyVisible,
+                "retry failure retains the requested choice and authoritative rollback");
             Check(File.ReadAllBytes(file + ".saved").SequenceEqual(savedBytes) && Directory.Exists(file)
                 && !Directory.EnumerateFiles(Path.GetDirectoryName(file)!, Path.GetFileName(file) + ".*.tmp").Any(),
                 "failed save preserves stored bytes and cleans incomplete writes");
@@ -154,11 +166,50 @@ internal sealed class SettingsScenario(IClassicDesktopStyleApplicationLifetime l
             Capture("settings-save-failure");
         }
         finally { Directory.Delete(file); File.Move(file + ".saved", file); }
-        Check(File.ReadAllBytes(file).SequenceEqual(savedBytes), "original preference file restored byte-for-byte for restart");
+        Check(File.ReadAllBytes(file).SequenceEqual(savedBytes), "storage recovery itself preserves the original preference bytes");
+        Named<ComboBox>("Density section").SelectedItem = "Accounts";
+        await Click("Retry saving Close to tray");
+        var retried = new WorkspacePreferencesStore().Current;
+        Check(retried.CloseToTray && !retried.MinimizeToTray && !retried.NotificationsEnabled,
+            "explicit retry persists exactly the failed On choice and preserves other flags");
+        Check(!Named<TextBlock>("Close to tray save error").IsEffectivelyVisible
+            && !Named<Button>("Retry saving Close to tray").IsEffectivelyVisible,
+            "successful retry clears inline error and retry action");
+        Check(retried.Densities["Usage"] == ViewDensity.Compact
+            && Named<CheckBox>("Close to tray").IsChecked == true,
+            "retry synchronizes app state while preserving per-section density");
+        Check(JsonSerializer.Serialize(fixture.Config) == initialHost && fixture.Requests.Count(x => !x.StartsWith("GET ", StringComparison.Ordinal)) == mutations,
+            "failed and successful local retries make no host mutation");
+        Capture("settings-save-retried");
+        var beforeDensityFailure = File.ReadAllBytes(file);
+        File.Move(file, file + ".saved"); Directory.CreateDirectory(file);
+        try
+        {
+            Named<CheckBox>("Usage and rate-limit alerts").IsChecked = true;
+            Named<ComboBox>("Density section").SelectedItem = "Usage";
+            Named<ComboBox>("Density for Usage").SelectedIndex = (int)ViewDensity.Normal;
+            Check(Named<ComboBox>("Density for Usage").SelectedIndex == (int)ViewDensity.Compact,
+                "failed density save rolls back to persisted value");
+            Check(!Named<Button>("Retry saving Usage and rate-limit alerts").IsEffectivelyVisible,
+                "newer failed choice replaces the old retry target");
+            Check(await VisibleText("Density for Usage could not be saved. Requested: Normal.") is not null,
+                "density error identifies its captured section and requested value");
+            Named<ComboBox>("Density section").SelectedItem = "Accounts";
+            Check(File.ReadAllBytes(file + ".saved").SequenceEqual(beforeDensityFailure),
+                "multiple failed selections leave saved preferences unchanged");
+        }
+        finally { Directory.Delete(file); File.Move(file + ".saved", file); }
+        await Click("Retry saving density");
+        var densityRetried = new WorkspacePreferencesStore().Current;
+        Check(densityRetried.Densities["Usage"] == ViewDensity.Normal
+            && densityRetried.Densities.GetValueOrDefault("Accounts", ViewDensity.Normal) == ViewDensity.Normal,
+            "density retry targets captured Usage section after switching to Accounts");
+        Check(!densityRetried.NotificationsEnabled && densityRetried.CloseToTray,
+            "density retry does not replay the superseded notification choice");
         window.Close(); await Open();
         Check(Named<CheckBox>("Close to tray").IsChecked == true && Named<CheckBox>("Minimize to tray").IsChecked == false
             && Named<CheckBox>("Usage and rate-limit alerts").IsChecked == false, "fresh window reloads independent flags");
-        Check(new WorkspacePreferencesStore().Current.Densities["Usage"] == ViewDensity.Compact, "fresh window preserves section density");
+        Check(new WorkspacePreferencesStore().Current.Densities["Usage"] == ViewDensity.Normal, "fresh window preserves retried section density");
         await File.WriteAllTextAsync(Path.Combine(output, "settings-evidence.json"), JsonSerializer.Serialize(new { checks,
             assembly = typeof(MainWindow).Assembly.Location, fixture.Requests,
             scope = "Private Xvfb, synthetic preferences and in-memory HTTP. No provider/service/user display. Host mode review cancelled." }, new JsonSerializerOptions { WriteIndented = true }));

@@ -209,16 +209,17 @@ public sealed partial class MainWindow
         return new(preferences.Level, preferences.Densities.GetValueOrDefault(PrimarySection(section), ViewDensity.Normal));
     }
 
-    private void SavePreferences(Func<WorkspacePreferences, WorkspacePreferences> change, bool render = true)
+    private bool SavePreferences(Func<WorkspacePreferences, WorkspacePreferences> change, bool render = true)
     {
         if (!_preferencesStore.Save(change(_preferences)))
         {
             _notice.Text = _preferencesStore.Error ?? "View preferences could not be saved.";
             SynchronizeInformationLevel();
             SynchronizeSettings();
-            return;
+            return false;
         }
         ApplyPresentation(render);
+        return true;
     }
 
     private void ApplyPresentation(bool render)

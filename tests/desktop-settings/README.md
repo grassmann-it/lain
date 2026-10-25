@@ -15,9 +15,10 @@ are confined to the runner's new `/tmp/lain-settings-*` home.
 Checks cover three wide groups, narrow scrolling to help, one information-level
 selector, section density, independent flags, both tray-availability descriptions,
 actual assembly version, cancelled revision-bound host review, no host mutation,
-preference write failure/checkbox rollback, a laid-out visible failure notice,
+preference write failure/checkbox rollback, inline failure and explicit retry of
+the captured requested value, retry failure followed by successful storage recovery,
 unchanged saved bytes with cleaned temporary writes, and a new window reading
-persisted values. PNGs and JSON are written to the requested output; inspect those images
+the retried value. PNGs and JSON are written to the requested output; inspect those images
 before claiming visual acceptance. The native tray availability source is fake;
 this proves Settings projection, not a real desktop tray implementation.
 
