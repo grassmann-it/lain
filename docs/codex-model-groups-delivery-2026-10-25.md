@@ -64,7 +64,8 @@ Desktop remains byte-identical to the baseline. The complete Core library test
 build reached the 3 GiB memory limit before executing any of its six targeted
 tests. It is not counted as passed. A smaller harness includes the unchanged
 production module and its six original tests with real, pinned dependencies;
-that run is pending. Eight TUI library tests have not been started; the seven
+all six pass without any source changes. Its peak memory is 2.20 GiB, with no
+OOM or memory-limit events. Eight TUI library tests have not been started; the seven
 real native PTY cases above are the completed menu qualification.
 
 The narrow retained-Desktop update helper passed 15 synthetic file fixtures after
