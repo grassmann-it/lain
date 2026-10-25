@@ -3,6 +3,8 @@ using Lain.Core;
 using Lain.Host.Models;
 using Lain.Host.Operations;
 
+await CollectionCases.RunAsync();
+
 var directory = Path.Combine(Path.GetTempPath(), "lain-models-" + Guid.NewGuid().ToString("N"));
 try
 {

@@ -6,6 +6,20 @@ profile references, placeholder exports, visible catalog selection, and launcher
 binding JSON. During parallel development, pass
 `-p:OperationsSource=/absolute/path/to/W3/src/Lain.Host/Operations`.
 
+Collection cases additionally cover legacy JSON without collection fields,
+ordered overlapping route references, shared revision conflicts, restart and
+snapshot isolation, validation, atomic removal of deleted route references,
+derived provider groups and synthetic loopback HTTP CRUD. They never call an
+upstream provider or create executable autorouter targets.
+
+Collections use GET `/api/v1/collections`, PUT `/api/v1/collections/{id}` with
+`{revision,value}` and DELETE `/api/v1/collections/{id}?revision=...`.
+GET `/api/v1/model-groups` returns a revisioned read-only view of provider and
+custom groups. Collection saves preserve profiles and applied revisions;
+membership alone does not enable or export a route. `RouterTargetId` must be
+null until routing is separately qualified. A collection named Free makes no
+cost guarantee.
+
 `python3 tests/models/codex_probe.py` additionally starts a synthetic loopback
 Responses server and runs installed Codex in a temporary `CODEX_HOME`. It accepts
 the same development override as `--operations-source`. No provider credentials

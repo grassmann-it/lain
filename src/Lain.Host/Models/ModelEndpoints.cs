@@ -14,6 +14,11 @@ public static class ModelEndpoints
         app.MapGet(Api.Prefix + "/routes", (ModelsService models) => models.Snapshot.Routes);
         app.MapGet(Api.Prefix + "/profiles", (ModelsService models) => models.Snapshot.Profiles);
         app.MapGet(Api.Prefix + "/models", (ModelsService models) => models.ConfiguredModels());
+        app.MapGet(Api.Prefix + "/collections", (ModelsService models) => models.Snapshot.Collections);
+        app.MapGet(Api.Prefix + "/model-groups", (ModelsService models) => models.CollectionGroups());
+        app.MapPut(Api.Prefix + "/collections/{id}", (string id, RevisionRequest<ModelCollectionDto> request, ModelsService models) =>
+            Execute(() => request.Value is not null && id == request.Value.Id ? Results.Ok(models.PutCollection(request.Revision, request.Value)) : Results.BadRequest(new ApiError("invalid_collection", "Path and collection identity differ."))));
+        app.MapDelete(Api.Prefix + "/collections/{id}", (string id, long revision, ModelsService models) => Execute(() => Results.Ok(models.DeleteCollection(revision, id))));
         app.MapPut(Api.Prefix + "/routes/{id}", (string id, RevisionRequest<RouteDto> request, ModelsService models) =>
             Execute(() => request.Value is not null && id == request.Value.Id ? Results.Ok(models.PutRoute(request.Revision, request.Value)) : Results.BadRequest(new ApiError("invalid_route", "Path and route identity differ."))));
         app.MapPut(Api.Prefix + "/profiles/{id}", (string id, RevisionRequest<ProfileDto> request, ModelsService models) =>
@@ -36,7 +41,7 @@ public static class ModelEndpoints
     {
         try { return action(); }
         catch (Operations.RevisionConflictException) { return Results.Conflict(new ApiError("revision_conflict", "Configuration changed; reload and retry.")); }
-        catch (KeyNotFoundException) { return Results.NotFound(new ApiError("not_found", "Route or profile does not exist.")); }
+        catch (KeyNotFoundException) { return Results.NotFound(new ApiError("not_found", "Route, profile or collection does not exist.")); }
         catch (InvalidDataException) { return Results.BadRequest(new ApiError("invalid_transport", "The selected inference transport is invalid; reconnect the affected account.")); }
         catch (IOException) { return Results.BadRequest(new ApiError("missing_credential", "The selected inference credential cannot be read; reconnect the affected account.")); }
         catch (InvalidOperationException) { return Results.BadRequest(new ApiError("invalid_transport", "The selected inference transport is unavailable or ambiguous.")); }

@@ -15,6 +15,33 @@ public sealed class ModelsService(ConfigurationRepository repository, ProviderCo
     private readonly ProviderCostPolicy policy = costPolicy ?? ProviderCostPolicy.Embedded();
     public ConfigurationDto Snapshot => repository.Snapshot;
 
+    public ConfigurationDto PutCollection(long revision, ModelCollectionDto collection) => repository.Update(revision, config =>
+    {
+        ArgumentNullException.ThrowIfNull(collection);
+        var collections = config.Collections ?? [];
+        return config with { Collections = collections.Any(item => item.Id == collection.Id)
+            ? collections.Select(item => item.Id == collection.Id ? collection : item).ToArray()
+            : [.. collections, collection] };
+    });
+
+    public ConfigurationDto DeleteCollection(long revision, string id) => repository.Update(revision, config =>
+    {
+        if (!(config.Collections ?? []).Any(collection => collection.Id == id)) throw new KeyNotFoundException("Collection does not exist.");
+        return config with { Collections = (config.Collections ?? []).Where(collection => collection.Id != id).ToArray() };
+    });
+
+    public ModelCollectionGroupsDto CollectionGroups()
+    {
+        var config = Snapshot;
+        var providerGroups = config.Routes.GroupBy(route => route.Provider, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new ModelCollectionGroupDto("provider:" + group.Key.ToLowerInvariant(),
+                policy.Catalog.Find(group.Key)?.Name ?? group.Key, "provider", group.Select(route => route.Id).ToArray(), group.Key));
+        var customGroups = (config.Collections ?? []).Select(collection => new ModelCollectionGroupDto(
+            "collection:" + collection.Id, collection.Name, "custom", collection.RouteIds.ToArray(), RouterTargetId: collection.RouterTargetId));
+        return new(Api.Version, config.Revision, providerGroups.Concat(customGroups).ToArray());
+    }
+
     public ConfigurationDto PutRoute(long revision, RouteDto route) => repository.Update(revision, config =>
     {
         ValidateRoute(config, route);
