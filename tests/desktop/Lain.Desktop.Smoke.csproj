@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Lain.Desktop/Lain.Desktop.csproj" />
+    <Compile Include="../uxd-acceptance/NativeInput.cs" Link="NativeInput.cs" />
     <EmbeddedResource Include="fixtures/inspection-providers.json" />
   </ItemGroup>
 </Project>

@@ -41,17 +41,19 @@ internal static class Program
         SmokeApp.AccountSnapshotsOnly = args.Contains("--account-snapshots-smoke", StringComparer.Ordinal);
         SmokeApp.XaiMetadataOnly = args.Contains("--xai-metadata-smoke", StringComparer.Ordinal);
         SmokeApp.ModelIdentityOnly = args.Contains("--model-identity-smoke", StringComparer.Ordinal);
+        SmokeApp.QuotaHierarchyOnly = args.Contains("--quota-hierarchy-smoke", StringComparer.Ordinal);
         SmokeApp.AccountSortOnly = args.Contains("--account-sort-smoke", StringComparer.Ordinal);
         SmokeApp.ProviderSetupOnly = args.Contains("--provider-setup-smoke", StringComparer.Ordinal);
         SmokeApp.InspectorOnly = args.Contains("--inspector-smoke", StringComparer.Ordinal);
         SmokeApp.UsageAnalysisOnly = args.Contains("--usage-analysis-smoke", StringComparer.Ordinal);
         return AppBuilder.Configure<SmokeApp>().UsePlatformDetect().WithInterFont()
-            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--xai-metadata-smoke" or "--model-identity-smoke" or "--monitor-table-smoke" or "--inspector-smoke" or "--usage-analysis-smoke")).ToArray());
+            .StartWithClassicDesktopLifetime(args.Where(x => x is not ("--quota-hierarchy-smoke" or "--account-sort-smoke" or "--provider-setup-smoke" or "--account-snapshots-smoke" or "--xai-metadata-smoke" or "--model-identity-smoke" or "--monitor-table-smoke" or "--inspector-smoke" or "--usage-analysis-smoke")).ToArray());
     }
 }
 
 internal sealed class SmokeApp : Application
 {
+    public static bool QuotaHierarchyOnly { get; set; }
     public static bool MonitorTableOnly { get; set; }
     public static bool AccountSnapshotsOnly { get; set; }
     public static bool XaiMetadataOnly { get; set; }
@@ -84,7 +86,8 @@ internal sealed class SmokeApp : Application
             var scenario = new Scenario(lifetime);
             try
             {
-                if (UsageAnalysisOnly) await scenario.RunUsageAnalysisSmoke();
+                if (QuotaHierarchyOnly) await scenario.RunQuotaHierarchySmoke();
+                else if (UsageAnalysisOnly) await scenario.RunUsageAnalysisSmoke();
                 else if (InspectorOnly) await scenario.RunInspectorSmoke();
                 else if (MonitorTableOnly) await scenario.RunMonitorTableSmoke();
                 else if (AccountSnapshotsOnly) await scenario.RunAccountSnapshotsSmoke();
@@ -811,7 +814,7 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         await Task.Delay(100);
     }
 
-    private string[] AccountTileNames() => Controls<Expander>().Select(AutomationProperties.GetName)
+    private string[] AccountTileNames() => Controls<Border>().Select(AutomationProperties.GetName)
         .Where(x => x?.StartsWith("Account budgets for ", StringComparison.Ordinal) == true).Cast<string>().ToArray();
 
     private void CheckAllAccountTileBounds()

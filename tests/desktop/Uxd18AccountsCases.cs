@@ -59,11 +59,17 @@ internal sealed partial class Scenario
         var live = await OpenGated(); live.ReleaseConfiguration();
         await Wait(() => HasText("37% used") && HasText("62% used"), "UXD18 delayed first data snapshot becomes visible");
         var aCard = Named<Border>("Account budgets for " + a.Name);
-        Check(aCard.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "7 days")
-            && aCard.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "Unknown window")
-            && aCard.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "Credit balance")
-            && aCard.GetVisualDescendants().OfType<ProgressBar>().Count() == 1,
-            "UXD18 closed account retains every known window; unknown and balance-only do not invent a percent bar");
+        Check(QuotaHierarchyVisible<TextBlock>(aCard).Any(text => text.Text == "7 days")
+            && !QuotaHierarchyVisible<TextBlock>(aCard).Any(text => text.Text is "Unknown window" or "Credit balance")
+            && QuotaHierarchyVisible<ProgressBar>(aCard).Length == 1,
+            "UXD18 closed account prioritizes its weekly reading and collapses additional detail");
+        var additional = Named<Expander>("Additional budgets for " + a.Name);
+        additional.IsExpanded = true; await Task.Delay(100);
+        Check(QuotaHierarchyVisible<TextBlock>(aCard).Any(text => text.Text == "Unknown window")
+            && QuotaHierarchyVisible<TextBlock>(aCard).Any(text => text.Text == "Credit balance")
+            && QuotaHierarchyVisible<ProgressBar>(aCard).Length == 1,
+            "UXD18 expanded account retains unknown and balance originals without invented percentages");
+        additional.IsExpanded = false; await Task.Delay(100);
         await Click("Open account details for " + a.Name);
         await ResizeViewport(1120, 780);
         var bars = Controls<ProgressBar>().Where(bar => AutomationProperties.GetName(bar) == a.Name + " · 7 days · consumed").ToArray();

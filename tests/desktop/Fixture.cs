@@ -268,6 +268,45 @@ internal sealed class Fixture : HttpMessageHandler
         Config = Config with { RuntimeMode = enabled ? "monitor" : "gateway" };
     }
 
+    public void UseQuotaHierarchyInventory()
+    {
+        Scenario = "quota-hierarchy";
+        Config = Config with { Accounts = [
+            new("qh-missing", "A Missing MiMo", "mimo", true, "api-key", "ready"),
+            new("qh-error", "B Failed Cloudflare", "cloudflare", true, "api-key", "ready"),
+            new("qh-command", "C Command Code", "command-code", true, "api-key", "ready"),
+            new("qh-week", "D Weekly", "codex", true, "api-key", "ready"),
+            new("qh-month", "E Monthly", "zai", true, "api-key", "ready"),
+            new("qh-zero", "F Empty wallet", "openrouter", true, "api-key", "ready"),
+            new("qh-stale", "G Stale measured", "kimi", true, "api-key", "ready")
+        ], Routes = [], Profiles = [] };
+        ActiveProfileId = null; ActiveProfileRevision = null;
+        var now = DateTimeOffset.UtcNow;
+        QuotaDto Window(string id, string label, int hours, double used) => new(id, null,
+            "fixture#" + label.Replace(" ", ""), "ok", now, now, now.AddHours(hours), "percent", used, 100, 100 - used, false,
+            WindowLabel: label, UsedPercent: used, WindowStart: now, WindowEnd: now.AddHours(hours));
+        QuotaDto Balance(string id, string label, double remaining) => new(id, null,
+            "fixture#" + label.Replace(" ", ""), "ok", now, now, null, "credits", null, null, remaining, false,
+            WindowLabel: label, MeasurementKind: "balance");
+        // API/config order intentionally disagrees with the requested first-look hierarchy.
+        QuotaOverride = [
+            Window("qh-command", "Monthly", 720, 30),
+            Balance("qh-command", "Purchased credits", 12),
+            Balance("qh-command", "Free credits", 0),
+            Window("qh-command", "7 days", 168, 40),
+            Window("qh-command", "5 hours", 5, 15),
+            Window("qh-command", "7 hours", 7, 25),
+            Window("qh-week", "7 days", 168, 55),
+            Window("qh-month", "Monthly", 720, 60),
+            Balance("qh-zero", "Wallet balance", 0),
+            Window("qh-stale", "5 hours", 5, 70) with { State = "stale", Error = "Synthetic stale observation", LastSuccessAt = now.AddHours(-2) },
+            new("qh-missing", null, "fixture#missing", "unsupported", now, null, null, "unknown", null, null, null, false,
+                WindowLabel: "No reading", Support: new("unsupported", "Synthetic quota unavailable", null)),
+            new("qh-error", null, "fixture#error", "error", now, null, null, "unknown", null, null, null, false,
+                Error: "Synthetic reporting denied", WindowLabel: "Reporting error")
+        ];
+    }
+
     public void UseUxdInventory()
     {
         UxdScenario = true;

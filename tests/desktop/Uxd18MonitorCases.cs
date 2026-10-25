@@ -39,12 +39,22 @@ internal sealed partial class Scenario
         await Wait(() => Controls<StackPanel>().Any(control => AutomationProperties.GetName(control) == "Monitor quota table"), "Monitor selects its table inventory");
         Check(!Controls<Control>().Any(control => control.GetType().Name == "MasonryPanel"), "Monitor uses account groups and quota rows rather than Gateway masonry");
         var command = Named<Border>("Account budgets for Command Code Pro");
-        var windowRows = command.GetVisualDescendants().OfType<Grid>().Where(grid => AutomationProperties.GetName(grid)?.StartsWith("Monitor quota window for ", StringComparison.Ordinal) == true).ToArray();
-        Check(windowRows.Length == 6, "Monitor retains all six Command Code windows while its detail is closed");
-        Check(command.GetVisualDescendants().OfType<ProgressBar>().Count() == 3
-            && command.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "12 credits left")
-            && command.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "0 credits left"),
-            "Monitor balance-only, Free zero and unknown windows do not invent percentage bars or disable the account");
+        var windowRows = QuotaHierarchyVisible<Grid>(command).Where(grid => AutomationProperties.GetName(grid)?.StartsWith("Monitor quota window for ", StringComparison.Ordinal) == true).ToArray();
+        Check(windowRows.Length == 2 && QuotaHierarchyVisible<ProgressBar>(command).Length == 2,
+            "Monitor prioritizes the two short Command Code windows while additional budgets are collapsed");
+        Named<Expander>("Additional budgets for Command Code Pro").IsExpanded = true; await Task.Delay(100);
+        Check(QuotaHierarchyVisible<Grid>(command).Count(grid => AutomationProperties.GetName(grid)?.StartsWith("Monitor quota window for ", StringComparison.Ordinal) == true) == 5
+            && QuotaHierarchyVisible<ProgressBar>(command).Length == 3
+            && QuotaHierarchyVisible<TextBlock>(command).Any(text => text.Text == "12 credits left")
+            && !QuotaHierarchyVisible<TextBlock>(command).Any(text => text.Text == "Free credits"),
+            "Monitor expansion preserves monthly, positive credit and unknown originals without a zero additional-credit row");
+        await Click("Open account details for Command Code Pro");
+        var originalDetails = Named<ScrollViewer>("Account detail content for Command Code Pro");
+        Check(QuotaHierarchyVisible<TextBlock>(originalDetails).Any(text => text.Text == "Free credits")
+            && QuotaHierarchyVisible<TextBlock>(originalDetails).Any(text => text.Text == "0 credits left"),
+            "Monitor Inspector retains the zero free-credit original without inventing a percentage");
+        await Click("Close account details for Command Code Pro");
+        Named<Expander>("Additional budgets for Kimi Coding").IsExpanded = true; await Task.Delay(100);
         var relative = Named<Grid>("Monitor quota window for Z.ai Coding · Relative weekly");
         Check(relative.GetVisualDescendants().OfType<ProgressBar>().Single().Value == 72, "Monitor retains a valid reported percent without absolute amounts");
         Check(HasText("Reset due · refresh to check") && HasText("Scope: account · synthetic-account")
