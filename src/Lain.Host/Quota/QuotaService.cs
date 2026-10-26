@@ -249,7 +249,8 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
         _ => new("unsupported", "Quota lookup is not available for this provider.")
     };
     private static bool HasQuantity(QuotaReading row) => row.Used.HasValue || row.Limit.HasValue || row.Remaining.HasValue ||
-        row.ExactUsed is not null || row.ExactLimit is not null || row.ExactRemaining is not null || (row.UsedPercent is >= 0 and <= 100);
+        row.ExactUsed is not null || row.ExactLimit is not null || row.ExactRemaining is not null
+        || row.UsedPercent is { } percent && double.IsFinite(percent) && percent >= 0;
 
     private IQuotaAdapter? Reader(AccountDto account) => providers.FirstOrDefault(a => a.Supports(AccountService.CanonicalProviderId(account.Provider)));
     private static AccountDto ReaderAccount(AccountDto account) => account with

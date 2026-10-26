@@ -1,4 +1,5 @@
 using Lain.Core;
+using Lain.Host.Accounts.CliConnections;
 using Lain.Host.Accounts.Monitoring;
 using Lain.Host.Operations;
 using Lain.Host.Providers;
@@ -8,10 +9,11 @@ namespace Lain.Host.Accounts;
 /// <summary>Installed connection capabilities. Documentation never enables an unimplemented login.</summary>
 public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Func<bool> gateway,
     Func<bool> coreAvailable, Func<bool> poeAvailable, Func<string, bool>? cloudAvailable = null,
-    Func<bool>? mimoAvailable = null, Func<bool>? googleCliAvailable = null)
+    Func<bool>? mimoAvailable = null, Func<bool>? googleCliAvailable = null,
+    Func<bool>? fireworksCliAvailable = null)
 {
     private static readonly HashSet<string> DirectQuota = new(StringComparer.Ordinal)
-        { "kilo", "requesty", "synthetic", "stepfun", "openrouter", "poe", "fireworks", "commandcode", "kimi", "zai" };
+        { "kilo", "requesty", "synthetic", "stepfun", "openrouter", "poe", "fireworks", "commandcode", "kimi", "zai", "deepseek" };
 
     public ConnectionMethodCatalogDto Snapshot(string? provider = null)
     {
@@ -34,14 +36,14 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
                     "api-key", hasDirectQuota
                         ? "Connect an existing key. Reported limits depend on this account and product; models are optional later."
                         : "Connect an existing inference key. This does not provide a measured remaining budget.",
-                    connection.BaseUrl, fields, descriptor.DocumentationUrl, Recommended: descriptor.Id is not ("openrouter" or "kilo") && index == 0));
+                    connection.BaseUrl, fields, descriptor.DocumentationUrl, Recommended: descriptor.Id is not ("openrouter" or "kilo" or "nanogpt") && index == 0));
             }
             foreach (var option in MonitorAccessCatalog.Options(descriptor.Id).Where(o => o.SecretRequired))
             {
                 var project = descriptor.Id is "gemini-api" or "groq";
                 result.Add(new(descriptor.Id, "monitor-" + option.Kind, option.Name, "monitor-token", ["quota"], "available",
                     false, true, option.Kind, option.Description, RequiredSettings:
-                    [new(project ? "projectId" : "accountId", option.ResourceLabel, Help: option.ResourceHelp)],
+                    option.ResourceRequired ? [new(project ? "projectId" : "accountId", option.ResourceLabel, Help: option.ResourceHelp)] : [],
                     DocumentationUrl: option.DocumentationUrl));
             }
         }
@@ -60,6 +62,8 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
         result.Add(new("openrouter", "browser", "Connect in browser", "browser", ["inference", "models", "quota"], "available",
             false, false, Description: "Authorize OpenRouter to issue a dedicated key to lain. No purchase or inference is performed.",
             DefaultBaseUrl: OpenRouterLoginAdapter.DefaultBaseUrl, DocumentationUrl: "https://openrouter.ai/docs/use-cases/oauth-pkce", Recommended: true));
+        result.Add(NanoGptLoginAdapter.ConnectionMethod());
+        result.Add(FireworksCliLoginAdapter.ConnectionMethod(fireworksCliAvailable?.Invoke() == true));
         result.Add(new("poe", "browser", "Connect in browser", "browser", ["inference", "models", "quota"],
             poeAvailable() ? "available" : "setup-required", false, false,
             Description: "Authorize a dedicated Poe API key using the registered lain client.",
@@ -70,7 +74,7 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
             Guidance: "This login reads quota only. It does not add inference access or purchase a plan. Lain owns renewal of its separate Kimi session.",
             DocumentationUrl: "https://github.com/MoonshotAI/kimi-code/tree/main/packages/oauth", Recommended: true));
         result.AddRange(Lain.Host.Accounts.Managed.ManagedLoginQualifications.Methods().Where(method => method.Provider != "kimi"));
-        foreach (var id in new[] { "requesty", "alibaba-model-studio", "commandcode", "fireworks", "mistral" })
+        foreach (var id in new[] { "requesty", "alibaba-model-studio", "commandcode", "mistral" })
             result.Add(new(id, "official-cli", "Connect with official CLI", "cli", ["inference", "models"], "unavailable", false, false,
                 Guidance: "This provider's executable, isolated credential storage and identity handoff are not yet fully qualified. Use the existing key method; lain does not inspect another CLI's credentials."));
         result.Add(new("gemini-api", "official-cli", "Connect with Google Cloud CLI", "cli", ["quota"],
@@ -139,6 +143,21 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
         var settings = request.Settings ?? [];
         if (settings.Count > 12 || settings.Any(p => p.Value is null || p.Value.Length > 512 || p.Value.Any(char.IsControl)))
             throw new ArgumentException("Invalid connection resource settings.");
+        var resourceLessMonitor = method.Kind == "monitor-token" && MonitorAccessCatalog.Options(request.Connection.Provider)
+            .Any(option => option.Kind == request.Kind && !option.ResourceRequired);
+        if (resourceLessMonitor)
+        {
+            if (settings.Count != 0 || request.Connection.Binding is { ResourceId: not null } or { ResourceType: not null })
+                throw new ArgumentException("This monitor credential does not accept a resource selector.");
+            if (request.Connection.Binding is { } supplied && Canonical(supplied.Provider) != Canonical(request.Connection.Provider))
+                throw new ArgumentException("Provider binding mismatch.");
+            if (request.BaseUrl is not null) throw new ArgumentException("This monitor credential does not accept an inference endpoint.");
+            // A personal management token selects its own owner. Inference-account
+            // identity assertions must not become an invented monitoring selector.
+            return request with { Connection = request.Connection with {
+                Binding = new ResourceBindingDto(request.Connection.Provider),
+                Name = request.Connection.Name ?? Name(Canonical(request.Connection.Provider)) }, Settings = [] };
+        }
         foreach (var field in method.RequiredSettings ?? [])
             if (field.Required && !settings.ContainsKey(field.Id) && !BindingValue(request.Connection.Binding, field.Id).HasValue())
                 throw new ArgumentException("A required provider resource is missing.");

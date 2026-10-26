@@ -7,6 +7,7 @@ using Lain.Core;
 using Lain.Host.Accounts;
 using Lain.Host.Accounts.Credentials;
 using Lain.Host.Accounts.Cloud;
+using Lain.Host.Accounts.CliConnections;
 using Lain.Host.Accounts.ConsoleConnections.MiMo;
 using Lain.Host.Accounts.Monitoring;
 using Lain.Host.Inspector;
@@ -79,8 +80,42 @@ builder.Services.AddSingleton(new LegacyImportService(paths, repository, secrets
 using var loginBackend = new HttpCodexOwnedLoginBackend(paths, secrets);
 var loginAdapter = new CodexOwnedLoginAdapter(loginBackend, paths, repository, secrets, codexModels);
 using var openRouterLogin = new OpenRouterLoginAdapter();
+using var nanoGptLogin = new NanoGptLoginAdapter();
 await using var kiloLogin = new Lain.Host.Accounts.Kilo.KiloDeviceLoginAdapter(configuration: repository, secrets: secrets);
 using var kimiLogin = new Lain.Host.Accounts.Managed.KimiDeviceLoginAdapter();
+bool FireworksCliPublished(CliConnectionState state)
+{
+ if (state.Provider != "fireworks" || state.Method != "official-cli") return false;
+ var account = repository.Snapshot.Accounts.SingleOrDefault(account => account.Id == state.AccountId);
+ if (account is null || AccountService.CanonicalProviderId(account.Provider) != "fireworks") return false;
+ foreach (var handle in account.Credentials ?? [])
+ {
+  if (handle.Owner != "static-key" || account.Capabilities?.Any(capability => capability.CredentialId == handle.Id) != true) continue;
+  try
+  {
+   var generation = secrets.Generations.Read(account.Id, handle);
+   if (generation.OperationId == state.OperationId && generation.RemoteId is not null && generation.RemoteId == state.RemoteKeyId)
+    return true;
+  }
+  catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException) { }
+ }
+ return false;
+}
+FireworksCliLoginAdapter CreateFireworksCliLogin()
+{
+ try
+ {
+  var state = new CliConnectionStateStore(Path.Combine(paths.Root, "accounts", "fireworks-cli"), FireworksCliPublished);
+  // Only lain's private installed artifact can enable this method; PATH and another
+  // CLI's store are never used. Reconciliation cannot start a new provider operation.
+  state.ReconcileAfterRestart();
+  var qualification = new FireworksCliQualification(Path.Combine(paths.Root, "tools", "fireworks", "firectl-1.8.19"));
+  return new FireworksCliLoginAdapter(state, qualification);
+ }
+ catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException or CliConnectionException or ArgumentException)
+ { return new FireworksCliLoginAdapter(); } // Optional login repair must not disable existing API-key accounts.
+}
+await using var fireworksCliLogin = CreateFireworksCliLogin();
 PoeLoginAdapter CreatePoeLogin()
 {
  try { return new PoeLoginAdapter(PoeLoginOptions.LoadMaintainerConfiguration(paths.Root)); }
@@ -121,7 +156,7 @@ try
 catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException)
 { cloudOptions = new([]); }
 var cloudLogins = cloudOptions.Clients.Where(c => c.Qualified).Select(c => new CloudOAuthAdapter(c)).ToArray();
-IAccountLoginAdapter[] accountLogins = [loginAdapter, openRouterLogin, kiloLogin, kimiLogin, mimoLogin, googleCli, .. (poeLogin.IsAvailable ? new IAccountLoginAdapter[] { poeLogin } : []), .. cloudLogins];
+IAccountLoginAdapter[] accountLogins = [loginAdapter, openRouterLogin, nanoGptLogin, kiloLogin, kimiLogin, mimoLogin, googleCli, fireworksCliLogin, .. (poeLogin.IsAvailable ? new IAccountLoginAdapter[] { poeLogin } : []), .. cloudLogins];
 ICredentialOwner[] credentialOwners = [.. cloudLogins, googleCli, kimiLogin];
 builder.Services.AddSingleton(sp => new LoginOperationService(configuration: repository,
  accounts: sp.GetRequiredService<AccountService>(), secrets: secrets,
@@ -132,7 +167,7 @@ builder.Services.AddSingleton(sp => new OwnedCredentialRefreshService(repository
 builder.Services.AddSingleton(sp => new ConnectionMethodCatalog(sp.GetRequiredService<ProviderCatalogRegistry>(),
  GatewayMode, () => restoreReady && File.Exists(binary), () => poeLogin.IsAvailable,
  provider => cloudLogins.Any(login => login.Provider == provider && login.IsAvailable),
- () => mimoLogin.IsAvailable, () => googleCli.IsAvailable));
+ () => mimoLogin.IsAvailable, () => googleCli.IsAvailable, () => fireworksCliLogin.IsAvailable));
 builder.Services.AddSingleton<ModelsService>();
 builder.Services.AddSingleton<CodexProfileAdapter>();
 builder.Services.AddSingleton<ProxyConfigurationWriter>();
@@ -180,6 +215,7 @@ var quota = new QuotaService(quotaSource, quotaSource,
   new StepFunQuotaAdapter(providerHttp), new PoeQuotaAdapter(providerHttp),
   new OpenRouterQuotaAdapter(providerHttp), new SyntheticQuotaAdapter(providerHttp),
   new KiloQuotaAdapter(providerHttp), new RequestyQuotaAdapter(providerHttp),
+  new DeepSeekQuotaAdapter(providerHttp), new NanoGptQuotaAdapter(providerHttp),
   new FireworksQuotaAdapter(providerHttp), geminiQuota, cloudflareQuota, mimoQuota,
   new GroqAccountQuotaAdapter(new CoreDependentQuotaAdapter(new GroqQuotaAdapter(quotaCoreHttp), CollectCore),
    new GroqEnterpriseUsageReader(providerHttp))]);

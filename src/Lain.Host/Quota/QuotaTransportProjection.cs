@@ -76,6 +76,8 @@ internal static class QuotaTransportProjection
             "synthetic" => host == "api.synthetic.new" && path is "/v1" or "/openai/v1" or "/anthropic/v1",
             "stepfun" => host == "api.stepfun.com" && path == "/v1",
             "fireworks" => host == "api.fireworks.ai" && path == "/inference/v1",
+            "deepseek" => host == "api.deepseek.com" && path == "",
+            "nanogpt" => host == "api.nano-gpt.com" && path == "/api/v1",
             "cloudflare-workers-ai" => host == "api.cloudflare.com" &&
                 System.Text.RegularExpressions.Regex.IsMatch(path, "^/client/v4/accounts/[a-fA-F0-9]{32}/ai/v1$"),
             _ => false
