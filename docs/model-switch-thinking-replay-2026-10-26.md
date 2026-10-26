@@ -16,6 +16,14 @@ formal gültig und wird deshalb durch eine reine Provider-/Formatprüfung nicht
 entfernt. Im globalen Katalog nutzen Sonnet und GPT außerdem unterschiedliche
 Shelltools. Das allein ist kein Grund, sichtbaren Verlauf zu löschen.
 
+Der nachgereichte VSCode-Screenshot ist ebenfalls durch einen echten lokalen
+Fehlereintrag bestätigt: `req_011CgQYfjA8KY8Zu2PawsAfv`, 08:38:50 UTC,
+gleiche Sitzung mit `model_provider: cpa`. Jetzt nennt die Meldung sowohl
+Systemprompt als auch Toolliste als abweichend. Ein tatsächlich benutztes
+Compaction-Modell ist aus diesem Eintrag nicht belegt; die sichtbare
+Modellauswahl allein ersetzt diesen Nachweis nicht. Der vorbereitete Fix war
+zu diesem Zeitpunkt weiterhin nicht angewandt, Ausgangs-SHA unverändert.
+
 Die aktive alte Proxybinary hat SHA256
 `8b2e25d6546e2d84ab42d2f2a843fa1efc106adef27e2b9477d1cc2171bb0cb9`.
 Ihre belegte Quelle liegt separat unter
