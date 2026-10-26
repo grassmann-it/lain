@@ -13,7 +13,7 @@ internal static class ExactBalanceChecks
         void Check(bool value, string message) { checks++; if (!value) throw new Exception(message); }
         var now = DateTimeOffset.UtcNow;
         var overLimit = new QuotaDto("existing", null, "fixture#subscription", "ok", now, now,
-            null, "percent", null, null, 125, false);
+            null, "percent", null, null, null, false, UsedPercent: 125);
         Check(QuotaPresentation.HasReading(overLimit), "provider-reported overage is a valid reading");
         var overageOutput = new StringWriter();
         await CliApplication.WriteQuotas(overageOutput, [overLimit], new(100, false));

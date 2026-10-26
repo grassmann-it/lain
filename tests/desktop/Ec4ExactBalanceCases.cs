@@ -54,6 +54,15 @@ internal sealed partial class Scenario
             window = new MainWindow(new LainApiClient(http), Path.Combine(Output, "exact-balance-" + mode + ".json")) { Width = 1120, Height = 780 };
             lifetime.MainWindow = window; window.Show();
             await Wait(() => AccountTileNames().Length == accounts.Length, mode + " exact-balance accounts mounted");
+            var overage = Balance(0, "0", "percent", "Subscription") with
+            { MeasurementKind = null, ExactRemaining = null, UsedPercent = 125 };
+            Check((double?)typeof(MainWindow).GetMethod("QuotaUsedPercent", statics)!.Invoke(null, [overage]) == 125,
+                mode + " provider-reported subscription overage remains visible");
+            var overageRow = (Control)typeof(MainWindow).GetMethod("BudgetWindowRow", instance)!.Invoke(window, [accounts[0], overage, null])!;
+            Check(overageRow.GetLogicalDescendants().OfType<ProgressBar>().Single().Value == 100
+                && overageRow.GetLogicalDescendants().OfType<TextBlock>().Any(text => text.Text?.Contains("125") == true)
+                && !overageRow.GetLogicalDescendants().OfType<TextBlock>().Any(text => text.Text?.Contains("-25") == true),
+                mode + " overage bar stays bounded and never invents negative remaining quota");
             observedScales.Add(window.RenderScaling);
             Check(Math.Abs(window.RenderScaling - requestedScale) < .001, mode + " actual exact-balance render scale matches request");
             Check(Texts(Card(0)).Contains(usd + " USD left") && !Texts(Card(0)).Any(text =>
