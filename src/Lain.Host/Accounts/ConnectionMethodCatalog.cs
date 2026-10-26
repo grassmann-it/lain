@@ -140,6 +140,7 @@ public sealed class ConnectionMethodCatalog(ProviderCatalogRegistry catalog, Fun
     {
         var method = RequireAvailable(request.Connection, secret: true);
         if (request.Kind != method.SecretKind) throw new ArgumentException("Credential kind does not match the method.");
+        if (method.Kind != "monitor-token") InferenceCredentialPolicy.RejectManagementToken(request.Secret);
         var settings = request.Settings ?? [];
         if (settings.Count > 12 || settings.Any(p => p.Value is null || p.Value.Length > 512 || p.Value.Any(char.IsControl)))
             throw new ArgumentException("Invalid connection resource settings.");

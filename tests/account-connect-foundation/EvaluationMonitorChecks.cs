@@ -6,6 +6,7 @@ using Lain.Host.Accounts.Credentials;
 using Lain.Host.Accounts.Monitoring;
 using Lain.Host.Operations;
 using Lain.Host.Quota;
+using Lain.Host.Providers;
 
 /// <summary>EC1–EC4 local integration checks; no provider requests or real credentials.</summary>
 internal static class EvaluationMonitorChecks
@@ -59,6 +60,19 @@ internal static class EvaluationMonitorChecks
 
         var nanoOption = MonitorAccessCatalog.Options("nanogpt").Single(o => o.Kind == "management-token");
         Check(nanoOption.SecretRequired && !nanoOption.ResourceRequired, "Nano monitor metadata declares a private token without a resource selector");
+        var methods = new ConnectionMethodCatalog(new ProviderCatalogRegistry(), () => true, () => true, () => false);
+        var nanoMethods = methods.Snapshot("nanogpt").Methods;
+        Check(nanoMethods.Where(m => m.Kind is "api-key" or "browser").All(m => !m.Purposes.Contains("quota")),
+            "Nano inference connections do not advertise subscription monitoring");
+        Check(nanoMethods.Single(m => m.Id == "monitor-management-token").RequiredSettings is { Length: 0 },
+            "personal monitor has no fake resource field in the connection catalog");
+        var personal = methods.PrepareCredentialRequest(new(new("nanogpt", "monitor-management-token", ["quota"],
+            Binding: new("nanogpt", Subject: "inference-subject", Product: "inference")), ManagementToken, Kind: "management-token"));
+        Check(personal.Connection.Binding == new ResourceBindingDto("nanogpt"),
+            "personal monitor request never borrows the inference identity");
+        foreach (var method in methods.Snapshot("xai").Methods.Where(m => m.Kind == "api-key"))
+            Reject(() => methods.PrepareCredentialRequest(new(new("xai", method.Id, ["inference"]), ManagementToken)),
+                "management access is rejected before any xAI credential metadata request");
         foreach (var resource in new[] { "invented-account", " owner " })
         {
             var state = New("selector");

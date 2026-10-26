@@ -57,6 +57,7 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
                 if (JsonText(auth, "type") != "codex") { warnings.Add("A non-Codex OAuth credential was skipped (provider not qualified)."); continue; }
                 var token = JsonText(auth, "access_token");
                 if (string.IsNullOrWhiteSpace(token)) { warnings.Add("A Codex auth file without an access token was skipped."); continue; }
+                InferenceCredentialPolicy.RejectManagementToken(token);
                 var accountId = JsonText(auth, "account_id");
                 var id = AccountService.CredentialId("codex", accountId ?? token);
                 DateTimeOffset? expires = DateTimeOffset.TryParse(JsonText(auth, "expired"), out var parsed) ? parsed : null;
