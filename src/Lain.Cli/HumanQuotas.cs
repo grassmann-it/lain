@@ -1,4 +1,5 @@
 using System.Text;
+using Lain.Client;
 using Lain.Core;
 
 namespace Lain.Cli;
@@ -31,6 +32,7 @@ public static partial class CliApplication
         foreach (var quota in quotas)
         {
             var percent = QuotaPercentage(quota);
+            var exactRemaining = QuotaPresentation.ExactAmount(quota.ExactRemaining);
             var unsupported = QuotaHasSupportOnly(quota);
             if (unsupported)
             {
@@ -41,7 +43,7 @@ public static partial class CliApplication
             var due = quota.ResetsAt is { } reset && reset <= DateTimeOffset.UtcNow;
             var stale = !unsupported && (due || quota.State is "stale" or "error" or "unavailable" or "refreshing"
                 || (checkAge && QuotaCheckIsOld(quota, DateTimeOffset.UtcNow)));
-            var state = stale && (percent.HasValue || quota.Remaining.HasValue || quota.Used.HasValue)
+            var state = stale && QuotaPresentation.HasReading(quota)
                 ? "Last known" : quota.State is "ok" or "available" ? "" : ReadableState(quota.State);
             await HumanTable.WriteTextAsync(output, QuotaWindowName(quota) + (state.Length > 0 ? " · " + state : ""), context, "  ");
             if (percent is { } used)
@@ -52,9 +54,10 @@ public static partial class CliApplication
                 var bar = "[" + new string('#', consumed) + new string('-', cells - consumed) + "] " + metric;
                 await output.WriteLineAsync("  " + HumanTable.Paint(bar, disabled || quota.State == "disabled" ? "2" : stale ? "33" : used >= 95 ? "31" : used >= 80 ? "33" : "32", context));
             }
-            else if (quota.Remaining is null && quota.Used is null && quota.Limit is null) await HumanTable.WriteTextAsync(output, "Quota values not reported", context, "  ");
+            else if (!QuotaPresentation.HasReading(quota)) await HumanTable.WriteTextAsync(output, "Quota values not reported", context, "  ");
 
             var remaining = unsupported ? "Remaining unavailable"
+                : exactRemaining is not null ? "Remaining " + QuotaAmount(exactRemaining, quota.Unit)
                 : quota.Remaining is { } amount && double.IsFinite(amount) ? "Remaining " + QuotaAmount(amount, quota.Unit)
                 : percent is { } known ? "Remaining " + Lain.Client.QuotaDisplayFacts.Percent(100 - known)
                     + (quota.Unit is "percent" or "%" ? "%" : "% (amount unknown)")
@@ -62,18 +65,23 @@ public static partial class CliApplication
             var resetLabel = unsupported ? "Reset unavailable" : quota.ResetsAt is { } next
                 ? (due ? "Reset due " : "Reset ") + Timestamp(next) + " UTC" : "Reset unknown";
             if (quota.MeasurementKind is not ("usage" or "limit" or "rate") && quota.ResetsAt is not null) await WriteQuotaPair(output, remaining, resetLabel, context);
-            else if (quota.MeasurementKind is not ("usage" or "limit" or "rate") && (quota.Remaining is not null || percent is not null)) await HumanTable.WriteTextAsync(output, remaining, context, "  ");
+            else if (quota.MeasurementKind is not ("usage" or "limit" or "rate") && (exactRemaining is not null || quota.Remaining is not null || percent is not null)) await HumanTable.WriteTextAsync(output, remaining, context, "  ");
             if (due && !unsupported) await HumanTable.WriteTextAsync(output, "Reset due · refresh to check the next window.", context, "  ");
             if (!unsupported && quota.Unit is not ("percent" or "%"))
             {
-                if (quota.Used is { } amountUsed && double.IsFinite(amountUsed) && amountUsed >= 0)
-                    await HumanTable.WriteTextAsync(output, (quota.MeasurementKind == "rate" ? "Observed " : "Used ") + QuotaAmount(amountUsed, quota.Unit)
-                        + (quota.Limit is { } suppliedLimit && double.IsFinite(suppliedLimit) && suppliedLimit >= 0 ? " / " + QuotaAmount(suppliedLimit, quota.Unit) : quota.MeasurementKind is "usage" or "rate" ? "" : " · limit unknown"), context, "  ");
-                else if (quota.Limit is { } limit && double.IsFinite(limit) && limit >= 0)
-                    await HumanTable.WriteTextAsync(output, "Limit " + QuotaAmount(limit, quota.Unit) + (quota.MeasurementKind == "limit" ? "" : " · usage unknown"), context, "  ");
+                var usedAmount = QuotaPresentation.ExactAmountSign(quota.ExactUsed) is >= 0 ? QuotaAmount(quota.ExactUsed!, quota.Unit)
+                    : quota.Used is { } amountUsed && double.IsFinite(amountUsed) && amountUsed >= 0 ? QuotaAmount(amountUsed, quota.Unit) : null;
+                var limitAmount = QuotaPresentation.ExactAmountSign(quota.ExactLimit) is >= 0 ? QuotaAmount(quota.ExactLimit!, quota.Unit)
+                    : quota.Limit is { } limit && double.IsFinite(limit) && limit >= 0 ? QuotaAmount(limit, quota.Unit) : null;
+                if (usedAmount is not null)
+                    await HumanTable.WriteTextAsync(output, (quota.MeasurementKind == "rate" ? "Observed " : "Used ") + usedAmount
+                        + (limitAmount is not null ? " / " + limitAmount : quota.MeasurementKind is "usage" or "rate" ? "" : " · limit unknown"), context, "  ");
+                else if (limitAmount is not null)
+                    await HumanTable.WriteTextAsync(output, "Limit " + limitAmount + (quota.MeasurementKind == "limit" ? "" : " · usage unknown"), context, "  ");
             }
             foreach (var fact in Lain.Client.QuotaDisplayFacts.Describe(quota)) await HumanTable.WriteTextAsync(output, fact, context, "  ");
-            if (quota.ExactUsed is not null || quota.ExactLimit is not null || quota.ExactRemaining is not null)
+            if ((quota.ExactUsed is not null || quota.ExactLimit is not null || quota.ExactRemaining is not null)
+                && !(quota.MeasurementKind == "balance" && exactRemaining is not null && quota.ExactUsed is null && quota.ExactLimit is null))
                 await HumanTable.WriteTextAsync(output, $"Exact amounts · used {quota.ExactUsed ?? "unknown"} · limit {quota.ExactLimit ?? "unknown"} · remaining {quota.ExactRemaining ?? "unknown"} {Cell(quota.Unit)}", context, "  ");
             if (!string.IsNullOrWhiteSpace(quota.Error)) await HumanTable.WriteTextAsync(output, "Note: " + Cell(quota.Error), context, "  ");
             if (stale || quota.Error is not null)
@@ -91,10 +99,10 @@ public static partial class CliApplication
     private static bool QuotaHasSupportOnly(QuotaDto quota) => quota.State is "unsupported" or "not-supported"
         // A successful monitor response without exported series is guidance, not an update failure.
         // Retained readings (stale) and any real error keep their diagnostic presentation.
-        || quota is { State: "unavailable", Error: null, Used: null, Remaining: null, Limit: null, UsedPercent: null,
+        || !QuotaPresentation.HasReading(quota) && (quota is { State: "unavailable", Error: null, Used: null, Remaining: null, Limit: null, UsedPercent: null,
             Support: { Kind: "unavailable" } }
         || quota.State is not ("error" or "unavailable" or "stale") && quota.Used is null && quota.Remaining is null && quota.Limit is null && quota.UsedPercent is null
-        && quota.Support?.Kind is "console" or "unsupported" or "unimplemented" or "setup-required" or "awaiting-observation" or "passive";
+        && quota.Support?.Kind is "console" or "unsupported" or "unimplemented" or "setup-required" or "awaiting-observation" or "passive");
 
     private static string QuotaSupportMessage(QuotaDto quota) => string.IsNullOrWhiteSpace(quota.Support?.Message)
         ? "No separate quota lookup is configured. See provider setup for available access." : Cell(quota.Support.Message);
@@ -118,6 +126,9 @@ public static partial class CliApplication
     }
 
     private static string QuotaAmount(double amount, string unit) => (unit is "%" or "percent" ? Lain.Client.QuotaDisplayFacts.Percent(amount) : Lain.Client.QuotaDisplayFacts.Amount(amount))
+        + (unit is "%" or "percent" ? "%" : unit is "" or "unknown" ? "" : " " + Cell(unit));
+
+    private static string QuotaAmount(string exactAmount, string unit) => Cell(exactAmount)
         + (unit is "%" or "percent" ? "%" : unit is "" or "unknown" ? "" : " " + Cell(unit));
 
     private static string QuotaWindowName(QuotaDto quota)

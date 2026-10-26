@@ -51,7 +51,9 @@ public static partial class CliApplication
                 var stale = QuotaIsLastKnown(quota, now);
                 var percent = CompactUsagePercentage(quota);
                 var remainingKind = quota.MeasurementKind is not ("usage" or "usage-estimate" or "limit" or "rate");
-                var exhausted = remainingKind && quota.Remaining is { } left && double.IsFinite(left) && left <= 0;
+                var exactSign = QuotaPresentation.ExactAmountSign(quota.ExactRemaining);
+                var exhausted = remainingKind && (exactSign is { } sign ? sign <= 0
+                    : quota.Remaining is { } left && double.IsFinite(left) && left <= 0);
                 if (exhausted) states.Add(stale ? "Last known exhausted" : "Exhausted");
                 else if (stale) states.Add("Last known");
                 if (quota.State is not ("ok" or "available" or "stale")) states.Add(ReadableState(quota.State));
@@ -80,14 +82,20 @@ public static partial class CliApplication
     {
         if (QuotaDisplayFacts.IsElapsedFreeDay(quota, DateTimeOffset.UtcNow)) return "Remaining unknown";
         // Usage, rate and configured limits are facts with their own labels, never remaining funds.
+        if (quota.MeasurementKind == "limit" && QuotaPresentation.ExactAmountSign(quota.ExactLimit) is >= 0)
+            return "Limit " + QuotaAmount(quota.ExactLimit!, quota.Unit);
         if (quota.MeasurementKind == "limit" && quota.Limit is { } limit && double.IsFinite(limit))
             return "Limit " + QuotaAmount(limit, quota.Unit);
         if (quota.MeasurementKind is "usage" or "usage-estimate" or "rate")
             return (quota.MeasurementKind == "rate" ? "Observed " : quota.MeasurementKind == "usage-estimate" ? "Est. used " : "Used ")
-                + (quota.Used is { } used && double.IsFinite(used) ? QuotaAmount(used, quota.Unit) : "unknown");
+                + (QuotaPresentation.ExactAmountSign(quota.ExactUsed) is >= 0 ? QuotaAmount(quota.ExactUsed!, quota.Unit)
+                    : quota.Used is { } used && double.IsFinite(used) ? QuotaAmount(used, quota.Unit) : "unknown");
+        if (QuotaPresentation.ExactAmount(quota.ExactRemaining) is { } exactRemaining) return QuotaAmount(exactRemaining, quota.Unit) + " left";
         if (quota.Remaining is { } remaining && double.IsFinite(remaining)) return QuotaAmount(remaining, quota.Unit) + " left";
         if (percent is { } known && quota.Unit is ("percent" or "%")) return QuotaDisplayFacts.Percent(100 - known) + "% left";
+        if (QuotaPresentation.ExactAmountSign(quota.ExactUsed) is >= 0) return "Used " + QuotaAmount(quota.ExactUsed!, quota.Unit);
         if (quota.Used is { } amount && double.IsFinite(amount)) return "Used " + QuotaAmount(amount, quota.Unit);
+        if (QuotaPresentation.ExactAmountSign(quota.ExactLimit) is >= 0) return "Limit " + QuotaAmount(quota.ExactLimit!, quota.Unit);
         if (quota.Limit is { } ceiling && double.IsFinite(ceiling)) return "Limit " + QuotaAmount(ceiling, quota.Unit);
         return "Remaining unknown";
     }

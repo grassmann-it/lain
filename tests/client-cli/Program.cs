@@ -5,6 +5,13 @@ using Lain.Client;
 using Lain.Cli;
 using Lain.Core;
 
+if (args.FirstOrDefault() == "--exact-balance-checks")
+{
+    var checks = await ExactBalanceChecks.RunAsync();
+    Console.WriteLine($"PASS: {checks} exact balance CLI checks.");
+    return;
+}
+
 if (args.FirstOrDefault() == "--resource-optional-monitor-checks")
 {
     var checks = await ResourceOptionalMonitorChecks.RunAsync();
@@ -423,6 +430,7 @@ assertions += await AccountWizardChecks.RunAsync();
 assertions += await DeviceOAuthLoginChecks.RunAsync();
 assertions += await MonitorWizardChecks.RunAsync();
 assertions += await ResourceOptionalMonitorChecks.RunAsync();
+assertions += await ExactBalanceChecks.RunAsync();
 assertions += await AccountUsageChecks.RunAsync();
 assertions += await UsageStyleChecks.RunAsync();
 Console.WriteLine($"PASS: {assertions} client/CLI contract checks.");
