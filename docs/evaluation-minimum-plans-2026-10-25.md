@@ -2,7 +2,16 @@
 
 ## Aktueller Nachtrag – 26.10.2026
 
-**Synthetic Go ist laut Nutzerbestätigung gekauft und aktiv; OpenRouter hat laut neuer Nutzerangabe jetzt ebenfalls Guthaben. Als Nächstes vorhandenes Synthetic Go und OpenRouter evaluieren sowie Requesty kostenlos einrichten; keine weiteren Pflichtkäufe.** Der Go-Listenpreis ist 9 USD/Monat; der tatsächlich bezahlte EUR-Endbetrag ist unbekannt. Dazu gibt es vier sinnvolle weitere Prüfkandidaten: NanoGPT, DeepSeek, Requesty und Fireworks. Die Quellen rechtfertigen **keine fünf weiteren sofortigen Käufe**: Zwei zusätzliche Anbieter benötigen zuerst einen Reader; bei zwei weiteren ist ein kostenloser Einstieg bzw. ein vorhandenes Trial der bessere erste Schritt. Das Budget beträgt weiterhin **höchstens 200 EUR insgesamt, einschließlich des bereits gekauften Go-Abos und der tatsächlichen OpenRouter-Aufladung**.
+**Aktueller Nutzerbestand: Synthetic Go und ein NanoGPT-Abo sind vorhanden; OpenRouter, Requesty und DeepSeek haben Guthaben; Fireworks hat API-/Serverless-Guthaben oder Trial. Keine weiteren Käufe oder Aufladungen empfohlen.** Bei NanoGPT sind konkreter Tarif, Laufzeit und tatsächlicher Zahlbetrag noch unbekannt; aus „hat Abo“ wird kein bestimmter PRO-Tier oder 12-USD-Kauf abgeleitet. Das Budget beträgt weiterhin **höchstens 200 EUR insgesamt einschließlich aller tatsächlichen Evaluierungsausgaben**. Endbeträge sind nicht bekannt, daher gibt es keinen belastbaren numerischen Rest. Die bedingten Kaufempfehlungen weiter unten beschreiben frühere Recherche- und Nutzerstände; vorhandene Zugänge zuerst anschließen und die fehlenden Reader ergänzen.
+
+| Bereits vorhanden | Anschluss-/Monitorstand in lain |
+| --- | --- |
+| Synthetic Go | Verbunden; automatischer Wochenquota-Snapshot vorhanden. Tarifname nutzerbestätigt. |
+| OpenRouter-Guthaben | Verbunden; Free-Tagesquota und Keycap lesbar, Walletsaldo davon getrennt. |
+| Requesty-Guthaben | Per offizieller isolierter CLI-Anmeldung verbunden; Self-/Keyverbrauch gelesen. Organisationswalletreader fehlt. |
+| Fireworks API/Serverless-Guthaben oder Trial | Quotaadapter vorhanden; noch nicht verbunden. Kein Fire Pass. |
+| DeepSeek-Guthaben | Direkter Providerkatalog-/Gatewayanschluss und Balancereader fehlen noch. |
+| NanoGPT-Abo, genauer Tarif unbekannt | Noch nicht verbunden; eigener Connector und Subscription-Reader fehlen. Dokumentierter Monitorweg mit separatem `usage:read`-Token. |
 
 **OpenRouter-Status, spätere Nutzerergänzung vom 26.10.:** Guthaben ist nutzerbestätigt; **Betrag und Währung sind unbekannt und nicht durch einen Providerabruf bestätigt**. Das früher beobachtete **20-USD-Keycap ist ein Key-Ausgabenlimit, kein belegter Walletsaldo** und kein Nachweis der Aufladehöhe. Aus der Guthabenangabe folgt **keine Freigabe für Ausgaben, kostenpflichtige Inferenz oder automatische Fallbacks**. Für diesen späteren Statusnachtrag wurden weder Provider-/Quotaabrufe noch erneute lokale Accountprüfungen, Recherche oder Runtimeaktionen ausgeführt.
 

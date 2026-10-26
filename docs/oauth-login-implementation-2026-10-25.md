@@ -304,6 +304,15 @@ direkte Balance-API ist ein separater noch fehlender Reader; Guthaben bei
 einem anderen Gateway und dessen DeepSeek-Modelle ersetzen diesen Anschluss
 nicht. Ein Providerlogin/-saldoabruf wurde dafür noch nicht durchgeführt.
 
+NanoGPT hat laut neuer Nutzerangabe ebenfalls ein Abo; konkreter Tarif,
+Zahlbetrag und Laufzeit bleiben unbekannt. Kein weiterer Kauf empfohlen.
+Die aktuelle offizielle Dokumentation belegt PKCE für einen Inferenzkey mit
+`api.use`, getrennt vom Managementtoken unter Settings → Security → Management
+API tokens → „Usage only — view subscription quotas“ (`usage:read`). Ein eigener
+NanoGPT-Connector und der Subscriptionreader fehlen im jetzigen Produktstand.
+Der anschließende direkte Nutzerauftrag zur Anbindung dieser vorhandenen
+Accounts wird in [EC1–EC4](evaluation-account-connections-2026-10-26.md) umgesetzt.
+
 ## Angeforderte OpenRouter-Free-Probe
 
 Am 26.10. zusätzlich beauftragt. Lesende Prüfung des installierten `f3d4851`
