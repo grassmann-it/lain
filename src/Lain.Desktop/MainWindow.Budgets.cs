@@ -64,7 +64,7 @@ public sealed partial class MainWindow
         if (quota is null || QuotaUnavailable(quota) || quota.MeasurementKind is "balance" or "usage" or "limit" or "rate") return null;
         if (QuotaDisplayFacts.IsElapsedFreeDay(quota, DateTimeOffset.UtcNow)) return null;
         if (quota.UsedPercent is { } supplied)
-            return double.IsFinite(supplied) && supplied is >= 0 and <= 100 ? supplied : null;
+            return double.IsFinite(supplied) && supplied >= 0 ? supplied : null;
         if (ValidAmount(quota.Limit) is not { } limit || limit <= 0) return null;
         if (ValidAmount(quota.Used) is { } used)
             return used <= limit ? used / limit * 100 : null;
@@ -257,7 +257,7 @@ public sealed partial class MainWindow
             var knownRemaining = ReportedRemaining(quota);
             var remaining = knownRemaining is { } amount
                 ? BudgetAmount(amount, quota.Unit) + " left"
-                : $"{BudgetPercent(100 - usedPercent)}% left";
+                : usedPercent <= 100 ? $"{BudgetPercent(100 - usedPercent)}% left" : "Limit exceeded";
             var values = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), ColumnSpacing = 8 };
             var used = Ui.Text($"{BudgetPercent(usedPercent)}% used", 12);
             used.FontWeight = FontWeight.Medium;
@@ -269,7 +269,7 @@ public sealed partial class MainWindow
             consumption.Children.Add(values);
             var bar = new ProgressBar
             {
-                Minimum = 0, Maximum = 100, Value = usedPercent, Height = 6,
+                Minimum = 0, Maximum = 100, Value = Math.Min(usedPercent, 100), Height = 6,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 Foreground = LastKnownQuota(quota) ? Ui.Warning : usedPercent >= 95 ? Ui.Danger : usedPercent >= 80 ? Ui.Warning : Ui.Accent,
                 Background = Ui.Edge

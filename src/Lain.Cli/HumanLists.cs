@@ -50,7 +50,7 @@ public static partial class CliApplication
     {
         if (quota.State is "unsupported" or "not-supported" || quota.MeasurementKind is "balance" or "usage" or "limit" or "rate") return null;
         if (Lain.Client.QuotaDisplayFacts.IsElapsedFreeDay(quota, DateTimeOffset.UtcNow)) return null;
-        if (quota.UsedPercent is { } supplied) return double.IsFinite(supplied) && supplied is >= 0 and <= 100 ? supplied : null;
+        if (quota.UsedPercent is { } supplied) return double.IsFinite(supplied) && supplied >= 0 ? supplied : null;
         if (quota.Limit is not { } limit || !double.IsFinite(limit) || limit <= 0) return null;
         if (quota.Used is { } used && double.IsFinite(used) && used >= 0 && used <= limit) return used / limit * 100;
         if (quota.Remaining is { } remaining && double.IsFinite(remaining) && remaining >= 0 && remaining <= limit) return (limit - remaining) / limit * 100;

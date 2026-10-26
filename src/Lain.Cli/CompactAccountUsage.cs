@@ -92,7 +92,7 @@ public static partial class CliApplication
                     : quota.Used is { } used && double.IsFinite(used) ? QuotaAmount(used, quota.Unit) : "unknown");
         if (QuotaPresentation.ExactAmount(quota.ExactRemaining) is { } exactRemaining) return QuotaAmount(exactRemaining, quota.Unit) + " left";
         if (quota.Remaining is { } remaining && double.IsFinite(remaining)) return QuotaAmount(remaining, quota.Unit) + " left";
-        if (percent is { } known && quota.Unit is ("percent" or "%")) return QuotaDisplayFacts.Percent(100 - known) + "% left";
+        if (percent is >= 0 and <= 100 && quota.Unit is ("percent" or "%")) return QuotaDisplayFacts.Percent(100 - percent.Value) + "% left";
         if (QuotaPresentation.ExactAmountSign(quota.ExactUsed) is >= 0) return "Used " + QuotaAmount(quota.ExactUsed!, quota.Unit);
         if (quota.Used is { } amount && double.IsFinite(amount)) return "Used " + QuotaAmount(amount, quota.Unit);
         if (QuotaPresentation.ExactAmountSign(quota.ExactLimit) is >= 0) return "Limit " + QuotaAmount(quota.ExactLimit!, quota.Unit);

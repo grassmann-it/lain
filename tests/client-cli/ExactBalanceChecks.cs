@@ -12,6 +12,13 @@ internal static class ExactBalanceChecks
         var checks = 0;
         void Check(bool value, string message) { checks++; if (!value) throw new Exception(message); }
         var now = DateTimeOffset.UtcNow;
+        var overLimit = new QuotaDto("existing", null, "fixture#subscription", "ok", now, now,
+            null, "percent", null, null, 125, false);
+        Check(QuotaPresentation.HasReading(overLimit), "provider-reported overage is a valid reading");
+        var overageOutput = new StringWriter();
+        await CliApplication.WriteQuotas(overageOutput, [overLimit], new(100, false));
+        Check(overageOutput.ToString().Contains("125% used") && !overageOutput.ToString().Contains("-25"),
+            "overage keeps the reported percentage with a bounded bar and no invented negative remaining value");
         QuotaDto Balance(string amount, string unit = "USD") => new("existing", null, "fixture#balance", "ok", now, now,
             null, unit, null, null, null, false, WindowLabel: "Account balance", MeasurementKind: "balance", ExactRemaining: amount);
         foreach (var (amount, unit) in new[] { ("110.00", "CNY"), ("0.00000000000000000001", "USD"), ("0.00", "USD"), ("-0.00000000000000000001", "USD") })

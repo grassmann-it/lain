@@ -50,7 +50,7 @@ public static partial class CliApplication
             {
                 var metric = Lain.Client.QuotaDisplayFacts.Percent(used) + "% used";
                 var cells = Math.Clamp(context.Width - 4 - metric.Length - 3, 8, 44);
-                var consumed = (int)Math.Round(used / 100 * cells, MidpointRounding.AwayFromZero);
+                var consumed = (int)Math.Round(Math.Min(used, 100) / 100 * cells, MidpointRounding.AwayFromZero);
                 var bar = "[" + new string('#', consumed) + new string('-', cells - consumed) + "] " + metric;
                 await output.WriteLineAsync("  " + HumanTable.Paint(bar, disabled || quota.State == "disabled" ? "2" : stale ? "33" : used >= 95 ? "31" : used >= 80 ? "33" : "32", context));
             }
@@ -59,7 +59,7 @@ public static partial class CliApplication
             var remaining = unsupported ? "Remaining unavailable"
                 : exactRemaining is not null ? "Remaining " + QuotaAmount(exactRemaining, quota.Unit)
                 : quota.Remaining is { } amount && double.IsFinite(amount) ? "Remaining " + QuotaAmount(amount, quota.Unit)
-                : percent is { } known ? "Remaining " + Lain.Client.QuotaDisplayFacts.Percent(100 - known)
+                : percent is >= 0 and <= 100 ? "Remaining " + Lain.Client.QuotaDisplayFacts.Percent(100 - percent.Value)
                     + (quota.Unit is "percent" or "%" ? "%" : "% (amount unknown)")
                 : "Remaining unknown" + (quota.Unit is "unknown" or "" ? "" : " " + Cell(quota.Unit));
             var resetLabel = unsupported ? "Reset unavailable" : quota.ResetsAt is { } next

@@ -254,14 +254,14 @@ public sealed partial class MainWindow
         var remaining = ExactBalanceRemaining(quota) is not null ? remainingAmount + " left"
             : !unavailable && ReportedRemaining(quota) is { } amount ?
             (ValidAmount(quota!.Limit) is { } total ? (PercentUnit(quota.Unit) ? BudgetPercent(amount) : BudgetNumber(amount)) + " of " + BudgetAmount(total, quota.Unit) : BudgetAmount(amount, quota.Unit)) + " left"
-            : percent is { } consumed ? $"{BudgetPercent(100 - consumed)}% left"
+            : percent is { } consumed ? consumed <= 100 ? $"{BudgetPercent(100 - consumed)}% left" : "Limit exceeded"
             : unavailable ? "Remaining not available" : "Remaining not supplied";
         var resetText = QuotaResetText(quota, unavailable);
         if (percent is { } usedPercent)
         {
             var bar = new ProgressBar
             {
-                Minimum = 0, Maximum = 100, Value = usedPercent, Height = compact ? 4 : 6,
+                Minimum = 0, Maximum = 100, Value = Math.Min(usedPercent, 100), Height = compact ? 4 : 6,
                 HorizontalAlignment = HorizontalAlignment.Stretch, Background = Ui.Edge,
                 Foreground = lastKnown ? Ui.Warning : usedPercent >= 95 ? Ui.Danger : usedPercent >= 80 ? Ui.Warning : Ui.Accent
             };
