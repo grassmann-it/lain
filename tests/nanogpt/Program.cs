@@ -149,6 +149,7 @@ foreach (var code in new[] { 401, 403, 429, 503 })
     catch (QuotaFetchException error) { Check(error.Message.Contains(code.ToString()) && !error.Message.Contains("private"), "HTTP error redacted"); }
 }
 Check(NanoGptCredentialPolicy.IsInferenceKey("sk-nano-fixture") && !NanoGptCredentialPolicy.IsInferenceKey("sk-nano-mgmt-fixture") && !NanoGptCredentialPolicy.IsManagementToken("sk-nano-fixture"), "credential namespaces disjoint");
+Check(NanoGptCredentialPolicy.IsInferenceKey("00000000-0000-0000-0000-000000000001") && !NanoGptCredentialPolicy.IsOAuthInferenceKey("00000000-0000-0000-0000-000000000001"), "legacy private UUID keys accepted without relaxing OAuth contract");
 using (var catalog = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "nanogpt.json"))))
 {
     var root = catalog.RootElement;

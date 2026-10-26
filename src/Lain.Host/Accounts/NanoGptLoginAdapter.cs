@@ -42,7 +42,7 @@ public sealed class NanoGptLoginAdapter(HttpMessageHandler? handler = null, Time
     protected override async Task<LoginAdapterResult> PrepareAsync(LoginOperationContext context, JsonElement response, CancellationToken ct)
     {
         var key = String(response, "key") ?? String(response, "access_token");
-        if (response.TryGetProperty("error", out _) || !NanoGptCredentialPolicy.IsInferenceKey(key)) return Uncertain();
+        if (response.TryGetProperty("error", out _) || !NanoGptCredentialPolicy.IsOAuthInferenceKey(key)) return Uncertain();
         // Save issued access before validating optional metadata. A lost response or invalid
         // scope must never silently trigger another one-time key issuance.
         var subject = Identity(String(response, "user_id"), key!);

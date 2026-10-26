@@ -38,7 +38,10 @@ silently confirmed from the requested account. No fabricated `self` identity is
 used. The key is persisted as a static key for inference/models, without an
 invented expiry or quota purpose.
 
-An existing inference API key remains a private alternative. Management secrets
+An existing inference API key remains a private alternative. The official
+[authentication guide](https://docs.nano-gpt.com/authentication) accepts both new
+`sk-nano-*` keys and legacy plain UUIDs; the manual-key policy supports both,
+while OAuth expects the documented prefixed key. Management secrets
 (`sk-nano-mgmt-*`) must be rejected by every inference credential entry path;
 `NanoGptCredentialPolicy` provides the provider namespace checks. Root integration
 owns those shared entry paths and runtime projection.
