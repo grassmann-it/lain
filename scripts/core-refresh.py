@@ -159,9 +159,11 @@ def check_core(package):
             notices.get('sourceManifestSha256') == build['sourceManifestSha256'] and
             notices.get('upstreamDependency') == upstream and notices.get('patchSetSha256') == build['patchSetSha256'],
             'Go notice inventory differs from new Core')
-    require(not notices.get('missingEvidence'), 'Go root notice evidence is incomplete; review before staging')
+    require(not notices.get('missingEvidence'), 'Go notice evidence is incomplete; review before staging')
     require(any(entry.get('module') == upstream['module'] and
-                entry.get('evidenceState') == 'verified-external-upstream-root-notices-collected'
+                entry.get('evidenceState') in (
+                    'verified-external-upstream-root-notices-collected',
+                    'verified-external-upstream-recursive-notices-collected')
                 for entry in notices['modules']), 'Verified upstream license inventory missing')
     return source, build, qualification
 
