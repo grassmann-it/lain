@@ -98,9 +98,25 @@ nicht auf. Keine echte Fireworks-Challenge oder Keyanlage wurde gestartet.
 
 Qualifikation R1 am `ee71593` stoppte wegen einer Variablenkollision ausschließlich
 in der neuen DeepSeek-Fixture. Der minimale Testfix ist `9f72225`; R1 bleibt als
-fehlgeschlagener Build erhalten. Die neue serielle R2-Lane läuft getrennt unter
-`~/.cache/lain-qualification-20261026/ec-final-r2`. Installation und echte
-Anbieteranmeldung sind davon getrennte, noch ausstehende Schritte.
+fehlgeschlagener Build erhalten. R2 bestand 1194 Backend-/CLIchecks, scheiterte
+aber anschließend an einer Desktopfixture, die einen unbekannten Reset als
+fehlenden Saldo wertete. Dieser Fehler bleibt im R2-Gesamtstatus erhalten.
+Der reine Desktopfixturefix ist `dca5f94`; R3 ist abgeschlossen unter
+`~/.cache/lain-qualification-20261026/ec-final-r3`.
+
+R3: 126 native Checks und zwölf tatsächlich visuell geprüfte Screenshots bei
+100/125 Prozent, vollständige Gateway-/Monitorpakete und elf exakte
+Paketstart-/Update-/Recoveryfälle bestanden. Sechs UI-Pakethashvergleiche stimmen
+überein. Die 1194 Backendchecks behalten ihren `9f72225`-Pin; ein Vergleich von
+438 geschützten Baumdateien belegt unveränderten Backendcode bis `dca5f94`.
+Keine erneute Corequalifikation: Corebytes unverändert `191f4f17…`.
+Keine öffentliche Releasefreigabe daraus ableiten.
+
+Installation und echte Anbieteranmeldung bleiben getrennte, ausstehende Schritte.
+Installiert ist weiterhin `ff5771c`. Der anschließende dringende
+[Modellwechselauftrag](model-switch-thinking-replay-2026-10-26.md) hat Vorrang.
+Nach einem Kaltstart war der eigene Core gestoppt; einmaliger gezielter Start
+stellte ihn ohne Profilanwendung wieder her. Bestand weiterhin 55/54.
 
 Privater aktueller Bestandsnachweis vor Lieferung:
 `~/.cache/lain-qualification-20261025/next/ec1-ec4-delivery-prepared-9988d84/`:
