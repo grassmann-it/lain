@@ -67,6 +67,7 @@ public sealed partial class MainWindow
             .OrderByDescending(method => method.Recommended).ToArray() ?? [];
         var form = AccountForm("Monitoring access for " + account.Name,
             "Read quota on this same account. Use saved access where the provider supports it, or connect one of the available methods below.");
+        form.Children.Add(Ui.Text("Monitoring access is for quota and usage reads. It does not replace your credential for model requests.", 12, Ui.Muted));
         var state = current.State == "configured-unverified" ? "Saved locally · monitor access not checked"
             : current.State is "not-configured" or "unsupported" ? "No separate monitoring access saved" : current.State;
         form.Children.Add(Ui.Text(state, 12, current.State == "expired" ? Ui.Warning : Ui.Muted));
@@ -132,7 +133,8 @@ public sealed partial class MainWindow
             description.Text = selected.Description ?? selected.Name;
             scopes.Text = selected.Scopes.Length == 0 ? "Read permissions are described in the official instructions." : "Required read permissions: " + string.Join(", ", selected.Scopes);
             resourceHelp.Text = selected.ResourceLabel + " · " + selected.ResourceHelp;
-            resourceRow.IsVisible = resourceHelp.IsVisible = !string.IsNullOrWhiteSpace(selected.ResourceLabel);
+            resourceRow.IsVisible = selected.ResourceRequired;
+            resourceHelp.IsVisible = selected.ResourceRequired && !string.IsNullOrWhiteSpace(selected.ResourceHelp);
             AutomationProperties.SetName(resource, selected.ResourceLabel.Length > 0 ? selected.ResourceLabel : "Resource ID");
             tokenRow.IsVisible = selected.SecretRequired;
             expiryRow.IsVisible = selected.Kind == "access-token-snapshot";
@@ -144,7 +146,8 @@ public sealed partial class MainWindow
         {
             var selected = options[kind.SelectedIndex];
             if (selected.SecretRequired && (string.IsNullOrWhiteSpace(token.Text) || token.Text.Any(char.IsWhiteSpace))) throw new InvalidOperationException("Enter your own monitoring token without whitespace.");
-            if (!string.IsNullOrWhiteSpace(selected.ResourceLabel) && string.IsNullOrWhiteSpace(resource.Text)) throw new InvalidOperationException("Enter " + selected.ResourceLabel + ".");
+            if (selected.ResourceRequired && string.IsNullOrWhiteSpace(resource.Text))
+                throw new InvalidOperationException("Enter " + (string.IsNullOrWhiteSpace(selected.ResourceLabel) ? "Resource ID" : selected.ResourceLabel) + ".");
             DateTimeOffset? expiresAt = null;
             if (selected.Kind == "access-token-snapshot")
             {
@@ -154,7 +157,7 @@ public sealed partial class MainWindow
                 expiresAt = parsed;
             }
             _configuration = await _client.SetMonitorAccessAsync(configuration.Revision, account.Id,
-                new(selected.Kind, selected.SecretRequired ? token.Text : null, resourceRow.IsVisible && !string.IsNullOrWhiteSpace(resource.Text) ? resource.Text.Trim() : null, expiresAt), _lifetime.Token);
+                new(selected.Kind, selected.SecretRequired ? token.Text : null, selected.ResourceRequired && !string.IsNullOrWhiteSpace(resource.Text) ? resource.Text.Trim() : null, expiresAt), _lifetime.Token);
             token.Text = "";
             if (checkQuota)
             {

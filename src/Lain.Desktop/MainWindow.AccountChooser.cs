@@ -247,6 +247,9 @@ public sealed partial class MainWindow
         }
         var purposes = quotaOnly ? method.Purposes.Where(purpose => purpose is "quota" or "cost").ToArray() : ConnectionPurposes(method);
         form.Children.Add(Ui.Text("Available purposes: " + string.Join(" · ", purposes), 12, Ui.Muted));
+        if (purposes.Contains("inference", StringComparer.Ordinal) && !purposes.Any(purpose => purpose is "quota" or "cost")
+            && _providerCatalog?.Providers.FirstOrDefault(provider => provider.Id == method.Provider)?.MonitorAccessOptions is { Length: > 0 })
+            form.Children.Add(Ui.Text("This connection is for model requests. Quota monitoring uses separate read access under Monitoring access.", 12, Ui.Muted));
         if (method.SecretRequired) form.Children.Add(AccountFormRow(method.SecretKind ?? "Credential", secret));
         if (method.SecretKind == "access-token-snapshot") form.Children.Add(AccountFormRow("Snapshot expires at", expiry));
         if (method.DocumentationUrl is { } url && Uri.TryCreate(url, UriKind.Absolute, out var link) && link.Scheme == "https")
