@@ -54,6 +54,9 @@ internal sealed partial class Scenario
             window = new MainWindow(new LainApiClient(http), Path.Combine(Output, "exact-balance-" + mode + ".json")) { Width = 1120, Height = 780 };
             lifetime.MainWindow = window; window.Show();
             await Wait(() => AccountTileNames().Length == accounts.Length, mode + " exact-balance accounts mounted");
+            Grid MonitorWindow(int index, string label) => Card(index).GetVisualDescendants().OfType<Grid>().Single(grid =>
+                AutomationProperties.GetName(grid) == "Monitor quota window for " + accounts[index].Name + " · " + label);
+            Control Consumption(int index, string label) => monitor ? MonitorWindow(index, label).Children[1] : Card(index);
             var overage = Balance(0, "0", "percent", "Subscription") with
             { MeasurementKind = null, ExactRemaining = null, UsedPercent = 125 };
             Check((double?)typeof(MainWindow).GetMethod("QuotaUsedPercent", statics)!.Invoke(null, [overage]) == 125,
@@ -65,11 +68,19 @@ internal sealed partial class Scenario
                 mode + " overage bar stays bounded and never invents negative remaining quota");
             observedScales.Add(window.RenderScaling);
             Check(Math.Abs(window.RenderScaling - requestedScale) < .001, mode + " actual exact-balance render scale matches request");
-            Check(Texts(Card(0)).Contains(usd + " USD left") && !Texts(Card(0)).Any(text =>
+            // Monitor rows have a separate reset column. Its honest unknown-reset
+            // text must not be mistaken for a missing consumption/balance value.
+            Check(Texts(Consumption(0, "USD balance")).Contains(usd + " USD left") && !Texts(Consumption(0, "USD balance")).Any(text =>
                 text.Contains("not supplied", StringComparison.OrdinalIgnoreCase) || text.Contains("not available", StringComparison.OrdinalIgnoreCase)),
                 mode + " exact-only main balance is visible on first look without contradictory missing-value text");
-            Check(Texts(Card(1)).Contains("0.0000 USD left") && Texts(Card(1)).Any(text => text.Contains("Balance empty", StringComparison.Ordinal)),
-                mode + " real exact zero remains visible and has honest empty state");
+            if (monitor)
+                Check(Texts(MonitorWindow(0, "USD balance").Children[2]).Contains("Not supplied"),
+                    "monitor unknown reset remains separate from the measured exact balance");
+            var zero = fixture.QuotaOverride!.Single(quota => quota.AccountId == accounts[1].Id);
+            Check(Texts(Consumption(1, "Balance")).Contains("0.0000 USD left")
+                && (bool)typeof(MainWindow).GetMethod("QuotaExhausted", statics)!.Invoke(null, [zero])!
+                && (monitor || Texts(Card(1)).Any(text => text.Contains("Balance empty", StringComparison.Ordinal))),
+                mode + " real exact zero remains visible and classified empty; the Gateway also shows its empty badge");
             Check(Texts(Card(2)).Contains(tiny + " USD left") && !Texts(Card(2)).Any(text => text.Contains("empty", StringComparison.OrdinalIgnoreCase)),
                 mode + " positive native decimal takes precedence over a binary zero without false exhaustion");
             Check(Texts(Card(3)).Contains("19.00000000000000000001 CNY left")
