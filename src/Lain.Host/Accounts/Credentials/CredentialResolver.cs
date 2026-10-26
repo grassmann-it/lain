@@ -43,6 +43,7 @@ public sealed class CredentialResolver(ConfigurationRepository configuration, Se
             if (!secrets.HasAccount(accountId)) return null;
             json = secrets.ReadAccount(accountId);
         }
+        if (purpose is "inference" or "models") InferenceCredentialPolicy.ValidatePrivateJson(json);
         return new(accountId, purpose, Version(account, purpose, handle, json), json, handle);
     }
 

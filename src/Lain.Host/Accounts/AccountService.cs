@@ -6,6 +6,8 @@ using Lain.Core;
 using Lain.Host.Operations;
 using Lain.Host.Providers;
 using Lain.Host.Accounts.Credentials;
+using Lain.Host.Accounts.Monitoring;
+using Lain.Host.Providers.NanoGpt;
 
 namespace Lain.Host.Accounts;
 
@@ -60,15 +62,29 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             if (context.Request.AccountId is null && existing is not null) throw new InvalidOperationException("Reserved account identity is already in use.");
             if (CanonicalProviderId(handle.Binding.Provider) != CanonicalProviderId(context.Request.Provider) || context.Request.Purposes.Any(p => !handle.Purposes.Contains(p, StringComparer.Ordinal)))
                 throw new InvalidDataException("Prepared credential does not grant the requested account purposes.");
-            EnsureBoundResult(context.Request.Binding, handle.Binding);
-            EnsureBoundResult(existing?.Binding, handle.Binding);
+            if (handle.Purposes.Any(p => p is "inference" or "models"))
+                InferenceCredentialPolicy.ValidatePrivateJson(secrets.Generations.Read(context.AccountId, handle).PrivateJson);
+            var unscopedMonitor = IsUnscopedSubscriptionMonitor(context, handle);
+            if (unscopedMonitor)
+            {
+                // The personal monitor has no identity endpoint. Keep its handle unknown
+                // and retain the existing inference identity rather than copying it.
+                EnsureCompatibleBinding(context.Request.Binding, handle.Binding);
+                EnsureCompatibleBinding(existing?.Binding, handle.Binding);
+            }
+            else
+            {
+                EnsureBoundResult(context.Request.Binding, handle.Binding);
+                EnsureBoundResult(existing?.Binding, handle.Binding);
+            }
             var capabilities = EffectiveCapabilities(existing).Where(c => !context.Request.Purposes.Contains(c.Purpose, StringComparer.Ordinal))
                 .Concat(context.Request.Purposes.Select(p => new AccountCapabilityDto(p, "unverified", handle.Id))).ToArray();
             var handles = (existing?.Credentials ?? []).Where(h => h.Id != handle.Id).Append(handle).Where(h => capabilities.Any(c => c.CredentialId == h.Id)).ToArray();
             var account = (existing ?? new AccountDto(context.AccountId, context.Request.Name?.Trim() ?? context.Request.Provider,
                 context.Request.Provider, true, handle.Owner == "static-key" ? "api-key" : handle.Owner, "unverified")) with
             {
-                Generation = checked((existing?.Generation ?? 0) + 1), Binding = MergeBinding(existing?.Binding, handle.Binding),
+                Generation = checked((existing?.Generation ?? 0) + 1), Binding = unscopedMonitor
+                    ? existing?.Binding ?? handle.Binding : MergeBinding(existing?.Binding, handle.Binding),
                 Credentials = handles, Capabilities = capabilities, State = "unverified",
                 ExpiresAt = capabilities.Any(c => c.Purpose == "inference" && c.CredentialId == handle.Id) ? handle.ExpiresAt : existing?.ExpiresAt
             };
@@ -84,12 +100,35 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         catch { secrets.Generations.DiscardStaticPreparation(handle); throw; }
     }
 
+    private bool IsUnscopedSubscriptionMonitor(LoginOperationContext context, CredentialHandleDto handle)
+    {
+        if (context.Request.Provider != "nanogpt" || context.Request.Method != "monitor-management-token") return false;
+        var binding = handle.Binding;
+        if (handle.Owner != "static-key" || !context.Request.Purposes.SequenceEqual(new[] { "quota" })
+            || !handle.Purposes.SequenceEqual(new[] { "quota" }) || binding.Provider != "nanogpt"
+            || binding.Provenance != "declared" || binding.Subject is not null || binding.Product is not null
+            || binding.Region is not null || binding.ResourceType is not null || binding.ResourceId is not null)
+            throw new InvalidDataException("A personal subscription monitor must remain quota-only with unknown provider identity.");
+        using var document = JsonDocument.Parse(secrets.Generations.Read(context.AccountId, handle).PrivateJson);
+        var root = document.RootElement;
+        if (!root.TryGetProperty("kind", out var kind) || kind.GetString() != "monitor-access"
+            || !root.TryGetProperty("monitorAccess", out var material))
+            throw new InvalidDataException("Invalid personal subscription monitor credential.");
+        var value = material.Deserialize<StoredMonitorAccess>();
+        if (value is null || value.AccountId != context.AccountId || value.Provider != "nanogpt"
+            || value.Kind != "management-token" || value.ResourceId is not null
+            || value.ExpiresAt != handle.ExpiresAt || !NanoGptCredentialPolicy.IsManagementToken(value.Secret))
+            throw new InvalidDataException("Invalid personal subscription monitor credential.");
+        return true;
+    }
+
     public ConfigurationDto ConnectCredential(long revision, ConnectCredentialRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (string.IsNullOrWhiteSpace(request.Secret) || request.Secret.Length > 65536 || request.Secret.Any(c => char.IsControl(c) || char.IsWhiteSpace(c)))
             throw new ArgumentException("A valid access credential is required.");
         if (request.Kind is not ("api-key" or "access-token-snapshot")) throw new ArgumentException("Unsupported static credential kind.");
+        InferenceCredentialPolicy.RejectManagementToken(request.Secret);
         if (request.Kind == "access-token-snapshot" && (request.ExpiresAt is null || request.ExpiresAt <= DateTimeOffset.UtcNow))
             throw new ArgumentException("An access snapshot requires a future expiry.");
         if (request.BaseUrl is { } endpoint) ValidateEndpoint(endpoint);
@@ -186,6 +225,7 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
     private ConfigurationDto AddApiCore(long revision, AddApiAccountRequest input, string? targetAccountId, long? expectedGeneration)
     {
         ArgumentNullException.ThrowIfNull(input);
+        InferenceCredentialPolicy.RejectManagementToken(input.ApiKey);
         if (string.IsNullOrWhiteSpace(input.Name) || input.Name.Length > 120 || input.Name.Any(char.IsControl))
             throw new ArgumentException("Account name is required (maximum 120 characters).");
         if (string.IsNullOrWhiteSpace(input.Provider) || input.Provider.Length > 80 || input.Provider.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '-'))
@@ -355,6 +395,7 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
     }
     public ConfigurationDto ReplaceApiCredential(long revision, string id, string apiKey)
     {
+        InferenceCredentialPolicy.RejectManagementToken(apiKey);
         if (string.IsNullOrWhiteSpace(apiKey) || apiKey.Any(char.IsWhiteSpace) || apiKey.Any(char.IsControl))
             throw new ArgumentException("A valid API key is required.");
         return configuration.Update(revision, state =>

@@ -16,7 +16,7 @@ public sealed record QuotaSummaryPresentation(
 /// <summary>Shared display hierarchy. Does not change, combine or manufacture provider readings.</summary>
 public static class QuotaPresentation
 {
-    private static readonly Regex ExactAmountPattern = new(@"^[+-]?[0-9]+(?:\.[0-9]+)?$",
+    private static readonly Regex ExactAmountPattern = new(@"\A[+-]?[0-9]+(?:\.[0-9]+)?\z",
         RegexOptions.CultureInvariant);
     private static readonly Regex DurationPattern = new(
         @"(?<![a-z0-9])(?<number>\d+(?:\.\d+)?)\s*-?\s*(?<unit>hours?|h|days?|d|weeks?|w|minutes?|mins?|m|seconds?|secs?|s)\b",
@@ -33,7 +33,7 @@ public static class QuotaPresentation
             _ => Amount(quota.Used) || Amount(quota.Limit) || Amount(quota.Remaining)
                 || ExactAmountSign(quota.ExactUsed) is >= 0 || ExactAmountSign(quota.ExactLimit) is >= 0
                 || ExactAmountSign(quota.ExactRemaining) is >= 0
-                || quota.UsedPercent is { } percent && double.IsFinite(percent) && percent is >= 0 and <= 100
+                || quota.UsedPercent is { } percent && double.IsFinite(percent) && percent >= 0
         };
     }
 

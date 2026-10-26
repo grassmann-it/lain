@@ -198,6 +198,7 @@ public sealed class LegacyImportService(OwnStatePaths paths, ConfigurationReposi
     {
         var key = Text(entry, "api-key");
         if (string.IsNullOrWhiteSpace(key)) return;
+        InferenceCredentialPolicy.RejectManagementToken(key);
         var canonicalProvider = AccountService.CanonicalProvider(providerName, endpoint);
         var id = AccountService.CredentialId(canonicalProvider, key);
         var transportId = "transport-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sourceSection + "\0" + providerName + "\0" + endpoint + "\0" + Text(entry, "proxy-url") + "\0" + Text(provider, "prefix")))).ToLowerInvariant()[..24];

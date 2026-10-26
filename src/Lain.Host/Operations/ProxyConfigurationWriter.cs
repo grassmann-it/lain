@@ -102,7 +102,9 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
             ? JsonSerializer.Deserialize<Dictionary<string, LegacyImportService.ImportedRouteSource>>(File.ReadAllText(metadataPath)) ?? [] : [];
         foreach (var account in state.Accounts.Where(a => a.Enabled && referencedAccounts.Contains(a.Id)))
         {
-            using var credential = JsonDocument.Parse(ReadInferenceCredential(account));
+            var privateJson = ReadInferenceCredential(account);
+            InferenceCredentialPolicy.ValidatePrivateJson(privateJson);
+            using var credential = JsonDocument.Parse(privateJson);
             var secret = credential.RootElement;
             var kind = Read(secret, "kind");
             if (kind == "codex-owned")
@@ -169,6 +171,7 @@ public sealed class ProxyConfigurationWriter(OwnStatePaths paths, SecretStore se
                 var provider = Read(transport, "sourceConfig") is { } sourceConfig ? Parse(sourceConfig) : new YamlMappingNode();
                 var key = Read(transport, "apiKey");
                 if (string.IsNullOrWhiteSpace(key)) throw new InvalidDataException("Missing own API credential.");
+                InferenceCredentialPolicy.RejectManagementToken(key);
                 var endpoint = Read(transport, "baseUrl") ?? "";
                 if (endpoint.Length > 0) { AccountService.ValidateEndpoint(endpoint); Set(provider, "base-url", new YamlScalarNode(endpoint)); }
                 var qualifiedDirectHeaders = false;

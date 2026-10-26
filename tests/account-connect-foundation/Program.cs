@@ -12,6 +12,7 @@ var assertions = 0;
 try
 {
     await MonitorAndStatic();
+    assertions += await EvaluationMonitorChecks.Run(Path.Combine(root, "evaluation-monitors"));
     await LoginLifecycle();
     await DeviceInstructions();
     assertions += await DurableRemovalChecks.Run(Path.Combine(root, "durable-removal"));
