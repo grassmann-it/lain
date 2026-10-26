@@ -35,8 +35,9 @@ public sealed partial class MainWindow
         // A successful monitor response without exported series is guidance, not an update failure.
         // Retained readings (stale) and any real error keep their diagnostic presentation.
         || quota is { State: "unavailable", Error: null, Used: null, Remaining: null, Limit: null, UsedPercent: null,
-            Support: { Kind: "unavailable" } }
+            Support: { Kind: "unavailable" } } && ExactBalanceRemaining(quota) is null
         || quota is not null && quota.State is not ("error" or "unavailable" or "stale") && quota.Used is null && quota.Remaining is null && quota.Limit is null && quota.UsedPercent is null
+        && ExactBalanceRemaining(quota) is null
         && quota.Support?.Kind is "console" or "unsupported" or "unimplemented" or "setup-required" or "awaiting-observation" or "passive";
 
     private static double? ValidAmount(double? value) => value is { } number && double.IsFinite(number) && number >= 0 ? number : null;
@@ -45,8 +46,16 @@ public sealed partial class MainWindow
         && quota.MeasurementKind is not ("usage" or "limit" or "rate")
         && !QuotaDisplayFacts.IsElapsedFreeDay(quota, DateTimeOffset.UtcNow) ? remaining : null;
 
+    private static string? ExactBalanceRemaining(QuotaDto? quota) => quota is { MeasurementKind: "balance" }
+        && !QuotaDisplayFacts.IsElapsedFreeDay(quota, DateTimeOffset.UtcNow) ? QuotaPresentation.ExactAmount(quota.ExactRemaining) : null;
+
+    private static string? ReportedRemainingAmount(QuotaDto? quota) => ExactBalanceRemaining(quota) is { } exact
+        ? exact + (string.IsNullOrWhiteSpace(quota!.Unit) || quota.Unit == "unknown" ? "" : " " + quota.Unit)
+        : ReportedRemaining(quota) is { } remaining ? BudgetAmount(remaining, quota!.Unit) : null;
+
     private static bool QuotaExhausted(QuotaDto? quota) => quota is not null && !QuotaUnavailable(quota)
-        && (QuotaUsedPercent(quota) >= 100 || ReportedRemaining(quota) <= 0);
+        && (QuotaUsedPercent(quota) >= 100 || (ExactBalanceRemaining(quota) is { } exact
+            ? QuotaPresentation.ExactAmountSign(exact) <= 0 : ReportedRemaining(quota) <= 0));
 
     // Percentages describe consumption. Never paint a missing value as zero, clamp
     // an invalid percentage, or combine separate windows into an account balance.
@@ -103,7 +112,7 @@ public sealed partial class MainWindow
         var rows = quotas.ToArray();
         return rows.FirstOrDefault(QuotaExhausted) ?? rows.Where(q => QuotaUsedPercent(q).HasValue)
             .OrderByDescending(q => QuotaUsedPercent(q)).FirstOrDefault()
-            ?? rows.FirstOrDefault(q => ReportedRemaining(q).HasValue && !QuotaUnavailable(q))
+            ?? rows.FirstOrDefault(q => ReportedRemainingAmount(q) is not null && !QuotaUnavailable(q))
             ?? rows.FirstOrDefault();
     }
 
@@ -140,7 +149,7 @@ public sealed partial class MainWindow
     {
         if (quota is null) return "Not loaded";
         if (QuotaUnavailable(quota)) return "Not available";
-        if (LastKnownQuota(quota) && (QuotaUsedPercent(quota).HasValue || ReportedRemaining(quota).HasValue || ValidAmount(quota.Used).HasValue)) return "Last known";
+        if (LastKnownQuota(quota) && (QuotaUsedPercent(quota).HasValue || ReportedRemainingAmount(quota) is not null || ValidAmount(quota.Used).HasValue)) return "Last known";
         return quota.State switch
         {
             "ok" or "available" => "",
@@ -271,10 +280,10 @@ public sealed partial class MainWindow
             if (!PercentUnit(quota.Unit) && ValidAmount(quota.Used) is { } amountUsed && ValidAmount(quota.Limit) is { } limit)
                 consumption.Children.Add(Ui.Text($"{BudgetNumber(amountUsed)} of {BudgetAmount(limit, quota.Unit)} used", 11, Ui.Muted));
         }
-        else if (!unavailable && quota is not null && (ReportedRemaining(quota).HasValue || ValidAmount(quota.Used).HasValue || ValidAmount(quota.Limit).HasValue))
+        else if (!unavailable && quota is not null && (ReportedRemainingAmount(quota) is not null || ValidAmount(quota.Used).HasValue || ValidAmount(quota.Limit).HasValue))
         {
-            if (ReportedRemaining(quota) is { } remaining)
-                consumption.Children.Add(Ui.Text(BudgetAmount(remaining, quota.Unit) + " left", 12));
+            if (ReportedRemainingAmount(quota) is { } remaining)
+                consumption.Children.Add(Ui.Text(remaining + " left", 12));
             if (ValidAmount(quota.Used) is { } used)
                 consumption.Children.Add(Ui.Text(ValidAmount(quota.Limit) is { } limit
                     ? $"{BudgetNumber(used)} of {BudgetAmount(limit, quota.Unit)} used" : BudgetAmount(used, quota.Unit) + " used", 11, Ui.Muted));

@@ -233,14 +233,26 @@ public sealed partial class MainWindow
         var lastKnown = quota is not null && LastKnownQuota(quota);
         var heading = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 10 };
         heading.Children.Add(TileText(QuotaWindowLabel(quota), 12));
+        var remainingAmount = ReportedRemainingAmount(quota);
         var value = percent is { } used ? $"{BudgetPercent(used)}% used" : unavailable ? "Not available"
-            : ReportedRemaining(quota) is { } balance ? BudgetAmount(balance, quota!.Unit) + " left"
+            : remainingAmount is { } balance ? balance + " left"
             : quota is null ? "No quota snapshot" : "Not supplied";
         var metric = TileText(value, 12, lastKnown ? Ui.Warning : percent >= 100 ? Ui.Danger : Ui.Ink);
         metric.FontWeight = FontWeight.Medium;
-        Grid.SetColumn(metric, 1); heading.Children.Add(metric);
+        if (ExactBalanceRemaining(quota) is not null)
+        {
+            // Native decimal strings may be longer than a binary approximation.
+            // Give the exact balance the full card width instead of an Auto column.
+            heading.ColumnDefinitions = new ColumnDefinitions("*");
+            heading.RowDefinitions = new RowDefinitions("Auto,Auto");
+            heading.RowSpacing = 3;
+            Grid.SetRow(metric, 1);
+        }
+        else Grid.SetColumn(metric, 1);
+        heading.Children.Add(metric);
         panel.Children.Add(heading);
-        var remaining = !unavailable && ReportedRemaining(quota) is { } amount ?
+        var remaining = ExactBalanceRemaining(quota) is not null ? remainingAmount + " left"
+            : !unavailable && ReportedRemaining(quota) is { } amount ?
             (ValidAmount(quota!.Limit) is { } total ? (PercentUnit(quota.Unit) ? BudgetPercent(amount) : BudgetNumber(amount)) + " of " + BudgetAmount(total, quota.Unit) : BudgetAmount(amount, quota.Unit)) + " left"
             : percent is { } consumed ? $"{BudgetPercent(100 - consumed)}% left"
             : unavailable ? "Remaining not available" : "Remaining not supplied";
@@ -259,10 +271,10 @@ public sealed partial class MainWindow
         }
         // Remaining and reset are explicit even when the provider supplies neither.
         var amounts = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 10 };
-        if (percent is not null || ReportedRemaining(quota) is null) amounts.Children.Add(TileText(remaining, 11, Ui.Muted));
+        if (percent is not null || remainingAmount is null) amounts.Children.Add(TileText(remaining, 11, Ui.Muted));
         var resetLabel = TileText(resetText, 11, quota is not null && QuotaResetOverdue(quota) ? Ui.Warning : Ui.Muted);
         if (quota?.ResetsAt is not null) { Grid.SetColumn(resetLabel, 1); amounts.Children.Add(resetLabel); }
-        if (percent is not null || quota?.ResetsAt is not null || ReportedRemaining(quota) is null) panel.Children.Add(amounts);
+        if (percent is not null || quota?.ResetsAt is not null || remainingAmount is null) panel.Children.Add(amounts);
         if (!unavailable && quota is not null && !PercentUnit(quota.Unit) && !(percent is not null && ReportedRemaining(quota) is not null))
         {
             if (ValidAmount(quota.Used) is { } amountUsed)

@@ -28,7 +28,7 @@ public sealed partial class MainWindow
         if (quota.ProviderUpdatedAt is { } updated) panel.Children.Add(QuotaTechnicalField("Provider update", Ui.When(updated)));
         panel.Children.Add(QuotaTechnicalField("Snapshot", $"{quota.State} · observed {Ui.When(quota.ObservedAt)} · last success {Ui.When(quota.LastSuccessAt)}"));
         string Amount(double? value) => ValidAmount(value) is { } amount ? BudgetAmount(amount, quota.Unit) : "Not supplied";
-        panel.Children.Add(QuotaTechnicalField("Amounts", $"Used: {Amount(quota.Used)} · limit: {Amount(quota.Limit)} · remaining: {(ReportedRemaining(quota) is { } remaining ? BudgetAmount(remaining, quota.Unit) : "Not supplied")}"));
+        panel.Children.Add(QuotaTechnicalField("Amounts", $"Used: {Amount(quota.Used)} · limit: {Amount(quota.Limit)} · remaining: {ReportedRemainingAmount(quota) ?? "Not supplied"}"));
         panel.Children.Add(QuotaTechnicalField("Consumption", QuotaUsedPercent(quota) is { } percent ? $"{BudgetPercent(percent)}% used" : "Percentage not available"));
         panel.Children.Add(QuotaTechnicalField("Reset", QuotaResetText(quota, QuotaUnavailable(quota))));
         if (!string.IsNullOrWhiteSpace(quota.BudgetPoolId)) panel.Children.Add(QuotaTechnicalField("Window pool", quota.BudgetPoolId));
