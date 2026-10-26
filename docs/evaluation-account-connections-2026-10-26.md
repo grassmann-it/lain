@@ -23,6 +23,10 @@ Keine Käufe, Topups, kostenpflichtigen Fallbacks oder automatischen
 Inferenzproben. Benutzer bestätigt tatsächliche Anbietergrants selbst;
 API-/Managementkeys gehören ausschließlich in lokale private Eingabefelder.
 Eine Anmeldung oder gespeicherter Key beweist noch keinen Live-Quotaabruf.
+Der Nutzer hat die Installation offizieller Anbieter-CLIs für einfachere
+Anmeldungen nochmals ausdrücklich erlaubt. Requesty wurde bereits auf diesem
+Weg verbunden. Eigene private lain-Speicher bleiben von vorhandenen
+CLI-Anmeldungen getrennt.
 
 ## Parallele Pakete und Dateigrenzen
 
@@ -69,3 +73,38 @@ Lieferung ist vom Nutzerauftrag umfasst; kein erneuter künstlicher
 Nutzerfreigabeschritt. Echte Logins benötigen seine sichtbare Anbieterzustimmung
 oder private Eingabe. Normale Codexkonfiguration und bisheriges Profil bleiben
 erhalten; keine Profilanwendung allein zur Bereinigung einer Statusanzeige.
+
+## Umsetzung und aktuelle Prüfgrenze
+
+Integrierter Produktstand `9f72225`: DeepSeek-Katalog und Same-Key-Balance,
+NanoGPT-PKCE für Modelle, separater ressourcenloser `usage:read`-Monitor,
+private CLI-/Desktop-Eingabe und exakte native Guthabenanzeigen. Gemeldete
+Überziehungen bleiben als Prozentwert sichtbar; nur die Balkengeometrie endet
+bei 100 Prozent. Fehlende Restwerte werden nicht negativ erfunden.
+
+Managementtoken sind vor Inferenzzugriffen, Modellzugriffen, Import,
+Credentialersetzung und Metadatenprüfungen gesperrt; Resolver und
+Proxykonfiguration prüfen auch bereits gespeichertes Material. Der persönliche
+NanoGPT-Monitor erhält einen eigenen unbekannten Providerbinding. Er übernimmt
+keine Identität vom Inferenzkey und erhält dessen bestehende Bindung unverändert.
+
+Fireworks' offizielle CLI ist auf 1.8.19 mit Archiv-/ELF-Prüfsummen vorbereitet.
+Die statische Prüfung ihres Signinablaufs belegt einen festen Callbacklistener
+auf `:18000`, also allen Interfaces. Der bisherige Hostnetzrunner kann damit
+keinen ausschließlich lokalen Callback zusichern. Die Produktaktivierung ist
+auch bei vorhandener Binary gesperrt; API-Key plus Account-ID ist der nutzbare
+Verbindungsweg dieser Lieferung. Eine Installation allein hebt diese Grenze
+nicht auf. Keine echte Fireworks-Challenge oder Keyanlage wurde gestartet.
+
+Qualifikation R1 am `ee71593` stoppte wegen einer Variablenkollision ausschließlich
+in der neuen DeepSeek-Fixture. Der minimale Testfix ist `9f72225`; R1 bleibt als
+fehlgeschlagener Build erhalten. Die neue serielle R2-Lane läuft getrennt unter
+`~/.cache/lain-qualification-20261026/ec-final-r2`. Installation und echte
+Anbieteranmeldung sind davon getrennte, noch ausstehende Schritte.
+
+Privater aktueller Bestandsnachweis vor Lieferung:
+`~/.cache/lain-qualification-20261025/next/ec1-ec4-delivery-prepared-9988d84/`:
+16 Accounts, 58 Routen, drei Profile, Revision 55 / angewandt 54, fester
+Historienvergleich und geschützte Dateifingerprints. Die normale
+Codexkonfiguration wurde ausschließlich gehasht. Ein frischer Vergleich ist
+unmittelbar vor der tatsächlichen Installation erforderlich.
