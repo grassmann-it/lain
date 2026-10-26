@@ -4,7 +4,9 @@ Aktuelle Orientierung (26.10.2026): installierter OAuth-/Device-Folgestand
 `ff5771c` in `docs/oauth-login-implementation-2026-10-25.md`: Kilo und Kimi,
 frische vollständige Pakete, native Abnahme und einmaliges eigenes Update
 mit Bestanderhaltung bestanden. Echte neue Providerlogins bleiben separat;
-Requesty-CLI-Anmeldung/Übernahme ist weiterhin nicht in lain aktiviert.
+Der allgemeine Requesty-CLI-Loginadapter ist weiterhin nicht aktiviert; ein
+konkreter Nutzerzugang wurde separat über die offizielle isolierte CLI
+angemeldet und privat übernommen (16 Accounts, Revision 55, angewandt 54).
 Vorherige private Linux-Lieferung N01–N09
 in `docs/next-work-packages-delivery-2026-10-25.md`; konsolidierter Ausgangsstand und
 nächste Arbeitspakete in `docs/next-work-packages-2026-10-25.md`.

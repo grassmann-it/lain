@@ -258,16 +258,51 @@ Nach unabhängigem Source-/Isolationsreview genau eine echte offizielle
 CLI-Challenge gestartet, dynamischen PKCE-Link aus deren Browseraufruf privat
 erfasst und dem Nutzer gegeben. Kein eigener OAuthclient nachgebaut. Die CLI
 verwaltet State/Verifier und den zeitlich begrenzten Loopbackcallback selbst;
-sie erstellt nach Nutzerzustimmung einen API-Key. **Nutzerbestätigung und
-Übernahme in lain sind noch offen.** Kein Tokenexport, kein automatischer
-Retry oder Profilwechsel. Auch eine erfolgreiche CLI-Anmeldung aktiviert
-noch keinen allgemeinen Requesty-Loginadapter in lain.
+sie erstellt nach Nutzerzustimmung einen API-Key. **Die Nutzeranmeldung ist
+inzwischen erfolgreich abgeschlossen:** Exit 0 nach 165,761 Sekunden,
+privates Profil `lain` gespeichert, Callbackprozess beendet. Danach genau
+ein privater offizieller `auth token`-Export im netzisolierten Namespace,
+ohne Schlüsselausgabe. Der erzeugte Key wurde per `lain accounts add-api
+--key-stdin` privat als Account **Requesty** übernommen. Der allgemeine
+Requesty-Loginadapter in lain bleibt davon getrennt und weiterhin nicht aktiviert.
+
+Aktueller Bestand nach dieser ausdrücklich gewünschten Accountverbindung:
+**16 Accounts, 58 Routen, drei Profile, Revision 55 / angewandt 54**. Keine
+neuen Modellrouten, keine Profilanwendung oder Änderung vorhandener Accounts,
+Modelldaten oder Profile. Die erste lokale Erhaltungsprüfung stoppte lediglich
+wegen der erwarteten Änderung des `models`-Envelopefelds `revision` 54→55;
+die anschließende rein lesende Prüfung bestätigte identische Modelldaten.
+Die Mutation wurde nicht wiederholt.
+
+Der reguläre automatische Monitor lieferte um 26.10.00:07:10Z einen echten
+Requesty-Self-Snapshot: 0 USD Monatsverbrauch, Key uncapped, Managementrecht
+`none`, Completions `write`. Keine Inferenz gesendet. Das bestätigt den
+Key-/Selfzugang, **keinen Organisationswalletsaldo**. Dessen Reader und passend
+berechtigter Monitorzugang fehlen weiterhin. Private Übernahmebelege:
+`adoption-r1/report.json` im nachstehenden Operatorverzeichnis; keine Secrets
+in Repository, Toolausgaben oder Chat. Kein automatischer Retry oder Profilwechsel.
 
 Privater Operator/Nachweise:
 `~/.cache/lain-qualification-20261026/requesty-oauth-v0.1.16-235713Z/`,
 Operator-SHA `44d7bd887b043b486b596776ee29bd5c999c9d35b277a7b9d0460f087b8dcb17`,
-Loginrun `login-b23413d2069c40a7`. Der Prozess wird begrenzt überwacht, ohne
-Secrets auszugeben. Link, Code und Tokens gehören nicht in Projektdokumente.
+Loginrun `login-b23413d2069c40a7`, privater Export
+`export-e5d52b54a921457e`. Beide Prozesse sind beendet und aufgeräumt.
+Link, Code und Tokens gehören nicht in Projektdokumente.
+
+Weitere Nutzerangabe: Fireworks hat bereits **API-/Serverless-Guthaben oder
+Trial**, ausdrücklich kein Fire-Pass-Abo; Betrag/Währung und etwaiger
+Zahlbetrag bleiben unbekannt, kein Nachkauf empfohlen. Im aktuellen Bestand
+ist noch kein Fireworks-Account verbunden. Der vorhandene Serverlessreader
+braucht einen berechtigten API-Key und die Account-ID; Quota-IDs werden
+automatisch gelistet. Fire Pass ist davon getrennt. `firectl signin` bietet
+einen offiziellen SSO-Weg, dessen automatische Lainübernahme bleibt
+unqualifiziert. Keinen eigenen OAuthlink erfinden.
+
+Auch **DeepSeek hat laut Nutzer bereits Guthaben**; Höhe/Währung und
+Zahlbetrag unbekannt. Keine weitere Aufladung empfehlen. Die dokumentierte
+direkte Balance-API ist ein separater noch fehlender Reader; Guthaben bei
+einem anderen Gateway und dessen DeepSeek-Modelle ersetzen diesen Anschluss
+nicht. Ein Providerlogin/-saldoabruf wurde dafür noch nicht durchgeführt.
 
 ## Angeforderte OpenRouter-Free-Probe
 
