@@ -247,7 +247,9 @@ def native_protocol_probe(core):
 
 def parent_pipe_probe(core):
     with PrivateRun(core, parent_stdin=True) as run:
-        expect(run.get("/lain/health")["version"] == "8.0.41-lain-adapter.3", "stale adapter identity")
+        manifest = json.loads((ROOT / "proxy/source-manifest.json").read_text())
+        expected = f"{manifest['snapshotVersion']}-lain-adapter.{manifest['lainPatchVersion']}"
+        expect(run.get("/lain/health")["version"] == expected, "stale adapter identity")
         start = time.monotonic()
         run.process.stdin.close()
         run.process.wait(timeout=10)
