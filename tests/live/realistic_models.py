@@ -7,6 +7,10 @@ does not read provider credentials, write configuration, change routes or retry.
 
 New plans use auto-v2 (automatic choice on both requests) and a structured,
 bounded quantity-validation assessment. forced-exec-v2 is an explicit control.
+K1/K2 use fixed generated contexts, evidence sentinels and explicit byte bounds;
+token targets are verified only against observed provider usage.
+cohere-auto-v2 is restricted to the exact Cohere K0 route, automatic/parallel
+tools and deliberately omitted output budget, through the installed Responses path.
 The legacy payload helper default remains byte-compatible with the separate
 model_boundaries.py diagnostics; v1 sweep plans cannot execute with this source.
 """
@@ -57,9 +61,28 @@ COMMAND = 'cat src/invoice.py'
 WORKDIR = '/workspace/lain-qualification'
 MAX_BODY = 4 * 1024 * 1024
 MAX_EVENTS = 20000
+MAX_STREAM_SECONDS = 90
+SOCKET_TIMEOUT = 45
 LEGACY_MODE = 'forced-exec-v1'
 DEFAULT_MODE = 'auto-v2'
-MODES = (DEFAULT_MODE, 'forced-exec-v2')
+COHERE_MODE = 'cohere-auto-v2'
+COHERE_ALIAS = 'command-a-plus-05-2026'
+MODES = (DEFAULT_MODE, 'forced-exec-v2', COHERE_MODE)
+# Targets are scenario labels, never token counts inferred from bytes.
+CONTEXT_MODES = ('k0', 'k1-32k', 'k2-110k')
+CONTEXT_SPECS = {
+    'k1-32k': {'targetInputTokens': 32000, 'generatedBytes': 128000,
+               'maximumContextBytes': 196608, 'maximumInitialRequestBytes': 196608,
+               'maximumContinuationRequestBytes': 294912},
+    'k2-110k': {'targetInputTokens': 110000, 'generatedBytes': 440000,
+                'maximumContextBytes': 786432, 'maximumInitialRequestBytes': 786432,
+                'maximumContinuationRequestBytes': 884736},
+}
+CONTEXT_EVIDENCE = {'beginning': 'invoice-draft-revision-17',
+                    'middle': 'preserve-half-up-cents', 'end': 'reject-invalid-before-subtotal',
+                    'file': 'invoice-fixture-quantity-review-42'}
+MAX_REPLAY_BYTES = 65536
+
 QUALITY = {
     'version': 'quantity-validation-json-v1',
     'cases': {'positive': 'accept', 'zero': 'reject', 'negative': 'reject',
@@ -198,11 +221,126 @@ def project_context():
     return text
 
 
-def payload(entry, tools, inputs=None, *, mode=LEGACY_MODE):
+def generated_context(context_mode):
+    if context_mode == 'k0':return project_context()
+    spec = CONTEXT_SPECS[context_mode]
+    # Three relevant rules embedded among deterministic, numbered ledger reviews.
+    # No model-produced input, random padding, personal data or hand-edited corpus.
+    rules = [
+        'Review rule beginning: invoice-draft-revision-17. Preserve draft revision checks.',
+        'Review rule middle: preserve-half-up-cents. Preserve Decimal ROUND_HALF_UP cents.',
+        'Review rule end: reject-invalid-before-subtotal. Reject bad quantities before arithmetic.',
+    ]
+    size = spec['generatedBytes']
+    lengths = [size // 2, size - size // 2 - 256, 256]
+    chunks = []
+    for section, (rule, length) in enumerate(zip(rules, lengths)):
+        header = rule + '\n' if section != 2 else ''
+        footer = '\n' + rule + '\n' if section == 2 else ''
+        remaining = length - len((header + footer).encode())
+        records = []
+        i = 0
+        while remaining:
+            operation, detail = [
+                ('draft', 'positive integer quantity 3 at Decimal price 12.50 totals 37.50 before discount'),
+                ('validation', 'quantity 0 or -2 must fail before subtotal; do not invent a negative invoice line'),
+                ('types', 'True, 2.0 and numeric strings are not positive integer quantities'),
+                ('rounding', 'preserve Decimal arithmetic and final ROUND_HALF_UP cent rounding'),
+                ('concurrency', 'reject a stale draft revision while preserving the current user edits'),
+                ('refund', 'create a separate refund document referencing the original posted invoice'),
+                ('discount', 'validate the 0..100 percent range; empty drafts total zero'),
+                ('posting', 'posted invoices are immutable; retain the original currency and audit identity'),
+            ][i % 8]
+            record = f'Ledger review {section}:{i:05d} {operation}: {detail}.\n'
+            take = record[:remaining]
+            records.append(take);remaining -= len(take);i += 1
+        chunks.append(header + ''.join(records) + footer)
+    text = ''.join(chunks)
+    if len(text.encode()) != size or size > spec['maximumContextBytes']:
+        raise ValueError('Generated context outside fixed byte contract')
+    return text
+
+
+def fixture_text(context_mode):
+    return FIXTURE if context_mode == 'k0' else (
+        '# File review evidence: ' + CONTEXT_EVIDENCE['file'] + '\n' + FIXTURE)
+
+
+def capacity_record(entry, record):
+    """Reviewed public route evidence; unknown remains explicit, never a guessed limit."""
+    if not isinstance(record, dict) or set(record) != {
+            'alias', 'provider', 'accountId', 'contextWindowTokens', 'maximumOutputTokens',
+            'source', 'checkedAt'}:
+        raise ValueError('Context capacity needs an exact reviewed route evidence record')
+    if any(record[k] != entry[k] for k in ('alias', 'provider', 'accountId')):
+        raise ValueError('Context capacity route/account mismatch')
+    for key in ('contextWindowTokens', 'maximumOutputTokens'):
+        value = record[key]
+        if value is not None and (type(value) is not int or not 0 < value <= 100000000):
+            raise ValueError('Invalid capacity value')
+    if not isinstance(record['source'], str) or not record['source'].startswith('https://'):
+        raise ValueError('Capacity needs a reviewed public HTTPS source, including for unknown limits')
+    if not isinstance(record['checkedAt'], str):raise ValueError('Capacity evidence needs checkedAt')
+    datetime.fromisoformat(record['checkedAt'].replace('Z', '+00:00'))
+    return copy.deepcopy(record)
+
+
+def context_contract(entries, context_mode):
+    if context_mode not in CONTEXT_MODES:raise ValueError('Unknown context mode')
+    if context_mode == 'k0':return None
+    spec = CONTEXT_SPECS[context_mode]
+    if len(entries) != 1:raise ValueError('Long-context probes select exactly one concrete alias')
+    capacity = capacity_record(entries[0], entries[0].get('contextCapacity'))
+    window, maximum = capacity['contextWindowTokens'], capacity['maximumOutputTokens']
+    if maximum is not None and maximum < 2048:
+        raise ValueError('Known provider maximum output is below the requested 2048 reserve')
+    if window is not None and spec['targetInputTokens'] + 2048 > window:
+        raise ValueError('Context target plus output reserve exceeds known provider window')
+    return {'mode': context_mode, **spec, 'outputReserveTokens': 2048,
+            'contextSha256': sha(generated_context(context_mode).encode()),
+            'fixtureSha256': sha(fixture_text(context_mode).encode()),
+            'requiredEvidence': CONTEXT_EVIDENCE.copy(), 'capacity': capacity,
+            'capacityStatus': 'unknown' if window is None else 'target_fits_not_tokenized',
+            'tokenMeasurement': 'provider usage only; targets and UTF-8 bytes are not token measurements',
+            'maximumReplayBytes': MAX_REPLAY_BYTES}
+
+
+def check_context_request(body, context_mode, *, continuation=False):
+    if context_mode == 'k0':return
+    key = 'maximumContinuationRequestBytes' if continuation else 'maximumInitialRequestBytes'
+    if len(encoded(body)) > CONTEXT_SPECS[context_mode][key]:
+        raise OutcomeError('context_request_byte_limit')
+
+
+def check_context_usage(meta, entry, context_mode):
+    if context_mode == 'k0':return
+    usage = meta.get('usage') or {}
+    count = usage.get('input_tokens')
+    window = entry['contextCapacity']['contextWindowTokens']
+    if type(count) is int and window is not None and count + 2048 > window:
+        raise OutcomeError('context_window_exceeded', {'inputTokens': count,
+                           'outputReserveTokens': 2048, 'contextWindowTokens': window})
+
+
+def validate_cohere_scope(entries, tools, context_mode):
+    if (context_mode != 'k0' or len(entries) != 1 or
+        entries[0].get('provider') != 'cohere' or entries[0].get('alias') != COHERE_ALIAS):
+        raise ValueError('cohere-auto-v2 requires exactly provider cohere, alias '+COHERE_ALIAS+' and K0')
+    native = json.loads(TOOLS_FILE.read_bytes())['tools']
+    if (len(native) != 7 or any(t.get('type') != 'function' for t in native) or
+        encoded(tools) != encoded(native)):
+        raise ValueError('cohere-auto-v2 requires the exact seven captured native function tools')
+
+
+def payload(entry, tools, inputs=None, *, mode=LEGACY_MODE, context_mode='k0'):
     # Keep the legacy default for model_boundaries.py's independently frozen
     # diagnostics. All new sweep plans/qualify calls pass a v2 mode explicitly.
+    if context_mode not in CONTEXT_MODES:raise ValueError('Unknown context mode')
+    if context_mode != 'k0' and mode != DEFAULT_MODE:
+        raise ValueError('Long-context qualification requires auto on both requests')
     if mode not in (*MODES, LEGACY_MODE):
         raise ValueError('Unknown qualification payload mode')
+    if mode == COHERE_MODE:validate_cohere_scope([entry],tools,context_mode)
     body = {'model': entry['alias'], 'stream': True, 'store': False,
             'max_output_tokens': 2048, 'parallel_tool_calls': False,
             'tools': copy.deepcopy(tools),
@@ -237,10 +375,19 @@ def payload(entry, tools, inputs=None, *, mode=LEGACY_MODE):
                 'The reject_if expression may use only quantity, int, bool, type(quantity), '
                 'isinstance(quantity, int), isinstance(quantity, bool), literals, comparisons '
                 'and and/or/not. Preserve valid positive integer quantities and all other behavior.')
-        if mode == DEFAULT_MODE:
+        if mode in (DEFAULT_MODE, COHERE_MODE):
             body['tool_choice'] = 'auto'
+    if mode == COHERE_MODE:
+        body['parallel_tool_calls'] = True
+        del body['max_output_tokens']  # Unsupported by this route; no invented provider budget.
     if entry['reasoningEffort'] is not None:
         body['reasoning'] = {'effort': entry['reasoningEffort']}
+    if context_mode != 'k0' and inputs is None:
+        body['input'][0]['content'][0]['text'] = generated_context(context_mode)
+        body['input'][-1]['content'][0]['text'] += (
+            ' Also return context_evidence with keys beginning, middle, end and file: '
+            'copy the three review-rule identifiers from the supplied project context and '
+            'the file review evidence identifier from the inspected file. Preserve these rules in your fix.')
     return body
 
 
@@ -304,7 +451,7 @@ def guard_value(node, quantity):
     raise ValueError('Unsupported guard')
 
 
-def assess_answer(text):
+def assess_answer(text, context_mode='k0'):
     """Report check outcomes only; retain no raw answer or model expression."""
     checks = dict.fromkeys(QUALITY['requiredChecks'], False)
     result = {'version': QUALITY['version'], 'checks': checks, 'guardCases': {}}
@@ -330,24 +477,44 @@ def assess_answer(text):
                     result['guardCases'][case['id']] = matched
                 checks['guard_boundaries'] = all(result['guardCases'].values())
             except (SyntaxError, ValueError, TypeError, RecursionError):pass
+    if context_mode != 'k0':
+        checks['context_evidence'] = isinstance(answer, dict) and answer.get('context_evidence') == CONTEXT_EVIDENCE
     result['passed'] = all(checks.values())
     return result
 
 
-def execution_contract(entries, tools, mode):
+def execution_contract(entries, tools, mode, context_mode='k0'):
     if mode not in MODES:raise ValueError('A new plan requires an explicit v2 payload mode')
-    return {'version': 2, 'payloadMode': mode, 'quality': copy.deepcopy(QUALITY),
+    if mode == COHERE_MODE:validate_cohere_scope(entries,tools,context_mode)
+    context = context_contract(entries, context_mode)
+    contract = {'version': 2, 'payloadMode': mode, 'quality': copy.deepcopy(QUALITY),
             'fixtureArguments':'exact-read-with-bounded-neutral-native-metadata-v1',
-            'toolChoice': {'initial': 'auto', 'continuation': 'auto'} if mode == DEFAULT_MODE else
+            'toolChoice': {'initial': 'auto', 'continuation': 'auto'} if mode in (DEFAULT_MODE, COHERE_MODE) else
                           {'initial': {'type': 'function', 'name': 'exec_command'}, 'continuation': 'none'},
             'harnessSha256': sha(Path(__file__).read_bytes()),
             'requests': [{
                 'alias': entry['alias'],
-                'firstSha256': sha(encoded(payload(entry, tools, mode=mode))),
+                'firstSha256': sha(encoded(payload(entry, tools, mode=mode, context_mode=context_mode))),
                 # Output items are unknown until inference; pin every static
                 # continuation field using an empty-input template as well.
-                'continuationTemplateSha256': sha(encoded(payload(entry, tools, [], mode=mode))),
+                'continuationTemplateSha256': sha(encoded(payload(entry, tools, [], mode=mode, context_mode=context_mode))),
             } for entry in entries]}
+    if context is not None:
+        if mode != DEFAULT_MODE:raise ValueError('K1/K2 require auto on both requests')
+        for entry in entries:
+            check_context_request(payload(entry,tools,mode=mode,context_mode=context_mode),context_mode)
+        if any(t.get('type') != 'function' for t in tools):
+            raise ValueError('K1/K2 accept only the existing native function fixture')
+        contract['quality']['requiredChecks'].append('context_evidence')
+        contract['context'] = context
+        contract['context']['toolSummary'] = {'topLevelTools':len(tools),
+            'callableDefinitions':len(tools), 'namespaceMembers':0, 'toolBytes':len(encoded(tools))}
+    if mode == COHERE_MODE:
+        contract['requestControls'] = {'parallelToolCalls':True, 'maximumOutputTokens':None,
+            'outputBudget':'omitted_unknown', 'contextMode':'k0', 'provider':'cohere', 'alias':COHERE_ALIAS,
+            'maximumResponseBytes':MAX_BODY, 'maximumSseEvents':MAX_EVENTS,
+            'streamDeadlineSeconds':MAX_STREAM_SECONDS, 'socketTimeoutSeconds':SOCKET_TIMEOUT}
+    return contract
 
 
 def verify_execution_contract(plan, tools):
@@ -355,11 +522,14 @@ def verify_execution_contract(plan, tools):
     if (plan.get('schemaVersion') != 2 or plan.get('kind') != 'lain-realistic-model-qualification' or
         not isinstance(contract, dict)):
         raise ValueError('Legacy or unknown plan: prepare a distinct v2 run; preserve original evidence')
-    current = execution_contract(plan['entries'], tools, contract.get('payloadMode'))
+    current = execution_contract(plan['entries'], tools, contract.get('payloadMode'),
+                                 contract.get('context', {}).get('mode', 'k0'))
     if encoded(contract) != encoded(current):
         raise ValueError('Frozen payload/quality/source contract changed; prepare a distinct run')
     if plan.get('maximumRequests') != len(plan['entries']) * 2:
         raise ValueError('Frozen request budget changed')
+    if contract['payloadMode'] == COHERE_MODE and plan.get('maximumOutputTokens','missing') is not None:
+        raise ValueError('Cohere plan must explicitly declare unknown/omitted output budget')
     return contract['payloadMode']
 
 
@@ -439,7 +609,7 @@ def sse(response, token=''):
         if event.get('type') == 'response.completed':
             final = event.get('response')
     while final is None:
-        if time.monotonic()-started > 90 or count > MAX_EVENTS:
+        if time.monotonic()-started > MAX_STREAM_SECONDS or count > MAX_EVENTS:
             raise OutcomeError('stream_deadline')
         line = response.readline(MAX_BODY+1)
         size += len(line)
@@ -479,7 +649,7 @@ def exchange(base, token, entry, body, record):
     opener = build_opener(ProxyHandler({}),NoRedirect())
     started = time.monotonic()
     try:
-        try:response = opener.open(request, timeout=45)
+        try:response = opener.open(request, timeout=SOCKET_TIMEOUT)
         except HTTPError as error:response=error
         with response:
             record['statusCode'] = response.status
@@ -522,30 +692,48 @@ def tool_result(item, fixture, *, allow_native_options=False):
             'output':'Process exited with code 0\nOutput:\n'+result.stdout.decode()}
 
 
-def qualify(entry, tools, base, token, fixture, row, checkpoint, stop, *, mode=DEFAULT_MODE):
+def qualify(entry, tools, base, token, fixture, row, checkpoint, stop, *, mode=DEFAULT_MODE, context_mode='k0'):
     try:
         if stop.is_set():row['state']='cancelled';return
         if mode not in MODES:raise ValueError('Qualification requires a v2 payload mode')
         row['payloadMode']=mode
-        body=payload(entry,tools,mode=mode);call={'step':'tool'};row['calls'].append(call);checkpoint()
+        if context_mode != 'k0':row['contextContract']=context_contract([entry],context_mode)
+        body=payload(entry,tools,mode=mode,context_mode=context_mode)
+        check_context_request(body,context_mode)
+        call={'step':'tool'};row['calls'].append(call);checkpoint()
         output, meta=exchange(base,token,entry,body,call);call.update(meta,state='passed');checkpoint()
+        check_context_usage(meta,entry,context_mode)
+        if context_mode != 'k0' and len(encoded(output)) > MAX_REPLAY_BYTES:
+            raise OutcomeError('context_replay_byte_limit')
         calls=[v for v in output if v.get('type') in ('function_call','custom_tool_call')]
         if len(calls)!=1:raise OutcomeError('expected_one_tool_call')
         result=tool_result(calls[0],fixture,allow_native_options=True)
         if stop.is_set():row['state']='cancelled';return
         inputs=body['input']+output+[result]
+        follow=payload(entry,tools,inputs,mode=mode,context_mode=context_mode)
+        check_context_request(follow,context_mode,continuation=True)
         call={'step':'continuation'};row['calls'].append(call);checkpoint()
-        output,meta=exchange(base,token,entry,payload(entry,tools,inputs,mode=mode),call)
+        output,meta=exchange(base,token,entry,follow,call)
         call.update(meta,state='passed')
+        check_context_usage(meta,entry,context_mode)
         text=''.join(c.get('text','') for item in output if item.get('type')=='message'
                      for c in item.get('content',[]) if c.get('type')=='output_text')
         if any(item.get('type') in ('function_call','custom_tool_call') for item in output):
             raise OutcomeError('unexpected_continuation_tool')
         if not text.strip():raise OutcomeError('empty_final_answer')
-        assessment=assess_answer(text)
+        assessment=assess_answer(text,context_mode)
         row.update(state='passed' if assessment['passed'] else 'answer_review_needed',
                    toolRoundTrip=True, answerBytes=len(text.encode()),answerSha256=sha(text.encode()),
                    answerAssessment=assessment)
+        if context_mode != 'k0':
+            observed = [(c.get('usage') or {}).get('input_tokens') for c in row['calls']]
+            initial = observed[0]
+            target = CONTEXT_SPECS[context_mode]['targetInputTokens']
+            reached = initial >= target if type(initial) is int else None
+            row['contextObservation'] = {'inputTokens':observed, 'targetInputTokens':target,
+                                         'targetReached':reached}
+            if assessment['passed'] and reached is not True:
+                row['state'] = 'context_usage_unknown' if reached is None else 'context_target_not_reached'
     except OutcomeError as error:
         row.update(state='failed',category=error.category,details=error.details)
         if row['calls']:row['calls'][-1].setdefault('state','failed')
@@ -563,8 +751,14 @@ def select_entries(entries, aliases):
     return [by_alias[alias] for alias in aliases]
 
 
-def prepare(output, mode=DEFAULT_MODE, aliases=None):
+def prepare(output, mode=DEFAULT_MODE, aliases=None, context_mode='k0', capacity_path=None):
     if mode not in MODES:raise ValueError('Unknown v2 qualification mode')
+    if context_mode not in CONTEXT_MODES:raise ValueError('Unknown context mode')
+    if mode == COHERE_MODE and (context_mode != 'k0' or aliases != [COHERE_ALIAS]):
+        raise ValueError('Cohere preparation requires exactly --only-alias '+COHERE_ALIAS+' and K0')
+    if context_mode != 'k0' and (mode != DEFAULT_MODE or not aliases or len(aliases) != 1 or capacity_path is None):
+        raise ValueError('K1/K2 require auto, one --only-alias and --context-capacity evidence')
+    if context_mode == 'k0' and capacity_path is not None:raise ValueError('Capacity evidence is for K1/K2 only')
     output.mkdir(mode=0o700,parents=True,exist_ok=False)
     status=cli('status'); models=cli('models'); profiles=cli('profiles')
     if not status.get('proxyReady') or status['revision']!=status['appliedRevision']:
@@ -576,24 +770,30 @@ def prepare(output, mode=DEFAULT_MODE, aliases=None):
     catalog_path=Path(config['model_catalog_json']); catalog_raw=catalog_path.read_bytes()
     catalog=json.loads(catalog_raw);all_entries=routes(models['models'],catalog,profile)
     entries=select_entries(all_entries,aliases)
-    fixture=output/'fixture/src/invoice.py';fixture.parent.mkdir(parents=True);fixture.write_text(FIXTURE)
+    if context_mode != 'k0':
+        if capacity_path.stat().st_size > 16384:raise ValueError('Capacity evidence exceeds 16384 bytes')
+        entries[0]['contextCapacity']=capacity_record(entries[0],json.loads(capacity_path.read_bytes()))
+        context_contract(entries,context_mode)
+        (output/'generated-context.txt').write_text(generated_context(context_mode))
+    fixture=output/'fixture/src/invoice.py';fixture.parent.mkdir(parents=True);fixture.write_text(fixture_text(context_mode))
     tool_record=json.loads(TOOLS_FILE.read_bytes()); tools=tool_record['tools']
     if len(tools)!=7 or any(t.get('type')!='function' for t in tools):raise ValueError('Unreviewed native tool fixture')
     plan={'schemaVersion':2,'kind':'lain-realistic-model-qualification','createdAt':now(),
-          'executionContract':execution_contract(entries,tools,mode),
+          'executionContract':execution_contract(entries,tools,mode,context_mode),
           'revision':status['revision'],'profileId':status['activeProfileId'],'endpoint':base,
           'configuredConcreteAliases':len(all_entries),'selectedAliases':[e['alias'] for e in entries],
           'conversationId':'lain-realistic-v2-'+uuid.uuid4().hex,
           'entries':entries,'maximumRequests':len(entries)*2,
           'clientToolFixtureSha256':sha(TOOLS_FILE.read_bytes()),'clientToolProvenance':tool_record['provenance'],
-          'nativeTools':len(tools),'projectContextBytes':len(project_context().encode()),
-          'maximumOutputTokens':2048,'fixtureSha256':sha(fixture.read_bytes()),
+          'nativeTools':len(tools),'projectContextBytes':len(generated_context(context_mode).encode()),
+          'maximumOutputTokens':None if mode == COHERE_MODE else 2048,'fixtureSha256':sha(fixture.read_bytes()),
           'catalogPath':str(catalog_path),'catalogSha256':sha(catalog_raw),
           'modelInventory':models,'profile':profile,
           'limits':['One bounded file-review task per concrete alias, at most two HTTP requests.',
                     'Seven captured native function tools; delegation, plugins, MCP, custom and namespace tools are not qualified.',
                     'Meaningful project context is synthetic; no personal project code or conversations are sent.',
-                    'Output budget is explicitly 2048 tokens, not a test of unbounded native defaults.',
+                    ('Cohere output token budget is deliberately omitted/unknown; response bytes, SSE events and time are bounded.'
+                     if mode == COHERE_MODE else 'Output budget is explicitly 2048 tokens, not a test of unbounded native defaults.'),
                     'Payload mode and structured quantity-review criteria are frozen in executionContract; v1 evidence is not regraded.',
                     'Quality uses explicit boundary cases and a restricted fix predicate, not FINDING/FIX keywords; unsupported answers need review.',
                     'Only the exact fixture read is executed; bounded neutral native execution metadata is accepted, never executed as shell text.',
@@ -612,6 +812,12 @@ def execute(output, expected, workers):
     tools=json.loads(TOOLS_FILE.read_bytes())['tools']
     # Fail closed before runtime inspection, auth helper or network access.
     mode=verify_execution_contract(plan,tools)
+    context_mode=plan['executionContract'].get('context',{}).get('mode','k0')
+    if context_mode != 'k0':
+        if (output/'generated-context.txt').read_bytes() != generated_context(context_mode).encode():
+            raise ValueError('Generated context changed; never hand-edit generated inputs')
+        if (output/'fixture/src/invoice.py').read_bytes() != fixture_text(context_mode).encode():
+            raise ValueError('Generated file task changed')
     status=cli('status');inventory=cli('models')
     if (not status.get('proxyReady') or status['revision']!=plan['revision'] or
         status['appliedRevision']!=plan['revision'] or status['activeProfileId']!=plan['profileId'] or
@@ -645,7 +851,8 @@ def execute(output, expected, workers):
                 current['activeProfileId']!=plan['profileId'] or not current.get('proxyReady')):
                 stop.set();row['state']='binding_changed';checkpoint();return
             row.update(state='running',startedAt=now());checkpoint()
-            qualify(row,tools,plan['endpoint'],token,fixture,row,checkpoint,stop,mode=mode)
+            qualify(row,tools,plan['endpoint'],token,fixture,row,checkpoint,stop,mode=mode,
+                    **({'context_mode':context_mode} if context_mode != 'k0' else {}))
     checkpoint()
     pending={}
     for row in report['rows']:pending.setdefault(row['provider'],[]).append(row)
@@ -674,16 +881,19 @@ def main():
     parser.add_argument('--expect-plan-sha256')
     parser.add_argument('--workers',type=int,choices=[1,2,3],default=3)
     parser.add_argument('--tool-mode',choices=MODES,
-                        help='Preparation only: auto-v2 (default) or explicit forced-exec-v2 control')
+                        help='Preparation only: auto-v2 default, forced-exec-v2 control, or exact Cohere K0 cohere-auto-v2 contract')
     parser.add_argument('--only-alias',action='append',help='Preparation only: exact concrete alias for bounded regression selection; repeat as needed')
+    parser.add_argument('--context-mode',choices=CONTEXT_MODES,help='Preparation only: k0 default, k1-32k or k2-110k generated context')
+    parser.add_argument('--context-capacity',type=Path,help='Preparation only: reviewed public route capacity JSON, at most 16384 bytes')
     args=parser.parse_args();os.umask(0o077)
     if args.execute:
         if not args.expect_plan_sha256:parser.error('--execute requires --expect-plan-sha256')
         if args.tool_mode is not None:parser.error('Execution uses only the frozen plan mode; omit --tool-mode')
+        if args.context_mode is not None or args.context_capacity is not None:parser.error('Execution uses the frozen generated context and capacity evidence')
         if args.only_alias is not None:parser.error('Execution uses only the frozen alias selection')
         execute(args.output,args.expect_plan_sha256,args.workers)
     else:
-        plan=prepare(args.output,args.tool_mode or DEFAULT_MODE,args.only_alias)
+        plan=prepare(args.output,args.tool_mode or DEFAULT_MODE,args.only_alias,args.context_mode or 'k0',args.context_capacity)
         print(json.dumps({'prepared':True,'models':len(plan['entries']),'maximumRequests':plan['maximumRequests'],
                           'payloadMode':plan['executionContract']['payloadMode'],
                           'qualityVersion':plan['executionContract']['quality']['version'],

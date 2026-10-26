@@ -26,7 +26,7 @@ internal static class SetupPresentationChecks
         var output = new StringWriter();
         await CliApplication.WriteAccountUsage(output, overview, new(120, false));
         var text = output.ToString();
-        Check(text.Contains(names[4]) && names.Take(4).All(name => !text.Contains(name)), "compact shows measured custom names and hides accounts without readings");
+        Check(text.Contains("OpenRouter") && !text.Contains(names[4]) && names.Take(4).All(name => !text.Contains(name)), "compact uses provider for a single measured account and hides accounts without readings");
         Check(text.Contains("4 accounts without quota readings hidden") && !text.Contains("No separate quota lookup"), "unsupported accounts contribute only to the neutral hidden count");
         Check(!text.Contains("Quota warning") && !text.Contains("Quota refresh error") && !text.Contains("Remaining unavailable") && !text.Contains("Reset unknown"), "unsupported is not a warning or repeated missing metrics");
         Check(text.Contains("Key spending limit") && text.Contains("20% used") && text.Contains("8 USD left"), "percentage identifies a bounded key spending limit");

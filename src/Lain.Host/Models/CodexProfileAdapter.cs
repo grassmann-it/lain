@@ -77,7 +77,7 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         {
             ["models"] = routes.Select((route, index) => CatalogEntry(route.Alias, DisplayName(route, catalogRegistry, resolved.Configuration, selectable),
                 Description(route, catalogRegistry), IsInternalReview(route), index, reasoning[route.Id]))
-                .Concat(routers.Select((router, index) => CatalogEntry(router.Alias, "Automatisch · " + RouterGroupName(router, resolved.Configuration, catalogRegistry), "Ordered selection for a new conversation; fixed model and account thereafter. No cross-route retry.", false, routes.Length + index,
+                .Concat(routers.Select((router, index) => CatalogEntry(router.Alias, "Automatisch · " + RouterGroupName(router, resolved.Configuration, catalogRegistry), "Uses models in your configured order, skipping known exhausted quotas. Quota fallback is limited to requests before output begins.", false, routes.Length + index,
                     RouterReasoning(router, reasoning)))).ToArray()
         };
         // Versioned lain client extension, not a native Codex catalog field. Callers opt in

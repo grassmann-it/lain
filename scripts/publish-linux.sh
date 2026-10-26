@@ -11,7 +11,7 @@ out=${1:-"$root/artifacts/lain-linux-x64-$mode"}
 cd "$root"
 revision=$(git rev-parse HEAD)
 # Application source pins describe an exact tracked tree; unrelated notes may be dirty.
-frozen_inputs=(src Directory.Build.props Directory.Build.targets global.json NuGet.Config nuget.config scripts packaging skills)
+frozen_inputs=(src Directory.Build.props Directory.Build.targets global.json NuGet.Config nuget.config scripts packaging skills LICENSE NOTICE)
 if [[ "$mode" == gateway ]]; then frozen_inputs+=(proxy); fi
 verify_frozen_inputs() {
     [[ "$(git rev-parse HEAD)" == "$revision" ]] || { echo 'Git HEAD changed during publish' >&2; exit 2; }
@@ -19,6 +19,7 @@ verify_frozen_inputs() {
     [[ -z "$(git ls-files --others --exclude-standard -- "${frozen_inputs[@]}")" ]] || { echo 'Untracked compile/packaging inputs must be committed before publishing' >&2; exit 2; }
 }
 verify_frozen_inputs
+[[ -f LICENSE && -f NOTICE ]] || { echo 'Own license and notice are required for packaging' >&2; exit 2; }
 if [[ "$mode" == gateway ]]; then
 python3 - <<'PYCATALOG'
 import pathlib, runpy
@@ -39,7 +40,11 @@ for project in Lain.Cli Lain.Host Lain.Desktop; do
     [[ -f "src/$project/packages.lock.json" ]] || { echo "Missing lockfile: $project" >&2; exit 2; }
     dotnet restore "src/$project/$project.csproj" --locked-mode -m:1 -p:BuildInParallel=false -nr:false -r linux-x64 -p:SelfContained=true -p:LainRuntimeMode="$mode"
  done
-mkdir -p "$out/packaging" "$out/skills"
+mkdir -p "$out/packaging" "$out/skills" "$out/source"
+cp LICENSE NOTICE "$out/"
+# Include the exact tracked Source alongside Compiled forms (Artistic-2.0).
+# Git's archive reads the frozen commit, never local runtime or ignored state.
+git archive --format=tar --prefix=lain-source/ "$revision" | gzip -n > "$out/source/lain-source.tar.gz"
 for spec in 'Lain.Cli cli' 'Lain.Host host' 'Lain.Desktop desktop'; do
     read -r project directory <<< "$spec"
     # Read each project's evaluated version without triggering a build. The exact
@@ -223,5 +228,5 @@ PYBUILDINFO
 (cd "$out" && find . -type f ! -name SHA256SUMS -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS)
 epoch=${SOURCE_DATE_EPOCH:-$(git log -1 --format=%ct)}
 tar --sort=name --mtime="@$epoch" --owner=0 --group=0 --numeric-owner -cf - -C "$(dirname "$out")" "$(basename "$out")" | gzip -n > "$out.tar.gz"
-sha256sum "$out.tar.gz" > "$out.tar.gz.sha256"
+(cd "$(dirname "$out")" && sha256sum -- "$(basename "$out").tar.gz") > "$out.tar.gz.sha256"
 printf 'Staged %s.tar.gz (see gate-status.json for final acceptance status)\n' "$out"

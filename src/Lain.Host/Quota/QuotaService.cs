@@ -21,6 +21,15 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
         lock (gate) return current.SelectMany(Project).ToArray();
     }
 
+    // Same cached projection/invalidation as the public read; never refreshes a provider.
+    public async Task<RouterAvailabilityQuotaSnapshot[]> GetRouterAvailabilitySnapshotsAsync(CancellationToken ct = default)
+    {
+        var current = await accounts.GetAccountsAsync(ct);
+        await InvalidateChangedAsync(current, ct);
+        lock (gate) return current.SelectMany(account => Project(account).Select(row =>
+            new RouterAvailabilityQuotaSnapshot(row, snapshots.GetValueOrDefault(account.Id)?.RouterProof))).ToArray();
+    }
+
     public async Task<QuotaDto[]> RefreshAsync(string? accountId = null, CancellationToken ct = default)
     {
         await refreshLock.WaitAsync(ct);
@@ -83,6 +92,7 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
                 accessDiagnostic = QuotaFetchException.SafeDiagnostic(error);
             }
             bindingVersion = credential?.BindingVersion;
+            var routerProof = (credentials as IRouterAvailabilityQuotaProofSource)?.GetRouterAvailabilityProof(account.Id, bindingVersion);
             if (previous.AccountVersion != accountVersion || previous.BindingVersion != bindingVersion)
                 previous = new(null, null, [], null, true, BindingVersion: bindingVersion, AccountVersion: accountVersion);
             var unavailable = credential is null || adapter.RequiresCredential && string.IsNullOrWhiteSpace(credential.BearerToken) && string.IsNullOrWhiteSpace(credential.MonitorBearerToken)
@@ -131,7 +141,7 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
             lock (gate) snapshots[account.Id] = new(now, now, readings, result.Error, false, support, bindingVersion,
                 accountVersion,
                 MergeMetadata(previous.KiloPass, result.KiloPass, result.KiloPassOutcome, result.Error, now),
-                MergeMetadata(previous.RequestyKey, result.RequestyKey, result.RequestyKeyOutcome, result.Error, now));
+                MergeMetadata(previous.RequestyKey, result.RequestyKey, result.RequestyKeyOutcome, result.Error, now), routerProof);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -292,5 +302,6 @@ public sealed class QuotaService(IQuotaAccountSource accounts, IQuotaCredentialS
     private sealed record CachedMetadata<T>(T? Value, DateTimeOffset? ObservedAt, DateTimeOffset? LastSuccessAt, string? Error) where T : class;
     private sealed record AccountSnapshot(DateTimeOffset? ObservedAt, DateTimeOffset? LastSuccessAt,
         IReadOnlyList<CachedReading> Readings, string? Error, bool Refreshing, QuotaSupportDto? Support = null,
-        string? BindingVersion = null, string? AccountVersion = null, CachedMetadata<KiloPassState>? KiloPass = null, CachedMetadata<RequestyKeyMetadata>? RequestyKey = null);
+        string? BindingVersion = null, string? AccountVersion = null, CachedMetadata<KiloPassState>? KiloPass = null, CachedMetadata<RequestyKeyMetadata>? RequestyKey = null,
+        RouterAvailabilityQuotaProof? RouterProof = null);
 }

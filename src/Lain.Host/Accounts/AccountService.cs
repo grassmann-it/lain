@@ -438,6 +438,17 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         }
         return null;
     }
+    public ConfigurationDto Rename(long revision, string id, string name)
+    {
+        if (string.IsNullOrWhiteSpace(name) || name.Length > 120 || name.Any(char.IsControl))
+            throw new ArgumentException("Account name must contain 1–120 characters without control characters.");
+        return configuration.Update(revision, state =>
+        {
+            RequireAccount(state, id);
+            return state with { Accounts = state.Accounts.Select(a => a.Id == id ? a with { Name = name.Trim() } : a).ToArray() };
+        });
+    }
+
     public ConfigurationDto SetEnabled(long revision, string id, bool enabled) => configuration.Update(revision, state =>
     {
         RequireAccount(state, id);

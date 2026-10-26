@@ -1,5 +1,13 @@
 # Opt-in Codex CLI model groups
 
+**Additional local delivery,26 October2026:** patch0003 preserves the native
+ChatGPT account display for command-authenticated Lain sessions, enabling the
+unchanged OpenAI `/usage` UI alongside separate Lain inference authentication.
+Its own build/native/installation status is recorded in the
+[usage delivery report](../../docs/native-openai-usage-delivery-2026-10-26.md).
+This client has its own qualification record and is locally installed. Existing
+daemons were preserved; `codex --no-daemon` starts the new bytes immediately.
+
 **Current local delivery, 25 October 2026:** the separate client and dispatcher
 are installed for the lain profile. Seven native PTY cases and a bounded harness
 of the six unchanged Core module tests passed. The full Core test build hit its

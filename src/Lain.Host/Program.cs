@@ -318,6 +318,7 @@ app.MapPost(Api.Prefix + "/accounts/{id}/credentials/{credentialId}/refresh", (s
 app.MapGet(Api.Prefix + "/accounts", (AccountService svc) => svc.List());
 app.MapPost(Api.Prefix + "/accounts", (RevisionRequest<AddApiAccountRequest> request, AccountService svc) => svc.AddApi(request.Revision, request.Value));
 app.MapPut(Api.Prefix + "/accounts/{id}/enabled", (string id, RevisionRequest<bool> request, AccountService svc) => svc.SetEnabled(request.Revision, id, request.Value));
+app.MapPut(Api.Prefix + "/accounts/{id}/name", (string id, RevisionRequest<string> request, AccountService svc) => svc.Rename(request.Revision, id, request.Value));
 app.MapDelete(Api.Prefix + "/accounts/{id}", (string id, long revision, AccountService svc) => svc.Remove(revision, id));
 app.MapPost(Api.Prefix + "/accounts/{id}/check", (string id, AccountService svc) => svc.Check(id));
 app.MapGet(Api.Prefix + "/accounts/{id}/monitor", (string id, MonitorAccessService svc) => svc.Get(id));
@@ -397,6 +398,11 @@ if (GatewayMode() && restoreReady && File.Exists(Path.Combine(paths.Root, "activ
 }
 // Bring the owned Core up before passive quota readers connect to its local port.
 var quotaLoop = referenceWithoutQuota ? Task.CompletedTask : quota.RunAsync(shutdown.Token);
+// Cached quota publication is independent of provider refresh and usage collection.
+var routerAvailability = new RouterAvailabilityPublisher(quotaCoreHttp, () => repository.Snapshot,
+ quota.GetRouterAvailabilitySnapshotsAsync,
+ ct => RouterAvailabilityBindings.ReadAsync(new RouteBindingsWriter(paths).BindingsPath, ct), canPublish: CollectCore);
+var routerAvailabilityLoop = referenceWithoutQuota ? Task.CompletedTask : routerAvailability.RunAsync(shutdown.Token);
 var credentialRefreshLoop = referenceWithoutQuota ? Task.CompletedTask :
  app.Services.GetRequiredService<OwnedCredentialRefreshService>().RunAsync(shutdown.Token);
 var recoveryCleanupLoop = RunRecoveryCleanupAsync(loginOperations, shutdown.Token);
@@ -404,7 +410,7 @@ try { await app.RunAsync(); }
 finally
 {
  shutdown.Cancel();
- try { await Task.WhenAll(quotaLoop, credentialRefreshLoop, recoveryCleanupLoop); } catch (OperationCanceledException) { }
+ try { await Task.WhenAll(quotaLoop, routerAvailabilityLoop, credentialRefreshLoop, recoveryCleanupLoop); } catch (OperationCanceledException) { }
  await proxy.DisposeAsync();
  foreach (var login in cloudLogins) login.Dispose();
  providerHttp.Dispose();

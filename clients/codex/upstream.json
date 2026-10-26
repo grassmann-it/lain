@@ -10,11 +10,13 @@
   "rustToolchain": "1.99.1",
   "patches": [
     "patches/0001-lain-model-picker.patch",
-    "patches/0002-release-workspace-lock.patch"
+    "patches/0002-release-workspace-lock.patch",
+    "patches/0003-lain-native-openai-usage.patch"
   ],
   "patchSha256": {
     "patches/0001-lain-model-picker.patch": "fda0a18221eff37f578e2f27cba6cc90556ef888ec2891c6c82067c7c10ac92d",
-    "patches/0002-release-workspace-lock.patch": "5e8d2b73b3bf7870dab1cb3f23d7629ecf47af88076f0052b636a19b9b5bc6d4"
+    "patches/0002-release-workspace-lock.patch": "5e8d2b73b3bf7870dab1cb3f23d7629ecf47af88076f0052b636a19b9b5bc6d4",
+    "patches/0003-lain-native-openai-usage.patch": "cfe3e2ad7e89b337dc31054887e9e43ef306effc37a7c29462c4f14a8d708ce7"
   },
   "workspaceLockNormalization": {
     "oldLocalVersion": "0.0.0",

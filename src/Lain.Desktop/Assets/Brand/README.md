@@ -17,5 +17,23 @@ environment scale this source at runtime.
 - The still earlier 1254 × 1254 source had hash
   `d36cb05911456a363b275631ad7a3b1176770f0f052d2e9747593e33f947a6fd`.
 
-The task supplies no separate copyright or license statement for this artwork;
-none has been invented. This record does not change existing third-party notices.
+## Credit and permission
+
+Photograph: [Alexander Huxel · Webentwicklung Huxel](https://webentwicklung-huxel.de/)
+[(Flickr)](https://flickr.com/people/204852984@N05/).
+Website: <https://webentwicklung-huxel.de/> (name and business verified on
+26 October 2026 against the photographer's own site).
+Photographer profile: <https://flickr.com/people/204852984@N05/>.
+
+On 26 October 2026 the project owner explicitly confirmed that the photograph
+is by his friend Alexander Huxel and that lain may use and publicly distribute
+the supplied artwork, including the edited application variant. This records
+the owner's supplied permission; it is not a separately obtained photographer
+license or permission to relicense the photograph under Artistic-2.0.
+The credit and profile link appear in the application's About page and root
+NOTICE. No general license for separate redistribution of the photograph is
+asserted. Existing third-party notices remain unchanged.
+
+The owner subsequently supplied a screenshot of the photographer agreeing to
+the proposed credit and links. The private conversation is not bundled in the
+source or binary release; its humorous alternative names are not credits.

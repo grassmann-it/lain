@@ -196,7 +196,13 @@ public sealed partial class UsageView
         foreach (var group in groups)
         {
             var stateKey = dimension.Dimension + "\n" + (group.Key is null ? "null" : "key:" + group.Key);
-            var name = group.Key is null ? "Unknown" : dimension.Dimension == "accountId" ? AccountName(group.Key) : group.Key;
+            var name = group.Key is null ? "Unknown" : dimension.Dimension switch
+            {
+                "accountId" => AccountName(group.Key),
+                "routeId" => RouteName(group.Key),
+                "provider" => Lain.Client.ProviderDisplayNames.Get(group.Key),
+                _ => group.Key
+            };
             var header = AnalysisCells(name, Number(group.Totals.Requests), Number(group.Totals.Attempts), Errors(group.Totals), ReportedTokens(group.Totals), Number(group.Totals.UnknownUsageAttempts));
             var detail = new StackPanel { Spacing = 5, Children =
             {

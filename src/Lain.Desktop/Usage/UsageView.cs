@@ -78,6 +78,7 @@ public sealed partial class UsageView : UserControl, IPresentationView
     private CancellationTokenSource? _refresh;
     private UsageQuery _query = new(Limit: 25);
     private readonly Dictionary<string, string> _accountNames = new();
+    private readonly Dictionary<string, string> _routeNames = new();
     private readonly HashSet<string> _knownAccounts = new(StringComparer.Ordinal);
     private readonly HashSet<string> _knownModels = new(StringComparer.Ordinal);
     private UsageSummaryDto? _summary;
@@ -524,8 +525,9 @@ public sealed partial class UsageView : UserControl, IPresentationView
             var attemptsTask = _client.AttemptsAsync(query, refresh.Token);
             // Friendly account names are optional; historical IDs still render when configuration is unavailable.
             var namesTask = ReadAccountNamesAsync(refresh.Token);
+            var routeNamesTask = ReadRouteNamesAsync(refresh.Token);
             var analysisTask = ReadAnalysisAsync(query, refresh.Token);
-            await Task.WhenAll(summaryTask, attemptsTask, namesTask, analysisTask);
+            await Task.WhenAll(summaryTask, attemptsTask, namesTask, routeNamesTask, analysisTask);
             if (refresh.IsCancellationRequested || generation != _generation) return;
             var summary = await summaryTask;
             if (summary.ContractVersion != Api.Version)
@@ -560,11 +562,26 @@ public sealed partial class UsageView : UserControl, IPresentationView
             token.ThrowIfCancellationRequested();
             _configuredAccounts.Clear();
             _configuredAccounts.UnionWith(accounts.Select(account => account.Id));
-            foreach (var account in accounts) _accountNames[account.Id] = account.Name;
+            foreach (var account in accounts) _accountNames[account.Id] = Lain.Client.AccountDisplayNames.Get(account, accounts);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch { /* Usage remains available when account configuration cannot be read. */ }
     }
+
+    private async Task ReadRouteNamesAsync(CancellationToken token)
+    {
+        try
+        {
+            var routes = await _client.RoutesAsync(token);
+            token.ThrowIfCancellationRequested();
+            foreach (var route in routes)
+                _routeNames[route.Id] = string.IsNullOrWhiteSpace(route.Alias) ? route.UpstreamModel : route.Alias;
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+        catch { /* Historical usage remains available when route configuration cannot be read. */ }
+    }
+
+    private string RouteName(string id) => _routeNames.GetValueOrDefault(id, id);
 
     private void Render(UsageSummaryDto summary, PageDto<AttemptDto> page, UsageQuery query)
     {

@@ -27,7 +27,8 @@ internal static class UsageStyleChecks
         var hostile = "\u001b[31mVisible\u001b[0m\u001b]8;;https://hostile.invalid\aLink\u001b]8;;\a\r\n\t\u202e";
         var longOverview = new AccountUsageOverview(1, "account-usage", [new(account with { Name = longName + hostile },
             [basis with { WindowLabel = string.Concat(Enumerable.Repeat("非常に長い枠", 10)) },
-             basis with { WindowLabel = "7 days", Used = 100, Remaining = 0, UsedPercent = 100 }])]);
+             basis with { WindowLabel = "7 days", Used = 100, Remaining = 0, UsedPercent = 100 }]),
+             new(account with { Id = "style-second", Name = "Second account" }, [])]);
         foreach (var width in new[] { 20, 40, 60, 80, 100, 120, 160, 200 })
         {
             var text = await Render(longOverview, width);
@@ -78,8 +79,9 @@ internal static class UsageStyleChecks
                 "known generated " + provider + " names use short provider labels without changing stored data");
         }
         var ownName = "My science account";
-        var custom = await Render(new(1, "account-usage", [new(account with { Provider = "gemini-api", Name = ownName }, [basis])]));
-        Check(custom.Contains(ownName), "an unrelated My … account name remains an actual custom name");
+        var custom = await Render(new(1, "account-usage", [new(account with { Provider = "gemini-api", Name = ownName }, [basis]),
+            new(account with { Id = "science-second", Provider = "gemini-api", Name = "Other lab" }, [])]));
+        Check(custom.Contains(ownName), "multiple accounts retain an unrelated My … custom name");
         var emailAccount = account with { Provider = "codex", Name = "person@example.invalid" };
         var emailOverview = new AccountUsageOverview(1, "account-usage", [new(emailAccount, [basis])]);
         var singleEmail = await Render(emailOverview);

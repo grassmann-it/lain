@@ -1,5 +1,79 @@
 # Ordered collection routing v1
 
+## Accepted extension, 26 October 2026 — source tested, deployment pending
+
+The user explicitly revises the previous no-fallback rule below: automatic
+groups should skip members with a fresh, applicable exhausted-quota snapshot
+and move to the next configured member after a quota rejection before any
+client-visible answer/tool output. GPT-6 Luna is requested as a reserve in IT Sec.
+This is an implementation requirement, not an installed-runtime claim.
+
+Cached provider quota snapshots remain distinct from local request/token history.
+Selection consumes a small derived availability snapshot, not inferred remaining
+tokens from local history. Snapshots must retain account/model applicability,
+observation freshness and reset boundaries; stale or unsupported information is
+unknown, never a permanent exclusion. No provider request is sent just to choose
+a route. Refresh uses the existing quota-monitoring cadence.
+
+The Core/Host bridge is management-authenticated, bounded and tied to the exact
+running Core generation; complete replacement updates use monotonic sequence
+numbers. Route fingerprints bind exclusions to compiled members. Old or delayed
+snapshots cannot override new state. Each exclusion expires no later than its
+original freshness/reset deadline. A restarted or unavailable bridge starts
+unknown, without blocking direct inference or usage monitoring.
+
+Fallback is bounded to eligible configured members. It preserves explicit account
+selection, transport/tool compatibility and each route's effective cost policy.
+It never buys extra usage or silently enables a paid replacement. No route change
+after visible output/tool events. Attempt records must identify each actually
+contacted model/account separately from the requested group alias. Exhaustion
+must return an explicit failure instead of looping. Conversation pin migration,
+concurrency and durable restart behavior require targeted qualification.
+
+Implementation rule for conversation migration: successful turns retain their
+durable pin. A later complete-history turn may move forward in group order for
+quota exhaustion before any executor payload, client byte or flush. Stored
+references and unpinned continuations remain rejected. Changed, removed or
+credential-unavailable pins fail closed rather than being reinterpreted as quota.
+Same-thread requests serialize through HTTP completion; moving the pin uses a
+durable compare-and-swap before another dispatch. A new conversation can choose
+earlier members again after their quotas recover.
+
+Later pin migration supports full user/assistant message history and paired
+function_call/function_call_output records with matching call IDs. A latest-user
+fragment, tool-output-only continuation, opaque reasoning or native/custom tool
+record cannot migrate: HTTP409 `router_replay_required` explains the supported
+replay format and asks for a new thread. Records are never silently stripped.
+Ordinary continuation on the existing route is unchanged. The gateway can
+validate supplied records, but cannot prove that a caller omitted no messages.
+
+The Host republishes derived availability every15 seconds, without refreshing
+providers. Initial supported quota evidence is limited to proven legacy Kimi
+Coding/Z.ai Coding credentials using the same quota/inference key. Other
+providers, ambiguous bindings and stale readings stay unknown. Original
+observation age is capped at5 minutes and the reset deadline; repeated publication
+does not renew it. Monitor mode and a stopped Core make no availability HTTP
+calls. The bridge and inference-error cooldowns are memory-only and start unknown
+after Core restart. Existing quota monitoring supplies the cached observations.
+
+Fresh cache exclusions are route-specific. Generic429 rejection cooldowns are
+model-specific; only recognized account-wide quota codes can suppress sibling
+aliases of that account. Rejection cooldowns default to30 seconds, honor bounded
+`Retry-After` and never exceed5 minutes; replacement credentials do not inherit
+them. Each real dispatch has its own attempt UUID under the parent request.
+
+Live evidence before implementation: one 569-byte, zero-tool IT-Sec request at
+19:34 UTC selected Kimi `k3` and returned HTTP429, `exceeded_current_quota_error`,
+5-hour window exhausted. The public attempts API independently identifies the
+same request, route and account. Both Kimi and Z.ai reported exhausted 5-hour
+windows; remaining longer windows do not remove the short-window constraint.
+IT Sec now saves `k3, kimi-for-coding, glm-5.3, gpt-6-luna` at revision58;
+runtime remains revision57 pending qualified activation.
+
+The historical installed contract below describes the preceding implementation;
+its no-quota-probe/no-cross-route-retry statements are superseded only by this
+explicitly requested bounded extension.
+
 **Current status, 25 October 2026:** this contract is implemented, synthetically
 qualified and installed as recorded in the
 [model-group delivery report](codex-model-groups-delivery-2026-10-25.md).

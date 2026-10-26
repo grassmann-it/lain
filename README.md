@@ -4,6 +4,11 @@ lain verwaltet lokale Provideraccounts, Kontingente und gespeicherte
 Nutzungsdaten für Linux x64. Desktop und CLI verwenden denselben privaten
 .NET-10-Host. Der Host kann unabhängig vom Fenster weiterlaufen.
 
+Eigener Code: [Artistic License 2.0](LICENSE), mit getrennten
+[Drittanbieter- und Bildhinweisen](NOTICE). Katzenfoto:
+[Alexander Huxel · Webentwicklung Huxel](https://webentwicklung-huxel.de/)
+[(Flickr)](https://flickr.com/people/204852984@N05/).
+
 Im aktuellen **Quellstand** sind zwei ausdrückliche Betriebsarten implementiert:
 **Monitor** liest qualifizierte Accountkontingente und vorhandene lokale History
 ohne installierten oder gestarteten Proxy-Core. **Gateway** ergänzt Inferenz,

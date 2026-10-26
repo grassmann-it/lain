@@ -31,6 +31,8 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 				return
 			}
 			switch path {
+			case "/lain/router-availability":
+				i.handleRouterAvailability(c)
 			case "/lain/journal/storage":
 				if c.Request.Method != "GET" {
 					c.AbortWithStatus(405)
@@ -249,12 +251,23 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 				c.AbortWithStatusJSON(400, gin.H{"error": "router supports full-history Responses only"})
 				return
 			}
-			route, err = i.routerRoute(router, alias, body, c.Request.Header, manager)
-			if err != nil {
-				c.AbortWithStatusJSON(409, gin.H{"error": gin.H{"code": "router_unavailable", "message": err.Error()}})
+			if i.routerPinError != nil || i.routerPins == nil {
+				c.AbortWithStatusJSON(409, gin.H{"error": "persistent router state unavailable; explicit recovery required"})
 				return
 			}
-			ok = true
+			thread, _, requestErr := routerRequest(body, c.Request.Header)
+			if requestErr != nil {
+				c.AbortWithStatusJSON(400, gin.H{"error": requestErr.Error()})
+				return
+			}
+			release, acquireErr := i.routerPins.acquire(c.Request.Context(), router, thread)
+			if acquireErr != nil {
+				c.AbortWithStatus(409)
+				return
+			}
+			defer release()
+			i.serveCollectionRouter(c, router, alias, body, manager)
+			return
 		}
 		if !ok {
 			c.AbortWithStatusJSON(400, gin.H{"error": "unknown model route"})

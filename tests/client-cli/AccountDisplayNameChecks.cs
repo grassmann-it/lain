@@ -12,7 +12,9 @@ internal static class AccountDisplayNameChecks
         Check(AccountDisplayNames.Get(imported, [imported]) == "Gemini" && imported.Name == "My Gemini API account",
             "compact labels do not rewrite saved import names");
         var custom = Account("custom", "Science account");
-        Check(AccountDisplayNames.Get(custom, [custom]) == custom.Name, "custom labels are preserved");
+        Check(AccountDisplayNames.Get(custom, [custom]) == "Gemini", "single account always uses provider label");
+        var openRouter = Account("router", "My OpenRouter account", "openrouter");
+        Check(AccountDisplayNames.Get(openRouter, [openRouter]) == "OpenRouter", "single default account uses provider label");
         var second = imported with { Id = "two" };
         AccountDto[] inventory = [imported, second, custom];
         Check(AccountDisplayNames.Get(imported, inventory) == "Gemini 1" && AccountDisplayNames.Get(second, inventory) == "Gemini 2",

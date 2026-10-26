@@ -7,6 +7,10 @@ Quota-/Kostenoptimierung bleiben nachgelagert. Neue Sourceänderungen nicht als
 bereits installierte oder veröffentlichte Version behandeln.
 Ausnahme: der separate Codexlauncher wurde lokal repariert und qualifiziert;
 normales `codex` und `--profile lain` verwenden jetzt beide das Gruppenmenü.
+Der zusätzliche native OpenAI-`/usage`-Fix ist am26.10.2026 qualifiziert und
+lokal installiert; echte Anmeldung und Kontingentabfrage geprüft. Laufende
+Daemons erhalten, sofort neue Bytes mit `codex --no-daemon`. Bericht:
+`docs/native-openai-usage-delivery-2026-10-26.md`.
 Die Worker-Host-/CLI-Source ist weiterhin nicht produktiv installiert.
 Die VS-Code-Modellgruppen sind separat nativ qualifiziert und als lokale
 Erweiterung 26.1021.22028 installiert; Produktionsfenster nicht neu geladen.

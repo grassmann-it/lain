@@ -229,18 +229,26 @@ public sealed partial class MainWindow
         var project = Ui.Button("Open project repository", () => _ = OpenProviderLinkAsync(new Uri(repository)));
         AutomationProperties.SetName(project, "Open project repository");
         var licenses = Ui.Text(
-            "Application license: no application-wide license is declared in the repository.\n\n" +
+            "Application license: Artistic License 2.0. Copyright © 2026 Tom Graßmann. " +
+            "See LICENSE and NOTICE in the package; the exact source is included in source/lain-source.tar.gz.\n\n" +
             "Bundled third-party license records include MIT (.NET, Avalonia, Semi, Ursa, Irihi and CLIProxyAPI Core), " +
             "Apache 2.0 (SQLitePCLRaw), and SIL Open Font License 1.1 (IBM Plex Sans Condensed and Oxanium). " +
             "Full component and runtime notices are included in the package's notices directory.\n\n" +
-            "The cat artwork is a contrast-adjusted variant of the user-supplied photo; its provenance records no separate license statement.", 12, Ui.Muted);
+            "Cat photograph: Alexander Huxel · Webentwicklung Huxel. " +
+            "Edited for lain and used with permission; separate from the application license.", 12, Ui.Muted);
         AutomationProperties.SetName(licenses, "License information");
+        var photographer = Ui.Button("(Flickr)", () =>
+            _ = OpenProviderLinkAsync(new Uri("https://flickr.com/people/204852984@N05/")));
+        AutomationProperties.SetName(photographer, "Open photographer profile");
+        var photographerWebsite = Ui.Button("Alexander Huxel · Webentwicklung Huxel", () =>
+            _ = OpenProviderLinkAsync(new Uri("https://webentwicklung-huxel.de/")));
+        AutomationProperties.SetName(photographerWebsite, "Open photographer website");
         var page = Ui.Stack(
             Heading("About lain", "Account monitoring and local AI gateway"),
             Ui.Card(Ui.Stack(Ui.Row(logo, brand), Ui.Text("Desktop build", 12, Ui.Muted), versionText,
                 Ui.Text("Host version · reported by the connected host", 12, Ui.Muted), hostVersion)),
             Ui.Card(Ui.Stack(Ui.Text("Project", 15), projectText, project)),
-            Ui.Card(Ui.Stack(Ui.Text("Licenses and credits", 15), licenses)));
+            Ui.Card(Ui.Stack(Ui.Text("Licenses and credits", 15), licenses, Ui.Row(photographerWebsite, photographer))));
         page.MaxWidth = 820;
         page.HorizontalAlignment = HorizontalAlignment.Stretch;
         AutomationProperties.SetName(page, "About page");

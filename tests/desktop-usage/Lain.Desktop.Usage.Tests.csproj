@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Lain.Desktop/Lain.Desktop.csproj" />
     <Compile Include="../desktop/Fixture.cs" Link="Fixture.cs" />
+    <Compile Include="../desktop/CodexArtifactFixture.cs" Link="CodexArtifactFixture.cs" />
     <Compile Include="../uxd-acceptance/NativeInput.cs" Link="NativeInput.cs" />
     <EmbeddedResource Include="../desktop/fixtures/inspection-providers.json" LogicalName="Lain.Desktop.Smoke.fixtures.inspection-providers.json" />
   </ItemGroup>

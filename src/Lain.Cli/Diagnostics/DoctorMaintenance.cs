@@ -9,7 +9,8 @@ internal static class DoctorMaintenance
     private static readonly HashSet<string> CliPins = new(StringComparer.Ordinal)
     {
         "5b3a058525925731f12eec3366fd6dff74f716fb2967791e4531e88e7a06d484",
-        "0d45eb864e1773cdd692194f3d1e7b2056614560444df5ed48e027733aab349a"
+        "0d45eb864e1773cdd692194f3d1e7b2056614560444df5ed48e027733aab349a",
+        "dce2d889f7a0924894a8e2321f6c7101445cbc66a5baad821f725ce430899541"
     };
     private const string HelperPin = "8ee4f472e92ac226a189e98998633b2d07f989f208515750764db660369f2926";
     internal static void Diagnose(IDoctorEnvironment env, string target, Dictionary<string, string> versions,

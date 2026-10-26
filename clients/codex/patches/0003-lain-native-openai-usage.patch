@@ -1,0 +1,58 @@
+--- a/codex-rs/app-server/src/request_processors/account_processor/workspace_routing.rs
++++ b/codex-rs/app-server/src/request_processors/account_processor/workspace_routing.rs
+@@ -45,6 +45,8 @@
+ 
+ pub(super) struct AccountRead {
+     account_state: ProviderAccountState,
++    // Native ChatGPT identity for account UI only; never used for inference routing.
++    lain_usage_account: Option<Account>,
+     pub(super) workspace_routing: Option<WorkspaceRouting>,
+ }
+ 
+@@ -259,7 +261,11 @@
+             })?;
+         Ok(Some(
+             GetAccountResponse {
+-                account: read.account_state.account.map(Account::from),
++                account: read
++                    .account_state
++                    .account
++                    .map(Account::from)
++                    .or(read.lain_usage_account),
+                 requires_openai_auth: read.account_state.requires_openai_auth,
+                 workspace_routing: read.workspace_routing.map(|routing| {
+                     codex_app_server_protocol::WorkspaceRouting {
+@@ -498,8 +504,33 @@
+                     return Err(WorkspaceRoutingError::SessionBackendChanged.into());
+                 }
+             }
++            // Command-backed Lain inference has its own credentials. Keep the
++            // separate native ChatGPT login visible to /usage, consistently with
++            // account/updated notifications. Do this AFTER routing discovery:
++            // this identity must never select a model endpoint or authenticate
++            // an inference request. Signed-out/API-key/other providers retain
++            // their upstream account behavior.
++            let lain_usage_account = if config.model_provider_id == "lain"
++                && config.model_provider.auth.is_some()
++                && !config.model_provider.requires_openai_auth
++                && account_state.account.is_none()
++                && request.is_none()
++            {
++                auth.as_ref()
++                    .filter(|auth| auth.is_chatgpt_auth())
++                    .filter(|auth| self.auth_manager.refresh_failure_for_auth(auth).is_none())
++                    .and_then(|auth| {
++                        auth.account_plan_type().map(|plan_type| Account::Chatgpt {
++                            email: auth.get_account_email(),
++                            plan_type,
++                        })
++                    })
++            } else {
++                None
++            };
+             Ok(AccountRead {
+                 account_state,
++                lain_usage_account,
+                 workspace_routing,
+             })
+         });

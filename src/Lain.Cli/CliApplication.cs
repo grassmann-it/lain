@@ -26,6 +26,7 @@ public static partial class CliApplication
           accounts login-status|login-cancel|check ID [--json]
           accounts discover ID [--revision N] [--json]  Read the saved xAI key's team identity; no budget read
           accounts enable|disable|remove ID [--revision N] [--json]
+          accounts rename ID --name NAME [--revision N] [--json]
           accounts add-api --name NAME --provider PROVIDER --base-url URL
                    (--key-env ENVNAME | --key-stdin) [--provider-route ID]
                    [--setting NAME=VALUE ...] [--revision N] [--json]
@@ -299,9 +300,16 @@ public static partial class CliApplication
                     options.RequireOnly("json", "revision", "method", "purpose", "account", "name");
                     if (options.Get("purpose") is { } purposes && purposes.Split(',', StringSplitOptions.TrimEntries).Any(p => p is not ("quota" or "inference" or "cost" or "models"))) throw new ArgumentException("Unknown connection purpose.");
                 }
+                else if (action == "rename")
+                {
+                    options.RequireOnly("json", "revision", "name");
+                    var name = options.Get("name");
+                    if (string.IsNullOrWhiteSpace(name) || name.Length > 120 || name.Any(char.IsControl))
+                        throw new ArgumentException("--name requires 1–120 characters without control characters.");
+                }
                 else if (action is "enable" or "disable" or "remove" or "discover") options.RequireOnly("json", "revision");
                 else if (action is "check" or "login-status" or "login-cancel") options.RequireOnly("json");
-                else throw new ArgumentException("Account action must be add, add-api, monitor, login, login-status, login-cancel, enable, disable, remove, discover or check.");
+                else throw new ArgumentException("Account action must be add, add-api, monitor, login, login-status, login-cancel, rename, enable, disable, remove, discover or check.");
             }
             if (options.Get("revision") is { } revision) _ = ParseLong(revision, "revision");
             return;
@@ -381,6 +389,7 @@ public static partial class CliApplication
         }
         return action switch
         {
+            "rename" => await client.RenameAccountAsync(revision, options.Positionals[1], options.Get("name")!, ct),
             "enable" => await client.SetAccountEnabledAsync(revision, options.Positionals[1], true, ct),
             "disable" => await client.SetAccountEnabledAsync(revision, options.Positionals[1], false, ct),
             "remove" => await client.RemoveAccountAsync(revision, options.Positionals[1], ct),

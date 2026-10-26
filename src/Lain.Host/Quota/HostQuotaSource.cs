@@ -10,15 +10,18 @@ namespace Lain.Host.Quota;
 
 /// <summary>Direct quota reads resolve their own capability and never start an inference runtime.</summary>
 public sealed class HostQuotaSource(ConfigurationRepository repository, SecretStore secrets, MonitorAccessService monitorAccess)
-    : IQuotaAccountSource, IQuotaCredentialSource
+    : IQuotaAccountSource, IQuotaCredentialSource, IRouterAvailabilityQuotaProofSource
 {
     private readonly CredentialResolver resolver = new(repository, secrets);
+    private readonly RouterAvailabilityProofStore routerProofs = new();
+    public RouterAvailabilityQuotaProof? GetRouterAvailabilityProof(string accountId, string? bindingVersion) => routerProofs.Get(accountId, bindingVersion);
     public Task<IReadOnlyList<AccountDto>> GetAccountsAsync(CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<AccountDto>>(repository.Snapshot.Accounts);
 
     public Task<QuotaCredential?> GetCredentialAsync(string accountId, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
+        routerProofs.Remove(accountId);
         var account = repository.Snapshot.Accounts.SingleOrDefault(a => a.Id == accountId);
         if (account is null || !account.Enabled) return Task.FromResult<QuotaCredential?>(null);
         var access = resolver.Resolve(accountId, "quota");
@@ -43,6 +46,7 @@ public sealed class HostQuotaSource(ConfigurationRepository repository, SecretSt
         if (access is null) return Task.FromResult<QuotaCredential?>(null);
         var projectedJson = QuotaTransportProjection.Select(account, access.PrivateJson);
         if (projectedJson is null) return Task.FromResult<QuotaCredential?>(null);
+        routerProofs.CaptureLegacy(account, access.PrivateJson, projectedJson, version);
         var credential = QuotaCredential.FromSecretJson(projectedJson, bindingVersion: version, purposes: ["quota"]);
         if (credential is null)
         {

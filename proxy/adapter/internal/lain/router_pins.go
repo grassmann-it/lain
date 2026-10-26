@@ -2,6 +2,7 @@ package lain
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -29,9 +30,12 @@ type routerPinFile struct {
 }
 
 // The existing journal process lock owns this sidecar as well. No prompt, key,
-// response or tool data is retained; pins never expire or silently move.
+// response or tool data is retained; pins never expire. Movement requires a
+// serialized pre-output quota transition.
 type routerPins struct {
 	mu             sync.Mutex
+	flightsMu      sync.Mutex
+	flights        map[string]chan struct{}
 	path, sourceID string
 }
 
@@ -198,4 +202,58 @@ func (p *routerPins) resolve(router CollectionRouter, thread string, continuatio
 		return routerPin{}, err
 	}
 	return pin, nil
+}
+
+// acquire serializes a complete request for this conversation, including output.
+// The bounded durable table also bounds active keys; canceled waiters never dispatch.
+func (p *routerPins) acquire(ctx context.Context, router CollectionRouter, thread string) (func(), error) {
+	key := router.ID + "\n" + router.ProfileID + "\n" + thread
+	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		p.flightsMu.Lock()
+		if p.flights == nil {
+			p.flights = map[string]chan struct{}{}
+		}
+		if wait, exists := p.flights[key]; exists {
+			p.flightsMu.Unlock()
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-wait:
+			}
+			continue
+		}
+		if len(p.flights) >= maxRouterPins {
+			p.flightsMu.Unlock()
+			return nil, errors.New("router concurrency capacity reached")
+		}
+		done := make(chan struct{})
+		p.flights[key] = done
+		p.flightsMu.Unlock()
+		return func() { p.flightsMu.Lock(); delete(p.flights, key); close(done); p.flightsMu.Unlock() }, nil
+	}
+}
+
+// replace is a durable compare-and-swap; a stale request cannot move a newer pin.
+func (p *routerPins) replace(router CollectionRouter, thread string, expected, next routerPin) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	state, err := p.read()
+	if err != nil {
+		return err
+	}
+	for n, pin := range state.Pins {
+		if pin.RouterID != router.ID || pin.ProfileID != router.ProfileID || pin.ThreadID != thread {
+			continue
+		}
+		if pin.RouteID != expected.RouteID || pin.AccountID != expected.AccountID || pin.Fingerprint != expected.Fingerprint {
+			return errors.New("router pin changed concurrently")
+		}
+		next.RouterID, next.ProfileID, next.ThreadID = router.ID, router.ProfileID, thread
+		state.Pins[n] = next
+		return p.write(state)
+	}
+	return errors.New("router pin missing during transition")
 }

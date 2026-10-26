@@ -371,12 +371,14 @@ class LiveQualificationTests(unittest.TestCase):
         entry={'alias':'example','reasoningEffort':'low','provider':'fixture','accountId':'fixture'}
         status={'proxyReady':True,'revision':1,'appliedRevision':1,'activeProfileId':'fixture'}
         for mode in probe.MODES:
+            selected={**entry,'alias':probe.COHERE_ALIAS,'provider':'cohere'} if mode == probe.COHERE_MODE else entry
             with self.subTest(mode=mode),tempfile.TemporaryDirectory() as temp:
                 output=Path(temp);catalog=output/'catalog.json';catalog.write_bytes(b'{}')
                 fixture=output/'fixture/src/invoice.py';fixture.parent.mkdir(parents=True)
                 fixture.write_text(probe.FIXTURE)
                 plan={'schemaVersion':2,'kind':'lain-realistic-model-qualification',
-                      'entries':[entry],'maximumRequests':2,'executionContract':probe.execution_contract([entry],tools,mode),
+                      'entries':[selected],'maximumRequests':2,'executionContract':probe.execution_contract([selected],tools,mode),
+                      'maximumOutputTokens':None if mode == probe.COHERE_MODE else 2048,
                       'revision':1,'profileId':'fixture','modelInventory':{},'limits':['synthetic unit fixture'],
                       'catalogPath':str(catalog),'catalogSha256':probe.sha(catalog.read_bytes()),
                       'clientToolFixtureSha256':probe.sha(probe.TOOLS_FILE.read_bytes()),
@@ -397,6 +399,366 @@ class LiveQualificationTests(unittest.TestCase):
                 self.assertEqual(report['executionContract'],plan['executionContract'])
                 self.assertEqual(report['counts'],{'passed':1})
                 self.assertEqual((output/'plan.json').read_bytes(),raw)
+
+
+class GeneratedContextTests(unittest.TestCase):
+    def entry(self, window=262144, maximum=8192):
+        entry = {'alias':'glm-5.3', 'provider':'zai', 'accountId':'fixture-account', 'reasoningEffort':None}
+        entry['contextCapacity'] = {**{k:entry[k] for k in ('alias','provider','accountId')},
+            'contextWindowTokens':window, 'maximumOutputTokens':maximum,
+            'source':'https://example.invalid/reviewed-route-documentation', 'checkedAt':'2026-10-26T00:00:00Z'}
+        return entry
+
+    def plan(self, mode, tools=None):
+        entry = self.entry()
+        return {'schemaVersion':2, 'kind':'lain-realistic-model-qualification', 'entries':[entry],
+            'maximumRequests':2, 'executionContract':probe.execution_contract(
+                [entry], tools or [], probe.DEFAULT_MODE, mode)}
+
+    def answer(self):
+        return {**LiveQualificationTests().review_answer(), 'context_evidence':probe.CONTEXT_EVIDENCE.copy()}
+
+    def test_fixed_generated_bytes_and_sentinels_at_beginning_middle_end_and_file(self):
+        for mode,size in [('k1-32k',128000),('k2-110k',440000)]:
+            with self.subTest(mode=mode),patch.object(probe.subprocess,'run') as run:
+                text = probe.generated_context(mode)
+                self.assertEqual(text,probe.generated_context(mode))
+                self.assertEqual(len(text.encode()),size)
+                self.assertLessEqual(size,probe.CONTEXT_SPECS[mode]['maximumContextBytes'])
+                self.assertLess(text.index(probe.CONTEXT_EVIDENCE['beginning']),100)
+                self.assertLess(abs(text.index(probe.CONTEXT_EVIDENCE['middle'])-size//2),100)
+                self.assertLess(size-text.index(probe.CONTEXT_EVIDENCE['end']),200)
+                self.assertNotIn(probe.CONTEXT_EVIDENCE['file'],text)
+                self.assertIn(probe.CONTEXT_EVIDENCE['file'],probe.fixture_text(mode))
+                self.assertTrue(probe.fixture_text(mode).endswith(probe.FIXTURE))
+                run.assert_not_called()
+
+    def test_context_payload_auto_semantics_and_byte_caps(self):
+        tools = json.loads(probe.TOOLS_FILE.read_bytes())['tools']
+        for mode in ('k1-32k','k2-110k'):
+            body = probe.payload(self.entry(),tools,mode=probe.DEFAULT_MODE,context_mode=mode)
+            self.assertEqual(body['input'][0]['content'][0]['text'],probe.generated_context(mode))
+            self.assertNotIn(probe.CONTEXT_EVIDENCE['file'],json.dumps(body))
+            self.assertEqual(body['tool_choice'],'auto')
+            self.assertEqual(body['max_output_tokens'],2048)
+            probe.check_context_request(body,mode)
+            follow = probe.payload(self.entry(),tools,body['input'],mode=probe.DEFAULT_MODE,context_mode=mode)
+            self.assertEqual(follow['input'],body['input'])
+            self.assertEqual(follow['tool_choice'],'auto')
+            probe.check_context_request(follow,mode,continuation=True)
+            for continuation,key in [(False,'maximumInitialRequestBytes'),(True,'maximumContinuationRequestBytes')]:
+                oversized = {'input':'x'*probe.CONTEXT_SPECS[mode][key]}
+                with self.assertRaises(probe.OutcomeError):
+                    probe.check_context_request(oversized,mode,continuation=continuation)
+
+    def test_known_capacity_rejection_and_unknown_limits_are_not_invented(self):
+        for window,output in [(32000,8192),(262144,2047)]:
+            with self.subTest(window=window,output=output),self.assertRaises(ValueError):
+                probe.context_contract([self.entry(window,output)],'k1-32k')
+        c = probe.context_contract([self.entry(None,None)],'k2-110k')
+        self.assertEqual(c['capacityStatus'],'unknown')
+        self.assertIsNone(c['capacity']['contextWindowTokens'])
+        self.assertEqual(c['outputReserveTokens'],2048)
+        self.assertEqual(probe.context_contract([self.entry(34048,2048)],'k1-32k')['capacityStatus'],
+                         'target_fits_not_tokenized')
+        for field,value in [('alias','wrong'),('provider','wrong'),('accountId','wrong'),
+                            ('contextWindowTokens',True),('maximumOutputTokens',-1),
+                            ('source','file:///private'),('checkedAt','unknown')]:
+            entry=self.entry();entry['contextCapacity'][field]=value
+            with self.subTest(field=field),self.assertRaises(ValueError):
+                probe.context_contract([entry],'k1-32k')
+        with self.assertRaises(ValueError):probe.context_contract([self.entry(),self.entry()],'k1-32k')
+        with self.assertRaises(ValueError):probe.execution_contract([self.entry()],[],'forced-exec-v2','k1-32k')
+
+    def test_semantic_and_all_four_evidence_checks_are_jointly_required(self):
+        answer = self.answer()
+        self.assertTrue(probe.assess_answer(json.dumps(answer),'k1-32k')['passed'])
+        for key in probe.CONTEXT_EVIDENCE:
+            changed=copy.deepcopy(answer);changed['context_evidence'][key]='wrong'
+            self.assertFalse(probe.assess_answer(json.dumps(changed),'k1-32k')['passed'])
+        answer['fix']['reject_if']='quantity <= 0'
+        assessment=probe.assess_answer(json.dumps(answer),'k2-110k')
+        self.assertTrue(assessment['checks']['context_evidence'])
+        self.assertFalse(assessment['passed'])
+        answer=self.answer();answer['fix']['reject_if']='__import__("os").system("false")'
+        with patch.object(probe.subprocess,'run') as run:
+            self.assertFalse(probe.assess_answer(json.dumps(answer),'k2-110k')['passed'])
+            run.assert_not_called()
+
+    def test_context_contract_drift_fails_before_cli_auth_or_network(self):
+        for mode in ('k1-32k','k2-110k'):
+            original=self.plan(mode)
+            self.assertEqual(probe.verify_execution_contract(original,[]),probe.DEFAULT_MODE)
+            for field in ('contextSha256','fixtureSha256','targetInputTokens','maximumInitialRequestBytes',
+                          'capacityStatus','maximumReplayBytes','requiredEvidence'):
+                plan=copy.deepcopy(original);plan['executionContract']['context'][field]='changed'
+                with tempfile.TemporaryDirectory() as temp:
+                    output=Path(temp);raw=probe.encoded(plan);(output/'plan.json').write_bytes(raw)
+                    with patch.object(probe,'cli') as cli,patch.object(probe.subprocess,'run') as run,\
+                         patch.object(probe,'exchange') as exchange,self.assertRaises(ValueError):
+                        probe.execute(output,probe.sha(raw),1)
+                    cli.assert_not_called();run.assert_not_called();exchange.assert_not_called()
+            changed=copy.deepcopy(original);changed['entries'][0]['contextCapacity']['contextWindowTokens']=123
+            with self.assertRaises(ValueError):probe.verify_execution_contract(changed,[])
+            with patch.object(probe,'generated_context',return_value='manual context'),self.assertRaises(ValueError):
+                probe.verify_execution_contract(original,[])
+
+    def test_hand_edited_generated_input_rejected_before_runtime_inspection(self):
+        for changed in ('context','file'):
+            with tempfile.TemporaryDirectory() as temp:
+                output=Path(temp);plan=self.plan('k1-32k');raw=probe.encoded(plan)
+                (output/'plan.json').write_bytes(raw)
+                (output/'generated-context.txt').write_text(probe.generated_context('k1-32k')+('edit' if changed=='context' else ''))
+                file=output/'fixture/src/invoice.py';file.parent.mkdir(parents=True)
+                file.write_text(probe.fixture_text('k1-32k')+('edit' if changed=='file' else ''))
+                with patch.object(probe,'TOOLS_FILE',output/'tools.json'):
+                    (output/'tools.json').write_text('{"tools":[]}')
+                    with patch.object(probe,'cli') as cli,patch.object(probe.subprocess,'run') as run,\
+                         patch.object(probe,'exchange') as exchange,self.assertRaises(ValueError):
+                        probe.execute(output,probe.sha(raw),1)
+                    cli.assert_not_called();run.assert_not_called();exchange.assert_not_called()
+
+    def roundtrip(self, mode, meta, answer=None, first_padding=''):
+        entry=self.entry();row={**entry,'calls':[]}
+        tool={'type':'function_call','name':'exec_command','call_id':'fixture',
+              'arguments':json.dumps({'cmd':probe.COMMAND,'workdir':probe.WORKDIR})}
+        if first_padding:tool['padding']=first_padding
+        final=[{'type':'message','content':[{'type':'output_text','text':json.dumps(answer or self.answer())}]}]
+        with tempfile.TemporaryDirectory() as temp:
+            file=Path(temp)/'invoice.py';file.write_text(probe.fixture_text(mode))
+            with patch.object(probe,'exchange',side_effect=[([tool],meta),(final,meta)]) as exchange:
+                probe.qualify(entry,[],None,None,file,row,lambda:None,threading.Event(),context_mode=mode)
+            return row,exchange.call_args_list
+
+    def test_two_calls_replay_same_context_and_no_unobserved_token_success(self):
+        for mode,target in [('k1-32k',32000),('k2-110k',110000)]:
+            row,calls=self.roundtrip(mode,{'usage':{'input_tokens':target}})
+            self.assertEqual(row['state'],'passed');self.assertEqual(len(calls),2)
+            self.assertTrue(row['contextObservation']['targetReached'])
+            first,second=[c.args[3] for c in calls]
+            self.assertEqual(first['input'],second['input'][:2])
+            self.assertEqual(second['input'][-1]['type'],'function_call_output')
+            self.assertIn(probe.CONTEXT_EVIDENCE['file'],second['input'][-1]['output'])
+            self.assertEqual(first['tool_choice'],second['tool_choice'])
+            self.assertEqual(row['answerAssessment']['passed'],True)
+        for meta,state in [({},'context_usage_unknown'),({'usage':{'input_tokens':7000}},'context_target_not_reached')]:
+            row,calls=self.roundtrip('k1-32k',meta)
+            self.assertEqual(len(calls),2);self.assertEqual(row['state'],state)
+            self.assertTrue(row['answerAssessment']['passed'])
+
+    def test_observed_window_overflow_and_replay_overflow_stop_after_first_call(self):
+        for meta,padding,category in [({'usage':{'input_tokens':262144}},'','context_window_exceeded'),
+                                      ({},'x'*probe.MAX_REPLAY_BYTES,'context_replay_byte_limit')]:
+            row,calls=self.roundtrip('k1-32k',meta,first_padding=padding)
+            self.assertEqual(len(calls),1);self.assertEqual(row['category'],category)
+            self.assertEqual(row['state'],'failed')
+
+    def test_generated_prepare_is_frozen_with_mocked_public_inspection_only(self):
+        entry=self.entry();record=entry.pop('contextCapacity')
+        status={'proxyReady':True,'revision':1,'appliedRevision':1,'activeProfileId':'fixture'}
+        tools={'tools':[{'type':'function','name':str(i)} for i in range(7)],'provenance':{}}
+        with tempfile.TemporaryDirectory() as temp:
+            base=Path(temp);(base/'.codex').mkdir();catalog=base/'catalog.json';catalog.write_text('{}')
+            (base/'.codex/config.toml').write_text('model_provider="lain"\nmodel_catalog_json='+json.dumps(str(catalog))+
+                '\n[model_providers.lain]\nbase_url="http://127.0.0.1:18417/v1"\n')
+            source=base/'capacity.json';source.write_text(json.dumps(record))
+            toolfile=base/'tools.json';toolfile.write_text(json.dumps(tools))
+            for mode in ('k1-32k','k2-110k'):
+                output=base/mode
+                with patch.object(Path,'home',return_value=base),patch.object(probe,'TOOLS_FILE',toolfile),\
+                     patch.object(probe,'cli',side_effect=[status,{'models':[]},[{'id':'fixture'}]]) as cli,\
+                     patch.object(probe,'routes',return_value=[entry.copy()]),\
+                     patch.object(probe.subprocess,'run') as run,patch.object(probe,'exchange') as exchange:
+                    plan=probe.prepare(output,aliases=['glm-5.3'],context_mode=mode,capacity_path=source)
+                    self.assertEqual([c.args for c in cli.call_args_list],[('status',),('models',),('profiles',)])
+                    run.assert_not_called();exchange.assert_not_called()
+                    self.assertEqual(probe.verify_execution_contract(plan,tools['tools']),probe.DEFAULT_MODE)
+                self.assertEqual((output/'generated-context.txt').read_text(),probe.generated_context(mode))
+                self.assertEqual(plan['maximumRequests'],2)
+                self.assertEqual(plan['executionContract']['context']['capacity'],record)
+                self.assertEqual(plan['executionContract']['context']['toolSummary']['namespaceMembers'],0)
+                # Execute the frozen long-context plan end to end, with every
+                # CLI/auth/HTTP boundary synthetic and no real process launched.
+                tool={'type':'function_call','name':'exec_command','call_id':'fixture',
+                      'arguments':json.dumps({'cmd':probe.COMMAND,'workdir':probe.WORKDIR})}
+                final=[{'type':'message','content':[{'type':'output_text','text':json.dumps(self.answer())}]}]
+                meta={'usage':{'input_tokens':probe.CONTEXT_SPECS[mode]['targetInputTokens']}}
+                def synthetic_process(argv,**kwargs):
+                    if argv[:3] == ['lain','auth','token']:
+                        return probe.subprocess.CompletedProcess(argv,0,stdout='synthetic-local-token\n')
+                    self.assertEqual(argv,['/usr/bin/cat',str(output/'fixture/src/invoice.py')])
+                    return probe.subprocess.CompletedProcess(argv,0,stdout=probe.fixture_text(mode).encode())
+                with patch.object(probe,'TOOLS_FILE',toolfile),\
+                     patch.object(probe,'cli',side_effect=lambda name:status if name=='status' else {'models':[]}),\
+                     patch.object(probe.subprocess,'run',side_effect=synthetic_process) as processes,\
+                     patch.object(probe,'exchange',side_effect=[([tool],meta),(final,meta)]) as exchange,\
+                     patch('sys.stdout',new_callable=io.StringIO):
+                    probe.execute(output,probe.sha((output/'plan.json').read_bytes()),1)
+                self.assertEqual(processes.call_count,2)
+                self.assertEqual(exchange.call_count,2)
+                report=json.loads((output/'report.json').read_bytes())
+                self.assertEqual(report['counts'],{'passed':1})
+                self.assertEqual(report['inferenceHttpRequests'],2)
+                self.assertEqual(report['executionContract'],plan['executionContract'])
+                self.assertEqual(report['rows'][0]['contextContract']['mode'],mode)
+
+
+
+class DirectCohereTests(unittest.TestCase):
+    def entry(self):
+        return {'alias':probe.COHERE_ALIAS,'provider':'cohere','accountId':'synthetic-account','reasoningEffort':'none'}
+
+    def tools(self):
+        return json.loads(probe.TOOLS_FILE.read_bytes())['tools']
+
+    def plan(self):
+        return {'schemaVersion':2,'kind':'lain-realistic-model-qualification',
+                'entries':[self.entry()],'maximumRequests':2,'maximumOutputTokens':None,
+                'executionContract':probe.execution_contract([self.entry()],self.tools(),probe.COHERE_MODE)}
+
+    def test_exact_cohere_controls_both_steps_without_changing_general_modes(self):
+        for inputs in (None,[]):
+            body=probe.payload(self.entry(),self.tools(),inputs,mode=probe.COHERE_MODE)
+            self.assertEqual(body['tool_choice'],'auto')
+            self.assertIs(body['parallel_tool_calls'],True)
+            self.assertNotIn('max_output_tokens',body)
+            self.assertNotIn('max_tokens',body)
+            self.assertEqual(body['tools'],self.tools())
+            self.assertEqual(body['reasoning'],{'effort':'none'})
+            if inputs is None:self.assertIn('reject_if',body['input'][-1]['content'][0]['text'])
+        for mode in (probe.DEFAULT_MODE,'forced-exec-v2',probe.LEGACY_MODE):
+            body=probe.payload(self.entry(),self.tools(),mode=mode)
+            self.assertIs(body['parallel_tool_calls'],False)
+            self.assertEqual(body['max_output_tokens'],2048)
+        contract=self.plan()['executionContract']
+        self.assertEqual(contract['toolChoice'],{'initial':'auto','continuation':'auto'})
+        self.assertEqual(contract['requestControls']['outputBudget'],'omitted_unknown')
+        self.assertIsNone(contract['requestControls']['maximumOutputTokens'])
+        self.assertEqual(contract['requestControls']['maximumResponseBytes'],probe.MAX_BODY)
+
+    def test_scope_and_native_schema_boundaries(self):
+        entry=self.entry();tools=self.tools()
+        for changed in ({**entry,'provider':'commandcode'},{**entry,'provider':'Cohere'},
+                        {**entry,'alias':'other'},{**entry,'alias':probe.COHERE_ALIAS+' '}):
+            with self.subTest(entry=changed),self.assertRaises(ValueError):
+                probe.payload(changed,tools,mode=probe.COHERE_MODE)
+        for entries in ([],[entry,entry]):
+            with self.assertRaises(ValueError):probe.execution_contract(entries,tools,probe.COHERE_MODE)
+        for mode in ('k1-32k','k2-110k'):
+            with self.assertRaises(ValueError):probe.execution_contract([entry],tools,probe.COHERE_MODE,mode)
+        changed=copy.deepcopy(tools);changed[0]['description']='Changed schema'
+        for other in ([],tools[:6],tools+[tools[0]],changed,[{'type':'namespace','tools':tools}]):
+            with self.assertRaises(ValueError):probe.payload(entry,other,mode=probe.COHERE_MODE)
+        for aliases,context in [(None,'k0'),(['other'],'k0'),([probe.COHERE_ALIAS]*2,'k0'),
+                                ([probe.COHERE_ALIAS],'k1-32k')]:
+            with patch.object(probe,'cli') as cli,self.assertRaises(ValueError):
+                probe.prepare(Path('/never-created'),probe.COHERE_MODE,aliases,context)
+            cli.assert_not_called()
+
+    def test_contract_drift_and_legacy_rejected_before_cli_auth_or_http(self):
+        original=self.plan()
+        for mutation in ('legacy','source','mode','provider','alias','count','output','missing_output',
+                         'controls','response_bound','first','continuation','quality'):
+            plan=copy.deepcopy(original);contract=plan['executionContract']
+            if mutation=='legacy':plan['schemaVersion']=1
+            elif mutation=='source':contract['harnessSha256']='0'*64
+            elif mutation=='mode':contract['payloadMode']=probe.DEFAULT_MODE
+            elif mutation in ('provider','alias'):plan['entries'][0][mutation]='other'
+            elif mutation=='count':plan['maximumRequests']=3
+            elif mutation=='output':plan['maximumOutputTokens']=2048
+            elif mutation=='missing_output':del plan['maximumOutputTokens']
+            elif mutation=='controls':contract['requestControls']['parallelToolCalls']=False
+            elif mutation=='response_bound':contract['requestControls']['maximumResponseBytes']+=1
+            elif mutation=='first':contract['requests'][0]['firstSha256']='0'*64
+            elif mutation=='continuation':contract['requests'][0]['continuationTemplateSha256']='0'*64
+            else:contract['quality']['cases']['zero']='accept'
+            with self.subTest(mutation=mutation),tempfile.TemporaryDirectory() as temp:
+                output=Path(temp);raw=probe.encoded(plan);(output/'plan.json').write_bytes(raw)
+                with patch.object(probe,'cli') as cli,patch.object(probe.subprocess,'run') as run,\
+                     patch.object(probe,'build_opener') as network,self.assertRaises(ValueError):
+                    probe.execute(output,probe.sha(raw),1)
+                cli.assert_not_called();run.assert_not_called();network.assert_not_called()
+        plan=self.plan();original_payload=probe.payload
+        def unsupported_field(*args,**kwargs):
+            body=original_payload(*args,**kwargs);body['max_output_tokens']=2048;return body
+        with patch.object(probe,'payload',side_effect=unsupported_field),self.assertRaises(ValueError):
+            probe.verify_execution_contract(plan,self.tools())
+
+    def test_direct_responses_prepare_execute_and_semantic_failure_without_retry(self):
+        status={'proxyReady':True,'revision':1,'appliedRevision':1,'activeProfileId':'fixture'}
+        for guard,expected in [('type(quantity) is not int or quantity <= 0','passed'),
+                               ('type(quantity) is not int','answer_review_needed')]:
+            with self.subTest(guard=guard),tempfile.TemporaryDirectory() as temp:
+                root=Path(temp);(root/'.codex').mkdir();catalog=root/'catalog.json';catalog.write_text('{}')
+                (root/'.codex/config.toml').write_text('model_provider="lain"\nmodel_catalog_json='+json.dumps(str(catalog))+
+                    '\n[model_providers.lain]\nbase_url="http://127.0.0.1:18417/v1"\n')
+                output=root/'run'
+                with patch.object(Path,'home',return_value=root),\
+                     patch.object(probe,'cli',side_effect=[status,{'models':[]},[{'id':'fixture'}]]),\
+                     patch.object(probe,'routes',return_value=[self.entry()]),\
+                     patch.object(probe.subprocess,'run') as processes,patch.object(probe,'build_opener') as network:
+                    plan=probe.prepare(output,probe.COHERE_MODE,[probe.COHERE_ALIAS])
+                    processes.assert_not_called();network.assert_not_called()
+                self.assertIsNone(plan['maximumOutputTokens'])
+                self.assertEqual(plan['maximumRequests'],2)
+                self.assertFalse(any('explicitly 2048' in limit for limit in plan['limits']))
+                tool={'type':'function_call','name':'exec_command','call_id':'fixture',
+                      'arguments':json.dumps({'cmd':probe.COMMAND,'workdir':probe.WORKDIR})}
+                final={'type':'message','content':[{'type':'output_text',
+                       'text':json.dumps(LiveQualificationTests().review_answer(guard))}]}
+                captured=[]
+                def local_response(request,**kwargs):
+                    self.assertEqual(request.full_url,'http://127.0.0.1:18417/v1/responses')
+                    self.assertEqual(kwargs['timeout'],probe.SOCKET_TIMEOUT)
+                    body=json.loads(request.data);captured.append(body)
+                    self.assertEqual(body['model'],probe.COHERE_ALIAS)
+                    self.assertEqual(body['tool_choice'],'auto');self.assertIs(body['parallel_tool_calls'],True)
+                    self.assertNotIn('max_output_tokens',body)
+                    response=io.BytesIO(b'data: '+json.dumps({'type':'response.completed','response':{
+                        'status':'completed','output':[tool if len(captured)==1 else final]}}).encode()+b'\n\n')
+                    response.status=200;response.headers={'Content-Type':'text/event-stream'};return response
+                def local_process(argv,**kwargs):
+                    if argv[:3]==['lain','auth','token']:
+                        return probe.subprocess.CompletedProcess(argv,0,stdout='synthetic-local-only\n')
+                    self.assertEqual(argv,['/usr/bin/cat',str(output/'fixture/src/invoice.py')])
+                    return probe.subprocess.CompletedProcess(argv,0,stdout=probe.FIXTURE.encode())
+                with patch.object(probe,'cli',side_effect=lambda name:status if name=='status' else {'models':[]}),\
+                     patch.object(probe.subprocess,'run',side_effect=local_process),\
+                     patch.object(probe,'build_opener') as opener,patch('sys.stdout',new_callable=io.StringIO):
+                    opener.return_value.open.side_effect=local_response
+                    probe.execute(output,probe.sha((output/'plan.json').read_bytes()),1)
+                report=json.loads((output/'report.json').read_bytes())
+                self.assertEqual(len(captured),2);self.assertEqual(report['inferenceHttpRequests'],2)
+                self.assertEqual(report['counts'],{expected:1})
+                self.assertEqual(report['executionContract'],plan['executionContract'])
+                self.assertEqual(captured[0]['input'],captured[1]['input'][:2])
+                self.assertEqual(captured[1]['input'][-1]['type'],'function_call_output')
+                for call in report['rows'][0]['calls']:
+                    self.assertIsNone(call['maxOutputTokens'])
+                    self.assertEqual(call['usage'],{'input_tokens':None,'output_tokens':None,'total_tokens':None})
+                self.assertEqual(report['rows'][0]['calls'][0]['requestSha256'],
+                                 plan['executionContract']['requests'][0]['firstSha256'])
+
+    def test_first_failure_stops_without_continuation_or_retry(self):
+        row={**self.entry(),'calls':[]}
+        with patch.object(probe,'exchange',side_effect=probe.OutcomeError('upstream_rejected')) as request,\
+             patch.object(probe.subprocess,'run') as process:
+            probe.qualify(self.entry(),self.tools(),None,None,Path('/never-read'),row,
+                          lambda:None,threading.Event(),mode=probe.COHERE_MODE)
+        self.assertEqual(request.call_count,1);process.assert_not_called()
+        self.assertEqual(row['state'],'failed')
+
+    def test_omitted_output_budget_still_has_response_byte_event_time_bounds(self):
+        with self.assertRaises(probe.OutcomeError) as raised:
+            probe.sse(io.BytesIO(b'x'*(probe.MAX_BODY+1)))
+        self.assertEqual(raised.exception.category,'response_size')
+        with patch.object(probe,'MAX_EVENTS',2),self.assertRaises(probe.OutcomeError) as raised:
+            probe.sse(io.BytesIO(b'data: {"type":"ping"}\n\n'*4))
+        self.assertEqual(raised.exception.category,'stream_deadline')
+        with patch.object(probe.time,'monotonic',side_effect=[0,probe.MAX_STREAM_SECONDS+1]),\
+             self.assertRaises(probe.OutcomeError) as raised:
+            probe.sse(io.BytesIO(b''))
+        self.assertEqual(raised.exception.category,'stream_deadline')
 
 
 if __name__=='__main__':unittest.main()

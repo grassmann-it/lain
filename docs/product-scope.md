@@ -28,6 +28,9 @@ zu lesen.
 - **Linux zuerst** wird tatsächlich abgenommen; Windows/macOS werden bei der
   Architektur berücksichtigt. Erste echte Zugänge sind **Codex-/ChatGPT-Abo
   und Command Code**.
+- Ergänzung 26.10.2026: Auch für macOS und Windows sind Installer mit CLI
+  gewünscht; native GitHub-Prüfung nach öffentlicher Repositorybereitstellung.
+  [Lieferarbeit und Accountnamensregeln](account-names-and-platform-installers.md).
 - Entwicklung, Tests und paralleler Betrieb von lain sollen den **bestehenden
   persönlichen Proxy unangetastet lassen**. Eigene Prozesse, Ports, Konfiguration,
   Credentialspeicher und Usage-Erfassung sind dafür verbindlich. Gemeinsame
@@ -75,6 +78,30 @@ zu lesen.
   ausdrücklich erwünscht.
 
 ## Aktueller erster Zuschnitt
+
+### Quotaabhängige Auto-Routen, 26.10.2026
+
+Ausdrücklich gewünscht: Auto-Gruppen sollen aktuelle, passende ausgeschöpfte
+Quota-Fenster aus dem vorhandenen Cache berücksichtigen und bei Quota-Ablehnung
+vor Antwortbeginn zum nächsten zulässigen Mitglied wechseln. Dies erweitert die
+bisherige feste Auswahl ohne Fallback. IT Sec erhält GPT-6 Luna als Reserve
+hinter Kimi und GLM. Frische Daten, Reset, Account-/Modellbezug, begrenzte
+Versuche und stabile Ausgabe-/Toolzuordnung sind Teil des
+[fortgeschriebenen Routingvertrags](collection-router-v1.md).
+Kein neuer Kauf, kein ungenehmigter kostenpflichtiger Ersatzanbieter, keine
+Quota-Ableitung aus bloßen lokalen Tokenzahlen. Umsetzung/Abnahme laufen;
+das Speichern von IT Sec in Revision58 ist noch keine Aktivierung des neuen Cores.
+
+### Lizenzentscheidung für 1.0.0, 26.10.2026
+
+Der Nutzer hat für den eigenen Lain-Code ausdrücklich **Artistic License2.0**
+gewählt. `LICENSE` und `NOTICE` halten Text und Geltungsbereich fest.
+Drittanbieterkomponenten behalten ihre Lizenzen. Neue Binärpakete sollen die
+Lizenzhinweise und die exakten eigenen Quellen mitliefern. Der Nutzer hat die
+öffentliche Nutzung des Katzenbilds ausdrücklich bestätigt: Urheber Alexander
+Huxel · Webentwicklung Huxel, mit Link auf
+<https://flickr.com/people/204852984@N05/>. Die Bildfreigabe und Attribution werden
+separat von der Softwarelizenz dokumentiert.
 
 ### Reale Modellprüfung vor dem Release, 26.10.2026
 
@@ -295,9 +322,20 @@ Codexskill heißt technisch `lain-workers`.
 - Linux-Installation, Update-/Rückwechselverfahren und spätere Betriebssystemadapter.
 - Prioritäten einer späteren Auswahlregel: Qualität, erste Partei, verfallendes
   Kontingent, Kosten, Latenz; erlaubte Modellwechsel und Fortsetzungsgrenzen.
-- Lizenz/Veröffentlichungsform des eigenen Produkts.
+- Öffentlicher Veröffentlichungskanal und Client-Lieferform; die eigene Lizenz
+  ist inzwischen als Artistic-2.0 festgelegt (oben).
 
 Der ursprüngliche Auftrag umfasste Repositoryeinrichtung, Bestandsaufnahme und
 Sparring. Die danach ausdrücklich beauftragte Implementierung und Erweiterung
 sind in den oben verlinkten aktuellen Unterlagen dokumentiert. Die neue
 UI-Strukturprüfung ist zunächst Sparring, kein Auftrag zur Veröffentlichung.
+
+## Native OpenAI-Usage innerhalb von Lain (26.10.2026)
+
+Ausdrücklich bestätigt: Die originale Codex-`/usage` soll direkt in einer
+Lain-Sitzung die native OpenAI-/ChatGPT-Nutzung anzeigen. Kein separates
+OpenAI-Profil erforderlich; andere Anbieter bleiben in `lain usage`.
+Die native ChatGPT-Anmeldung und Lains Inferenzauthentifizierung sind unabhängig.
+Die Kontingentanzeige darf weder den Inferenzprovider noch dessen Zugang ändern.
+Der Nutzer hat den nativen ChatGPT-Login selbst erfolgreich durchgeführt.
+Implementierungs-/Lieferstand: [native-openai-usage-delivery-2026-10-26.md](native-openai-usage-delivery-2026-10-26.md).

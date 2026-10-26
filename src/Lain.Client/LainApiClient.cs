@@ -34,6 +34,8 @@ public sealed partial class LainApiClient : IDisposable
         Send<ConfigurationDto>(HttpMethod.Post, "accounts", new RevisionRequest<AddApiAccountRequest>(revision, value), ct);
     public Task<ConfigurationDto> SetAccountEnabledAsync(long revision, string id, bool enabled, CancellationToken ct = default) =>
         Send<ConfigurationDto>(HttpMethod.Put, $"accounts/{Id(id)}/enabled", new RevisionRequest<bool>(revision, enabled), ct);
+    public Task<ConfigurationDto> RenameAccountAsync(long revision, string id, string name, CancellationToken ct = default) =>
+        Send<ConfigurationDto>(HttpMethod.Put, $"accounts/{Id(id)}/name", new RevisionRequest<string>(revision, name), ct);
     public Task<ConfigurationDto> RemoveAccountAsync(long revision, string id, CancellationToken ct = default) =>
         Send<ConfigurationDto>(HttpMethod.Delete, $"accounts/{Id(id)}?revision={revision}", null, ct);
     public Task<AccountDto> CheckAccountAsync(string id, CancellationToken ct = default) =>
