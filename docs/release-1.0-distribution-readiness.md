@@ -1,109 +1,121 @@
-# lain 1.0.0 – öffentliche Lieferform und Linux-Betrieb
+# Lain 1.0.0 – Lieferform und Linux-Betrieb
 
-Stand: 26.10.2026. Analyse der gemeinsamen Arbeitskopie, Ausgangs-HEAD
-`fef478f601f46b315939fa53f02caa9791086f1d` mit umfangreichem parallelem WIP.
-Kein Veröffentlichungs-, Installations- oder Abnahmebeleg. In diesem Auftrag
-wurden ausschließlich Quellcode, Paketmetadaten und Dokumente gelesen; keine
-Credentials, Datenbanken oder privaten Laufzeitbestände. Keine Builds, schweren
-Tests, Diensteingriffe oder Commits. Diese Datei ist die einzige eigene Änderung.
+Stand: 26.10.2026. Geprüfter Kandidat: `5fab859b8f603b7f7ce430d0d2fff748b05bd150`, eingefrorene Source unter `/home/tomka/.cache/lain-release-1.0-source-20261026`.
+Die Main-Arbeitskopie enthält fremdes WIP und ist nicht die Buildquelle.
+Diese Überarbeitung ändert nur die drei Release-Dokumente; kein Commit,
+Reset, Stash, Produktivzugriff oder Upload.
 
-## Ergebnis und konkrete Blocker
+## Lieferumfang und Freigabestand
 
-Die vorhandene Liefertechnik trägt ein Linux-x64-Archiv mit Installer,
-Prüfsummen, Komponentenprovenienz und Drittanbieter-Notices. Eine öffentliche
-1.0.0-Lieferung ist durch die vorliegenden Nachweise allein noch nicht gedeckt:
+Öffentliche Lieferform: je ein Linux-x64-Tararchiv für **Monitor** (Host,
+CLI, Desktop, Skills, ohne Inferenz-Core) und **Gateway** (zusätzlich eigener
+CLIProxyAPI-Build), jeweils mit externer SHA-256-Datei. Enthalten sind
+`LICENSE`, `NOTICE`, `notices/`, `SHA256SUMS`, Installer, Wartungshelfer,
+Build-/Quellprovenienz und `source/lain-source.tar.gz` mit der exakten Source.
+Kein modifizierter Codex-Binärclient und keine VSIX werden mitgeliefert.
+Bestandskonfiguration hat Vorrang vor dem Initialmodus. Ein Gatewaybestand
+kann nicht durch Installation des Monitorpakets stillschweigend reduziert werden.
 
-1. **Eigene Lizenz inzwischen entschieden:** Der Nutzer hat Artistic License2.0
-   gewählt. Root-`LICENSE` enthält den unveränderten SPDX-Referenztext,
-   `NOTICE` grenzt eigene Bestandteile von Drittmaterial ab. Der Publisher
-   nimmt beide Texte und ein Gitarchiv der exakten Source auf. Die bereits
-   gebauten r4-Pakete enthalten diese Ergänzung noch nicht; final neu bauen.
-2. **Artwork inzwischen bestätigt:** Der Nutzer bestätigt öffentliche Nutzung
-   des Fotos seines Freundes Alexander Huxel · Webentwicklung Huxel. Attribution
-   mit <https://flickr.com/people/204852984@N05/> steht in `NOTICE`,
-   [Brand-Herkunft](../src/Lain.Desktop/Assets/Brand/README.md) und der neuen
-   About-Source. Das dokumentiert die übermittelte Freigabe für Lain, keine
-   allgemeine Artistic-Lizenz des Fotos oder separate Kontaktaufnahme zum Urheber.
-3. **Exaktes finales Notice-Paket noch zu prüfen:** Die Collector-Skripte liefern
-   Belege, ausdrücklich keine abgeschlossene Complianceprüfung. Native und
-   verschachtelte Drittanteile sowie die Übereinstimmung mit den finalen Bytes
-   bleiben Prüfgegenstand. Ein leerer Go-`missingEvidence`-Wert deckt nur den
-   vom Collector beschriebenen Umfang ab.
-4. **Öffentliche Client-Lieferung offen:** Codex-Patchbuild und veränderte
-   VS-Code-Erweiterung sind separate Artefakte. Ihre lokale Qualifikation und
-   erhaltene Lizenzdateien belegen keine abgeschlossene öffentliche
-   Redistributionsprüfung. Insbesondere Codex-Runtime-Ressourcen enthalten
-   LGPL-2.1-Texte; die betroffenen Bibliotheken und Erfüllung ihrer konkreten
-   Bedingungen müssen vor einer Binärweitergabe zugeordnet werden.
-5. **Finaler Releasebeleg fehlt in diesem Auftrag:** Der Publisher setzt
-   `releaseQualified: false` auch mit positivem Backendbeleg. Installierte
-   Gesamtversion, reale Modellmatrix, Client-/Skillsabnahme und abschließende
-   Releasechecks liegen bei den anderen Arbeitspaketen. Umfangreiches WIP in
-   eingefrorenen Buildpfaden blockiert derzeit einen Publish aus genau dieser
-   Arbeitskopie; es wird hier weder bereinigt noch committed.
+Die neuen Pakete liegen unter `/home/tomka/.cache/lain-quota-release-20261026/`:
 
-Das sind Nachweis- und Produktentscheidungen, keine neu eingeführten
-Pflichtgenehmigungen. Öffentlicher Downloadort, unterstützte Distributionen,
-Vertrauensanker für Downloads und Umfang optionaler Clients sind noch festzulegen.
+| Datei | SHA-256 |
+| --- | --- |
+| `package-monitor.tar.gz` | `a142522bfb8d9bca0850be94ecdb115216343f0970a240759a971c723b684bd7` |
+| `package-gateway.tar.gz` | `b414230fbdff931afbe560dee11a5518dc597ba90dfde157bd151141fa27d41f` |
 
-## Belegte Komponenten und Weitergabebedingungen
+Die gleichnamigen `.sha256`-Dateien referenzieren portable Dateinamen.
+Die Archive behalten beim Entpacken die Ordner `package-monitor` bzw.
+`package-gateway`. Bei Umbenennung für einen Download muss die äußere
+Hashdatei angepasst werden; Archivinhalt und innere Prüfsummen bleiben erhalten.
 
-| Bestandteil | Beleg im Repository | Feststellung / Konsequenz |
-| --- | --- | --- |
-| Eigener Host, CLI, Clientbibliothek, Coreverträge, Desktop und Skills | `src/*/*.csproj`, `skills/`, [LICENSE](../LICENSE), [NOTICE](../NOTICE) | Artistic-2.0 vom Nutzer gewählt. CLI bindet aktuell lain-usage, lain-workers, lain-connect und lain-doctor als Ressourcen ein. |
-| CLIProxyAPI v8.0.41 plus eigener Adapter und Patches | [go.mod](../proxy/adapter/go.mod), [Quellmanifest](../proxy/source-manifest.json), [Upstream-Lizenz](../proxy/LICENSE.upstream) | Upstream MIT: Copyright- und Erlaubnistext bei Kopien/wesentlichen Teilen erhalten. Manifest bindet Archiv, Patches und Buildinputs. MIT des Upstreams ist keine Lizenzentscheidung für eigene Ergänzungen. |
-| Avalonia.Desktop / Avalonia.Fonts.Inter 12.1.4, Semi 12.1.0.1, Ursa 2.2.0, Irihi.Shared 0.5.0 | [Desktopprojekt](../src/Lain.Desktop/Lain.Desktop.csproj), [Lockdatei](../src/Lain.Desktop/packages.lock.json), `packaging/licenses/` | Gepinnte Framework-Lizenztexte sind MIT, Copyright und Erlaubnistext erhalten. Der Avalonia-Frameworktext ersetzt nicht die Font- und Native-Notices. |
-| Microsoft.Data.Sqlite 10.0.12, YamlDotNet 16.3.0; SQLitePCLRaw 2.1.12 transitiv | [Hostprojekt](../src/Lain.Host/Lain.Host.csproj), [Host-Lockdatei](../src/Lain.Host/packages.lock.json) | SQLitePCLRaw-Lizenztext ist Apache-2.0: Lizenz mitgeben, relevante Hinweise/NOTICE erhalten, Änderungen kennzeichnen. Wrapper, native SQLite-Bibliothek und weitere Pakete getrennt inventarisieren; keine pauschale Gleichsetzung mit SQLite public domain. Exakte weitere Lizenzmetadaten kommen aus den nuspecs. |
-| SkiaSharp 3.119.4, HarfBuzzSharp 8.3.1.3 und native Assets | Desktop-Lockdatei | Tatsächliche transitive Komponenten; C#-Paketlizenz allein deckt die Attribution nativer Unterkomponenten nicht nachweislich vollständig ab. Finale Notice-Dateien prüfen. Andere Plattformen im Restoregraph sind nicht automatisch ausgelieferte Linux-Binaries. |
-| Self-contained .NET / ASP.NET Core | [Publisher](../scripts/publish-linux.sh), `global.json`, `packaging/licenses/sources.json` | SDK 10.0.111 gepinnt. Offizielle Runtime-Lizenz und Third-Party-Notices für 10.0.11 vorhanden; Hauptlizenz MIT, Drittanteile separat. Desktop-Restoremetadaten nennen hier 10.0.11-Runtimedownloads. Microsoft.Data.Sqlite 10.0.12 beweist kein Runtimeupgrade auf 10.0.12. Finale Runtimeversion je Publish prüfen. |
-| Oxanium und IBM Plex Sans Condensed | `src/Lain.Desktop/Assets/Fonts/*/OFL.txt`, Desktop-Ressourcen | SIL OFL 1.1: Copyright/OFL erhalten, Fonts nicht für sich allein verkaufen; bei Änderungen Reserved Font Names beachten. Collector kopiert Familien-OFLs und inventarisiert Font-/Noticehashes. Inter zusätzlich über NuGet prüfen. |
-| Go-Module und Go-Laufzeit im Gateway | [Go-Collector](../scripts/collect-go-notices.py), Adapter-go.mod | Tatsächlich verlinkte Module werden über `go version -m` ermittelt, Versionen/Checksummen und Root-Notices aus Cache bzw. geprüftem Upstream erfasst. Toolchain-Lizenz wird mitgenommen. go.mod allein ist kein endgültiges Binärinventar. |
-| Separater Codex 0.164.0 mit drei Patches | [Upstream-Pin](../clients/codex/upstream.json), [Buildskript](../scripts/build-codex-picker.sh), `scripts/clients/install_codex_dispatch.py` | Build erzeugt codex und codex-code-mode-host; Dispatcher übernimmt zusätzliche Runtime-Dateien mit Hashbindung. Ressourcenliste enthält voice/NOTICE und LGPL-2.1, Opus, PCRE2, libffi, proxy-libintl, sljit und zlib. Kein vollständiger Codex-/Cargo-Lizenzsatz in den Repo-Lizenzdateien nachgewiesen; keine pauschale Freigabe behauptet. |
-| Separat veränderte VS-Code-Erweiterung | [Wartungsvertrag](../clients/vscode/maintenance.md) | Vollständige fremde Bundles bleiben außerhalb des Repos; Ressourcen-/Lizenzhashes bleiben geschützt. Erhaltung ist Integritätsbeleg, keine bestätigte öffentliche Änderungs-/Weitergabeerlaubnis. |
+**Noch kein öffentlich freigegebener Download.** Der neue Core ist qualifiziert;
+elf isolierte Vollpaketchecks sind bestanden. Das ersetzt keine öffentliche
+Gesamtfreigabe: `releaseQualified: false` bleibt bestehen. Neue eigene Installation,
+frischer Erhaltungs-/Updateseal und exakte native Gesamt-/Modellabnahme bleiben
+separate Arbeiten. Laut übergebenem Produktivstand läuft weiterhin `ff5771c`,
+Revision 58 gespeichert / 57 angewandt; in diesem Auftrag nicht neu abgefragt.
+Die bestätigte Artistic-2.0-Lizenz und Fotoattribution sind tatsächlich enthalten;
+der frühere r4-Neubauhinweis ist erledigt. Die [Noticeprüfung](release-1.0-notice-review.md)
+benennt die ursprünglichen Textlücken. Diese sind in den neuen
+[Packaginginputs für r3](../packaging/licenses/review-20261026.md) konkret geschlossen;
+Parent muss daraus neue Pakete bauen. Native Compilefeaturelisten allein
+begründen keinen zusätzlichen Releaseblocker. Die unveränderten
+Archive deshalb noch nicht als abschließend noticegeprüfte 1.0 veröffentlichen.
 
-Die Originaltexte und Herkunfts-URLs stehen in
-[packaging/licenses/sources.json](../packaging/licenses/sources.json).
-Dort liegt auch ein historischer Avalonia-11-Text: seine Anwesenheit bedeutet
-nicht, dass Avalonia 11 aktuell verwendet wird. MIT erlaubt Weitergabe unter
-Erhalt der Hinweise; Apache-2.0 enthält zusätzlich Patentregelungen und gewährt
-keine allgemeine Markenlizenz. Providerzugang und API-Nutzung bleiben den
-jeweiligen Dienstbedingungen unterworfen; ein Adapter verteilt keine
-Modellgewichte und belegt keine Nutzungsrechte an fremden Accounts.
+## Download und Source
 
-## Lieferform aus vorhandenen Skripten
+Bei Veröffentlichung gehören beide Archive mit ihren Hashdateien, diese
+Anleitung, [Release Notes](release-1.0-release-notes.md) und Noticeprüfung in einen
+versionierten Releaseeintrag. Ein bestätigter öffentlicher HTTPS-Downloadkanal
+oder Signatur-Vertrauensanker ist noch nicht vorhanden. Keine Download-URL erfinden.
+Hashdateien schützen Integrität; aus derselben Quelle bezogene Hashes allein
+beweisen keine Herausgeberidentität. Die untenstehenden Befehle gelten nach
+Bezug aus dem bestätigten Releasekanal.
 
-[Publish](../scripts/publish-linux.sh) unterstützt `--mode monitor` und
-`--mode gateway` (Standard). Beide enthalten CLI, Host, Desktop, Skills,
-Installer und Notices; Monitor lässt Core/Go-Inventar weg. Gateway ergänzt
-Corebinary, Lizenz, Katalog, Quell-/Buildmanifeste und Adapter-/Patchprovenienz.
-Der Modus ist in `package-metadata.json` und `build-info.json` dokumentiert.
-Eine bestehende Konfiguration dominiert den Initialmodus des frischen Pakets.
+```sh
+cd "$HOME/Downloads"
+sha256sum --check package-gateway.tar.gz.sha256
+# Für Monitor stattdessen package-monitor.tar.gz.sha256 verwenden.
+```
 
-Der Publisher verlangt neue absolute Ausgabepfade, unveränderte eingefrorene
-Inputs einschließlich `src`, `scripts`, `packaging`, `skills` und bei Gateway
-`proxy`, exaktes SDK und Locked Restore. Er erzeugt `.tar.gz`,
-`.tar.gz.sha256`, internes `SHA256SUMS`, NuGet-/Font- und gegebenenfalls
-Go-Inventare. Ein Backendqualifikationsbeleg muss die exakten Binary- und
-Quellmanifesthashes treffen; die Gesamtfreigabe wird nicht erfunden.
+Eigene Source steht unter Artistic-2.0, Fremdanteile unter ihren jeweiligen
+Lizenzen. Die Fotofreigabe gilt für Lain einschließlich bearbeitetem Logo;
+Attribution: Alexander Huxel · [Webentwicklung Huxel](https://webentwicklung-huxel.de/)
+([Flickr](https://flickr.com/people/204852984@N05/)). Keine allgemeine Fotolizenz.
+Das Sourcearchiv enthält gepinnte Fremdquellenreferenzen und Patchinputs,
+keinen vollständigen Offlinecache aller NuGet-/Go-/Rust-Abhängigkeiten oder
+separaten Upstreamarchive. Rebuild erfordert die jeweiligen Downloads.
 
-Geeignete öffentliche Lieferform als **Vorschlag**, noch keine Entscheidung:
-versioniertes Linux-x64-Tararchiv pro angebotenem Modus samt Checksumme,
-Versions-/Quellreferenz, finalem Abnahmebeleg, vollständigem Notice-Verzeichnis
-und dieser Betriebsanleitung. Der aktualisierte Publisher kopiert `LICENSE`
-und `NOTICE` und liefert `source/lain-source.tar.gz` aus dem exakten Commit mit;
-dadurch ist Source direkt im neuen Paket erreichbar. Diese Änderung ist noch
-nicht Bestandteil der historischen r4-Archive. Clients könnten separat oder als
-Anleitung für einen eigenen Build geliefert werden; die Entscheidung bleibt offen.
+## Optionale Clients: Source-/Patchlieferung
 
-Prüfsummen erkennen Beschädigungen, authentifizieren aber keinen Absender,
-wenn Archiv und Hash aus derselben ungesicherten Quelle stammen. Einen
-bestätigten Downloadkanal oder Signaturmechanismus festlegen; das Repo belegt
-hier keinen fertigen öffentlichen Releasekanal. Der Publisher wurde anschließend
-so korrigiert, dass neue Archiv-Hashdateien nur den Dateinamen enthalten.
-Ein synthetischer Relokationscheck mit Leerzeichen in Build-/Downloadpfaden
-bestand mit `sha256sum --check`; Shellsyntax geprüft. Bereits gebaute r4-Archive
-wurden dadurch nicht verändert, ein neues Paket enthält die Änderung erst nach
-seinem eigenen gebundenen Build.
+Der öffentliche Client-Lieferumfang besteht ausschließlich aus den im
+Sourcearchiv enthaltenen eigenen Patches, Transformern, Pins und Anleitungen.
+Lokale Clientqualifikation erteilt keine allgemeine Binär-Redistributionsfreigabe.
+Unveränderte Clients beziehen Nutzer selbst über den jeweiligen offiziellen
+Anbieterkanal. Gruppenmenü/native Usage-Erweiterungen benötigen den passenden
+lokalen Patchstand; gewöhnliche API-Kompatibilität garantiert diese UI nicht.
+
+Für Codex: Source in einen neuen Ordner entpacken, dort Pins in
+`clients/codex/upstream.json` sowie `clients/codex/README.md` prüfen. Python 3,
+Git und die Upstream-Buildabhängigkeiten sowie exakt Rust 1.99.1 bereitstellen.
+Die nachfolgenden Schritte bauen lokal und installieren nichts:
+
+```sh
+python3 scripts/prepare-codex-picker.py --fetch --output /absolute/new/codex-source
+scripts/build-codex-picker.sh /absolute/new/codex-source
+```
+
+Der Preparer bindet Upstream 0.164.0, Archiv-/Patchhashes und Lockdatei;
+der Builder verwendet `--locked`, einen Job und baut **codex sowie
+codex-code-mode-host**. Ein nackter CLI-Binarytausch ist kein vollständiges
+Runtimepaket. Für flaglosen Daemonbetrieb sind zusätzlich die passenden,
+selbst bezogenen Upstream-Helfer/Ressourcen nötig; Zusammenstellung und
+Hashbindung nach `clients/codex/dispatcher.md` und `maintenance.md` prüfen.
+Keine Ressourcen aus einer fremden lokalen Installation öffentlich hochladen.
+Die darin vorhandenen LGPL-2.1-Texte sind kein Beleg für erfüllte Bedingungen
+aller betroffenen Runtimebibliotheken. Native Abnahme gilt nur für die exakt
+qualifizierten Bytes, nicht automatisch für einen eigenen Rebuild.
+
+Für VS Code: Original `openai.chatgpt` 26.1021.22027 Linux x64 selbst vom
+Anbieter beziehen. Nur eigener Transformer wird geliefert; kein Originalbundle
+und keine modifizierte VSIX. Python 3.11+, vollständigen vertrauenswürdigen
+Original-Hashmanifest und die festen Pins des Helpers verwenden:
+
+```sh
+python3 scripts/clients/vscode_groups.py prepare \
+  --source /absolute/original-extension \
+  --input-manifest /absolute/reviewed-input.json \
+  --bundle /absolute/new-local-bundle
+```
+
+Ziel ist die lokale Version 26.1021.22028. Vollständiges Manifestformat,
+Qualifikation, Installationsplan und Rollback stehen in
+`clients/vscode/maintenance.md`. Ohne vollständiges passendes Original und
+unabhängige Pins abbrechen; keine beliebige aktuelle Marketplaceversion anpassen.
+Erzeugte Bundles/VSIX bleiben lokal. Installation verlangt exakte native
+Qualifikation; Fensterreload erfolgt bewusst durch den Nutzer. Vor lokaler
+Anpassung gelten weiterhin die Bedingungen des Originalanbieters; diese
+Anleitung behauptet keine bestätigte Änderungs-/Weitergabeerlaubnis.
 
 ## Linux: Neuinstallation
 
@@ -119,10 +131,10 @@ Beispiele, nicht vorhandene öffentliche Downloads):
 
 ```sh
 cd "$HOME/Downloads"
-sha256sum lain-1.0.0-linux-x64-gateway.tar.gz
+sha256sum package-gateway.tar.gz
 # Mit dem bestätigten Releasehash vergleichen, dann entpacken.
-tar -xzf lain-1.0.0-linux-x64-gateway.tar.gz
-package="$HOME/Downloads/lain-1.0.0-linux-x64-gateway"
+tar -xzf package-gateway.tar.gz
+package="$HOME/Downloads/package-gateway"
 (cd "$package" && sha256sum --check SHA256SUMS)
 bash "$package/install-linux.sh" "$package"
 systemctl --user daemon-reload
@@ -253,16 +265,39 @@ der Endabnahme nachzuweisen; hier wird kein erfundener CLI-Befehl angegeben.
 Eine quarantänisierte Sicherung nicht mit einem historischen ungeschützten Host
 starten. Siehe [Recoveryvertrag](linux-delivery-stabilization.md).
 
-## Abschlusskriterien für den Integrator
+## Linux: Entfernen
 
-- Artistic-2.0 samt Source und bestätigte Fotoattribution im finalen Paket
-  prüfen; öffentlichen Client-Lieferumfang entscheiden.
-- Finale NuGet-/Runtime-, Font-, native und tatsächlich verlinkte Go-Inventare
-  auf die gelieferten Bytes beziehen; verschachtelte Notices und mögliche
-  LGPL-Bestandteile eines separaten Clientbundles prüfen.
-- Frischen eingefrorenen Stand, Paket-/Installations-/Update-/Recoveryabnahme,
-  Client-/Skillsabnahme und reale Modellmatrix aus den zuständigen Arbeitspaketen
-  zusammenführen; historische lokale Erfolge nicht zur öffentlichen 1.0.0 erklären.
-- Öffentlichen Kanal, portable Hashdateinamen, Quellzugang, unterstützte
-  Linuxumgebungen und konkrete Recoverybedienung dokumentieren. Dieser Bericht
-  veröffentlicht nichts und verändert keine dieser Entscheidungen.
+Zuerst alle Aufträge abschließen, Clients/Worker und Desktop/Tray schließen.
+Bei Standardinstallation anschließend:
+
+```sh
+systemctl --user disable --now lain.service
+rm -- "$HOME/.config/systemd/user/lain.service"
+systemctl --user daemon-reload
+rm -- "$HOME/.local/bin/lain" \
+  "$HOME/.local/share/applications/lain.desktop" \
+  "$HOME/.local/share/icons/lain.png"
+```
+
+Vor dem Entfernen prüfen, dass diese Dateien zur eigenen Laininstallation
+gehören. Bei abweichenden Installationspfaden die tatsächlich verwendeten Werte
+für Präfix, LAIN_SYSTEMD_DIR und LAIN_DESKTOP_DATA_DIR verwenden. Separat
+laufende Host-/Coreprozesse müssen ebenfalls geordnet beendet sein.
+Daten unter `~/.local/share/lain` bleiben dabei erhalten. Nach gestoppter,
+privater Sicherung kann dieses Verzeichnis samt `app`/`app.previous` bewusst
+archiviert oder entfernt werden; es enthält private Accounts und History.
+Kein automatischer Purge und kein angeblicher Uninstaller. Separat installierte
+Skills, eigene Codexclients, VS-Code-Anpassungen und Providerzugänge werden
+hierdurch nicht entfernt oder widerrufen. Für VS Code den dokumentierten
+qualifizierten Rollback verwenden; für Codex den eigenen Dispatcher nach dessen
+Installationsbeleg zurücknehmen. Eine Dateilöschung widerruft keine Providergrants.
+
+## Vor öffentlichem Upload
+
+Die ergänzten Noticebelege/Collector aus dem Zusatzbericht in r3 einfrieren und daraus neue gebundene Archive
+mit erneut geprüften Inventaren/Hashes erzeugen; bestehende Artefakte erhalten.
+Die drei hier bearbeiteten Dokumente sind Begleitdokumente in Main und noch
+nicht Teil des eingefrorenen Sourcearchivs. Für einen neuen Sourcebezug einen
+separaten Releasekandidaten erstellen, ohne fremdes Main-WIP mitzunehmen.
+Gesamtfreigabe, unterstützte Linuxumgebung und Download-Vertrauensanker mit
+exakten Artefakten dokumentieren. Keine Veröffentlichung in diesem Auftrag.

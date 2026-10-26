@@ -14,7 +14,7 @@ internal attempts are not established by counting client calls.
 New schema-2 plans use `auto-v2`: seven captured Codex 0.164.0 native function
 schemas, 22,638 bytes of synthetic invoice-project context, streaming, a fixed
 file read and `tool_choice:auto` on both requests. The output budget remains
-2,048. Optional `--payload-mode forced-exec-v2` explicitly chooses forced first
+2,048. Optional `--tool-mode forced-exec-v2` explicitly chooses forced first
 tool/none continuation. These modes do **not** reproduce native omitted output
 budgets, multiagent namespace/custom tools, MCP, plugins, the complete VS Code
 environment or maximum conversation length.
@@ -24,7 +24,7 @@ python3 -B tests/live/realistic_models.py --output /absolute/private/new-run
 # Review the plan; execute only within the user's authorized inference scope.
 flock /home/tomka/.cache/lain-verification-lane.lock \
   python3 -B tests/live/realistic_models.py --output /absolute/private/new-run \
-  --execute --expect-plan-sha256 EXACT_PRINTED_PLAN_SHA --workers 3
+  --execute --expect-plan-sha256 EXACT_PRINTED_PLAN_SHA --workers 1
 ```
 
 For a distinct bounded regression scenario, preparation accepts repeatable

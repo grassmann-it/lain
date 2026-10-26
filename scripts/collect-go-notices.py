@@ -4,8 +4,10 @@
 Schema-2 builds use --prepared-adapter from prepare-core.py. Only the pinned
 upstream dependency may resolve to a private local replacement. Its original
 license text is checked against the source manifest instead of being omitted.
+Module archives are h1-verified against binary metadata and notices are recursive.
 """
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -13,6 +15,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import zipfile
 
 
 def digest(path):
@@ -35,6 +38,51 @@ def json_stream(value):
         item, end = decoder.raw_decode(value)
         yield item
         value = value[end:]
+
+
+def notice_name(name):
+    return any(Path(name).name.upper().startswith(prefix) for prefix in
+               ("LICENSE", "LICENCE", "COPYING", "NOTICE", "COPYRIGHT", "PATENTS", "AUTHORS"))
+
+
+def collect_module_archive(archive, module, version, expected_sum, output, destination):
+    """Read original notices recursively from the h1-verified module archive.
+
+    Go's dirhash.Hash1 hashes sorted archive names and each file's SHA-256;
+    using the archive avoids attributing edited extracted cache files to upstream.
+    Conservative: notice-bearing test and optional subpackages are retained too.
+    """
+    records = []
+    archive_bytes = archive.read_bytes()
+    import io
+    with zipfile.ZipFile(io.BytesIO(archive_bytes)) as package:
+        entries = [entry for entry in package.infolist() if not entry.is_dir()]
+        names = [entry.filename for entry in entries]
+        require(len(names) == len(set(names)), "Duplicate Go archive paths")
+        prefix = module + "@" + version + "/"
+        hasher = hashlib.sha256()
+        notice_bytes = {}
+        for name in sorted(names):
+            require(name.startswith(prefix), "Go archive module prefix mismatch: " + name)
+            relative = name[len(prefix):]
+            require(relative and not any(part in ("", ".", "..") for part in relative.split("/"))
+                    and "\\" not in relative and "\n" not in name,
+                    "Unsafe Go archive path: " + name)
+            data = package.read(name)
+            hasher.update((hashlib.sha256(data).hexdigest() + "  " + name + "\n").encode())
+            if notice_name(relative):
+                notice_bytes[relative] = data
+        actual_sum = "h1:" + base64.b64encode(hasher.digest()).decode()
+        require(expected_sum and actual_sum == expected_sum,
+                "Go module archive differs from binary checksum: " + module)
+        for relative, data in notice_bytes.items():
+            target = destination / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+            records.append({"path": str(target.relative_to(output)),
+                            "sourcePath": relative, "sha256": hashlib.sha256(data).hexdigest()})
+    return records, {"sha256": hashlib.sha256(archive_bytes).hexdigest(), "goSum": actual_sum,
+                     "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"}
 
 
 def main():
@@ -114,10 +162,12 @@ def main():
         records = []
         if not source.is_dir():
             return records
-        for path in sorted(source.iterdir()):
-            if path.is_file() and any(path.name.upper().startswith(prefix) for prefix in ("LICENSE", "LICENCE", "COPYING", "NOTICE", "COPYRIGHT", "PATENTS")):
+        for path in sorted(source.rglob("*")):
+            require(not path.is_symlink(), "Notice source symlink is unsupported: " + str(path))
+            if path.is_file() and notice_name(path.name):
                 destination.mkdir(parents=True, exist_ok=True)
-                target = destination / path.name
+                target = destination / path.relative_to(source)
+                target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(path, target)
                 records.append({"path": str(target.relative_to(output)), "sha256": digest(path)})
         return records
@@ -141,7 +191,7 @@ def main():
                 require(digest(source / "LICENSE") == source_manifest["licenseSha256"], "Prepared upstream license differs from source manifest")
                 module["sourceUrl"] = upstream.get("repository", "https://github.com/router-for-me/CLIProxyAPI") + "/tree/" + upstream["commit"]
                 module["noticeFiles"] = copy_notices(source, output / "upstream")
-                module["evidenceState"] = "verified-external-upstream-root-notices-collected"
+                module["evidenceState"] = "verified-external-upstream-recursive-notices-collected"
                 module["upstreamDependency"] = upstream
                 module["upstreamSourceModified"] = build["upstreamSourceModified"]
                 module["patchSetSha256"] = build["patchSetSha256"]
@@ -153,32 +203,34 @@ def main():
             continue
         module["sourceUrl"] = f"https://pkg.go.dev/{name}@{version}"
         cache_relative = escape(name) + "@" + escape(version)
-        cache = Path(settings["GOMODCACHE"]) / cache_relative
         if entry:
             resolved = entry.get("Replace", entry)
             require(resolved.get("Path") == name and resolved.get("Version") == version,
                     "Prepared module replacement differs from binary: " + module["module"])
             if actual.get("goSum"):
                 require(resolved.get("Sum") == actual["goSum"], "Replacement checksum differs from binary")
-        module["noticeFiles"] = copy_notices(cache, output / "modules" / cache_relative)
+        archive = Path(settings["GOMODCACHE"]) / "cache/download" / escape(name) / "@v" / (escape(version) + ".zip")
+        require(archive.is_file(), "Exact Go module archive missing from cache: " + name + "@" + version)
+        module["noticeFiles"], module["sourceArchive"] = collect_module_archive(
+            archive, name, version, actual.get("goSum"), output, output / "modules" / cache_relative)
         info = Path(settings["GOMODCACHE"]) / "cache/download" / escape(name) / "@v" / (escape(version) + ".info")
         if info.is_file():
             origin = json.loads(info.read_text()).get("Origin")
             if origin:
                 module["cachedSourceOrigin"] = origin
-        module["evidenceState"] = "cached-root-notices-collected" if module["noticeFiles"] else "root-license-evidence-missing"
+        module["evidenceState"] = "verified-module-archive-recursive-notices-collected" if module["noticeFiles"] else "module-license-evidence-missing"
         if not module["noticeFiles"]:
             missing.append({"module": name, "version": version, "reason": module["evidenceState"]})
     if upstream:
         require(prepared_inventory() == prepared["files"], "Prepared source changed during notice collection")
-        require(any(item["module"] == upstream["module"] and item.get("evidenceState") == "verified-external-upstream-root-notices-collected" for item in modules),
+        require(any(item["module"] == upstream["module"] and item.get("evidenceState") == "verified-external-upstream-recursive-notices-collected" for item in modules),
                 "Binary does not contain the pinned external upstream replacement")
     toolchain = {"version": compiled_version, "sourceUrl": f"https://go.googlesource.com/go/+/refs/tags/{compiled_version}/LICENSE",
                  "noticeFiles": copy_notices(Path(settings["GOROOT"]), output / "toolchain" / compiled_version)}
     if not any(Path(entry["path"]).name == "LICENSE" for entry in toolchain["noticeFiles"]):
         missing.append({"toolchain": compiled_version, "reason": "Go toolchain LICENSE missing"})
     report = {"format": 2, "binarySha256": digest(binary),
-              "scope": "Exact linked Go modules from the shipped binary; cached root notices and explicitly pinned prepared upstream root notices",
+              "scope": "Exact linked Go modules from the shipped binary; h1-verified recursive module archive notices and explicitly pinned prepared upstream notices",
               "reviewStatus": "evidence-collected-not-a-legal-compliance-approval",
               "toolchain": toolchain, "modules": modules, "missingEvidence": missing}
     if source_manifest:
@@ -187,13 +239,13 @@ def main():
     (output / "inventory.json").write_text(json.dumps(report, indent=2) + "\n")
     (output / "README.txt").write_text(
         "Go notice evidence for the exact binary identified by inventory.json.\n"
-        "modules/ contains cached root notice texts for linked versioned modules.\n" +
-        ("upstream/ contains explicitly pinned CLIProxyAPI root notices from the verified private\n"
+        "modules/ contains recursive notices from h1-verified archives of linked versioned modules.\n" +
+        ("upstream/ contains explicitly pinned CLIProxyAPI recursive notices from the verified private\n"
          "prepared source tree. Its modification flag/patchset is recorded in inventory.json;\n"
          "the original upstream license is preserved unchanged.\n" if upstream else
          "Local replacement notice sources are unresolved unless explicitly recorded in inventory.json.\n") +
         "toolchain/ contains the matching\n"
-        "Go compiler's original license. Missing evidence is explicit. Nested/generated attribution\n"
+        "Go compiler's recursive source notices. Missing evidence is explicit. Generated/file-header attribution\n"
         "obligations still require review. This inventory does not provide legal approval.\n")
     print(f"Collected {len(modules)} linked Go module inventories; missing evidence: {len(missing)}")
 
