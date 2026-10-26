@@ -104,7 +104,10 @@ public sealed class FireworksCliProcess(FireworksCliQualification qualification)
         var path = Path.Combine(directory, "authorization-url.json");
         if (!File.Exists(path)) return null;
         using var json = JsonDocument.Parse(CliPrivatePaths.Read(path, 16384));
-        return FireworksCliResult.AuthorizationUrl(json.RootElement.GetProperty("url").GetString()!);
+        var root = json.RootElement;
+        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("url", out var value) || value.ValueKind != JsonValueKind.String)
+            throw new InvalidDataException("Fireworks browser capture is malformed.");
+        return FireworksCliResult.AuthorizationUrl(value.GetString()!);
     }
     // The official github.com/pkg/browser Linux provider invokes xdg-open first.
     // Only capture its original URL; never create state, PKCE, redirect, code or token.

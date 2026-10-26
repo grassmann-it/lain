@@ -96,7 +96,7 @@ public sealed class FireworksCliLoginAdapter : IAccountLoginAdapter, IAsyncDispo
             attempt.Creation = Create(attempt, context, selected);
             return new("waiting");
         }
-        catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException or CliConnectionException or OperationCanceledException or ArgumentException)
+        catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException or CliConnectionException or OperationCanceledException or ArgumentException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception)
         { return attempt.Result = Recovery(attempt, "Fireworks login could not be confirmed. Review the private result before retrying."); }
         finally { attempt.Gate.Release(); }
     }
@@ -116,11 +116,15 @@ public sealed class FireworksCliLoginAdapter : IAccountLoginAdapter, IAsyncDispo
             if (context.CheckpointCredentialAsync is { } checkpoint) await checkpoint(credential, CancellationToken.None);
             return new("prepared", Credential: credential);
         }
-        catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException or CliConnectionException or OperationCanceledException or ArgumentException)
+        catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException or CliConnectionException or OperationCanceledException or ArgumentException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception)
         { return Recovery(attempt, "An owned Fireworks key may have been issued. Keep the private result and review provider keys before retrying."); }
     }
     private LoginAdapterResult Recovery(Attempt attempt, string message)
-    { store!.Update(attempt.Initial, "recovery-required"); return new("recovery-required", Error: message, NextAction: "review-provider-keys"); }
+    {
+        try { store!.Update(attempt.Initial, "recovery-required"); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { /* Private CLI result remains; do not retry issuance. */ }
+        return new("recovery-required", Error: message, NextAction: "review-provider-keys");
+    }
     private static TimeSpan Remaining(LoginOperationContext context)
     { var left = context.ExpiresAt - DateTimeOffset.UtcNow; if (left <= TimeSpan.Zero) throw new CliConnectionException("fireworks-operation-expired"); return left < TimeSpan.FromMinutes(8) ? left : TimeSpan.FromMinutes(8); }
     private static void Validate(LoginOperationContext context)

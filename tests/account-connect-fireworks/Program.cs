@@ -9,6 +9,9 @@ void Check(bool condition, string message) { if (!condition) throw new Exception
 void Denied(Action action, string message) { try { action(); } catch (Exception e) when (e is InvalidDataException or CliConnectionException or ArgumentException) { checks++; return; } throw new Exception(message); }
 ReadOnlyMemory<byte> Bytes(string text) => Encoding.UTF8.GetBytes(text);
 var accountJson = Bytes("{\"accounts\":[{\"name\":\"accounts/owned-a\"},{\"name\":\"accounts/owned-b\"}]}");
+Denied(() => FireworksCliResult.Accounts(Bytes("{}")), "missing account list has provider recovery error");
+Denied(() => FireworksCliResult.Accounts(Bytes("null")), "nonobject account root refused");
+Denied(() => FireworksCliResult.Accounts(Bytes("[null]")), "nonobject account entry refused");
 var resources = FireworksCliResult.Accounts(accountJson);
 Check(resources.Length == 2 && resources[0].ResourceId == "owned-a" && resources[0].Product == "serverless", "account identity binds ordinary serverless product");
 Denied(() => FireworksCliResult.Accounts(Bytes("{\"accounts\":[{\"name\":\"accounts/a\"}],\"nextPageToken\":\"more\"}")), "partial selection refused");
@@ -67,6 +70,22 @@ try
  await adapter.ReleaseAsync(context, default);
 }
 finally { if (Directory.Exists(mismatchRoot)) Directory.Delete(mismatchRoot, true); }
+// Issuance cannot be repeated when the shared checkpoint rejects publication.
+var checkpointRoot = root + "-checkpoint";
+try
+{
+ var store = new CliConnectionStateStore(checkpointRoot); var fake = new FixtureProcess(accountJson, normal, url);
+ await using var adapter = FireworksCliLoginAdapter.Fixture(store, fake);
+ var request = new ConnectAccountRequest("fireworks", "official-cli", ["inference"], Binding: resources[0]);
+ var context = new LoginOperationContext("operation1", "checkpointaccount", 4, 2, request, DateTimeOffset.UtcNow.AddMinutes(5))
+ { CheckpointCredentialAsync = (c, ct) => throw new InvalidOperationException("synthetic fence rejection") };
+ await adapter.BeginAsync(context, default); await adapter.StatusAsync(context, default);
+ Check((await adapter.StatusAsync(context, default)).State == "recovery-required", "checkpoint failure enters owned-key recovery");
+ Check((await adapter.StatusAsync(context, default)).State == "recovery-required" && fake.Creates == 1, "failed checkpoint never repeats issuance");
+ Check(store.Read(context.OperationId)?.RemoteKeyId == "new-owned-key", "remote identity journaled before checkpoint failure");
+ await adapter.ReleaseAsync(context, default);
+}
+finally { if (Directory.Exists(checkpointRoot)) Directory.Delete(checkpointRoot, true); }
 Console.WriteLine($"PASS: {checks} Fireworks connection assertions; synthetic only, no provider calls.");
 
 sealed class FixtureProcess(ReadOnlyMemory<byte> accounts, string key, string url) : IFireworksCliProcess

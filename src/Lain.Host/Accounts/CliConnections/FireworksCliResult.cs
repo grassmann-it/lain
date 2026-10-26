@@ -49,6 +49,7 @@ public static class FireworksCliResult
         var names = new HashSet<string>(StringComparer.Ordinal); var result = new List<ResourceBindingDto>();
         foreach (var node in list.EnumerateArray())
         {
+            if (node.ValueKind != JsonValueKind.Object) throw new InvalidDataException("Invalid Fireworks account entry.");
             var name = Text(node, "name") ?? throw new InvalidDataException("Fireworks account name is missing.");
             if (!name.StartsWith("accounts/", StringComparison.Ordinal)) throw new InvalidDataException("Fireworks account resource differs.");
             var id = Identifier(name[9..]);
