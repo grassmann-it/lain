@@ -25,8 +25,8 @@ Check(Read("""{"is_available":false,"balance_infos":[{"currency":"USD","total_ba
 Check(Read("""{"balance_infos":[{"currency":"USD","total_balance":"-0.01"}]}""").Single().ExactRemaining == "-0.01", "signed provider monetary facts survive");
 Check(Read("""{"balance_infos":[{"currency":"CNY","total_balance":"99999999999999999999999999999999999999999999999999999.12345678901234567890"}]}""")
     .Single().ExactRemaining!.EndsWith(".12345678901234567890"), "exact balance is not constrained by floating-point or decimal precision");
-foreach (var body in new[] { "null", "[]", "{}", """{"balance_infos":null}""", """{"balance_infos":{}}""", """{"balance_infos":[]}""" })
-    Check(Read(body).Count == 0, "malformed/missing/empty balances stay unknown: " + body);
+foreach (var malformedBody in new[] { "null", "[]", "{}", """{"balance_infos":null}""", """{"balance_infos":{}}""", """{"balance_infos":[]}""" })
+    Check(Read(malformedBody).Count == 0, "malformed/missing/empty balances stay unknown: " + malformedBody);
 foreach (var value in new[] { "null", "true", "{}", "[]", "12.34", "\"\"", "\"NaN\"", "\"Infinity\"", "\"1e2\"", "\" 1.00\"", "\"1.00 \"", "\"+1.00\"", "\"1,000\"", "\".1\"", "\"1.\"", "\"-\"", "\"١.٠٠\"" })
     Check(Read("{\"balance_infos\":[{\"currency\":\"USD\",\"total_balance\":" + value + "}]}").Count == 0,
         "invalid/non-string decimal stays unknown: " + value);
