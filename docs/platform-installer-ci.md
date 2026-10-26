@@ -69,10 +69,11 @@ testen dort keinen echten macOS- oder Windows-Systemlebenszyklus. Fehlende
 Windows-Symlinkrechte oder andere native Dateisystemabweichungen bleiben harte
 CI-Fehler und müssen anhand des ersten echten Laufs untersucht werden.
 
-Es wurde kein GitHub-Lauf gestartet und lokal weder macOS noch Windows oder
-der PowerShellparser ausgeführt. Der erste öffentliche CI-Lauf steht aus.
-Auch ein vollständig grüner Lauf bestätigt nur Contracttests und Syntax auf
-den jeweiligen Runnern. Echte native Pakete, Host-/CLI-/GUI-Ausführung,
+Nachtrag: Der [erste GitHub-Lauf40416133877](https://github.com/grassmann-it/lain/actions/runs/40416133877)
+am Source8708650 besteht auf allen drei Runnern einschließlich der jeweiligen
+Shellsyntaxprüfung. Das Repo ist inzwischen öffentlich; der Lauf wurde durch
+den Sourcepush gestartet. Lokal wurden macOS/Windows nicht ausgeführt.
+Der grüne Lauf bestätigt nur Contracttests und Syntax auf den jeweiligen Runnern. Echte native Pakete, Host-/CLI-/GUI-Ausführung,
 Autostart/LaunchAgents, Benutzer-PATH, Updates/Uninstall im Benutzerkonto,
 Crash-Recovery, Signierung/Notarisierung und Windows-Coreportabilität bleiben
 separate offene Abnahmen. Keine native Paket-, GUI- oder Corefreigabe folgt
