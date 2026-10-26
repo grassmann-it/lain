@@ -66,7 +66,7 @@ public sealed partial class MainWindow
                 && method.Purposes.Any(purpose => purpose is "quota" or "cost"))
             .OrderByDescending(method => method.Recommended).ToArray() ?? [];
         var form = AccountForm("Monitoring access for " + account.Name,
-            "Read quota on this same account. Use saved access where the provider supports it, or connect one of the available methods below.");
+            "Read quota using the monitoring access saved for this entry. Use saved access where the provider supports it, or connect one of the available methods below.");
         form.Children.Add(Ui.Text("Monitoring access is for quota and usage reads. It does not replace your credential for model requests.", 12, Ui.Muted));
         var state = current.State == "configured-unverified" ? "Saved locally · monitor access not checked"
             : current.State is "not-configured" or "unsupported" ? "No separate monitoring access saved" : current.State;
@@ -125,7 +125,7 @@ public sealed partial class MainWindow
         form.Children.Add(AccountFormRow("Access method", kind));
         form.Children.Add(description); form.Children.Add(scopes); form.Children.Add(docs);
         form.Children.Add(resourceRow); form.Children.Add(resourceHelp); form.Children.Add(tokenRow); form.Children.Add(expiryRow);
-        form.Children.Add(Ui.Text("Saving keeps access on this account. Use Save and refresh quota to check its reporting permissions. External token snapshots must be replaced after expiry.", 11, Ui.Muted));
+        form.Children.Add(Ui.Text("Saving keeps monitoring access on this entry. Use Save and refresh quota to check its reporting permissions. External token snapshots must be replaced after expiry.", 11, Ui.Muted));
         kind.SelectionChanged += (_, _) =>
         {
             if (kind.SelectedIndex < 0) return;
