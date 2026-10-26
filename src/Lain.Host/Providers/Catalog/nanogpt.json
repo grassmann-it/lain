@@ -1,0 +1,121 @@
+{
+  "id": "nanogpt",
+  "name": "NanoGPT",
+  "summary": "OpenAI-compatible model gateway with separate personal subscription monitoring. Account tier and model coverage remain unknown until confirmed.",
+  "accountUrl": "https://nano-gpt.com/settings",
+  "documentationUrl": "https://docs.nano-gpt.com",
+  "credentials": [
+    {
+      "id": "apiKey",
+      "label": "NanoGPT inference API key",
+      "kind": "api-key",
+      "required": true,
+      "secret": true,
+      "help": "Use browser sign-in or an existing inference key. Never enter a management token here."
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Connect your NanoGPT account",
+      "description": "Use Sign in with NanoGPT or privately enter an existing inference API key. Connecting alone creates no model route.",
+      "url": "https://docs.nano-gpt.com/api-reference/miscellaneous/oauth-pkce"
+    },
+    {
+      "title": "Add subscription monitoring",
+      "description": "Create a separate management token with Usage only (usage:read). No account ID is required; the token reads its own personal subscription.",
+      "url": "https://nano-gpt.com/settings#management-api-tokens"
+    },
+    {
+      "title": "Choose optional model routes",
+      "description": "Model templates do not establish subscription coverage. Check current coverage and key billing settings before routing requests; inference keys may spend balance."
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "account-settings",
+      "name": "Existing account billing settings",
+      "kind": "unknown",
+      "scope": "account",
+      "unit": "unknown",
+      "notes": "Subscription tier, price, included limits and coverage are unknown. A public model listing is not proof of inclusion. No purchase or paid fallback is enabled by setup."
+    }
+  ],
+  "routes": [
+    {
+      "id": "nanogpt-deepseek-v32",
+      "model": "deepseek/deepseek-v3.2",
+      "name": "DeepSeek V3.2",
+      "baseUrl": "https://api.nano-gpt.com/api/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "account-settings"
+      ],
+      "capabilities": {},
+      "manufacturer": "DeepSeek",
+      "gateway": "NanoGPT",
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "sources": [
+        {
+          "url": "https://api.nano-gpt.com/api/v1/models",
+          "title": "Public model catalog (unauthenticated snapshot)",
+          "checkedAt": "2026-10-26T00:16:29.507951+00:00"
+        }
+      ],
+      "restrictions": [
+        "Subscription coverage and account billing settings must be confirmed before use."
+      ]
+    },
+    {
+      "id": "nanogpt-kimi-k25",
+      "model": "moonshotai/kimi-k2.5",
+      "name": "Kimi K2.5",
+      "baseUrl": "https://api.nano-gpt.com/api/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "account-settings"
+      ],
+      "capabilities": {},
+      "manufacturer": "Moonshot AI",
+      "gateway": "NanoGPT",
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "sources": [
+        {
+          "url": "https://api.nano-gpt.com/api/v1/models",
+          "title": "Public model catalog (unauthenticated snapshot)",
+          "checkedAt": "2026-10-26T00:16:29.507951+00:00"
+        }
+      ],
+      "restrictions": [
+        "Subscription coverage and account billing settings must be confirmed before use."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://docs.nano-gpt.com/api-reference/miscellaneous/oauth-pkce",
+      "title": "Public shortcut OAuth PKCE",
+      "checkedAt": "2026-10-26T00:16:29.507951+00:00"
+    },
+    {
+      "url": "https://docs.nano-gpt.com/api-reference/management-api",
+      "title": "Separate usage:read management tokens",
+      "checkedAt": "2026-10-26T00:16:29.507951+00:00"
+    },
+    {
+      "url": "https://api.nano-gpt.com/api/v1/models",
+      "title": "Public model catalog (unauthenticated snapshot)",
+      "checkedAt": "2026-10-26T00:16:29.507951+00:00"
+    }
+  ],
+  "restrictions": [
+    "OAuth api.use returns a spend-capable inference API key; it cannot read Management API subscription quotas.",
+    "Management tokens are separate, quota-only credentials and must never reach inference.",
+    "Monitor results identify no user or account; association with an inference credential is unverified.",
+    "Optional templates are present in the public catalog; capabilities, current prices and subscription inclusion are unverified."
+  ],
+  "adapterState": "prepared",
+  "liveVerification": "not_tested",
+  "quotaSupport": "api"
+}

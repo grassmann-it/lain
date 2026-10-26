@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Lain.Core/Lain.Core.csproj" />
+    <Compile Include="../public-login/ContractFixtures.cs" Link="ContractFixtures.cs" />
+    <Compile Include="../../src/Lain.Host/Accounts/PublicLogin/*.cs" Link="PublicLogin/%(Filename)%(Extension)" />
+    <Compile Include="../../src/Lain.Host/Accounts/NanoGptLoginAdapter.cs" Link="NanoGptLoginAdapter.cs" />
+    <Compile Include="../../src/Lain.Host/Providers/NanoGpt/*.cs" Link="NanoGpt/%(Filename)%(Extension)" />
+    <Compile Include="../../src/Lain.Host/Quota/QuotaContracts.cs" Link="QuotaContracts.cs" />
+    <Compile Include="../../src/Lain.Host/Quota/QuotaHttp.cs" Link="QuotaHttp.cs" />
+    <Compile Include="../../src/Lain.Host/Quota/NanoGptQuotaAdapter.cs" Link="NanoGptQuotaAdapter.cs" />
+    <None Include="../../src/Lain.Host/Providers/Catalog/nanogpt.json" Link="nanogpt.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
