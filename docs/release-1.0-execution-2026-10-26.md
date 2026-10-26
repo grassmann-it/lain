@@ -1,5 +1,105 @@
 # Lain 1.0.0: laufende Releasearbeiten
 
+## Aktueller Folgestand: r3-Kandidat und laufende Recherche
+
+Der Nutzer lässt die aktive VS-Code-Recherche „Priorisiere umsatzstarke
+Unternehmen“ samt ihren Workern ausdrücklich zu Ende laufen. Kein Dienststopp,
+Clientreload oder Eingriff in diese Recherche. Das eigene Update wartet weiter;
+isolierter Paketbau und Abnahme bleiben davon unabhängig.
+
+Der neue private Quellstand ist
+`023c87f24d73cadce187bc8a013cd9b1c5b7877d`, aufbauend auf
+`5fab859b8f603b7f7ce430d0d2fff748b05bd150`. Ergänzt sind konkrete
+[Zusatznotices](../packaging/licenses/review-20261026.md), Collectorprüfungen,
+der getrennte [Plattforminstallervertrag](platform-installers-delivery.md)
+und Dokumentation. Produkt- und Coreinputs sind gegenüber 5fab unverändert.
+Die Main-Arbeitskopie bleibt uncommittet; eingefroren wurde ausschließlich im
+privaten Cachecheckout. Neue Artefakte und Bindungen liegen unter
+`~/.cache/lain-release-candidate-r3-20261026/`.
+
+Die strikte Corequalifikation für den r3-Anwendungssourcecommit ist
+bestanden (`core-qualification.json`). Sie verwendet ausdrücklich die
+unveränderten Corebytes und die ursprüngliche 5fab-Go-Testidentität;
+historische Berichte werden nicht umetikettiert. Beide r3-Pakete sind gebaut,
+vollständige Archiv-/Manifest-/Sourceprüfungen bestanden. Die tatsächliche
+Paketprüfung fand danach eine Vertragslücke: `check_core` akzeptierte nur die
+alte Rootnotice-Kennzeichnung, der neue Collector liefert rekursive Notices.
+Vor einem Runtime-/Installationsschritt abgewiesen; Fehlerartefakte bleiben
+unter `full-packages/plan.json` erhalten.
+
+Die gezielte Korrektur akzeptiert beide verifizierten Kennzeichnungen und
+erhält alle übrigen Coreprüfungen. Echte Prüfaufrufe gegen das neue r3-Paket
+und den historischen 5fab-Bestand bestehen. Privater Folgekandidat
+`882bdadd09235b35ca74c0ebdcff59e00061b2fe` verändert ausschließlich
+`scripts/core-refresh.py`; Artefakte liegen getrennt unter
+`~/.cache/lain-release-candidate-r4-20261026/`. Neue strikte Corequalifikation,
+beide Paketbauten, vollständige Archiv-/Source-/Manifestprüfung und elf echte
+isolierte Paket-Runtimefälle sind hierfür bestanden. Report:
+`full-packages/runtime/report.json`. R3 bleibt unverändert erhalten.
+Manifest-SHA-256 Monitor:
+`477c04f19c745014636d36122eb8d32d40f35e681353fb700c9aa82e2a15c683`;
+Gateway: `e648a89ec1d545feed2d099773bda33a657dfcd760f67787afedaf45e9b573b5`.
+Native Workerabnahme und Exact-Core-Drain mit den r4-Paketbytes sind ebenfalls
+bestanden (`native-workers/summary.json`, `drain.json`,
+`worker-checks/closure-proof.json`). Die acht gepflegten UI-Läufe (vier Fälle
+bei Skala1/1,25) sind am exakten r4-Paket bestanden,54 PNGs visuell geprüft.
+Bundle: `~/.cache/lain-native-r4-20261026-evidence/native-bundle-r1.json`.
+Die private Sealerfunktion `native()` hat diesen Bundle gegen153 tatsächlich
+gepinnte Belegdateien erfolgreich validiert; kein Gesamtseal daraus abgeleitet.
+Beide vollständigen Defaultläufe sind inzwischen bestanden: jeweils698 Checks
+und114 Screenshots bei Skala1/1,25. Alle228 Bilder wurden geprüft, ohne
+blockierenden Befund; bekannter P3 bleibt dokumentiert. Finaler Harnesscommit
+`f15ecef6d4240686ece70d761e537dff5dda74f5`, nur
+`tests/desktop/{Program.cs,Fixture.cs}` weichen vom Produktstand ab.
+Belege: `default-proof-r11.json`, `default-all-visual-r11/review.json` im
+gleichen nativen Evidenceverzeichnis. Die zusätzliche Fixtureantwort ist exakt
+`GET /api/v1/routes => Config.Routes`; kein Aufweichen der Requestallowlist.
+
+Die beiden qualifizierten Testdateien wurden per geprüftem Dreifachabgleich
+in Main übernommen. Sie sind byteidentisch zum qualifizierten Harness; der
+vorherige Mainbestand ist gesichert, andere Mainänderungen bleiben erhalten.
+Kein Maincommit. Importnachweis: `test-import/import-proof.json` im r4-Root.
+Lokales Update und reale Modellmatrix sind noch offen. Keine Veröffentlichung.
+
+Der Nutzer hat inzwischen das Ende der letzten externen Codexaufgabe bestätigt.
+Das produktive Desktopfenster ist geschlossen. Frische öffentliche
+Bestandsaufnahme und SHA-Guards für r4 sind vorbereitet, weiterhin16/59/3 und
+Revision58/57. Separate sichtbare sudo-Terminalprüfung hat den lesenden
+Originalprozessscanner (420 klassifizierte Prozesse) und die Bestands-/
+Backendaufnahme bestanden. Belege unter `own-update-prep/scanner-v1/` und
+`capture-v1/`; kein Dienststopp oder Update aus diesem Schritt.
+
+Historisch: Der vollständige Defaultlauf bei Skala1 erreichte407 bestandene Checks und
+scheiterte an einer alten Sichtbarkeits-/Textabfrage des Analysefehlers.
+Screenshot belegt die kompakte „last known analysis“-Notice und die erhaltene
+Gruppe. Der gesuchte ausführliche Snapshottext steht im geschlossenen Bereich
+„Source & freshness“. Die gezielte Testkorrektur und erneuten vollständigen
+Läufe wurden im privaten Testcheckout abgeschlossen; kein Produktpatch oder
+rückwirkendes PASS für den fehlgeschlagenen Lauf.
+
+Frischer eigener Qualifikationsseal: `own-update-prep/sealed-r1/seal.json`,
+Qualification-SHA-256
+`42c6777c1284c3b2da5034a7e2da244bbe9e30d21c3c718b5486a7496a7b63dd`.
+Der reguläre v1-Updateplan wurde geprüft und die Ausführung gestartet. Sie
+scheiterte sicher **vor dem Dienststopp** am Requestdrain; Backupjournal meldet
+`failed-before-stop`, Admission ist wieder freigegeben. Installierter Bestand
+bleibt unverändert. Öffentliche Codex-Metadaten belegen weiterhin aktive
+Rechercheworker unter `/home/tomka/Desktop/ai`, die neue Kinder starten. Die
+vermeintlich beendete Recherche ist deshalb noch kein ruhiges Updatefenster.
+Der Nutzer möchte die Recherche ausdrücklich weiterlaufen lassen. Das lokale
+Update wartet. V2-Scannerprüfung mit425 Prozessen bestanden; anschließender
+Capture wegen fehlgeschlagener privilegierter Prozessinspektion verweigert.
+Kein neuer Seal oder Dienststopp aus v2. V1-Backup-/Logpfade bleiben erhalten.
+
+Neu beauftragt: öffentliches Repo nach Prüfung vorbereiten und umschalten,
+Provider-Referralübersicht mit Bezugsstellen eigener Links sowie OAuth-Inventar
+und umsetzbare Ergänzungen. Referral-/OAuthübersichten sind fertig, ebenso Plattform-Contractworkflow.
+Der zusätzliche Vergleich aller27 Connectoren liegt als vorläufiger Bericht vor;
+frische Preisprüfung scheiterte am Netzausfall. Repo derzeit PRIVATE; noch kein Upload/Tag/Release.
+
+Die folgenden Abschnitte dokumentieren frühere Zwischenstände; dortige
+Revision57/57 und Kandidat bec078e sind keine aktuellen Updateinputs.
+
 Am 26.10.2026 hat der Nutzer die fünf zuvor beschriebenen Releasearbeiten mit
 „führes aus“ zur Ausführung beauftragt. Dies umfasst die lokale Lieferung und
 Abnahme sowie die Vorbereitung einer öffentlichen Auslieferung. Ungeklärte
@@ -35,8 +135,12 @@ bestanden. Spätere Pinmigration unterstützt nur vollständige Message-/gepaart
 Functionhistorie; opaque Reasoning-/Customtoolsätze verlangen einen neuen Thread.
 Die Änderungen sind noch nicht installiert. Sie ändern
 den Core: r4-Binary-/Sourcequalifikation kann dafür nicht wiederverwendet werden.
-Nach der gemeinsamen Integration sind neue Core-/Hostpakete und echte Abnahme
-des ausgewählten Modells erforderlich. Keine neue erfolgreiche Installation behauptet.
+Neue Corequalifikation vollständig bestanden; Monitor-/Gatewaypakete gebaut,
+Prüfsummen und elf isolierte Paketprüfungen bestanden.
+[Lieferstand und Grenzen](quota-aware-routing-delivery-2026-10-26.md).
+Eigener frischer Updateseal, native Paketabnahme und echter Gruppenlauf bleiben
+ausstehend. Beobachtung zeigte offenes Lain-UI und7–9 aktive HTTP-Anfragen;
+keine Zwangsbeendigung und keine neue erfolgreiche Installation.
 
 Belege zur aktuellen Updatevorbereitung liegen unter
 `~/.cache/lain-connect-doctor-20261026/own-update-prep-r4/` in neuen

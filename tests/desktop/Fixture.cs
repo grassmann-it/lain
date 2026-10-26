@@ -115,6 +115,7 @@ internal sealed class Fixture : HttpMessageHandler
                 "/api/v1/status" => Status(),
                 "/api/v1/configuration" => Config,
                 "/api/v1/accounts" => Config.Accounts,
+                "/api/v1/routes" => Config.Routes,
                 "/api/v1/models" => new ModelCatalogDto(1, Config.Revision, [new ModelEntryDto("gpt-model", "openai", ["a1"])]),
                 "/api/v1/quotas" => Quotas(),
                 "/api/v1/providers" => Providers(),

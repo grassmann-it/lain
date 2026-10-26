@@ -1,9 +1,9 @@
 # Lain 1.0.0 – Lieferform und Linux-Betrieb
 
-Stand: 26.10.2026. Geprüfter Kandidat: `5fab859b8f603b7f7ce430d0d2fff748b05bd150`, eingefrorene Source unter `/home/tomka/.cache/lain-release-1.0-source-20261026`.
+Stand: 26.10.2026. Geprüfter Kandidat: `882bdadd09235b35ca74c0ebdcff59e00061b2fe`, eingefrorene Source unter `/home/tomka/.cache/lain-release-1.0-source-20261026`.
 Die Main-Arbeitskopie enthält fremdes WIP und ist nicht die Buildquelle.
-Diese Überarbeitung ändert nur die drei Release-Dokumente; kein Commit,
-Reset, Stash, Produktivzugriff oder Upload.
+Die folgenden Belege gelten für die exakten r4-Pakete; spätere Begleitdokumente
+ändern deren Sourcearchiv und Qualifikationsbindung nicht.
 
 ## Lieferumfang und Freigabestand
 
@@ -16,31 +16,29 @@ Kein modifizierter Codex-Binärclient und keine VSIX werden mitgeliefert.
 Bestandskonfiguration hat Vorrang vor dem Initialmodus. Ein Gatewaybestand
 kann nicht durch Installation des Monitorpakets stillschweigend reduziert werden.
 
-Die neuen Pakete liegen unter `/home/tomka/.cache/lain-quota-release-20261026/`:
+Die neuen Pakete liegen unter `/home/tomka/.cache/lain-release-candidate-r4-20261026/`:
 
 | Datei | SHA-256 |
 | --- | --- |
-| `package-monitor.tar.gz` | `a142522bfb8d9bca0850be94ecdb115216343f0970a240759a971c723b684bd7` |
-| `package-gateway.tar.gz` | `b414230fbdff931afbe560dee11a5518dc597ba90dfde157bd151141fa27d41f` |
+| `package-monitor.tar.gz` | `9dabf8e1913f72c39bf337b50d42b9390479cf7f5ed25be72e78ba6bc5127e93` |
+| `package-gateway.tar.gz` | `55a013bb1e35096e8cc2b8474182d24adf6c93cdb00008704428fa9c3ffce243` |
 
 Die gleichnamigen `.sha256`-Dateien referenzieren portable Dateinamen.
 Die Archive behalten beim Entpacken die Ordner `package-monitor` bzw.
 `package-gateway`. Bei Umbenennung für einen Download muss die äußere
 Hashdatei angepasst werden; Archivinhalt und innere Prüfsummen bleiben erhalten.
 
-**Noch kein öffentlich freigegebener Download.** Der neue Core ist qualifiziert;
-elf isolierte Vollpaketchecks sind bestanden. Das ersetzt keine öffentliche
-Gesamtfreigabe: `releaseQualified: false` bleibt bestehen. Neue eigene Installation,
-frischer Erhaltungs-/Updateseal und exakte native Gesamt-/Modellabnahme bleiben
-separate Arbeiten. Laut übergebenem Produktivstand läuft weiterhin `ff5771c`,
-Revision 58 gespeichert / 57 angewandt; in diesem Auftrag nicht neu abgefragt.
-Die bestätigte Artistic-2.0-Lizenz und Fotoattribution sind tatsächlich enthalten;
-der frühere r4-Neubauhinweis ist erledigt. Die [Noticeprüfung](release-1.0-notice-review.md)
-benennt die ursprünglichen Textlücken. Diese sind in den neuen
-[Packaginginputs für r3](../packaging/licenses/review-20261026.md) konkret geschlossen;
-Parent muss daraus neue Pakete bauen. Native Compilefeaturelisten allein
-begründen keinen zusätzlichen Releaseblocker. Die unveränderten
-Archive deshalb noch nicht als abschließend noticegeprüfte 1.0 veröffentlichen.
+**Noch kein öffentlich freigegebener Download.** Core, elf isolierte
+Vollpaketfälle, native Worker und Drain sowie die native Desktopmatrix sind
+geprüft: acht gepflegte UI-Läufe und zwei vollständige Defaultläufe mit je
+698 Checks. Noticekorrekturen sind im neu gebauten r4-Paket enthalten;
+[Packagingreview](../packaging/licenses/review-20261026.md).
+`releaseQualified: false` bleibt bestehen: Der lokale Dienst läuft weiterhin
+auf `ff5771c`, Revision58/57. Der eigene Updateversuch brach vor Dienststopp
+wegen aktiver Requests ab; Admission ist freigegeben. Der Nutzer möchte die
+laufende Recherche erhalten. Update, Apply/Katalogexport, Skillaktivierung und
+reale finale Modellmatrix warten auf ein ruhiges Zeitfenster.
+[Aktueller Ausführungsstand](release-1.0-execution-2026-10-26.md).
 
 ## Download und Source
 
@@ -294,10 +292,11 @@ Installationsbeleg zurücknehmen. Eine Dateilöschung widerruft keine Providergr
 
 ## Vor öffentlichem Upload
 
-Die ergänzten Noticebelege/Collector aus dem Zusatzbericht in r3 einfrieren und daraus neue gebundene Archive
-mit erneut geprüften Inventaren/Hashes erzeugen; bestehende Artefakte erhalten.
-Die drei hier bearbeiteten Dokumente sind Begleitdokumente in Main und noch
-nicht Teil des eingefrorenen Sourcearchivs. Für einen neuen Sourcebezug einen
-separaten Releasekandidaten erstellen, ohne fremdes Main-WIP mitzunehmen.
-Gesamtfreigabe, unterstützte Linuxumgebung und Download-Vertrauensanker mit
-exakten Artefakten dokumentieren. Keine Veröffentlichung in diesem Auftrag.
+Repoöffentlichkeit ist vom Nutzer beauftragt; ein öffentlicher 1.0-Release mit
+Tag und Downloads ist dadurch noch nicht veröffentlicht. Getrackte Historie,
+Kandidat und tatsächlicher Remotezustand werden vor dem Umschalten geprüft.
+Neue Begleitdokumente und CI-Verträge müssen auf einem getrennten sauberen
+Veröffentlichungsstand liegen; die laufende Main-Arbeitskopie bleibt erhalten.
+Die r4-Archive bleiben an Source882 gebunden. Gesamtfreigabe und tatsächliche
+Installation/Modellabnahme gesondert belegen; keine macOS-/Windowsproduktfreigabe
+von Installerfixtures ableiten.

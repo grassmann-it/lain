@@ -66,6 +66,10 @@ und passenden Drittanbieternachweisen. `gate-status.json` trennt Backendprüfung
 von vollständiger Releaseabnahme. Kein Publisher wählt eine Anwendungslizenz,
 veröffentlicht extern oder aktiviert einen Dienst.
 
+- [Referralprogramme und Bezugsstellen eigener Links](docs/provider-referrals-overview-2026-10-26.md)
+- [Free-/Abovergleich aller Connectoren (Preisprüfung noch offen)](docs/provider-recommendations-2026-10-26.md)
+- [OAuth-/Device-Logins: Bestand und nächste Integrationen](docs/oauth-provider-overview-2026-10-26.md)
+- [1.0-Kandidat: Lieferumfang und Installation](docs/release-1.0-distribution-readiness.md)
 - [Linuxinstallation](docs/install.md) und [Betriebsarten, Release und sichere Wiederherstellung](docs/linux-delivery-stabilization.md)
 - [Aktuelle Arbeitspakete und Nachweisgrenzen](docs/work-packages-execution-2026-10-24.md)
 - [UXD-Pakete](docs/ux-design-work-packages/README.md) und [Reviewreferenzen](docs/uxpilot-design-results-2026-10-24.md)
@@ -89,5 +93,5 @@ außerhalb dieses Besitzes. Lain verwendet eigene Dienste, Daten und Secrets.
 Codexintegration schreibt ihre separaten `lain.config.toml`/`lain.models.json`;
 der Authhelper liefert nur den lokalen Inferenzschlüssel. Kauf, Paid-Fallback,
 öffentliche Veröffentlichung und Anwendungslizenzwahl sind keine Nebenwirkung
-dieser Arbeit. Öffentlicher Releaseumfang und Anwendungslizenz bleiben eigene
-Produktentscheidungen.
+dieser Arbeit. Die Anwendungslizenz ist Artistic-2.0; Repoöffentlichkeit ist beauftragt.
+Ein öffentlicher Release mit Tag und Binärdownloads bleibt ein eigener Schritt.

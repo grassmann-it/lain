@@ -1,6 +1,6 @@
 # Lain 1.0.0 – Release Notes für Linux x64
 
-Kandidat vom 26.10.2026, Source `5fab859b8f603b7f7ce430d0d2fff748b05bd150`.
+Kandidat vom 26.10.2026, Source `882bdadd09235b35ca74c0ebdcff59e00061b2fe`.
 Vorbereitete Release Notes; noch keine öffentliche Veröffentlichung oder
 Gesamtfreigabe. Die aktuellen Archive bleiben `releaseQualified: false`.
 
@@ -34,7 +34,9 @@ der [Notice Review](release-1.0-notice-review.md).
 Diese Nachweise sind keine neue Produktivinstallation und keine vollständige
 Live-Abnahme aller Provider/Modelle. Der übergebene lokale Produktivstand ist
 weiterhin `ff5771c`, Revision 58 gespeichert / 57 angewandt. Die neue eigene
-Update-/Bestandserhaltungsabnahme und finale native Gesamtprüfung stehen aus.
+Update-/Bestandserhaltungsabnahme wartet auf das vom Nutzer gewünschte Ende der
+laufenden Recherche. Native Desktopprüfung besteht: acht gepflegte Läufe sowie
+zwei vollständige Defaultläufe mit je698 Checks; alle228 Defaultbilder geprüft.
 
 ## Einschränkungen
 
@@ -47,15 +49,9 @@ Update-/Bestandserhaltungsabnahme und finale native Gesamtprüfung stehen aus.
   Lainpaket. Optionale UI-Anpassungen werden als eigene Source/Patches mit Pins
   geliefert; Nutzer beziehen Originalclients selbst und qualifizieren lokale
   Builds. Keine pauschale Freigabe für deren Binärweitergabe.
-- Noch offene Noticebelege betreffen insbesondere Inter, MicroCom.Runtime,
-  Tmds.DBus.Protocol, YamlDotNet sowie verschachtelte Gatewayanteile
-  utls/dicttls und compress/zstd/internal/xxhash. Native Zuordnungen und die
-  Data.Sqlite-Lizenzzuordnung sind ebenfalls in der historischen Review benannt.
-  Diese Punkte sind inzwischen in den
-  [Packaginginputs für r3](../packaging/licenses/review-20261026.md) geschlossen;
-  neue Pakete baut der Parent. Native Compilefeaturelisten allein sind kein
-  zusätzlicher Releaseblocker. Die
-  unveränderten Archive sind deshalb noch nicht abschließend noticegeprüft.
+- Die historischen Noticelücken sind in Source882 und den r4-Archiven geschlossen;
+  [Packagingreview](../packaging/licenses/review-20261026.md). Frühere Archive
+  und fehlgeschlagene Abnahmeläufe bleiben als historische Belege erhalten.
 - Source liegt bei; alle externen Abhängigkeiten und Upstreamarchive für einen
   vollständigen Offline-Rebuild liegen nicht bei. Neue Begleitdokumente aus
   diesem Auftrag gehören noch nicht zur eingefrorenen Sourcerevision.
@@ -77,6 +73,7 @@ Clients beenden und die verwalteten Integrationsdateien entfernen. Private
 Daten bleiben erhalten, bis sie bewusst separat entfernt werden. Optionale
 Clientanpassungen und Providergrants haben eigene Rücknahmeabläufe.
 
-Öffentlicher Downloadkanal und Vertrauensanker sind noch festzulegen. Vor
-Upload müssen die korrigierten Packaginginputs in neue, erneut geprüfte
-Archive übernommen werden; die getrennte Gesamtfreigabe bleibt erforderlich. Hier wurde nichts veröffentlicht.
+Das GitHub-Repo soll nach der Veröffentlichungsprüfung öffentlich werden.
+Ein öffentlicher Release mit Tag/Downloads und die Gesamtfreigabe bleiben eigene
+Schritte. Die korrigierten r4-Archive sind gebaut und geprüft; laufende Recherche
+wird für das lokale Update nicht unterbrochen.
