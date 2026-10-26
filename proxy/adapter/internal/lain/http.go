@@ -148,7 +148,7 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 				if !ready {
 					status = 503
 				}
-				c.AbortWithStatusJSON(status, gin.H{"ready": ready, "journalHealthy": i.Journal.Health() == nil, "version": "8.0.41-lain-adapter.4", "routersReady": i.routerPinError == nil})
+				c.AbortWithStatusJSON(status, gin.H{"ready": ready, "journalHealthy": i.Journal.Health() == nil, "version": "8.0.41-lain-adapter.5", "routersReady": i.routerPinError == nil})
 			default:
 				c.AbortWithStatus(404)
 			}
