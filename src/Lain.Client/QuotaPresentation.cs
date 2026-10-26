@@ -16,6 +16,8 @@ public sealed record QuotaSummaryPresentation(
 /// <summary>Shared display hierarchy. Does not change, combine or manufacture provider readings.</summary>
 public static class QuotaPresentation
 {
+    private static readonly Regex ExactAmountPattern = new(@"^[+-]?[0-9]+(?:\.[0-9]+)?$",
+        RegexOptions.CultureInvariant);
     private static readonly Regex DurationPattern = new(
         @"(?<![a-z0-9])(?<number>\d+(?:\.\d+)?)\s*-?\s*(?<unit>hours?|h|days?|d|weeks?|w|minutes?|mins?|m|seconds?|secs?|s)\b",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
@@ -25,12 +27,25 @@ public static class QuotaPresentation
         if (quota.State is "unsupported" or "not-supported") return false;
         return quota.MeasurementKind switch
         {
-            "balance" => Finite(quota.Remaining),
-            "usage" or "usage-estimate" or "rate" => Amount(quota.Used),
-            "limit" => Amount(quota.Limit),
+            "balance" => Finite(quota.Remaining) || ExactAmount(quota.ExactRemaining) is not null,
+            "usage" or "usage-estimate" or "rate" => Amount(quota.Used) || ExactAmountSign(quota.ExactUsed) is >= 0,
+            "limit" => Amount(quota.Limit) || ExactAmountSign(quota.ExactLimit) is >= 0,
             _ => Amount(quota.Used) || Amount(quota.Limit) || Amount(quota.Remaining)
+                || ExactAmountSign(quota.ExactUsed) is >= 0 || ExactAmountSign(quota.ExactLimit) is >= 0
+                || ExactAmountSign(quota.ExactRemaining) is >= 0
                 || quota.UsedPercent is { } percent && double.IsFinite(percent) && percent is >= 0 and <= 100
         };
+    }
+
+    /// <summary>Validated native decimal text, without binary conversion or loss of precision.</summary>
+    public static string? ExactAmount(string? supplied) => supplied is { Length: > 0 and <= 1024 }
+        && ExactAmountPattern.IsMatch(supplied) ? supplied : null;
+
+    public static int? ExactAmountSign(string? supplied)
+    {
+        if (ExactAmount(supplied) is not { } value) return null;
+        if (!value.Any(c => c is >= '1' and <= '9')) return 0;
+        return value[0] == '-' ? -1 : 1;
     }
 
     public static bool HasQuotaReading(IEnumerable<QuotaDto> quotas) => quotas
@@ -63,8 +78,12 @@ public static class QuotaPresentation
             || label.Contains("bonus credits", StringComparison.Ordinal);
         // Never hide a main balance, exhausted rolling allowance, or monthly budget.
         if (!explicitlyAdditional || !IsAdditionalCredit(quota) || !HasReading(quota)) return false;
+        var exact = new[] { quota.ExactUsed, quota.ExactLimit, quota.ExactRemaining }
+            .Where(value => value is not null).ToArray();
+        // An exact positive amount must never disappear because a parallel double rounded to zero.
+        if (exact.Any(value => ExactAmountSign(value) is not 0)) return false;
         var supplied = new[] { quota.Used, quota.Limit, quota.Remaining, quota.UsedPercent }.Where(value => value.HasValue).ToArray();
-        return supplied.Length > 0 && supplied.All(value => value == 0);
+        return (supplied.Length > 0 || exact.Length > 0) && supplied.All(value => value == 0);
     }
 
     public static IReadOnlyList<QuotaDto> Order(IEnumerable<QuotaDto> quotas) => quotas
