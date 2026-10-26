@@ -243,6 +243,32 @@ dokumentiert, in lain aber weiterhin nicht qualifiziert/aktiviert; der
 aktuelle Katalog bietet API-Key-Eingabe. Ein nutzbarer OAuthlink wird nicht
 aus der bekannten Herstellerclient-ID konstruiert.
 
+Für den konkreten Nutzerlogin danach die offizielle Requesty-CLI v0.1.16
+separat vorbereitet: Release/Source `21809398e99d888565178d718186b637f3de4566`,
+Archiv-SHA `d5eb9b56a4beeb298f59b7a784fcdf614548f38cb9226a6cf48d5ae1c5efee2e`,
+ELF-SHA `b50ab070cdb1c1f0670613d790bbec11a8a0a2c927d29e90cab015f9bc0b6974`.
+Ein privater Namespace mountet einen frischen Store am ursprünglichen
+HOME-Pfad, ohne dessen Umgebungswert zu ändern; kein Zugriff auf echte
+Requesty-/Codexprofile, kein Harnessaufruf. Offline Help/Loginhelp bestanden,
+`--version` wird vom Hersteller nicht unterstützt; Identität stattdessen mit
+Releasehash und eingebetteter VCS-Revision belegt. Vorbereitungsmountfehler
+bleiben als Fehler vor jeder echten Anmeldung dokumentiert.
+
+Nach unabhängigem Source-/Isolationsreview genau eine echte offizielle
+CLI-Challenge gestartet, dynamischen PKCE-Link aus deren Browseraufruf privat
+erfasst und dem Nutzer gegeben. Kein eigener OAuthclient nachgebaut. Die CLI
+verwaltet State/Verifier und den zeitlich begrenzten Loopbackcallback selbst;
+sie erstellt nach Nutzerzustimmung einen API-Key. **Nutzerbestätigung und
+Übernahme in lain sind noch offen.** Kein Tokenexport, kein automatischer
+Retry oder Profilwechsel. Auch eine erfolgreiche CLI-Anmeldung aktiviert
+noch keinen allgemeinen Requesty-Loginadapter in lain.
+
+Privater Operator/Nachweise:
+`~/.cache/lain-qualification-20261026/requesty-oauth-v0.1.16-235713Z/`,
+Operator-SHA `44d7bd887b043b486b596776ee29bd5c999c9d35b277a7b9d0460f087b8dcb17`,
+Loginrun `login-b23413d2069c40a7`. Der Prozess wird begrenzt überwacht, ohne
+Secrets auszugeben. Link, Code und Tokens gehören nicht in Projektdokumente.
+
 ## Angeforderte OpenRouter-Free-Probe
 
 Am 26.10. zusätzlich beauftragt. Lesende Prüfung des installierten `f3d4851`
