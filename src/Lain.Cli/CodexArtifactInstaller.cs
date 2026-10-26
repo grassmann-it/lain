@@ -205,7 +205,7 @@ public static class CodexArtifactInstaller
     private static string Hash(string content) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(content))).ToLowerInvariant();
     private static string ReadSmall(string path)
     {
-        using var stream = WorkerProjectFiles.OpenRead(path);
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
         if (stream.Length > 16 * 1024 * 1024) throw new IOException("Codex artifact exceeds its size limit.");
         using var reader = new StreamReader(stream, Encoding.UTF8);
         return reader.ReadToEnd();

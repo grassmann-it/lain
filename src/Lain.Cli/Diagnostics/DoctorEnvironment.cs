@@ -82,7 +82,21 @@ public sealed class DoctorEnvironment(Func<LainApiClient>? clientFactory = null)
         if (count == buffer.Length) throw new IOException();
         return new string(buffer, 0, count);
     }
-    public CodexInstallationStatus Inspect(string directory, string? profile, long? revision) => CodexArtifactInstaller.Inspect(directory, profile, revision);
+    public CodexInstallationStatus Inspect(string directory, string? profile, long? revision)
+    {
+        var storage = Path.Combine(directory, ".lain-artifacts");
+        CheckPath(Path.Combine(directory, "lain.config.toml"));
+        var current = Path.Combine(storage, "current.json");
+        var text = ReadText(current);
+        if (text is not null)
+        {
+            using var manifest = System.Text.Json.JsonDocument.Parse(text);
+            var generation = manifest.RootElement.GetProperty("generationId").GetString();
+            if (!Guid.TryParseExact(generation, "N", out _)) throw new IOException();
+            CheckPath(Path.Combine(storage, generation!, "lain.models.json"));
+        }
+        return CodexArtifactInstaller.Inspect(directory, profile, revision);
+    }
     private static void CheckPath(string path)
     {
         WorkerProjectFiles.AssertRegular(path);

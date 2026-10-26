@@ -23,6 +23,15 @@ public sealed class DoctorEngine(IDoctorEnvironment environment)
         }
         Add("accounts.setup", host.Configuration is null ? "unknown" : host.Configuration.Accounts.Any(a => a.Enabled) ? "ok" : "blocked",
             host.Configuration is null ? "Account setup was not observed." : host.Configuration.Accounts.Any(a => a.Enabled) ? "An enabled account is configured; authentication is unverified." : "No enabled account is configured.", "public configuration API", "Review accounts through the public account commands.");
+        var routeAccounts = host.Configuration?.Accounts.Where(a => a.Enabled &&
+            (a.Capabilities is null || a.Capabilities.Any(c => c.Purpose == "inference"))).ToArray();
+        var missingRoutes = routeAccounts?.Any(a => !host.Configuration!.Routes.Any(r =>
+            r.Enabled && r.Visible && r.AccountIds.Contains(a.Id, StringComparer.Ordinal))) == true;
+        Add("accounts.routes", host.Configuration is null ? "unknown" : missingRoutes ? "warning" : "ok",
+            host.Configuration is null ? "Configured model routes were not observed." : missingRoutes ?
+            "At least one enabled inference account has no enabled visible model route; an account alone adds no client models." :
+            "No enabled inference account without a visible configured route was observed; profile inclusion is separate.",
+            "public configuration API", "Configure the intended subscription model routes and profile inclusion through supported management operations; then review the export.");
         Add("provider.acceptance", "unknown", "No authentication, inference or response-quality probe was performed.", "read-only scope", "Use a separately authorized provider probe when required.");
         var versions = new Dictionary<string, string>();
         // Never echo arbitrary server version strings (including malicious fixture payloads).
