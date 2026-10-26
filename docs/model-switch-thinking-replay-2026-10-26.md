@@ -5,6 +5,12 @@ und GPT fortsetzen können, auch nach Compaction oder erneutem Verbinden.
 Der bestehende Account-/Lieferauftrag bleibt erhalten, Installation und neue
 Anbieteranmeldungen sind während dieser Fehlerbehebung noch nicht erfolgt.
 
+**Anschließende Nutzerentscheidung:** Lain ist inzwischen ausdrücklich als
+[Codex-Standard eingerichtet](codex-default-lain-2026-10-26.md), der vorherige
+Standard bytegenau als `old-cpa` erhalten. Das ändert die normale
+Codexkonfiguration mit Auftrag; der alte Proxy und sein vorbereiteter Hotfix
+bleiben unangetastet. Der Standardwechsel ist kein Livewechsel bestehender Chats.
+
 ## Nachgewiesener Fehlerpfad
 
 Die gemeldete Request-ID `req_011CgQX8yQ9mtMSwbWXZWstP` gehört laut lokalem
