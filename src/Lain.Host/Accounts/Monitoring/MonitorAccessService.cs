@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Lain.Core;
 using Lain.Host.Operations;
 using Lain.Host.Quota;
+using Lain.Host.Providers.NanoGpt;
 
 namespace Lain.Host.Accounts.Monitoring;
 
@@ -56,14 +57,19 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
         var state = configuration.Snapshot;
         if (state.Revision != revision) throw new RevisionConflictException(revision, state.Revision);
         var account = RequireAccount(state, accountId);
-        var resourceId = request.ResourceId?.Trim();
+        var resourceId = NormalizeResource(request.ResourceId);
         Validate(account, request.Kind, request.Secret, resourceId, request.ExpiresAt, requireFutureExpiry: true);
         var resourceType = MonitorAccessCatalog.Provider(account.Provider) is "gemini-api" or "groq" ? "project" : "account";
-        var binding = (account.Binding ?? new ResourceBindingDto(account.Provider)) with { ResourceType = resourceType, ResourceId = resourceId };
+        var resourceRequired = MonitorAccessCatalog.Options(account.Provider).Single(o => o.Kind == request.Kind).ResourceRequired;
+        // A token-owned personal monitor returns no identity. Keep its handle separate
+        // from any observed OAuth subject; AccountService preserves the account binding.
+        var binding = resourceRequired
+            ? (account.Binding ?? new ResourceBindingDto(account.Provider)) with { ResourceType = resourceType, ResourceId = resourceId }
+            : new ResourceBindingDto(account.Provider);
         AccountService.EnsureCompatibleBinding(account.Binding, binding);
         var connection = new ConnectAccountRequest(account.Provider, "monitor-" + request.Kind, ["quota"], AccountId: account.Id,
             Binding: binding, ExpectedGeneration: account.Generation);
-        var value = new StoredMonitorAccess(account.Id, account.Provider, request.Kind, request.Secret, resourceId!, request.ExpiresAt?.ToUniversalTime());
+        var value = new StoredMonitorAccess(account.Id, account.Provider, request.Kind, request.Secret, resourceId, request.ExpiresAt?.ToUniversalTime());
         var json = JsonSerializer.Serialize(new { kind = "monitor-access", monitorAccess = value });
         return new AccountService(configuration, secrets).Connect(revision, connection,
             new(request.Kind == "access-token-snapshot" ? "external-snapshot" : "static-key", ["quota"], binding, json, request.ExpiresAt));
@@ -75,12 +81,17 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
         if (request.Kind == "inference-key") throw new ArgumentException("Create a monitor account with its own access token first.");
         var accounts = new AccountService(configuration, secrets);
         var resourceType = MonitorAccessCatalog.Provider(provider) is "gemini-api" or "groq" ? "project" : "account";
-        var binding = new ResourceBindingDto(provider, ResourceType: resourceType, ResourceId: request.ResourceId?.Trim());
+        var resourceId = NormalizeResource(request.ResourceId);
+        var option = MonitorAccessCatalog.Options(provider).SingleOrDefault(o => o.Kind == request.Kind)
+            ?? throw new ArgumentException("This monitor credential kind is not supported for the selected provider.");
+        var binding = option.ResourceRequired
+            ? new ResourceBindingDto(provider, ResourceType: resourceType, ResourceId: resourceId)
+            : new ResourceBindingDto(provider);
         var connection = new ConnectAccountRequest(provider, "monitor-" + request.Kind, ["quota"], Name: name, Binding: binding);
         var context = accounts.ReserveConnect(revision, connection, "monitor-" + Guid.NewGuid().ToString("N"), clock.GetUtcNow().AddMinutes(10));
         var account = new AccountDto(context.AccountId, name, provider, true, "monitor", "unverified");
-        Validate(account, request.Kind, request.Secret, binding.ResourceId, request.ExpiresAt, requireFutureExpiry: true);
-        var value = new StoredMonitorAccess(account.Id, provider, request.Kind, request.Secret, binding.ResourceId!, request.ExpiresAt);
+        Validate(account, request.Kind, request.Secret, resourceId, request.ExpiresAt, requireFutureExpiry: true);
+        var value = new StoredMonitorAccess(account.Id, provider, request.Kind, request.Secret, binding.ResourceId, request.ExpiresAt);
         var handle = secrets.Generations.Prepare(account.Id, new(request.Kind == "access-token-snapshot" ? "external-snapshot" : "static-key",
             ["quota"], binding, JsonSerializer.Serialize(new { kind = "monitor-access", monitorAccess = value }), request.ExpiresAt));
         try { return accounts.CommitPrepared(context, handle); }
@@ -111,8 +122,8 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
     private void Validate(AccountDto account, string kind, string? secret, string? resourceId, DateTimeOffset? expiresAt, bool requireFutureExpiry)
     {
         var provider = MonitorAccessCatalog.Provider(account.Provider);
-        if (!MonitorAccessCatalog.Options(provider).Any(o => o.Kind == kind))
-            throw new ArgumentException("This monitor credential kind is not supported for the selected provider.");
+        var option = MonitorAccessCatalog.Options(provider).SingleOrDefault(o => o.Kind == kind)
+            ?? throw new ArgumentException("This monitor credential kind is not supported for the selected provider.");
         if (kind == "inference-key")
         {
             if (!secrets.HasAccount(account.Id)) throw new ArgumentException("No inference key is available for this account.");
@@ -127,6 +138,14 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
                 throw new ArgumentException("The access-token snapshot requires its expiry.");
             if (requireFutureExpiry && expiresAt <= clock.GetUtcNow())
                 throw new ArgumentException("The monitor token must not already be expired.");
+        }
+        if (!option.ResourceRequired)
+        {
+            if (provider != "nanogpt" || kind != "management-token" || !NanoGptCredentialPolicy.IsManagementToken(secret))
+                throw new ArgumentException("NanoGPT subscription monitoring requires a separate management token.");
+            if (resourceId is not null)
+                throw new ArgumentException("NanoGPT personal subscription monitoring does not accept an account selector.");
+            return;
         }
         if (resourceId is null || resourceId.Length > 128) throw new ArgumentException("A monitor resource ID is required.");
         if (provider == "gemini-api")
@@ -189,6 +208,8 @@ public sealed class MonitorAccessService(ConfigurationRepository configuration, 
         catch (Exception error) when (error is IOException or JsonException)
         { throw new InvalidOperationException("The inference credential's account binding cannot be read."); }
     }
+
+    private static string? NormalizeResource(string? resource) => string.IsNullOrWhiteSpace(resource) ? null : resource.Trim();
 
     private static AccountDto RequireAccount(ConfigurationDto state, string id) =>
         state.Accounts.SingleOrDefault(a => a.Id == id) ?? throw new KeyNotFoundException("Account not found.");

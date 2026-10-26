@@ -13,6 +13,14 @@ public static class MonitorAccessCatalog
 
     public static MonitorAccessOptionDto[] Options(string providerId) => Provider(providerId) switch
     {
+        "nanogpt" =>
+        [
+            new("management-token", "NanoGPT Usage only management token", true, "",
+                "Reads the token owner’s personal subscription; no account selector is accepted.",
+                "https://docs.nano-gpt.com/api-reference/management-api", ["usage:read"],
+                "Create a separate Usage only token in NanoGPT Settings → Management API tokens. This token reads personal subscription quotas and cannot run models. Association with an inference key is unverified; no account ID is required.",
+                ResourceRequired: false)
+        ],
         "groq" =>
         [
             new("inference-key", "Groq Enterprise metrics with existing key", false, "Groq project ID",

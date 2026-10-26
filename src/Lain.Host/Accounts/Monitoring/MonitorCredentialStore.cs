@@ -1,18 +1,19 @@
 using System.Text.Json;
 using Lain.Core;
 using Lain.Host.Operations;
+using Lain.Host.Providers.NanoGpt;
 
 namespace Lain.Host.Accounts.Monitoring;
 
 /// <summary>A private capability of an existing account, never an inference credential or OAuth session.</summary>
 public sealed class StoredMonitorAccess(string accountId, string provider, string kind, string? secret,
-    string resourceId, DateTimeOffset? expiresAt)
+    string? resourceId, DateTimeOffset? expiresAt)
 {
     public string AccountId { get; } = accountId;
     public string Provider { get; } = provider;
     public string Kind { get; } = kind;
     public string? Secret { get; } = secret;
-    public string ResourceId { get; } = resourceId;
+    public string? ResourceId { get; } = string.IsNullOrWhiteSpace(resourceId) ? null : resourceId;
     public DateTimeOffset? ExpiresAt { get; } = expiresAt;
     public override string ToString() => "StoredMonitorAccess [redacted]";
 }
@@ -63,6 +64,11 @@ public sealed class MonitorCredentialStore
                     var value = monitor.Deserialize<StoredMonitorAccess>(JsonOptions) ?? throw new InvalidDataException("Invalid monitor credential.");
                     if (value.AccountId != account.Id || value.Provider != account.Provider) throw new InvalidDataException("Monitor credential identity mismatch.");
                     ValidateShape(value);
+                    if (value.Kind == "management-token" &&
+                        (!document.RootElement.TryGetProperty("kind", out var envelopeKind) || envelopeKind.ValueKind != JsonValueKind.String || envelopeKind.GetString() != "monitor-access"
+                         || handle.Owner != "static-key" || !handle.Purposes.SequenceEqual(new[] { "quota" })
+                         || handle.Binding != new ResourceBindingDto(account.Provider)))
+                        throw new InvalidDataException("Invalid personal monitor credential binding.");
                     return value;
                 }
             }
@@ -127,6 +133,13 @@ public sealed class MonitorCredentialStore
 
     private static void ValidateShape(StoredMonitorAccess value)
     {
+        if (value.Kind == "management-token")
+        {
+            if (MonitorAccessCatalog.Provider(value.Provider) != "nanogpt" || value.ResourceId is not null
+                || !NanoGptCredentialPolicy.IsManagementToken(value.Secret))
+                throw new InvalidDataException("Invalid NanoGPT personal management credential.");
+            return;
+        }
         if (string.IsNullOrWhiteSpace(value.Provider) || string.IsNullOrWhiteSpace(value.ResourceId) || value.ResourceId.Length > 128 ||
             value.ResourceId.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '-' && c != '_'))
             throw new InvalidDataException("Invalid monitor resource.");

@@ -26,12 +26,12 @@ public sealed class AlibabaConsoleQuotaAdapter(IAlibabaConsoleReadOwner owner, I
     public async Task<AlibabaConsoleObservation> ReadDetailsAsync(AccountDto account, QuotaCredential credential, CancellationToken ct = default)
     {
         if (!Supports(account.Provider) || account.Binding is not { Provider: "alibaba-model-studio", Product: "ordinary-api", ResourceType: "workspace", ResourceId: { } workspace, Region: { } region }
-            || region is not ("cn-beijing" or "ap-southeast-1") || credential.Monitor is not { Kind: "alibaba-cli-profile", Secret: null } monitor
+            || region is not ("cn-beijing" or "ap-southeast-1") || credential.Monitor is not { Kind: "alibaba-cli-profile", Secret: null, ResourceId: { } profileId } monitor
             || string.IsNullOrWhiteSpace(credential.BindingVersion) || !credential.Settings.TryGetValue("consoleSite", out var site)
             || site is not ("international" or "domestic")) throw new QuotaFetchException("Alibaba requires a current owned ordinary-API Console profile bound to its site, region and workspace.");
         if (credential.Monitor.ExpiresAt is { } expiry && expiry <= time.GetUtcNow())
             throw new QuotaFetchException("Alibaba Console session expired; renew the owned usage connection.");
-        var scope = new AlibabaConsoleScope(account.Id, monitor.ResourceId, credential.BindingVersion, site, region, workspace);
+        var scope = new AlibabaConsoleScope(account.Id, profileId, credential.BindingVersion, site, region, workspace);
         var end = time.GetUtcNow(); var start = end.AddDays(-7);
         var rows = new List<QuotaReading>(); var grants = new List<AlibabaTrialGrant>(); var protection = new List<AlibabaTrialProtection>(); var errors = new List<string>();
         var models = trialUnits?.Keys.ToArray() ?? [];

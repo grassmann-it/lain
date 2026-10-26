@@ -56,11 +56,11 @@ public sealed class QuotaCredential(string bearerToken, string? providerAccountI
 }
 
 /// <summary>Private access projection. Owned refresh material must never enter this type.</summary>
-public sealed class QuotaMonitorCredential(string kind, string? secret, string resourceId, DateTimeOffset? expiresAt = null)
+public sealed class QuotaMonitorCredential(string kind, string? secret, string? resourceId, DateTimeOffset? expiresAt = null)
 {
     public string Kind { get; } = kind;
     public string? Secret { get; } = secret;
-    public string ResourceId { get; } = resourceId;
+    public string? ResourceId { get; } = resourceId;
     public DateTimeOffset? ExpiresAt { get; } = expiresAt;
     public override string ToString() => "QuotaMonitorCredential [redacted]";
 }

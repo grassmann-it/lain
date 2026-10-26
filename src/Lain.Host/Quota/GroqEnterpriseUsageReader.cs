@@ -21,7 +21,7 @@ public sealed class GroqEnterpriseUsageReader(HttpClient http, TimeProvider? tim
         var monitor = credential.Monitor;
         if (monitor is null)
             return new([], Support: new("setup-required", "Enterprise metrics require explicit monitor setup for the intended Groq project.", Documentation));
-        if (monitor.Kind is not ("inference-key" or "api-token") || !ValidProject(monitor.ResourceId))
+        if (monitor.Kind is not ("inference-key" or "api-token") || monitor.ResourceId is not { } projectId || !ValidProject(projectId))
             return new([], Support: new("setup-required", "Select a Groq API key and the exact Enterprise project ID.", Documentation));
         if (monitor.ExpiresAt <= clock.GetUtcNow())
             throw new QuotaFetchException("Groq monitor access expired; reconnect monitoring.");
@@ -29,12 +29,12 @@ public sealed class GroqEnterpriseUsageReader(HttpClient http, TimeProvider? tim
         var token = monitor.Kind == "inference-key" ? credential.BearerToken : monitor.Secret;
         if (string.IsNullOrWhiteSpace(token))
             return new([], Support: new("setup-required", "The selected Groq monitor API key is unavailable.", Documentation));
-        var query = BuildQuery(monitor.ResourceId);
+        var query = BuildQuery(projectId);
         using var request = new HttpRequestMessage(HttpMethod.Get, Endpoint + "?query=" + Uri.EscapeDataString(query)
             + "&time=" + clock.GetUtcNow().ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture));
         request.Headers.Authorization = new("Bearer", token);
         using var document = await QuotaSourceHttp.ReadJsonAsync(http, request, ct);
-        return Normalize(document.RootElement, monitor.ResourceId, clock.GetUtcNow());
+        return Normalize(document.RootElement, projectId, clock.GetUtcNow());
     }
 
     public static string BuildQuery(string projectId)
