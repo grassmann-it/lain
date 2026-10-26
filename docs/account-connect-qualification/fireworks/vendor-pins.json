@@ -63,5 +63,20 @@
   },
   "liveSigninTested": false,
   "liveKeyCreateTested": false,
-  "liveQuotaTested": false
+  "liveQuotaTested": false,
+  "runtimeAvailable": false,
+  "runtimeBlocker": "Pinned proprietary CLI signin binds tcp :18000 (all interfaces) before browser login. Host-network execution cannot provide loopback-only callback isolation. Production qualification refuses live execution regardless of matching binary hash.",
+  "staticBinaryInspection": {
+    "method": "Source-only ELF Go pclntab function/type metadata and objdump disassembly; no binary execution or account access.",
+    "signinCommandRange": "0x2254440..0x2254ce0",
+    "signinSubroutineRange": "0x2254da0..0x2255a60",
+    "cognitoLogoutUrlRange": "0x225e4e0..0x225e960",
+    "ssoRequestTypes": [
+      "gateway.CreateUserRequest",
+      "gateway.User"
+    ],
+    "keyCreationFinding": "No CreateApiKey RPC or API-key issuance was found in the inspected signin command/subroutine. OIDC session and optional SSO-user setup are distinct from the explicitly named api-key create. This is static evidence, not a live provider assertion.",
+    "browserHandoff": "Cognito /logout with client_id, redirect_uri, response_type=code, state; it can sign the browser out before the login.",
+    "listener": "net.Listen(\"tcp\", \":18000\") with return URI http://localhost:18000. It is not a loopback-bound socket."
+  }
 }

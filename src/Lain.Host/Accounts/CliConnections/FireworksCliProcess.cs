@@ -120,7 +120,7 @@ u=sys.argv[1]; p=urlsplit(u)
 assert len(u)<=8192 and not any(ord(c)<32 for c in u)
 assert p.scheme=='https' and p.username is None and p.password is None and p.port in (None,443) and not p.fragment
 assert p.hostname and p.hostname.startswith('fireworks-') and p.hostname.endswith('.auth.us-west-2.amazoncognito.com')
-assert p.path in ('/oauth2/authorize','/login')
+assert p.path in ('/oauth2/authorize','/login','/logout')
 os.umask(0o077)
 t='/run/lain-fireworks/.authorization-url.'+str(os.getpid())
 f=os.open(t,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)

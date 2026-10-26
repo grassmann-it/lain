@@ -27,6 +27,8 @@ Denied(() => FireworksCliResult.Key(Bytes(normal.Replace("false", "true")), "own
 Denied(() => FireworksCliResult.Key(Bytes(normal.Replace("lain-operation1", "existing-key")), "owned-a", "lain-operation1", "operation1", "profile1", ["inference"]), "existing key cannot be imported as own issuance");
 Denied(() => FireworksCliResult.Key(Bytes(normal.Replace("\"keyId\":", "\"key_id\":\"other\",\"keyId\":")), "owned-a", "lain-operation1", "operation1", "profile1", ["inference"]), "ambiguous field aliases refused");
 var url = "https://fireworks-fixture.auth.us-west-2.amazoncognito.com/oauth2/authorize?client_id=fixture&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A12345%2Fcallback&state=fixture";
+Check(FireworksCliResult.AuthorizationUrl(url.Replace("/oauth2/authorize", "/logout")) == url.Replace("/oauth2/authorize", "/logout"), "pinned official sign-in begins with Cognito logout handoff");
+Check(FireworksCliQualification.CallbackBlocker.Contains(":18000"), "production callback binding blocker is explicit");
 Check(FireworksCliResult.AuthorizationUrl(url) == url, "official original challenge passes without reconstruction");
 Denied(() => FireworksCliResult.AuthorizationUrl(url.Replace("amazoncognito.com", "amazoncognito.com.evil.invalid")), "issuer spoof refused");
 Denied(() => FireworksCliResult.AuthorizationUrl(url + "&access_token=secret"), "token-bearing URL refused");

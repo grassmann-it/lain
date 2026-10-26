@@ -29,7 +29,7 @@ public sealed class FireworksCliLoginAdapter : IAccountLoginAdapter, IAsyncDispo
     public string Method => "official-cli";
     public bool RequiresCore => false;
     public bool IsAvailable => store is not null && process is not null && (fixture || qualification?.IsAvailable == true);
-    public string QualificationBlocker => "Install the pinned Fireworks CLI 1.8.19 and Linux private mount isolation, or use an existing API key.";
+    public string QualificationBlocker => FireworksCliQualification.CallbackBlocker;
     public FireworksCliLoginAdapter(CliConnectionStateStore? store = null, FireworksCliQualification? qualification = null)
     { this.store = store; this.qualification = qualification; if (qualification is not null) process = new FireworksCliProcess(qualification); }
     // Explicit fixture factory cannot make a production installation available.
@@ -39,7 +39,7 @@ public sealed class FireworksCliLoginAdapter : IAccountLoginAdapter, IAsyncDispo
     public static ProviderConnectionMethodDto ConnectionMethod(bool available) => new("fireworks", "official-cli", "Sign in with Fireworks", "cli",
         ["inference", "models", "quota"], available ? "available" : "setup-required", false, false,
         Description: "Sign in through the official Fireworks CLI, choose your account, and create a dedicated ordinary Serverless API key for lain. No purchase or inference request is performed.",
-        Guidance: "Google SSO and account-specific enterprise SSO use a separate private login. This creates a new named API key; existing keys remain available. Account quotas are constraints, not prepaid credit balance. Disconnect does not revoke the provider key.",
+        Guidance: available ? "Google SSO and account-specific enterprise SSO use a separate private login. This creates a new named API key; existing keys remain available. Account quotas are constraints, not prepaid credit balance. Disconnect does not revoke the provider key." : FireworksCliQualification.CallbackBlocker,
         DefaultBaseUrl: "https://api.fireworks.ai/inference/v1", RequiredSettings: [new("accountId", "Fireworks account ID", Required: false, Help: "Optional before sign-in; required for enterprise SSO. A reconnect keeps the existing account.")], DocumentationUrl: "https://docs.fireworks.ai/tools-sdks/firectl/commands/authentication", Recommended: available);
     public Task<LoginAdapterResult> BeginAsync(LoginOperationContext context, CancellationToken ct)
     {

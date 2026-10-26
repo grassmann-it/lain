@@ -9,6 +9,7 @@ public sealed record FireworksCliQualification(string ExecutablePath)
     public const string ExecutableSha256 = "dfc6f83e3af156b44a3d27237b192efae431c00fce9e56e62b8c71ea5cf8802f";
     public const string ArchiveSha256 = "f6fac5dc456b526d9378af9d5240aa92f98c927a9ba2ca8a00fd5f41938c0353";
     public const string TapCommit = "a3ecce3207b1d2f1c5ecad15a5006478a000d86c";
+    public const string CallbackBlocker = "firectl 1.8.19 binds its signin callback to :18000 on all interfaces. Host-network signin is not qualified; use the private API-key method until loopback-only callback isolation is implemented.";
     public const string Download = "https://storage.googleapis.com/fireworks-public/firectl/stable/linux-amd64.gz";
     public bool IsAvailable
     {
@@ -22,5 +23,8 @@ public sealed record FireworksCliQualification(string ExecutablePath)
         using var file = File.OpenRead(ExecutablePath);
         if (!Convert.ToHexString(SHA256.HashData(file)).Equals(ExecutableSha256, StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException("Fireworks CLI artifact differs from its pinned release.");
+        // No mutable availability flag bypasses this vendor binding boundary.
+        // The prepared namespace runner must not share host networking for a live signin.
+        throw new PlatformNotSupportedException(CallbackBlocker);
     }
 }

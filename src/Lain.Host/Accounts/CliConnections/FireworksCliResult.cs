@@ -17,7 +17,7 @@ public static class FireworksCliResult
         if (candidate.Length > 8192 || candidate.Any(char.IsControl) || !Uri.TryCreate(candidate, UriKind.Absolute, out var uri)
             || uri.Scheme != "https" || !uri.IsDefaultPort || uri.UserInfo.Length != 0 || uri.Fragment.Length != 0
             || !Regex.IsMatch(uri.Host, @"^fireworks-[a-z0-9-]+\.auth\.us-west-2\.amazoncognito\.com$", RegexOptions.CultureInvariant)
-            || uri.AbsolutePath is not ("/oauth2/authorize" or "/login")) throw new InvalidDataException("Unqualified Fireworks authorization URL.");
+            || uri.AbsolutePath is not ("/oauth2/authorize" or "/login" or "/logout")) throw new InvalidDataException("Unqualified Fireworks authorization URL.");
         HashSet<string> seen = new(StringComparer.Ordinal);
         foreach (var part in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
         {
