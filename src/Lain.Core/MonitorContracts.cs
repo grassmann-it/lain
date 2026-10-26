@@ -3,7 +3,7 @@ namespace Lain.Core;
 /// <summary>Public setup guidance; never contains authentication material.</summary>
 public sealed record MonitorAccessOptionDto(string Kind, string Name, bool SecretRequired,
     string ResourceLabel, string ResourceHelp, string DocumentationUrl, string[] Scopes,
-    string? Description = null);
+    string? Description = null, bool ResourceRequired = true);
 
 /// <summary>Sent only to the authenticated local management API. Never log this request.</summary>
 public sealed record MonitorAccessRequest(string Kind, string? Secret = null,
