@@ -17,6 +17,9 @@ public static partial class CliApplication
                 Compact by default; --full includes IDs and complete source details.
           accounts add  Private interactive account setup (TTY required)
           accounts monitor ID  Private optional monitoring setup (TTY required)
+          accounts monitor ID --kind KIND --token-stdin [--resource ID]
+                   [--expires-at ISO8601] [--revision N] [--json]
+                   Save separate monitoring access from private redirected input
           accounts methods [PROVIDER] [--json]
           accounts login PROVIDER [--method ID] [--purpose quota,inference]
                    [--account ID] [--name NAME] [--revision N] [--json]
@@ -106,12 +109,16 @@ public static partial class CliApplication
             if (command is not ("status" or "accounts" or "import" or "models" or "profiles" or "collections" or "routers" or "usage" or "history" or "attempts" or "quotas" or "auth" or "service" or "providers" or "inspector" or "mode"))
                 throw new ArgumentException($"Unknown command '{command}'. Run 'lain help'.");
             Validate(command, options);
-            if (command == "accounts" && options.Positionals.FirstOrDefault() is "add" or "monitor")
+            if (command == "accounts" && (options.Positionals.FirstOrDefault() == "add"
+                || options.Positionals.FirstOrDefault() == "monitor" && !options.Has("token-stdin")))
             {
                 wizardTerminal ??= new ConsoleAccountWizardTerminal(output);
                 if (!wizardTerminal.IsInteractive)
                     throw new ArgumentException("Account setup requires an interactive terminal. Use accounts add-api --key-stdin or --key-env for automation.");
             }
+            if (command == "accounts" && options.Positionals.FirstOrDefault() == "monitor" && options.Has("token-stdin")
+                && input is null && !Console.IsInputRedirected)
+                throw new ArgumentException("--token-stdin requires private redirected input. Use accounts monitor ID for hidden terminal entry.");
             using var client = (clientFactory ?? LainApiClient.CreateLocal)();
             object result;
             switch (command)
@@ -135,6 +142,11 @@ public static partial class CliApplication
                     }
                     if (options.Positionals.FirstOrDefault() == "monitor")
                     {
+                        if (options.Has("token-stdin"))
+                        {
+                            result = await ConfigureMonitorFromInput(client, options, input ?? Console.In, ct);
+                            break;
+                        }
                         if (!await MonitorAccountWizard(client, options.Positionals[1], output, wizardTerminal!, ct))
                             await output.WriteLineAsync("Monitoring setup cancelled. Saved account is unchanged.");
                         return 0;
@@ -238,7 +250,16 @@ public static partial class CliApplication
             }
             if (action == "monitor")
             {
-                options.RequireOnly(); options.RequirePositionals(2); return;
+                options.RequirePositionals(2);
+                if (!options.Has("token-stdin")) { options.RequireOnly(); return; }
+                options.RequireOnly("token-stdin", "kind", "resource", "expires-at", "revision", "json");
+                if (string.IsNullOrWhiteSpace(options.Get("kind")))
+                    throw new ArgumentException("--kind is required with --token-stdin. Choose a monitoring kind from the provider catalog.");
+                if (options.Has("resource") && string.IsNullOrWhiteSpace(options.Get("resource")))
+                    throw new ArgumentException("--resource requires a nonempty resource ID.");
+                if (options.Get("revision") is { } monitorRevision) _ = ParseLong(monitorRevision, "revision");
+                if (options.Get("expires-at") is { } expiry) _ = ParseTime(expiry);
+                return;
             }
             if (action == "add-api")
             {
@@ -416,6 +437,10 @@ public static partial class CliApplication
             case StatusDto s: await WriteStatus(output, s); break;
             case AccountDto[] accounts:
                 await WriteAccounts(output, accounts); break;
+            case MonitorAccessDto monitor:
+                await output.WriteLineAsync($"Monitoring access for {Cell(monitor.AccountId)}: {Cell(monitor.State)}.");
+                await output.WriteLineAsync("Saved locally; inference credentials remain unchanged. Refresh quota separately to check access.");
+                break;
             case LoginDto login:
                 await output.WriteLineAsync($"Login {Cell(login.Id)} ({Cell(login.Provider)}): {Cell(login.State)}");
                 await WriteLoginAuthorization(output, login);
@@ -477,7 +502,7 @@ public static partial class CliApplication
                 if (name.Length == 0 || name.Contains('=')) throw new ArgumentException("Use options as '--name value'.");
                 if (options.values.ContainsKey(name) && name != "setting") throw new ArgumentException($"Duplicate option --{name}.");
                 string? value = null;
-                if (name is not ("json" or "full" or "today" or "key-stdin" or "model-groups"))
+                if (name is not ("json" or "full" or "today" or "key-stdin" or "token-stdin" or "model-groups"))
                 {
                     if (++i >= args.Length || args[i].StartsWith("--", StringComparison.Ordinal)) throw new ArgumentException($"--{name} requires a value.");
                     value = args[i];

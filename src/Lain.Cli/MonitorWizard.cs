@@ -60,8 +60,9 @@ public static partial class CliApplication
             await output.WriteLineAsync("Official access instructions: " + Cell(selected.DocumentationUrl));
             await output.WriteLineAsync("Required read permissions: " + Cell(string.Join(", ", selected.Scopes)));
             if (!string.IsNullOrWhiteSpace(selected.ResourceHelp)) await output.WriteLineAsync(Cell(selected.ResourceHelp));
-            var resource = string.IsNullOrWhiteSpace(selected.ResourceLabel) ? null
-                : await WizardValue(terminal, selected.ResourceLabel, false, ct, current.ResourceId ?? account.Binding?.ResourceId);
+            var resource = selected.ResourceRequired
+                ? await WizardValue(terminal, string.IsNullOrWhiteSpace(selected.ResourceLabel) ? "Resource ID" : selected.ResourceLabel,
+                    false, ct, current.ResourceId ?? account.Binding?.ResourceId) : null;
             var secret = selected.SecretRequired ? await WizardValue(terminal, "Monitoring token (hidden)", true, ct) : null;
             DateTimeOffset? expiry = null;
             if (selected.Kind == "access-token-snapshot")
@@ -70,6 +71,7 @@ public static partial class CliApplication
                 expiry = ParseTime(await WizardValue(terminal, "Expires at (ISO timestamp with timezone)", false, ct));
                 if (expiry <= DateTimeOffset.UtcNow) throw new ArgumentException("The token expiry must be in the future. No monitoring access was saved.");
             }
+            await output.WriteLineAsync("Monitoring access does not replace inference credentials.");
             await output.WriteLineAsync("Saving is local. Quota refresh and real inference are separate actions.");
             var confirm = await WizardValue(terminal, "Save monitoring access? Type yes", false, ct, required: false);
             if (!confirm.Equals("yes", StringComparison.OrdinalIgnoreCase)) return false;

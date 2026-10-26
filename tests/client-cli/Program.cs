@@ -5,6 +5,13 @@ using Lain.Client;
 using Lain.Cli;
 using Lain.Core;
 
+if (args.FirstOrDefault() == "--resource-optional-monitor-checks")
+{
+    var checks = await ResourceOptionalMonitorChecks.RunAsync();
+    Console.WriteLine($"PASS: {checks} resource-optional monitor CLI checks.");
+    return;
+}
+
 if (args.FirstOrDefault() == "--device-oauth-checks")
 {
     var checks = await DeviceOAuthLoginChecks.RunAsync();
@@ -415,6 +422,7 @@ assertions += await SetupPresentationChecks.RunAsync();
 assertions += await AccountWizardChecks.RunAsync();
 assertions += await DeviceOAuthLoginChecks.RunAsync();
 assertions += await MonitorWizardChecks.RunAsync();
+assertions += await ResourceOptionalMonitorChecks.RunAsync();
 assertions += await AccountUsageChecks.RunAsync();
 assertions += await UsageStyleChecks.RunAsync();
 Console.WriteLine($"PASS: {assertions} client/CLI contract checks.");
