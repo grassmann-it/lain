@@ -1,0 +1,200 @@
+{
+  "id": "deepseek",
+  "name": "DeepSeek",
+  "summary": "Direct DeepSeek API with optional model routes and same-key native user balance monitoring.",
+  "accountUrl": "https://platform.deepseek.com/",
+  "documentationUrl": "https://api-docs.deepseek.com/",
+  "credentials": [
+    {
+      "id": "api_key",
+      "label": "DeepSeek API key",
+      "kind": "secret",
+      "required": true,
+      "secret": true,
+      "help": "Enter privately in lain. Existing user balance is read through this same key."
+    }
+  ],
+  "setupSteps": [
+    {
+      "title": "Use your existing account",
+      "description": "Sign in to your own DeepSeek account. No purchase or account creation is performed by lain.",
+      "url": "https://platform.deepseek.com/"
+    },
+    {
+      "title": "Connect an existing API key",
+      "description": "Enter the key in the private API-key field. No account ID is requested; the user balance endpoint selects its user through the key.",
+      "url": "https://platform.deepseek.com/api_keys"
+    },
+    {
+      "title": "Keep models optional",
+      "description": "Create the account first, then optionally attach documented models. Connecting does not send an inference request or apply a profile."
+    }
+  ],
+  "billingPlans": [
+    {
+      "id": "payg",
+      "name": "API account balance",
+      "kind": "payg",
+      "scope": "account",
+      "unit": "currency",
+      "includedAmount": null,
+      "resetDescription": null,
+      "notes": "Actual CNY and USD available balances are read separately. No fixed grant, spending limit, reset, conversion or recurring allowance is assumed."
+    }
+  ],
+  "routes": [
+    {
+      "id": "deepseek:deepseek-flash:openai-chat",
+      "model": "deepseek-flash",
+      "name": "DeepSeek Flash",
+      "baseUrl": "https://api.deepseek.com",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": 1048576,
+        "maximumOutput": 393216,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": true,
+        "structuredOutput": true,
+        "reasoningModes": [
+          "none",
+          "low",
+          "high",
+          "max"
+        ]
+      },
+      "modelFamily": "deepseek",
+      "manufacturer": "DeepSeek",
+      "inferenceProvider": "DeepSeek",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": "Existing balance is not a free-only billing cutoff.",
+      "publisher": "DeepSeek",
+      "publisherType": "manufacturer",
+      "sources": [
+        {
+          "url": "https://api-docs.deepseek.com/",
+          "title": "DeepSeek API quick start",
+          "checkedAt": "2026-10-26T00:15:39Z",
+          "notes": "Canonical current model IDs; API key and OpenAI-compatible base URL."
+        },
+        {
+          "url": "https://api-docs.deepseek.com/api/create-chat-completion",
+          "title": "DeepSeek Chat Completions API",
+          "checkedAt": "2026-10-26T00:15:39Z",
+          "notes": "Model enum, streaming, tools, JSON output and reasoning effort."
+        },
+        {
+          "url": "https://api-docs.deepseek.com/api/list-models",
+          "title": "DeepSeek Lists Models",
+          "checkedAt": "2026-10-26T00:15:39Z",
+          "notes": "Documented example reports context/output and model-specific image support; no live model discovery performed."
+        }
+      ],
+      "restrictions": [
+        "Documented capabilities are not a live entitlement check.",
+        "reasoning_effort none disables thinking; low/high/max enable thinking. Default effort is high.",
+        "JSON output requires an explicit JSON instruction in the conversation."
+      ]
+    },
+    {
+      "id": "deepseek:deepseek-v4-pro:openai-chat",
+      "model": "deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "baseUrl": "https://api.deepseek.com",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": 1048576,
+        "maximumOutput": 393216,
+        "tools": true,
+        "streaming": true,
+        "reasoning": true,
+        "images": false,
+        "structuredOutput": true,
+        "reasoningModes": [
+          "none",
+          "low",
+          "high",
+          "max"
+        ]
+      },
+      "modelFamily": "deepseek",
+      "manufacturer": "DeepSeek",
+      "inferenceProvider": "DeepSeek",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": "Existing balance is not a free-only billing cutoff.",
+      "publisher": "DeepSeek",
+      "publisherType": "manufacturer",
+      "sources": [
+        {
+          "url": "https://api-docs.deepseek.com/",
+          "title": "DeepSeek API quick start",
+          "checkedAt": "2026-10-26T00:15:39Z",
+          "notes": "Canonical current model IDs; API key and OpenAI-compatible base URL."
+        },
+        {
+          "url": "https://api-docs.deepseek.com/api/create-chat-completion",
+          "title": "DeepSeek Chat Completions API",
+          "checkedAt": "2026-10-26T00:15:39Z",
+          "notes": "Model enum, streaming, tools, JSON output and reasoning effort."
+        },
+        {
+          "url": "https://api-docs.deepseek.com/api/list-models",
+          "title": "DeepSeek Lists Models",
+          "checkedAt": "2026-10-26T00:15:39Z",
+          "notes": "Documented example reports context/output and model-specific image support; no live model discovery performed."
+        }
+      ],
+      "restrictions": [
+        "Documented capabilities are not a live entitlement check.",
+        "reasoning_effort none disables thinking; low/high/max enable thinking. Default effort is high.",
+        "JSON output requires an explicit JSON instruction in the conversation."
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://api-docs.deepseek.com/",
+      "title": "DeepSeek API quick start",
+      "checkedAt": "2026-10-26T00:15:39Z",
+      "notes": "Canonical current model IDs; API key and OpenAI-compatible base URL."
+    },
+    {
+      "url": "https://api-docs.deepseek.com/api/create-chat-completion",
+      "title": "DeepSeek Chat Completions API",
+      "checkedAt": "2026-10-26T00:15:39Z",
+      "notes": "Model enum, streaming, tools, JSON output and reasoning effort."
+    },
+    {
+      "url": "https://api-docs.deepseek.com/api/list-models",
+      "title": "DeepSeek Lists Models",
+      "checkedAt": "2026-10-26T00:15:39Z",
+      "notes": "Documented example reports context/output and model-specific image support; no live model discovery performed."
+    },
+    {
+      "url": "https://api-docs.deepseek.com/api/get-user-balance",
+      "title": "DeepSeek Get User Balance",
+      "checkedAt": "2026-10-26T00:15:39Z",
+      "notes": "Native CNY/USD total_balance strings; granted and topped-up balances are components, not additional pools."
+    }
+  ],
+  "restrictions": [
+    "Use your own existing API key. No qualified public OAuth flow is implemented.",
+    "Connecting does not purchase credit, run inference, attach model routes or apply a profile.",
+    "CNY and USD balances remain separate. Total balance already includes granted and topped-up components.",
+    "The balance response contains no user identifier. Provider-only declared binding is supported; asserted user/resource identity cannot be verified.",
+    "Legacy deepseek-chat/deepseek-reasoner names are not assumed to be current. Current canonical documented IDs are offered."
+  ],
+  "adapterState": "available",
+  "liveVerification": "not_tested",
+  "quotaSupport": "partial",
+  "defaultAccountName": "DeepSeek"
+}
