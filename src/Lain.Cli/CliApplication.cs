@@ -43,6 +43,17 @@ public static partial class CliApplication
                 --cost configured|free_only --revision N [--json]
                 Group IDs: collection:ID, provider:ID, account:ID, policy:free. Saving does not apply or export.
           routers delete ID --revision N [--json]
+          workers init --project DIR --profile ID [--json]
+          workers install-skill --project DIR [--json]
+          workers validate --project DIR [--revision N] [--json]
+          workers plan|run --project DIR --tasks FILE [--revision N] [--json]
+                run requires --client /absolute/codex; optional --timeout-seconds 1..3600.
+          workers status --project DIR [--json]
+          skills list [--json]
+          skills install NAME --project DIR [--json]
+                Project-local bundled skills; preserves existing targets. No Host required.
+          doctor [--target codex-cli|codex-vscode] [--project DIR] [--profile ID] [--json]
+                Read-only service and client diagnostics; no inference or automatic repair.
           import CONFIG [--auth-dir DIR] [--revision N] [--json]
           history [--today] [--from ISO] [--to ISO] [--timezone IANA]
                 [--account ID] [--model ID] [--status HTTP] [--json]
@@ -75,8 +86,13 @@ public static partial class CliApplication
         {
             if (args.Length == 0 || args[0] is "help" or "--help" or "-h")
             { await WriteHelp(output); return 0; }
+            if (args[0] == "doctor")
+                return await Diagnostics.DoctorCommand.RunAsync(args[1..], output, error, clientFactory, ct);
             var options = Options.Parse(args[1..]);
             var command = args[0];
+            if (command == "skills") return await Skills(options, output);
+            if (command == "workers")
+                return await Workers(options, output, error, clientFactory, ct);
             if (command == "ui")
             {
                 options.RequireOnly(); options.RequirePositionals(0);
@@ -502,7 +518,7 @@ public static partial class CliApplication
                 if (name.Length == 0 || name.Contains('=')) throw new ArgumentException("Use options as '--name value'.");
                 if (options.values.ContainsKey(name) && name != "setting") throw new ArgumentException($"Duplicate option --{name}.");
                 string? value = null;
-                if (name is not ("json" or "full" or "today" or "key-stdin" or "token-stdin" or "model-groups"))
+                if (name is not ("json" or "full" or "today" or "key-stdin" or "token-stdin" or "model-groups" or "help"))
                 {
                     if (++i >= args.Length || args[i].StartsWith("--", StringComparison.Ordinal)) throw new ArgumentException($"--{name} requires a value.");
                     value = args[i];

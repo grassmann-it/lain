@@ -310,9 +310,8 @@ internal sealed class N05N06ProfilesHandler(Fixture fixture) : DelegatingHandler
             LastExport = await request.Content!.ReadFromJsonAsync<CodexExportRequest>(cancellationToken: ct);
             if (RejectExport || LastExport!.Revision != fixture.Config.Revision) return Conflict();
             var catalog = LastExport.EnableLainModelPicker
-                ? "{\"models\":[],\"lain_model_picker\":{\"groups\":[{\"id\":\"one\"},{\"id\":\"two\",\"router_model\":\"auto\"}]}}" : "{\"models\":[]}";
-            return Result(new CodexProfileArtifacts("lain.config.toml", "model_catalog_json = \"fixture.json\"\n", "lain.models.json", catalog,
-                ["--no-daemon", "--profile", "lain"], fixture.Config.Revision, ProfileId: path.Split('/')[4], GenerationId: "n05-export-" + fixture.Config.Revision));
+                ? "{\"models\":[{\"slug\":\"fixture-model\"}],\"lain_model_picker\":{\"groups\":[{\"id\":\"one\"},{\"id\":\"two\",\"router_model\":\"auto\"}]}}" : "{\"models\":[{\"slug\":\"fixture-model\"}]}";
+            return Result(CodexArtifactFixture.Create(path.Split('/')[4], fixture.Config.Revision, catalog));
         }
         if (path == "/api/v1/collections/order")
         {

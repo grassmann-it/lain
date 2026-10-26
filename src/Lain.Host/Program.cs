@@ -17,6 +17,7 @@ using Lain.Host.Providers;
 using Lain.Host.Providers.Xai;
 using Lain.Host.Quota;
 using Lain.Host.Usage;
+using Lain.Host.Workers;
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
 builder.Logging.ClearProviders(); // Never log request bodies, credentials or upstream exception text.
@@ -362,6 +363,7 @@ app.MapPost(Api.Prefix + "/accounts/login/{id}/resource", (string id, ResourceSe
 app.MapGet(Api.Prefix + "/accounts/login/{id}", (string id, LoginOperationService svc, CancellationToken ct) => svc.StatusAsync(id, ct));
 app.MapDelete(Api.Prefix + "/accounts/login/{id}", (string id, LoginOperationService svc, CancellationToken ct) => svc.CancelAsync(id, ct));
 app.MapModelEndpoints();
+app.MapWorkerEndpoints();
 app.MapProviderCatalogEndpoints();
 app.MapInspectorEndpoints();
 app.MapGet(Api.Prefix + "/profiles/{id}/preview", (string id, long revision) => application.Preview(id, revision));

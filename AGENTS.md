@@ -1,5 +1,19 @@
 # lain
 
+Aktive Arbeitskopie 26.10.2026: Projektregeln und begrenzte Worker sind ausdrücklich
+zur parallelen Umsetzung beauftragt. Vertrag: `docs/workers-v1.md`, Liefer- und
+Prüfstand: `docs/release-workers-2026-10-26.md`. Automatische Zerlegung und
+Quota-/Kostenoptimierung bleiben nachgelagert. Neue Sourceänderungen nicht als
+bereits installierte oder veröffentlichte Version behandeln.
+Ausnahme: der separate Codexlauncher wurde lokal repariert und qualifiziert;
+normales `codex` und `--profile lain` verwenden jetzt beide das Gruppenmenü.
+Die Worker-Host-/CLI-Source ist weiterhin nicht produktiv installiert.
+Die VS-Code-Modellgruppen sind separat nativ qualifiziert und als lokale
+Erweiterung 26.1021.22028 installiert; Produktionsfenster nicht neu geladen.
+Liefer-/Wartungsbelege: `docs/vscode-model-groups-delivery-2026-10-26.md`.
+Astras eingebundener Katalog ist auf low/fünf unterstützte Werte repariert;
+spätere Modellwahl und bestehende Threadsettings bleiben erhalten.
+
 Aktuelle Orientierung (26.10.2026): installierter OAuth-/Device-Folgestand
 `ff5771c` in `docs/oauth-login-implementation-2026-10-25.md`: Kilo und Kimi,
 frische vollständige Pakete, native Abnahme und einmaliges eigenes Update

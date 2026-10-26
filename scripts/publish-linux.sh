@@ -136,7 +136,22 @@ PYNOTICES
 else
 python3 scripts/collect-notices.py "$out/notices" --without-core
 fi
-cp -a skills/lain-usage "$out/skills/"
+# The compiled CLI is the authoritative bundled-skill catalog. This command is
+# local-only and does not discover or start the Host.
+"$out/cli/Lain.Cli" skills list --json > "$publish_parent/skills.json"
+python3 - "$out" "$publish_parent/skills.json" <<'PYSKILLS'
+import json, pathlib, re, shutil, sys
+out, catalog = pathlib.Path(sys.argv[1]), json.loads(pathlib.Path(sys.argv[2]).read_text())
+if catalog.get('schemaVersion') != 1 or not catalog.get('skills'):
+    raise SystemExit('Invalid compiled bundled skill catalog')
+for name in catalog['skills']:
+    if not re.fullmatch(r'[a-z][a-z0-9-]{0,63}', name):
+        raise SystemExit('Unsafe bundled skill name')
+    source = pathlib.Path('skills') / name
+    if not (source / 'SKILL.md').is_file():
+        raise SystemExit('Missing bundled skill source')
+    shutil.copytree(source, out / 'skills' / name)
+PYSKILLS
 verify_frozen_inputs
 python3 - "$out" "$expected" "$revision" "$publish_parent/properties" "$mode" <<'PYBUILDINFO'
 import hashlib, json, pathlib, runpy, shutil, subprocess, sys

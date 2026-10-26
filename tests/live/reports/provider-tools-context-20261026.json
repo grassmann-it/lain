@@ -1,0 +1,457 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-26",
+  "scope": "Bounded follow-up; historical all-model evidence unchanged. Source/candidate repairs are not production-installed.",
+  "productionChanged": false,
+  "runs": [
+    {
+      "run": "quality-auto-r1",
+      "planSha256": "ca4571e4e24ff722b249b73075d5a869255ceb06fa66a848e352ddb057309d9d",
+      "reportSha256": "ad61ed5bc7641b1cba5bdeba53e67cee5a36d4a6618a615701f307ccfb288127",
+      "attemptsSha256": "96cb2ab5f696a3e8b0bfbff898ae63e3a65ebcb9c61d5f3cc13b6959b3b3fe60",
+      "startedAt": "2026-10-26T16:09:24.201808+00:00",
+      "finishedAt": "2026-10-26T16:10:10.162740+00:00",
+      "clientCalls": 12,
+      "observedAttempts": 12,
+      "rows": [
+        {
+          "alias": "k3",
+          "provider": "kimi",
+          "state": "passed",
+          "category": null,
+          "clientCalls": 2,
+          "observedAttempts": 2,
+          "accountProviderAliasProfileAndResponseJoined": true,
+          "routeInFrozenProfile": true,
+          "inputTokens": [
+            5642,
+            5930
+          ],
+          "quality": {
+            "checks": {
+              "boundary_cases": true,
+              "finding_present": true,
+              "fix_exception": true,
+              "fix_placement": true,
+              "guard_boundaries": true,
+              "guard_supported": true
+            },
+            "guardCases": {
+              "false": true,
+              "fractional": true,
+              "integral_float": true,
+              "large_integer": true,
+              "list": true,
+              "negative": true,
+              "null": true,
+              "numeric_string": true,
+              "object": true,
+              "positive_many": true,
+              "positive_one": true,
+              "true": true,
+              "zero": true
+            },
+            "passed": true,
+            "version": "quantity-validation-json-v1"
+          }
+        },
+        {
+          "alias": "k3-256k",
+          "provider": "kimi",
+          "state": "passed",
+          "category": null,
+          "clientCalls": 2,
+          "observedAttempts": 2,
+          "accountProviderAliasProfileAndResponseJoined": true,
+          "routeInFrozenProfile": true,
+          "inputTokens": [
+            5642,
+            5926
+          ],
+          "quality": {
+            "checks": {
+              "boundary_cases": true,
+              "finding_present": true,
+              "fix_exception": true,
+              "fix_placement": true,
+              "guard_boundaries": true,
+              "guard_supported": true
+            },
+            "guardCases": {
+              "false": true,
+              "fractional": true,
+              "integral_float": true,
+              "large_integer": true,
+              "list": true,
+              "negative": true,
+              "null": true,
+              "numeric_string": true,
+              "object": true,
+              "positive_many": true,
+              "positive_one": true,
+              "true": true,
+              "zero": true
+            },
+            "passed": true,
+            "version": "quantity-validation-json-v1"
+          }
+        },
+        {
+          "alias": "kimi-for-coding",
+          "provider": "kimi",
+          "state": "passed",
+          "category": null,
+          "clientCalls": 2,
+          "observedAttempts": 2,
+          "accountProviderAliasProfileAndResponseJoined": true,
+          "routeInFrozenProfile": true,
+          "inputTokens": [
+            5642,
+            5930
+          ],
+          "quality": {
+            "checks": {
+              "boundary_cases": true,
+              "finding_present": true,
+              "fix_exception": true,
+              "fix_placement": true,
+              "guard_boundaries": true,
+              "guard_supported": true
+            },
+            "guardCases": {
+              "false": true,
+              "fractional": true,
+              "integral_float": true,
+              "large_integer": true,
+              "list": true,
+              "negative": true,
+              "null": true,
+              "numeric_string": true,
+              "object": true,
+              "positive_many": true,
+              "positive_one": true,
+              "true": true,
+              "zero": true
+            },
+            "passed": true,
+            "version": "quantity-validation-json-v1"
+          }
+        },
+        {
+          "alias": "kimi-for-coding-highspeed",
+          "provider": "kimi",
+          "state": "passed",
+          "category": null,
+          "clientCalls": 2,
+          "observedAttempts": 2,
+          "accountProviderAliasProfileAndResponseJoined": true,
+          "routeInFrozenProfile": true,
+          "inputTokens": [
+            5354,
+            5596
+          ],
+          "quality": {
+            "checks": {
+              "boundary_cases": true,
+              "finding_present": true,
+              "fix_exception": true,
+              "fix_placement": true,
+              "guard_boundaries": true,
+              "guard_supported": true
+            },
+            "guardCases": {
+              "false": true,
+              "fractional": true,
+              "integral_float": true,
+              "large_integer": true,
+              "list": true,
+              "negative": true,
+              "null": true,
+              "numeric_string": true,
+              "object": true,
+              "positive_many": true,
+              "positive_one": true,
+              "true": true,
+              "zero": true
+            },
+            "passed": true,
+            "version": "quantity-validation-json-v1"
+          }
+        },
+        {
+          "alias": "glm-5.3",
+          "provider": "zai",
+          "state": "failed",
+          "category": "tool_arguments_outside_fixture",
+          "clientCalls": 1,
+          "observedAttempts": 1,
+          "accountProviderAliasProfileAndResponseJoined": true,
+          "routeInFrozenProfile": true,
+          "inputTokens": [
+            5697
+          ],
+          "quality": null
+        },
+        {
+          "alias": "glm-5.3-flash",
+          "provider": "zai",
+          "state": "failed",
+          "category": "tool_arguments_outside_fixture",
+          "clientCalls": 1,
+          "observedAttempts": 1,
+          "accountProviderAliasProfileAndResponseJoined": true,
+          "routeInFrozenProfile": true,
+          "inputTokens": [
+            5697
+          ],
+          "quality": null
+        },
+        {
+          "alias": "cmd-beam-free",
+          "provider": "commandcode",
+          "state": "passed",
+          "category": null,
+          "clientCalls": 2,
+          "observedAttempts": 2,
+          "accountProviderAliasProfileAndResponseJoined": true,
+          "routeInFrozenProfile": true,
+          "inputTokens": [
+            5273,
+            5511
+          ],
+          "quality": {
+            "checks": {
+              "boundary_cases": true,
+              "finding_present": true,
+              "fix_exception": true,
+              "fix_placement": true,
+              "guard_boundaries": true,
+              "guard_supported": true
+            },
+            "guardCases": {
+              "false": true,
+              "fractional": true,
+              "integral_float": true,
+              "large_integer": true,
+              "list": true,
+              "negative": true,
+              "null": true,
+              "numeric_string": true,
+              "object": true,
+              "positive_many": true,
+              "positive_one": true,
+              "true": true,
+              "zero": true
+            },
+            "passed": true,
+            "version": "quantity-validation-json-v1"
+          }
+        }
+      ]
+    },
+    {
+      "run": "quality-zai-native-metadata-r1",
+      "planSha256": "054c1090889a6aeefaa0692ebeefb7df76791003c006952f6562ba6c25d3a73a",
+      "reportSha256": "2d5ba8fd031fa24e3fff1a809263d0eeed9610934443ff1755b7d685de1c9ee1",
+      "attemptsSha256": "df7b4f4561a02ae117807be84fdec92cfc26aaabc868d98242e54b21b331a056",
+      "startedAt": "2026-10-26T16:14:39.188502+00:00",
+      "finishedAt": "2026-10-26T16:15:04.563959+00:00",
+      "clientCalls": 4,
+      "observedAttempts": 4,
+      "rows": [
+        {
+          "alias": "glm-5.3",
+          "provider": "zai",
+          "state": "passed",
+          "category": null,
+          "clientCalls": 2,
+          "observedAttempts": 2,
+          "accountProviderAliasProfileAndResponseJoined": true,
+          "routeInFrozenProfile": true,
+          "inputTokens": [
+            5733,
+            5978
+          ],
+          "quality": {
+            "checks": {
+              "boundary_cases": true,
+              "finding_present": true,
+              "fix_exception": true,
+              "fix_placement": true,
+              "guard_boundaries": true,
+              "guard_supported": true
+            },
+            "guardCases": {
+              "false": true,
+              "fractional": true,
+              "integral_float": true,
+              "large_integer": true,
+              "list": true,
+              "negative": true,
+              "null": true,
+              "numeric_string": true,
+              "object": true,
+              "positive_many": true,
+              "positive_one": true,
+              "true": true,
+              "zero": true
+            },
+            "passed": true,
+            "version": "quantity-validation-json-v1"
+          }
+        },
+        {
+          "alias": "glm-5.3-flash",
+          "provider": "zai",
+          "state": "passed",
+          "category": null,
+          "clientCalls": 2,
+          "observedAttempts": 2,
+          "accountProviderAliasProfileAndResponseJoined": true,
+          "routeInFrozenProfile": true,
+          "inputTokens": [
+            5733,
+            5978
+          ],
+          "quality": {
+            "checks": {
+              "boundary_cases": true,
+              "finding_present": true,
+              "fix_exception": true,
+              "fix_placement": true,
+              "guard_boundaries": true,
+              "guard_supported": true
+            },
+            "guardCases": {
+              "false": true,
+              "fractional": true,
+              "integral_float": true,
+              "large_integer": true,
+              "list": true,
+              "negative": true,
+              "null": true,
+              "numeric_string": true,
+              "object": true,
+              "positive_many": true,
+              "positive_one": true,
+              "true": true,
+              "zero": true
+            },
+            "passed": true,
+            "version": "quantity-validation-json-v1"
+          }
+        }
+      ]
+    },
+    {
+      "run": "cohere-live-r2",
+      "planSha256": "c9c45781d7ed1112528e7ad49aa58a1d2cd1745466a126930385d964ba1cfb01",
+      "reportSha256": "90e83646853466009b2746291705a6f4a6413d96ae6a817f5ba33406239ede34",
+      "attemptsSha256": "cf60d3c1bed266e97bd8e59152454007a906757f9de8ef67a9529dec7af11104",
+      "startedAt": "2026-10-26T16:08:57.357814+00:00",
+      "finishedAt": "2026-10-26T16:09:15.406914+00:00",
+      "clientCalls": 2,
+      "observedAttempts": 2,
+      "rows": [
+        {
+          "alias": "command-a-plus-05-2026",
+          "provider": "cohere",
+          "state": "answer_review_needed",
+          "clientCalls": 2,
+          "observedAttempts": 2,
+          "accountProviderAliasProfileAndTurnJoined": true,
+          "routeInFrozenProfile": true,
+          "quality": {
+            "checks": {
+              "boundary_cases": true,
+              "finding_present": true,
+              "fix_exception": true,
+              "fix_placement": true,
+              "guard_boundaries": false,
+              "guard_supported": true
+            },
+            "guardCases": {
+              "false": true,
+              "fractional": true,
+              "integral_float": true,
+              "large_integer": true,
+              "list": true,
+              "negative": false,
+              "null": true,
+              "numeric_string": true,
+              "object": true,
+              "positive_many": true,
+              "positive_one": true,
+              "true": true,
+              "zero": false
+            },
+            "passed": false,
+            "version": "quantity-validation-json-v1"
+          },
+          "forwardedFields": [
+            [
+              "messages",
+              "model",
+              "reasoning_effort",
+              "stream",
+              "tools"
+            ],
+            [
+              "messages",
+              "model",
+              "reasoning_effort",
+              "stream",
+              "tools"
+            ]
+          ],
+          "usageKnown": false
+        }
+      ]
+    }
+  ],
+  "nativeContext": {
+    "state": "passed",
+    "syntheticOnly": true,
+    "planSha256": "da00594701cd95a4f4d3e50f3517491ed628387bf072ca0ac856b2827a04195b",
+    "resultSha256": "be10c347f975281a5dd33b93be6eeef788c806619888a9f77bcf3ee7d40c1e1d",
+    "binarySha256": "0d45eb864e1773cdd692194f3d1e7b2056614560444df5ed48e027733aab349a",
+    "helperSha256": "8ee4f472e92ac226a189e98998633b2d07f989f208515750764db660369f2926",
+    "assemblySha256": "249eae2a32b9b351a21e77d0796effd703874a24dbf4d840f869f0a21e59bb6c",
+    "context": {
+      "baseline": {
+        "topLevelTools": 11,
+        "leafTools": 170,
+        "toolBytes": 118760
+      },
+      "native": {
+        "fixture-read": {
+          "topLevelTools": 7,
+          "leafTools": 7,
+          "toolBytes": 7562,
+          "projectRulesPreserved": true,
+          "optionalSkillCatalogOmitted": true
+        },
+        "fixture-write": {
+          "topLevelTools": 7,
+          "leafTools": 7,
+          "toolBytes": 7562,
+          "projectRulesPreserved": true,
+          "optionalSkillCatalogOmitted": true
+        }
+      }
+    },
+    "providerRequests": {
+      "fixture-read": 2,
+      "fixture-write": 2,
+      "fixture-inherit": 1
+    },
+    "baseConfigUnchanged": true,
+    "limits": [
+      "MCP members are grouped in one namespace; baseline top-level count does not exceed 128.",
+      "Serialized bytes are not token measurements. This is not the actual VS Code plugin set.",
+      "Native file tools, AGENTS rules, read-only denial and detached-worktree write verified."
+    ]
+  },
+  "additionalClientCalls": 18,
+  "observedAttempts": 18
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "lain:doctor"
+  short_description: "Diagnose lain errors and carry out targeted repairs"
+  default_prompt: "Use $lain-doctor to diagnose this concrete lain error and carry out the repair within my requested scope."

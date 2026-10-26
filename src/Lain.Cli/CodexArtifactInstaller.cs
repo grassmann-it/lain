@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Globalization;
 using Lain.Client;
 
 namespace Lain.Cli;
@@ -19,15 +20,28 @@ public sealed record CodexInstallationStatus(string State, string? ProfileId = n
 public static class CodexArtifactInstaller
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-    private static readonly Regex CatalogSetting = new(@"(?m)^model_catalog_json\s*=\s*[^\r\n]*", RegexOptions.CultureInvariant);
-    public static CodexInstallResult Install(CodexProfileArtifacts artifacts, string directory)
+    private static readonly Regex CatalogSetting = new(@"(?m)^[ \t]*model_catalog_json[ \t]*=[^\r\n]*", RegexOptions.CultureInvariant);
+    public static CodexInstallResult Install(CodexProfileArtifacts artifacts, string directory,
+        string? expectedProfileId = null, long? expectedRevision = null)
     {
         if (artifacts.ConfigFileName != "lain.config.toml" || artifacts.CatalogFileName != "lain.models.json")
             throw new InvalidDataException("lain host returned unexpected Codex artifact names.");
+        if ((expectedProfileId is not null && expectedProfileId != artifacts.ProfileId) ||
+            (expectedRevision is not null && expectedRevision != artifacts.Revision))
+            throw new InvalidDataException("Codex export is stale or belongs to another profile. Prepare the selected current revision again.");
+        Validate(artifacts);
         var root = Path.GetFullPath(directory);
         var configuration = Path.Combine(root, "lain.config.toml");
         var compatibilityCatalog = Path.Combine(root, "lain.models.json");
         AssertRegularPath(root);
+        // TOML has no null/reset value for an inherited effort. An unqualified
+        // route therefore cannot safely clear a base override through this overlay.
+        // Refuse before writing, leaving the user's choice available for explicit review.
+        var baseConfiguration = Path.Combine(root, "config.toml");
+        AssertRegularPath(baseConfiguration);
+        if (Setting(artifacts.Configuration, "model_reasoning_effort") is null && File.Exists(baseConfiguration) &&
+            Regex.IsMatch(TopLevel(ReadSmall(baseConfiguration)), @"(?m)^[ \t]*model_reasoning_effort[ \t]*=", RegexOptions.CultureInvariant))
+            throw new InvalidDataException("Codex base configuration has an inherited reasoning effort, but this route has no qualified effort controls. Select a source-qualified route or explicitly remove the base override before installing this profile.");
         CreateDirectory(root);
         var storage = Path.Combine(root, ".lain-artifacts");
         AssertRegularPath(storage);
@@ -74,24 +88,114 @@ public static class CodexArtifactInstaller
             var configuration = Path.Combine(root, "lain.config.toml");
             var catalog = Path.Combine(storage, manifest.GenerationId, "lain.models.json");
             AssertRegularPath(configuration); AssertRegularPath(catalog);
-            if (Hash(ReadSmall(configuration)) != manifest.ConfigurationHash || Hash(ReadSmall(catalog)) != manifest.CatalogHash) return Recovery();
+            var content = ReadSmall(configuration);
+            if (Hash(content) != manifest.ConfigurationHash || Hash(ReadSmall(catalog)) != manifest.CatalogHash ||
+                !string.Equals(Setting(content, "model_catalog_json", required: true), catalog,
+                    OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)) return Recovery();
             bool? stale = activeProfileId is null || activeRevision is null || manifest.ProfileId is null ? null
                 : activeProfileId != manifest.ProfileId || activeRevision != manifest.Revision;
             return new("installed", manifest.ProfileId, manifest.Revision, manifest.GenerationId, stale);
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException or ArgumentException)
         { return Recovery(); }
     }
 
     private static string BindCatalog(string configuration, string catalog)
     {
         // Only the generated top-level setting is ours. A similarly named table key is not.
-        var table = Regex.Match(configuration, @"(?m)^[ \t]*\[", RegexOptions.CultureInvariant);
-        var topLevel = table.Success ? configuration[..table.Index] : configuration;
-        if (CatalogSetting.Matches(topLevel).Count > 1)
-            throw new InvalidDataException("Codex configuration has duplicate catalog settings.");
+        var topLevel = TopLevel(configuration);
+        if (CatalogSetting.Matches(topLevel).Count != 1)
+            throw new InvalidDataException("Codex configuration must have exactly one top-level catalog setting.");
         return CatalogSetting.Replace(topLevel, _ => "model_catalog_json = " + JsonSerializer.Serialize(catalog)) +
-            (table.Success ? configuration[table.Index..] : "");
+            configuration[topLevel.Length..];
+    }
+
+    /// <summary>Validate the returned pair before creating files or an installation journal.</summary>
+    private static void Validate(CodexProfileArtifacts artifacts)
+    {
+        if (artifacts.Revision < 0) throw new InvalidDataException("Codex export revision must be nonnegative.");
+        if (artifacts.GenerationId is not null && (string.IsNullOrWhiteSpace(artifacts.ProfileId) ||
+            artifacts.GenerationId != Hash(artifacts.ProfileId + "\n" + artifacts.Revision.ToString(CultureInfo.InvariantCulture) + "\n" +
+                artifacts.Configuration + "\n" + artifacts.Catalog)))
+            throw new InvalidDataException("Codex export generation does not match its profile, revision, configuration and catalog. Prepare the export again.");
+        var selected = Setting(artifacts.Configuration, "model", required: true)!;
+        Setting(artifacts.Configuration, "model_catalog_json", required: true);
+        var effort = Setting(artifacts.Configuration, "model_reasoning_effort");
+        try
+        {
+            using var catalog = JsonDocument.Parse(artifacts.Catalog);
+            var models = Property(catalog.RootElement, "models");
+            if (models is not { ValueKind: JsonValueKind.Array } || models.Value.GetArrayLength() == 0)
+                throw new InvalidDataException("Codex catalog must contain models.");
+            var slugs = new HashSet<string>(StringComparer.Ordinal);
+            var found = false;
+            foreach (var model in models.Value.EnumerateArray())
+            {
+                var slug = Text(Property(model, "slug"), "model slug");
+                if (!slugs.Add(slug)) throw new InvalidDataException("Codex catalog has duplicate model slugs.");
+                var levels = Property(model, "supported_reasoning_levels");
+                var supported = new HashSet<string>(StringComparer.Ordinal);
+                if (levels is not null)
+                {
+                    if (levels.Value.ValueKind != JsonValueKind.Array) throw new InvalidDataException("Codex reasoning levels must be an array.");
+                    foreach (var level in levels.Value.EnumerateArray())
+                        if (!supported.Add(Text(Property(level, "effort"), "reasoning effort")))
+                            throw new InvalidDataException("Codex catalog has duplicate reasoning efforts.");
+                }
+                var defaultValue = Property(model, "default_reasoning_level");
+                var defaultEffort = defaultValue is null or { ValueKind: JsonValueKind.Null } ? null : Text(defaultValue, "default reasoning effort");
+                if ((defaultEffort is not null && !supported.Contains(defaultEffort)) || (defaultEffort is null && supported.Count > 0))
+                    throw new InvalidDataException($"Codex model '{slug}' must advertise its default reasoning effort in supported_reasoning_levels. Export a current catalog.");
+                if (slug != selected) continue;
+                found = true;
+                if ((Property(model, "visibility") is { ValueKind: JsonValueKind.String } visibility && visibility.GetString() == "hide") ||
+                    Property(model, "supported_in_api") is { ValueKind: JsonValueKind.False })
+                    throw new InvalidDataException("Codex default model is hidden or unavailable.");
+                if (effort is not null && !supported.Contains(effort))
+                    throw new InvalidDataException($"Reasoning effort '{effort}' is not advertised by Codex model '{slug}'. Select an advertised effort explicitly or export its supported default.");
+                if (effort is null && supported.Count > 0)
+                    throw new InvalidDataException("Codex configuration must bind a supported default reasoning effort explicitly; inherited values are ambiguous. Export the selected model again.");
+            }
+            if (!found) throw new InvalidDataException("Codex default model is absent from the returned catalog. Prepare the selected profile again.");
+        }
+        catch (JsonException error) { throw new InvalidDataException("Codex export catalog is invalid JSON.", error); }
+    }
+
+    // The host emits JSON-escaped TOML basic strings. Parse only that generated
+    // top-level contract, never a user's general TOML configuration or table keys.
+    private static string TopLevel(string configuration)
+    {
+        var table = Regex.Match(configuration, @"(?m)^[ \t]*\[", RegexOptions.CultureInvariant);
+        return table.Success ? configuration[..table.Index] : configuration;
+    }
+    private static string? Setting(string configuration, string name, bool required = false)
+    {
+        var matches = Regex.Matches(TopLevel(configuration), @"(?m)^[ \t]*" + Regex.Escape(name) + @"[ \t]*=([^\r\n]*)", RegexOptions.CultureInvariant);
+        if (matches.Count == 0 && !required) return null;
+        if (matches.Count != 1) throw new InvalidDataException($"Codex configuration must have exactly one top-level {name} setting.");
+        try
+        {
+            using var value = JsonDocument.Parse(matches[0].Groups[1].Value);
+            return Text(value.RootElement, name);
+        }
+        catch (JsonException error) { throw new InvalidDataException($"Codex generated {name} must be a quoted basic string.", error); }
+    }
+    private static string Text(JsonElement? value, string label)
+    {
+        if (value is not { ValueKind: JsonValueKind.String } text || string.IsNullOrWhiteSpace(text.GetString()) || text.GetString()!.Any(char.IsControl))
+            throw new InvalidDataException($"Codex {label} must be a nonempty string without control characters.");
+        return text.GetString()!;
+    }
+    private static JsonElement? Property(JsonElement parent, string name)
+    {
+        if (parent.ValueKind != JsonValueKind.Object) throw new InvalidDataException("Codex catalog controls must be objects.");
+        JsonElement? found = null;
+        foreach (var property in parent.EnumerateObject().Where(property => property.Name == name))
+        {
+            if (found is not null) throw new InvalidDataException($"Codex catalog has duplicate {name} controls.");
+            found = property.Value;
+        }
+        return found;
     }
 
     private static CodexInstallationStatus Recovery() => new("recovery-required", RecoveryAction:
@@ -101,7 +205,7 @@ public static class CodexArtifactInstaller
     private static string Hash(string content) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(content))).ToLowerInvariant();
     private static string ReadSmall(string path)
     {
-        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
+        using var stream = WorkerProjectFiles.OpenRead(path);
         if (stream.Length > 16 * 1024 * 1024) throw new IOException("Codex artifact exceeds its size limit.");
         using var reader = new StreamReader(stream, Encoding.UTF8);
         return reader.ReadToEnd();

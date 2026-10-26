@@ -82,7 +82,7 @@ func TestCohereFinalBoundaryRemovesOnlyInjectedUsageAndPreservesIntent(t *testin
 }
 
 func TestCohereFinalBoundaryRejectsUnqualifiedInjectedOptions(t *testing.T) {
-	for _, control := range []string{`"stream_options":{"include_usage":false}`, `"stream_options":{"include_usage":true,"extra":true}`, `"max_completion_tokens":64`, `"parallel_tool_calls":true`, `"reasoning_effort":"medium"`} {
+	for _, control := range []string{`"stream_options":{"include_usage":false}`, `"stream_options":{"include_usage":true,"extra":true}`, `"max_completion_tokens":64`, `"parallel_tool_calls":false`, `"reasoning_effort":"medium"`} {
 		calls := 0
 		tr := &guardedTransport{auth: cohereAuth(), cohereValidated: true, next: fixtureTransport(func(*http.Request) (*http.Response, error) { calls++; return nil, errors.New("must not dispatch") })}
 		req, _ := http.NewRequest("POST", "http://fixture.invalid/chat/completions", strings.NewReader(`{"model":"model","messages":[],`+control+`}`))

@@ -175,7 +175,7 @@ internal sealed class Fixture : HttpMessageHandler
         }
         else if (request.Method == HttpMethod.Post && path.EndsWith("/codex/export"))
         {
-            ExportCalls++; value = ExportOverride ?? new CodexProfileArtifacts("lain.config.toml", "model_catalog_json = \"lain.models.json\"\n# fixture configuration", "lain.models.json", "{}", ["--no-daemon", "--profile", "lain"], Config.Revision, ProfileId: path.Split('/')[4], GenerationId: "fixture-export-" + Config.Revision);
+            ExportCalls++; value = ExportOverride ?? CodexArtifactFixture.Create(path.Split('/')[4], Config.Revision);
         }
         else if (request.Method == HttpMethod.Put && path.StartsWith("/api/v1/profiles/"))
         {

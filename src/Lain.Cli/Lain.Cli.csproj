@@ -1,1 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup><ItemGroup><ProjectReference Include="../Lain.Core/Lain.Core.csproj" /><ProjectReference Include="../Lain.Client/Lain.Client.csproj" /></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Lain.Core/Lain.Core.csproj" />
+    <ProjectReference Include="../Lain.Client/Lain.Client.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../skills/lain-usage/**/*" LogicalName="Lain.Cli.BundledSkills/lain-usage/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../skills/lain-workers/**/*" LogicalName="Lain.Cli.BundledSkills/lain-workers/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../skills/lain-connect/**/*" LogicalName="Lain.Cli.BundledSkills/lain-connect/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../skills/lain-doctor/**/*" LogicalName="Lain.Cli.BundledSkills/lain-doctor/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

@@ -274,14 +274,14 @@ try
     Directory.CreateDirectory(codex);
     File.WriteAllText(Path.Combine(codex, "config.toml"), "USER CONFIG");
     var exported = new Artifacts("lain.config.toml", "model = \"first\"\nmodel_catalog_json = \"/ignored/lain.models.json\"\n", "lain.models.json", "{\"models\":[{\"slug\":\"first\"}]}", [], 7,
-        ProfileId: "profile", GenerationId: "export-generation-one");
+        ProfileId: "profile");
     var installed = CodexArtifactInstaller.Install(exported, codex);
     Check(File.ReadAllText(installed.ConfigurationPath).Contains(JsonSerializer.Serialize(installed.CatalogPath)), "stable config references the exact immutable catalog generation");
     Check(File.ReadAllText(Path.Combine(codex, "config.toml")) == "USER CONFIG", "ordinary Codex configuration is preserved");
     Check(CodexArtifactInstaller.Inspect(codex, "profile", 7) is { State: "installed", Stale: false, ProfileId: "profile", Revision: 7 }, "installed identity matches the applied profile");
     Check(CodexArtifactInstaller.Inspect(codex, "other", 7).Stale == true && CodexArtifactInstaller.Inspect(codex, "profile", 8).Stale == true, "same-revision profile switch and changed revision both expose stale exports");
     var oldCatalog = File.ReadAllText(installed.CatalogPath);
-    var next = CodexArtifactInstaller.Install(exported with { Revision = 8, Catalog = "{\"models\":[]}" }, codex);
+    var next = CodexArtifactInstaller.Install(exported with { Revision = 8, Catalog = "{\"models\":[{\"slug\":\"first\",\"description\":\"next export\"}]}" }, codex);
     Check(installed.GenerationId != next.GenerationId && File.ReadAllText(installed.CatalogPath) == oldCatalog, "running clients retain immutable old catalogs across export");
     var privateRoot = Path.Combine(codex, ".lain-artifacts");
     File.WriteAllText(Path.Combine(privateRoot, "pending.json"), "{}");
@@ -304,6 +304,7 @@ try
         Reject(() => CodexArtifactInstaller.Install(exported, codex));
         Check(!File.Exists(Path.Combine(root, "external")), "symbolic links cannot redirect export writes");
     }
+    checks += CodexArtifactCases.Run(Path.Combine(root, "artifact-validation"));
     Console.WriteLine($"Profile application and artifact recovery: {checks} checks passed; synthetic lifecycle only.");
 }
 finally { if (Directory.Exists(root)) Directory.Delete(root, true); }

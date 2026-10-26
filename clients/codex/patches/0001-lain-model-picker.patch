@@ -1,9 +1,9 @@
 diff --git a/codex-rs/core/src/config/lain_model_picker.rs b/codex-rs/core/src/config/lain_model_picker.rs
 new file mode 100644
-index 0000000..6c56c11
+index 0000000..0bbc125
 --- /dev/null
 +++ b/codex-rs/core/src/config/lain_model_picker.rs
-@@ -0,0 +1,188 @@
+@@ -0,0 +1,253 @@
 +//! Explicit, local catalog extension for lain's two-stage TUI model picker.
 +//! This metadata changes presentation only; every selectable slug must already exist in the catalog.
 +
@@ -39,7 +39,8 @@ index 0000000..6c56c11
 +    pub lain_model_picker: Option<serde_json::Value>,
 +}
 +
-+/// Require the selected profile's actual provenance, not legacy TOML `profile` or a filename.
++/// Allow lain's default config or exact named profile, using actual user-layer provenance.
++/// Legacy TOML `profile` and config filenames do not select a native profile.
 +pub fn enabled_for(provider_id: &str, layers: &ConfigLayerStack) -> bool {
 +    let profile = layers.get_active_user_layer().and_then(|layer| match &layer.name {
 +        ConfigLayerSource::User { profile, .. } => profile.as_deref(),
@@ -49,7 +50,7 @@ index 0000000..6c56c11
 +}
 +
 +fn is_lain_scope(provider_id: &str, profile: Option<&str>) -> bool {
-+    provider_id == "lain" && profile == Some("lain")
++    provider_id == "lain" && matches!(profile, None | Some("lain"))
 +}
 +
 +pub(super) fn parse_catalog(
@@ -57,7 +58,7 @@ index 0000000..6c56c11
 +    enabled: bool,
 +) -> io::Result<(ModelsResponse, Option<LainModelPicker>)> {
 +    let invalid = |error| io::Error::new(io::ErrorKind::InvalidData, error);
-+    // Use the original upstream deserializer outside --profile lain + provider lain. Even an
++    // Use the upstream deserializer outside provider lain + default/exact lain profile. Even an
 +    // arbitrarily malformed or repeated unknown extension must keep upstream's ignore behavior.
 +    if !enabled {
 +        return serde_json::from_str::<ModelsResponse>(file_contents)
@@ -158,36 +159,100 @@ index 0000000..6c56c11
 +    fn catalog_without_extension_retains_upstream_models() {
 +        let input = include_str!("../../../models-manager/models.json");
 +        let upstream: ModelsResponse = serde_json::from_str(input).unwrap();
-+        let envelope: CatalogEnvelope = serde_json::from_str(input).unwrap();
-+        assert_eq!(envelope.catalog, upstream);
-+        assert!(envelope.lain_model_picker.is_none());
++        for profile in [None, Some("lain")] {
++            let (catalog, picker) = parse_catalog(input, is_lain_scope("lain", profile)).unwrap();
++            assert_eq!(catalog, upstream);
++            assert!(picker.is_none());
++        }
 +    }
++
 +    #[test]
-+    fn scope_requires_both_exact_profile_and_provider() {
-+        assert!(is_lain_scope("lain", Some("lain")));
-+        for (provider, profile) in [("lain", None), ("lain", Some("other")),
-+            ("lain", Some("Lain")), ("openai", Some("lain")), ("openai", None)] {
++    fn scope_requires_lain_provider_and_default_or_exact_lain_profile() {
++        for profile in [None, Some("lain")] {
++            assert!(is_lain_scope("lain", profile));
++        }
++        for (provider, profile) in [("lain", Some("other")), ("lain", Some("old-cpa")),
++            ("lain", Some("Lain")), ("openai", Some("lain")), ("openai", None), ("cpa", None)] {
 +            assert!(!is_lain_scope(provider, profile));
 +        }
 +    }
 +
 +    #[test]
-+    fn malformed_extension_is_ignored_outside_opt_in_scope() {
++    fn profile_v2_enabled_for_uses_selected_user_layer_provenance() {
++        use codex_config::AbsolutePathBuf;
++
++        let home = tempfile::tempdir().unwrap();
++        let base_file = AbsolutePathBuf::try_from(home.path().join("config.toml")).unwrap();
++        for (profile, filename, legacy_profile, expected) in [
++            (None, "config.toml", "other", true),
++            (Some("lain"), "other.config.toml", "other", true),
++            (Some("other"), "lain.config.toml", "lain", false),
++            (Some("old-cpa"), "lain.config.toml", "lain", false),
++            (Some("Lain"), "lain.config.toml", "lain", false),
++        ] {
++            let layers = ConfigLayerStack::new(Vec::new(), Default::default(), Default::default()).unwrap();
++            let mut layers = layers.with_user_config_profile(
++                &base_file, None, toml::from_str("profile = 'lain'").unwrap(),
++            ).unwrap();
++            let selected_file = AbsolutePathBuf::try_from(home.path().join(filename)).unwrap();
++            let selected_profile = profile.map(|name| name.parse::<codex_config::ProfileV2Name>().unwrap());
++            layers = layers.with_user_config_profile(
++                &selected_file, selected_profile.as_ref(),
++                toml::from_str(&format!("profile = '{legacy_profile}'")).unwrap(),
++            ).unwrap();
++            assert_eq!(enabled_for("lain", &layers), expected, "profile {profile:?}");
++            assert!(!enabled_for("openai", &layers));
++        }
++    }
++
++    #[test]
++    fn valid_metadata_is_loaded_for_default_and_exact_lain_profile() {
 +        let input = include_str!("../../../models-manager/models.json");
 +        let upstream: ModelsResponse = serde_json::from_str(input).unwrap();
++        let slug = upstream.models[0].slug.clone();
++        let mut value: serde_json::Value = serde_json::from_str(input).unwrap();
++        value["lain_model_picker"] = serde_json::json!({"schema_version":1,"groups":[
++            {"id":"free","name":"Free","models":[slug.clone()]}
++        ]});
++        for profile in [None, Some("lain")] {
++            let (catalog, picker) = parse_catalog(&value.to_string(), is_lain_scope("lain", profile)).unwrap();
++            assert_eq!(catalog, upstream);
++            let picker = picker.unwrap();
++            assert_eq!(picker.groups[0].id, "free");
++            assert_eq!(picker.groups[0].models, vec![slug.clone()]);
++            assert!(picker.groups[0].router_model.is_none());
++        }
++    }
++
++    #[test]
++    fn malformed_extension_is_rejected_in_both_lain_scopes_and_ignored_elsewhere() {
++        let input = include_str!("../../../models-manager/models.json");
++        let upstream: ModelsResponse = serde_json::from_str(input).unwrap();
++        let slug = upstream.models[0].slug.clone();
 +        let duplicate = format!("{},\"lain_model_picker\":false,\"lain_model_picker\":42}}", input.trim_end().strip_suffix('}').unwrap());
-+        assert!(parse_catalog(&duplicate, false).is_ok());
-+        assert!(parse_catalog(&duplicate, true).is_err());
++        let mut invalid_catalogs = vec![duplicate];
 +        for metadata in [serde_json::json!("wrong shape"), serde_json::json!({"schema_version":99,"groups":[]}),
-+            serde_json::json!({"schema_version":1,"groups":[{"id":"free","name":"Free","router_model":"missing","models":[]}]})] {
++            serde_json::json!({"schema_version":1,"groups":[{"id":"free","name":"Free","router_model":"missing","models":[]}]}),
++            serde_json::json!({"schema_version":1,"groups":[{"id":"free","name":"Free","models":["missing"]}]}),
++            serde_json::json!({"schema_version":1,"groups":[{"id":"free","name":"Free","models":[]},{"id":"free","name":"Duplicate","models":[]}]}),
++            serde_json::json!({"schema_version":1,"groups":[{"id":"free","name":"Free","models":[slug.clone(),slug.clone()]}]}),
++            serde_json::json!({"schema_version":1,"groups":[{"id":"free","name":"Free\nGroup","models":[]}]}),
++            serde_json::json!({"schema_version":1,"groups":[],"unknown_field":true})] {
 +            let mut value: serde_json::Value = serde_json::from_str(input).unwrap();
 +            value["lain_model_picker"] = metadata;
-+            for (provider, profile) in [("lain", None), ("lain", Some("other")), ("openai", Some("lain"))] {
-+                let (catalog, picker) = parse_catalog(&value.to_string(), is_lain_scope(provider, profile)).unwrap();
++            invalid_catalogs.push(value.to_string());
++        }
++        for input in invalid_catalogs {
++            for (provider, profile) in [("lain", Some("other")), ("lain", Some("old-cpa")),
++                ("openai", Some("lain")), ("openai", None)] {
++                let (catalog, picker) = parse_catalog(&input, is_lain_scope(provider, profile)).unwrap();
 +                assert_eq!(catalog, upstream);
 +                assert!(picker.is_none());
 +            }
-+            assert!(parse_catalog(&value.to_string(), true).is_err());
++            for profile in [None, Some("lain")] {
++                let error = parse_catalog(&input, is_lain_scope("lain", profile)).unwrap_err();
++                assert_eq!(error.kind(), io::ErrorKind::InvalidData);
++            }
 +        }
 +    }
 +
@@ -573,10 +638,10 @@ index aa5de8b..1c43fea 100644
              model_ids,
              SelectionViewParams {
 diff --git a/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs b/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs
-index 613c1b2..e804a1d 100644
+index 613c1b2..e222346 100644
 --- a/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/model_picker_tests.rs
-@@ -18,3 +18,159 @@ async fn model_picker_compact_hint_and_actions_follow_configured_bindings() {
+@@ -18,3 +18,196 @@ async fn model_picker_compact_hint_and_actions_follow_configured_bindings() {
      chat.handle_key_event(KeyEvent::from(KeyCode::F(2)));
      assert!(chat.no_modal_or_popup_active());
  }
@@ -674,13 +739,16 @@ index 613c1b2..e804a1d 100644
 +
 +#[tokio::test]
 +async fn lain_metadata_is_opt_in_and_other_providers_keep_upstream_picker() {
-+    let (mut chat, _rx, _ops) = make_chatwidget_manual(Some("member-a")).await;
-+    configure_lain_picker(&mut chat, false);
-+    chat.config.model_provider_id = "openai".to_string();
-+    chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
-+    let popup = render_bottom_popup(&chat, 80);
-+    assert!(popup.contains("Select Model and Effort"));
-+    assert!(!popup.contains("Modellgruppe wählen"));
++    for profile in [None, Some("lain")] {
++        let (mut chat, _rx, _ops) = make_chatwidget_manual(Some("member-a")).await;
++        configure_lain_picker(&mut chat, false);
++        set_lain_test_profile(&mut chat, profile);
++        chat.config.model_provider_id = "openai".to_string();
++        chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
++        let popup = render_bottom_popup(&chat, 80);
++        assert!(popup.contains("Select Model and Effort"));
++        assert!(!popup.contains("Modellgruppe wählen"));
++    }
 +}
 +
 +fn set_lain_test_profile(chat: &mut ChatWidget, profile: Option<&str>) {
@@ -693,11 +761,45 @@ index 613c1b2..e804a1d 100644
 +}
 +
 +#[tokio::test]
-+async fn lain_provider_without_exact_lain_profile_keeps_upstream_picker() {
-+    for profile in [None, Some("other")] {
++async fn lain_provider_with_explicit_other_profile_keeps_upstream_picker() {
++    for profile in [Some("other"), Some("old-cpa"), Some("Lain")] {
 +        let (mut chat, _rx, _ops) = make_chatwidget_manual(Some("member-a")).await;
 +        configure_lain_picker(&mut chat, false);
 +        set_lain_test_profile(&mut chat, profile);
++        chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
++        let popup = render_bottom_popup(&chat, 80);
++        assert!(popup.contains("Select Model and Effort"));
++        assert!(!popup.contains("Modellgruppe wählen"));
++    }
++}
++
++#[tokio::test]
++async fn lain_default_profile_with_metadata_opens_groups_and_members() {
++    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("member-a")).await;
++    configure_lain_picker(&mut chat, false);
++    set_lain_test_profile(&mut chat, None);
++    chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
++    let groups = render_bottom_popup(&chat, 80);
++    assert!(groups.contains("Modellgruppe wählen") && groups.contains("Free") && groups.contains("Alle"));
++    assert!(!groups.contains("Member A"));
++    chat.handle_key_event(KeyCode::Enter.into());
++    let group_id = assert_matches!(rx.try_recv(), Ok(AppEvent::OpenLainModelGroupPopup { group_id }) => group_id);
++    assert_eq!(group_id, "free");
++    chat.open_lain_model_group_popup(&group_id);
++    let members = render_bottom_popup(&chat, 80);
++    assert!(members.contains("Member A") && !members.contains("Member B"));
++    chat.handle_key_event(KeyCode::Esc.into());
++    assert!(render_bottom_popup(&chat, 80).contains("Modellgruppe wählen"));
++    assert!(rx.try_recv().is_err());
++}
++
++#[tokio::test]
++async fn lain_default_or_named_profile_without_metadata_keeps_upstream_picker() {
++    for profile in [None, Some("lain")] {
++        let (mut chat, _rx, _ops) = make_chatwidget_manual(Some("member-a")).await;
++        configure_lain_picker(&mut chat, false);
++        set_lain_test_profile(&mut chat, profile);
++        chat.config.lain_model_picker = None;
 +        chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
 +        let popup = render_bottom_popup(&chat, 80);
 +        assert!(popup.contains("Select Model and Effort"));

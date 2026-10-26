@@ -1,5 +1,93 @@
 # Bounded real reference probes
 
+## Per-model realistic request qualification (2026-10-26)
+
+`realistic_models.py` prepares a frozen plan from the **existing applied** Lain
+profile, public model inventory and active Codex catalog. Preparation sends no
+inference. Execution uses a local in-memory inference credential from
+`lain auth token --audience codex`, pins each existing account and sends at most
+two HTTP requests per concrete alias. Routers are excluded, equal upstream names
+on distinct providers remain distinct. It performs no login, configuration write,
+profile application, route substitution or harness retry. Provider/gateway
+internal attempts are not established by counting client calls.
+
+New schema-2 plans use `auto-v2`: seven captured Codex 0.164.0 native function
+schemas, 22,638 bytes of synthetic invoice-project context, streaming, a fixed
+file read and `tool_choice:auto` on both requests. The output budget remains
+2,048. Optional `--payload-mode forced-exec-v2` explicitly chooses forced first
+tool/none continuation. These modes do **not** reproduce native omitted output
+budgets, multiagent namespace/custom tools, MCP, plugins, the complete VS Code
+environment or maximum conversation length.
+
+```sh
+python3 -B tests/live/realistic_models.py --output /absolute/private/new-run
+# Review the plan; execute only within the user's authorized inference scope.
+flock /home/tomka/.cache/lain-verification-lane.lock \
+  python3 -B tests/live/realistic_models.py --output /absolute/private/new-run \
+  --execute --expect-plan-sha256 EXACT_PRINTED_PLAN_SHA --workers 3
+```
+
+For a distinct bounded regression scenario, preparation accepts repeatable
+`--only-alias EXACT_ALIAS` after validating the complete inventory. It never
+substitutes another provider's route. The plan freezes the payload mode, initial
+and static continuation templates, quality criteria and harness source SHA.
+Old or drifting plans fail before auth/inference; preserve historical evidence
+and prepare a new output directory.
+
+The harness executes only `/usr/bin/cat` on its own fixture, never model-supplied
+shell text. New v2 execution accepts exact command/workdir with bounded neutral
+native metadata (`login:false`, `tty:false`, default sandbox, bounded output and
+yield settings); privilege/shell/command changes are rejected. Legacy helper
+calls remain strict. `tool_arguments_outside_fixture` is inconclusive about
+route compatibility. Structured answer checks exercise the proposed quantity
+guard on positive, zero, negative, boolean, float and nonnumeric boundary cases
+using a restricted AST interpreter; arbitrary model code is never executed.
+Passing this small task is not broad quality certification.
+At most one request runs per provider. An output-directory `stop` file cancels
+pending cases. Existing reports cannot be overwritten/retried; review failures
+before authorizing a distinct follow-up scenario. Exit zero means the batch
+finished, **not** that every row passed. Read `counts`, `rows` and binding status.
+
+`model_boundaries.py` separately prepares four bounded diagnostic scenarios:
+Cohere with `auto` and omitted output budget; Kimi k3 with `auto`; Beam with
+exactly 128 and 129 top-level definitions. Beam's extra definitions are labeled
+synthetic unused functions. At most six client requests are permitted; the
+observed run used five. This does not load the user's actual plugins.
+
+```sh
+python3 -B tests/live/model_boundaries.py --source-run /absolute/private/completed-run \
+  --output /absolute/private/new-diagnostics
+flock /home/tomka/.cache/lain-verification-lane.lock \
+  python3 -B tests/live/model_boundaries.py --output /absolute/private/new-diagnostics \
+  --execute --expect-plan-sha256 EXACT_PRINTED_DIAGNOSTIC_PLAN_SHA
+```
+
+Diagnostics send explicit conversation/turn headers for independent public
+`lain attempts` correlation. Bounded error fields are redacted; tokens, raw
+answers and provider credentials are never saved. The original sweep saved
+only hashes of error bodies and has no explicit conversation correlation.
+Archived executed source pins in private evidence distinguish it from later
+diagnostic improvements. Shared results and limits:
+[report](../../docs/model-live-qualification-2026-10-26.md),
+[machine-readable summary](reports/realistic-models-20261026.json).
+That historical 59-alias sweep used forced choice and a marker heuristic;
+its reports are not regraded with v2. The [follow-up report](../../docs/provider-tool-context-repair-2026-10-26.md)
+and [summary](reports/provider-tools-context-20261026.json) document native-auto
+quality checks, independent public attempts correlation and compact native context.
+
+`cohere_candidate.py` separately exercises an owned candidate Core against the
+existing Cohere route, through a loopback forwarder holding only an in-memory
+local inference token. No provider credential reads or production restarts.
+At most two existing-gateway calls; auto/parallel defaults and omitted output
+budget are checked at the translated wire. New plans freeze all harness source
+dependencies and continuation templates. The completed technical roundtrip
+failed semantic quality; do not rerun it just to obtain a green result.
+
+Focused offline checks:
+`python3 -B -m unittest discover -s tests/live -p 'test_*.py' -v`.
+
+## Earlier reference probes
+
 These probes are prepared for the user-authorized minimal live check. Execution
 waits for W1/W2 synthetic qualification of an exact binary SHA; the real probes
 then contribute to final A qualification. The default command only prints a four-call

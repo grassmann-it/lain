@@ -197,7 +197,7 @@ exit = await CliApplication.RunAsync(["profiles", "apply", "profile-1", "--revis
 Require(exit == 0 && JsonDocument.Parse(output.ToString()).RootElement.GetProperty("appliedRevision").GetInt64() == 3, "CLI apply emits effective configuration"); assertions++;
 
 var codex = Path.Combine(Path.GetTempPath(), "lain-codex-" + Guid.NewGuid().ToString("N"));
-var artifacts = new CodexProfileArtifacts("lain.config.toml", "synthetic generated config", "lain.models.json", "{\"models\":[]}", ["--no-daemon", "--profile", "lain"], 3);
+var artifacts = new CodexProfileArtifacts("lain.config.toml", "model = \"fixture-model\"\nmodel_catalog_json = \"/ignored/lain.models.json\"\n", "lain.models.json", "{\"models\":[{\"slug\":\"fixture-model\"}]}", ["--no-daemon", "--profile", "lain"], 3);
 try
 {
     Directory.CreateDirectory(codex);
@@ -212,7 +212,7 @@ try
     };
     var generated = await client.ExportCodexProfileAsync(3, "profile-1", "/absolute/lain", Path.Combine(codex, "lain.models.json"));
     var installed = CodexArtifactInstaller.Install(generated, codex);
-    Require(File.ReadAllText(installed.ConfigurationPath) == artifacts.Configuration && File.ReadAllText(installed.CatalogPath) == artifacts.Catalog,
+    Require(File.ReadAllText(installed.ConfigurationPath).Contains(JsonSerializer.Serialize(installed.CatalogPath)) && File.ReadAllText(installed.CatalogPath) == artifacts.Catalog,
         "generated artifacts installed");
     Require(File.ReadAllText(Path.Combine(codex, "config.toml")) == "EXISTING-CONFIG" && Directory.GetFiles(codex).Length == 3,
         "ordinary config unchanged and temporary files removed");

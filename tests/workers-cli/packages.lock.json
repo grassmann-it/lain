@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0": {
+      "lain.cli": {
+        "type": "Project",
+        "dependencies": {
+          "Lain.Client": "[1.0.0, )",
+          "Lain.Core": "[1.0.0, )"
+        }
+      },
+      "lain.client": {
+        "type": "Project",
+        "dependencies": {
+          "Lain.Core": "[1.0.0, )"
+        }
+      },
+      "lain.core": {
+        "type": "Project"
+      }
+    }
+  }
+}

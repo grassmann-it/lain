@@ -1,0 +1,57 @@
+{
+  "format": 1,
+  "productSourceCommit": "793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+  "qualificationHarnessCommit": "7cf3dfd",
+  "qualificationHarnessSha256": "e71646539c38bf2729ec4d0408461b61cf6d58d078753894f27fff71450ef73a",
+  "packageCheckStatus": "passed",
+  "historicalScope": "Exact reviewed old schema3/legacy11/2 only; current grants retained; staged and original-home binary returns; arbitrary new activity unsupported",
+  "packagedUI": {
+    "functionalResult": "PASS",
+    "cases": 9,
+    "assertions": 205,
+    "imageRecords": 28,
+    "pngCount": 31,
+    "assemblySha256": "5a68a42c2113b6093b4b678710a10ab4fd3f3efe1f3a6088a9e553a233d501ff",
+    "evidenceSha256": "944c242ce19bccb0860d4c4542ef66a18a78ff18ad131c69e3ac5db6f05462bc",
+    "reviewedImages": [
+      {
+        "file": "accounts-simple-normal-1120x780.png",
+        "sha256": "25b134bf042890f046e69c912fafeb798575fb998918a648721cdc3edf0ce038",
+        "review": "Root personally inspected native product layout"
+      },
+      {
+        "file": "profiles-simple-compact-800x560.png",
+        "sha256": "f81e50a4b39fb1c544f381f788ce14cf37296357e5c6f5722f2ded9172e01051",
+        "review": "Root personally inspected native product layout"
+      },
+      {
+        "file": "usage-simple-normal-800x560.png",
+        "sha256": "37e1161451d9cc73741f01e40f0eb122c265320dcccb8c44d7bee36566a21b7b",
+        "review": "Root personally inspected native product layout"
+      },
+      {
+        "file": "connect-codex-waiting-narrow.png",
+        "sha256": "7ca2f07f0c421e7d0c3ee2ab23d6f7e352253925fc52831c27b5a98efad57c5b",
+        "review": "Root personally inspected native product layout"
+      }
+    ],
+    "accessibilityResult": "NOT_QUALIFIED",
+    "visualResult": "NOT_REVIEWED_BY_HARNESS"
+  },
+  "resourceLimits": {
+    "serialHeavyJobs": true,
+    "memoryHighBytes": 1610612736,
+    "memoryMaxBytes": 2147483648,
+    "memorySwapMaxBytes": 268435456,
+    "cpuQuota": "150%",
+    "ioWeight": 10
+  },
+  "secretScan": {
+    "range": "6e15065..df711a9",
+    "commits": 22,
+    "findings": 0
+  },
+  "installedDelivery": "pending",
+  "providerLiveQualification": "not performed",
+  "publicReleaseQualified": false
+}

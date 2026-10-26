@@ -43,6 +43,10 @@ func cohereFieldError(field string) error {
 		return &providerInputError{"Cohere supports only Responses store:false through the stateless Chat bridge"}
 	case "previous_response_id", "conversation":
 		return &providerInputError{"Cohere Chat requires complete input history; response IDs and stored conversations are not supported"}
+	case "tool_choice":
+		return &providerInputError{"Cohere Responses supports only tool_choice:auto through the Chat bridge; none, required and forced tool selection are not qualified"}
+	case "parallel_tool_calls":
+		return &providerInputError{"Cohere Responses supports only parallel_tool_calls:true through the Chat bridge; disabling parallel tool calls is not supported"}
 	default:
 		return &providerInputError{"request contains a field outside the supported Cohere compatibility subset"}
 	}
@@ -86,6 +90,9 @@ func validateCohereInput(a *auth.Auth, req executor.Request, opts executor.Optio
 		if field == "store" && responses && bytes.Equal(bytes.TrimSpace(value), []byte("false")) {
 			continue
 		}
+		if responses && (field == "tool_choice" || field == "parallel_tool_calls") {
+			continue // Exact default-equivalent values are checked below.
+		}
 		if field != "reasoning_effort" {
 			return cohereFieldError(field)
 		}
@@ -94,11 +101,49 @@ func validateCohereInput(a *auth.Auth, req executor.Request, opts executor.Optio
 			return cohereFieldError(field)
 		}
 	}
+	if err := validateCohereDefaultToolControls(body); err != nil {
+		return err
+	}
 	if err := validateCohereTools(body, responses); err != nil {
 		return err
 	}
 	_, err = cohereRequestedEffort(req, opts)
 	return err
+}
+
+// This is a narrow Responses-to-Chat default mapping, not general support for
+// OpenAI tool controls. Official sources, checked 2026-10-26:
+//
+// The Compatibility API lists parallel_tool_calls as unsupported:
+// https://docs.cohere.com/docs/compatibility-api#unsupported-parameters
+//
+// Omitted tool_choice lets the model decide whether to use tools:
+// https://docs.cohere.com/reference/chat
+//
+// The native tool guide demonstrates multiple calls with no parallel-control
+// field, including on command-a-plus-05-2026:
+// https://docs.cohere.com/v2/docs/tool-use-usage-patterns#parallel-tool-calling
+//
+// true permits this behavior; false would forbid it. This does not force the
+// model to call multiple tools or claim support for the compatibility parameter.
+// Only auto/true can therefore map to omission without weakening caller intent.
+// Native NONE/REQUIRED do not establish a qualified Compatibility API mapping;
+// reject those and forced choices before the generic translator can lose them.
+func validateCohereDefaultToolControls(body []byte) error {
+	fields, err := toolControlFields(body, "tool_choice", "parallel_tool_calls")
+	if err != nil {
+		return &providerInputError{"invalid or duplicate Cohere tool controls"}
+	}
+	if value, present := fields["tool_choice"]; present {
+		var choice string
+		if json.Unmarshal(value, &choice) != nil || choice != "auto" {
+			return cohereFieldError("tool_choice")
+		}
+	}
+	if value, present := fields["parallel_tool_calls"]; present && !bytes.Equal(bytes.TrimSpace(value), []byte("true")) {
+		return cohereFieldError("parallel_tool_calls")
+	}
+	return nil
 }
 
 // Only declaration locations are inspected; function schemas and tool results
@@ -245,6 +290,22 @@ func (t *guardedTransport) normalizeCohereRequest(req *http.Request) error {
 	if json.Unmarshal(data, &fields) != nil || fields == nil {
 		return &providerInputError{"invalid Cohere request"}
 	}
+	// Check the unmodified wire before map decoding/remarshalling can hide an
+	// override or duplicate. This also covers the two default controls below.
+	names := make([]string, 0, len(fields))
+	for name := range fields {
+		names = append(names, name)
+	}
+	if _, err := toolControlFields(data, names...); err != nil {
+		return &providerInputError{"invalid or duplicate Cohere request fields"}
+	}
+	if err := validateCohereDefaultToolControls(data); err != nil {
+		return err
+	}
+	// Preserve the validated auto/parallel-permitted semantics using Cohere's
+	// documented defaults; never send unsupported parallel_tool_calls upstream.
+	delete(fields, "tool_choice")
+	delete(fields, "parallel_tool_calls")
 	if value, exists := fields["stream_options"]; exists {
 		// Only the Core's known automatic usage request may be removed. Any
 		// explicit stream_options was rejected before translation above.

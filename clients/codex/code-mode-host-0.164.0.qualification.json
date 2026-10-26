@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "status": "qualified",
+  "provenance": "qualified-release",
+  "version": "0.164.0",
+  "upstreamCommit": "6aaac694803004a63c6f393d153c96d22521a6b9",
+  "platform": "x86_64-unknown-linux-musl",
+  "helperSha256": "8ee4f472e92ac226a189e98998633b2d07f989f208515750764db660369f2926",
+  "patchedCliSha256": "5b3a058525925731f12eec3366fd6dff74f716fb2967791e4531e88e7a06d484",
+  "officialRelease": {
+    "url": "https://github.com/openai/codex/releases/tag/rust-v0.164.0",
+    "apiUrl": "https://api.github.com/repos/openai/codex/releases/421457270",
+    "tag": "rust-v0.164.0",
+    "releaseId": 421457270,
+    "assets": [
+      {
+        "name": "codex-code-mode-host-x86_64-unknown-linux-musl.sigstore",
+        "id": 667994734,
+        "browser_download_url": "https://github.com/openai/codex/releases/download/rust-v0.164.0/codex-code-mode-host-x86_64-unknown-linux-musl.sigstore",
+        "digest": "sha256:a61eb6c4ab76ca70596e23a69ad00c5cd46be0c8da97b5c4e397fdf66a01df96",
+        "size": 8509,
+        "created_at": "2026-10-23T04:47:51Z",
+        "updated_at": "2026-10-23T04:47:51Z"
+      },
+      {
+        "name": "codex-code-mode-host-x86_64-unknown-linux-musl.zst",
+        "id": 667994748,
+        "browser_download_url": "https://github.com/openai/codex/releases/download/rust-v0.164.0/codex-code-mode-host-x86_64-unknown-linux-musl.zst",
+        "digest": "sha256:2ec1a16d1e872667c0311c57fa7306e0c3ec90d69f1a3284775786cb0a05cf8a",
+        "size": 20869619,
+        "created_at": "2026-10-23T04:47:51Z",
+        "updated_at": "2026-10-23T04:47:53Z"
+      }
+    ]
+  },
+  "signatureVerification": {
+    "status": "verified",
+    "verifier": "sigstore 4.5.1",
+    "oidcIssuer": "https://token.actions.githubusercontent.com",
+    "certificateIdentity": "https://github.com/openai/codex/.github/workflows/rust-release.yml@refs/tags/rust-v0.164.0",
+    "sourceCommit": "6aaac694803004a63c6f393d153c96d22521a6b9",
+    "checks": [
+      "artifact signature",
+      "Fulcio certificate chain",
+      "Rekor signed entry timestamp",
+      "Rekor Merkle inclusion proof and signed checkpoint",
+      "certificate validity at verified signing time",
+      "exact workflow identity, repository, source commit and ref"
+    ],
+    "negativeChecks": {
+      "changedArtifact": {
+        "rejected": true,
+        "errorType": "VerificationError",
+        "reason": "Signature is invalid for input"
+      },
+      "wrongSourceCommit": {
+        "rejected": true,
+        "errorType": "VerificationError",
+        "reason": "Certificate's GitHubWorkflowSHA does not match (got '6aaac694803004a63c6f393d153c96d22521a6b9', expected '0000000000000000000000000000000000000000')"
+      }
+    },
+    "trustRoot": "Sigstore production TUF, bootstrapped from sigstore 4.5.1 bundled trusted root; refreshed and signature/expiry checked by python-tuf",
+    "rekorLogIndex": 3409175984,
+    "rekorLogId": "c0d23d6ad406973f9559f3ba2d1ca01f84147d8ffc5b8445c224f98b9591801d",
+    "rekorIntegratedTime": 1792726296,
+    "legacyBundlePayloadMatchedFetchedRekorEntry": true,
+    "verifiedSignedEntryTimestampSource": "original release bundle",
+    "reportSha256": "ac9c27880577c1c1dbfa611db35058df012b8b0df4218ef675d801ed45dd36f0",
+    "legacyBundleSha256": "a61eb6c4ab76ca70596e23a69ad00c5cd46be0c8da97b5c4e397fdf66a01df96",
+    "verificationBundleSha256": "6b48574032c69e0b97ed9bbb99ddd23f5504ca3e7dbcbee9b6bafe869b164999",
+    "trustedConfigSha256": "53553bc92bfb7e0d408c01c84a03df573b33b9900b82c9e3062e186f7094c728",
+    "rekorEntrySha256": "6b6d9a98288bfa55113807bbe0771a8b4b3f9691a44386fcbaab3a624d1c0281",
+    "verificationScriptSha256": "88eb12fa65becef92d5b38ac453c1e331331c9da29c16d516e34e6af20953e5a"
+  },
+  "nativeProof": {
+    "status": "passed",
+    "resultSha256": "b28261fe8fcbca10a6928139846305b3583fa9d0b7e0b8bd78a2052068b12da5",
+    "summarySha256": "942fb32f6a324223ee9ac1c42dc0c3ccfe2629aaf1c4c7269b0b54f0e4b4c63a",
+    "providerRequests": 2,
+    "cliExitCode": 0,
+    "shellExitCode": 0,
+    "customTool": "functions.exec",
+    "nestedTool": "tools.exec_command",
+    "configSentinelsUnchanged": true,
+    "isolation": "Private bwrap root; synthetic HOME at original path, CODEX_HOME unchanged; PID and network namespaces; loopback fixture only.",
+    "limit": "Qualifies this helper/CLI pair for real shell execution and continuation; WorkerBatchRunner sandbox/worktree acceptance is separate."
+  },
+  "sourceBuildAlternative": {
+    "result": "Authenticated official release helper used after parent combined Rust build exited 101 on rusty_v8 152.2.0 official binding HTTP 404.",
+    "fullBuildLogRetained": false,
+    "differentV8Substituted": false
+  },
+  "limits": [
+    "Qualifies the pinned CLI/helper pair for the retained real shell and continuation case.",
+    "Does not certify WorkerBatchRunner read-only/worktree behavior; that requires independent native product-path acceptance.",
+    "Does not qualify the system helper with SHA256 6f39ebe2c695d21062d15b8047e9ff2914267d40e91f073c8652d2cbbbbf5c44.",
+    "No production installation, credential/configuration read, or system service change was performed."
+  ],
+  "optionalLocalEvidence": {
+    "qualificationReport": "/home/tomka/.cache/lain-qualification-20261026/ap1-official-helper-r1/qualification.json",
+    "qualificationReportSha256": "6f332f813c49662d3b417f123847686e186d26b9a2c10c0dbe8657fb673676b5",
+    "nativeDirectory": "/home/tomka/.cache/lain-qualification-20261026/ap1-official-helper-native-r1",
+    "sourceBuildBlocker": "/home/tomka/.cache/lain-qualification-20261026/ap1-helper-provenance-r1/source-build-blocker.json"
+  }
+}

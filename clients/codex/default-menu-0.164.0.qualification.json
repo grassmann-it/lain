@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "status": "qualified",
+  "version": "0.164.0",
+  "variant": "lain-model-picker-default",
+  "upstreamCommit": "6aaac694803004a63c6f393d153c96d22521a6b9",
+  "platform": "x86_64-unknown-linux-gnu",
+  "patchedCliSha256": "0d45eb864e1773cdd692194f3d1e7b2056614560444df5ed48e027733aab349a",
+  "helperSha256": "8ee4f472e92ac226a189e98998633b2d07f989f208515750764db660369f2926",
+  "source": {
+    "patchSha256": "fda0a18221eff37f578e2f27cba6cc90556ef888ec2891c6c82067c7c10ac92d",
+    "provenanceSha256": "d82d5a6e40ae8d785ec3245712fa682f4dac8fbfa216af97ab85399061fd2336",
+    "buildResultSha256": "a621692d1bb10b6a5c523a7b3933693755e7117d0bb8f37760b0d3a5294d0030",
+    "buildLogSha256": "90fdbb26adeadd820bfe4afd2345c5141b41460767760c9a7ef6ab1bfb685445",
+    "command": "cargo build --locked --profile dev-small -p codex-cli --bin codex -j 1",
+    "rustToolchain": "1.99.1",
+    "rustUnitTestsExecuted": false
+  },
+  "runtimePackage": {
+    "target": "x86_64-unknown-linux-gnu",
+    "files": {
+      "codex-package.json": "606d0f7808599de91625be997a30168e9922a3497b835d54edf034eb75e7ef92",
+      "codex-path/rg": "e62198eb19b136b88c330af83647b5a962cb99b6b1f066758568f12de1974849",
+      "codex-resources/bwrap": "3a81c19ad10a70436529c58e77898e2a447abe80167f813fc20ec34bd9eafdeb",
+      "codex-resources/voice/NOTICE.md": "40097a1799441051aa0b6645cdc819cceb19be73cdd265eb602aa2b15e0b1f48",
+      "codex-resources/voice/bin/codex-voice-host": "a374997203c3aae9b6a8dd05f355256b4066f045ac271fb8dc8c52769bdbda8a",
+      "codex-resources/voice/lib/gstreamer-1.0/libgstapp.so": "0e43aee9255c9d938df41ff6af1cf65d119aacf78ca1427616cf69623df9ee0c",
+      "codex-resources/voice/lib/gstreamer-1.0/libgstaudioconvert.so": "482ec6d32a496f6322682cc0b119bd0af82ea31a0f3026dd07c9a9917346d2f6",
+      "codex-resources/voice/lib/gstreamer-1.0/libgstaudioresample.so": "e9abcc301e817a81b6f01fba3d8701a8767a23090603b5f3baa0357837f2346f",
+      "codex-resources/voice/lib/gstreamer-1.0/libgstcoreelements.so": "951d7579c56ebeef6b3db85914ef1001e6a466ed54b443b194eeec997d159c71",
+      "codex-resources/voice/lib/gstreamer-1.0/libgstopus.so": "fd01916d777e4c0b82e7baee5a9ee8493f04b25194d59a7084cab1bb554169a8",
+      "codex-resources/voice/lib/gstreamer-1.0/libgstrtp.so": "392684a4895d869399a255cba729ec0075f1849abe3b1fc9b1f56af5ba32a2cc",
+      "codex-resources/voice/lib/gstreamer-1.0/libgstrtpmanager.so": "07117be91f9fa2e449386fcedafe757f34436029b86843ddf92a72a088f8242f",
+      "codex-resources/voice/lib/libffi.so.8": "bdec19c4e46b8fbf1c3e0b39f7b3fad933b77b43e2c37631157c97950fd2b174",
+      "codex-resources/voice/lib/libgio-2.0.so.0": "21cf9737aa0b78e176723112f419115aa0433f97cb13465b6e2c0a41faf8853c",
+      "codex-resources/voice/lib/libglib-2.0.so.0": "f45fc3cabf7b363fd4b77d81914921ff838fd023a9ee4058a5e91bfde46d5406",
+      "codex-resources/voice/lib/libgmodule-2.0.so.0": "e30d348e2497900e44a43261976921afcb023bb0a326aaea9733c6a87512bd6b",
+      "codex-resources/voice/lib/libgobject-2.0.so.0": "f6d4f8f6d95c0e10e0b07baf265e5b53f35fe5c2840b341efe4122662c38651f",
+      "codex-resources/voice/lib/libgstallocators-1.0.so.0": "9ea81406081c9d069915da4e4b7b3fd65f9294e94ae9d291956258abe17f4e6d",
+      "codex-resources/voice/lib/libgstapp-1.0.so.0": "681f3f137cb194bdffa6a8d314dbe72002dbd6c3f72d26bffa4d97013648d94e",
+      "codex-resources/voice/lib/libgstaudio-1.0.so.0": "369a54082f9b68b532dc4ffa98e7fee49f9efb79c93a9fdd622dc6ad42a20bd9",
+      "codex-resources/voice/lib/libgstbase-1.0.so.0": "54c4200b2164ad19badee88fcb999989d37980a57b9ea3fccc204549da675745",
+      "codex-resources/voice/lib/libgstnet-1.0.so.0": "60690a11caa2b561bc1fd8deb4f495a28aa3b942b6bff1c68c01acb77b8432b5",
+      "codex-resources/voice/lib/libgstpbutils-1.0.so.0": "061c78737ebb8575d5c06fca16c555b2a763eb8b6ee9aa6736d41d8412ab78ed",
+      "codex-resources/voice/lib/libgstreamer-1.0.so.0": "7ca382c8ec951368384f5c85fdccb31fc08e090be402e811575809f6babedfd0",
+      "codex-resources/voice/lib/libgstrtp-1.0.so.0": "1d5e6a4d84d6da9b19599d8be5ee7414453b4e5c8e98ac8dfd0cbff3820b3b44",
+      "codex-resources/voice/lib/libgsttag-1.0.so.0": "26386441f8d324d05448399f7b25641cea4975b7224411588fcdde8748f54085",
+      "codex-resources/voice/lib/libgstvideo-1.0.so.0": "1fdf86805535aabb7c175c13f73957af9fbe7527a99b48d6adf835ed943cec4b",
+      "codex-resources/voice/lib/libintl.so.8": "3745518bbcd678e70f7560496596c8adc8b9215d23839c5eb2d0dea0bce3975a",
+      "codex-resources/voice/lib/libopus.so.0": "7f1b4bd7b36f6e3d906102e93cf1c9f82053befe7ffd76584ce50222cb2ae3df",
+      "codex-resources/voice/lib/libpcre2-8.so.0": "e39519b242f40686734ed8d0218f68cac24f0e956ec64c8c1b49b9da5cc9788b",
+      "codex-resources/voice/lib/libz.so.1": "6c5d765f42d9368cc4bdbd11f725c1bcf6b14b78322033d3c94f787fc6261f5e",
+      "codex-resources/voice/licenses/LGPL-2.1.txt": "ad2eec519ebd4b5df86ea84dff24ae3bfa2edea846a703b58902dd221ae375db",
+      "codex-resources/voice/licenses/Opus.txt": "01e1167d54a096d123cf6dfbbeb19587278845c6481d2d66d545669846079551",
+      "codex-resources/voice/licenses/PCRE2.md": "197d8a73ffee0d6b09adba2f9c677b5f5aede24edf89258a68e48248d010d811",
+      "codex-resources/voice/licenses/libffi.txt": "17b64dc60f3b6897a60f971e288b973f655c2edcdf08b25f3c3dd5549857881c",
+      "codex-resources/voice/licenses/proxy-libintl.txt": "d245807f90032872d1438d741ed21e2490e1175dc8aa3afa5ddb6c8e529b58e5",
+      "codex-resources/voice/licenses/sljit.txt": "5f216505c0f6ea3273caec89e766eef93cdeb7bbb0c429f9360116d7c938feeb",
+      "codex-resources/voice/licenses/zlib.txt": "e32ff4e00d9d94930537635291da39e7e612703334bf6fde8c7f1686fe8a45a2",
+      "codex-resources/voice/manifest.json": "b4c7fbc3b46647c1a382c7129f47b7a4e453e5a18d671c726bb04d12f610f58c",
+      "codex-resources/voice/runtime.json": "350690ea1502d50be347483b17ef60480a5f3a236b9cfa638eb12bbe51c2cd63",
+      "codex-resources/voice/sources.json": "e2f6b124f6277e7c3c4f5c7cc8830c66190f671ad65e972bb2cc9507dbfcb937"
+    }
+  },
+  "helperProvenance": {
+    "evidence": "clients/codex/code-mode-host-0.164.0.qualification.json",
+    "evidenceSha256": "5689f88fb1a188cc5e632480f70f5a44e5ba8a0518d6dd3d5d718128ed0ca205",
+    "provenance": "qualified-release",
+    "signature": "Sigstore authenticated official 0.164.0 helper; see referenced signature report. New CLI/helper pair independently exercised below."
+  },
+  "nativeModelPicker": {
+    "status": "passed",
+    "cases": 15,
+    "summarySha256": "5e779e3990caac062b65ade777068bf6a54bc133021843d27b2c5abc6852c34f",
+    "flaglessDefaultDaemon": true,
+    "exactDaemonCliHashVerified": true,
+    "providerRequests": 0,
+    "covers": [
+      "default groups",
+      "named lain groups",
+      "other profiles/providers stay upstream",
+      "model persistence in selected user layer",
+      "invalid/duplicate metadata refusal",
+      "group navigation and visibility"
+    ],
+    "initialFailure": "First native default startup rejected unmodified musl metadata for GNU client. Retained r1 fails; r2 uses accurate GNU package metadata."
+  },
+  "nativeHelper": {
+    "status": "passed",
+    "summarySha256": "66c4df89c914dcd9feedf52e63fd0a2d809060ecd12f80b1190ad38a79814f04",
+    "resultSha256": "89baf5656b76fab093029ca3a61b7bb69177a5297fb7f7875a4686ea6c1c443d",
+    "providerRequests": 2,
+    "customTool": "functions.exec",
+    "nestedTool": "tools.exec_command",
+    "realShellAndMatchingContinuation": true,
+    "configSentinelsUnchanged": true
+  },
+  "nativeWorkers": {
+    "status": "passed",
+    "summarySha256": "c8fa9657767ffed461021a1003300d87a96e1142ea67433adac70b2cd23504d8",
+    "resultSha256": "30d5907904af8d059be2d111d5844012be10367b952042b4e5eea2d0478f3744",
+    "assemblySha256": "85fd262eefc32a13cdb9dc5ab564e4545025e2a51870863cd0bf127f77bb486e",
+    "providerRequests": {
+      "fixture-read": 2,
+      "fixture-write": 2
+    },
+    "readOnlyWriteDenied": true,
+    "detachedWorktreeVerified": true,
+    "sourceAndConfigPreserved": true
+  },
+  "isolation": "Private bwrap HOME mounted at its original path; no HOME/CODEX_HOME reassignment; private PID/network namespace; synthetic loopback only.",
+  "limits": [
+    "No real provider, quota, login or historical Astra failure qualification.",
+    "Native package voice assets are retained and hash-pinned; voice functionality was not exercised.",
+    "Qualification precedes production launcher installation; installation receipt is separate.",
+    "Lain Host/CLI worker source is not deployed by qualifying this Codex client."
+  ],
+  "optionalLocalEvidence": {
+    "root": "/home/tomka/.cache/lain-qualification-20261026",
+    "picker": "codex-default-menu-native-r2",
+    "helper": "codex-default-helper-native-r1",
+    "workers": "workers-native-runner-r3-default-menu",
+    "build": "codex-default-menu-r1"
+  },
+  "runtimePackageSource": "Auxiliary files copied byte-for-byte from the existing standalone 0.164.0 package, with accurate GNU metadata for this source-built CLI. Hash-pinned here; voice functionality not exercised."
+}

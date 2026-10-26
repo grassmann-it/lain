@@ -15,6 +15,8 @@ import os
 from pathlib import Path
 import re
 import shutil
+import selectors
+import subprocess
 import threading
 import time
 
@@ -267,6 +269,59 @@ def plan(config, fresh=True, installed="baseline"):
             'preservationBaseline': preservation}, common, before, after
 
 
+def process_identity(proc):
+    """Linux UID and starttime, never comm/argv as executable evidence."""
+    uid = proc.stat().st_uid
+    value = (proc / 'stat').read_text()
+    fields = value[value.rindex(')') + 2:].split()
+    need(len(fields) > 19 and fields[19].isdigit(), 'Invalid process starttime')
+    return uid, int(fields[19])
+
+
+def privileged_process_executable(proc):
+    """Read only exe metadata using an already authenticated terminal sudo ticket."""
+    message = 'Privileged process inspection failed; authenticate with sudo -v in the same terminal first'
+    try:
+        need(re.fullmatch(r'[0-9]+', proc.name) is not None, message)
+        before = process_identity(proc)
+        need(before[0] == os.getuid(), message)
+        # Account for spawn time too; Popen itself has no portable spawn timeout.
+        deadline = time.monotonic() + 3
+        # No shell, password input, inherited output or executable from configuration.
+        child = subprocess.Popen(['/usr/bin/sudo', '-n', '--', '/usr/bin/readlink', '--',
+                                  '/proc/' + proc.name + '/exe'], stdin=subprocess.DEVNULL,
+                                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                 env={'PATH': '/usr/bin:/bin', 'LC_ALL': 'C'})
+        try:
+            output = bytearray()
+            with selectors.DefaultSelector() as selector:
+                selector.register(child.stdout, selectors.EVENT_READ)
+                while True:
+                    remaining = deadline - time.monotonic()
+                    need(remaining > 0 and selector.select(remaining), message)
+                    block = os.read(child.stdout.fileno(), 4097 - len(output))
+                    if not block: break
+                    output.extend(block)
+                    need(len(output) <= 4096, message)
+            remaining = deadline - time.monotonic()
+            need(remaining > 0, message)
+            need(child.wait(timeout=remaining) == 0, message)
+        finally:
+            # Never use Popen's context manager: its exit waits without a timeout.
+            try:
+                if child.poll() is None:
+                    child.kill()
+                    child.wait(timeout=0.25)
+            finally:
+                child.stdout.close()
+        need(process_identity(proc) == before, 'Process identity changed during privileged inspection')
+        need(output.startswith(b'/') and output.endswith(b'\n') and
+             b'\n' not in output[:-1] and b'\0' not in output, message)
+        return os.fsdecode(bytes(output[:-1])).removesuffix(' (deleted)')
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        raise RuntimeError(message) from None
+
+
 def prepare_update_class(args, config, expected, common, before_files, after_files):
     old = module(HERE / 'service-update-primitives.py', config['operatorHelpers']['primitivesSha256'], 'portable_update_primitives')
     proof = module(HERE / 'service-update-platform.py', config['operatorHelpers']['platformSha256'], 'portable_platform_proof')
@@ -283,15 +338,24 @@ def prepare_update_class(args, config, expected, common, before_files, after_fil
         result = []
         for proc in Path('/proc').iterdir():
             if not proc.name.isdigit() or int(proc.name) == os.getpid(): continue
+            inspected = False
             try:
                 if proc.stat().st_uid != os.getuid(): continue
                 comm = (proc / 'comm').read_text().strip()
                 try: executable = os.readlink(proc / 'exe').removesuffix(' (deleted)')
                 except PermissionError:
-                    need(comm not in ('Lain.Host', 'Lain.Cli', 'Lain.Desktop', 'lain-proxy', 'dotnet') and
-                         proof.proves_platform_daemon(proc, (str(STATE) + '/app/',)),
-                         'Unreadable own process cannot be classified')
-                    continue
+                    if args.privileged_process_inspection:
+                        inspected = True
+                        identity = process_identity(proc)
+                        comm_before = (proc / 'comm').read_text()
+                        argv_before = (proc / 'cmdline').read_bytes()
+                        comm = comm_before.strip()
+                        executable = privileged_process_executable(proc)
+                    else:
+                        need(comm not in ('Lain.Host', 'Lain.Cli', 'Lain.Desktop', 'lain-proxy', 'dotnet') and
+                             proof.proves_platform_daemon(proc, (str(STATE) + '/app/',)),
+                             'Unreadable own process cannot be classified')
+                        continue
                 arguments = tuple(os.fsdecode(x) for x in (proc / 'cmdline').read_bytes().split(b'\0') if x)
                 need(arguments or (comm not in ('Lain.Host', 'Lain.Cli', 'Lain.Desktop', 'lain-proxy', 'dotnet') and
                      not executable.startswith(str(STATE) + '/app/')), 'Application candidate argv unavailable')
@@ -299,10 +363,23 @@ def prepare_update_class(args, config, expected, common, before_files, after_fil
                     Path(x).name in ('Lain.Desktop', 'Lain.Desktop.dll') for x in arguments)
                 installed = executable.startswith(str(STATE) + '/app/') or any(
                     x.startswith(str(STATE) + '/app/') for x in arguments)
+                if inspected:
+                    # Repeated snapshots detect observed exec/metadata changes, not
+                    # atomic quiescence: exec-and-restore between reads is possible.
+                    executable_after = privileged_process_executable(proc)
+                    comm_after = (proc / 'comm').read_text()
+                    argv_after = (proc / 'cmdline').read_bytes()
+                    need(process_identity(proc) == identity and
+                         comm_after == comm_before and argv_after == argv_before and
+                         arguments == tuple(os.fsdecode(x) for x in argv_before.split(b'\0') if x) and
+                         executable_after == executable,
+                         'Process metadata changed during privileged classification')
                 # Existing no_writers consumes the executable field; expose a
                 # canonical installed marker also for dotnet-hosted app DLLs.
                 result.append((int(proc.name), str(STATE / 'app/observed-process') if installed else executable, desktop))
-            except (FileNotFoundError, ProcessLookupError): pass
+            except (FileNotFoundError, ProcessLookupError):
+                if inspected:
+                    raise RuntimeError('Process disappeared during privileged classification') from None
             except PermissionError: raise RuntimeError('Own process metadata unreadable; defer update') from None
         return result
 
@@ -638,6 +715,8 @@ def main():
     parser.add_argument('--inputs', type=Path, required=True)
     parser.add_argument('--inputs-sha256', required=True)
     parser.add_argument('--execute', action='store_true')
+    parser.add_argument('--privileged-process-inspection', action='store_true',
+                        help='Read inaccessible exe metadata via noninteractive sudo; run sudo -v in this terminal first')
     args = parser.parse_args()
     os.umask(0o077)
     inputs = pinned(args.inputs, args.inputs_sha256)

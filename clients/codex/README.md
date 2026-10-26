@@ -21,13 +21,18 @@ manual inspection and permission correction required before retrying.
 This is a small patch over the public `rust-v0.164.0` source, not a selection wrapper.
 It changes the real TUI `/model` path in `tui/src/chatwidget/model_popups.rs`.
 The original installed Codex binary and configuration are not changed by preparation or build.
-Deployment must use a separate binary and the `lain` profile only; it is outside this bundle.
+Deployment uses a separate binary; preparation is not an installation or dispatcher update.
 
-The extension is active only with **`--profile lain`**, effective model provider `lain`, and
-`lain_model_picker` in the configured `model_catalog_json`. The selected user-layer provenance
-records the real CLI profile; legacy TOML `profile` and filenames do not activate it. Outside
-this exact scope, the original upstream catalog deserializer ignores the extension completely,
-including invalid metadata. Other catalogs and profiles keep the upstream picker.
+**Source follow-up, 26 October 2026:** the extension is active with effective model provider
+`lain`, either the default native profile (`None`, plain `codex`) or exact **`--profile lain`**,
+and valid `lain_model_picker` metadata in the configured `model_catalog_json`. The selected
+user-layer provenance records the real CLI profile; legacy TOML `profile` and filenames do not
+select it. Explicit other profiles (including `old-cpa` and case variants) and non-lain providers
+keep the original upstream deserializer, including its behavior of ignoring invalid extensions.
+Missing metadata keeps the upstream picker even for the lain provider. Malformed or repeated
+extension metadata is rejected for both default and named lain profiles by the same validator.
+The 25 October delivery above qualified the earlier explicit-profile scope; these new source
+changes still require a rebuilt binary and fresh native acceptance.
 Core reads the extension and existing model metadata from the same file snapshot. No additional
 configuration setting, environment variable, network lookup, or model-id naming convention is used.
 
@@ -76,6 +81,19 @@ python scripts/prepare-codex-picker.py --fetch --output /absolute/new/source
 scripts/build-codex-picker.sh /absolute/new/source
 ```
 
+The offline reconstruction command for the default-profile patch on this workspace is:
+
+```sh
+python scripts/prepare-codex-picker.py \
+  --archive /home/tomka/.cache/lain-worktrees/codex-picker-client-cbf083f/clients/codex/upstream-rust-v0.164.0.tar.gz \
+  --output /home/tomka/.cache/lain-codex-sources/prepared-picker-default-lain-0.164.0-20261026
+```
+
+Run from the repository root and choose another new output path if it already exists. The
+manifest pins the updated `0001-lain-model-picker.patch` SHA-256 to
+`fda0a18221eff37f578e2f27cba6cc90556ef888ec2891c6c82067c7c10ac92d`; upstream tag,
+commit, archive and lock pins are unchanged. No model override is required.
+
 The public release bumps workspace package versions to `0.164.0` while its committed lock
 still records the 166 local packages as `0.0.0`. The second pinned patch corrects only those
 local version fields. Preparation independently compares all 1308 complete external package
@@ -85,11 +103,64 @@ build or dependency update is needed. `tests/codex-picker/test_prepare.py` check
 of changes to external records, local dependencies, and lock metadata.
 
 The tag requires **Rust 1.99.1**. The build script uses the upstream `dev-small` profile, one Cargo
-job, no incremental cache and `--locked`. It only builds `codex-cli`'s `codex` executable and does
-not install or launch it. Upstream Cargo.lock contains 1474 workspace packages; the CLI dependency
+job, no incremental cache and `--locked`. It builds `codex-cli`'s `codex` executable and
+the required sibling `codex-code-mode-host`; it does not install or launch either.
+Upstream Cargo.lock contains 1474 workspace packages; the CLI dependency
 closure and peak memory have not yet been measured. Its git dependencies include mxc, nucleo,
 rmcp, runfiles and the upstream-pinned terminal/WebSocket forks. Network/toolchain/dependency
 preparation and any build must run in the root's bounded serial lane.
+
+## Default-profile source qualification, 26 October 2026
+
+The patch includes eight Core tests and ten lain TUI tests, including actual profile-v2
+user-layer provenance, default/named scope, valid/missing metadata, equal malformed/duplicate
+metadata refusal, explicit other profiles, non-lain providers, and default nested navigation.
+The product CLI was compiled with pinned Rust 1.99.1. These Rust unit tests were
+not executed; the independent native PTY acceptance below exercises the built client.
+
+`PYTHONDONTWRITEBYTECODE=1 python tests/codex-picker/test_prepare.py` passes fourteen offline tests
+for the lock verifier, patch hashes/syntax, and native fixture/persistence contracts. It launches
+no Codex client. The source preparer requires no changes.
+
+`tests/codex-picker/native_model_picker.py` now prepares fifteen fresh isolated PTY cases.
+Default and named lain invocations both expect groups; explicit other profiles/non-lain
+providers and missing metadata expect the upstream picker. Invalid and duplicate default
+metadata require a bounded, nonzero native configuration-parser exit before any input is sent.
+Default selection may persist only the chosen model in the synthetic `config.toml`; named
+selection writes only its profile file. Every nonselected config remains byte-identical.
+The fixture pre-seeds reasoning `none`, matching the synthetic catalog, so the unchanged native
+model/effort persistence does not add an unrelated setting during the selection check.
+
+Separate `default-native-flags` and `lain-native-flags` cases launch the binary with no extra
+flags and with only `--profile lain`, respectively. The default case requires a private daemon
+socket/PID, the tested executable hash, and matching private PID/network namespaces, so an
+embedded fallback cannot pass as daemon acceptance. `/run` is hidden along with the private
+home and temporary directory; no production daemon or service is contacted. The existing
+environment allowlist and unchanged `HOME` value/private mount remain in place; `CODEX_HOME`
+is not reassigned. Provider traffic still fails every case.
+
+The source paths explain why these cases differ: `tui/src/daemon_startup.rs::exclusion` treats
+`--profile` as embedded-only, while `tui/src/startup_orchestration.rs` loads the local TUI config
+through `ConfigBuilder` for either transport. Picker metadata is read by that local loader and
+stored in the TUI config; it does not rely on a new daemon wire field. All fifteen cases passed
+on CLI SHA256 `0d45eb864e1773cdd692194f3d1e7b2056614560444df5ed48e027733aab349a`, including
+the flagless private daemon with that exact executable hash. Evidence is retained under
+`~/.cache/lain-qualification-20261026/codex-default-menu-native-r2/` and in
+[the portable qualification](default-menu-0.164.0.qualification.json). The initial r1 correctly
+failed on musl metadata paired with the GNU build; r2 uses accurate GNU metadata.
+
+Flagless startup also requires upstream's complete local package, not just a standalone CLI.
+The harness accepts `--package /absolute/local/linux/package` with `codex-package.json`,
+`bin/codex-code-mode-host`, `codex-path/rg`, and `codex-resources/bwrap`. It mounts that package
+read-only at `/mnt/package`, overlays the exact `--binary` at `bin/codex`, and hashes the
+manifest/helper/resources. Upstream may copy it only into the synthetic private home for its
+daemon. `--run` requires this explicit input; there is no package discovery, download, or
+fallback to production. Preparation without `--run` remains possible with just the CLI/source.
+
+`--dispatcher-state /absolute/installed/state` additionally runs the two native startup cases
+through that exact installed wrapper. Its state is mounted read-only at its recorded path,
+and the private fixture uses a recognized `lain.models.json` location. The wrapper and bound
+CLI hashes must match the installation manifest. All user configuration remains synthetic.
 
 ## Verification status at the original preparation handoff
 
