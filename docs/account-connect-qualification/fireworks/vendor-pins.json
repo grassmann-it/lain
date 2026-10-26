@@ -1,0 +1,67 @@
+{
+  "provider": "fireworks",
+  "release": "1.8.19",
+  "platform": "linux-x64",
+  "checkedAt": "2026-10-26",
+  "archive": {
+    "url": "https://storage.googleapis.com/fireworks-public/firectl/stable/linux-amd64.gz",
+    "sha256": "f6fac5dc456b526d9378af9d5240aa92f98c927a9ba2ca8a00fd5f41938c0353",
+    "size": 20865535,
+    "lastModified": "2026-10-21T23:21:17Z"
+  },
+  "executable": {
+    "sha256": "dfc6f83e3af156b44a3d27237b192efae431c00fce9e56e62b8c71ea5cf8802f",
+    "size": 70656162,
+    "versionCommand": [
+      "version"
+    ],
+    "versionOutput": "1.8.19"
+  },
+  "publication": {
+    "url": "https://github.com/fw-ai/homebrew-firectl/blob/a3ecce3207b1d2f1c5ecad15a5006478a000d86c/Formula/firectl.rb",
+    "commit": "a3ecce3207b1d2f1c5ecad15a5006478a000d86c",
+    "sha256": "314a7bd35c31e1e33f49b502edb603afa7d813c1fc5011578cb34cce45f03047",
+    "cliSourceAvailable": false,
+    "note": "Tap commit pins vendor publication/checksum only; it is not the proprietary CLI source revision. No SPDX license claim for the binary is invented."
+  },
+  "browserDependency": {
+    "source": "https://github.com/pkg/browser/blob/5ac0b6a4141c/browser_linux.go",
+    "evidence": "Module version and function symbols embedded in pinned ELF; Linux invokes first found xdg-open, x-www-browser, www-browser. Private xdg-open succeeds without launching a browser.",
+    "sha256": "0df707d84105ede8a99632102a541f3c721f7b6a7c97af65699fe7e78f4d94b5"
+  },
+  "publicContracts": [
+    "https://docs.fireworks.ai/tools-sdks/firectl/commands/authentication",
+    "https://docs.fireworks.ai/tools-sdks/firectl/commands/account-list",
+    "https://docs.fireworks.ai/tools-sdks/firectl/commands/api-key-create",
+    "https://docs.fireworks.ai/api-reference/create-api-key",
+    "https://docs.fireworks.ai/api-reference/list-accounts"
+  ],
+  "offlineQualification": {
+    "help": true,
+    "signinHelp": true,
+    "apiKeyCreateHelp": true,
+    "version": true,
+    "actualHomeMountIsolation": true,
+    "networkIsolated": true,
+    "evidenceCommands": [
+      [
+        "version"
+      ],
+      [
+        "--help"
+      ],
+      [
+        "signin",
+        "--help"
+      ],
+      [
+        "api-key",
+        "create",
+        "--help"
+      ]
+    ]
+  },
+  "liveSigninTested": false,
+  "liveKeyCreateTested": false,
+  "liveQuotaTested": false
+}
