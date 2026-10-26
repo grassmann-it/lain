@@ -95,7 +95,19 @@ Neu beauftragt: öffentliches Repo nach Prüfung vorbereiten und umschalten,
 Provider-Referralübersicht mit Bezugsstellen eigener Links sowie OAuth-Inventar
 und umsetzbare Ergänzungen. Referral-/OAuthübersichten sind fertig, ebenso Plattform-Contractworkflow.
 Der zusätzliche Vergleich aller27 Connectoren liegt als vorläufiger Bericht vor;
-frische Preisprüfung scheiterte am Netzausfall. Repo derzeit PRIVATE; noch kein Upload/Tag/Release.
+frische Preisprüfung scheiterte am Netzausfall. Sauberer separater Veröffentlichungscommit:
+`5fcc7f0f52abff00b1a5c9981c34ae788bffb46b` unter
+`~/.cache/lain-publication-source-20261026/`.26 gezielt übernommene Dateien,
+Link-/Whitespaceprüfung und erneuter Secret-Scan ohne ungeklärte Treffer.
+Repo weiterhin PRIVATE; Upload/Visibilityprüfung durch GitHub-DNSausfall
+blockiert. Kein Tag/Release. Main nicht committiert.
+
+Nachtrag zur Netzstörung: Erneute öffentliche Angebotsrecherche für alle27
+Connectoren erfolgreich, verbleibende Auslese-/Tariflücken ausdrücklich benannt.
+Aktuelle Zusammenfassung: [Providerempfehlungen](provider-recommendations-2026-10-26.md).
+GitHubmetadaten wieder erreichbar, Remote-main weiterhin5dc916f, keine weiteren
+Heads oder Tags gemeldet. Der Netzfehler oben ist historisch; noch kein lokales
+Update oder öffentlicher Binärrelease aus dieser Recherche.
 
 Die folgenden Abschnitte dokumentieren frühere Zwischenstände; dortige
 Revision57/57 und Kandidat bec078e sind keine aktuellen Updateinputs.

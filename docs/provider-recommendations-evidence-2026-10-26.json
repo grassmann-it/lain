@@ -1,6 +1,6 @@
 {
   "reportDate": "2026-10-26",
-  "currentWebVerification": "blocked",
+  "currentWebVerification": "completed_with_documented_gaps",
   "verificationAttempts": [
     {
       "tool": "search_service_web_run",
@@ -19,8 +19,8 @@
   ],
   "providerCount": 27,
   "manifestCount": 22,
-  "recommendationsFinal": [],
-  "provisionalCandidates": [
+  "recommendationsFinal": [
+    "nanogpt:pro",
     "synthetic:go",
     "opencode-go:opencode-go"
   ],
@@ -5521,5 +5521,83 @@
     "purchase": false,
     "contact": false,
     "otherWorkersStarted": false
-  }
+  },
+  "verificationRetries": [
+    {
+      "date": "2026-10-26",
+      "method": "public web open, direct structured arguments",
+      "status": "successful_with_documented_gaps_all_27_scoped",
+      "providers": [
+        "synthetic",
+        "opencode-go"
+      ],
+      "sources": [
+        "https://synthetic.new/pricing",
+        "https://synthetic.new/rate-limits",
+        "https://dev.synthetic.new/docs/api/overview",
+        "https://synthetic.new/blog/referrals-launch",
+        "https://synthetic.new/referrals",
+        "https://opencode.ai/go",
+        "https://opencode.ai/v2/docs/console/go/",
+        "https://raw.githubusercontent.com/anomalyco/opencode/dev/packages/console/app/src/i18n/en.ts"
+      ],
+      "limits": [
+        "Synthetic current referral terms login-gated",
+        "German checkout and final tax-inclusive prices not inspected",
+        "No authenticated provider or inference request"
+      ]
+    }
+  ],
+  "comparisonBasis": "providerComparison retains initial local snapshot; current offers and evidence are in verificationReports",
+  "conditionalCandidates": [
+    "kilo:pass-starter"
+  ],
+  "initialProvisionalCandidates": [
+    "synthetic:go",
+    "opencode-go:opencode-go"
+  ],
+  "verificationReports": [
+    {
+      "file": "provider-research-retry-core-2026-10-26.md",
+      "providerIds": [
+        "synthetic",
+        "opencode-go"
+      ]
+    },
+    {
+      "file": "provider-research-retry-subscriptions-2026-10-26.md",
+      "providerIds": [
+        "kimi",
+        "zai",
+        "nanogpt",
+        "kilo",
+        "poe",
+        "commandcode",
+        "xiaomi-mimo",
+        "stepfun",
+        "mistral",
+        "codex"
+      ]
+    },
+    {
+      "file": "provider-research-retry-free-2026-10-26.md",
+      "providerIds": [
+        "alibaba-model-studio",
+        "cloudflare-workers-ai",
+        "cohere",
+        "deepseek",
+        "fireworks",
+        "gemini-api",
+        "groq",
+        "inception",
+        "nebius",
+        "nvidia-build",
+        "openrouter",
+        "requesty",
+        "sambanova",
+        "upstage",
+        "xai"
+      ]
+    }
+  ]
 }

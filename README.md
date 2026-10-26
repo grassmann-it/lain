@@ -67,7 +67,7 @@ von vollständiger Releaseabnahme. Kein Publisher wählt eine Anwendungslizenz,
 veröffentlicht extern oder aktiviert einen Dienst.
 
 - [Referralprogramme und Bezugsstellen eigener Links](docs/provider-referrals-overview-2026-10-26.md)
-- [Free-/Abovergleich aller Connectoren (Preisprüfung noch offen)](docs/provider-recommendations-2026-10-26.md)
+- [Free-/Abovergleich aller Connectoren](docs/provider-recommendations-2026-10-26.md)
 - [OAuth-/Device-Logins: Bestand und nächste Integrationen](docs/oauth-provider-overview-2026-10-26.md)
 - [1.0-Kandidat: Lieferumfang und Installation](docs/release-1.0-distribution-readiness.md)
 - [Linuxinstallation](docs/install.md) und [Betriebsarten, Release und sichere Wiederherstellung](docs/linux-delivery-stabilization.md)
