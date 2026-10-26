@@ -188,7 +188,32 @@ func (e *boundExecutor) ExecuteStream(ctx context.Context, a *auth.Auth, req exe
 		canceled, overflow := false, false
 		heldBytes := 0
 		var completion []executor.StreamChunk
-		for chunk := range result.Chunks {
+	streamLoop:
+		for {
+			// Caller cancellation must finalize even if the inner producer stops
+			// sending without closing its channel. Provider-only cancellation
+			// (such as terminal buffer overflow) still follows the drain path.
+			// Do not spawn a drainer for an uncooperative producer: after caller
+			// cancellation it owns shutdown; After seals already persisted usage.
+			if ctx.Err() != nil {
+				terminal = ctx.Err()
+				canceled = true
+				cancelProvider()
+				break
+			}
+			var chunk executor.StreamChunk
+			var ok bool
+			select {
+			case <-ctx.Done():
+				terminal = ctx.Err()
+				canceled = true
+				cancelProvider()
+				break streamLoop
+			case chunk, ok = <-result.Chunks:
+				if !ok {
+					break streamLoop
+				}
+			}
 			if chunk.Err != nil {
 				if terminal == nil {
 					terminal = chunk.Err
@@ -225,6 +250,7 @@ func (e *boundExecutor) ExecuteStream(ctx context.Context, a *auth.Auth, req exe
 				terminal = ctx.Err()
 				canceled = true
 				cancelProvider()
+				break streamLoop
 			}
 		}
 		if terminal == nil && expectsResponseTerminal && !sawResponseTerminal {
