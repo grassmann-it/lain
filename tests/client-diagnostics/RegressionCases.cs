@@ -59,8 +59,9 @@ static class RegressionCases
         Check(await Read(project: "/project"), "client.helper", "blocked");
         fixture.Files["/codex/config.toml"] = "model_provider = \"lain\"\n[model_providers.lain]\nauth = { command = \"/wrong\" }";
         var inline = await Read();
-        Check(inline, "client.local_read", "unknown");
-        if (inline.Findings.Any(f => f.Code == "client.provider" && f.State == "ok")) throw new Exception("inline auth false positive");
+        Check(inline, "client.helper", "unknown");
+        Check(inline, "client.provider", "ok");
+        if (inline.Findings.Any(f => f.Code == "client.helper" && f.State == "ok")) throw new Exception("inline auth false positive");
         Check(await Read("codex-vscode"), "client.version", "warning");
         Check(await Read("codex-vscode"), "client.vsix_selection", "ok");
         Check(await Read("codex-vscode"), "client.activation", "unknown");

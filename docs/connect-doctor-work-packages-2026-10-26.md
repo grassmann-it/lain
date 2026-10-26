@@ -37,6 +37,22 @@ Keine pauschalen Prozessnamen-/Docker-Ausnahmen und keine Umdeutung des alten
 NOT-VALID-Belegs. AP5 und die produktive Installation sind noch nicht abgeschlossen.
 Neue Source ist weiterhin keine installierte Version.
 
+Aktuelle private Pakete: `~/.cache/lain-connect-doctor-20261026/packages-r2/`,
+Quellenpin `02b82e00d6dd037a9bf27cc6ce7c4f53c12c1c04` in separater Arbeitskopie;
+ursprüngliches Main-WIP erhalten. Beide vollständigen Pakete gebaut, 22 echte
+Offline-CLI-Aufrufe bestanden und fünf Skillressourcen pro Paket bytegleich
+installiert. Gateway-Core reproduziert SHA256
+`f737b8726b845796f38bad6f9a881bddb96e9598ea8908f9849559d91a2164cd`;
+die 15 synthetischen Backendfälle bestanden in eigener Netznamespace. Das ersetzt
+nicht die vollständige Core-/Paketqualifikation. Die Pakete bleiben gestuft und
+uninstalliert. Der erste reale lesende Doctorlauf erkannte den vorhandenen
+Synthetic-Account ohne konfigurierte Modellroute, zeigte aber noch zu grobe
+Unbekannt-Befunde bei komplexen normalen TOML-Abschnitten; Der gezielte Parserfix besteht Fixtures und echten lesenden Quelllauf;
+erneuter Paketbuild folgt. Rootprovider, Katalogvalidität und unbekannte
+Inline-Authbeobachtung werden unabhängig bewertet. Fehlgeschlagener erster Monitorbuild bleibt
+unter `packages/monitor.log` als Beleg erhalten; gemeinsame Desktop-Datei hatte
+eine CLI-Abhängigkeit erhalten, die vor r2 behoben wurde.
+
 ## Ziel und Ausgangsstand
 
 Ein Nutzer kann einen bestehenden Lainzugang mit Codex CLI oder der lokal

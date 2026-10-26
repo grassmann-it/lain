@@ -102,12 +102,14 @@ public sealed class DoctorEngine(IDoctorEnvironment environment)
             catalogOk = Path.GetFullPath(catalogPath) == Path.GetFullPath(Path.Combine(home, ".lain-artifacts", installed.GenerationId, "lain.models.json"));
         add("client.catalog", catalogOk ? "ok" : "warning", catalogOk ? "Selected static catalog matches the installed export generation." : "Selected static catalog does not establish the installed export binding.", "root/profile configuration and install identity", "Review catalog selection against the current installed export.");
         var provider = root.GetValueOrDefault("model_providers.lain.auth");
-        var helper = provider?.GetValueOrDefault("command");
+        var helper = root.ContainsKey("!auth-unsupported") ? null : provider?.GetValueOrDefault("command");
         var helperExists = helper is not null && Path.IsPathFullyQualified(helper) && environment.IsFile(helper);
         var argsOk = provider?.GetValueOrDefault("args") == "[\"auth\",\"token\",\"--audience\",\"codex\"]";
         add("client.helper", helper is null ? "unknown" : !helperExists || !argsOk ? "blocked" : "unknown",
             helper is null ? "A supported helper declaration was not observed." : !helperExists ? "Declared helper file is missing or is not an absolute path." : !argsOk ? "Declared helper arguments differ from the qualified auth token contract." : "Helper file and auth arguments were observed; executable identity is unverified.", "root provider auth declaration", "Compare the helper identity with the installed Lain executable.");
-        if (catalogOk && catalogPath is not null) DiagnoseCatalog(environment.ReadText(catalogPath), settings, add);
+        // Export identity and selected catalog validity are independent observations.
+        if (catalogPath is not null && Path.IsPathFullyQualified(catalogPath))
+            DiagnoseCatalog(environment.ReadText(catalogPath), settings, add);
     }
 
     private static void DiagnoseCatalog(string? text, Dictionary<string, string> settings, Action<string, string, string, string, string> add)
@@ -133,14 +135,15 @@ public sealed class DoctorEngine(IDoctorEnvironment environment)
 
     private static string StripComment(string value)
     {
-        var quoted = false; var escaped = false;
+        char quote = '\0'; var escaped = false;
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
             if (escaped) { escaped = false; continue; }
-            if (quoted && c == '\\') { escaped = true; continue; }
-            if (c == '\"') quoted = !quoted;
-            if (!quoted && c == '#') return value[..i].TrimEnd();
+            if (quote == '"' && c == '\\') { escaped = true; continue; }
+            if (quote != '\0') { if (c == quote) quote = '\0'; continue; }
+            if (c is '"' or '\'') quote = c;
+            if (quote == '\0' && c == '#') return value[..i].TrimEnd();
         }
         return value;
     }
@@ -157,38 +160,122 @@ public sealed class DoctorEngine(IDoctorEnvironment environment)
             foreach (var item in element.EnumerateArray()) RejectDuplicates(item);
     }
 
-    // Deliberately a small subset, not a general TOML parser. Unsupported syntax on a
-    // relevant field is unknown; unrelated values (including credentials) are discarded.
+    // A bounded subset for observations, not general TOML validation. Irrelevant
+    // sections are discarded structurally, so their model-like keys cannot leak.
     private static Dictionary<string, Dictionary<string, string>> Parse(string? text)
     {
         var result = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal) { [""] = new(StringComparer.Ordinal) };
         if (text is null) return result;
-        var section = "";
+        if (text.Length > 2 * 1024 * 1024) throw new InvalidDataException();
+        string? section = "";
         foreach (var raw in text.Split('\n'))
         {
             var line = raw.Trim();
             if (line.Length == 0 || line.StartsWith('#')) continue;
+            // Do not mistake content of unsupported multiline values for tables.
+            if (line.Contains("\"\"\"", StringComparison.Ordinal) || line.Contains("'" + "''", StringComparison.Ordinal)) throw new InvalidDataException();
             if (line.StartsWith('['))
             {
-                var match = Regex.Match(line, @"\A\[([a-zA-Z0-9_.-]+)\]\s*(?:#.*)?\z");
-                if (!match.Success) throw new InvalidDataException();
-                section = match.Groups[1].Value;
-                if (!result.TryAdd(section, new(StringComparer.Ordinal))) throw new InvalidDataException();
+                var array = line.StartsWith("[[", StringComparison.Ordinal);
+                var clean = StripComment(line).TrimEnd();
+                var end = array ? "]]" : "]";
+                if (!clean.EndsWith(end, StringComparison.Ordinal)) throw new InvalidDataException();
+                var body = clean[(array ? 2 : 1)..^end.Length];
+                var parts = HeaderParts(body);
+                section = parts.Count == 2 && parts[0] == "profiles" ? "profiles." + parts[1] :
+                    parts.SequenceEqual(new[] { "model_providers", "lain", "auth" }) ? "model_providers.lain.auth" :
+                    parts.SequenceEqual(new[] { "model_providers", "lain" }) ? "model_providers.lain" : null;
+                if (section is not null)
+                {
+                    if (array || !result.TryAdd(section, new(StringComparer.Ordinal))) throw new InvalidDataException();
+                }
                 continue;
             }
             var equal = line.IndexOf('=');
             if (equal < 0) throw new InvalidDataException();
-            var key = line[..equal].Trim();
-            if (key is not ("model" or "model_provider" or "model_catalog_json" or "model_reasoning_effort" or "profile" or "command" or "args"))
-            { if (key is "auth" or "model_providers" || key.StartsWith("model_providers.", StringComparison.Ordinal)) throw new InvalidDataException(); continue; }
-            // JSON basic strings exactly match the generated TOML subset. Comments,
-            // literal strings, inline tables and multiline values stay unsupported.
             var literal = StripComment(line[(equal + 1)..].Trim());
-            string value;
-            if (key == "args") value = JsonSerializer.Serialize(JsonSerializer.Deserialize<string[]>(literal) ?? throw new InvalidDataException());
-            else value = JsonSerializer.Deserialize<string>(literal) ?? throw new InvalidDataException();
+            RequireSingleLineValue(literal);
+            if (section is null) continue;
+            var key = line[..equal].Trim();
+            if (key.StartsWith('"')) key = JsonSerializer.Deserialize<string>(key) ?? throw new InvalidDataException();
+            else if (key.StartsWith('\''))
+            {
+                if (key.Length < 2 || !key.EndsWith('\'') || key[1..^1].Contains('\'')) throw new InvalidDataException();
+                key = key[1..^1];
+            }
+            if ((section == "model_providers.lain" && key == "auth") ||
+                (section == "" && (key == "model_providers" || key.StartsWith("model_providers.", StringComparison.Ordinal))))
+            {
+                result.TryAdd("!auth-unsupported", new(StringComparer.Ordinal));
+                continue;
+            }
+            var modelSection = section == "" || section.StartsWith("profiles.", StringComparison.Ordinal);
+            if (modelSection ? key is not ("model" or "model_provider" or "model_catalog_json" or "model_reasoning_effort" or "profile") :
+                section != "model_providers.lain.auth" || key is not ("command" or "args")) continue;
+            var value = key == "args" ? JsonSerializer.Serialize(JsonSerializer.Deserialize<string[]>(literal) ?? throw new InvalidDataException()) :
+                JsonSerializer.Deserialize<string>(literal) ?? throw new InvalidDataException();
             if (!result[section].TryAdd(key, value)) throw new InvalidDataException();
         }
         return result;
+    }
+
+    private static List<string> HeaderParts(string body)
+    {
+        var parts = new List<string>();
+        var i = 0;
+        while (i < body.Length)
+        {
+            while (i < body.Length && char.IsWhiteSpace(body[i])) i++;
+            if (i == body.Length) throw new InvalidDataException();
+            string part;
+            if (body[i] is '"' or '\'')
+            {
+                var quote = body[i++]; var start = i - 1; var escaped = false;
+                while (i < body.Length)
+                {
+                    var c = body[i++];
+                    if (escaped) { escaped = false; continue; }
+                    if (quote == '"' && c == '\\') { escaped = true; continue; }
+                    if (c != quote) continue;
+                    break;
+                }
+                if (i <= start + 1 || body[i - 1] != quote) throw new InvalidDataException();
+                part = quote == '"' ? JsonSerializer.Deserialize<string>(body[start..i]) ?? throw new InvalidDataException() : body[(start + 1)..(i - 1)];
+            }
+            else
+            {
+                var start = i;
+                while (i < body.Length && (char.IsAsciiLetterOrDigit(body[i]) || body[i] is '_' or '-')) i++;
+                if (i == start) throw new InvalidDataException();
+                part = body[start..i];
+            }
+            parts.Add(part);
+            while (i < body.Length && char.IsWhiteSpace(body[i])) i++;
+            if (i == body.Length) break;
+            if (body[i++] != '.' || i == body.Length) throw new InvalidDataException();
+        }
+        if (parts.Count == 0) throw new InvalidDataException();
+        return parts;
+    }
+
+    private static void RequireSingleLineValue(string value)
+    {
+        char quote = '\0'; var escaped = false;
+        var stack = new Stack<char>();
+        foreach (var c in value)
+        {
+            if (quote != '\0')
+            {
+                if (escaped) { escaped = false; continue; }
+                if (quote == '"' && c == '\\') { escaped = true; continue; }
+                if (c == quote) quote = '\0';
+                continue;
+            }
+            if (c is '"' or '\'') quote = c;
+            else if (c is '[' or '{') stack.Push(c);
+            else if (c is ']' or '}')
+            { if (stack.Count == 0 || stack.Pop() != (c == ']' ? '[' : '{')) throw new InvalidDataException(); }
+        }
+        if (quote != '\0' || stack.Count != 0) throw new InvalidDataException();
     }
 }

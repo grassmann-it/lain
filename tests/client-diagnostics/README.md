@@ -54,8 +54,9 @@ version pins come from clients/codex/qualified-releases.json; the helper also
 matches clients/codex/code-mode-host-0.164.0.qualification.json. These are reviewed
 source constants, not trust in arbitrary local manifests. CLI pin updates require
 source review. VS Code profile overrides, remote/Insiders/custom extension roots,
-complete VSIX content and running activation remain unknown. Complex TOML headers,
-literal/multiline relevant strings and inline provider tables remain unsupported.
+complete VSIX content and running activation remain unknown. Common quoted table headers and repeated unrelated array tables are supported.
+Multiline values remain conservatively unknown. Inline provider auth remains
+unknown independently of root model/provider/catalog observations.
 Binary hashing permits 512 MiB (including the observed 418673216-byte CLI),
 checks cancellation and an eight-second per-file deadline between 1 MiB reads,
 and rejects files growing beyond the cap. Regression source includes an

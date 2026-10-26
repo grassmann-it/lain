@@ -66,6 +66,7 @@ using var http = new HttpClient(new ReadOnlyHandler()) { BaseAddress = new Uri("
 output = new();
 Check(await DoctorCommand.RunAsync(["--json"], output, error, () => new LainApiClient(http)) == 0, "handler public metadata GETs only");
 await RegressionCases.RunAsync();
+await ParserCases.RunAsync();
 Console.WriteLine("Doctor fixture suite complete.");
 
 sealed class Fixture : IDoctorEnvironment
