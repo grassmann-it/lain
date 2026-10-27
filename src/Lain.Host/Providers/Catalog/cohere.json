@@ -56,7 +56,7 @@
     {
       "id": "cohere/command-a-plus-05-2026",
       "model": "command-a-plus-05-2026",
-      "name": "Command A+ \u00b7 evaluation",
+      "name": "Command A+ · evaluation",
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
@@ -87,6 +87,598 @@
         "Use max_tokens. No Responses API, parallel_tool_calls, store, metadata, n, or Cohere-native documents/connectors are qualified.",
         "reasoning_effort supports only none/high in the compatibility API; this route makes no reasoning capability claim.",
         "Tools and streaming are documented, but vendor execution remains untested."
+      ]
+    },
+    {
+      "id": "cohere/command-a-03-2025",
+      "model": "command-a-03-2025",
+      "name": "command-a-03-2025",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/command-a-reasoning-08-2025",
+      "model": "command-a-reasoning-08-2025",
+      "name": "command-a-reasoning-08-2025",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/command-a-translate-08-2025",
+      "model": "command-a-translate-08-2025",
+      "name": "command-a-translate-08-2025",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/command-a-vision-07-2025",
+      "model": "command-a-vision-07-2025",
+      "name": "command-a-vision-07-2025",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/command-r-08-2024",
+      "model": "command-r-08-2024",
+      "name": "command-r-08-2024",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/command-r-plus-08-2024",
+      "model": "command-r-plus-08-2024",
+      "name": "command-r-plus-08-2024",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/command-r7b-12-2024",
+      "model": "command-r7b-12-2024",
+      "name": "command-r7b-12-2024",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/command-r7b-arabic-02-2025",
+      "model": "command-r7b-arabic-02-2025",
+      "name": "command-r7b-arabic-02-2025",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/c4ai-aya-expanse-32b",
+      "model": "c4ai-aya-expanse-32b",
+      "name": "c4ai-aya-expanse-32b",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/c4ai-aya-vision-32b",
+      "model": "c4ai-aya-vision-32b",
+      "name": "c4ai-aya-vision-32b",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/north-mini-code-1.0",
+      "model": "north-mini-code-1.0",
+      "name": "north-mini-code-1.0",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/north-small-translate-1.0",
+      "model": "north-small-translate-1.0",
+      "name": "north-small-translate-1.0",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/tiny-aya-earth",
+      "model": "tiny-aya-earth",
+      "name": "tiny-aya-earth",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/tiny-aya-fire",
+      "model": "tiny-aya-fire",
+      "name": "tiny-aya-fire",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/tiny-aya-global",
+      "model": "tiny-aya-global",
+      "name": "tiny-aya-global",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "cohere/tiny-aya-water",
+      "model": "tiny-aya-water",
+      "name": "tiny-aya-water",
+      "baseUrl": "https://api.cohere.ai/compatibility/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "evaluation"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Cohere",
+      "inferenceProvider": "Cohere",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://docs.cohere.com/docs/compatibility-api",
+          "title": "Official Cohere OpenAI compatibility contract",
+          "checkedAt": "2026-10-24T15:47:23Z",
+          "notes": "Exact compatibility endpoint; examples cover command-a-plus-05-2026, streaming and tools. Supported parameter subset applies."
+        },
+        {
+          "url": "https://api.cohere.ai/compatibility/v1/models",
+          "title": "Cohere account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
       ]
     }
   ],

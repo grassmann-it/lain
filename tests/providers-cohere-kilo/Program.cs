@@ -64,7 +64,7 @@ try
     var liquid = kilo.Routes.Single(r => r.Id == "kilo/liquid/lfm-2.5-2.6b:free");
     Check(liquid.Model == "liquid/lfm-2.5-2.6b:free" && !liquid.FreeOnlyEligible && liquid.FreeOnlyEnforcementKind == "unsupported", "Kilo Liquid does not borrow strict OpenRouter eligibility");
     var cohere = catalog.Find("cohere")!;
-    Check(cohere.BillingPlans.Single().Kind == "trial" && cohere.Routes.Single().PricingClass == "trial", "Evaluation is not permanent free/production access");
+    Check(cohere.BillingPlans.Single().Kind == "trial" && cohere.Routes[0].PricingClass == "trial" && cohere.Routes.Skip(1).All(r => r.PricingClass == "paid"), "Evaluation is not permanent free/production access");
 }
 finally { if (Directory.Exists(temporary)) Directory.Delete(temporary, true); }
 Console.WriteLine($"{checks} Cohere/Kilo synthetic catalog, account, policy and compiler assertions passed; no vendor requests.");

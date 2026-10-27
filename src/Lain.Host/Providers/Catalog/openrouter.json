@@ -65,7 +65,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 65536,
@@ -99,7 +100,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 131072,
@@ -138,7 +140,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 1048576
@@ -176,7 +179,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {},
       "modelFamily": null,
@@ -384,7 +388,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 262144,
@@ -530,7 +535,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 262144,
@@ -749,7 +755,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 1000000,
@@ -3394,7 +3401,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 512000,
@@ -3760,7 +3768,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 1000000,
@@ -4014,7 +4023,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 1048576,
@@ -4230,7 +4240,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 262144,
@@ -4484,7 +4495,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 1048576,
@@ -5253,7 +5265,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 262144,
@@ -5436,7 +5449,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 256000,
@@ -5654,7 +5668,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 1000000,
@@ -6316,7 +6331,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 256000,
@@ -7012,7 +7028,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 262144,
@@ -7085,7 +7102,8 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "free-models"
+        "free-models",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": 262144,

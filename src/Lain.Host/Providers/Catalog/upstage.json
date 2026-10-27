@@ -102,6 +102,643 @@
         "A registered payment method can be charged after credits expire or run out. This package does not configure billing, auto-recharge, purchase or a paid fallback.",
         "No suitable public quota/credit polling endpoint qualified or implemented. Organization usage in Console and lain-only local history do not imply full API account quota."
       ]
+    },
+    {
+      "id": "upstage/solar-pro4",
+      "model": "solar-pro4",
+      "name": "solar-pro4",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.upstage.ai/v1/models",
+          "title": "Upstage account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "upstage/solar-pro4-260806",
+      "model": "solar-pro4-260806",
+      "name": "solar-pro4-260806",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.upstage.ai/v1/models",
+          "title": "Upstage account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "upstage/solar-pro3",
+      "model": "solar-pro3",
+      "name": "solar-pro3",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.upstage.ai/v1/models",
+          "title": "Upstage account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "upstage/solar-pro3-260323",
+      "model": "solar-pro3-260323",
+      "name": "solar-pro3-260323",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.upstage.ai/v1/models",
+          "title": "Upstage account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "upstage/solar-pro2",
+      "model": "solar-pro2",
+      "name": "solar-pro2",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.upstage.ai/v1/models",
+          "title": "Upstage account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "upstage/solar-pro2-251215",
+      "model": "solar-pro2-251215",
+      "name": "solar-pro2-251215",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.upstage.ai/v1/models",
+          "title": "Upstage account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "upstage/solar-mini4",
+      "model": "solar-mini4",
+      "name": "solar-mini4",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.upstage.ai/v1/models",
+          "title": "Upstage account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "upstage/solar-mini",
+      "model": "solar-mini",
+      "name": "solar-mini",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.upstage.ai/v1/models",
+          "title": "Upstage account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "upstage/solar-mini-250422",
+      "model": "solar-mini-250422",
+      "name": "solar-mini-250422",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.upstage.ai/v1/models",
+          "title": "Upstage account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "upstage/solar-decide",
+      "model": "solar-decide",
+      "name": "solar-decide",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.upstage.ai/v1/models",
+          "title": "Upstage account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "upstage/solar-decide-flash",
+      "model": "solar-decide-flash",
+      "name": "solar-decide-flash",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.upstage.ai/v1/models",
+          "title": "Upstage account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "upstage/syn-pro",
+      "model": "syn-pro",
+      "name": "syn-pro",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.upstage.ai/v1/models",
+          "title": "Upstage account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
+    },
+    {
+      "id": "upstage/syn-pro-251021",
+      "model": "syn-pro-251021",
+      "name": "syn-pro-251021",
+      "baseUrl": "https://api.upstage.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "signup-trial"
+      ],
+      "capabilities": {
+        "streaming": true
+      },
+      "manufacturer": "Upstage",
+      "inferenceProvider": "Upstage",
+      "gateway": null,
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://console.upstage.ai/docs/models/solar-mini-4",
+          "title": "Solar Mini 4 model and dated snapshot",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "solar-mini4-260922: 512K context, 128K output; Chat, tools, structured outputs and reasoning explicitly documented."
+        },
+        {
+          "url": "https://console.upstage.ai/api/chat",
+          "title": "Upstage Chat API and supported parameters",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "POST /chat/completions at https://api.upstage.ai/v1; stream chunks and tool_calls documented."
+        },
+        {
+          "url": "https://console.upstage.ai/docs/capabilities/generate/tool-calling",
+          "title": "Solar model tool-calling guide",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.upstage.ai/v1/models",
+          "title": "Upstage account model listing",
+          "checkedAt": "2026-10-27T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact model ID from the account model listing; tools, limits and price are not verified for this route."
+      ]
     }
   ],
   "sources": [
@@ -166,7 +803,20 @@
         "signup-trial"
       ],
       "providerRouteIds": [
-        "upstage/solar-mini4-260922"
+        "upstage/solar-mini4-260922",
+        "upstage/solar-pro4",
+        "upstage/solar-pro4-260806",
+        "upstage/solar-pro3",
+        "upstage/solar-pro3-260323",
+        "upstage/solar-pro2",
+        "upstage/solar-pro2-251215",
+        "upstage/solar-mini4",
+        "upstage/solar-mini",
+        "upstage/solar-mini-250422",
+        "upstage/solar-decide",
+        "upstage/solar-decide-flash",
+        "upstage/syn-pro",
+        "upstage/syn-pro-251021"
       ]
     }
   ],
