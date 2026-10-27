@@ -1,0 +1,495 @@
+{
+  "format": 1,
+  "reviewStatus": "exact-version-evidence-not-a-compliance-approval",
+  "baselineSourceCommit": "5fab859b8f603b7f7ce430d0d2fff748b05bd150",
+  "packages": [
+    {
+      "id": "Avalonia.Fonts.Inter",
+      "version": "12.1.4",
+      "nupkgSha256": "b6d9b4c4a6097099629553b400851e12127677c14118e82c042ff7aed37a548b",
+      "nupkgSha512": "nZW0SEAMGpRQ3dnPK+dW7WSGt23CAOIsacMjLcoJLyKGlzNCN62JEiQD8ZzvZzwHup2toJs4edC/Owecr19cDA==",
+      "notices": [
+        "Inter-3.019-OFL.txt"
+      ],
+      "cacheFiles": [
+        {
+          "path": "lib/net10.0/Avalonia.Fonts.Inter.dll",
+          "archivePath": "lib/net10.0/Avalonia.Fonts.Inter.dll",
+          "sha256": "99c1631309e6b11fe19b8f4b7a668759eb34be9059ab6f12eab821c55ec740b3"
+        },
+        {
+          "path": "avalonia.fonts.inter.nuspec",
+          "archivePath": "Avalonia.Fonts.Inter.nuspec",
+          "sha256": "33c30173dd853458df5a5b0619b63548fc02e9e87bc46a5e293f0bb719b61e1c"
+        }
+      ],
+      "publishedFiles": [
+        {
+          "path": "desktop/Avalonia.Fonts.Inter.dll",
+          "packagePath": "lib/net10.0/Avalonia.Fonts.Inter.dll",
+          "sha256": "99c1631309e6b11fe19b8f4b7a668759eb34be9059ab6f12eab821c55ec740b3"
+        }
+      ],
+      "embeddedFonts": [
+        {
+          "name": "Inter-Bold.ttf",
+          "container": "lib/net10.0/Avalonia.Fonts.Inter.dll",
+          "offset": 12303,
+          "size": 316100,
+          "sha256": "790c108befe859dac2ddbd20af3fbb6917c601b3d544c8a05761519f3b5508fe",
+          "sourceUrl": "https://raw.githubusercontent.com/AvaloniaUI/Avalonia/2d79ba55fae1b1e71c69f93a668080c9029e6a31/src/Avalonia.Fonts.Inter/Assets/Inter-Bold.ttf",
+          "sourceGitBlob": "8e82c70d1081e2857ada1b73395d4f42c2e8adc9",
+          "version": "3.019;git-0a5106e0b",
+          "copyright": "Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)",
+          "license": "SIL Open Font License 1.1",
+          "notice": "Inter-3.019-OFL.txt"
+        },
+        {
+          "name": "Inter-Light.ttf",
+          "container": "lib/net10.0/Avalonia.Fonts.Inter.dll",
+          "offset": 328403,
+          "size": 310420,
+          "sha256": "c44ff7a5fde4816f94fc1e5e232b021a812a411339ddd08b0a475ca6e21db810",
+          "sourceUrl": "https://raw.githubusercontent.com/AvaloniaUI/Avalonia/2d79ba55fae1b1e71c69f93a668080c9029e6a31/src/Avalonia.Fonts.Inter/Assets/Inter-Light.ttf",
+          "sourceGitBlob": "9e265d8905dd0ab93e4830a461453e1dbdadaa56",
+          "version": "3.019;git-0a5106e0b",
+          "copyright": "Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)",
+          "license": "SIL Open Font License 1.1",
+          "notice": "Inter-3.019-OFL.txt"
+        },
+        {
+          "name": "Inter-Medium.ttf",
+          "container": "lib/net10.0/Avalonia.Fonts.Inter.dll",
+          "offset": 638823,
+          "size": 314712,
+          "sha256": "10d48331f5b3c7362ca357b00c17ac4863ad35199b13b0eceb0962c8c1ad7dc9",
+          "sourceUrl": "https://raw.githubusercontent.com/AvaloniaUI/Avalonia/2d79ba55fae1b1e71c69f93a668080c9029e6a31/src/Avalonia.Fonts.Inter/Assets/Inter-Medium.ttf",
+          "sourceGitBlob": "b53fb1c4acbe100c7a91f07564b7f1fa2d5bab12",
+          "version": "3.019;git-0a5106e0b",
+          "copyright": "Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)",
+          "license": "SIL Open Font License 1.1",
+          "notice": "Inter-3.019-OFL.txt"
+        },
+        {
+          "name": "Inter-Regular.ttf",
+          "container": "lib/net10.0/Avalonia.Fonts.Inter.dll",
+          "offset": 953535,
+          "size": 309828,
+          "sha256": "41ab0f707a2bfab8133ccdfcdab52282f5f79e5751f43a264805451c7bb95fb8",
+          "sourceUrl": "https://raw.githubusercontent.com/AvaloniaUI/Avalonia/2d79ba55fae1b1e71c69f93a668080c9029e6a31/src/Avalonia.Fonts.Inter/Assets/Inter-Regular.ttf",
+          "sourceGitBlob": "8d4eebf20665d5ae746c622a2bd42274b54d2bf1",
+          "version": "3.019;git-0a5106e0b",
+          "copyright": "Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)",
+          "license": "SIL Open Font License 1.1",
+          "notice": "Inter-3.019-OFL.txt"
+        },
+        {
+          "name": "Inter-SemiBold.ttf",
+          "container": "lib/net10.0/Avalonia.Fonts.Inter.dll",
+          "offset": 1263363,
+          "size": 315756,
+          "sha256": "e8cbc2b88bc4268237ff5e251776d3c54edcb14e015a9e66e4883bde4b55f13f",
+          "sourceUrl": "https://raw.githubusercontent.com/AvaloniaUI/Avalonia/2d79ba55fae1b1e71c69f93a668080c9029e6a31/src/Avalonia.Fonts.Inter/Assets/Inter-SemiBold.ttf",
+          "sourceGitBlob": "c6aeeb16a6d7f754258bc7f3f2101d287976e6e6",
+          "version": "3.019;git-0a5106e0b",
+          "copyright": "Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)",
+          "license": "SIL Open Font License 1.1",
+          "notice": "Inter-3.019-OFL.txt"
+        },
+        {
+          "name": "Inter-Thin.ttf",
+          "container": "lib/net10.0/Avalonia.Fonts.Inter.dll",
+          "offset": 1579119,
+          "size": 310516,
+          "sha256": "b778a52b84f39ba1d3b08553a246643573b33453b5481b4d09c604bccced930d",
+          "sourceUrl": "https://raw.githubusercontent.com/AvaloniaUI/Avalonia/2d79ba55fae1b1e71c69f93a668080c9029e6a31/src/Avalonia.Fonts.Inter/Assets/Inter-Thin.ttf",
+          "sourceGitBlob": "7aed55d560065b7a5a1975121e0b13ac25e798c8",
+          "version": "3.019;git-0a5106e0b",
+          "copyright": "Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)",
+          "license": "SIL Open Font License 1.1",
+          "notice": "Inter-3.019-OFL.txt"
+        }
+      ],
+      "restoreContentHash": "PqzIALObVJ3ZUpfYDkoNNkijaVBUGVrHqAyWPkE39aJrPukbMv49aGMhS+c5HiW1s+/iuo3fW+ISOk34GOc0iw=="
+    },
+    {
+      "id": "MicroCom.Runtime",
+      "version": "0.11.6",
+      "nupkgSha256": "453af6d34477b19bb2c62d17436e68c76a75915b7947509b1ff601b36d7e78d8",
+      "nupkgSha512": "Y1fibjW9zDGhrbRY8euhJzAm4TiGW39wmM4M3ykTXDF/WK+gqMAVtkxbYxXOAsSWQTvBeL/XJpNdjTKvY/cywQ==",
+      "notices": [
+        "MicroCom.Runtime-0.11.6-LICENSE"
+      ],
+      "cacheFiles": [
+        {
+          "path": "microcom.runtime.nuspec",
+          "archivePath": "MicroCom.Runtime.nuspec",
+          "sha256": "c7aeab4b73acdba3bb8e66865c2bbe67566b8593d972be2089181344adef345f"
+        },
+        {
+          "path": "lib/net8.0/MicroCom.Runtime.dll",
+          "archivePath": "lib/net8.0/MicroCom.Runtime.dll",
+          "sha256": "2538ec6f3c24e901a90e33c37788b9a4e4b6ae8158cab7328a00a00bb28eab9e"
+        }
+      ],
+      "publishedFiles": [
+        {
+          "path": "desktop/MicroCom.Runtime.dll",
+          "packagePath": "lib/net8.0/MicroCom.Runtime.dll",
+          "sha256": "2538ec6f3c24e901a90e33c37788b9a4e4b6ae8158cab7328a00a00bb28eab9e"
+        }
+      ],
+      "restoreContentHash": "NdNWGDiZ6eS/Mf/9+QHR91cj1K7Hy+PX9yrHI/zM7xFYuj9IWT2uxtB6sCHjrnxAeLV9fut1R6zHDUGKX6f9lQ=="
+    },
+    {
+      "id": "Tmds.DBus.Protocol",
+      "version": "0.94.1",
+      "nupkgSha256": "4f71d06ac40e725ffbcf1b79853dd93218695a84f23d36fafc85f477a4c9580f",
+      "nupkgSha512": "l6HQm/Ny4TygH7dxUpTj9G9WoiIGCQuceI3zN2gXBrKhSz2Spb5Jlxb9pARJrSPbxySW65hIy9kq6u1XZGU5jA==",
+      "notices": [
+        "Tmds.DBus.Protocol-0.94.1-COPYING"
+      ],
+      "cacheFiles": [
+        {
+          "path": "tmds.dbus.protocol.nuspec",
+          "archivePath": "Tmds.DBus.Protocol.nuspec",
+          "sha256": "72830040b14d42de24d85be271fce22d608614360bc6bbc46762fd4a5039651a"
+        },
+        {
+          "path": "lib/net9.0/Tmds.DBus.Protocol.dll",
+          "archivePath": "lib/net9.0/Tmds.DBus.Protocol.dll",
+          "sha256": "60a1c5255731d8ac843cab53108be8ba1ed02759ce3db0da5b49939ebe97bd8a"
+        }
+      ],
+      "publishedFiles": [
+        {
+          "path": "desktop/Tmds.DBus.Protocol.dll",
+          "packagePath": "lib/net9.0/Tmds.DBus.Protocol.dll",
+          "sha256": "60a1c5255731d8ac843cab53108be8ba1ed02759ce3db0da5b49939ebe97bd8a"
+        }
+      ],
+      "restoreContentHash": "11YMr7FnAbL83bQmVxlhbIKHvSLxjO81D12Ej0QMSGXMDTxNA9MTOa4MQxx43nv5el/efuPHwzyrj6a5ha2gug=="
+    },
+    {
+      "id": "YamlDotNet",
+      "version": "16.3.0",
+      "nupkgSha256": "e068bcc1243c46c8bfdfe2f27a026bfff03cde7c67d9f37c2cdd70bd24a9dfd4",
+      "nupkgSha512": "8QL7QYw6/l7AzF0DNrmsZRevbzBgOrX5JaezYiVExBm7k10eVZARR//1oROHTlVJFTTVVTQR+06hmOZVDAQh3w==",
+      "notices": [
+        "YamlDotNet-16.3.0-LICENSE.txt",
+        "YamlDotNet-16.3.0-LICENSE-libyaml"
+      ],
+      "cacheFiles": [
+        {
+          "path": "yamldotnet.nuspec",
+          "archivePath": "YamlDotNet.nuspec",
+          "sha256": "f1573d3b0c83844d8ed3ae016240cb18cd3674b8f5d82b40fcccbe49ff97774e"
+        },
+        {
+          "path": "lib/net8.0/YamlDotNet.dll",
+          "archivePath": "lib/net8.0/YamlDotNet.dll",
+          "sha256": "86f873f682c619a0c24e263dcdd15fe027104666641c92f503516671d61edda6"
+        }
+      ],
+      "publishedFiles": [
+        {
+          "path": "host/YamlDotNet.dll",
+          "packagePath": "lib/net8.0/YamlDotNet.dll",
+          "sha256": "86f873f682c619a0c24e263dcdd15fe027104666641c92f503516671d61edda6"
+        }
+      ],
+      "restoreContentHash": "SgMOdxbz8X65z8hraIs6hOEdnkH6hESTAIUa7viEngHOYaH+6q5XJmwr1+yb9vJpNQ19hCQY69xbFsLtXpobQA=="
+    },
+    {
+      "id": "Microsoft.Data.Sqlite",
+      "version": "10.0.12",
+      "nupkgSha256": "246679d8c6c83ffcf4c8a480066e3f4fc4e051c96b71bedfd932fe7a5af1f7d4",
+      "nupkgSha512": "yZ7JQJqVWSICoSZmKJSx0mCm6vgZ2lnIzmPomiEDDfpCKDq93sGY8/d/+7BBPXgeSOdddfqC7GThK6TcV8RSxg==",
+      "notices": [
+        "Microsoft.Data.Sqlite-10.0.12-LICENSE.txt"
+      ],
+      "cacheFiles": [
+        {
+          "path": "microsoft.data.sqlite.nuspec",
+          "archivePath": "Microsoft.Data.Sqlite.nuspec",
+          "sha256": "8e1c47c77197daaac1584979b7bb42a9a8f6deaff9f6d18029b3a689a2107c6c"
+        }
+      ],
+      "publishedFiles": [],
+      "restoreContentHash": "xUq9xUc653ue7ac2rMfCaf8UQN+U3zS8poWYlugycpvJllplMM0Mk7v/+MM0CTlu9zGvbGML4BPH8YWhrUOfGw=="
+    },
+    {
+      "id": "Microsoft.Data.Sqlite.Core",
+      "version": "10.0.12",
+      "nupkgSha256": "5e8ed353006dadf55d5c7f56d237321c20bb10c786262e6b25526756e1036332",
+      "nupkgSha512": "U6a1XGw24t9M39INjA7yjncLkGl/UrJBKIFKDaqdjB3JIUYH6HjUDNokXrfVX2XVS0WUDPGjmU/aOhW3E62m9Q==",
+      "notices": [
+        "Microsoft.Data.Sqlite-10.0.12-LICENSE.txt"
+      ],
+      "cacheFiles": [
+        {
+          "path": "microsoft.data.sqlite.core.nuspec",
+          "archivePath": "Microsoft.Data.Sqlite.Core.nuspec",
+          "sha256": "56030907327ba858664e4c2cbc6547ad56d766d900bc323c14408fcd42fc46a0"
+        },
+        {
+          "path": "lib/net8.0/Microsoft.Data.Sqlite.dll",
+          "archivePath": "lib/net8.0/Microsoft.Data.Sqlite.dll",
+          "sha256": "b98d957462be432895b00dccca012d3c127e118d3d4262418014b92c7bbd66cf"
+        }
+      ],
+      "publishedFiles": [
+        {
+          "path": "host/Microsoft.Data.Sqlite.dll",
+          "packagePath": "lib/net8.0/Microsoft.Data.Sqlite.dll",
+          "sha256": "b98d957462be432895b00dccca012d3c127e118d3d4262418014b92c7bbd66cf"
+        }
+      ],
+      "restoreContentHash": "2aL9eL5HQr0V4b8V909SD+jQAx6qnTTl7sT/v3D8dIvmr2UGdpZIQxqm1pj2Js3e4EYTvpw0oMH7DjapJJuPPw=="
+    },
+    {
+      "id": "SQLitePCLRaw.bundle_e_sqlite3",
+      "version": "2.1.12",
+      "nupkgSha256": "a9a06e6b5a313f6ef3675f91997d012adeffe8aa9e1ffd69ed46a4e685b054e1",
+      "nupkgSha512": "KbeKXtiMrpxd7dFgsnorA1Gci/xVRDCBmkfZNdiiE1la6OdUEMtyTTJ3TBeCn9nIvZgXo5uCd9dVCji3Ay6LuA==",
+      "notices": [
+        "SQLitePCLRaw-2.1.12-NOTICE.TXT",
+        "SQLitePCLRaw-2.1.12-LICENSE.TXT"
+      ],
+      "cacheFiles": [
+        {
+          "path": "sqlitepclraw.bundle_e_sqlite3.nuspec",
+          "archivePath": "SQLitePCLRaw.bundle_e_sqlite3.nuspec",
+          "sha256": "2faa9f418c3b8831efdf92df6aca8322ffa9f7a556e915b46e5daa8e1f8e3233"
+        },
+        {
+          "path": "lib/netstandard2.0/SQLitePCLRaw.batteries_v2.dll",
+          "archivePath": "lib/netstandard2.0/SQLitePCLRaw.batteries_v2.dll",
+          "sha256": "815ce410c9eab531dd219318e3ba16c5e38e83d361cfbbdbb4bbca222c497b0b"
+        }
+      ],
+      "publishedFiles": [
+        {
+          "path": "host/SQLitePCLRaw.batteries_v2.dll",
+          "packagePath": "lib/netstandard2.0/SQLitePCLRaw.batteries_v2.dll",
+          "sha256": "815ce410c9eab531dd219318e3ba16c5e38e83d361cfbbdbb4bbca222c497b0b"
+        }
+      ],
+      "restoreContentHash": "mAgscpQMLw5/nfA1Q5oJVAT29yROUo1ifZGbbTpx/lwZpSxMUGoYbKfmvdm8oXER+RzxqBmmQzeBEVKfeHv2nw==",
+      "noticeScope": "Apache-2.0 wrapper plus full official family NOTICE, including SQLite public-domain dedication; other NOTICE alternatives are not asserted present."
+    },
+    {
+      "id": "SQLitePCLRaw.core",
+      "version": "2.1.12",
+      "nupkgSha256": "af06904138ffa6dc95a599133d64d254716d6facc7543a6b3b910793dae9dca5",
+      "nupkgSha512": "WgmgyKwGLTR6ZfIf1+1dFNxsOyp9GmsU9YjjeUjgz+NZnw2hyjVB0U8taT1Z1vv21s5+gvhHQ3vtpZajsMKJYg==",
+      "notices": [
+        "SQLitePCLRaw-2.1.12-NOTICE.TXT",
+        "SQLitePCLRaw-2.1.12-LICENSE.TXT"
+      ],
+      "cacheFiles": [
+        {
+          "path": "sqlitepclraw.core.nuspec",
+          "archivePath": "SQLitePCLRaw.core.nuspec",
+          "sha256": "8ab9189071aef856b12a9a3d68ac055a01ec6f8fc51b85ac1029e7c5ba12eecc"
+        },
+        {
+          "path": "lib/netstandard2.0/SQLitePCLRaw.core.dll",
+          "archivePath": "lib/netstandard2.0/SQLitePCLRaw.core.dll",
+          "sha256": "af340ac9eb9195795660d7fc1114f486b6ab63998f33176e2f24c8e0acb9aa84"
+        }
+      ],
+      "publishedFiles": [
+        {
+          "path": "host/SQLitePCLRaw.core.dll",
+          "packagePath": "lib/netstandard2.0/SQLitePCLRaw.core.dll",
+          "sha256": "af340ac9eb9195795660d7fc1114f486b6ab63998f33176e2f24c8e0acb9aa84"
+        }
+      ],
+      "restoreContentHash": "ETpNw9DY3ckWLgRRAeCHj+GKOuPi61aeczkXhgHexUvqoZBAYg8RYESE2J7O1M7+o6QbdSEZwrw9bfqztUVWXg==",
+      "noticeScope": "Apache-2.0 wrapper plus full official family NOTICE, including SQLite public-domain dedication; other NOTICE alternatives are not asserted present."
+    },
+    {
+      "id": "SQLitePCLRaw.lib.e_sqlite3",
+      "version": "2.1.12",
+      "nupkgSha256": "4a22c02ffcf489792903cf263def9fce27739716883f965f0b5eeff1637430ac",
+      "nupkgSha512": "Dli+ELKNuRX0g72Uq2I2OZa5zgi4fwSXV4Je3wyF7jH9oz6AKRA9wXIzMwuVeW7RfAZdSVgIcEeZZON59LdtiA==",
+      "notices": [
+        "SQLitePCLRaw-2.1.12-NOTICE.TXT",
+        "SQLitePCLRaw-2.1.12-LICENSE.TXT"
+      ],
+      "cacheFiles": [
+        {
+          "path": "sqlitepclraw.lib.e_sqlite3.nuspec",
+          "archivePath": "SQLitePCLRaw.lib.e_sqlite3.nuspec",
+          "sha256": "0e82e5cda14ccb8c546596d39393a6a9ba94146ffeeac86069df29ce9d57a731"
+        },
+        {
+          "path": "runtimes/linux-x64/native/libe_sqlite3.so",
+          "archivePath": "runtimes/linux-x64/native/libe_sqlite3.so",
+          "sha256": "b0f5c48026fedcf9f05cf31c6fadf9e1e001ca59cd85aa68b8b6814e52c18a07"
+        }
+      ],
+      "publishedFiles": [
+        {
+          "path": "host/libe_sqlite3.so",
+          "packagePath": "runtimes/linux-x64/native/libe_sqlite3.so",
+          "sha256": "b0f5c48026fedcf9f05cf31c6fadf9e1e001ca59cd85aa68b8b6814e52c18a07"
+        }
+      ],
+      "restoreContentHash": "fWi8Dbknuhgg72fWinIdjXVaqO1hHL4YBBwVLnr7e1c9TAZwJ0QE38j9syW1hwx6HaqEVTwI+O07WPdZn8Rp0w==",
+      "noticeScope": "Apache-2.0 wrapper plus full official family NOTICE, including SQLite public-domain dedication; other NOTICE alternatives are not asserted present."
+    },
+    {
+      "id": "SQLitePCLRaw.provider.e_sqlite3",
+      "version": "2.1.12",
+      "nupkgSha256": "df2b3271992e5d719186c4671e3cf4f8658097c154cbcd41494ab594c5997595",
+      "nupkgSha512": "k4RCblP+Hc1JAc77crV+fFZLiZeJPaY8VjMA8kvki00Z0dohG6xxXw4qkuVyCUC2+HChbhwW+ydhmjmlUZAXUQ==",
+      "notices": [
+        "SQLitePCLRaw-2.1.12-NOTICE.TXT",
+        "SQLitePCLRaw-2.1.12-LICENSE.TXT"
+      ],
+      "cacheFiles": [
+        {
+          "path": "sqlitepclraw.provider.e_sqlite3.nuspec",
+          "archivePath": "SQLitePCLRaw.provider.e_sqlite3.nuspec",
+          "sha256": "7e5b604b8ad8121fa75f01eec61f56989b717fadfd530188a57d35759d93f573"
+        },
+        {
+          "path": "lib/net6.0/SQLitePCLRaw.provider.e_sqlite3.dll",
+          "archivePath": "lib/net6.0/SQLitePCLRaw.provider.e_sqlite3.dll",
+          "sha256": "df996bcae63c2cabcfe8d4b9c5110eb39a2a4706178b07d875665391c6eb3995"
+        }
+      ],
+      "publishedFiles": [
+        {
+          "path": "host/SQLitePCLRaw.provider.e_sqlite3.dll",
+          "packagePath": "lib/net6.0/SQLitePCLRaw.provider.e_sqlite3.dll",
+          "sha256": "df996bcae63c2cabcfe8d4b9c5110eb39a2a4706178b07d875665391c6eb3995"
+        }
+      ],
+      "restoreContentHash": "W3oH4XIfCzFrgUSDKHhN6N+dgzA5YHOR2VxX8GB6Qy7CyrJJgxPEG8NirgYWlPQC5P2jz2knSsexWu4tDUL33g==",
+      "noticeScope": "Apache-2.0 wrapper plus full official family NOTICE, including SQLite public-domain dedication; other NOTICE alternatives are not asserted present."
+    },
+    {
+      "id": "SkiaSharp.NativeAssets.Linux",
+      "version": "3.119.4",
+      "nupkgSha256": "fae0554059b1107ef7888e46c20bdfb548401ef7a7a6f7391ad4fadc7432d50a",
+      "nupkgSha512": "+DnMNYJrhlrUUYBCehbi13l76DgZIzWq/PPc/aixEMoE188a6/XzAMStv4dUVGONR2/oxE6bMrOIViveDVWPcg==",
+      "notices": [
+        "native/brotli-LICENSE.txt",
+        "native/dng_sdk-LICENSE.txt",
+        "native/expat-expat_COPYING.txt",
+        "native/freetype-docs_FTL.TXT.txt",
+        "native/freetype-LICENSE.TXT.txt",
+        "native/freetype-docs_GPLv2.TXT.txt",
+        "native/harfbuzz-COPYING.txt",
+        "native/libjpeg-turbo-LICENSE.md.txt",
+        "native/libjpeg-turbo-README.ijg.txt",
+        "native/libpng-LICENSE.txt",
+        "native/libwebp-COPYING.txt",
+        "native/libwebp-PATENTS.txt",
+        "native/libwebp-AUTHORS.txt",
+        "native/piex-LICENSE.txt",
+        "native/wuffs-LICENSE.txt",
+        "native/zlib-LICENSE.txt",
+        "native/gcc8-runtime.txt",
+        "native/gcc8-gpl3.txt",
+        "native/gcc8-libstdc-license.txt",
+        "native/skia-LICENSE.txt",
+        "native/ATTRIBUTION.txt"
+      ],
+      "cacheFiles": [
+        {
+          "path": "skiasharp.nativeassets.linux.nuspec",
+          "archivePath": "SkiaSharp.NativeAssets.Linux.nuspec",
+          "sha256": "b95f79928a4833943ec3930ff1a9329c8ec004875bd922611743b2d4289bb2b5"
+        },
+        {
+          "path": "runtimes/linux-x64/native/libSkiaSharp.so",
+          "archivePath": "runtimes/linux-x64/native/libSkiaSharp.so",
+          "sha256": "66c856eaf1a47a00b23204c30c6ee407987bf5086ecc0a1a6b4fd67526b0cd02"
+        },
+        {
+          "path": "LICENSE.txt",
+          "archivePath": "LICENSE.txt",
+          "sha256": "89101e35a8c66fd4d6dffc1763259161d35cb564c169714ec227a768c89f2938"
+        },
+        {
+          "path": "THIRD-PARTY-NOTICES.txt",
+          "archivePath": "THIRD-PARTY-NOTICES.txt",
+          "sha256": "21504c46c4c58aa64c1055bd2dcbc5f9a136b4b8c412ed3cc6740e22c5b127f5"
+        }
+      ],
+      "publishedFiles": [
+        {
+          "path": "desktop/libSkiaSharp.so",
+          "packagePath": "runtimes/linux-x64/native/libSkiaSharp.so",
+          "sha256": "66c856eaf1a47a00b23204c30c6ee407987bf5086ecc0a1a6b4fd67526b0cd02"
+        }
+      ],
+      "restoreContentHash": "UAyVzbqNfZsZbKbzj68zXLyUyF/SbTKmzTfOO6qDu++dtIUMMTzPBe8oOuzU/DiewpfKoUUlOSsJmqWc6blxBw==",
+      "noticeScope": "Conservative pinned native-source supplements. Existing complete official THIRD-PARTY-NOTICES remains primary evidence; not every listed subcomponent is asserted linked."
+    },
+    {
+      "id": "HarfBuzzSharp.NativeAssets.Linux",
+      "version": "8.3.1.3",
+      "nupkgSha256": "7de58e9daffc9dcbe6aeaec2c670dccefd5f69c576a68655e51f8ec82b687295",
+      "nupkgSha512": "xBOkJE8fzwyt3Y4Dn36WMkzuRewJcKriP8Mkv0CogIxfz54rOGvlqSD5XjfMLuA6aNPdcJL7kJHBVeUqcprI1w==",
+      "notices": [
+        "native/brotli-LICENSE.txt",
+        "native/dng_sdk-LICENSE.txt",
+        "native/expat-expat_COPYING.txt",
+        "native/freetype-docs_FTL.TXT.txt",
+        "native/freetype-LICENSE.TXT.txt",
+        "native/freetype-docs_GPLv2.TXT.txt",
+        "native/harfbuzz-COPYING.txt",
+        "native/libjpeg-turbo-LICENSE.md.txt",
+        "native/libjpeg-turbo-README.ijg.txt",
+        "native/libpng-LICENSE.txt",
+        "native/libwebp-COPYING.txt",
+        "native/libwebp-PATENTS.txt",
+        "native/libwebp-AUTHORS.txt",
+        "native/piex-LICENSE.txt",
+        "native/wuffs-LICENSE.txt",
+        "native/zlib-LICENSE.txt",
+        "native/gcc8-runtime.txt",
+        "native/gcc8-gpl3.txt",
+        "native/gcc8-libstdc-license.txt",
+        "native/skia-LICENSE.txt"
+      ],
+      "cacheFiles": [
+        {
+          "path": "harfbuzzsharp.nativeassets.linux.nuspec",
+          "archivePath": "HarfBuzzSharp.NativeAssets.Linux.nuspec",
+          "sha256": "0aa61be16ff5d9e7a8379e5b162cccbce0754a5c360b3f33ab463c25d4d7618e"
+        },
+        {
+          "path": "runtimes/linux-x64/native/libHarfBuzzSharp.so",
+          "archivePath": "runtimes/linux-x64/native/libHarfBuzzSharp.so",
+          "sha256": "1d5c3afef13545bf34bf8f068b14e25ee619c3b6dee235c44e260fe61cb24018"
+        },
+        {
+          "path": "THIRD-PARTY-NOTICES.txt",
+          "archivePath": "THIRD-PARTY-NOTICES.txt",
+          "sha256": "21504c46c4c58aa64c1055bd2dcbc5f9a136b4b8c412ed3cc6740e22c5b127f5"
+        },
+        {
+          "path": "LICENSE.txt",
+          "archivePath": "LICENSE.txt",
+          "sha256": "89101e35a8c66fd4d6dffc1763259161d35cb564c169714ec227a768c89f2938"
+        }
+      ],
+      "publishedFiles": [
+        {
+          "path": "desktop/libHarfBuzzSharp.so",
+          "packagePath": "runtimes/linux-x64/native/libHarfBuzzSharp.so",
+          "sha256": "1d5c3afef13545bf34bf8f068b14e25ee619c3b6dee235c44e260fe61cb24018"
+        }
+      ],
+      "restoreContentHash": "RI6A1LgmooU30+4QIyFt5rmBCzP0VzTR+587IJSGvYIsHHWlahFufihYxtraLfsIhW7I8dn6+xX+DZGygOPKWQ==",
+      "noticeScope": "Conservative pinned native-source supplements. Existing complete official THIRD-PARTY-NOTICES remains primary evidence; not every listed subcomponent is asserted linked."
+    }
+  ],
+  "hashSemantics": "nupkgSha256/nupkgSha512 identify raw cached (possibly signed) archive bytes; restoreContentHash is separately pinned NuGet restore metadata, not assumed equal to raw archive SHA512."
+}

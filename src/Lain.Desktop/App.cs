@@ -23,7 +23,7 @@ public sealed class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var window = new MainWindow(LainApiClient.CreateLocal());
+            var window = new MainWindow(LainApiClient.CreateLocal(), startup: DesktopStartupServices.CreateLocal());
             desktop.MainWindow = window;
             // Hiding preserves the main window; a real close always terminates the UI.
             desktop.ShutdownMode = Avalonia.Controls.ShutdownMode.OnMainWindowClose;
@@ -31,10 +31,14 @@ public sealed class App : Application
             var monitor = new DesktopSignalMonitor(monitorClient);
             var tray = new TrayWorkspaceController(window, () => desktop.Shutdown(), monitor.PollAsync,
                 new LinuxDesktopNotificationSink(), TrayAvailability.IsAvailableAsync);
+            tray.Reopened += () => _ = window.EnsureServiceOnOpenAsync();
             window.AttachTrayController(tray);
             window.Opened += (_, _) => tray.Start();
             Program.InstanceOwner?.StartListening(tray.Reopen);
             desktop.Exit += (_, _) => { tray.Dispose(); monitorClient.Dispose(); };
+            // Host startup acquires its own admission. UI initialization must release
+            // its short lease before Opened can call the service manager.
+            Program.ReleaseInitializationAdmission();
         }
         base.OnFrameworkInitializationCompleted();
     }

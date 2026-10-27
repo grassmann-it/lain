@@ -1,0 +1,1734 @@
+{
+  "format": 2,
+  "binarySha256": "90dfebb27ec7fd5184b54afa06e7105c279d12858f1948d5ed1e011413d80985",
+  "scope": "Exact linked Go modules from the shipped binary; h1-verified recursive module archive notices and explicitly pinned prepared upstream notices",
+  "reviewStatus": "evidence-collected-not-a-legal-compliance-approval",
+  "toolchain": {
+    "version": "go1.27.2",
+    "sourceUrl": "https://go.googlesource.com/go/+/refs/tags/go1.27.2/LICENSE",
+    "noticeFiles": [
+      {
+        "path": "toolchain/go1.27.2/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/compile/internal/ssa/_gen/vendor/golang.org/x/tools/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/compile/internal/ssa/_gen/vendor/golang.org/x/tools/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/github.com/google/pprof/AUTHORS",
+        "sha256": "8a196dfd9252ad9cb0670365e680d6b19560c688776fa76f0203854ae2c0e29c"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/github.com/google/pprof/LICENSE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/github.com/google/pprof/third_party/svgpan/LICENSE",
+        "sha256": "154c946c17de61ca71d28e13673d76a5798e6e25995a7397fbae157afc8f62b4"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/github.com/ianlancetaylor/demangle/LICENSE",
+        "sha256": "b73277f7730993ef8e7f80aed83e5309762fed4d77eced982abb2c00657c074d"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/arch/LICENSE",
+        "sha256": "8cda009bd927676a95ee7ce2dae921442ac4d9584d041b56ecfcba6839032f0b"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/arch/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/build/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/build/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/mod/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/mod/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/sync/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/sync/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/sys/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/sys/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/telemetry/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/telemetry/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/term/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/term/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/text/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/text/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/tools/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/golang.org/x/tools/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/cmd/vendor/rsc.io/markdown/LICENSE",
+        "sha256": "2d36597f7117c38b006835ae7f537487207d8ec407aa9d9980794b2030cbc067"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/crypto/internal/boring/LICENSE",
+        "sha256": "56210f826b8f0fbac3160dfe55c97f4019eb6cdda3963b5a0eab8a8bdb62360e"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/internal/copyright/copyright_test.go",
+        "sha256": "d42b910fe44f043a907002751c5b29c7a17175e6c10ad8c3f5884387e7acab6d"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/runtime/testdata/testgoroutineleakprofile/goker/LICENSE",
+        "sha256": "f99df8ae6da6de047ed002d9dbe8682d9a19c88e9a7473abdadf3ac206621a85"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/vendor/golang.org/x/crypto/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/vendor/golang.org/x/crypto/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/vendor/golang.org/x/net/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/vendor/golang.org/x/net/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/vendor/golang.org/x/sys/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/vendor/golang.org/x/sys/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/vendor/golang.org/x/text/LICENSE",
+        "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+      },
+      {
+        "path": "toolchain/go1.27.2/src/vendor/golang.org/x/text/PATENTS",
+        "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "module": "cloud.google.com/go/compute/metadata",
+      "version": "v0.3.0",
+      "goSum": "h1:Tz+eQXMEqDIKRsmY3cHTL6FVaynIjX2QxYC4trgAKZc=",
+      "sourceUrl": "https://pkg.go.dev/cloud.google.com/go/compute/metadata@v0.3.0",
+      "noticeFiles": [
+        {
+          "path": "modules/cloud.google.com/go/compute/metadata@v0.3.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "c0ab79c30870c1aa9912fb0fdcb043e0044782825988e40f59401d227976b677",
+        "goSum": "h1:Tz+eQXMEqDIKRsmY3cHTL6FVaynIjX2QxYC4trgAKZc=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/googleapis/google-cloud-go",
+        "Subdir": "compute/metadata",
+        "Hash": "b952f41fc832fbe5ed74f47ae0e6d6f2e93448e0",
+        "Ref": "refs/tags/compute/metadata/v0.3.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/andybalholm/brotli",
+      "version": "v1.0.6",
+      "goSum": "h1:Yf9fFpf49Zrxb9NlQaluyE92/+X7UVHlhMNJN2sxfOI=",
+      "sourceUrl": "https://pkg.go.dev/github.com/andybalholm/brotli@v1.0.6",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/andybalholm/brotli@v1.0.6/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "7406a3da42b69d91795fa3cbdbda47b4609352e1a292d5cf890ed6e7a05ab690",
+        "goSum": "h1:Yf9fFpf49Zrxb9NlQaluyE92/+X7UVHlhMNJN2sxfOI=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/andybalholm/brotli",
+        "Hash": "b7a4cf9ec51091bb564e7d758771b967bc411813",
+        "Ref": "refs/tags/v1.0.6"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/cespare/xxhash/v2",
+      "version": "v2.3.0",
+      "goSum": "h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=",
+      "sourceUrl": "https://pkg.go.dev/github.com/cespare/xxhash/v2@v2.3.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/cespare/xxhash/v2@v2.3.0/LICENSE.txt",
+          "sourcePath": "LICENSE.txt",
+          "sha256": "f566a9f97bacdaf00d9f21dd991e81dc11201c4e016c86b470799429a1c9a79c"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "145a26cdc7c49db566017b807c4989ee7f7ddeb569423e9cb99f995fac3621d3",
+        "goSum": "h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/cespare/xxhash",
+        "Hash": "998dce232f17418a7a5721ecf87ca714025a3243",
+        "Ref": "refs/tags/v2.3.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/dlclark/regexp2/v2",
+      "version": "v2.5.1",
+      "goSum": "h1:E5Ug7Dh264W1ymdySmiHNcDG7fmsR307APCE5R07a20=",
+      "sourceUrl": "https://pkg.go.dev/github.com/dlclark/regexp2/v2@v2.5.1",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/dlclark/regexp2/v2@v2.5.1/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "9be5d04bb4d706914d5bf943710da4afeb42048f7c529902fb57c82762a991a9"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "068f3cfc039119473609e438145072de2d402e75aace180fa467ab546226956d",
+        "goSum": "h1:E5Ug7Dh264W1ymdySmiHNcDG7fmsR307APCE5R07a20=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/dlclark/regexp2",
+        "Hash": "0ec61737c1e8483bb16083a916fa9a3bd21f91bb",
+        "Ref": "refs/tags/v2.5.1"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/fsnotify/fsnotify",
+      "version": "v1.9.0",
+      "goSum": "h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=",
+      "sourceUrl": "https://pkg.go.dev/github.com/fsnotify/fsnotify@v1.9.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/fsnotify/fsnotify@v1.9.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "2dfbe6d2b5eb18b55148f3805d88648a09e0d17e38428123259afb08c8996e37"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "94e64824b23591b7aa504e3321d5ec3f57de88f4d49882eaefbbf6820dab746e",
+        "goSum": "h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/fsnotify/fsnotify",
+        "Hash": "ae0e7923765f64fb8061396db7edebb558cf6093",
+        "Ref": "refs/tags/v1.9.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/gabriel-vasile/mimetype",
+      "version": "v1.4.3",
+      "goSum": "h1:in2uUcidCuFcDKtdcBxlR0rJ1+fsokWf+uqxgUFjbI0=",
+      "sourceUrl": "https://pkg.go.dev/github.com/gabriel-vasile/mimetype@v1.4.3",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/gabriel-vasile/mimetype@v1.4.3/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "4335e2ceb33d8d7e75125192466ae8604617b0a67492b919604fe52dc56018d9"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "cbad487d3bd410db294fe9b95dff68dd9e1e59beb0d4850ca416e13b1cd70faf",
+        "goSum": "h1:in2uUcidCuFcDKtdcBxlR0rJ1+fsokWf+uqxgUFjbI0=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/gabriel-vasile/mimetype",
+        "Hash": "e64d6bdb3607578757d31380818651a9fc95ca8b",
+        "Ref": "refs/tags/v1.4.3"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/gin-contrib/sse",
+      "version": "v0.1.0",
+      "goSum": "h1:Y/yl/+YNO8GZSjAhjMsSuLt29uWRFHdHYUb5lYOV9qE=",
+      "sourceUrl": "https://pkg.go.dev/github.com/gin-contrib/sse@v0.1.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/gin-contrib/sse@v0.1.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "03458b6d5828e1be1127ca2adf122572eb574fc47b56190c3b38203b8b2a98d0"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "512c8672f26405172077e764c4817ed8f66edc632d1bed205b5e1b8d282816ab",
+        "goSum": "h1:Y/yl/+YNO8GZSjAhjMsSuLt29uWRFHdHYUb5lYOV9qE=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/gin-gonic/gin",
+      "version": "v1.10.1",
+      "goSum": "h1:T0ujvqyCSqRopADpgPgiTT63DUQVSfojyME59Ei63pQ=",
+      "sourceUrl": "https://pkg.go.dev/github.com/gin-gonic/gin@v1.10.1",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/gin-gonic/gin@v1.10.1/AUTHORS.md",
+          "sourcePath": "AUTHORS.md",
+          "sha256": "41711f484fa311b9b556397c0c3353197681b2c6599918483cc8f19bc68f26fe"
+        },
+        {
+          "path": "modules/github.com/gin-gonic/gin@v1.10.1/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "03458b6d5828e1be1127ca2adf122572eb574fc47b56190c3b38203b8b2a98d0"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "9dacb88b9d0f4b9e92b24344bcbb4e8646acaaa13182cbad491063e33061d11b",
+        "goSum": "h1:T0ujvqyCSqRopADpgPgiTT63DUQVSfojyME59Ei63pQ=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/gin-gonic/gin",
+        "Hash": "b5af7796535d97d9c7af42539af01d787fcb3b4d",
+        "Ref": "refs/tags/v1.10.1"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/go-playground/locales",
+      "version": "v0.14.1",
+      "goSum": "h1:EWaQ/wswjilfKLTECiXz7Rh+3BjFhfDFKv/oXslEjJA=",
+      "sourceUrl": "https://pkg.go.dev/github.com/go-playground/locales@v0.14.1",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/go-playground/locales@v0.14.1/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "a1a5ca382f9e8c646fa05240a74a6554bbc3084b5675f84c9eaafd3d95686612"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "f33b53f2eef290d8b43b1011285f1f9cfcb1295c690defcb452598773baace7b",
+        "goSum": "h1:EWaQ/wswjilfKLTECiXz7Rh+3BjFhfDFKv/oXslEjJA=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/go-playground/locales",
+        "Hash": "ce315c8672599942003599943a1e64288f55b03f",
+        "Ref": "refs/tags/v0.14.1"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/go-playground/universal-translator",
+      "version": "v0.18.1",
+      "goSum": "h1:Bcnm0ZwsGyWbCzImXv+pAJnYK9S473LQFuzCbDbfSFY=",
+      "sourceUrl": "https://pkg.go.dev/github.com/go-playground/universal-translator@v0.18.1",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/go-playground/universal-translator@v0.18.1/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "a55d0c6e1a35ee6cf13afb4bbc3c8801cc570d7ac8edcd5e4503892f1c7ff4f7"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "77fc966f2d045c208ddeaa8343924f83688841b6f4c2ae005dc9ea5550c7d171",
+        "goSum": "h1:Bcnm0ZwsGyWbCzImXv+pAJnYK9S473LQFuzCbDbfSFY=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/go-playground/universal-translator",
+        "Hash": "f83cd526536e253181a13835b00cd107f627c505",
+        "Ref": "refs/tags/v0.18.1"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/go-playground/validator/v10",
+      "version": "v10.20.0",
+      "goSum": "h1:K9ISHbSaI0lyB2eWMPJo+kOS/FBExVwjEviJTixqxL8=",
+      "sourceUrl": "https://pkg.go.dev/github.com/go-playground/validator/v10@v10.20.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/go-playground/validator/v10@v10.20.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "9e321f6a1db81616a6c344d3aefddf9834fef23bdd913eae0db283dfa6753dff"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "dce6b136e5a21f32082a75a083a0e17cafeb8fdbc5457a3c5b965835e8a1f8b1",
+        "goSum": "h1:K9ISHbSaI0lyB2eWMPJo+kOS/FBExVwjEviJTixqxL8=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/go-playground/validator",
+        "Hash": "e20b94842ab102ba94e73eaf66f5c0466e405882",
+        "Ref": "refs/tags/v10.20.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/google/uuid",
+      "version": "v1.6.0",
+      "goSum": "h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=",
+      "sourceUrl": "https://pkg.go.dev/github.com/google/uuid@v1.6.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/google/uuid@v1.6.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "0a8d61ed3cbfd5312326e8126c31ce9c627a283adc99131b56896d29ada04b2d"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "d0f02f377217f42702e259684e06441edbf5140dddcc34ba9bea56038b38a6ed",
+        "goSum": "h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/google/uuid",
+        "Hash": "0f11ee6918f41a04c201eceeadf612a377bc7fbc",
+        "Ref": "refs/tags/v1.6.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/gorilla/websocket",
+      "version": "v1.5.3",
+      "goSum": "h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=",
+      "sourceUrl": "https://pkg.go.dev/github.com/gorilla/websocket@v1.5.3",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/gorilla/websocket@v1.5.3/AUTHORS",
+          "sourcePath": "AUTHORS",
+          "sha256": "fdebefabdd93d9701887ac1fa4df716322f71651000442cfd947325648a06675"
+        },
+        {
+          "path": "modules/github.com/gorilla/websocket@v1.5.3/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "2be1b548b0387ca8948e1bb9434e709126904d15f622cc2d0d8e7f186e4d122d"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "dbbd31dd0f08548c5dc43e4c2f12bbba66abff5252b224b1cd06afbb72783a76",
+        "goSum": "h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/gorilla/websocket",
+        "Hash": "ce903f6d1d961af3a8602f2842c8b1c3fca58c4d",
+        "Ref": "refs/tags/v1.5.3"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/klauspost/compress",
+      "version": "v1.17.4",
+      "goSum": "h1:Ej5ixsIri7BrIjBkRZLTo6ghwrEtHFk7ijlczPW4fZ4=",
+      "sourceUrl": "https://pkg.go.dev/github.com/klauspost/compress@v1.17.4",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/klauspost/compress@v1.17.4/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "0d9e582ee4bff57bf1189c9e514e6da7ce277f9cd3bc2d488b22fbb39a6d87cf"
+        },
+        {
+          "path": "modules/github.com/klauspost/compress@v1.17.4/gzhttp/LICENSE",
+          "sourcePath": "gzhttp/LICENSE",
+          "sha256": "2252a5b1e2b1d3663b53ea77051b8ed065cb9270a3d1174d5d6ead8a2de051b6"
+        },
+        {
+          "path": "modules/github.com/klauspost/compress@v1.17.4/internal/lz4ref/LICENSE",
+          "sourcePath": "internal/lz4ref/LICENSE",
+          "sha256": "6a358d2540ca14048f02d366f23787c0a480157e58f058113f0e27168dd4e447"
+        },
+        {
+          "path": "modules/github.com/klauspost/compress@v1.17.4/internal/snapref/LICENSE",
+          "sourcePath": "internal/snapref/LICENSE",
+          "sha256": "f69f157b0be75da373605dbc8bbf142e8924ee82d8f44f11bcaf351335bf98cf"
+        },
+        {
+          "path": "modules/github.com/klauspost/compress@v1.17.4/s2/LICENSE",
+          "sourcePath": "s2/LICENSE",
+          "sha256": "08683b14bda8ae3538abf19e1879e853a39e3b8276a8d673363b529d15a61c1a"
+        },
+        {
+          "path": "modules/github.com/klauspost/compress@v1.17.4/s2/cmd/internal/filepathx/LICENSE",
+          "sourcePath": "s2/cmd/internal/filepathx/LICENSE",
+          "sha256": "8582c87d9a6baa28f7827c5205b7d16c3179bc794ebd4c7cc287c49a89b7eaa1"
+        },
+        {
+          "path": "modules/github.com/klauspost/compress@v1.17.4/s2/cmd/internal/readahead/LICENSE",
+          "sourcePath": "s2/cmd/internal/readahead/LICENSE",
+          "sha256": "10fa24a602fde465db603cd5d546e37e33642a73cd24ddf5910be81724fec8b2"
+        },
+        {
+          "path": "modules/github.com/klauspost/compress@v1.17.4/snappy/AUTHORS",
+          "sourcePath": "snappy/AUTHORS",
+          "sha256": "f6f3821e64460346c1ed1a15fb32b94ad241617276b60726c1350ca315309463"
+        },
+        {
+          "path": "modules/github.com/klauspost/compress@v1.17.4/snappy/LICENSE",
+          "sourcePath": "snappy/LICENSE",
+          "sha256": "f69f157b0be75da373605dbc8bbf142e8924ee82d8f44f11bcaf351335bf98cf"
+        },
+        {
+          "path": "modules/github.com/klauspost/compress@v1.17.4/snappy/xerial/LICENSE",
+          "sourcePath": "snappy/xerial/LICENSE",
+          "sha256": "d4ff111fa30ac75e28dca3868de957a3b73ff50b76bc4b8fe5c3a1f008d26703"
+        },
+        {
+          "path": "modules/github.com/klauspost/compress@v1.17.4/zstd/internal/xxhash/LICENSE.txt",
+          "sourcePath": "zstd/internal/xxhash/LICENSE.txt",
+          "sha256": "f566a9f97bacdaf00d9f21dd991e81dc11201c4e016c86b470799429a1c9a79c"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "dd1acc63c40bf36ccfb2a7a7dd46579ea67585e37f1d2dbb06026b56ef625903",
+        "goSum": "h1:Ej5ixsIri7BrIjBkRZLTo6ghwrEtHFk7ijlczPW4fZ4=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/klauspost/compress",
+        "Hash": "98ff542abe3108aa760c1558f80d393be0136539",
+        "Ref": "refs/tags/v1.17.4"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/leodido/go-urn",
+      "version": "v1.4.0",
+      "goSum": "h1:WT9HwE9SGECu3lg4d/dIA+jxlljEa1/ffXKmRjqdmIQ=",
+      "sourceUrl": "https://pkg.go.dev/github.com/leodido/go-urn@v1.4.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/leodido/go-urn@v1.4.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "fe81a9072afbfe0fe32b0bc99a852d697d14fbbca99b0b1878ac8f5dcbdd6ee6"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "948fe5f705b9eab6c3bc7e34a3ad2549ead87a8f5f73e5a85a8c66f347612ab2",
+        "goSum": "h1:WT9HwE9SGECu3lg4d/dIA+jxlljEa1/ffXKmRjqdmIQ=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/leodido/go-urn",
+        "Hash": "d725923fe33ce69c89b9e2033d069099b498224f",
+        "Ref": "refs/tags/v1.4.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/libp2p/zeroconf/v2",
+      "version": "v2.2.0",
+      "goSum": "h1:Cup06Jv6u81HLhIj1KasuNM/RHHrJ8T7wOTS4+Tv53Q=",
+      "sourceUrl": "https://pkg.go.dev/github.com/libp2p/zeroconf/v2@v2.2.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/libp2p/zeroconf/v2@v2.2.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "200e14ba92ed9bee1273b522c0931351bfb89c41177056e5d0cafc7e91e45c0a"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "934673e6ee168516eac9d768e5ee074dd8d7e3a33e0f90ac266501100faaea13",
+        "goSum": "h1:Cup06Jv6u81HLhIj1KasuNM/RHHrJ8T7wOTS4+Tv53Q=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/libp2p/zeroconf",
+        "Hash": "586e7c571d106f842c8567012dacd28d73fcf966",
+        "Ref": "refs/tags/v2.2.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/mattn/go-isatty",
+      "version": "v0.0.20",
+      "goSum": "h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=",
+      "sourceUrl": "https://pkg.go.dev/github.com/mattn/go-isatty@v0.0.20",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/mattn/go-isatty@v0.0.20/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "08eab1118c80885fa1fa6a6dd7303f65a379fcb3733e063d20d1bbc2c76e6fa1"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "f2d5f89ca451577e17464b9bb596dc0d0ecececb5eaa63622c41b57cd0b7b8cc",
+        "goSum": "h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/mattn/go-isatty",
+        "Hash": "a7c02353c47bc4ec6b30dc9628154ae4fe760c11",
+        "Ref": "refs/tags/v0.0.20"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/miekg/dns",
+      "version": "v1.1.43",
+      "goSum": "h1:JKfpVSCB84vrAmHzyrsxB5NAr5kLoMXZArPSw7Qlgyg=",
+      "sourceUrl": "https://pkg.go.dev/github.com/miekg/dns@v1.1.43",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/miekg/dns@v1.1.43/AUTHORS",
+          "sourcePath": "AUTHORS",
+          "sha256": "74a7b790488334d8a15bb0349ef1ceed3d4bb107f1c175460d5049217f0b5b89"
+        },
+        {
+          "path": "modules/github.com/miekg/dns@v1.1.43/COPYRIGHT",
+          "sourcePath": "COPYRIGHT",
+          "sha256": "66550c0ad5ca7ec1e08683e5f872cc45c741f311eee3b8ee484206ecbf9c740d"
+        },
+        {
+          "path": "modules/github.com/miekg/dns@v1.1.43/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "629ccac021fbccd2efd2d1697f30f08d9d125804510118591743102b163bc9e7"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "98eaddff5c30e475850f8f9c170bfb1adf33f0aaeeb280f71e77808a1dd902aa",
+        "goSum": "h1:JKfpVSCB84vrAmHzyrsxB5NAr5kLoMXZArPSw7Qlgyg=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pelletier/go-toml/v2",
+      "version": "v2.4.3-0.20260624044523-35f78d5908f1",
+      "goSum": "h1:gIZQQ2+wbsdQGWLPDSdJFptR25tBCjSC0KbSIQZ1rgE=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pelletier/go-toml/v2@v2.4.3-0.20260624044523-35f78d5908f1",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pelletier/go-toml/v2@v2.4.3-0.20260624044523-35f78d5908f1/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "26844e4b53c5adec04e557fd7dfef281cc0205a7d355626b1c68b778b99e9e7b"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "029fea5665a9c07e8df41817dd961325da7006e8e47a2e480f49bcd2b536eb31",
+        "goSum": "h1:gIZQQ2+wbsdQGWLPDSdJFptR25tBCjSC0KbSIQZ1rgE=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pelletier/go-toml",
+        "Hash": "35f78d5908f1ccf0b5b3fd7927b3aeb538c352af"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pierrec/xxHash",
+      "version": "v0.1.5",
+      "goSum": "h1:n/jBpwTHiER4xYvK3/CdPVnLDPchj8eTJFFLUb4QHBo=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pierrec/xxHash@v0.1.5",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pierrec/xx!hash@v0.1.5/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "2adb93d27b6b0c2e0e458c1fb8d0a8543e7c8f959749bdef04ec14c7bec6c094"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "addb70f9950a171cae204ff36787b9d71170b294e06530740288d602b663d147",
+        "goSum": "h1:n/jBpwTHiER4xYvK3/CdPVnLDPchj8eTJFFLUb4QHBo=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/datachannel",
+      "version": "v1.6.2",
+      "goSum": "h1:7EXQ8TH3vTouBUdRWYbcX2edSx9Yj6k5zl5P+qyxEPc=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/datachannel@v1.6.2",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/datachannel@v1.6.2/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "6483daf6c8aa2c8192528e60be098aa82dd18f6d7b96dc8246f4f7c3333fbf3f"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "15aba5471d6f750d4d18a114174203def39af240eb9ff8c880805eb412bb20f1",
+        "goSum": "h1:7EXQ8TH3vTouBUdRWYbcX2edSx9Yj6k5zl5P+qyxEPc=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/datachannel",
+        "Hash": "7a71a8db774be92b7f3be850c387445f2fdf74de",
+        "Ref": "refs/tags/v1.6.2"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/dtls/v3",
+      "version": "v3.1.5",
+      "goSum": "h1:9xJtVsHwMYeSjPp5Hh1FTis4DchnQWtnOa5o+6ygqfc=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/dtls/v3@v3.1.5",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/dtls/v3@v3.1.5/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "6483daf6c8aa2c8192528e60be098aa82dd18f6d7b96dc8246f4f7c3333fbf3f"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "447358c3191774c809538a061ecb89effb4a7257b22213e19f35a62faa37cdf5",
+        "goSum": "h1:9xJtVsHwMYeSjPp5Hh1FTis4DchnQWtnOa5o+6ygqfc=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/dtls",
+        "Hash": "9c642f885371954b6010f9605e963d54f654e917",
+        "Ref": "refs/tags/v3.1.5"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/ice/v4",
+      "version": "v4.3.0",
+      "goSum": "h1:X8l4s9zV2HeTKX33nulWAFXAEo5KhIVzOsY62/3t/LM=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/ice/v4@v4.3.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/ice/v4@v4.3.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "6483daf6c8aa2c8192528e60be098aa82dd18f6d7b96dc8246f4f7c3333fbf3f"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "f95ef3ce2e0063c13925f478bf8d188833725b2f0a7ecb1e695dee8ab61ef63c",
+        "goSum": "h1:X8l4s9zV2HeTKX33nulWAFXAEo5KhIVzOsY62/3t/LM=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/ice",
+        "Hash": "1e8716372f2bb52e45bf2a7172e4fb1004251c46",
+        "Ref": "refs/tags/v4.3.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/interceptor",
+      "version": "v0.1.45",
+      "goSum": "h1:6PUo/5829bIfRFIPPJQzuDn8EjxRTSB/CSD7QVCOaqo=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/interceptor@v0.1.45",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/interceptor@v0.1.45/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "6483daf6c8aa2c8192528e60be098aa82dd18f6d7b96dc8246f4f7c3333fbf3f"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "59393203b8c2f9da83a32221891fcdefbf60a215fb34d1cd99689fbed22f8d94",
+        "goSum": "h1:6PUo/5829bIfRFIPPJQzuDn8EjxRTSB/CSD7QVCOaqo=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/interceptor",
+        "Hash": "c1e9f44ca83a170253740a2b6363db4d92db3676",
+        "Ref": "refs/tags/v0.1.45"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/logging",
+      "version": "v0.2.4",
+      "goSum": "h1:tTew+7cmQ+Mc1pTBLKH2puKsOvhm32dROumOZ655zB8=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/logging@v0.2.4",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/logging@v0.2.4/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "87272dba8c4fcf57101a3195f4f53f7b010b6e153b9b0977bb1a3f91acddf691"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "b904074dd76009e71b4e4e0e004a2c7862bff0a8690b4f47410c46b172b3830c",
+        "goSum": "h1:tTew+7cmQ+Mc1pTBLKH2puKsOvhm32dROumOZ655zB8=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/logging",
+        "Hash": "39ff9235799bde6d2c7b3f5e21579159e5bbe332",
+        "Ref": "refs/tags/v0.2.4"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/mdns/v2",
+      "version": "v2.1.0",
+      "goSum": "h1:3IJ9+Xio6tWYjhN6WwuY142P/1jA0D5ERaIqawg/fOY=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/mdns/v2@v2.1.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/mdns/v2@v2.1.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "83e4dd21429a91fb7cea67a476032a9641425e5355df2e0f589a738b6ec9fd2c"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "275bed51350805c787bdfc7917ecfaa3a8c705b8eb767ba0116c96110410b566",
+        "goSum": "h1:3IJ9+Xio6tWYjhN6WwuY142P/1jA0D5ERaIqawg/fOY=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/mdns",
+        "Hash": "339008c88b3e25493223ad5289fd2efffd2c6422",
+        "Ref": "refs/tags/v2.1.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/randutil",
+      "version": "v0.1.0",
+      "goSum": "h1:CFG1UdESneORglEsnimhUjf33Rwjubwj6xfiOXBa3mA=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/randutil@v0.1.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/randutil@v0.1.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "badaf9bc72e71d5a70e7604c636b5b7adf79b9cafc188688438105d2b1e54722"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "35161b7c4ff98bb09fd8055537f9b2499116c19a89b9700b9b1986b7147b6805",
+        "goSum": "h1:CFG1UdESneORglEsnimhUjf33Rwjubwj6xfiOXBa3mA=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/rtcp",
+      "version": "v1.2.17",
+      "goSum": "h1:PxiT6L79yPZKtXIsXdG1eakBl6dtBj4x+4oVEL0DlSw=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/rtcp@v1.2.17",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/rtcp@v1.2.17/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "6483daf6c8aa2c8192528e60be098aa82dd18f6d7b96dc8246f4f7c3333fbf3f"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "8c553da7b246022087d265e010463c1d50ec61615cb0bf8cca1ddcf1c1a87418",
+        "goSum": "h1:PxiT6L79yPZKtXIsXdG1eakBl6dtBj4x+4oVEL0DlSw=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/rtcp",
+        "Hash": "a9b71ae137f29b00eb94a89a9529f0d13c85d536",
+        "Ref": "refs/tags/v1.2.17"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/rtp",
+      "version": "v1.10.4",
+      "goSum": "h1:4sCUwUd35Nllcpyp8V7lRgb4DV/ulHJaRTjbrkAcpQ4=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/rtp@v1.10.4",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/rtp@v1.10.4/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "b85dcd3e453d05982552c52b5fc9e0bdd6d23c6f8e844b984a88af32570b0cc0"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "8116129c5ec6a7a75823d07afdb5e3a02d1f1387a72cd89348597b1d54f5ec35",
+        "goSum": "h1:4sCUwUd35Nllcpyp8V7lRgb4DV/ulHJaRTjbrkAcpQ4=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/rtp",
+        "Hash": "2b19d5b2d9c41d02f3ea5d9464fda0b776488743",
+        "Ref": "refs/tags/v1.10.4"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/sctp",
+      "version": "v1.11.0",
+      "goSum": "h1:sAxv9Qp3uIcaF5wu1XntwshtnW93CEuxhpkYzSbnfMs=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/sctp@v1.11.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/sctp@v1.11.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "6483daf6c8aa2c8192528e60be098aa82dd18f6d7b96dc8246f4f7c3333fbf3f"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "d7bef696b2ce3c8aec1db90327b85e27ecec7195d46261e9c62be43d9b12ccf2",
+        "goSum": "h1:sAxv9Qp3uIcaF5wu1XntwshtnW93CEuxhpkYzSbnfMs=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/sctp",
+        "Hash": "d9cdf5f622d8bcce50ebe59337b3f5dffae68b2c",
+        "Ref": "refs/tags/v1.11.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/sdp/v3",
+      "version": "v3.0.19",
+      "goSum": "h1:1VMKs3gIkTQV5M3hNKfTAPrDXSNrYtOlmOD8+mSZUGQ=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/sdp/v3@v3.0.19",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/sdp/v3@v3.0.19/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "6483daf6c8aa2c8192528e60be098aa82dd18f6d7b96dc8246f4f7c3333fbf3f"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "ad38874cc2d2936fdbc86945e0acef6dedd121b3cd484d33f06545c7e788a2b4",
+        "goSum": "h1:1VMKs3gIkTQV5M3hNKfTAPrDXSNrYtOlmOD8+mSZUGQ=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/sdp",
+        "Hash": "c1a888b2f5fcd2bb0a476bfa083d86978f31922f",
+        "Ref": "refs/tags/v3.0.19"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/srtp/v3",
+      "version": "v3.0.12",
+      "goSum": "h1:U7V17bckl7sI4mb3sepiojByDuBY0wNCqQE+6IlQBbc=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/srtp/v3@v3.0.12",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/srtp/v3@v3.0.12/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "6483daf6c8aa2c8192528e60be098aa82dd18f6d7b96dc8246f4f7c3333fbf3f"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "f0ce3bc8f7d2a61f80cf4eeb31aa7592a629251989cded04257629852d045b45",
+        "goSum": "h1:U7V17bckl7sI4mb3sepiojByDuBY0wNCqQE+6IlQBbc=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/srtp",
+        "Hash": "5aa4098de56c50afac96acad747a79db2fcbdc80",
+        "Ref": "refs/tags/v3.0.12"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/stun/v3",
+      "version": "v3.1.6",
+      "goSum": "h1:WnhsD0eHCiwCfKNkVx0VJJwr2Y3eV4Ueih3KJ+dfZy8=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/stun/v3@v3.1.6",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/stun/v3@v3.1.6/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "6483daf6c8aa2c8192528e60be098aa82dd18f6d7b96dc8246f4f7c3333fbf3f"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "ab69bf22421e9c89c97768ee7627f4a1edf8262bc526ee62bb24354d96d6adb8",
+        "goSum": "h1:WnhsD0eHCiwCfKNkVx0VJJwr2Y3eV4Ueih3KJ+dfZy8=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/stun",
+        "Hash": "e1234ac068ba5e0bb4e110c8fe1a548e0724f15f",
+        "Ref": "refs/tags/v3.1.6"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/transport/v4",
+      "version": "v4.0.2",
+      "goSum": "h1:ifYlPqNwsy6aKQ9y8yzxXlHae5431ZrH2avkD/Rn6Tk=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/transport/v4@v4.0.2",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/transport/v4@v4.0.2/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "6483daf6c8aa2c8192528e60be098aa82dd18f6d7b96dc8246f4f7c3333fbf3f"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "5c44f0562179e9e2761f7d3c2d68ac030fdbd3be565771e536e88444666d73b5",
+        "goSum": "h1:ifYlPqNwsy6aKQ9y8yzxXlHae5431ZrH2avkD/Rn6Tk=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/transport",
+        "Hash": "1bb98ade0d7759304c0b88bd33914b42bc7f481b",
+        "Ref": "refs/tags/v4.0.2"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/turn/v5",
+      "version": "v5.0.12",
+      "goSum": "h1:6+b69ivQQXSlyfkp2AKripqD2k3W32qXK8QzCzpJWPI=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/turn/v5@v5.0.12",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/turn/v5@v5.0.12/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "6483daf6c8aa2c8192528e60be098aa82dd18f6d7b96dc8246f4f7c3333fbf3f"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "6e7de42e14c396cd6c5bdd455e6e3acbd06c3a83e5591d7047e4ee9b8d7f5465",
+        "goSum": "h1:6+b69ivQQXSlyfkp2AKripqD2k3W32qXK8QzCzpJWPI=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/turn",
+        "Hash": "443e41acf1bb4e5e6cabfb3a8876d419b31b617e",
+        "Ref": "refs/tags/v5.0.12"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/pion/webrtc/v4",
+      "version": "v4.2.17",
+      "goSum": "h1:no7rmszKV1jkGz7GvErGp/VlnzGu/koVHO9CRjItiVU=",
+      "sourceUrl": "https://pkg.go.dev/github.com/pion/webrtc/v4@v4.2.17",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/pion/webrtc/v4@v4.2.17/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "6483daf6c8aa2c8192528e60be098aa82dd18f6d7b96dc8246f4f7c3333fbf3f"
+        },
+        {
+          "path": "modules/github.com/pion/webrtc/v4@v4.2.17/test-wasm/LICENSE",
+          "sourcePath": "test-wasm/LICENSE",
+          "sha256": "2d36597f7117c38b006835ae7f537487207d8ec407aa9d9980794b2030cbc067"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "d938ea7a19c3880e012afb4a2e6a6df795b79d765968eebdc6638f94e6a2479d",
+        "goSum": "h1:no7rmszKV1jkGz7GvErGp/VlnzGu/koVHO9CRjItiVU=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/pion/webrtc",
+        "Hash": "21f6d7ad2c5a4159b56f7eec877738c34b4d66d3",
+        "Ref": "refs/tags/v4.2.17"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/redis/go-redis/v9",
+      "version": "v9.19.0",
+      "goSum": "h1:XPVaaPSnG6RhYf7p+rmSa9zZfeVAnWsH5h3lxthOm/k=",
+      "sourceUrl": "https://pkg.go.dev/github.com/redis/go-redis/v9@v9.19.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/redis/go-redis/v9@v9.19.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "a3a7dff87da3927db65cb4c87b1cfbc96ca2755704461a485d457be7ae300a86"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "bec0fda4ccf70be68c9ec6b7a0b51343a6e811a9c058db4cde20615950b3d052",
+        "goSum": "h1:XPVaaPSnG6RhYf7p+rmSa9zZfeVAnWsH5h3lxthOm/k=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/redis/go-redis",
+        "Hash": "e7e9866e54f4423addca48ec804044cfca1b30d6",
+        "Ref": "refs/tags/v9.19.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/refraction-networking/utls",
+      "version": "v1.8.2",
+      "goSum": "h1:j4Q1gJj0xngdeH+Ox/qND11aEfhpgoEvV+S9iJ2IdQo=",
+      "sourceUrl": "https://pkg.go.dev/github.com/refraction-networking/utls@v1.8.2",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/refraction-networking/utls@v1.8.2/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "2d36597f7117c38b006835ae7f537487207d8ec407aa9d9980794b2030cbc067"
+        },
+        {
+          "path": "modules/github.com/refraction-networking/utls@v1.8.2/dicttls/LICENSE",
+          "sourcePath": "dicttls/LICENSE",
+          "sha256": "ac089a3cb515b32ba1c8c2b401646527f55815a9022013693d515f2e2e4fb6ec"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "c5377f68cd4ba8d410a4d7c9bd45bec60fb493e2f09d0728a4f76db9f38c059d",
+        "goSum": "h1:j4Q1gJj0xngdeH+Ox/qND11aEfhpgoEvV+S9iJ2IdQo=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/refraction-networking/utls",
+        "Hash": "8fe0b08e9a0e7e2d08b268f451f2c79962e6acd0",
+        "Ref": "refs/tags/v1.8.2"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/router-for-me/CLIProxyAPI/v8",
+      "version": "v8.0.41",
+      "goSum": null,
+      "replacement": {
+        "module": "../upstream",
+        "version": "(devel)",
+        "goSum": null
+      },
+      "sourceUrl": "https://github.com/router-for-me/CLIProxyAPI/tree/8289ec4c71ad914d0612c2776352b76ba3d355a6",
+      "noticeFiles": [
+        {
+          "path": "upstream/LICENSE",
+          "sha256": "879792e89cf1bdd6a8d446033ec87e30496f97dcafc4656dc53f641509b346a6"
+        }
+      ],
+      "evidenceState": "verified-external-upstream-recursive-notices-collected",
+      "upstreamDependency": {
+        "repository": "https://github.com/router-for-me/CLIProxyAPI",
+        "module": "github.com/router-for-me/CLIProxyAPI/v8",
+        "version": "v8.0.41",
+        "commit": "8289ec4c71ad914d0612c2776352b76ba3d355a6",
+        "archiveUrl": "https://proxy.golang.org/github.com/router-for-me/!c!l!i!proxy!a!p!i/v8/@v/v8.0.41.zip",
+        "archiveSha256": "4bf9c5eeae8c27dfa450db4b9d89484d86fbc59f609c0fcd169cc80ca1c0f37c",
+        "moduleSum": "h1:XTATjRB2HxmDfhlMvyOztr8cuDJgOEtbn+TYfO5RbL8=",
+        "goModSum": "h1:jn26USbHr+iHyOdaPfRCFSUuVj+PxjMr9fTLED+SrPY="
+      },
+      "upstreamSourceModified": true,
+      "patchSetSha256": "42244d117846d968615184c47327ecdc28745aef007d84f39b35bf0d0778f2dc"
+    },
+    {
+      "module": "github.com/sirupsen/logrus",
+      "version": "v1.9.3",
+      "goSum": "h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=",
+      "sourceUrl": "https://pkg.go.dev/github.com/sirupsen/logrus@v1.9.3",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/sirupsen/logrus@v1.9.3/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "51a0c9ec7f8b7634181b8d4c03e5b5d204ac21d6e72f46c313973424664b2e6b"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "4501f4e6b858bfdd997671fcdd2f647a3178b29b6b4d1344caa7c07517121dd0",
+        "goSum": "h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/sirupsen/logrus",
+        "Hash": "d40e25cd45ed9c6b2b66e6b97573a0413e4c23bd",
+        "Ref": "refs/tags/v1.9.3"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/skratchdot/open-golang",
+      "version": "v0.0.0-20200116055534-eef842397966",
+      "goSum": "h1:JIAuq3EEf9cgbU6AtGPK4CTG3Zf6CKMNqf0MHTggAUA=",
+      "sourceUrl": "https://pkg.go.dev/github.com/skratchdot/open-golang@v0.0.0-20200116055534-eef842397966",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/skratchdot/open-golang@v0.0.0-20200116055534-eef842397966/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "04b3a5b262b48be9feddc28611dd9c28f05d6b23df569ed5b8fb1f33ef6c8102"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "3ad7f856621f78b370a47bb05ce12c31bdee1014e596b7f565ee20dc8ac80c66",
+        "goSum": "h1:JIAuq3EEf9cgbU6AtGPK4CTG3Zf6CKMNqf0MHTggAUA=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/tidwall/gjson",
+      "version": "v1.18.0",
+      "goSum": "h1:FIDeeyB800efLX89e5a8Y0BNH+LOngJyGrIWxG2FKQY=",
+      "sourceUrl": "https://pkg.go.dev/github.com/tidwall/gjson@v1.18.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/tidwall/gjson@v1.18.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "be83ad53208d03a9fe08c7fac231cabf79422989ef5706bff217bd35104ebf07"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "ab8092b3e42f83f003466757c63ec819a45d1e83caa63c6c131cebbe760f1df2",
+        "goSum": "h1:FIDeeyB800efLX89e5a8Y0BNH+LOngJyGrIWxG2FKQY=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/tidwall/gjson",
+        "Hash": "133f42ce2d99d6adb6b5885af6d20939dc4b6fe9",
+        "Ref": "refs/tags/v1.18.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/tidwall/match",
+      "version": "v1.1.1",
+      "goSum": "h1:+Ho715JplO36QYgwN9PGYNhgZvoUSc9X2c80KVTi+GA=",
+      "sourceUrl": "https://pkg.go.dev/github.com/tidwall/match@v1.1.1",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/tidwall/match@v1.1.1/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "be83ad53208d03a9fe08c7fac231cabf79422989ef5706bff217bd35104ebf07"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "2ba41f7f27330d49e0e432cbf96bf90720a33e4a97be58fe53f63a7e66f04d37",
+        "goSum": "h1:+Ho715JplO36QYgwN9PGYNhgZvoUSc9X2c80KVTi+GA=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/tidwall/pretty",
+      "version": "v1.2.0",
+      "goSum": "h1:RWIZEg2iJ8/g6fDDYzMpobmaoGh5OLl4AXtGUGPcqCs=",
+      "sourceUrl": "https://pkg.go.dev/github.com/tidwall/pretty@v1.2.0",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/tidwall/pretty@v1.2.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "0ca70311227fe097c662dece3f359e3317fa7f9d41f8d29eb45fc5135e216139"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "8a7050340a6d97d00e3ae41b4be167b9ef35d4df5596ecd59106e1aaf8774b48",
+        "goSum": "h1:RWIZEg2iJ8/g6fDDYzMpobmaoGh5OLl4AXtGUGPcqCs=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/tidwall/sjson",
+      "version": "v1.2.5",
+      "goSum": "h1:kLy8mja+1c9jlljvWTlSazM7cKDRfJuR/bOJhcY5NcY=",
+      "sourceUrl": "https://pkg.go.dev/github.com/tidwall/sjson@v1.2.5",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/tidwall/sjson@v1.2.5/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "dbf5e2aa91aee5f19a1ce2cc7891e2ac37204b6461c0adc539426636e27b208e"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "fc40fda87c7de55362f6386e069d674772f25c9d76411ee823acb9ac78b20565",
+        "goSum": "h1:kLy8mja+1c9jlljvWTlSazM7cKDRfJuR/bOJhcY5NcY=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/tidwall/sjson",
+        "Hash": "b279807a1bad9fa155988667d97a3d2fff4061b5",
+        "Ref": "refs/tags/v1.2.5"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/tiktoken-go/tokenizer",
+      "version": "v0.8.1",
+      "goSum": "h1:4obDoB6/dhdBt9xMweX4nww5cjdOq/nYF4ecwPq2+mg=",
+      "sourceUrl": "https://pkg.go.dev/github.com/tiktoken-go/tokenizer@v0.8.1",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/tiktoken-go/tokenizer@v0.8.1/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "84b1679fd28b98c8e02f2f1a1cab41ac230b0e9841695462ad6369663d32473a"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "eeeccd8cd1f97239158aa6209312775002b3120a893ba7c3fdb7c66e156dbcbd",
+        "goSum": "h1:4obDoB6/dhdBt9xMweX4nww5cjdOq/nYF4ecwPq2+mg=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/tiktoken-go/tokenizer",
+        "Hash": "ca39f5c7bff9edfc9d70012c5dfdf23b44f7971e",
+        "Ref": "refs/tags/v0.8.1"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/ugorji/go/codec",
+      "version": "v1.2.12",
+      "goSum": "h1:9LC83zGrHhuUA9l16C9AHXAqEV/2wBQ4nkvumAE65EE=",
+      "sourceUrl": "https://pkg.go.dev/github.com/ugorji/go/codec@v1.2.12",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/ugorji/go/codec@v1.2.12/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "c8a84b926246b4ac76e3810722858b0f83bdea8378de49911dccbefd70b0692e"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "ca38b5b9f58e33de24f88ac2505e2c67f2b454d09d929228a10b938bddda848d",
+        "goSum": "h1:9LC83zGrHhuUA9l16C9AHXAqEV/2wBQ4nkvumAE65EE=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/ugorji/go",
+        "Subdir": "codec",
+        "Hash": "43b79bfcab412eeb73e92181a2190e97a5520566",
+        "Ref": "refs/tags/codec/v1.2.12"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "github.com/wlynxg/anet",
+      "version": "v0.0.5",
+      "goSum": "h1:J3VJGi1gvo0JwZ/P1/Yc/8p63SoW98B5dHkYDmpgvvU=",
+      "sourceUrl": "https://pkg.go.dev/github.com/wlynxg/anet@v0.0.5",
+      "noticeFiles": [
+        {
+          "path": "modules/github.com/wlynxg/anet@v0.0.5/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "6b8970dbe36fe214fd02b438c06daee19897708e435d761ecd18adc9ef7e7a05"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "5d6e471ccaa553e0cac56e17f8e44499f99ca1a1e37d80d5fdb3c64d4d50d02a",
+        "goSum": "h1:J3VJGi1gvo0JwZ/P1/Yc/8p63SoW98B5dHkYDmpgvvU=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/wlynxg/anet",
+        "Hash": "839bc3a920f1b87dd3ce1386e425aa5ef2e69d24",
+        "Ref": "refs/tags/v0.0.5"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "go.uber.org/atomic",
+      "version": "v1.11.0",
+      "goSum": "h1:ZvwS0R+56ePWxUNi+Atn9dWONBPp/AUETXlHW0DxSjE=",
+      "sourceUrl": "https://pkg.go.dev/go.uber.org/atomic@v1.11.0",
+      "noticeFiles": [
+        {
+          "path": "modules/go.uber.org/atomic@v1.11.0/LICENSE.txt",
+          "sourcePath": "LICENSE.txt",
+          "sha256": "edbb5a4d165ac69376c765b551c0662ff42bea87e1f1eda85f42ac90c34b09d0"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "8109325abe17488245878b07f3c35b10ba7d1aa3310f792968f5b9deba432e2c",
+        "goSum": "h1:ZvwS0R+56ePWxUNi+Atn9dWONBPp/AUETXlHW0DxSjE=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://github.com/uber-go/atomic",
+        "Hash": "76f817c8b7e771cdffc2b9f11a7ebb80333ca92b",
+        "Ref": "refs/tags/v1.11.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "golang.org/x/crypto",
+      "version": "v0.57.0",
+      "goSum": "h1:3ZVCjf8Ggz7zneR/EHRVx68Ctf+2pmIMP2UFhh9cC6M=",
+      "sourceUrl": "https://pkg.go.dev/golang.org/x/crypto@v0.57.0",
+      "noticeFiles": [
+        {
+          "path": "modules/golang.org/x/crypto@v0.57.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+        },
+        {
+          "path": "modules/golang.org/x/crypto@v0.57.0/PATENTS",
+          "sourcePath": "PATENTS",
+          "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "856c916b92f1fc5b53983c04f6249f632f56c47ebc003bbcdfc503500dfb58b8",
+        "goSum": "h1:3ZVCjf8Ggz7zneR/EHRVx68Ctf+2pmIMP2UFhh9cC6M=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://go.googlesource.com/crypto",
+        "Hash": "3f62bf119e84c6e35e8518a2958089ade622d1a3",
+        "Ref": "refs/tags/v0.57.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "golang.org/x/net",
+      "version": "v0.60.0",
+      "goSum": "h1:79p50tfZlm0J9YfoDsSi639qSXNGVwEzOPLCxM2FsYU=",
+      "sourceUrl": "https://pkg.go.dev/golang.org/x/net@v0.60.0",
+      "noticeFiles": [
+        {
+          "path": "modules/golang.org/x/net@v0.60.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+        },
+        {
+          "path": "modules/golang.org/x/net@v0.60.0/PATENTS",
+          "sourcePath": "PATENTS",
+          "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "052e0453db47a96ae9567503e7c95ea925ab52682cb1cec31250541f7160107e",
+        "goSum": "h1:79p50tfZlm0J9YfoDsSi639qSXNGVwEzOPLCxM2FsYU=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://go.googlesource.com/net",
+        "Hash": "18ece0ce30bc35fa81fe72028bf309bb3ff3f4a5",
+        "Ref": "refs/tags/v0.60.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "golang.org/x/oauth2",
+      "version": "v0.30.0",
+      "goSum": "h1:dnDm7JmhM45NNpd8FDDeLhK6FwqbOf4MLCM9zb1BOHI=",
+      "sourceUrl": "https://pkg.go.dev/golang.org/x/oauth2@v0.30.0",
+      "noticeFiles": [
+        {
+          "path": "modules/golang.org/x/oauth2@v0.30.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "1e1028d0b190948f0cd44229bfa298440cb2481f601f992e12424bc6fa1f183c",
+        "goSum": "h1:dnDm7JmhM45NNpd8FDDeLhK6FwqbOf4MLCM9zb1BOHI=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://go.googlesource.com/oauth2",
+        "Hash": "cf1431934151b3a93e0b3286eb6798ca08ea3770",
+        "Ref": "refs/tags/v0.30.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "golang.org/x/sync",
+      "version": "v0.23.0",
+      "goSum": "h1:KameEIfc1IkluZyXWLn39Wd4tURc6GbCiISGiZm2bQk=",
+      "sourceUrl": "https://pkg.go.dev/golang.org/x/sync@v0.23.0",
+      "noticeFiles": [
+        {
+          "path": "modules/golang.org/x/sync@v0.23.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+        },
+        {
+          "path": "modules/golang.org/x/sync@v0.23.0/PATENTS",
+          "sourcePath": "PATENTS",
+          "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "c19a11baba5c1a093cb4fd2f6d0d8d79673c97a82cb0fe2d693c9b6ad84f0f82",
+        "goSum": "h1:KameEIfc1IkluZyXWLn39Wd4tURc6GbCiISGiZm2bQk=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://go.googlesource.com/sync",
+        "Hash": "f75267d8412fc1dfd12b343644a7ea46e4d9c85d",
+        "Ref": "refs/tags/v0.23.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "golang.org/x/sys",
+      "version": "v0.48.0",
+      "goSum": "h1:bbX/i/6MgT9BVLM9RT1thmxL04yeTAhbEz4SyadbXoo=",
+      "sourceUrl": "https://pkg.go.dev/golang.org/x/sys@v0.48.0",
+      "noticeFiles": [
+        {
+          "path": "modules/golang.org/x/sys@v0.48.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+        },
+        {
+          "path": "modules/golang.org/x/sys@v0.48.0/PATENTS",
+          "sourcePath": "PATENTS",
+          "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "3a47e06431ba1e24d5b2aca3a7ce31fd13faff34df3e5d8e63f105ff9d0c1786",
+        "goSum": "h1:bbX/i/6MgT9BVLM9RT1thmxL04yeTAhbEz4SyadbXoo=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://go.googlesource.com/sys",
+        "Hash": "613e2570718ecde85c04e69ebd5585c3881c442c",
+        "Ref": "refs/tags/v0.48.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "golang.org/x/text",
+      "version": "v0.42.0",
+      "goSum": "h1:JbOZXgfeCPU9gacVtYliJqOhD+zhrEqK4LfdpmlUZqI=",
+      "sourceUrl": "https://pkg.go.dev/golang.org/x/text@v0.42.0",
+      "noticeFiles": [
+        {
+          "path": "modules/golang.org/x/text@v0.42.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+        },
+        {
+          "path": "modules/golang.org/x/text@v0.42.0/PATENTS",
+          "sourcePath": "PATENTS",
+          "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "a7b64e003056b6470303f408202098d8f3714a115f23091b8cac85edeb265476",
+        "goSum": "h1:JbOZXgfeCPU9gacVtYliJqOhD+zhrEqK4LfdpmlUZqI=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://go.googlesource.com/text",
+        "Hash": "fafe4a06967e06550e69ee42787d9902845d2a3f",
+        "Ref": "refs/tags/v0.42.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "golang.org/x/time",
+      "version": "v0.14.0",
+      "goSum": "h1:MRx4UaLrDotUKUdCIqzPC48t1Y9hANFKIRpNx+Te8PI=",
+      "sourceUrl": "https://pkg.go.dev/golang.org/x/time@v0.14.0",
+      "noticeFiles": [
+        {
+          "path": "modules/golang.org/x/time@v0.14.0/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+        },
+        {
+          "path": "modules/golang.org/x/time@v0.14.0/PATENTS",
+          "sourcePath": "PATENTS",
+          "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "0e2d2e47d107859130c7088346966d99a14ec0f7a42290c4acc0e2cc568e7a81",
+        "goSum": "h1:MRx4UaLrDotUKUdCIqzPC48t1Y9hANFKIRpNx+Te8PI=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://go.googlesource.com/time",
+        "Hash": "2b4e43900c03fd6b77109b7b2b6d77583f48bc1c",
+        "Ref": "refs/tags/v0.14.0"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "google.golang.org/protobuf",
+      "version": "v1.34.1",
+      "goSum": "h1:9ddQBjfCyZPOHPUiPxpYESBLc+T8P3E+Vo4IbKZgFWg=",
+      "sourceUrl": "https://pkg.go.dev/google.golang.org/protobuf@v1.34.1",
+      "noticeFiles": [
+        {
+          "path": "modules/google.golang.org/protobuf@v1.34.1/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "4835612df0098ca95f8e7d9e3bffcb02358d435dbb38057c844c99d7f725eb20"
+        },
+        {
+          "path": "modules/google.golang.org/protobuf@v1.34.1/PATENTS",
+          "sourcePath": "PATENTS",
+          "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "b5987adbf21a6cbe6463ea795c320b700537d5dbb6f3e2aa3ffaf226cedf476b",
+        "goSum": "h1:9ddQBjfCyZPOHPUiPxpYESBLc+T8P3E+Vo4IbKZgFWg=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://go.googlesource.com/protobuf",
+        "Hash": "4a76e11653e368b9331815e1eb98e0cedc28997f",
+        "Ref": "refs/tags/v1.34.1"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "gopkg.in/natefinch/lumberjack.v2",
+      "version": "v2.2.1",
+      "goSum": "h1:bBRl1b0OH9s/DuPhuXpNl+VtCaJXFZ5/uEFST95x9zc=",
+      "sourceUrl": "https://pkg.go.dev/gopkg.in/natefinch/lumberjack.v2@v2.2.1",
+      "noticeFiles": [
+        {
+          "path": "modules/gopkg.in/natefinch/lumberjack.v2@v2.2.1/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "9622cbfd055d92991dcf523a256840424cc6356eab93beb4a93a973dec046492"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "e28804b050e7debf4f5b2dd8d241d804f5d592d0519b6e7a3dc9d4cce6f075b3",
+        "goSum": "h1:bBRl1b0OH9s/DuPhuXpNl+VtCaJXFZ5/uEFST95x9zc=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "cachedSourceOrigin": {
+        "VCS": "git",
+        "URL": "https://gopkg.in/natefinch/lumberjack.v2",
+        "Hash": "4cb27fcfbb0f35cb48c542c5ea80b7c1d18933d0",
+        "Ref": "refs/tags/v2.2.1"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    },
+    {
+      "module": "gopkg.in/yaml.v3",
+      "version": "v3.0.1",
+      "goSum": "h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=",
+      "sourceUrl": "https://pkg.go.dev/gopkg.in/yaml.v3@v3.0.1",
+      "noticeFiles": [
+        {
+          "path": "modules/gopkg.in/yaml.v3@v3.0.1/LICENSE",
+          "sourcePath": "LICENSE",
+          "sha256": "d18f6323b71b0b768bb5e9616e36da390fbd39369a81807cca352de4e4e6aa0b"
+        },
+        {
+          "path": "modules/gopkg.in/yaml.v3@v3.0.1/NOTICE",
+          "sourcePath": "NOTICE",
+          "sha256": "f6c2dd3a67b576eafb89b80200b8b1627230bf3821a0c14cb99a22ac19107d00"
+        }
+      ],
+      "sourceArchive": {
+        "sha256": "aab8fbc4e6300ea08e6afe1caea18a21c90c79f489f52c53e2f20431f1a9a015",
+        "goSum": "h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=",
+        "noticeScope": "all nested notice files in exact module archive; conservative subpackage coverage"
+      },
+      "evidenceState": "verified-module-archive-recursive-notices-collected"
+    }
+  ],
+  "missingEvidence": [],
+  "sourceManifestSha256": "1389394e9532150a2ba7c0422551ee376e1e3289360a8cac02a2d6e3675122b9",
+  "upstreamDependency": {
+    "repository": "https://github.com/router-for-me/CLIProxyAPI",
+    "module": "github.com/router-for-me/CLIProxyAPI/v8",
+    "version": "v8.0.41",
+    "commit": "8289ec4c71ad914d0612c2776352b76ba3d355a6",
+    "archiveUrl": "https://proxy.golang.org/github.com/router-for-me/!c!l!i!proxy!a!p!i/v8/@v/v8.0.41.zip",
+    "archiveSha256": "4bf9c5eeae8c27dfa450db4b9d89484d86fbc59f609c0fcd169cc80ca1c0f37c",
+    "moduleSum": "h1:XTATjRB2HxmDfhlMvyOztr8cuDJgOEtbn+TYfO5RbL8=",
+    "goModSum": "h1:jn26USbHr+iHyOdaPfRCFSUuVj+PxjMr9fTLED+SrPY="
+  },
+  "upstreamSourceModified": true,
+  "patchSetSha256": "42244d117846d968615184c47327ecdc28745aef007d84f39b35bf0d0778f2dc",
+  "kind": "historical-exact-binary-notice-baseline-not-r3-qualification"
+}

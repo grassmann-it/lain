@@ -1,33 +1,38 @@
 {
   "id": "synthetic",
   "name": "Synthetic",
-  "summary": "Offene Modelle über Coding-Abos oder nutzungsabhängige API-Abrechnung.",
+  "summary": "Open models through coding subscriptions or usage-based API billing.",
   "accountUrl": "https://synthetic.new/users/create",
   "documentationUrl": "https://dev.synthetic.new/docs/api/overview",
   "credentials": [
     {
       "id": "apiKey",
-      "label": "Synthetic API-Key",
+      "label": "Synthetic API key",
       "kind": "api-key",
       "required": true,
       "secret": true,
-      "help": "Eigener Inferenz-API-Key; Consumer-Abos belegen kein API-Guthaben."
+      "help": "Your own inference API key; consumer subscriptions do not establish API credit."
     }
   ],
   "setupSteps": [
     {
-      "title": "Account einrichten",
-      "description": "Eigenen Account und Tarif selbst wählen.",
+      "title": "Set up an account",
+      "description": "Choose your own account and plan.",
       "url": "https://synthetic.new/users/create"
     },
     {
-      "title": "API-Key abrufen",
-      "description": "Persönlichen Key privat in lain speichern.",
+      "title": "Get an API key",
+      "description": "Store your personal key privately in lain.",
       "url": "https://dev.synthetic.new/docs/api/overview"
     },
     {
-      "title": "Route prüfen",
-      "description": "Offizielle API-Basis und Modell auswählen; Livezugang bleibt bis zur Prüfung ungeprüft."
+      "title": "Check the route",
+      "description": "Select an official API base URL and model; live access remains unverified until checked."
+    },
+    {
+      "title": "Optional Synthetic signup (referral)",
+      "description": "Lain's maintainer may receive referral rewards. Use this optional link for a new account; connect existing accounts through the normal connection methods. Current provider terms apply.",
+      "url": "https://synthetic.new/?referral=TteV9RBa"
     }
   ],
   "billingPlans": [
@@ -40,8 +45,8 @@
       "recurringPrice": 9,
       "currency": "USD",
       "priceInterval": "month",
-      "resetDescription": "Gemeinsamer Pool; Kredite regenerieren über die Woche.",
-      "notes": "Modellgewichte unterscheiden sich; keine festen Tokenbudgets. Extra PAYG separat konfigurieren."
+      "resetDescription": "Shared pool; credits regenerate throughout the week.",
+      "notes": "Model weights differ; there are no fixed token budgets. Configure additional PAYG usage separately."
     },
     {
       "id": "standard",
@@ -52,8 +57,8 @@
       "recurringPrice": 30,
       "currency": "USD",
       "priceInterval": "month",
-      "resetDescription": "Gemeinsamer Pool; Kredite regenerieren über die Woche.",
-      "notes": "Modellgewichte unterscheiden sich; keine festen Tokenbudgets. Extra PAYG separat konfigurieren."
+      "resetDescription": "Shared pool; credits regenerate throughout the week.",
+      "notes": "Model weights differ; there are no fixed token budgets. Configure additional PAYG usage separately."
     },
     {
       "id": "big",
@@ -64,12 +69,12 @@
       "recurringPrice": 90,
       "currency": "USD",
       "priceInterval": "month",
-      "resetDescription": "Gemeinsamer Pool; Kredite regenerieren über die Woche.",
-      "notes": "Modellgewichte unterscheiden sich; keine festen Tokenbudgets. Extra PAYG separat konfigurieren."
+      "resetDescription": "Shared pool; credits regenerate throughout the week.",
+      "notes": "Model weights differ; there are no fixed token budgets. Configure additional PAYG usage separately."
     },
     {
       "id": "payg",
-      "name": "API nach Verbrauch",
+      "name": "Pay-as-you-go API",
       "kind": "payg",
       "scope": "account",
       "unit": "USD"
@@ -102,18 +107,18 @@
       "pricingClass": "subscription",
       "freeOnlyEligible": false,
       "restrictions": [
-        "Modell kann bei Rotation entfernt werden; kein automatischer Aliaswechsel.",
-        "Modellbezogene Tool-/Reasoning-/JSON-Fähigkeiten ungeprüft."
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
       ],
       "sources": [
         {
           "url": "https://dev.synthetic.new/docs/api/models",
-          "title": "Modelle und Kontext",
+          "title": "Models and context",
           "checkedAt": "2026-10-24T00:00:00Z"
         },
         {
           "url": "https://dev.synthetic.new/docs/openai/chat-completions",
-          "title": "Chat-SSE",
+          "title": "Chat SSE",
           "checkedAt": "2026-10-24T00:00:00Z"
         }
       ]
@@ -142,18 +147,18 @@
       "pricingClass": "payg",
       "freeOnlyEligible": false,
       "restrictions": [
-        "Modell kann bei Rotation entfernt werden; kein automatischer Aliaswechsel.",
-        "Modellbezogene Tool-/Reasoning-/JSON-Fähigkeiten ungeprüft."
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
       ],
       "sources": [
         {
           "url": "https://dev.synthetic.new/docs/api/models",
-          "title": "Modelle und Kontext",
+          "title": "Models and context",
           "checkedAt": "2026-10-24T00:00:00Z"
         },
         {
           "url": "https://dev.synthetic.new/docs/openai/chat-completions",
-          "title": "Chat-SSE",
+          "title": "Chat SSE",
           "checkedAt": "2026-10-24T00:00:00Z"
         }
       ]
@@ -184,18 +189,18 @@
       "pricingClass": "subscription",
       "freeOnlyEligible": false,
       "restrictions": [
-        "Modell kann bei Rotation entfernt werden; kein automatischer Aliaswechsel.",
-        "Modellbezogene Tool-/Reasoning-/JSON-Fähigkeiten ungeprüft."
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
       ],
       "sources": [
         {
           "url": "https://dev.synthetic.new/docs/api/models",
-          "title": "Modelle und Kontext",
+          "title": "Models and context",
           "checkedAt": "2026-10-24T00:00:00Z"
         },
         {
           "url": "https://dev.synthetic.new/docs/openai/chat-completions",
-          "title": "Chat-SSE",
+          "title": "Chat SSE",
           "checkedAt": "2026-10-24T00:00:00Z"
         }
       ]
@@ -224,18 +229,18 @@
       "pricingClass": "payg",
       "freeOnlyEligible": false,
       "restrictions": [
-        "Modell kann bei Rotation entfernt werden; kein automatischer Aliaswechsel.",
-        "Modellbezogene Tool-/Reasoning-/JSON-Fähigkeiten ungeprüft."
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
       ],
       "sources": [
         {
           "url": "https://dev.synthetic.new/docs/api/models",
-          "title": "Modelle und Kontext",
+          "title": "Models and context",
           "checkedAt": "2026-10-24T00:00:00Z"
         },
         {
           "url": "https://dev.synthetic.new/docs/openai/chat-completions",
-          "title": "Chat-SSE",
+          "title": "Chat SSE",
           "checkedAt": "2026-10-24T00:00:00Z"
         }
       ]
@@ -266,18 +271,18 @@
       "pricingClass": "subscription",
       "freeOnlyEligible": false,
       "restrictions": [
-        "Modell kann bei Rotation entfernt werden; kein automatischer Aliaswechsel.",
-        "Modellbezogene Tool-/Reasoning-/JSON-Fähigkeiten ungeprüft."
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
       ],
       "sources": [
         {
           "url": "https://dev.synthetic.new/docs/api/models",
-          "title": "Modelle und Kontext",
+          "title": "Models and context",
           "checkedAt": "2026-10-24T00:00:00Z"
         },
         {
           "url": "https://dev.synthetic.new/docs/openai/chat-completions",
-          "title": "Chat-SSE",
+          "title": "Chat SSE",
           "checkedAt": "2026-10-24T00:00:00Z"
         }
       ]
@@ -306,18 +311,18 @@
       "pricingClass": "payg",
       "freeOnlyEligible": false,
       "restrictions": [
-        "Modell kann bei Rotation entfernt werden; kein automatischer Aliaswechsel.",
-        "Modellbezogene Tool-/Reasoning-/JSON-Fähigkeiten ungeprüft."
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
       ],
       "sources": [
         {
           "url": "https://dev.synthetic.new/docs/api/models",
-          "title": "Modelle und Kontext",
+          "title": "Models and context",
           "checkedAt": "2026-10-24T00:00:00Z"
         },
         {
           "url": "https://dev.synthetic.new/docs/openai/chat-completions",
-          "title": "Chat-SSE",
+          "title": "Chat SSE",
           "checkedAt": "2026-10-24T00:00:00Z"
         }
       ]
@@ -326,37 +331,37 @@
   "sources": [
     {
       "url": "https://synthetic.new/pricing",
-      "title": "Tarife und gemeinsame Modellgewichte",
+      "title": "Plans and shared model weights",
       "checkedAt": "2026-10-24T00:00:00Z"
     },
     {
       "url": "https://dev.synthetic.new/docs/api/overview",
-      "title": "Offizielle API-Basen",
+      "title": "Official API base URLs",
       "checkedAt": "2026-10-24T00:00:00Z"
     },
     {
       "url": "https://dev.synthetic.new/docs/api/models",
-      "title": "Modellliste und Kontext",
+      "title": "Model list and context",
       "checkedAt": "2026-10-24T00:00:00Z"
     },
     {
       "url": "https://dev.synthetic.new/docs/openai/chat-completions",
-      "title": "Tools, Reasoning, SSE und JSON-Parameter",
+      "title": "Tools, reasoning, SSE, and JSON parameters",
       "checkedAt": "2026-10-24T00:00:00Z"
     },
     {
       "url": "https://dev.synthetic.new/docs/synthetic/quotas",
-      "title": "Offizieller Quota-Vertrag",
+      "title": "Official quota contract",
       "checkedAt": "2026-10-24T00:00:00Z"
     }
   ],
   "restrictions": [
-    "Kein dauerhaft kostenloser API-Tarif nachgewiesen.",
-    "Kredite regenerieren über die Woche; Modelle teilen denselben gewichteten Kontopool. Modellschätzungen nicht addieren.",
-    "Zusätzliche PAYG-Nutzung bewusst konfigurieren; kein kostenloser Fallback.",
-    "Quota-Feld requests wird wegen aktueller gewichteter Credits als Anbieter-Einheiten geführt.",
-    "Big Fast/Infinite sind eingeschränkte Beta-Aboleistungen, keine kostenlosen API-Tarife.",
-    "Tools, Reasoning und JSON-Schema sind API-Parameter; Fähigkeiten konkreter Modellrouten noch ungeprüft."
+    "No ongoing free API plan verified.",
+    "Credits regenerate throughout the week; models share the same weighted account pool. Do not add model estimates together.",
+    "Configure additional PAYG usage deliberately; there is no free fallback.",
+    "The requests quota field is reported in provider units to reflect the current weighted credits.",
+    "Big Fast/Infinite are limited beta subscription benefits, not free API plans.",
+    "Tools, reasoning, and JSON schema are API parameters; capabilities of specific model routes have not yet been verified."
   ],
   "adapterState": "available",
   "liveVerification": "not_tested",

@@ -45,8 +45,7 @@ public static class AccountDisplayNames
         });
         var name = normalize(account.Name);
         var siblings = accounts.Where(item => string.Equals(item.Provider, provider, StringComparison.OrdinalIgnoreCase)).ToArray();
-        if (siblings.Length == 1 && System.Net.Mail.MailAddress.TryCreate(name, out var address)
-            && string.Equals(address.Address, name, StringComparison.OrdinalIgnoreCase)) return display;
+        if (siblings.Length == 1) return display;
         var known = new[] { provider, display, ProviderDisplayNames.Get(provider),
             "My " + provider + " account", "My " + display + " account", "My " + ProviderDisplayNames.Get(provider) + " account" };
         if (!known.Contains(name, StringComparer.OrdinalIgnoreCase))

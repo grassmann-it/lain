@@ -29,6 +29,7 @@ operator = module('service-update')
 class PortablePlanFixtures(unittest.TestCase):
     def setUp(self):
         fixture = fixture_module.RefreshFixtures('test_stage_plan_writes_nothing')
+        fixture.release_version = getattr(self, 'release_version', '1.0.0')
         fixture.setUp()
         self.addCleanup(fixture.doCleanups)
         self.f = fixture
@@ -150,18 +151,18 @@ class PortablePlanFixtures(unittest.TestCase):
         info['coreSourceCommit'] = self.f.commit
         self.config['core']['sourceCommit'] = self.f.commit
         info['componentSourceCommits']['desktop'] = self.f.commit
-        info['componentInformationalVersions']['desktop'] = '1.0.0+' + self.f.commit
+        info['componentInformationalVersions']['desktop'] = self.f.version
         info['components']['desktop']['assemblySha256'] = api.sha(self.f.out / 'desktop/Lain.Desktop.dll')
         info.update(commit=self.f.commit, compileInputsFrozen=True, runtime='linux-x64', runtimeMode='gateway')
         records = []
         for name, project in (('cli', 'Lain.Cli'), ('host', 'Lain.Host'), ('desktop', 'Lain.Desktop')):
             item = info['components'][name]
-            item.update(sourceCommit=self.f.commit, informationalVersion='1.0.0+' + self.f.commit,
+            item.update(sourceCommit=self.f.commit, informationalVersion=self.f.version,
                         localSharedAssemblies={'Lain.Core': api.sha(self.f.out / name / 'Lain.Core.dll')})
             properties = self.f.out / 'source-provenance/publish-properties' / (name + '.json')
             properties.parent.mkdir(parents=True, exist_ok=True)
             common.write(properties, {'sourceCommit': self.f.commit, 'project': project, 'publishProperties': {
-                         'InformationalVersion': '1.0.0+' + self.f.commit, 'RuntimeIdentifier': 'linux-x64', 'SelfContained': 'true'}})
+                         'InformationalVersion': self.f.version, 'RuntimeIdentifier': 'linux-x64', 'SelfContained': 'true'}})
             lock = self.f.out / 'source-provenance/source/src' / project / 'packages.lock.json'
             lock.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(self.f.evidence / name / 'packages.lock.json', lock)
@@ -201,7 +202,7 @@ class PortablePlanFixtures(unittest.TestCase):
         self.full_package()
         info = common.load(self.f.out / 'build-info.json')
         inventory = common.load(self.f.out / 'source-provenance/inventory.json')
-        version = '1.0.0+' + self.f.commit[:7] + '.' + self.f.commit
+        version = self.f.version.partition('+')[0] + '+' + self.f.commit[:7] + '.' + self.f.commit
         for name in ('cli', 'host', 'desktop'):
             info['componentInformationalVersions'][name] = version
             info['components'][name]['informationalVersion'] = version
@@ -359,7 +360,7 @@ class PortablePlanFixtures(unittest.TestCase):
         def captured(name):
             value = copy.deepcopy(capture)
             if state['started']:
-                value['status']['version'] = '1.0.0+' + self.f.commit
+                value['status']['version'] = self.f.version
                 if append_new_usage: value['history']['cursor'] = 2
             return value
         update.capture = captured
@@ -525,6 +526,11 @@ class PortablePlanFixtures(unittest.TestCase):
         self.assertEqual((destination / 'credential.sentinel').read_bytes(), b'synthetic-current-generation')
         self.assertTrue((destination / 'restore-requires-reconnect').is_file())
         self.assertTrue(source.is_dir())
+
+
+class FirstReleaseFixtures(PortablePlanFixtures):
+    """Run the same delivery contracts for 0.8.0; retain historical 1.0.0 coverage."""
+    release_version = '0.8.0'
 
 
 if __name__ == '__main__':

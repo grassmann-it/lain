@@ -115,6 +115,7 @@ internal sealed class Fixture : HttpMessageHandler
                 "/api/v1/status" => Status(),
                 "/api/v1/configuration" => Config,
                 "/api/v1/accounts" => Config.Accounts,
+                "/api/v1/routes" => Config.Routes,
                 "/api/v1/models" => new ModelCatalogDto(1, Config.Revision, [new ModelEntryDto("gpt-model", "openai", ["a1"])]),
                 "/api/v1/quotas" => Quotas(),
                 "/api/v1/providers" => Providers(),
@@ -175,7 +176,7 @@ internal sealed class Fixture : HttpMessageHandler
         }
         else if (request.Method == HttpMethod.Post && path.EndsWith("/codex/export"))
         {
-            ExportCalls++; value = ExportOverride ?? new CodexProfileArtifacts("lain.config.toml", "model_catalog_json = \"lain.models.json\"\n# fixture configuration", "lain.models.json", "{}", ["--no-daemon", "--profile", "lain"], Config.Revision, ProfileId: path.Split('/')[4], GenerationId: "fixture-export-" + Config.Revision);
+            ExportCalls++; value = ExportOverride ?? CodexArtifactFixture.Create(path.Split('/')[4], Config.Revision);
         }
         else if (request.Method == HttpMethod.Put && path.StartsWith("/api/v1/profiles/"))
         {

@@ -75,6 +75,14 @@ func (i *Integration) ExecutorDecorator(writable func(*auth.Auth) bool) func(aut
 }
 func (e *boundExecutor) Identifier() string { return e.inner.Identifier() }
 func (e *boundExecutor) begin(ctx context.Context, a *auth.Auth, req executor.Request, opts executor.Options) (context.Context, error) {
+	if routerDispatchFor(ctx) != nil {
+		if err := routerCanceled(ctx); err != nil {
+			return ctx, err
+		}
+	}
+	if err := routerDispatchFor(ctx).claim(); err != nil {
+		return ctx, err
+	}
 	ctx = usage.WithExecutionRequestID(ctx, uuid.NewString())
 	dispatchCtx := ctx
 	ctx = usage.WithDurableSink(ctx, func(_ context.Context, record usage.Record) error { return e.integration.Publish(dispatchCtx, record) })
@@ -86,6 +94,14 @@ func (e *boundExecutor) begin(ctx context.Context, a *auth.Auth, req executor.Re
 	if err = e.integration.Before(ctx, a, req, opts); err != nil {
 		return ctx, err
 	}
+	if state := routerDispatchFor(ctx); state != nil {
+		selected, _ := routeSelection(ctx)
+		key, ok := routerRejectionIdentity(selected.Route, a)
+		state.mu.Lock()
+		state.rejectionKey, state.haveRejectionKey = key, ok
+		state.mu.Unlock()
+	}
+
 	cohereOpts := opts
 	if cohereCompatibility(a) {
 		cohereOpts.OriginalRequest = originalCompatibilityRequest(ctx, req, opts)
@@ -136,13 +152,14 @@ func (e *boundExecutor) Execute(ctx context.Context, a *auth.Auth, req executor.
 		return executor.Response{}, err
 	}
 	response, err := e.inner.Execute(ctx, a, req, opts)
+	routerDispatchFor(ctx).finish(err)
 	if err == nil {
 		e.integration.Observe(ctx, response.Payload, false)
 	}
 	if end := e.integration.After(ctx, err); end != nil {
 		return executor.Response{}, end
 	}
-	return response, err
+	return response, stopRouterRetry(ctx, err)
 }
 func (e *boundExecutor) CountTokens(ctx context.Context, a *auth.Auth, req executor.Request, opts executor.Options) (executor.Response, error) {
 	ctx, err := e.begin(ctx, a, req, opts)
@@ -173,10 +190,11 @@ func (e *boundExecutor) ExecuteStream(ctx context.Context, a *auth.Auth, req exe
 		if err == nil {
 			err = closed(errors.New("upstream returned no stream"))
 		}
+		routerDispatchFor(ctx).finish(err)
 		if end := e.integration.After(ctx, err); end != nil {
 			return nil, end
 		}
-		return result, err
+		return result, stopRouterRetry(ctx, err)
 	}
 	chunks := make(chan executor.StreamChunk)
 	go func() {
@@ -188,7 +206,32 @@ func (e *boundExecutor) ExecuteStream(ctx context.Context, a *auth.Auth, req exe
 		canceled, overflow := false, false
 		heldBytes := 0
 		var completion []executor.StreamChunk
-		for chunk := range result.Chunks {
+	streamLoop:
+		for {
+			// Caller cancellation must finalize even if the inner producer stops
+			// sending without closing its channel. Provider-only cancellation
+			// (such as terminal buffer overflow) still follows the drain path.
+			// Do not spawn a drainer for an uncooperative producer: after caller
+			// cancellation it owns shutdown; After seals already persisted usage.
+			if ctx.Err() != nil {
+				terminal = ctx.Err()
+				canceled = true
+				cancelProvider()
+				break
+			}
+			var chunk executor.StreamChunk
+			var ok bool
+			select {
+			case <-ctx.Done():
+				terminal = ctx.Err()
+				canceled = true
+				cancelProvider()
+				break streamLoop
+			case chunk, ok = <-result.Chunks:
+				if !ok {
+					break streamLoop
+				}
+			}
 			if chunk.Err != nil {
 				if terminal == nil {
 					terminal = chunk.Err
@@ -201,6 +244,7 @@ func (e *boundExecutor) ExecuteStream(ctx context.Context, a *auth.Auth, req exe
 			responseTerminal, payloadFailed := responseStreamOutcome(chunk.Payload)
 			sawResponseTerminal = sawResponseTerminal || responseTerminal
 			if payloadFailed {
+				observeRouterQuotaPayload(ctx, chunk.Payload)
 				if terminal == nil {
 					terminal = &streamOutcomeError{}
 				}
@@ -219,24 +263,27 @@ func (e *boundExecutor) ExecuteStream(ctx context.Context, a *auth.Auth, req exe
 				completion = append(completion, chunk)
 				continue
 			}
+			routerDispatchFor(ctx).markOutput(chunk.Payload)
 			select {
 			case chunks <- chunk:
 			case <-ctx.Done():
 				terminal = ctx.Err()
 				canceled = true
 				cancelProvider()
+				break streamLoop
 			}
 		}
 		if terminal == nil && expectsResponseTerminal && !sawResponseTerminal {
 			terminal = &streamOutcomeError{missingTerminal: true}
 		}
+		routerDispatchFor(ctx).finish(terminal)
 		if end := e.integration.After(ctx, terminal); end != nil {
 			terminal = end
 		}
 		if terminal != nil {
 			if !canceled {
 				select {
-				case chunks <- executor.StreamChunk{Err: terminal}:
+				case chunks <- executor.StreamChunk{Err: stopRouterRetry(ctx, terminal)}:
 				case <-ctx.Done():
 				}
 			}
@@ -393,6 +440,9 @@ func (t *guardedTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 			}
 		}
 	}
+	if err := claimRouterSend(req.Context()); err != nil {
+		return nil, err
+	}
 	if pin, ok := freeonly.OpenRouterPin(req.Context()); ok {
 		client := &http.Client{Transport: t.next, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 		if err := freeonly.PrepareOpenRouterRequest(req.Context(), client, req, pin); err != nil {
@@ -415,6 +465,7 @@ func (t *guardedTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		return nil, closed(errors.New("router inference redirects are disabled"))
 	}
 	if err == nil {
+		observeRouterQuotaResponse(req.Context(), response)
 		boundRequestErrorResponse(response)
 	}
 	if err == nil && response != nil && t.integration != nil {

@@ -394,7 +394,9 @@ public sealed partial class MainWindow
         }
         if (IsMonitorMode) return "Monitor · " + (status.Capabilities?.QuotaMonitoring == false ? "Quota monitoring unavailable" : "Account quotas")
             + (HasHistory ? " · Recorded history available" : "");
-        var text = status.ProxyReady ? "Proxy ready" : "Proxy " + status.State;
+        var text = status.ProxyReady ? "Proxy ready" : _startupServices is not null
+            ? DesktopStartupPresentation.Describe(_startupStatus, status, hostReady: true).Message
+            : "Proxy " + status.State;
         // Keep operational warnings before a user-controlled, potentially long name.
         if (status.Revision != status.AppliedRevision) text += $" · Changes pending ({status.Revision} / {status.AppliedRevision})";
         if (!string.IsNullOrWhiteSpace(status.Error)) text += " · Attention required";

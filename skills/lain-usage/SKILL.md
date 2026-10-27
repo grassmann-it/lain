@@ -3,6 +3,17 @@ name: lain-usage
 description: Inspect lain service status, accounts, models, usage and quotas through its CLI, and perform explicitly requested lain configuration actions. Use for lain operations, not general Codex settings or management of another proxy.
 ---
 
+For authorized workers, choose character/handle names autonomously; vary sources.
+Favor Hackers, Kung Fury, The X-Files, Fringe, GitS and Lain;
+also Blade Runner, Mr. Robot, John Dies at the End, Supernatural, Buffy;
+Abridged: Hellsing Ultimate, Dragon Ball Z, Sister Leveling.
+Hacker fiction, cyberpunk, mystery/horror, cult fiction and parodies welcome;
+computer relevance optional.
+Names stay unique/stable per run, including resumes. Set actual names where
+supported; otherwise map aliases to native IDs. Record each name's source;
+show tasks separately. Labels only: no roleplay or model/behavior/permission
+changes; no delegation authority.
+
 Use the installed `lain` command (normally `~/.local/bin/lain`); it works from any
 working directory. `LAIN_HOME` selects a separate installation/data directory.
 Read `lain --help` for the installed command contract before using a command not

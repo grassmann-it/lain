@@ -28,9 +28,9 @@ internal static class AccountUsageChecks
         var human = await Run("usage");
         Check(human.Exit == 0 && human.Error == "" && human.Output.Contains("Account usage (6 accounts)"), "bare usage is the current all-account quota overview");
         Check(handler.Requests.SequenceEqual(new[] { "/api/v1/accounts", "/api/v1/quotas" }), "overview reads accounts and cached quotas on the same client, without historical/configuration/provider calls");
-        Check(human.Output.Contains("Personal Codex") && human.Output.Contains("Coding credits") && human.Output.Contains("Disabled") &&
+        Check(human.Output.Contains("Codex") && !human.Output.Contains("Personal Codex") && human.Output.Contains("Command Code") && human.Output.Contains("Disabled") &&
             human.Output.Contains("shared") && !human.Output.Contains("Missing credential"),
-            "default table keeps custom names, disabled measured accounts and shared-budget warnings while hiding missing measurements");
+            "default table uses provider names for single accounts and keeps disabled measured accounts and shared-budget warnings while hiding missing measurements: " + human.Output);
         Check(human.Output.Contains("40% used") && human.Output.Contains("7 days") && human.Output.Contains("96% used") &&
             human.Output.Contains("3 accounts without quota readings hidden") && !human.Output.Contains("Quota not reported"),
             "measured windows stay visible and unavailable accounts contribute only to the hidden count");

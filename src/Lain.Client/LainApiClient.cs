@@ -34,6 +34,8 @@ public sealed partial class LainApiClient : IDisposable
         Send<ConfigurationDto>(HttpMethod.Post, "accounts", new RevisionRequest<AddApiAccountRequest>(revision, value), ct);
     public Task<ConfigurationDto> SetAccountEnabledAsync(long revision, string id, bool enabled, CancellationToken ct = default) =>
         Send<ConfigurationDto>(HttpMethod.Put, $"accounts/{Id(id)}/enabled", new RevisionRequest<bool>(revision, enabled), ct);
+    public Task<ConfigurationDto> RenameAccountAsync(long revision, string id, string name, CancellationToken ct = default) =>
+        Send<ConfigurationDto>(HttpMethod.Put, $"accounts/{Id(id)}/name", new RevisionRequest<string>(revision, name), ct);
     public Task<ConfigurationDto> RemoveAccountAsync(long revision, string id, CancellationToken ct = default) =>
         Send<ConfigurationDto>(HttpMethod.Delete, $"accounts/{Id(id)}?revision={revision}", null, ct);
     public Task<AccountDto> CheckAccountAsync(string id, CancellationToken ct = default) =>
@@ -76,9 +78,11 @@ public sealed partial class LainApiClient : IDisposable
         Send<QuotaDto[]>(HttpMethod.Post, "quotas/refresh", new QuotaRefreshRequest(accountId), ct);
     public Task<StatusDto> ServiceAsync(string action, CancellationToken ct = default)
     {
-        if (action is not ("start" or "stop" or "restart")) throw new ArgumentException("Unknown service action.", nameof(action));
+        if (action is not ("start" or "stop" or "restart" or "ensure")) throw new ArgumentException("Unknown service action.", nameof(action));
         return Send<StatusDto>(HttpMethod.Post, $"service/{action}", null, ct);
     }
+    public Task ShutdownHostAsync(CancellationToken ct = default) =>
+        Send<object>(HttpMethod.Post, "host/shutdown", null, ct);
     public Task<TokenResponse> InferenceTokenAsync(string audience = "codex", CancellationToken ct = default) =>
         Get<TokenResponse>($"auth/token?audience={Id(audience)}", ct);
 

@@ -109,4 +109,5 @@ try
     Check(repository.Snapshot.Revision == state.Revision, "export is pure");
 }
 finally { if (Directory.Exists(temporary)) Directory.Delete(temporary, true); }
+assertions += ReasoningCases.Run();
 Console.WriteLine($"{assertions} model compatibility assertions passed; no provider access or personal Codex state.");

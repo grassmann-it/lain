@@ -1,0 +1,14 @@
+Native graphics acknowledgements
+
+This software is based in part on the work of the Independent JPEG Group.
+
+Portions of this software are copyright © 2024 The FreeType Project
+(www.freetype.org). All rights reserved.
+FreeType is used under the FreeType License (FTL) option. The alternate GPLv2
+text is retained as upstream license information, not a selection of that option.
+
+See the complete original SkiaSharp/HarfBuzzSharp THIRD-PARTY-NOTICES and the
+pinned supplemental texts. These acknowledgements are Lain-authored packaging
+text derived from the libjpeg-turbo LICENSE/README.ijg and FreeType FTL/README.
+The FreeType year/version is bound to commit
+83af801b552111e37d9466a887e1783a0fb5f196 (2.13.3, README copyright through 2024).

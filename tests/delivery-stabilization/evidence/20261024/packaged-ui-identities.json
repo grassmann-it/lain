@@ -1,0 +1,12 @@
+{
+  "packageSourceCommit": "793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+  "packageManifestSha256": "f60ffb6e3be089fcceeca64b3cd6a6bbfb116a00500bb042a9722df818a1a418",
+  "productionAssemblies": {
+    "Lain.Desktop": "5a68a42c2113b6093b4b678710a10ab4fd3f3efe1f3a6088a9e553a233d501ff",
+    "Lain.Client": "00c92d0b6016f3e6f17b180828f31145183919302a915126c0169d5e9ef8fab1",
+    "Lain.Core": "2bd98c593b1c1f290b8f4236703651d0019c374b82cc18817819883ea636ca4a"
+  },
+  "harnessSha256": "842f122b7b0d25a002b8d2d709281dddbfed223364a6352583090ac0f894c8b5",
+  "exitCode": 0,
+  "scope": "Exact shipped production DLLs in qualified native fixture; private Xvfb; synthetic API only"
+}

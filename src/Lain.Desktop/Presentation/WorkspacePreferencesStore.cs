@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Lain.Core;
 
 namespace Lain.Desktop.Presentation;
 
@@ -18,6 +19,7 @@ public sealed class WorkspacePreferencesStore
     };
     private readonly object _gate = new();
     private readonly string? _path;
+    private readonly string? _coordinationRoot;
     private WorkspacePreferences _current = new();
 
     // Return snapshots: the shared contract contains mutable collections.
@@ -31,6 +33,8 @@ public sealed class WorkspacePreferencesStore
             var root = Environment.GetEnvironmentVariable("LAIN_HOME") ??
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "lain");
             _path = Path.GetFullPath(path ?? Path.Combine(root, "ui", "workspace-preferences.json"));
+            // Explicit fixture paths must never admit against the real user state.
+            _coordinationRoot = path is null ? Path.GetFullPath(root) : Path.GetDirectoryName(_path);
             _current = Read(_path);
         }
         catch (Exception ex) when (IsStorageError(ex))
@@ -53,6 +57,7 @@ public sealed class WorkspacePreferencesStore
                 Validate(preferences);
                 var requested = Copy(preferences);
                 if (_path is null) throw new IOException("Preference storage is unavailable.");
+                using var admission = LifecycleCoordination.AcquireOperation(_coordinationRoot);
                 EnsureDirectory(Path.GetDirectoryName(_path)!);
                 using var fileLock = AcquireLock(_path + ".lock");
                 WorkspacePreferences latest;

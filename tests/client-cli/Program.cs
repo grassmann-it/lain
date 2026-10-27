@@ -76,6 +76,18 @@ handler.Handle = request =>
 await client.RemoveAccountAsync(3, "acct-1"); assertions++;
 handler.Handle = request =>
 {
+    Require(request.Method == HttpMethod.Put && request.RequestUri!.AbsolutePath == "/api/v1/accounts/acct-1/name", "rename uses dedicated account name endpoint");
+    using var body = JsonDocument.Parse(request.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
+    Require(body.RootElement.GetProperty("revision").GetInt64() == 3 && body.RootElement.GetProperty("value").GetString() == "Work account", "rename carries expected revision and name only");
+    return new(HttpStatusCode.OK) { Content = JsonContent.Create(configuration) };
+};
+var renameOutput = new StringWriter(); var renameError = new StringWriter();
+Require(await CliApplication.RunAsync(["accounts", "rename", "acct-1", "--name", "Work account", "--revision", "3", "--json"],
+    renameOutput, renameError, () => client) == 0 && renameError.ToString() == "", "CLI rename succeeds"); assertions++;
+Require(await CliApplication.RunAsync(["accounts", "rename", "acct-1", "--name", " "], new StringWriter(), new StringWriter(),
+    () => throw new Exception("invalid rename must not open client")) == 2, "blank rename is rejected before discovery"); assertions++;
+handler.Handle = request =>
+{
     Require(request.RequestUri!.AbsolutePath == "/api/v1/status", "status path");
     return new(HttpStatusCode.OK) { Content = JsonContent.Create(status) };
 };
@@ -197,7 +209,7 @@ exit = await CliApplication.RunAsync(["profiles", "apply", "profile-1", "--revis
 Require(exit == 0 && JsonDocument.Parse(output.ToString()).RootElement.GetProperty("appliedRevision").GetInt64() == 3, "CLI apply emits effective configuration"); assertions++;
 
 var codex = Path.Combine(Path.GetTempPath(), "lain-codex-" + Guid.NewGuid().ToString("N"));
-var artifacts = new CodexProfileArtifacts("lain.config.toml", "synthetic generated config", "lain.models.json", "{\"models\":[]}", ["--no-daemon", "--profile", "lain"], 3);
+var artifacts = new CodexProfileArtifacts("lain.config.toml", "model = \"fixture-model\"\nmodel_catalog_json = \"/ignored/lain.models.json\"\n", "lain.models.json", "{\"models\":[{\"slug\":\"fixture-model\"}]}", ["--no-daemon", "--profile", "lain"], 3);
 try
 {
     Directory.CreateDirectory(codex);
@@ -212,7 +224,7 @@ try
     };
     var generated = await client.ExportCodexProfileAsync(3, "profile-1", "/absolute/lain", Path.Combine(codex, "lain.models.json"));
     var installed = CodexArtifactInstaller.Install(generated, codex);
-    Require(File.ReadAllText(installed.ConfigurationPath) == artifacts.Configuration && File.ReadAllText(installed.CatalogPath) == artifacts.Catalog,
+    Require(File.ReadAllText(installed.ConfigurationPath).Contains(JsonSerializer.Serialize(installed.CatalogPath)) && File.ReadAllText(installed.CatalogPath) == artifacts.Catalog,
         "generated artifacts installed");
     Require(File.ReadAllText(Path.Combine(codex, "config.toml")) == "EXISTING-CONFIG" && Directory.GetFiles(codex).Length == 3,
         "ordinary config unchanged and temporary files removed");

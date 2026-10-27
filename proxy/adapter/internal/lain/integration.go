@@ -48,19 +48,20 @@ type attempt struct {
 	captureExpires time.Time
 }
 type Integration struct {
-	routerPins     *routerPins
-	routerPinError error
-	Login          *LoginManager
-	Journal        *Journal
-	Bindings       Bindings
-	Inspector      *Inspector
-	Quotas         *quotaObservations
-	mu             sync.Mutex
-	active         map[string]*attempt
-	captureSlots   int
-	activityMu     sync.Mutex
-	draining       bool
-	requests       int64
+	routerAvailability *routerAvailability
+	routerPins         *routerPins
+	routerPinError     error
+	Login              *LoginManager
+	Journal            *Journal
+	Bindings           Bindings
+	Inspector          *Inspector
+	Quotas             *quotaObservations
+	mu                 sync.Mutex
+	active             map[string]*attempt
+	captureSlots       int
+	activityMu         sync.Mutex
+	draining           bool
+	requests           int64
 }
 type dispatchError struct{ message string }
 
@@ -121,7 +122,7 @@ func New(j *Journal, b Bindings) (*Integration, error) {
 			}
 		}
 	}
-	integration := &Integration{Journal: j, Bindings: b, Inspector: newInspector(), Quotas: openQuotaObservations(j.basePath + ".quota-observations.json"), active: map[string]*attempt{}}
+	integration := &Integration{routerAvailability: newRouterAvailability(), Journal: j, Bindings: b, Inspector: newInspector(), Quotas: openQuotaObservations(j.basePath + ".quota-observations.json"), active: map[string]*attempt{}}
 	if len(b.Routers) > 0 {
 		integration.routerPins, integration.routerPinError = openRouterPins(j, b.Routers)
 	}

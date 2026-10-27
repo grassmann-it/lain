@@ -17,7 +17,10 @@ using Lain.Host.Providers;
 using Lain.Host.Providers.Xai;
 using Lain.Host.Quota;
 using Lain.Host.Usage;
+using Lain.Host.Workers;
 
+args = HostLaunchArguments.Apply(args);
+using var startupAdmission = LifecycleCoordination.AcquireHostStartup();
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
 builder.Logging.ClearProviders(); // Never log request bodies, credentials or upstream exception text.
 var paths = new OwnStatePaths();
@@ -40,7 +43,7 @@ var restoreReady = true;
 try { RestoredCredentialQuarantine.PrepareForRestore(paths); }
 catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException)
 { restoreReady = false; } // Keep local repair/history available; never enumerate restored grants in Core.
-var binary = Environment.GetEnvironmentVariable("LAIN_PROXY_PATH") ?? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../proxy/lain-proxy"));
+var binary = Environment.GetEnvironmentVariable("LAIN_PROXY_PATH") ?? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../proxy/lain-proxy" + (OperatingSystem.IsWindows() ? ".exe" : "")));
 var proxy = new OwnedProxyLifecycle(paths, secrets, new(binary, "", false), () => ProxyBuildMetadata.Read(paths, binary));
 bool GatewayMode() => repository.Snapshot.RuntimeMode == "gateway";
 bool CollectCore() => GatewayMode() && proxy.Status.Ready;
@@ -242,7 +245,17 @@ app.Use(async (context, next) => {
   context.GetEndpoint()?.Metadata.GetMetadata<OwnsPublicationGate>() is null;
  if (mutation) await mutations.WaitAsync(context.RequestAborted);
  var beforeAccounts = context.Request.Path.StartsWithSegments(Api.Prefix + "/accounts") ? repository.Snapshot : null;
- try { await next(context); }
+ IDisposable? lifecycleAdmission = null;
+ try
+ {
+  // Client-side inspection cannot close a check/POST race with maintenance.
+  // Keep admission through Core start/Apply and other HTTP state writers.
+  var teardown = context.Request.Path == Api.Prefix + "/service/stop" || context.Request.Path == Api.Prefix + "/host/shutdown";
+  if (context.Request.Method is not ("GET" or "HEAD") && !teardown)
+   lifecycleAdmission = LifecycleCoordination.AcquireOperation(paths.Root);
+  await next(context);
+ }
+ catch (LifecycleMaintenanceException ex) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError(ex.Code, ex.Message)); }
  catch (RevisionConflictException) { context.Response.StatusCode = 409; await context.Response.WriteAsJsonAsync(new ApiError("revision_conflict", "Configuration changed; reload and retry.")); }
  catch (KeyNotFoundException) { context.Response.StatusCode = 404; await context.Response.WriteAsJsonAsync(new ApiError("not_found", "The requested item does not exist.")); }
  catch (CollectionRouterValidationException ex) { context.Response.StatusCode = 400; await context.Response.WriteAsJsonAsync(ex.ToApiError()); }
@@ -253,6 +266,7 @@ app.Use(async (context, next) => {
  catch (Exception) { context.Response.StatusCode = 500; await context.Response.WriteAsJsonAsync(new ApiError("operation_failed", "The operation failed. Check lain paths, credentials and service readiness.")); }
  finally
  {
+  lifecycleAdmission?.Dispose();
   if (mutation) mutations.Release();
   // Includes successful login polling/resource selection and recovery publication.
   // Browser/owner cleanup happens after persistence and outside the shared CAS gate.
@@ -272,6 +286,8 @@ void RequireAppliedRuntime()
  RequireGateway();
  application.RequireCompletedRuntime();
 }
+var runtimeStartup = new RuntimeStartupService(new RuntimeStartIntent(paths), proxy, GatewayMode, () => restoreReady,
+ () => application.Status, RequireAppliedRuntime);
 StatusDto Status()
 {
  var config = repository.Snapshot;
@@ -286,7 +302,7 @@ StatusDto Status()
   config.Revision != config.AppliedRevision ? "pending-application" : ps.State : "monitoring";
  return new(Api.Version, version, state,
   ps.Ready, config.Revision, config.AppliedRevision, DateTimeOffset.UtcNow, !restoreReady ? "Restored credentials require local recovery before Gateway can start." : gateway ? ps.Error : null, active.Id, active.Revision,
-  config.RuntimeMode, new(true, gateway, gateway, true, gateway, gateway && restoreReady && File.Exists(binary)), applicationState);
+  config.RuntimeMode, new(true, gateway, gateway, true, gateway, gateway && restoreReady && File.Exists(binary)), applicationState, runtimeStartup.Status);
 }
 // Matching profile identity and revision in both metadata files reject partial
 // publication. Reads stay responsive while another request refreshes provider quotas.
@@ -317,6 +333,7 @@ app.MapPost(Api.Prefix + "/accounts/{id}/credentials/{credentialId}/refresh", (s
 app.MapGet(Api.Prefix + "/accounts", (AccountService svc) => svc.List());
 app.MapPost(Api.Prefix + "/accounts", (RevisionRequest<AddApiAccountRequest> request, AccountService svc) => svc.AddApi(request.Revision, request.Value));
 app.MapPut(Api.Prefix + "/accounts/{id}/enabled", (string id, RevisionRequest<bool> request, AccountService svc) => svc.SetEnabled(request.Revision, id, request.Value));
+app.MapPut(Api.Prefix + "/accounts/{id}/name", (string id, RevisionRequest<string> request, AccountService svc) => svc.Rename(request.Revision, id, request.Value));
 app.MapDelete(Api.Prefix + "/accounts/{id}", (string id, long revision, AccountService svc) => svc.Remove(revision, id));
 app.MapPost(Api.Prefix + "/accounts/{id}/check", (string id, AccountService svc) => svc.Check(id));
 app.MapGet(Api.Prefix + "/accounts/{id}/monitor", (string id, MonitorAccessService svc) => svc.Get(id));
@@ -362,6 +379,7 @@ app.MapPost(Api.Prefix + "/accounts/login/{id}/resource", (string id, ResourceSe
 app.MapGet(Api.Prefix + "/accounts/login/{id}", (string id, LoginOperationService svc, CancellationToken ct) => svc.StatusAsync(id, ct));
 app.MapDelete(Api.Prefix + "/accounts/login/{id}", (string id, LoginOperationService svc, CancellationToken ct) => svc.CancelAsync(id, ct));
 app.MapModelEndpoints();
+app.MapWorkerEndpoints();
 app.MapProviderCatalogEndpoints();
 app.MapInspectorEndpoints();
 app.MapGet(Api.Prefix + "/profiles/{id}/preview", (string id, long revision) => application.Preview(id, revision));
@@ -379,30 +397,55 @@ app.MapGet(Api.Prefix + "/auth/token", (string audience) => {
  return audience == "codex" ? Results.Ok(new { token = secrets.GetOrCreateToken(paths.InferenceToken) }) : Results.BadRequest(new ApiError("invalid_audience", "Only the codex inference audience is supported."));
 });
 app.MapPost(Api.Prefix + "/service/{action}", async (string action, CancellationToken ct) => {
- if (action != "stop") RequireGateway();
- switch (action) { case "start": RequireAppliedRuntime(); await proxy.StartAsync(ct); break; case "stop": await proxy.StopAsync(ct); break; case "restart": RequireAppliedRuntime(); await proxy.RestartAsync(ct); break; default: throw new ArgumentException("Unknown proxy action."); }
+ switch (action)
+ {
+  case "ensure": await runtimeStartup.EnsureAsync(ct); break;
+  case "start": await runtimeStartup.StartAsync(false, ct); break;
+  case "stop": await runtimeStartup.StopAsync(ct); break;
+  case "restart": await runtimeStartup.StartAsync(true, ct); break;
+  default: throw new ArgumentException("Unknown proxy action.");
+ }
  return Status();
 });
-using var shutdown = new CancellationTokenSource();
+app.MapPost(Api.Prefix + "/host/shutdown", (HttpContext context) => {
+ context.Response.OnCompleted(() => { app.Lifetime.StopApplication(); return Task.CompletedTask; });
+ return Results.Ok(new { accepted = true });
+});
+using var shutdown = CancellationTokenSource.CreateLinkedTokenSource(app.Lifetime.ApplicationStopping);
 var referenceWithoutQuota = referenceIsolation && Environment.GetEnvironmentVariable("LAIN_REFERENCE_DISABLE_QUOTA") == "1";
-if (GatewayMode() && restoreReady && File.Exists(Path.Combine(paths.Root, "active-profile.json")))
+async Task ResumeCoreAtStartupAsync()
 {
- try {
-  using var active = JsonDocument.Parse(File.ReadAllText(Path.Combine(paths.Root, "active-profile.json")));
-  if (active.RootElement.GetProperty("revision").GetInt64() != repository.Snapshot.AppliedRevision) throw new InvalidOperationException();
-  RequireAppliedRuntime(); await proxy.StartAsync(shutdown.Token);
- } catch (Exception) { proxy.ReportStartupValidationFailure(); /* API remains available for repair. */ }
+ try
+ {
+  await mutations.WaitAsync(shutdown.Token);
+  try { await runtimeStartup.EnsureAsync(shutdown.Token); }
+  finally { startupAdmission.Dispose(); mutations.Release(); }
+ }
+ catch (OperationCanceledException) when (shutdown.IsCancellationRequested) { }
+ finally { startupAdmission.Dispose(); }
 }
-// Bring the owned Core up before passive quota readers connect to its local port.
+// Core-dependent passive readers are gated by confirmed readiness. The Host API
+// is available throughout the bounded Core start, including its health stages.
 var quotaLoop = referenceWithoutQuota ? Task.CompletedTask : quota.RunAsync(shutdown.Token);
+// Cached quota publication is independent of provider refresh and usage collection.
+var routerAvailability = new RouterAvailabilityPublisher(quotaCoreHttp, () => repository.Snapshot,
+ quota.GetRouterAvailabilitySnapshotsAsync,
+ ct => RouterAvailabilityBindings.ReadAsync(new RouteBindingsWriter(paths).BindingsPath, ct), canPublish: CollectCore);
+var routerAvailabilityLoop = referenceWithoutQuota ? Task.CompletedTask : routerAvailability.RunAsync(shutdown.Token);
 var credentialRefreshLoop = referenceWithoutQuota ? Task.CompletedTask :
  app.Services.GetRequiredService<OwnedCredentialRefreshService>().RunAsync(shutdown.Token);
 var recoveryCleanupLoop = RunRecoveryCleanupAsync(loginOperations, shutdown.Token);
-try { await app.RunAsync(); }
+var initialStartup = Task.CompletedTask;
+try
+{
+ await app.StartAsync();
+ initialStartup = ResumeCoreAtStartupAsync();
+ await app.WaitForShutdownAsync();
+}
 finally
 {
  shutdown.Cancel();
- try { await Task.WhenAll(quotaLoop, credentialRefreshLoop, recoveryCleanupLoop); } catch (OperationCanceledException) { }
+ try { await Task.WhenAll(initialStartup, quotaLoop, routerAvailabilityLoop, credentialRefreshLoop, recoveryCleanupLoop); } catch (OperationCanceledException) { }
  await proxy.DisposeAsync();
  foreach (var login in cloudLogins) login.Dispose();
  providerHttp.Dispose();

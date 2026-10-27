@@ -1,44 +1,44 @@
 {
   "id": "xai",
   "name": "xAI / Grok",
-  "summary": "Direkter Grok-API-Zugang nach Verbrauch; unabhängig von Groq.",
+  "summary": "Direct pay-as-you-go Grok API access; independent of Groq.",
   "accountUrl": "https://console.x.ai/",
   "documentationUrl": "https://docs.x.ai/developers/quickstart",
   "credentials": [
     {
       "id": "apiKey",
-      "label": "xAI / Grok API-Key",
+      "label": "xAI / Grok API key",
       "kind": "api-key",
       "required": true,
       "secret": true,
-      "help": "Eigener Inferenz-API-Key; Consumer-Abos belegen kein API-Guthaben."
+      "help": "Your own inference API key; consumer subscriptions do not establish API credit."
     }
   ],
   "setupSteps": [
     {
-      "title": "API-Account einrichten",
-      "description": "Eigenen Account und API-Billing selbst einrichten.",
+      "title": "Set up an API account",
+      "description": "Set up your own account and API billing.",
       "url": "https://console.x.ai/"
     },
     {
-      "title": "Inferenz-Key anlegen",
-      "description": "Key mit passenden Modell-/Endpoint-ACLs privat speichern.",
+      "title": "Create an inference key",
+      "description": "Store the key privately with appropriate model and endpoint ACLs.",
       "url": "https://console.x.ai/team/default/api-keys"
     },
     {
-      "title": "Teamlimits prüfen",
-      "description": "Tatsächliche Modelle, Limits und Berechtigungen prüfen.",
+      "title": "Check team limits",
+      "description": "Check the actual models, limits, and permissions.",
       "url": "https://console.x.ai/team/default/models"
     }
   ],
   "billingPlans": [
     {
       "id": "payg",
-      "name": "API nach Verbrauch",
+      "name": "Pay-as-you-go API",
       "kind": "payg",
       "scope": "team",
       "unit": "USD",
-      "notes": "Kein dauerhaftes Gratisbudget bestätigt; Preise und Key-Limits modellabhängig."
+      "notes": "No ongoing free allowance confirmed; prices and key limits depend on the model."
     }
   ],
   "routes": [
@@ -72,9 +72,9 @@
       "pricingClass": "payg",
       "freeOnlyEligible": false,
       "restrictions": [
-        "Reasoning standardmäßig high und nicht abschaltbar.",
-        "Responses muss verschlüsselte Reasoning-Elemente bei Fortsetzungen erhalten; Chat hat dieses Feld nicht.",
-        "Dokumentierte Fähigkeit; tatsächlicher Livezugang und Backend-Protokollunterstützung noch ungeprüft."
+        "Reasoning defaults to high and cannot be disabled.",
+        "Responses must preserve encrypted reasoning items in continuations; Chat does not have this field.",
+        "Documented capability; actual live access and backend protocol support have not yet been verified."
       ]
     },
     {
@@ -107,50 +107,50 @@
       "pricingClass": "payg",
       "freeOnlyEligible": false,
       "restrictions": [
-        "Reasoning standardmäßig high und nicht abschaltbar.",
-        "Responses muss verschlüsselte Reasoning-Elemente bei Fortsetzungen erhalten; Chat hat dieses Feld nicht.",
-        "Dokumentierte Fähigkeit; tatsächlicher Livezugang und Backend-Protokollunterstützung noch ungeprüft."
+        "Reasoning defaults to high and cannot be disabled.",
+        "Responses must preserve encrypted reasoning items in continuations; Chat does not have this field.",
+        "Documented capability; actual live access and backend protocol support have not yet been verified."
       ]
     }
   ],
   "sources": [
     {
       "url": "https://docs.x.ai/developers/quickstart.md",
-      "title": "Inferenz-Key und API-Credits",
+      "title": "Inference key and API credits",
       "checkedAt": "2026-10-24T00:00:00Z"
     },
     {
       "url": "https://docs.x.ai/developers/models/grok-4.7.md",
-      "title": "Grok 4.7 Fähigkeiten und Kontext",
+      "title": "Grok 4.7 capabilities and context",
       "checkedAt": "2026-10-24T00:00:00Z"
     },
     {
       "url": "https://docs.x.ai/developers/model-capabilities/text/reasoning.md",
-      "title": "Reasoning und verschlüsselte Fortsetzung",
+      "title": "Reasoning and encrypted continuation",
       "checkedAt": "2026-10-24T00:00:00Z"
     },
     {
       "url": "https://docs.x.ai/developers/model-capabilities/text/streaming.md",
-      "title": "SSE-Streaming",
+      "title": "SSE streaming",
       "checkedAt": "2026-10-24T00:00:00Z"
     },
     {
       "url": "https://docs.x.ai/developers/rate-limits.md",
-      "title": "Team-Tiers und Key-Limits",
+      "title": "Team tiers and key limits",
       "checkedAt": "2026-10-24T00:00:00Z"
     },
     {
       "url": "https://docs.x.ai/developers/management-api-guide.md",
-      "title": "Getrennter Management-Key",
+      "title": "Separate management key",
       "checkedAt": "2026-10-24T00:00:00Z"
     }
   ],
   "restrictions": [
-    "xAI/Grok und Groq sind verschiedene Anbieter.",
-    "Kein dauerhaftes kostenloses API-Budget bestätigt.",
-    "Consumer-Grok-/X-Abos sind kein API-Guthaben.",
-    "Quota mit Inferenz-Key nicht unterstützt: Management-API braucht separaten Key und Team-ID.",
-    "Team-/Key-Limits und API-Berechtigungen ohne Account ungeprüft; keine Parallelität oder Restmenge ableiten."
+    "xAI/Grok and Groq are different providers.",
+    "No ongoing free API allowance confirmed.",
+    "Consumer Grok/X subscriptions do not provide API credit.",
+    "Quota queries with an inference key are not supported: the management API requires a separate key and team ID.",
+    "Team/key limits and API permissions have not been verified without an account; do not infer concurrency or remaining quota."
   ],
   "adapterState": "available",
   "liveVerification": "not_tested",

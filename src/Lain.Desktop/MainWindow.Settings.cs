@@ -145,8 +145,8 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(windowGroup, "Window and notification settings");
         AutomationProperties.SetName(helpGroup, "Help and application settings");
         var page = new StackPanel { Spacing = 18, Children = {
-            Heading("Settings", "Local window preferences. Changes are saved as you choose them."),
-            densityGroup, windowGroup, helpGroup } };
+            Heading("Settings", "Window preferences and independent background service startup choices."),
+            densityGroup, windowGroup, helpGroup, StartupSettingsGroup() } };
         page.MaxWidth = 760;
         page.HorizontalAlignment = HorizontalAlignment.Stretch;
         AutomationProperties.SetName(page, "Settings page");
@@ -201,6 +201,7 @@ public sealed partial class MainWindow
             _settingsDensity.SelectedIndex = (int)preferences.Densities.GetValueOrDefault(_settingsDensitySection, ViewDensity.Normal);
             foreach (var (toggle, value) in _settingsToggles) toggle.IsChecked = value(preferences);
             SynchronizeSettingsSaveFeedback();
+            SynchronizeStartupSettings();
             if (_settingsTrayHint is not null)
                 _settingsTrayHint.Text = _trayController?.TrayAvailable == true
                     ? "Tray available. Minimize and close use your independent choices. Hiding or closing the UI does not stop the host."
@@ -228,19 +229,32 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(projectText, "Project repository");
         var project = Ui.Button("Open project repository", () => _ = OpenProviderLinkAsync(new Uri(repository)));
         AutomationProperties.SetName(project, "Open project repository");
+        var support = Ui.Button("Support development via PayPal", () =>
+            _ = OpenProviderLinkAsync(new Uri("https://www.paypal.com/donate/?hosted_button_id=5BR4MK748PDSQ")));
+        AutomationProperties.SetName(support, "Support development via PayPal");
         var licenses = Ui.Text(
-            "Application license: no application-wide license is declared in the repository.\n\n" +
+            "Application license: Artistic License 2.0. Copyright © 2026 Tom Graßmann. " +
+            "See LICENSE and NOTICE in the package; the exact source is included in source/lain-source.tar.gz.\n\n" +
             "Bundled third-party license records include MIT (.NET, Avalonia, Semi, Ursa, Irihi and CLIProxyAPI Core), " +
             "Apache 2.0 (SQLitePCLRaw), and SIL Open Font License 1.1 (IBM Plex Sans Condensed and Oxanium). " +
             "Full component and runtime notices are included in the package's notices directory.\n\n" +
-            "The cat artwork is a contrast-adjusted variant of the user-supplied photo; its provenance records no separate license statement.", 12, Ui.Muted);
+            "Cat photograph: Alexander Huxel · Webentwicklung Huxel. " +
+            "Edited for lain and used with permission; separate from the application license.", 12, Ui.Muted);
         AutomationProperties.SetName(licenses, "License information");
+        var photographer = Ui.Button("(Flickr)", () =>
+            _ = OpenProviderLinkAsync(new Uri("https://flickr.com/people/204852984@N05/")));
+        AutomationProperties.SetName(photographer, "Open photographer profile");
+        var photographerWebsite = Ui.Button("Alexander Huxel · Webentwicklung Huxel", () =>
+            _ = OpenProviderLinkAsync(new Uri("https://webentwicklung-huxel.de/")));
+        AutomationProperties.SetName(photographerWebsite, "Open photographer website");
         var page = Ui.Stack(
             Heading("About lain", "Account monitoring and local AI gateway"),
             Ui.Card(Ui.Stack(Ui.Row(logo, brand), Ui.Text("Desktop build", 12, Ui.Muted), versionText,
                 Ui.Text("Host version · reported by the connected host", 12, Ui.Muted), hostVersion)),
             Ui.Card(Ui.Stack(Ui.Text("Project", 15), projectText, project)),
-            Ui.Card(Ui.Stack(Ui.Text("Licenses and credits", 15), licenses)));
+            Ui.Card(Ui.Stack(Ui.Text("Support lain", 15),
+                Ui.Text("If lain helps you, you can voluntarily support its development.", 13, Ui.Muted), support)),
+            Ui.Card(Ui.Stack(Ui.Text("Licenses and credits", 15), licenses, Ui.Row(photographerWebsite, photographer))));
         page.MaxWidth = 820;
         page.HorizontalAlignment = HorizontalAlignment.Stretch;
         AutomationProperties.SetName(page, "About page");

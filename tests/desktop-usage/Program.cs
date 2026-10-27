@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Avalonia;
@@ -102,17 +103,17 @@ internal static class Scenario
         await Wait(() => Controls<TextBlock>(view).Any(x => AutomationProperties.GetName(x) == "Usage selected group name"), "initial selected group");
         await Task.Delay(200);
         CheckColumns(view, window, "1120×780");
-        var row = Named<Grid>(view, "Analysis group accountId Kimi Coding");
+        var row = Named<Grid>(view, "Analysis group accountId Kimi");
         var rowHeight = row.Bounds.Height;
-        await Click(input, Named<Button>(view, "Select analysis group accountId Kimi Coding"));
-        Check(Selected(view) == "Kimi Coding" && Math.Abs(row.Bounds.Height - rowHeight) < 1,
+        await Click(input, Named<Button>(view, "Select analysis group accountId Kimi"));
+        Check(Selected(view) == "Kimi" && Math.Abs(row.Bounds.Height - rowHeight) < 1,
             "native pointer selects Kimi in the side detail without expanding its row");
         Check(Named<StackPanel>(view, "Usage selected group detail").GetVisualDescendants().OfType<TextBlock>().Any(x => x.Text == "accountId: a4"),
             "side detail is bound to the evidenced stable account identity");
         var query = JsonSerializer.Serialize(fixture.Data.UsageQueries.Last());
-        var command = Named<Button>(view, "Select analysis group accountId Command Code Pro");
+        var command = Named<Button>(view, "Select analysis group accountId Command Code");
         command.Focus(); input.Key(0x20); await Task.Delay(160);
-        Check(Selected(view) == "Command Code Pro" && JsonSerializer.Serialize(fixture.Data.UsageQueries.Last()) == query,
+        Check(Selected(view) == "Command Code" && JsonSerializer.Serialize(fixture.Data.UsageQueries.Last()) == query,
             "native Space selects a row without applying a query");
         Check(Text(Named<StackPanel>(view, "Usage performance")).Contains("120 / 132 measured")
             && Text(Named<StackPanel>(view, "Usage performance")).Contains("P50 240 ms"),
@@ -124,7 +125,7 @@ internal static class Scenario
         {
             view.SetPresentation(new(InformationLevel.Simple, density)); await Task.Delay(160);
             CheckColumns(view, window, "800×560 " + density);
-            Check(Selected(view) == "Command Code Pro", "density changes keep the selected identity");
+            Check(Selected(view) == "Command Code", "density changes keep the selected identity");
         }
         var table = Named<ScrollViewer>(view, "Usage table scroll");
         var detail = Named<ScrollViewer>(view, "Usage detail scroll");
@@ -138,7 +139,7 @@ internal static class Scenario
         fixture.Partial = true; await Apply(view, fixture);
         Check(Text(view).Contains("64,200") || Text(view).Contains("64.200"), "partial fixture reports exactly 64,200 known tokens");
         Check(!Text(view).Contains("81,986") && !Text(view).Contains("81.986"), "partial fixture does not retain the complete 81,986 total");
-        await Click(input, Named<Button>(view, "Select analysis group accountId Kimi Coding"));
+        await Click(input, Named<Button>(view, "Select analysis group accountId Kimi"));
         Check(Text(Named<StackPanel>(view, "Usage selected group detail")).Contains("—"), "Kimi missing measurement remains unknown");
         Capture(window, "usage-partial-narrow.png");
         await Click(input, Named<Button>(view, "Usage additional filters"));
@@ -146,7 +147,7 @@ internal static class Scenario
         await Wait(() => status.Text == "503", "native draft typing");
         var reads = fixture.Data.UsageCalls;
         await Wait(() => fixture.Data.UsageCalls > reads, "poll while draft focused");
-        Check(status.IsFocused && status.Text == "503" && !fixture.Data.UsageQueries.Last().ContainsKey("statusCode") && Selected(view) == "Kimi Coding",
+        Check(status.IsFocused && status.Text == "503" && !fixture.Data.UsageQueries.Last().ContainsKey("statusCode") && Selected(view) == "Kimi",
             "polling preserves native input focus, unapplied draft, applied query and selected group");
         await Click(input, Named<Button>(view, "Usage additional filters"));
         detail.Offset = new Vector(0, 80); table.Offset = new Vector(0, 50); await Task.Delay(100);
@@ -157,13 +158,13 @@ internal static class Scenario
         window.Content = view; restore();
         await Wait(() => Controls<TextBlock>(view).Any(x => AutomationProperties.GetName(x) == "Usage selected group name"), "navigation restored");
         await Task.Delay(180);
-        Check(Selected(view) == "Kimi Coding" && status.Text == "503" && !fixture.Data.UsageQueries.Last().ContainsKey("statusCode"),
+        Check(Selected(view) == "Kimi" && status.Text == "503" && !fixture.Data.UsageQueries.Last().ContainsKey("statusCode"),
             "navigation Back restores selection and keeps draft separate from applied query");
         Check(Math.Abs(detail.Offset.Y - detailOffset.Y) < 2 && Math.Abs(table.Offset.Y - tableOffset.Y) < 2,
             "navigation Back restores both independent scroll offsets");
         fixture.Data.AnalysisFailure = true;
         reads = fixture.Data.UsageCalls; await Wait(() => fixture.Data.UsageCalls > reads, "analysis failure poll"); await Task.Delay(120);
-        Check(Text(view).Contains("Last known group measurements") && Selected(view) == "Kimi Coding", "same-scope analysis failure labels retained side detail as last known");
+        Check(Text(view).Contains("Last known group measurements") && Selected(view) == "Kimi", "same-scope analysis failure labels retained side detail as last known");
         Capture(window, "usage-source-error.png");
         fixture.Data.AnalysisFailure = false; fixture.OmitKimi = true;
         reads = fixture.Data.UsageCalls; await Wait(() => fixture.Data.UsageCalls > reads, "missing selected group poll"); await Task.Delay(120);
@@ -171,7 +172,22 @@ internal static class Scenario
             "disappeared group does not silently switch to a different identity");
         fixture.OmitKimi = false; fixture.Regressed = true;
         reads = fixture.Data.UsageCalls; await Wait(() => fixture.Data.UsageCalls > reads, "source regression poll"); await Task.Delay(120);
-        Check(Selected(view) == "Kimi Coding" && Text(view).Contains("continuity unconfirmed"), "returning identity is restored while source regression remains explicit");
+        Check(Selected(view) == "Kimi" && Text(view).Contains("continuity unconfirmed"), "returning identity is restored while source regression remains explicit");
+        var dimension = Named<ComboBox>(view, "Compare by");
+        dimension.SelectedItem = dimension.ItemsSource!.Cast<object>().Single(item => item.ToString() == "Route");
+        await Wait(() => Controls<TextBlock>(view).Any(x => AutomationProperties.GetName(x) == "Usage selected group name" && x.Text == "gpt-lain-01"), "friendly route selected");
+        Check(Selected(view) == "gpt-lain-01" && Text(Named<StackPanel>(view, "Usage selected group detail")).Contains("routeId: r1"),
+            "route alias is readable while selected detail retains stable route identity");
+        WorkspaceNavigationRequest? destination = null;
+        view.NavigateRequested = value => destination = value;
+        Named<Button>(view, "Open routeId r1").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Check(destination?.RouteId == "r1", "friendly route navigation retains the stable ID");
+        window.Width = 1120; window.Height = 780;
+        view.SetPresentation(new(InformationLevel.Simple, ViewDensity.Normal));
+        await Task.Delay(300);
+        Check(Named<TextBlock>(view, "Usage selected group name").Bounds.Height > 0,
+            "friendly route label has completed native layout before capture");
+        Capture(window, "usage-friendly-route.png");
         Check(fixture.Data.Requests.All(x => x.StartsWith("GET ")) && fixture.Data.Unexpected.Count == 0, "qualification made only expected in-memory reads");
         File.WriteAllText(Path.Combine(Output, "result.json"), JsonSerializer.Serialize(new { checks, status = "passed", scope = "Production UsageView and App styles, private Xvfb+DBus, native XTest selection/draft, in-memory HTTP only" }));
         window.Close(); Console.WriteLine($"PASS: {checks} checks");
@@ -185,6 +201,11 @@ internal sealed class UsageFixture : HttpMessageHandler
     public UsageFixture() => inner = new(Data);
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        if (request.Method == HttpMethod.Get && request.RequestUri!.AbsolutePath == "/api/v1/routes")
+        {
+            Data.Requests.Add("GET /api/v1/routes");
+            return new(HttpStatusCode.OK) { Content = JsonContent.Create(Data.Config.Routes) };
+        }
         var response = await inner.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode) return response;
         var path = request.RequestUri!.AbsolutePath;

@@ -12,6 +12,7 @@ var assertions = 0;
 try
 {
     await MonitorAndStatic();
+    RenameAccount();
     assertions += await EvaluationMonitorChecks.Run(Path.Combine(root, "evaluation-monitors"));
     await LoginLifecycle();
     await DeviceInstructions();
@@ -36,6 +37,22 @@ async Task Throws<T>(Func<Task> work, string message) where T : Exception
 }
 void ThrowsSync<T>(Action work, string message) where T : Exception => Throws<T>(() => { work(); return Task.CompletedTask; }, message).GetAwaiter().GetResult();
 Fixture New(string name) => new(Path.Combine(root, name));
+void RenameAccount()
+{
+    var f = New("rename");
+    var config = f.Monitor.Create(0, "Old name", "gemini-api", new("access-token-snapshot", "rename-fixture-token", "my-project", DateTimeOffset.UtcNow.AddHours(1)));
+    var original = config.Accounts.Single();
+    var renamed = f.Accounts.Rename(config.Revision, original.Id, "  Work account  ");
+    Check(JsonSerializer.Serialize(renamed.Accounts.Single()) == JsonSerializer.Serialize(original with { Name = "Work account" }),
+        "rename preserves identity, credentials and account metadata");
+    Check(renamed.Revision == config.Revision + 1 && renamed.AppliedRevision == config.AppliedRevision,
+        "rename uses normal revision control without applying gateway configuration");
+    Check(new ConfigurationRepository(f.Paths).Snapshot.Accounts.Single().Name == "Work account", "rename survives restart");
+    ThrowsSync<RevisionConflictException>(() => f.Accounts.Rename(config.Revision, original.Id, "Stale"), "stale rename rejected");
+    foreach (var invalid in new[] { "", "  ", "line\nbreak", new string('a', 121) })
+        ThrowsSync<ArgumentException>(() => f.Accounts.Rename(renamed.Revision, original.Id, invalid), "invalid name rejected");
+    ThrowsSync<KeyNotFoundException>(() => f.Accounts.Rename(renamed.Revision, "missing", "Valid"), "missing account rejected");
+}
 PreparedLoginCredential Key(string token, string provider = "test", string[]? purposes = null, ResourceBindingDto? binding = null,
     string owner = "static-key", bool recovery = false) => new(owner, purposes ?? ["quota"], binding ?? new(provider),
         JsonSerializer.Serialize(new { kind = "api-key", apiKey = token, provider }), PreserveForRecovery: recovery);

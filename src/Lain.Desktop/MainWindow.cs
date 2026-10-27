@@ -51,9 +51,10 @@ public sealed partial class MainWindow : Window
     private bool _loginVisible;
     private string? _loginError;
 
-    public MainWindow(LainApiClient client, string? preferencesPath = null)
+    public MainWindow(LainApiClient client, string? preferencesPath = null, DesktopStartupServices? startup = null)
     {
         _client = client;
+        _startupServices = startup;
         _preferencesStore = new WorkspacePreferencesStore(preferencesPath);
         _usage = new UsageView(client);
         _inspector = new InspectorView(client);
@@ -122,6 +123,7 @@ public sealed partial class MainWindow : Window
         var noticeBox = new Border { Background = Ui.Raised, BorderBrush = Ui.Edge, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(12, 8), Margin = new Thickness(20, 12, 20, 0), Child = noticeContent, IsVisible = false };
         _notice.PropertyChanged += (_, args) => { if (args.Property == TextBlock.TextProperty) noticeBox.IsVisible = !string.IsNullOrWhiteSpace(_notice.Text); };
         var notices = new StackPanel { Spacing = 0 };
+        notices.Children.Add(StartupStatusPanel());
         notices.Children.Add(noticeBox);
         notices.Children.Add(_retainedDraftNotices);
         Grid.SetRow(notices, 1); shell.Children.Add(notices);
@@ -208,7 +210,7 @@ public sealed partial class MainWindow : Window
         Content = shell;
         SizeChanged += (_, _) => { UpdateNavigationLayout(); UpdateAccountInspectorLayout(); };
         UpdateNavigationLayout();
-        Opened += async (_, _) => { await RefreshAsync(true); _poll.Start(); };
+        Opened += async (_, _) => { await EnsureServiceOnOpenAsync(); if (!_lifetime.IsCancellationRequested) _poll.Start(); };
         _poll.Tick += async (_, _) => await RefreshAsync(false);
         Closed += (_, _) => { _poll.Stop(); _lifetime.Cancel(); _client.Dispose(); _lifetime.Dispose(); };
         ApplyPresentation(false);
@@ -239,7 +241,7 @@ public sealed partial class MainWindow : Window
 
     private async Task RefreshAsync(bool explicitRefresh)
     {
-        if (_refreshing || _busy) return;
+        if (_refreshing || _busy || _startupInProgress || _startupAdmissionBlocked) return;
         _refreshing = true;
         _refresh.IsEnabled = false;
         var readingConfiguration = false;
@@ -249,6 +251,7 @@ public sealed partial class MainWindow : Window
             _status = status;
             UpdateNavigationDestinations();
             _hostAvailable = true;
+            _startupRefreshFailed = false;
             _connection.Text = ServiceSummary(status);
             _hostIndicator.Background = ProfileApplyOutcomeUnknown ? Ui.Warning : IsMonitorMode || status.ProxyReady ? Ui.Success : Ui.Warning;
             ToolTip.SetTip(_connection, $"lain host {status.Version} · {status.State}\nConfiguration {status.Revision} · Applied {status.AppliedRevision}");
@@ -284,6 +287,7 @@ public sealed partial class MainWindow : Window
                 _providers.SetCatalog(_providerCatalog, _configuration?.Accounts);
             if (_section == "Providers" && (explicitRefresh || _providerCatalog is null)) await RefreshProviderCatalogAsync();
             UpdateServiceSummary();
+            UpdateStartupPresentation();
             UpdateDraftStatus();
             RefreshPage(explicitRefresh);
         }
@@ -292,14 +296,17 @@ public sealed partial class MainWindow : Window
         {
             if (readingConfiguration || _configuration is null) _configurationError = Friendly(ex);
             _hostAvailable = false;
+            _startupRefreshFailed = true;
+            if (_startupServices is not null) _startupError ??= Friendly(ex);
             _connection.Text = _status is null ? "Local host unavailable · Open service help" : $"Local host unavailable · Last updated {Ui.When(_status.ObservedAt)}";
             _hostIndicator.Background = Ui.Warning;
             ToolTip.SetTip(_connection, Friendly(ex));
             UpdateServiceSummary();
-            if (explicitRefresh || _status is null) _notice.Text = Friendly(ex);
+            UpdateStartupPresentation();
+            if ((explicitRefresh || _status is null) && _startupServices is null) _notice.Text = Friendly(ex);
             RefreshPage(explicitRefresh);
         }
-        finally { _refreshing = false; _refresh.IsEnabled = !_busy; }
+        finally { _refreshing = false; _refresh.IsEnabled = !_busy; SynchronizeStartupSettings(); }
     }
 
     private async Task RunAsync(Func<Task> operation, string success, bool stayOnPage = false, Action? afterSuccess = null)

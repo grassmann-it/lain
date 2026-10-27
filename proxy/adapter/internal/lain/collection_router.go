@@ -116,6 +116,38 @@ func (i *Integration) routerRoute(router CollectionRouter, alias string, body []
 	if err != nil {
 		return Route{}, err
 	}
+	byID, eligible := i.routerCandidates(router, alias, body, headers, manager)
+	pin, err := i.routerPins.resolve(router, thread, continuation, func() (routerPin, error) {
+		quotaBlocked := false
+		for _, id := range router.RouteIDs {
+			route := byID[id]
+			if eligible(route) == nil {
+				if i.routerMemberBlocked(router, route, manager) {
+					quotaBlocked = true
+					continue
+				}
+				return routerPin{RouteID: id, AccountID: route.Accounts[0], Fingerprint: router.MemberFingerprints[id]}, nil
+			}
+		}
+		if quotaBlocked {
+			return routerPin{}, errRouterExhausted
+		}
+		return routerPin{}, errors.New("no qualified available router member")
+	}, func(pin routerPin) error {
+		fingerprint, member := router.MemberFingerprints[pin.RouteID]
+		route, exists := byID[pin.RouteID]
+		if !member || !exists || fingerprint != pin.Fingerprint || len(route.Accounts) != 1 || route.Accounts[0] != pin.AccountID {
+			return errors.New("pinned router member changed or was removed; start a new thread")
+		}
+		return eligible(route)
+	})
+	if err != nil {
+		return Route{}, err
+	}
+	return byID[pin.RouteID], nil
+}
+
+func (i *Integration) routerCandidates(router CollectionRouter, alias string, body []byte, headers http.Header, manager *auth.Manager) (map[string]Route, func(Route) error) {
 	byID := map[string]Route{}
 	for _, route := range i.Bindings.Routes {
 		byID[route.ID] = route
@@ -157,26 +189,7 @@ func (i *Integration) routerRoute(router CollectionRouter, alias string, body []
 		}
 		return validateCohereInput(credential, executor.Request{Model: route.Model, Payload: body}, executor.Options{OriginalRequest: body, SourceFormat: translator.FormatOpenAIResponse})
 	}
-	pin, err := i.routerPins.resolve(router, thread, continuation, func() (routerPin, error) {
-		for _, id := range router.RouteIDs {
-			route := byID[id]
-			if eligible(route) == nil {
-				return routerPin{RouteID: id, AccountID: route.Accounts[0], Fingerprint: router.MemberFingerprints[id]}, nil
-			}
-		}
-		return routerPin{}, errors.New("no qualified available router member")
-	}, func(pin routerPin) error {
-		fingerprint, member := router.MemberFingerprints[pin.RouteID]
-		route, exists := byID[pin.RouteID]
-		if !member || !exists || fingerprint != pin.Fingerprint || len(route.Accounts) != 1 || route.Accounts[0] != pin.AccountID {
-			return errors.New("pinned router member changed or was removed; start a new thread")
-		}
-		return eligible(route)
-	})
-	if err != nil {
-		return Route{}, err
-	}
-	return byID[pin.RouteID], nil
+	return byID, eligible
 }
 
 func (i *Integration) isRouterDispatch(ctx context.Context) bool {

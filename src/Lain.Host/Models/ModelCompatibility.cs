@@ -8,7 +8,7 @@ public sealed record ModelCompatibilityTransportBinding(string Provider, string 
     string Source, DateTimeOffset? ObservedAt = null);
 
 /// <summary>Bounded compatibility matrix. Reported failures are useful restrictions, not a live provider certification.</summary>
-public sealed class ModelCompatibilityCatalog(ProviderCatalogRegistry? registry = null, IReadOnlySet<string>? qualifiedProviderRouteIds = null,
+public sealed partial class ModelCompatibilityCatalog(ProviderCatalogRegistry? registry = null, IReadOnlySet<string>? qualifiedProviderRouteIds = null,
     IReadOnlyDictionary<string, ModelCompatibilityTransportBinding>? transportBindings = null)
 {
     private readonly HashSet<string>? qualifiedRoutes = qualifiedProviderRouteIds?.ToHashSet(StringComparer.Ordinal);
@@ -79,6 +79,10 @@ public sealed class ModelCompatibilityCatalog(ProviderCatalogRegistry? registry 
             }
         }
         notes.Add("HTTP 429 alone does not establish exhausted subscription quota; no paid fallback is permitted.");
+        var reasoning = ResolveReasoning(route, clientVersion);
+        notes.Add(reasoning.DefaultEffort is null
+            ? "Reasoning effort controls are unqualified. No default effort (including none) is advertised; inherited overrides require explicit removal or a qualified route."
+            : $"Codex reasoning default: {reasoning.DefaultEffort}; advertised choices: {string.Join(", ", reasoning.SupportedEfforts)}. Source: {reasoning.Evidence.Source}; scope: {reasoning.Evidence.Scope}. Client choices do not certify provider inference.");
         notes.Add("Unknown means unqualified, not unsupported. Documentation and local client fixtures do not establish real provider acceptance.");
         if (clientVersion != ClientVersion) notes.Add("This Codex version has no qualified catalog schema or local tool capture. Known compiled route restrictions still apply independently; qualify this client before relying on catalog metadata.");
         return new(route.Id, route.Provider, route.UpstreamModel, route.ProviderRouteId, "codex", clientVersion, ingressProtocol,

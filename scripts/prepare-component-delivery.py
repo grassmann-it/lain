@@ -87,11 +87,16 @@ def main():
     metadata = json.loads(args.metadata.read_text())
     for name, project in (('cli', 'Lain.Cli'), ('host', 'Lain.Host')):
         publish = args.delivery / name
-        config[name] = {'path': str(publish), 'files': common.inventory(publish), 'informationalVersion': '1.0.0+' + source_commit}
+        # Bind the actual independently read version, including historical releases.
+        # check_publish below requires the exact full source commit and DLL marker.
+        version = metadata.get(name, {}).get('informationalVersion')
+        need(isinstance(version, str) and re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?\+' + source_commit, version),
+             'Actual metadata version must identify the full frozen source commit')
+        config[name] = {'path': str(publish), 'files': common.inventory(publish), 'informationalVersion': version}
         api.check_publish(common, args.baseline, name, config[name], source_commit)
         need(metadata.get(name) == {'method': 'assembly-metadata-reader',
              'attribute': 'System.Reflection.AssemblyInformationalVersionAttribute',
-             'dllSha256': config[name]['files'][project + '.dll'], 'informationalVersion': '1.0.0+' + source_commit, 'passed': True},
+             'dllSha256': config[name]['files'][project + '.dll'], 'informationalVersion': version, 'passed': True},
              'Actual metadata read does not bind the expected exact DLL/version')
     report = {'kind': 'host-cli-core-publish-qualification', 'passed': True, 'sourceCommit': source_commit,
               'scope': 'Real publish inventories/dependency invariance and actual PE metadata read only; no runtime/installed acceptance.',

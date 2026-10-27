@@ -51,6 +51,308 @@
       "file": "Irihi.Avalonia.Shared-0.5.0-LICENSE",
       "sourceUrl": "https://raw.githubusercontent.com/irihitech/Irihi.Avalonia.Shared/3514e169837878c80c71c315be1437ac942743b3/LICENSE",
       "sha256": "ec35403fdfacfc7de897d520dc2d68387997eb881cf9f3eea45b89cbeae19f5b"
+    },
+    {
+      "file": "MicroCom.Runtime-0.11.6-LICENSE",
+      "sourceUrl": "https://raw.githubusercontent.com/kekekeks/MicroCom/76785efcafd91b5902fd19dd11145f6dd655b7b4/LICENSE",
+      "sha256": "6ee769c9ac4dac9abb16b98b1341e9528ff9f4ab685481410d3376d14148f3a9",
+      "retrievedDate": "2026-10-26"
+    },
+    {
+      "file": "Tmds.DBus.Protocol-0.94.1-COPYING",
+      "sourceUrl": "https://raw.githubusercontent.com/tmds/Tmds.DBus/b4a7fed0b878f74cb54f7cca84d2889af4e596ba/COPYING",
+      "sha256": "aca3b49277abcc7886ccb2f115603a9f5b15fc3f96019a10c00f2974098b210c",
+      "retrievedDate": "2026-10-26"
+    },
+    {
+      "file": "YamlDotNet-16.3.0-LICENSE.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/aaubry/YamlDotNet/ae480660f4fb26f3eb0b41c1d1fcf21c0e9d9e73/LICENSE.txt",
+      "sha256": "daea8b7f1b2bab48ea12ad50b0ce91634669d99d7dd0cb64aed8dffeeef69ed3",
+      "retrievedDate": "2026-10-26"
+    },
+    {
+      "file": "YamlDotNet-16.3.0-LICENSE-libyaml",
+      "sourceUrl": "https://raw.githubusercontent.com/aaubry/YamlDotNet/ae480660f4fb26f3eb0b41c1d1fcf21c0e9d9e73/LICENSE-libyaml",
+      "sha256": "cb65f46df0d9125ba60862117200ec6631fef3a8169cd0b4513ffcad4ef5cb9b",
+      "retrievedDate": "2026-10-26"
+    },
+    {
+      "file": "Microsoft.Data.Sqlite-10.0.12-LICENSE.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/dotnet/dotnet/95017c711e6afc1085133d440e42b4bd78155701/src/efcore/LICENSE.txt",
+      "sha256": "ae48df11a335dc1a615f4f938b69cba73bcf4485c4f97af49b38efb0f216353b",
+      "retrievedDate": "2026-10-26"
+    },
+    {
+      "file": "SQLitePCLRaw-2.1.12-NOTICE.TXT",
+      "sourceUrl": "https://raw.githubusercontent.com/ericsink/SQLitePCL.raw/ca835d21508bff43121c65081035840ac5006c4c/NOTICE.TXT",
+      "sha256": "485b276b3d2bfaa26df348e1e5c84df3648981e09b88531a6a53006f0705c24b",
+      "retrievedDate": "2026-10-26",
+      "note": "Conservative full upstream NOTICE; includes alternatives not asserted present in e_sqlite3."
+    },
+    {
+      "file": "Inter-3.019-OFL.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/rsms/inter/5fa70f6e8c0ecad97544e19aba2d5062aa8c3e7a/LICENSE.txt",
+      "sha256": "4d7d9c95e7d7f2f0ebf76d5e0b344826b74e903a34028ee18ab54bb639e45906",
+      "retrievedDate": "2026-10-26",
+      "component": "inter",
+      "revision": "5fa70f6e8c0ecad97544e19aba2d5062aa8c3e7a",
+      "upstreamPath": "LICENSE.txt"
+    },
+    {
+      "file": "native/brotli-LICENSE.txt",
+      "sourceUrl": "https://skia.googlesource.com/external/github.com/google/brotli.git/+/028fb5a23661f123017c060daa546b55cf4bde29/LICENSE?format=TEXT",
+      "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94",
+      "retrievedDate": "2026-10-26",
+      "component": "brotli",
+      "revision": "028fb5a23661f123017c060daa546b55cf4bde29",
+      "upstreamPath": "LICENSE"
+    },
+    {
+      "file": "native/dng_sdk-LICENSE.txt",
+      "sourceUrl": "https://android.googlesource.com/platform/external/dng_sdk.git/+/c8d0c9b1d16bfda56f15165d39e0ffa360a11123/LICENSE?format=TEXT",
+      "sha256": "012e875468ac2f9a2070ee25a950588afa2735b4b2d961f491e3d72c8f572306",
+      "retrievedDate": "2026-10-26",
+      "component": "dng_sdk",
+      "revision": "c8d0c9b1d16bfda56f15165d39e0ffa360a11123",
+      "upstreamPath": "LICENSE"
+    },
+    {
+      "file": "native/expat-expat_COPYING.txt",
+      "sourceUrl": "https://chromium.googlesource.com/external/github.com/libexpat/libexpat.git/+/f31adfd584b7f6c50bbf4d22eb928538ffc9145a/expat/COPYING?format=TEXT",
+      "sha256": "31b15de82aa19a845156169a17a5488bf597e561b2c318d159ed583139b25e87",
+      "retrievedDate": "2026-10-26",
+      "component": "expat",
+      "revision": "f31adfd584b7f6c50bbf4d22eb928538ffc9145a",
+      "upstreamPath": "expat/COPYING"
+    },
+    {
+      "file": "native/freetype-docs_FTL.TXT.txt",
+      "sourceUrl": "https://chromium.googlesource.com/chromium/src/third_party/freetype2.git/+/83af801b552111e37d9466a887e1783a0fb5f196/docs/FTL.TXT?format=TEXT",
+      "sha256": "08c135755dd589039470f1fdbb400daaabaaa50d0b366d19cebff4d22986baa1",
+      "retrievedDate": "2026-10-26",
+      "component": "freetype",
+      "revision": "83af801b552111e37d9466a887e1783a0fb5f196",
+      "upstreamPath": "docs/FTL.TXT"
+    },
+    {
+      "file": "native/freetype-LICENSE.TXT.txt",
+      "sourceUrl": "https://chromium.googlesource.com/chromium/src/third_party/freetype2.git/+/83af801b552111e37d9466a887e1783a0fb5f196/LICENSE.TXT?format=TEXT",
+      "sha256": "2e3bbb7d7c5c396368dd0853a790ec29ce5b8647163dde42a0493fb0d6556b2b",
+      "retrievedDate": "2026-10-26",
+      "component": "freetype",
+      "revision": "83af801b552111e37d9466a887e1783a0fb5f196",
+      "upstreamPath": "LICENSE.TXT"
+    },
+    {
+      "file": "native/freetype-docs_GPLv2.TXT.txt",
+      "sourceUrl": "https://chromium.googlesource.com/chromium/src/third_party/freetype2.git/+/83af801b552111e37d9466a887e1783a0fb5f196/docs/GPLv2.TXT?format=TEXT",
+      "sha256": "c4120c6752c910c299e3bd9cb3a46ff262c268303ca2069b61f92f10a5656c18",
+      "retrievedDate": "2026-10-26",
+      "component": "freetype",
+      "revision": "83af801b552111e37d9466a887e1783a0fb5f196",
+      "upstreamPath": "docs/GPLv2.TXT"
+    },
+    {
+      "file": "native/harfbuzz-COPYING.txt",
+      "sourceUrl": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git/+/2b3631a866b3077d9d675caa4ec9010b342b5a7c/COPYING?format=TEXT",
+      "sha256": "ba8f810f2455c2f08e2d56bb49b72f37fcf68f1f4fade38977cfd7372050ad64",
+      "retrievedDate": "2026-10-26",
+      "component": "harfbuzz",
+      "revision": "2b3631a866b3077d9d675caa4ec9010b342b5a7c",
+      "upstreamPath": "COPYING"
+    },
+    {
+      "file": "native/libjpeg-turbo-LICENSE.md.txt",
+      "sourceUrl": "https://chromium.googlesource.com/chromium/deps/libjpeg_turbo.git/+/927aabfcd26897abb9776ecf2a6c38ea5bb52ab6/LICENSE.md?format=TEXT",
+      "sha256": "60c756742db3ad1913304e8b13f0e86e22e51adb50cc0b3333c163f7e45ceec1",
+      "retrievedDate": "2026-10-26",
+      "component": "libjpeg-turbo",
+      "revision": "927aabfcd26897abb9776ecf2a6c38ea5bb52ab6",
+      "upstreamPath": "LICENSE.md"
+    },
+    {
+      "file": "native/libjpeg-turbo-README.ijg.txt",
+      "sourceUrl": "https://chromium.googlesource.com/chromium/deps/libjpeg_turbo.git/+/927aabfcd26897abb9776ecf2a6c38ea5bb52ab6/README.ijg?format=TEXT",
+      "sha256": "4b7b9f8c03bb8d60270dfd12684e70ab21e4abfd27e73905cd1a7c4cae6f5cdb",
+      "retrievedDate": "2026-10-26",
+      "component": "libjpeg-turbo",
+      "revision": "927aabfcd26897abb9776ecf2a6c38ea5bb52ab6",
+      "upstreamPath": "README.ijg"
+    },
+    {
+      "file": "native/libpng-LICENSE.txt",
+      "sourceUrl": "https://skia.googlesource.com/third_party/libpng.git/+/3061454d980de7d53608f594194cfac722721d2a/LICENSE?format=TEXT",
+      "sha256": "bdb0a645ea18c60507d0368379b1ac5474b92255fcc2d115e07486a7672ba526",
+      "retrievedDate": "2026-10-26",
+      "component": "libpng",
+      "revision": "3061454d980de7d53608f594194cfac722721d2a",
+      "upstreamPath": "LICENSE"
+    },
+    {
+      "file": "native/libwebp-COPYING.txt",
+      "sourceUrl": "https://chromium.googlesource.com/webm/libwebp.git/+/4fa21912338357f89e4fd51cf2368325b59e9bd9/COPYING?format=TEXT",
+      "sha256": "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf",
+      "retrievedDate": "2026-10-26",
+      "component": "libwebp",
+      "revision": "4fa21912338357f89e4fd51cf2368325b59e9bd9",
+      "upstreamPath": "COPYING"
+    },
+    {
+      "file": "native/libwebp-PATENTS.txt",
+      "sourceUrl": "https://chromium.googlesource.com/webm/libwebp.git/+/4fa21912338357f89e4fd51cf2368325b59e9bd9/PATENTS?format=TEXT",
+      "sha256": "cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c",
+      "retrievedDate": "2026-10-26",
+      "component": "libwebp",
+      "revision": "4fa21912338357f89e4fd51cf2368325b59e9bd9",
+      "upstreamPath": "PATENTS"
+    },
+    {
+      "file": "native/libwebp-AUTHORS.txt",
+      "sourceUrl": "https://chromium.googlesource.com/webm/libwebp.git/+/4fa21912338357f89e4fd51cf2368325b59e9bd9/AUTHORS?format=TEXT",
+      "sha256": "f251be89fd442bd9d701360730aea163cc8e2076ff03528f59267dc2c4f8b60a",
+      "retrievedDate": "2026-10-26",
+      "component": "libwebp",
+      "revision": "4fa21912338357f89e4fd51cf2368325b59e9bd9",
+      "upstreamPath": "AUTHORS"
+    },
+    {
+      "file": "native/piex-LICENSE.txt",
+      "sourceUrl": "https://android.googlesource.com/platform/external/piex.git/+/bb217acdca1cc0c16b704669dd6f91a1b509c406/LICENSE?format=TEXT",
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+      "retrievedDate": "2026-10-26",
+      "component": "piex",
+      "revision": "bb217acdca1cc0c16b704669dd6f91a1b509c406",
+      "upstreamPath": "LICENSE"
+    },
+    {
+      "file": "native/wuffs-LICENSE.txt",
+      "sourceUrl": "https://skia.googlesource.com/external/github.com/google/wuffs-mirror-release-c.git/+/e3f919ccfe3ef542cfc983a82146070258fb57f8/LICENSE?format=TEXT",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "retrievedDate": "2026-10-26",
+      "component": "wuffs",
+      "revision": "e3f919ccfe3ef542cfc983a82146070258fb57f8",
+      "upstreamPath": "LICENSE"
+    },
+    {
+      "file": "native/zlib-LICENSE.txt",
+      "sourceUrl": "https://chromium.googlesource.com/chromium/src/third_party/zlib/+/e432200a7931de1b0b1b50201aac8a46d9380cb2/LICENSE?format=TEXT",
+      "sha256": "e1cfcc55c325b3f78cf55df9664abaa066e2271dffe8213347d9fccdfbac8f2c",
+      "retrievedDate": "2026-10-26",
+      "component": "zlib",
+      "revision": "e432200a7931de1b0b1b50201aac8a46d9380cb2",
+      "upstreamPath": "LICENSE"
+    },
+    {
+      "file": "native/gcc8-runtime.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-8.3.0/COPYING.RUNTIME",
+      "sha256": "9d6b43ce4d8de0c878bf16b54d8e7a10d9bd42b75178153e3af6a815bdc90f74",
+      "retrievedDate": "2026-10-26",
+      "component": "gcc",
+      "revision": "8.3.0",
+      "upstreamPath": "COPYING.RUNTIME"
+    },
+    {
+      "file": "native/gcc8-gpl3.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-8.3.0/COPYING3",
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+      "retrievedDate": "2026-10-26",
+      "component": "gcc",
+      "revision": "8.3.0",
+      "upstreamPath": "COPYING3"
+    },
+    {
+      "file": "native/gcc8-libstdc-license.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-8.3.0/libstdc++-v3/README",
+      "sha256": "28ccfda26b0f50642bb79c2e2ea2ec0d8a8a5fd9199ea573b28309a92f673607",
+      "retrievedDate": "2026-10-26",
+      "component": "gcc",
+      "revision": "8.3.0",
+      "upstreamPath": "libstdc++-v3/README"
+    },
+    {
+      "file": "native/skia-LICENSE.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/mono/skia/7dbfc07dd33181f84e0958afb7ee805c6c769f0b/LICENSE",
+      "sha256": "5f787c1dee3c56547f09ccc2906ab5f5293c4d8dd6c8654e573216c38e908dbd",
+      "retrievedDate": "2026-10-26",
+      "component": "skia",
+      "revision": "7dbfc07dd33181f84e0958afb7ee805c6c769f0b",
+      "upstreamPath": "LICENSE"
+    },
+    {
+      "file": "evidence/skia-build.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/mono/SkiaSharp/f568ac94dd768ef9a2f593537cfde2dd0d348ef5/native/linux/build.cake",
+      "sha256": "f64ea368372071ae61c031392cf0788200491ed9557540b120a4d9ef1de4af3f",
+      "retrievedDate": "2026-10-26"
+    },
+    {
+      "file": "evidence/harfbuzz-build.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/mono/SkiaSharp/2888c737ad016d584c74525e2d35db5097ea8576/native/linux/build.cake",
+      "sha256": "b9f1502db218d57c44a049c09becd9175cb9863a1daebb123b49091858e259a3",
+      "retrievedDate": "2026-10-26"
+    },
+    {
+      "file": "evidence/skia-submodules.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/mono/SkiaSharp/f568ac94dd768ef9a2f593537cfde2dd0d348ef5/.gitmodules",
+      "sha256": "bf22cc02b77906ab208afe759eb356ba1e2ebb1be9961aa9ea40c2792b9e7b4d",
+      "retrievedDate": "2026-10-26"
+    },
+    {
+      "file": "evidence/harfbuzz-submodules.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/mono/SkiaSharp/2888c737ad016d584c74525e2d35db5097ea8576/.gitmodules",
+      "sha256": "bf22cc02b77906ab208afe759eb356ba1e2ebb1be9961aa9ea40c2792b9e7b4d",
+      "retrievedDate": "2026-10-26"
+    },
+    {
+      "file": "evidence/sqlite-README.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/ericsink/SQLitePCL.raw/ca835d21508bff43121c65081035840ac5006c4c/src/SQLitePCLRaw.lib.e_sqlite3/SQLitePCLRaw.lib.e_sqlite3.nuspec",
+      "sha256": "8a1a5c76dae4f148d66193d609a9af4c06855450fe204b81dc4d5414211641a3",
+      "retrievedDate": "2026-10-26"
+    },
+    {
+      "file": "evidence/skia-DEPS.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/mono/skia/7dbfc07dd33181f84e0958afb7ee805c6c769f0b/DEPS",
+      "sha256": "a0e1e0cc4e1a9a06ab68eaf649741114dd2bc7404d290564a40bcd395740898a",
+      "retrievedDate": "2026-10-26"
+    },
+    {
+      "file": "evidence/harfbuzz-DEPS.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/mono/skia/927041a58f130e0dd0562ba86cb4170989ad39e9/DEPS",
+      "sha256": "022000bf923415adf0c483cc437927d4c6d73682b353227ece27481bc0e028c7",
+      "retrievedDate": "2026-10-26"
+    },
+    {
+      "file": "evidence/skia-BUILD.gn.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/mono/skia/7dbfc07dd33181f84e0958afb7ee805c6c769f0b/BUILD.gn",
+      "sha256": "70de3c0a9d7d9f9a2ea09bb29994bb501fc7c8cd424f727ac3b08abb0ea3a438",
+      "retrievedDate": "2026-10-26",
+      "role": "upstream-target-attribution-evidence-not-an-additional-release-gate"
+    },
+    {
+      "file": "evidence/harfbuzz-BUILD.gn.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/mono/skia/927041a58f130e0dd0562ba86cb4170989ad39e9/BUILD.gn",
+      "sha256": "70de3c0a9d7d9f9a2ea09bb29994bb501fc7c8cd424f727ac3b08abb0ea3a438",
+      "retrievedDate": "2026-10-26",
+      "role": "upstream-target-attribution-evidence-not-an-additional-release-gate"
+    },
+    {
+      "file": "evidence/freetype-2.13.3-README.txt",
+      "sourceUrl": "https://chromium.googlesource.com/chromium/src/third_party/freetype2.git/+/83af801b552111e37d9466a887e1783a0fb5f196/README?format=TEXT",
+      "sha256": "304b99f680248e42f9c656d36c8c41cda74cf6eebbc5af4d11c4abc1b0d9e2b9",
+      "retrievedDate": "2026-10-26",
+      "role": "version-and-attribution-year-evidence"
+    },
+    {
+      "file": "native/ATTRIBUTION.txt",
+      "sourceUrl": "https://chromium.googlesource.com/chromium/src/third_party/freetype2.git/+/83af801b552111e37d9466a887e1783a0fb5f196/docs/FTL.TXT",
+      "sha256": "66e2840e40e6dc61324171fe8fc17ff4aa053fd5073ad96416f60540e71a8ce9",
+      "retrievedDate": "2026-10-26",
+      "role": "lain-authored-acknowledgements-not-an-unmodified-upstream-license",
+      "derivedFrom": [
+        "native/freetype-docs_FTL.TXT.txt",
+        "evidence/freetype-2.13.3-README.txt",
+        "native/libjpeg-turbo-LICENSE.md.txt",
+        "native/libjpeg-turbo-README.ijg.txt"
+      ]
     }
   ]
 }

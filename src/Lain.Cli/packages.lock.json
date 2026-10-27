@@ -5,7 +5,7 @@
       "lain.client": {
         "type": "Project",
         "dependencies": {
-          "Lain.Core": "[1.0.0, )"
+          "Lain.Core": "[0.8.0, )"
         }
       },
       "lain.core": {

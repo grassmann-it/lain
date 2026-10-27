@@ -18,4 +18,6 @@ esac
 export CARGO_BUILD_JOBS=1
 export CARGO_INCREMENTAL=0
 export CARGO_PROFILE_DEV_SMALL_DEBUG=0
-exec cargo build --locked --profile dev-small -p codex-cli --bin codex -j 1
+# code-mode is a separate process resolved next to the CLI at runtime.
+# Shipping only codex produces a client that starts but cannot execute tools.
+exec cargo build --locked --profile dev-small -p codex-cli --bin codex -p codex-code-mode-host --bin codex-code-mode-host -j 1

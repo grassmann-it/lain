@@ -2,6 +2,7 @@
 """Exercise the real installer with a temporary fake package; starts no service."""
 from pathlib import Path
 import hashlib
+import json
 import os
 import shutil
 import stat
@@ -52,6 +53,13 @@ with tempfile.TemporaryDirectory(prefix="lain-package-test-") as temporary:
     result = run([launcher, "ui", "two words"], cwd="/")
     assert result.stdout.splitlines() == ["desktop/Lain.Desktop", str(home), "two words"]
     assert stat.S_IMODE(home.stat().st_mode) == 0o700
+    login_link = units / 'default.target.wants/lain.service'
+    assert login_link.is_symlink() and login_link.resolve() == units / 'lain.service'
+    installation = json.loads((home / 'installation.json').read_text())
+    assert installation['loginAutostart'] is True
+    assert installation['desktopPath'] == str(home / 'app/desktop/Lain.Desktop')
+    assert installation['registrationSha256'] == hashlib.sha256((units / 'lain.service').read_bytes()).hexdigest()
+    assert stat.S_IMODE((home / 'installation.json').stat().st_mode) == 0o600
     desktop = prefix / 'share/applications/lain.desktop'
     icon = prefix / 'share/icons/lain.png'
     entry = desktop.read_text()
@@ -63,6 +71,12 @@ with tempfile.TemporaryDirectory(prefix="lain-package-test-") as temporary:
     assert result.returncode != 0 and icon.read_bytes() == b'user customized icon'
     assert not (home / 'app.previous').exists()
     icon.write_bytes((brand / 'lain-cat.png').read_bytes())
+    original_unit = (units / 'lain.service').read_bytes()
+    (units / 'lain.service').write_bytes(original_unit + b'\n# user customized\n')
+    result = run(command)
+    assert result.returncode != 0 and not (home / 'app.previous').exists()
+    assert (units / 'lain.service').read_bytes().endswith(b'# user customized\n')
+    (units / 'lain.service').write_bytes(original_unit)
     if shutil.which('desktop-file-validate'):
         assert run(['desktop-file-validate', str(desktop)]).returncode == 0
     unit = (units / "lain.service").read_text()
@@ -111,10 +125,13 @@ with tempfile.TemporaryDirectory(prefix="lain-package-test-") as temporary:
     env['LAIN_SYSTEMD_DIR'] = str(units)
     sentinel = home / "retain-user-data"
     sentinel.write_text("credentials, preferences and history stay outside app")
+    login_link.unlink()  # A user's disabled login choice must survive an update.
     result = run(command)
     assert result.returncode == 0, result.stderr
     assert (home / "app.previous/.lain-package").is_file()
     assert sentinel.read_text() == "credentials, preferences and history stay outside app"
+    assert not login_link.exists()
+    assert json.loads((home / 'installation.json').read_text())['loginAutostart'] is False
     assert run(command).returncode != 0
     (package / "cli/Lain.Cli").write_text("tampered")
     untouched = temporary / "untouched"

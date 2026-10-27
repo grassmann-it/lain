@@ -130,6 +130,13 @@ internal sealed class SettingsScenario(IClassicDesktopStyleApplicationLifetime l
         Check(Named<TextBlock>("Application version").Text == version, "About shows exact desktop assembly version");
         Check(!string.IsNullOrWhiteSpace(Named<TextBlock>("Reported host version").Text), "About separates reported host version");
         Capture("about-narrow");
+        var support = Named<Button>("Support development via PayPal");
+        support.BringIntoView(); await Task.Delay(100);
+        var supportPosition = support.TranslatePoint(default, window)!.Value;
+        Check(support.IsEffectivelyVisible && supportPosition.Y > 0
+            && supportPosition.Y + support.Bounds.Height < window.Bounds.Height - 80,
+            "voluntary support reachable in narrow About viewport");
+        Capture("about-narrow-support");
         await Click("Back"); await Click("Host operating mode…");
         Check(!window.GetVisualDescendants().OfType<ComboBox>().Any(c => AutomationProperties.GetName(c) == "Host operating mode"), "host mode has no ambiguous dropdown");
         await Click("Review host mode change"); await Click("Cancel");

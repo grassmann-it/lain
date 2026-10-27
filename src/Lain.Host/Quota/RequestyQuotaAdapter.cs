@@ -53,6 +53,15 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
         if (account.Binding?.ResourceId is not null && !resourceVerified)
             return new([], "Requesty Self identity could not be verified for the bound resource.",
                 RequestyKeyOutcome: new(false, "Requesty Self identity could not be verified for the bound resource."));
+                // Fetch org wallet balance (USD) from the management API. Currently unused in the displayed output.
+        string? orgBalance = null;
+        try
+        {
+            using var orgDoc = await QuotaHttp.GetAsync(client, "https://api-v2.requesty.ai/v1/manage/org", credential, ct, userAgent: "lain/1.0");
+            var bal = JsonFields.Number(orgDoc.RootElement, "balance");
+            if (bal.HasValue) orgBalance = bal.Value.ToString("F2", CultureInfo.InvariantCulture);
+        } catch { }
+
         // Explicit month-to-observation bounds; no all-time spend compared with a monthly cap.
         var usageUrl = Endpoint + "/usage?start=" + Uri.EscapeDataString(start.ToString("O", CultureInfo.InvariantCulture))
             + "&end=" + Uri.EscapeDataString(now.ToString("O", CultureInfo.InvariantCulture));
@@ -65,6 +74,15 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
         catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
         { errors.Add("Requesty Self usage unavailable. " + QuotaFetchException.SafeDiagnostic(ex)); }
         if (rows.Count == 0 && metadata is null && errors.Count == 0) errors.Add("Requesty Self quota unknown.");
+
+        // Append org wallet balance reading if we fetched it.
+        if (!string.IsNullOrEmpty(orgBalance))
+        {
+            rows.Add(new(Endpoint + "#wallet-usd", "USD", null, null, null,
+                InheritAccountPool: false, WindowLabel: "Org wallet balance (USD)", WindowId: "wallet-usd",
+                MeasurementKind: "wallet-usd", Scope: "api_key", ScopeId: metadata?.KeyId, SourceUrl: Endpoint,
+                WindowStart: start, WindowEnd: now));
+        }
         return new(rows, errors.Count == 0 ? null : string.Join(" ", errors), RequestyKey: metadata,
             RequestyKeyOutcome: new(metadata is not null, metadataError));
     }

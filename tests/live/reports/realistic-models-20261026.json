@@ -1,0 +1,2876 @@
+{
+  "schemaVersion": 1,
+  "kind": "lain-per-model-live-qualification-summary",
+  "observedDate": "2026-10-26",
+  "sourceBaseCommit": "fef478f601f46b315939fa53f02caa9791086f1d",
+  "sourceHasUncommittedChanges": true,
+  "installedVersion": "1.0.0+ff5771c47fd61ead38d82d294b053c0dee21c67d",
+  "profileId": "lain",
+  "revision": 57,
+  "concreteAliases": 59,
+  "excludedRouterAliases": 16,
+  "clientHttpRequests": 99,
+  "uniqueAliasesWithCompletedToolRoundtrip": 32,
+  "fullNativeIdePluginSurfaceQualified": false,
+  "screenshotContextFailureAttributed": false,
+  "mainSweep": {
+    "planSha256": "5609b4e7e91258b1d077e23238b4b2259344226b3ca42767e372ab91300b3050",
+    "reportSha256": "aeabc6e9ebddaea87193085016f2def9f6b64885bf37a1fd1d0cd0413203e707",
+    "executedHarnessSha256": "183a674e627f442f2cb642eeb34bde31948e079814fc596bf3764e39db236e9d",
+    "executedTestsSha256": "16a2e013bebd17eed8a553a4a39b622b70e52c804a73a6ecdb7796ad3a4f434a",
+    "startedAt": "2026-10-26T15:24:36.574129+00:00",
+    "finishedAt": "2026-10-26T15:28:36.333052+00:00",
+    "counts": {
+      "failed": 28,
+      "passed": 31
+    },
+    "clientHttpRequests": 94,
+    "bindingSnapshotStable": true,
+    "projectContextBytes": 22638,
+    "nativeFunctionTools": 7,
+    "toolFixtureSha256": "d90aa6ef0ff0a643b2c0933ce867691562fd44c3d391f0411472e52f8f6e157b",
+    "toolProvenance": {
+      "capture": "workers-native-runner-r3-default-menu/fixture-read-request-1.json",
+      "client": "codex-cli 0.164.0",
+      "clientBinarySha256": "0d45eb864e1773cdd692194f3d1e7b2056614560444df5ed48e027733aab349a",
+      "mcpPlugins": "not-loaded",
+      "multiAgent": false,
+      "qualification": "synthetic native capture, not live provider evidence",
+      "sourceRequestSha256": "162ff11ae5ba4a30186a1e218187c7e8497b7858ca7e8eb751e28a51c4c41764"
+    },
+    "maximumOutputTokens": 2048,
+    "firstToolChoice": "forced exec_command",
+    "continuationToolChoice": "none",
+    "independentAttemptCorrelation": "not established; unrelated concurrent traffic; no conversation IDs",
+    "rows": [
+      {
+        "alias": "gpt-6-astra",
+        "answerBytes": 409,
+        "answerSha256": "36bdc4b6369ab4b6217d686aca827d428411b86db5ff6d4d7ed9c82697eabea2",
+        "calls": [
+          {
+            "durationMs": 2668.709,
+            "finishedAt": "2026-10-26T15:24:39.353220+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-6-astra",
+            "requestBytes": 34045,
+            "requestSha256": "f1212606931d3ceb3b9a6260fe0932760e9df92ffc050517bea5b210b965a932",
+            "responseBytes": 34709,
+            "sseEvents": 26,
+            "startedAt": "2026-10-26T15:24:36.678305+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5138,
+              "output_tokens": 32,
+              "total_tokens": 5170
+            }
+          },
+          {
+            "durationMs": 4946.477,
+            "finishedAt": "2026-10-26T15:24:44.307433+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-6-astra",
+            "requestBytes": 35316,
+            "requestSha256": "b8ce7608681d9ec907aa2bf85fc1d0a30cb211035d0bf221f80594644dddcacb",
+            "responseBytes": 56219,
+            "sseEvents": 93,
+            "startedAt": "2026-10-26T15:24:39.357429+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5359,
+              "output_tokens": 88,
+              "total_tokens": 5447
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:24:44.307596+00:00",
+        "provider": "codex",
+        "reasoningEffort": "low",
+        "startedAt": "2026-10-26T15:24:36.672623+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "gpt-6.1-sol",
+        "answerBytes": 472,
+        "answerSha256": "b0b336dae34c37063b1a65a27cdf36c9820e7a1407e6be2625db29e920e99670",
+        "calls": [
+          {
+            "durationMs": 3309.774,
+            "finishedAt": "2026-10-26T15:25:21.705707+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-6.1-sol",
+            "requestBytes": 34045,
+            "requestSha256": "12d6adae7cb93b673af39d73c75913f3a3d3d38f090b2d76f9cf2ef626060c0e",
+            "responseBytes": 34709,
+            "sseEvents": 26,
+            "startedAt": "2026-10-26T15:25:18.392464+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5138,
+              "output_tokens": 32,
+              "total_tokens": 5170
+            }
+          },
+          {
+            "durationMs": 5897.606,
+            "finishedAt": "2026-10-26T15:25:27.611838+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-6.1-sol",
+            "requestBytes": 35316,
+            "requestSha256": "350a6c32860bc90866db9eb4678ccc599a3d2d69507ea6d4b8eea4be0c59b310",
+            "responseBytes": 58752,
+            "sseEvents": 101,
+            "startedAt": "2026-10-26T15:25:21.710632+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5359,
+              "output_tokens": 96,
+              "total_tokens": 5455
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:25:27.611918+00:00",
+        "provider": "codex",
+        "reasoningEffort": "low",
+        "startedAt": "2026-10-26T15:25:18.388977+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "k3",
+        "calls": [
+          {
+            "durationMs": 1146.585,
+            "finishedAt": "2026-10-26T15:24:37.829990+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34037,
+            "requestSha256": "cf582820f0355c98864268ca1badd59a6790ff3271963c49b653980f3afa9318",
+            "startedAt": "2026-10-26T15:24:36.680130+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "tool_schema",
+        "details": {
+          "diagnosticBytes": 147,
+          "diagnosticSha256": "4a2cc6ed7b1ec319b75a14ef75bbff9407ea47b5f0b8866e1735abd1fd401c9f"
+        },
+        "finishedAt": "2026-10-26T15:24:37.830006+00:00",
+        "provider": "kimi",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:24:36.672284+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "k3-256k",
+        "calls": [
+          {
+            "durationMs": 1008.101,
+            "finishedAt": "2026-10-26T15:25:24.225991+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34042,
+            "requestSha256": "83ce3b381cc01e6b28c4950657dd541e2c5318ff2618a9d7a2623c8c42ccd797",
+            "startedAt": "2026-10-26T15:25:23.214253+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "tool_schema",
+        "details": {
+          "diagnosticBytes": 147,
+          "diagnosticSha256": "4a2cc6ed7b1ec319b75a14ef75bbff9407ea47b5f0b8866e1735abd1fd401c9f"
+        },
+        "finishedAt": "2026-10-26T15:25:24.226009+00:00",
+        "provider": "kimi",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:23.211268+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "kimi-for-coding",
+        "calls": [
+          {
+            "durationMs": 1299.612,
+            "finishedAt": "2026-10-26T15:25:40.284898+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34050,
+            "requestSha256": "e966281bfcdae3d2008fd530efedcdab59bec6704ad22186cf2980479434ef90",
+            "startedAt": "2026-10-26T15:25:38.981766+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "tool_schema",
+        "details": {
+          "diagnosticBytes": 147,
+          "diagnosticSha256": "4a2cc6ed7b1ec319b75a14ef75bbff9407ea47b5f0b8866e1735abd1fd401c9f"
+        },
+        "finishedAt": "2026-10-26T15:25:40.284918+00:00",
+        "provider": "kimi",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:38.978698+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "kimi-for-coding-highspeed",
+        "calls": [
+          {
+            "durationMs": 1156.987,
+            "finishedAt": "2026-10-26T15:25:41.667943+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34060,
+            "requestSha256": "77a1389f45835777b118610895d76e3ecebae1ccdac3c1ec75a72dfebfe15c30",
+            "startedAt": "2026-10-26T15:25:40.507722+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "tool_schema",
+        "details": {
+          "diagnosticBytes": 147,
+          "diagnosticSha256": "4a2cc6ed7b1ec319b75a14ef75bbff9407ea47b5f0b8866e1735abd1fd401c9f"
+        },
+        "finishedAt": "2026-10-26T15:25:41.667962+00:00",
+        "provider": "kimi",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:40.504496+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "glm-5.3",
+        "calls": [
+          {
+            "durationMs": 4071.438,
+            "finishedAt": "2026-10-26T15:24:40.750272+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "glm-5.3",
+            "requestBytes": 34042,
+            "requestSha256": "d41d77ce480fa43d62f6a345819c730b732a2cfb7a31a38b99f318247aa1f94a",
+            "responseBytes": 14041,
+            "sseEvents": 61,
+            "startedAt": "2026-10-26T15:24:36.674066+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5583,
+              "output_tokens": 72,
+              "total_tokens": 5655
+            }
+          }
+        ],
+        "category": "tool_arguments_outside_fixture",
+        "details": {},
+        "finishedAt": "2026-10-26T15:24:40.751385+00:00",
+        "provider": "zai",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:24:36.671337+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "glm-5.3-flash",
+        "answerBytes": 491,
+        "answerSha256": "6ef09b85678c41789f82755e8edd45b858cdf4c7d1051aa7652cd50e21d0eed2",
+        "calls": [
+          {
+            "durationMs": 1548.306,
+            "finishedAt": "2026-10-26T15:25:25.879419+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "glm-5.3-flash",
+            "requestBytes": 34048,
+            "requestSha256": "ca74a22f389792347e503115c31e087ad18a9c6827c801d738577ff2f11a5498",
+            "responseBytes": 6581,
+            "sseEvents": 26,
+            "startedAt": "2026-10-26T15:25:24.327677+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5583,
+              "output_tokens": 27,
+              "total_tokens": 5610
+            }
+          },
+          {
+            "durationMs": 6520.101,
+            "finishedAt": "2026-10-26T15:25:32.407768+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "glm-5.3-flash",
+            "requestBytes": 35282,
+            "requestSha256": "a8f87f3970dc81f12c917db3a6d5f03fdbf2669932594e8e6a7a18fb1c73f24e",
+            "responseBytes": 46324,
+            "sseEvents": 194,
+            "startedAt": "2026-10-26T15:25:25.884003+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5790,
+              "output_tokens": 183,
+              "total_tokens": 5973
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:25:32.407842+00:00",
+        "provider": "zai",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:24.324657+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "mimo-v2.6-pro",
+        "answerBytes": 395,
+        "answerSha256": "8e10e3198357d361f4a947bfd2482ead2c57d0089c542cd69a65f8481efbbf5c",
+        "calls": [
+          {
+            "durationMs": 2172.369,
+            "finishedAt": "2026-10-26T15:24:40.110127+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "mimo-v2.6-pro",
+            "requestBytes": 34048,
+            "requestSha256": "ddf39ee5ca6576d2bece905d35a564a2bdf3437c7c1d4646ab85ad48712fd82d",
+            "responseBytes": 4247,
+            "sseEvents": 16,
+            "startedAt": "2026-10-26T15:24:37.934423+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5677,
+              "output_tokens": 36,
+              "total_tokens": 5713
+            }
+          },
+          {
+            "durationMs": 5409.054,
+            "finishedAt": "2026-10-26T15:24:45.530342+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "mimo-v2.6-pro",
+            "requestBytes": 35288,
+            "requestSha256": "d064b0c1335b5fe61bceef94ffe20ccd1109f59392b44a91be629307159b1bb6",
+            "responseBytes": 11747,
+            "sseEvents": 44,
+            "startedAt": "2026-10-26T15:24:40.115249+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5905,
+              "output_tokens": 101,
+              "total_tokens": 6006
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:24:45.530409+00:00",
+        "provider": "xiaomi-mimo",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:24:37.931708+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "mimo-v2.6-flash",
+        "answerBytes": 311,
+        "answerSha256": "1d0d8fe5c0c11fc8c681400746163aa2efcddf1c0340bc95558dc0d39f1f9612",
+        "calls": [
+          {
+            "durationMs": 4118.552,
+            "finishedAt": "2026-10-26T15:25:31.845116+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "mimo-v2.6-flash",
+            "requestBytes": 34050,
+            "requestSha256": "b8e527bba24c1b9a10ffb7849a8b2c64b156304eef4da932a892f48206b9f133",
+            "responseBytes": 4253,
+            "sseEvents": 16,
+            "startedAt": "2026-10-26T15:25:27.722725+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5677,
+              "output_tokens": 36,
+              "total_tokens": 5713
+            }
+          },
+          {
+            "durationMs": 7027.414,
+            "finishedAt": "2026-10-26T15:25:38.881870+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "mimo-v2.6-flash",
+            "requestBytes": 35290,
+            "requestSha256": "42f6c66fa44e31bbfcf403a4de6b3a37cfcb1d1591f12830fe76638ed6b31786",
+            "responseBytes": 9285,
+            "sseEvents": 34,
+            "startedAt": "2026-10-26T15:25:31.848728+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5905,
+              "output_tokens": 68,
+              "total_tokens": 5973
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:25:38.881948+00:00",
+        "provider": "xiaomi-mimo",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:27.719511+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-gpt-6-sol",
+        "answerBytes": 317,
+        "answerSha256": "62e3a066692c11d302ef3d7d926a8be96ad406f2955a67b1cd385f7979dbc18c",
+        "calls": [
+          {
+            "durationMs": 2043.529,
+            "finishedAt": "2026-10-26T15:24:42.897862+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-6-sol",
+            "requestBytes": 34048,
+            "requestSha256": "fae96dd973aaff196d5644fd83041e72e4c06aab6f6d6948d3953834a2751248",
+            "responseBytes": 30486,
+            "sseEvents": 25,
+            "startedAt": "2026-10-26T15:24:40.851141+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5138,
+              "output_tokens": 32,
+              "total_tokens": 5170
+            }
+          },
+          {
+            "durationMs": 2795.564,
+            "finishedAt": "2026-10-26T15:24:45.702173+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-6-sol",
+            "requestBytes": 35277,
+            "requestSha256": "298f97d6a1cce2ad7f2d16d40750aa890178b65c79d62e8f84789ab714969f02",
+            "responseBytes": 42525,
+            "sseEvents": 77,
+            "startedAt": "2026-10-26T15:24:42.902536+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5359,
+              "output_tokens": 73,
+              "total_tokens": 5432
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:24:45.702226+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:24:40.848668+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-gpt-6-luna",
+        "answerBytes": 314,
+        "answerSha256": "1b03e9fb596669d2af77ac50285fe3cd812c4ea91126e2fdd765239afcb5ff6a",
+        "calls": [
+          {
+            "durationMs": 1460.999,
+            "finishedAt": "2026-10-26T15:25:31.117787+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-6-luna",
+            "requestBytes": 34049,
+            "requestSha256": "2e1eb5c9af10da390e60cba7a051e6d8a0192b8a57a3967380755e0b9be5eda8",
+            "responseBytes": 30489,
+            "sseEvents": 25,
+            "startedAt": "2026-10-26T15:25:29.653624+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5138,
+              "output_tokens": 32,
+              "total_tokens": 5170
+            }
+          },
+          {
+            "durationMs": 2442.007,
+            "finishedAt": "2026-10-26T15:25:33.569905+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-6-luna",
+            "requestBytes": 35278,
+            "requestSha256": "db904fd43a95d49e85205dc5ca5a866cc64d9f0e282b77fcb3e496578e2ee1ca",
+            "responseBytes": 42104,
+            "sseEvents": 75,
+            "startedAt": "2026-10-26T15:25:31.121602+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5359,
+              "output_tokens": 71,
+              "total_tokens": 5430
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:25:33.569965+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:29.650779+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-gpt-5.6-sol",
+        "answerBytes": 283,
+        "answerSha256": "3007ab7d033c6ca690e35e5a72632c87410561d1a7a9dbe90daed4da02650466",
+        "calls": [
+          {
+            "durationMs": 1530.137,
+            "finishedAt": "2026-10-26T15:25:41.073975+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-5.6-sol",
+            "requestBytes": 34050,
+            "requestSha256": "46a97c5d2facce273b542cb5a1de2ad8daa3dea02633c53c53506f7f46a9fcec",
+            "responseBytes": 30515,
+            "sseEvents": 25,
+            "startedAt": "2026-10-26T15:25:39.540714+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5138,
+              "output_tokens": 32,
+              "total_tokens": 5170
+            }
+          },
+          {
+            "durationMs": 3679.27,
+            "finishedAt": "2026-10-26T15:25:44.761999+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-5.6-sol",
+            "requestBytes": 35280,
+            "requestSha256": "d81751ecaa60dba08429cc4c9153d21c664e6fbdeb92cd1fd11170ff72c27865",
+            "responseBytes": 49240,
+            "sseEvents": 78,
+            "startedAt": "2026-10-26T15:25:41.079648+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5359,
+              "output_tokens": 143,
+              "total_tokens": 5502
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:25:44.762080+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:39.537459+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-deepseek-v4-pro",
+        "calls": [
+          {
+            "durationMs": 694.379,
+            "finishedAt": "2026-10-26T15:26:05.521326+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34054,
+            "requestSha256": "5517ffb38266cf296e09668f2f475ff50bb22453741f63f747bd09fdc3113753",
+            "startedAt": "2026-10-26T15:26:04.823724+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "tool_schema",
+        "details": {
+          "diagnosticBytes": 1152,
+          "diagnosticSha256": "28f5a5ec901348c0c29f671797332ad4de43dbc832e09ba833d015172517673a"
+        },
+        "finishedAt": "2026-10-26T15:26:05.521346+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:26:04.820638+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-deepseek-v4.1-flash",
+        "answerBytes": 363,
+        "answerSha256": "87819bb8ce3aad126c2ae60794249fed7741c8beef388fb6eb65a82124512b21",
+        "calls": [
+          {
+            "durationMs": 1545.957,
+            "finishedAt": "2026-10-26T15:25:46.410517+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "deepseek/deepseek-v4.1-flash",
+            "requestBytes": 34058,
+            "requestSha256": "ebbc7ce417ecd4f080fe7f682811d321d16144c84a6e8f478a01b8636e105c79",
+            "responseBytes": 31746,
+            "sseEvents": 36,
+            "startedAt": "2026-10-26T15:25:44.861433+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5994,
+              "output_tokens": 66,
+              "total_tokens": 6060
+            }
+          },
+          {
+            "durationMs": 2001.908,
+            "finishedAt": "2026-10-26T15:25:48.423469+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "deepseek/deepseek-v4.1-flash",
+            "requestBytes": 35305,
+            "requestSha256": "c964d8912662e27377162ff35a560ce0ae7d8d98c39b50ccff0009627f9aee60",
+            "responseBytes": 40179,
+            "sseEvents": 61,
+            "startedAt": "2026-10-26T15:25:46.415877+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 6262,
+              "output_tokens": 144,
+              "total_tokens": 6406
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:25:48.423522+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:44.858226+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-kimi-k3",
+        "answerBytes": 474,
+        "answerSha256": "c1f1400c9138433b17f1a85a4011371c984b7e6d7e464c65dbf682c091d80847",
+        "calls": [
+          {
+            "durationMs": 5940.193,
+            "finishedAt": "2026-10-26T15:25:54.464525+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "moonshotai/Kimi-K3",
+            "requestBytes": 34046,
+            "requestSha256": "f62108cf80c3615556c12544bc8517f7502696831682daaf94785ad5c8d9d875",
+            "responseBytes": 5670,
+            "sseEvents": 23,
+            "startedAt": "2026-10-26T15:25:48.521289+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5527,
+              "output_tokens": 70,
+              "total_tokens": 5597
+            }
+          },
+          {
+            "durationMs": 10235.628,
+            "finishedAt": "2026-10-26T15:26:04.711181+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "moonshotai/Kimi-K3",
+            "requestBytes": 35262,
+            "requestSha256": "cef116af93452af452e28208c694fb3243b6bea2145e042abdf67cabe4cd2a88",
+            "responseBytes": 35547,
+            "sseEvents": 152,
+            "startedAt": "2026-10-26T15:25:54.469853+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5849,
+              "output_tokens": 154,
+              "total_tokens": 6003
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:26:04.711238+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:48.518169+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-glm-5.3",
+        "answerBytes": 468,
+        "answerSha256": "ce042fab02d5ef31945303f23fd7d8a06a3fe0ac5a691e5cd55d019d4fe87a32",
+        "calls": [
+          {
+            "durationMs": 1679.549,
+            "finishedAt": "2026-10-26T15:28:33.464341+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "zai-org/GLM-5.3",
+            "requestBytes": 34046,
+            "requestSha256": "4bfa307faf991c5262fb98a1fa1f4ade92cca4a549bf65c396cd17c6dacef36c",
+            "responseBytes": 29338,
+            "sseEvents": 19,
+            "startedAt": "2026-10-26T15:28:31.778130+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5627,
+              "output_tokens": 27,
+              "total_tokens": 5654
+            }
+          },
+          {
+            "durationMs": 2853.455,
+            "finishedAt": "2026-10-26T15:28:36.327792+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "zai-org/GLM-5.3",
+            "requestBytes": 35280,
+            "requestSha256": "0d1108d4beea7eb3b46d55bc3ac8320dcad42471c8e2706f256db6d754eb6d8e",
+            "responseBytes": 54930,
+            "sseEvents": 134,
+            "startedAt": "2026-10-26T15:28:33.469741+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4085,
+              "output_tokens": 126,
+              "total_tokens": 4211
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:28:36.327885+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:28:31.765533+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-minimax-m3",
+        "answerBytes": 502,
+        "answerSha256": "c23d63f0ce7b1e5dc4db41fa9da6f6bf0f6b1f16e3b9b1edc314700dcab93386",
+        "calls": [
+          {
+            "durationMs": 3017.479,
+            "finishedAt": "2026-10-26T15:26:08.646956+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "MiniMaxAI/MiniMax-M3",
+            "requestBytes": 34049,
+            "requestSha256": "b83ba0640d198717d30d95f1ead236349911669fea534882479c76ecca648b14",
+            "responseBytes": 28019,
+            "sseEvents": 12,
+            "startedAt": "2026-10-26T15:26:05.626167+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4664,
+              "output_tokens": 47,
+              "total_tokens": 4711
+            }
+          },
+          {
+            "durationMs": 10651.336,
+            "finishedAt": "2026-10-26T15:26:19.306950+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "MiniMaxAI/MiniMax-M3",
+            "requestBytes": 35278,
+            "requestSha256": "cf45fee0f774643e46bc2c603ea0150e46b2634de94afb21f63915aadde2561f",
+            "responseBytes": 115565,
+            "sseEvents": 355,
+            "startedAt": "2026-10-26T15:26:08.652146+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4335,
+              "output_tokens": 1178,
+              "total_tokens": 5513
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:26:19.307045+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:26:05.623129+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-mimo-v2.6-pro",
+        "answerBytes": 219,
+        "answerSha256": "8f242d9a2c00f8ddaa67c5b84e3fe5746aebf285dc0a845b9436207976ff57e9",
+        "calls": [
+          {
+            "durationMs": 3996.06,
+            "finishedAt": "2026-10-26T15:28:20.450596+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "xiaomi/mimo-v2.6-pro",
+            "requestBytes": 34052,
+            "requestSha256": "b0e0c08afa67701d4b703c6989e672457077c7eac5c56e0dce22490364e60d66",
+            "responseBytes": 31775,
+            "sseEvents": 29,
+            "startedAt": "2026-10-26T15:28:16.446956+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5647,
+              "output_tokens": 65,
+              "total_tokens": 5712
+            }
+          },
+          {
+            "durationMs": 11176.364,
+            "finishedAt": "2026-10-26T15:28:31.638389+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "xiaomi/mimo-v2.6-pro",
+            "requestBytes": 35609,
+            "requestSha256": "9070073c41374f2c5143a0cfc3b727c4a210f7fd917e738a966300a1ef419984",
+            "responseBytes": 50878,
+            "sseEvents": 109,
+            "startedAt": "2026-10-26T15:28:20.456323+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5902,
+              "output_tokens": 232,
+              "total_tokens": 6134
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:28:31.638461+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:28:16.440099+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-mimo-v2.6-pro-ultraspeed",
+        "answerBytes": 284,
+        "answerSha256": "e4af0f142d5b0eb3cfbd515e27e168c5ee6ad58d2ff0fe1b5e420b252cbf9ffb",
+        "calls": [
+          {
+            "durationMs": 2734.38,
+            "finishedAt": "2026-10-26T15:26:22.186041+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "xiaomi/mimo-v2.6-pro-ultraspeed",
+            "requestBytes": 34063,
+            "requestSha256": "1e925be47e367c30721fd19e2cca4549be93923c8cd775a9d7a4cab0a23e9168",
+            "responseBytes": 30179,
+            "sseEvents": 19,
+            "startedAt": "2026-10-26T15:26:19.446128+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5675,
+              "output_tokens": 74,
+              "total_tokens": 5749
+            }
+          },
+          {
+            "durationMs": 5440.482,
+            "finishedAt": "2026-10-26T15:26:27.635153+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "xiaomi/mimo-v2.6-pro-ultraspeed",
+            "requestBytes": 35672,
+            "requestSha256": "37edd510acc316b4b04fbbdf7787ae8187b65ee86e258288738834a7e35474ca",
+            "responseBytes": 35510,
+            "sseEvents": 18,
+            "startedAt": "2026-10-26T15:26:22.191273+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5940,
+              "output_tokens": 329,
+              "total_tokens": 6269
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:26:27.635231+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:26:19.442726+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-step-5-preview",
+        "answerBytes": 371,
+        "answerSha256": "b3fbeb14a78e77307fba60954092396b7516e8b5688ff70c2d2832d2ae26744b",
+        "calls": [
+          {
+            "durationMs": 2231.882,
+            "finishedAt": "2026-10-26T15:26:29.975484+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "stepfun/Step-5-Preview",
+            "requestBytes": 34053,
+            "requestSha256": "5cf9d01163ed46242046744bc54bdbf269ad54f9c48e1acbf6e4a695827e8995",
+            "responseBytes": 35552,
+            "sseEvents": 42,
+            "startedAt": "2026-10-26T15:26:27.740418+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5941,
+              "output_tokens": 151,
+              "total_tokens": 6092
+            }
+          },
+          {
+            "durationMs": 11186.309,
+            "finishedAt": "2026-10-26T15:26:41.170686+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "stepfun/Step-5-Preview",
+            "requestBytes": 35966,
+            "requestSha256": "a1398a962d895e363946007ecbbf78588888e70f255c31e04a4318df478712fd",
+            "responseBytes": 164580,
+            "sseEvents": 589,
+            "startedAt": "2026-10-26T15:26:29.981132+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 6296,
+              "output_tokens": 1763,
+              "total_tokens": 8059
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:26:41.170763+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:26:27.736982+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-gemini-4-argon",
+        "answerBytes": 439,
+        "answerSha256": "8b223a501d66687c504c142647a29dfa873fcc41657dd074ab1bed497a2991cb",
+        "calls": [
+          {
+            "durationMs": 4185.899,
+            "finishedAt": "2026-10-26T15:26:45.524982+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "google/gemini-4-argon",
+            "requestBytes": 34053,
+            "requestSha256": "501d9b835a6e90aba5833d48b8166eec9c2e833c910626043f9990789adb5f43",
+            "responseBytes": 28392,
+            "sseEvents": 9,
+            "startedAt": "2026-10-26T15:26:41.334956+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4402,
+              "output_tokens": 38,
+              "total_tokens": 4440
+            }
+          },
+          {
+            "durationMs": 8520.043,
+            "finishedAt": "2026-10-26T15:26:54.057530+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "google/gemini-4-argon",
+            "requestBytes": 35841,
+            "requestSha256": "c7eb1f731bfadd577ef822adbd158b1160fd512b5df0b26e63eaf19ac68940a8",
+            "responseBytes": 30349,
+            "sseEvents": 14,
+            "startedAt": "2026-10-26T15:26:45.532266+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4273,
+              "output_tokens": 109,
+              "total_tokens": 4382
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:26:54.057836+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:26:41.331118+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-nemotron-3-ultra-550b-a55b",
+        "calls": [
+          {
+            "durationMs": 1252.591,
+            "finishedAt": "2026-10-26T15:26:55.964873+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "nvidia/nemotron-3-ultra-550b-a55b",
+            "requestBytes": 34065,
+            "requestSha256": "962991c9895e56066481d10b9b7eb9d693eb886c65153f267ebe069862caf4b3",
+            "responseBytes": 27492,
+            "sseEvents": 9,
+            "startedAt": "2026-10-26T15:26:54.667918+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 6353,
+              "output_tokens": 37,
+              "total_tokens": 6390
+            }
+          },
+          {
+            "durationMs": 2030.92,
+            "finishedAt": "2026-10-26T15:26:58.026917+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "nvidia/nemotron-3-ultra-550b-a55b",
+            "requestBytes": 35332,
+            "requestSha256": "1e89c88e1c9da5436c2742baffa4b755be714e4337a9b0ccf768c49086334ca6",
+            "responseBytes": 29059,
+            "sseEvents": 15,
+            "startedAt": "2026-10-26T15:26:55.988455+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4410,
+              "output_tokens": 47,
+              "total_tokens": 4457
+            }
+          }
+        ],
+        "category": "unexpected_continuation_tool",
+        "details": {},
+        "finishedAt": "2026-10-26T15:26:58.027033+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:26:54.641189+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-nemotron-3.5-super-vl",
+        "answerBytes": 343,
+        "answerSha256": "4c4cb95d936f0a1db63a2f9c8469a61e79c02ae34bca692cc51226ae4c1fbfd9",
+        "calls": [
+          {
+            "durationMs": 632.951,
+            "finishedAt": "2026-10-26T15:26:58.931388+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "nvidia/nemotron-3.5-super-vl",
+            "requestBytes": 34060,
+            "requestSha256": "dece85f97a7d53fa5645af99926ad72445c825e8616765841c8b57e14a0140f4",
+            "responseBytes": 27513,
+            "sseEvents": 9,
+            "startedAt": "2026-10-26T15:26:58.291661+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 6353,
+              "output_tokens": 37,
+              "total_tokens": 6390
+            }
+          },
+          {
+            "durationMs": 934.076,
+            "finishedAt": "2026-10-26T15:26:59.877866+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "nvidia/nemotron-3.5-super-vl",
+            "requestBytes": 35327,
+            "requestSha256": "b9a1af11388c391b300dc162ffe37ffa9f203c764a7ff9e68ea61adf0cd50227",
+            "responseBytes": 40795,
+            "sseEvents": 63,
+            "startedAt": "2026-10-26T15:26:58.938981+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4410,
+              "output_tokens": 171,
+              "total_tokens": 4581
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:26:59.877958+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:26:58.287576+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-inkling",
+        "calls": [
+          {
+            "durationMs": 341.198,
+            "finishedAt": "2026-10-26T15:27:00.363657+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34046,
+            "requestSha256": "0c71b19bd84f42305e82d16fde383d1202f289cea3afe98195eceb131a03191b",
+            "startedAt": "2026-10-26T15:27:00.016136+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "upstream_rejected",
+        "details": {
+          "diagnosticBytes": 301,
+          "diagnosticSha256": "ba7f43270cedf68b0b77b0b2f8c0121178a23092eae3f61257266f35388acb2f"
+        },
+        "finishedAt": "2026-10-26T15:27:00.363697+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:00.009623+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-inkling-small",
+        "calls": [
+          {
+            "durationMs": 279.885,
+            "finishedAt": "2026-10-26T15:27:00.777570+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34052,
+            "requestSha256": "428c9ed8355177e2bb751d385cdd31e41acaff555902288f61a2d80caf2d4a92",
+            "startedAt": "2026-10-26T15:27:00.491723+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "upstream_rejected",
+        "details": {
+          "diagnosticBytes": 288,
+          "diagnosticSha256": "c7e7117f9ee99b5358f3e54005e4cf7100e1229c6d47d1e5377bb9b3d5a70e69"
+        },
+        "finishedAt": "2026-10-26T15:27:00.777602+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:00.486033+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-muse-spark-1.3",
+        "calls": [
+          {
+            "durationMs": 420.6,
+            "finishedAt": "2026-10-26T15:27:01.424973+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34053,
+            "requestSha256": "1e816b46b5c34085ffdfcd8d330cc7166c9c34779740cb3e8dac32ca069d89cd",
+            "startedAt": "2026-10-26T15:27:00.913716+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "tool_schema",
+        "details": {
+          "diagnosticBytes": 1192,
+          "diagnosticSha256": "0b5af4f029ddd51ac1da7d860232efd112ee93a81ec4405911b5777cc00f44e0"
+        },
+        "finishedAt": "2026-10-26T15:27:01.424999+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:00.908969+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-grok-4.7",
+        "answerBytes": 288,
+        "answerSha256": "d5f6b553fec50de0652cdecb97a0dfe811a1c4151cd3426af1e42898db8d26cb",
+        "calls": [
+          {
+            "durationMs": 2053.633,
+            "finishedAt": "2026-10-26T15:27:03.611543+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "xai/grok-4.7",
+            "requestBytes": 34047,
+            "requestSha256": "4f64927af4fa8b26d8ae8f24f3b1466e769597d5c8a56f953b87d6203b53dc18",
+            "responseBytes": 29106,
+            "sseEvents": 12,
+            "startedAt": "2026-10-26T15:27:01.554273+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 6872,
+              "output_tokens": 57,
+              "total_tokens": 6929
+            }
+          },
+          {
+            "durationMs": 5879.376,
+            "finishedAt": "2026-10-26T15:27:09.509216+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "xai/grok-4.7",
+            "requestBytes": 35896,
+            "requestSha256": "04099fa4ed28f3a9ec7b5a01af8121bd6a98f44e3ceb466bcc4c7d7afe2a01b6",
+            "responseBytes": 57105,
+            "sseEvents": 105,
+            "startedAt": "2026-10-26T15:27:03.619186+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 7141,
+              "output_tokens": 452,
+              "total_tokens": 7593
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:27:09.509334+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:01.550567+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-mistral-large-4",
+        "answerBytes": 454,
+        "answerSha256": "f6d83bc1f9c7211c1aee973f03916de4c787515168d3cdb0d6a53f73623aee51",
+        "calls": [
+          {
+            "durationMs": 2482.56,
+            "finishedAt": "2026-10-26T15:27:12.623140+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "mistral/mistral-large-4",
+            "requestBytes": 34054,
+            "requestSha256": "6c3c2506aadd9fe566de85ea388ebac240109b5b2889085c9c58bfa52ecae69f",
+            "responseBytes": 33373,
+            "sseEvents": 33,
+            "startedAt": "2026-10-26T15:27:10.127054+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4519,
+              "output_tokens": 105,
+              "total_tokens": 4624
+            }
+          },
+          {
+            "durationMs": 17092.055,
+            "finishedAt": "2026-10-26T15:27:29.726856+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "mistral/mistral-large-4",
+            "requestBytes": 35819,
+            "requestSha256": "955a7f030447c21bc3d213f0e7d25f9c3642e897e3badd90867e93ccb0b7ff55",
+            "responseBytes": 140612,
+            "sseEvents": 493,
+            "startedAt": "2026-10-26T15:27:12.630048+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4405,
+              "output_tokens": 1454,
+              "total_tokens": 5859
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:27:29.726930+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:10.118020+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-fugu-ultra",
+        "calls": [
+          {
+            "durationMs": 1916.06,
+            "finishedAt": "2026-10-26T15:27:31.759597+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34049,
+            "requestSha256": "69f780a09fca61eaf714e6d7b2c6e3f15b62a2cd0455ab9f0463681c4bbd3a7a",
+            "startedAt": "2026-10-26T15:27:29.839622+00:00",
+            "state": "failed",
+            "statusCode": 403,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "authentication",
+        "details": {
+          "diagnosticBytes": 103,
+          "diagnosticSha256": "f29db673e068f1e63060f32ae737263affea57c2ae104f18ccabb922da8c2caa"
+        },
+        "finishedAt": "2026-10-26T15:27:31.760429+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:29.835057+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-muse-wonder-1.0",
+        "calls": [
+          {
+            "durationMs": 463.831,
+            "finishedAt": "2026-10-26T15:27:32.390822+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34054,
+            "requestSha256": "f7c292c253e41f118f09be59d3d4c342ba2f4c599126f749a6cb23e055e9b5c9",
+            "startedAt": "2026-10-26T15:27:31.923815+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "tool_schema",
+        "details": {
+          "diagnosticBytes": 1192,
+          "diagnosticSha256": "5c7a29a0a72775f8fc6956300851748edbb92be1466c6b9715186f1b6fec74bf"
+        },
+        "finishedAt": "2026-10-26T15:27:32.390846+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:31.919447+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-beam-free",
+        "answerBytes": 321,
+        "answerSha256": "99eaea95d355b508e6c5e0cf1bcedec394b1a2fc97ad259a719867feba9f1e5d",
+        "calls": [
+          {
+            "durationMs": 1170.14,
+            "finishedAt": "2026-10-26T15:27:33.731523+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "reflection/beam:free",
+            "requestBytes": 34048,
+            "requestSha256": "51e07439bf0143f64f288d03b721f20321133b97af2508e0f1da219307fb7861",
+            "responseBytes": 29182,
+            "sseEvents": 16,
+            "startedAt": "2026-10-26T15:27:32.557586+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5160,
+              "output_tokens": 53,
+              "total_tokens": 5213
+            }
+          },
+          {
+            "durationMs": 2036.366,
+            "finishedAt": "2026-10-26T15:27:35.779716+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "reflection/beam:free",
+            "requestBytes": 35576,
+            "requestSha256": "db0f621abeb41790cc9fa7583da158a82ed261329656885f164f25fbcb39c4d4",
+            "responseBytes": 38070,
+            "sseEvents": 46,
+            "startedAt": "2026-10-26T15:27:33.739026+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4164,
+              "output_tokens": 215,
+              "total_tokens": 4379
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:27:35.779788+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:32.553738+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-laguna-s-2.1-free",
+        "calls": [
+          {
+            "durationMs": 446.453,
+            "finishedAt": "2026-10-26T15:27:36.335442+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34056,
+            "requestSha256": "019604a2dd4cf04975894b51141c08ffd978fcc01447fe81ee8452b9a661b0ae",
+            "startedAt": "2026-10-26T15:27:35.885923+00:00",
+            "state": "failed",
+            "statusCode": 429,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "account_or_capacity",
+        "details": {
+          "diagnosticBytes": 131,
+          "diagnosticSha256": "1d76251dd04183c791295e0cd017f4a17477194f5dfcea4a08835d9f69ad25ac"
+        },
+        "finishedAt": "2026-10-26T15:27:36.335460+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:35.882227+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-glyph-cluster-free",
+        "calls": [
+          {
+            "durationMs": 509.334,
+            "finishedAt": "2026-10-26T15:27:36.949209+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34057,
+            "requestSha256": "9bf62d5ffc77e7779e2b13a1a134b26ff902174529c3899ac8e361072fdcb31f",
+            "startedAt": "2026-10-26T15:27:36.436877+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "upstream_rejected",
+        "details": {
+          "diagnosticBytes": 985,
+          "diagnosticSha256": "f2321085c522e33c15d3bf0462a2d4b197708df24d44dd525bdb3e45ae6c356b"
+        },
+        "finishedAt": "2026-10-26T15:27:36.949227+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:36.432490+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-claude-sonnet-5-5",
+        "calls": [
+          {
+            "durationMs": 440.844,
+            "finishedAt": "2026-10-26T15:27:37.525626+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34056,
+            "requestSha256": "325e27ce44ccd99e0522fcd4e4ddf8c437eefd5e24fda974dc5f3f8b0dbb57a1",
+            "startedAt": "2026-10-26T15:27:37.081210+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "tool_schema",
+        "details": {
+          "diagnosticBytes": 267,
+          "diagnosticSha256": "3ebba7c69c00db8ddf8b8e1b38d980d3d7878497ad4397b9f8eecaf0a2d6181c"
+        },
+        "finishedAt": "2026-10-26T15:27:37.525654+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:37.076661+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-claude-haiku-5-5",
+        "answerBytes": 474,
+        "answerSha256": "32acab50b847d4dcfb222a6db8c81a28d4c983cb77fca6339b78e1e9cc8481a2",
+        "calls": [
+          {
+            "durationMs": 2823.853,
+            "finishedAt": "2026-10-26T15:27:40.458370+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "claude-haiku-5-5",
+            "requestBytes": 34055,
+            "requestSha256": "cd6274d33ccb43e15c2fa8846f50dc3d0cea3c9c2fd511c825481ae3b7608b8b",
+            "responseBytes": 12025,
+            "sseEvents": 17,
+            "startedAt": "2026-10-26T15:27:37.631022+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 10071,
+              "output_tokens": 73,
+              "total_tokens": 10144
+            }
+          },
+          {
+            "durationMs": 2444.225,
+            "finishedAt": "2026-10-26T15:27:42.912901+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "claude-haiku-5-5",
+            "requestBytes": 35295,
+            "requestSha256": "21129a7461f9c0cc60ddb6148fb3c9a45d7e80e78835d64880a6d519406996dc",
+            "responseBytes": 24614,
+            "sseEvents": 51,
+            "startedAt": "2026-10-26T15:27:40.463893+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 10356,
+              "output_tokens": 348,
+              "total_tokens": 10704
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:27:42.913008+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:37.627339+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-claude-opus-5-5",
+        "calls": [
+          {
+            "durationMs": 379.917,
+            "finishedAt": "2026-10-26T15:27:43.428226+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34054,
+            "requestSha256": "1ad084dbf0f47478dab856b1876e2106aecc5e4659725dbb8937de1ae2d12deb",
+            "startedAt": "2026-10-26T15:27:43.044824+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "tool_schema",
+        "details": {
+          "diagnosticBytes": 267,
+          "diagnosticSha256": "07f553f7250c32d7b3994ec58660d1e46da7cd964f64013f9d94256b1912792e"
+        },
+        "finishedAt": "2026-10-26T15:27:43.428245+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:43.029299+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-claude-fable-5-1",
+        "calls": [
+          {
+            "durationMs": 401.153,
+            "finishedAt": "2026-10-26T15:27:43.950772+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34055,
+            "requestSha256": "e48fdb9241b978bbfa2ba2096b44ccd733bd0bcff97687bd8aca1d3527882ca6",
+            "startedAt": "2026-10-26T15:27:43.546229+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "tool_schema",
+        "details": {
+          "diagnosticBytes": 267,
+          "diagnosticSha256": "1ae6ad052a47ea2d2444ecd275f353a633aec35f05b184f4e5ffe52a8609e823"
+        },
+        "finishedAt": "2026-10-26T15:27:43.950796+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:43.542512+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-qwen3.8-max-0902",
+        "answerBytes": 478,
+        "answerSha256": "bc0f4234ff7362fcc66b925fed900c9b6a46e7264f873f6aead344c17703a889",
+        "calls": [
+          {
+            "durationMs": 4838.7,
+            "finishedAt": "2026-10-26T15:27:48.921739+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "Qwen/Qwen3.8-Max-0902",
+            "requestBytes": 34055,
+            "requestSha256": "137d95a3c19064a66edccba6b5d508fa7a5cfd341c2bc2c47de3ee94afafe60b",
+            "responseBytes": 14307,
+            "sseEvents": 24,
+            "startedAt": "2026-10-26T15:27:44.078836+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5943,
+              "output_tokens": 60,
+              "total_tokens": 6003
+            }
+          },
+          {
+            "durationMs": 9239.953,
+            "finishedAt": "2026-10-26T15:27:58.175068+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "Qwen/Qwen3.8-Max-0902",
+            "requestBytes": 35551,
+            "requestSha256": "d199af432d957aab4d232dffd37b9c49b51c0cdf283c99f838193b4d1f700310",
+            "responseBytes": 31196,
+            "sseEvents": 78,
+            "startedAt": "2026-10-26T15:27:48.929264+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4263,
+              "output_tokens": 216,
+              "total_tokens": 4479
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:27:58.175143+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:44.072508+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "cmd-ling-3.1-flash",
+        "answerBytes": 544,
+        "answerSha256": "bc90955f4173e25323ee95e7a8ebcf8f88d4ea39649036f55b3e548752e7d617",
+        "calls": [
+          {
+            "durationMs": 4251.703,
+            "finishedAt": "2026-10-26T15:28:02.568565+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "inclusionai/ling-3.1-flash",
+            "requestBytes": 34053,
+            "requestSha256": "b802763c637c8bccb30ac4eeaf1d74ab2df3f3a0dfd18899b9605e99a27d0f02",
+            "responseBytes": 17789,
+            "sseEvents": 36,
+            "startedAt": "2026-10-26T15:27:58.312768+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4580,
+              "output_tokens": 101,
+              "total_tokens": 4681
+            }
+          },
+          {
+            "durationMs": 13705.556,
+            "finishedAt": "2026-10-26T15:28:16.284022+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "inclusionai/ling-3.1-flash",
+            "requestBytes": 35741,
+            "requestSha256": "32d8e41b235eb8070e34ea0520a0e5fde27810d88e6db75c86b20de0cab1ed75",
+            "responseBytes": 127060,
+            "sseEvents": 429,
+            "startedAt": "2026-10-26T15:28:02.574844+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4319,
+              "output_tokens": 1072,
+              "total_tokens": 5391
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:28:16.284142+00:00",
+        "provider": "commandcode",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:27:58.309057+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "gpt-6-luna",
+        "answerBytes": 270,
+        "answerSha256": "209d01c783dc172b22ad5dd3e53f48d1b6fbe029a35ae0fc335ca3699fc90e47",
+        "calls": [
+          {
+            "durationMs": 1558.088,
+            "finishedAt": "2026-10-26T15:25:37.161795+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-6-luna",
+            "requestBytes": 34045,
+            "requestSha256": "cd13248f9fa8cb5849ac4a371e6cb11ff1951b4f146caadd642094864801a788",
+            "responseBytes": 34586,
+            "sseEvents": 26,
+            "startedAt": "2026-10-26T15:25:35.600537+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5138,
+              "output_tokens": 32,
+              "total_tokens": 5170
+            }
+          },
+          {
+            "durationMs": 2267.343,
+            "finishedAt": "2026-10-26T15:25:39.436697+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-6-luna",
+            "requestBytes": 35316,
+            "requestSha256": "842f7e246e56bea9cb557cbfaf9ca9a658b30e591a715979ec9b09a57a7711d3",
+            "responseBytes": 47970,
+            "sseEvents": 72,
+            "startedAt": "2026-10-26T15:25:37.166174+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5359,
+              "output_tokens": 67,
+              "total_tokens": 5426
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:25:39.436770+00:00",
+        "provider": "codex",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:35.596627+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "gpt-5.5",
+        "calls": [
+          {
+            "durationMs": 1.253,
+            "finishedAt": "2026-10-26T15:25:40.394131+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34042,
+            "requestSha256": "d95b63b97884f7ef2ed3b945c5466f03c1d7090a2f6cff8c7c6543d8594dc283",
+            "startedAt": "2026-10-26T15:25:40.389676+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "model_unavailable",
+        "details": {
+          "diagnosticBytes": 130,
+          "diagnosticSha256": "9d80744ae18aedef0630400e90594bdc39b12ed9d9412967cd8f4b61303961c5"
+        },
+        "finishedAt": "2026-10-26T15:25:40.394147+00:00",
+        "provider": "codex",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:40.386476+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "gpt-5.6-terra",
+        "answerBytes": 285,
+        "answerSha256": "90ff6b78180b99f47f7a7ab9299877a2069de9fb973a4127c5f1ebf413b4b9a1",
+        "calls": [
+          {
+            "durationMs": 1746.212,
+            "finishedAt": "2026-10-26T15:25:43.514869+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-5.6-terra",
+            "requestBytes": 34048,
+            "requestSha256": "11f9adc3fc4f586f78af45ace0571be4237a50effe109ff746d38d40ccbe25f2",
+            "responseBytes": 34667,
+            "sseEvents": 26,
+            "startedAt": "2026-10-26T15:25:41.765655+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5138,
+              "output_tokens": 32,
+              "total_tokens": 5170
+            }
+          },
+          {
+            "durationMs": 3154.161,
+            "finishedAt": "2026-10-26T15:25:46.679227+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-5.6-terra",
+            "requestBytes": 35319,
+            "requestSha256": "c70642666c1ce8659f5f95b64c8810c3e55c5059c4e33cc666d81bd0929e76af",
+            "responseBytes": 50551,
+            "sseEvents": 75,
+            "startedAt": "2026-10-26T15:25:43.520850+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5359,
+              "output_tokens": 70,
+              "total_tokens": 5429
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:25:46.679286+00:00",
+        "provider": "codex",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:41.762624+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "gpt-5.6-luna",
+        "answerBytes": 308,
+        "answerSha256": "0d17cb17d74a0d296943e3a22260ada8485717b5a7e380ca8be558efe136e332",
+        "calls": [
+          {
+            "durationMs": 1483.382,
+            "finishedAt": "2026-10-26T15:25:48.288297+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-5.6-luna",
+            "requestBytes": 34047,
+            "requestSha256": "0371d71f3092abbde700264d25ee6eaefa9d3559568658e23cd1264f40e8bbed",
+            "responseBytes": 34589,
+            "sseEvents": 26,
+            "startedAt": "2026-10-26T15:25:46.800374+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5138,
+              "output_tokens": 32,
+              "total_tokens": 5170
+            }
+          },
+          {
+            "durationMs": 1854.877,
+            "finishedAt": "2026-10-26T15:25:50.150448+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-5.6-luna",
+            "requestBytes": 35318,
+            "requestSha256": "7398e8b8a056a62bc287e65c36db4071a929c9909250469420f4dd69646c2b33",
+            "responseBytes": 54438,
+            "sseEvents": 71,
+            "startedAt": "2026-10-26T15:25:48.292319+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5359,
+              "output_tokens": 110,
+              "total_tokens": 5469
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:25:50.150524+00:00",
+        "provider": "codex",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:46.785475+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "gpt-6-sol",
+        "answerBytes": 298,
+        "answerSha256": "f547739dc5166b6a223a0d017dbcea9b97892eb0c2ab9652618521a96afe0c9a",
+        "calls": [
+          {
+            "durationMs": 1724.709,
+            "finishedAt": "2026-10-26T15:25:51.979447+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-6-sol",
+            "requestBytes": 34044,
+            "requestSha256": "b805c970c2d3ecf97084b9800c16c664cd5957254fd7f6944a59d52e9d5f95e5",
+            "responseBytes": 34658,
+            "sseEvents": 26,
+            "startedAt": "2026-10-26T15:25:50.251762+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5138,
+              "output_tokens": 32,
+              "total_tokens": 5170
+            }
+          },
+          {
+            "durationMs": 2586.276,
+            "finishedAt": "2026-10-26T15:25:54.575172+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-6-sol",
+            "requestBytes": 35315,
+            "requestSha256": "e4d00f3c989046cf1cb19b30f8a70ed4911b88a8741552f3e57c87e06602a481",
+            "responseBytes": 48024,
+            "sseEvents": 66,
+            "startedAt": "2026-10-26T15:25:51.983798+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5359,
+              "output_tokens": 61,
+              "total_tokens": 5420
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:25:54.575247+00:00",
+        "provider": "codex",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:50.247999+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "gpt-5.6-sol",
+        "answerBytes": 296,
+        "answerSha256": "191e57eb311fff06ef48d7d57e62a3c0638160f0ec2e4a847c9df342591c7733",
+        "calls": [
+          {
+            "durationMs": 2595.868,
+            "finishedAt": "2026-10-26T15:26:07.432302+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-5.6-sol",
+            "requestBytes": 34046,
+            "requestSha256": "6cc86aefd4f1a2c1ddff9ae844f7ca2390b3a62eb683d00521b4c0fa69e628d4",
+            "responseBytes": 34661,
+            "sseEvents": 26,
+            "startedAt": "2026-10-26T15:26:04.833192+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5138,
+              "output_tokens": 32,
+              "total_tokens": 5170
+            }
+          },
+          {
+            "durationMs": 3424.165,
+            "finishedAt": "2026-10-26T15:26:10.865528+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gpt-5.6-sol",
+            "requestBytes": 35317,
+            "requestSha256": "a38ce7f6185f33c30386872c5ae9942a9f840a085b03526d71edbb18d81d84e3",
+            "responseBytes": 49159,
+            "sseEvents": 70,
+            "startedAt": "2026-10-26T15:26:07.437733+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5359,
+              "output_tokens": 65,
+              "total_tokens": 5424
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:26:10.865599+00:00",
+        "provider": "codex",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:26:04.829998+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "google/gemma-4-26b-a4b-it:free",
+        "calls": [
+          {
+            "durationMs": 2.679,
+            "finishedAt": "2026-10-26T15:24:44.411288+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34065,
+            "requestSha256": "796b367cd611efe3f8e433c4cfd16e800b094976a9c1b56b1e6a7a0dd2e96302",
+            "startedAt": "2026-10-26T15:24:44.405389+00:00",
+            "state": "failed",
+            "statusCode": 503,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "upstream_rejected",
+        "details": {
+          "diagnosticBytes": 298,
+          "diagnosticSha256": "3c78b5598b8fd2854cb1ff1698ff1fa8c893a80cba3d3cc30e275f3245036d8c"
+        },
+        "finishedAt": "2026-10-26T15:24:44.411302+00:00",
+        "provider": "kilo",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:24:44.402716+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "nvidia-step-5-preview",
+        "calls": [
+          {
+            "durationMs": 45045.333,
+            "finishedAt": "2026-10-26T15:25:29.556173+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34056,
+            "requestSha256": "aa74be36c8a0e0b6921ad555994e5974c61e4ecd1f0ac018e5c0e5b6a61039ea",
+            "startedAt": "2026-10-26T15:24:44.507667+00:00",
+            "state": "failed",
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "transport_or_timeout",
+        "details": {},
+        "finishedAt": "2026-10-26T15:25:29.556208+00:00",
+        "provider": "nvidia-build",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:24:44.504975+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "codex-auto-review",
+        "answerBytes": 282,
+        "answerSha256": "6e65c7ca4418010c68710acf4f7887bd559cec41eb4f0cd2194b110380d16449",
+        "calls": [
+          {
+            "durationMs": 1362.009,
+            "finishedAt": "2026-10-26T15:26:12.344587+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "codex-auto-review",
+            "requestBytes": 34052,
+            "requestSha256": "bb42131e1b5f892508d1958e2dbd9aca9a4e030f74438011825aa9f469e99637",
+            "responseBytes": 34604,
+            "sseEvents": 26,
+            "startedAt": "2026-10-26T15:26:10.976928+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5138,
+              "output_tokens": 32,
+              "total_tokens": 5170
+            }
+          },
+          {
+            "durationMs": 2091.327,
+            "finishedAt": "2026-10-26T15:26:14.444513+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "codex-auto-review",
+            "requestBytes": 35323,
+            "requestSha256": "66f5ee1862338a797f81804021ce3c66ccc3d69296221b0791027411ca543d39",
+            "responseBytes": 54414,
+            "sseEvents": 71,
+            "startedAt": "2026-10-26T15:26:12.349947+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5359,
+              "output_tokens": 113,
+              "total_tokens": 5472
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:26:14.444583+00:00",
+        "provider": "codex",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:26:10.973454+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "hide"
+      },
+      {
+        "alias": "command-a-plus-05-2026",
+        "calls": [
+          {
+            "durationMs": 3.615,
+            "finishedAt": "2026-10-26T15:24:45.637051+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34057,
+            "requestSha256": "eca4fc949dd4887df32f06b01ef9d52043b88cd74ad3f7f8db2bbf9064b38ed9",
+            "startedAt": "2026-10-26T15:24:45.630373+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "upstream_rejected",
+        "details": {
+          "diagnosticBytes": 129,
+          "diagnosticSha256": "b130c8fb05e9955294f8e7c26da589c4d49dd3ecfddd409719062e181bf40972"
+        },
+        "finishedAt": "2026-10-26T15:24:45.637066+00:00",
+        "provider": "cohere",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:24:45.627387+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "solar-mini4-260922",
+        "answerBytes": 353,
+        "answerSha256": "be9fb84df83a9e2848233d474137048cb34d1070caf77dc74e2d018e525f1b52",
+        "calls": [
+          {
+            "durationMs": 2860.08,
+            "finishedAt": "2026-10-26T15:24:48.597929+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "solar-mini4-260922",
+            "requestBytes": 34053,
+            "requestSha256": "ceaa4ddcaafae210e7284dca2facea3104598fa2dd6a36a6ba6eae4d9dbd67fa",
+            "responseBytes": 16924,
+            "sseEvents": 37,
+            "startedAt": "2026-10-26T15:24:45.734722+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5735,
+              "output_tokens": 42,
+              "total_tokens": 5777
+            }
+          },
+          {
+            "durationMs": 7013.775,
+            "finishedAt": "2026-10-26T15:24:55.621015+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "solar-mini4-260922",
+            "requestBytes": 35550,
+            "requestSha256": "3203b461299863dea7e52d66dfb7f349dd11c0535be53d9604e9e02d43dd97f2",
+            "responseBytes": 151930,
+            "sseEvents": 587,
+            "startedAt": "2026-10-26T15:24:48.602596+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 4163,
+              "output_tokens": 580,
+              "total_tokens": 4743
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:24:55.621108+00:00",
+        "provider": "upstage",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:24:45.732157+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "@cf/google/gemma-4-26b-a4b-it",
+        "calls": [
+          {
+            "durationMs": 912.784,
+            "finishedAt": "2026-10-26T15:24:46.729906+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "@cf/google/gemma-4-26b-a4b-it",
+            "requestBytes": 34064,
+            "requestSha256": "b4fd021b3e16b82a9ac081062af6e60e02fecc1f2c46a5fb850977b48b8c4ff8",
+            "responseBytes": 10838,
+            "sseEvents": 11,
+            "startedAt": "2026-10-26T15:24:45.813561+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5623,
+              "output_tokens": 36,
+              "total_tokens": 5659
+            }
+          },
+          {
+            "durationMs": 36340.955,
+            "finishedAt": "2026-10-26T15:25:23.078436+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 35304,
+            "requestSha256": "edbbdb1ab1f4d189a309b5fde03f714a66c0012995069375b6b812672a86feb6",
+            "startedAt": "2026-10-26T15:24:46.733365+00:00",
+            "state": "failed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7
+          }
+        ],
+        "category": "upstream_rejected",
+        "details": {
+          "responseBytes": 451755,
+          "sseEvents": 2053
+        },
+        "finishedAt": "2026-10-26T15:25:23.078540+00:00",
+        "provider": "cloudflare-workers-ai",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:24:45.810759+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "@cf/zai-org/glm-4.7-flash",
+        "calls": [
+          {
+            "durationMs": 2129.452,
+            "finishedAt": "2026-10-26T15:25:35.488428+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "@cf/zai-org/glm-4.7-flash",
+            "requestBytes": 34060,
+            "requestSha256": "5ce37f49cbd910b5afc81b21ea3ba7154cd68793e204b71783799a5ec9d3e012",
+            "responseBytes": 25397,
+            "sseEvents": 74,
+            "startedAt": "2026-10-26T15:25:33.355773+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5690,
+              "output_tokens": 103,
+              "total_tokens": 5793
+            }
+          }
+        ],
+        "category": "tool_arguments_outside_fixture",
+        "details": {},
+        "finishedAt": "2026-10-26T15:25:35.489939+00:00",
+        "provider": "cloudflare-workers-ai",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:33.353049+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "Meta-Llama-3.3-70B-Instruct",
+        "calls": [
+          {
+            "durationMs": 851.75,
+            "finishedAt": "2026-10-26T15:24:56.575967+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34062,
+            "requestSha256": "a986e103be185c117bc09ae8284c87fc5b80e9b4060cd2dfbe879594a22bbd7a",
+            "startedAt": "2026-10-26T15:24:55.720974+00:00",
+            "state": "failed",
+            "statusCode": 429,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "upstream_rejected",
+        "details": {
+          "diagnosticBytes": 149,
+          "diagnosticSha256": "e0861c8f2c394d26138157a98e98745afb4c56ce19b73f43ed9a107d1b69d60f"
+        },
+        "finishedAt": "2026-10-26T15:24:56.575994+00:00",
+        "provider": "sambanova",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:24:55.718059+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "groq-gpt-oss-20b",
+        "calls": [
+          {
+            "durationMs": 1600.06,
+            "finishedAt": "2026-10-26T15:24:58.277963+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "openai/gpt-oss-20b",
+            "requestBytes": 34051,
+            "requestSha256": "7cb8be1ce53565e022ce387ba973e5506651ea25b2dfa5d3980d6666a96ff706",
+            "responseBytes": 13053,
+            "sseEvents": 18,
+            "startedAt": "2026-10-26T15:24:56.674726+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5212,
+              "output_tokens": 44,
+              "total_tokens": 5256
+            }
+          },
+          {
+            "durationMs": 176.622,
+            "finishedAt": "2026-10-26T15:24:58.462775+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 35548,
+            "requestSha256": "181deea397ba3cb21516d2f930ab3a33e9d1d49d69e8874bf812607cdf1d84f1",
+            "startedAt": "2026-10-26T15:24:58.282772+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "continuation",
+            "tools": 7
+          }
+        ],
+        "category": "upstream_rejected",
+        "details": {
+          "diagnosticBytes": 184,
+          "diagnosticSha256": "8f13ce586612567206737f9195a7437549e767bda456fe5c2565b8f9b883e551"
+        },
+        "finishedAt": "2026-10-26T15:24:58.462800+00:00",
+        "provider": "groq",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:24:56.671592+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "gemini-3.5-flash-lite",
+        "calls": [
+          {
+            "durationMs": 18517.745,
+            "finishedAt": "2026-10-26T15:25:17.090958+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "gemini-3.5-flash-lite",
+            "requestBytes": 34056,
+            "requestSha256": "f9f8b07869e6ce2791541b37ef2fd0e91fa5dbe95a209310b7ef699badf165f0",
+            "responseBytes": 9889,
+            "sseEvents": 7,
+            "startedAt": "2026-10-26T15:24:58.568242+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5607,
+              "output_tokens": 33,
+              "total_tokens": 5733
+            }
+          },
+          {
+            "durationMs": 455.663,
+            "finishedAt": "2026-10-26T15:25:17.553506+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 35239,
+            "requestSha256": "ba501b858c1270b3a03c2823830a0893f8456fcd626ba75664e6e2ee90fc4e42",
+            "startedAt": "2026-10-26T15:25:17.094586+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "continuation",
+            "tools": 7
+          }
+        ],
+        "category": "upstream_rejected",
+        "details": {
+          "diagnosticBytes": 411,
+          "diagnosticSha256": "2447f5589bce1d35768cb860be3b66ab988fbf91479f42d09d725a62d380d9e3"
+        },
+        "finishedAt": "2026-10-26T15:25:17.553520+00:00",
+        "provider": "gemini-api",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:24:58.565078+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "openrouter-llama-3.3-free",
+        "calls": [
+          {
+            "durationMs": 581.885,
+            "finishedAt": "2026-10-26T15:25:18.262422+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34060,
+            "requestSha256": "257655bbcdeb5f5ea085e0f8aca5ea19fe068dceb20c0b1b78518909e03e5c01",
+            "startedAt": "2026-10-26T15:25:17.677297+00:00",
+            "state": "failed",
+            "statusCode": 404,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "upstream_rejected",
+        "details": {
+          "diagnosticBytes": 163,
+          "diagnosticSha256": "d04fe0f5da82cfc45318f2c3414664697af816088b070f287a7baa623cf1fd75"
+        },
+        "finishedAt": "2026-10-26T15:25:18.262450+00:00",
+        "provider": "openrouter",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:17.674165+00:00",
+        "state": "failed",
+        "visibility": "list"
+      },
+      {
+        "alias": "openrouter/free",
+        "answerBytes": 288,
+        "answerSha256": "f141e7cdfe5492381fe239d9c7a64ffbf77a4078a40ddbd03a078ed2ac259641",
+        "calls": [
+          {
+            "durationMs": 2042.521,
+            "finishedAt": "2026-10-26T15:25:35.715684+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "openrouter/free",
+            "requestBytes": 34050,
+            "requestSha256": "910afae15ce32ecf9f7556369e99baa9887e753151cee085c449546613f28df7",
+            "responseBytes": 17044,
+            "sseEvents": 31,
+            "startedAt": "2026-10-26T15:25:33.669896+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 6337,
+              "output_tokens": 89,
+              "total_tokens": 6426
+            }
+          },
+          {
+            "durationMs": 5680.539,
+            "finishedAt": "2026-10-26T15:25:41.404036+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "openrouter/free",
+            "requestBytes": 35795,
+            "requestSha256": "cdf4f2d56203f39ff74ab280a7618d83f2773a32abae85ebb32818d21742c848",
+            "responseBytes": 216713,
+            "sseEvents": 852,
+            "startedAt": "2026-10-26T15:25:35.720439+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5864,
+              "output_tokens": 842,
+              "total_tokens": 6706
+            }
+          }
+        ],
+        "expectedAnswerMarkers": true,
+        "finishedAt": "2026-10-26T15:25:41.404136+00:00",
+        "provider": "openrouter",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:33.666495+00:00",
+        "state": "passed",
+        "toolRoundTrip": true,
+        "visibility": "list"
+      },
+      {
+        "alias": "kilo-liquid-lfm-free",
+        "calls": [
+          {
+            "durationMs": 736.698,
+            "finishedAt": "2026-10-26T15:25:33.249404+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 34055,
+            "requestSha256": "c132a9c8feff7fa8d38dd8a40c0b2ef77d2576adeeef6d66bce5b4a9ef3476c7",
+            "startedAt": "2026-10-26T15:25:32.509483+00:00",
+            "state": "failed",
+            "statusCode": 429,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "account_or_capacity",
+        "details": {
+          "diagnosticBytes": 689,
+          "diagnosticSha256": "2ea7d4b3089bf02092dedf339ea58b10e2af09bc3d280ba9240150be44b43211"
+        },
+        "finishedAt": "2026-10-26T15:25:33.249426+00:00",
+        "provider": "kilo",
+        "reasoningEffort": "none",
+        "startedAt": "2026-10-26T15:25:32.506844+00:00",
+        "state": "failed",
+        "visibility": "list"
+      }
+    ]
+  },
+  "diagnostics": {
+    "planSha256": "0b0a4e26548ea10cf9ebba19cf3b62d865f5dda6eb383620d2375accecff74c4",
+    "reportSha256": "d6eba62522f625eec10b15c7c50d7a1f2faa71ede2a96ff317b921d9b69e0b03",
+    "executedSourceSha256": {
+      "realistic_models.py": "438566e2409985ee4b3506f176b349dafd747f132d7d5fc1271f30566e5d3889",
+      "model_boundaries.py": "67bd45efdd5b1639dcd0339b9860dd8c6b351d52d38680c78df621fad16f2103",
+      "test_realistic_models.py": "e38ad4059bf74bb449c004774e871267cbbcbe9ce2cbc14f1f6607dad7998d41",
+      "fixtures/codex-0.164.0-native-tools.json": "d90aa6ef0ff0a643b2c0933ce867691562fd44c3d391f0411472e52f8f6e157b"
+    },
+    "startedAt": "2026-10-26T15:33:10.784462+00:00",
+    "finishedAt": "2026-10-26T15:33:21.184915+00:00",
+    "clientHttpRequests": 5,
+    "boundariesInterpretation": "Beam accepted 128, rejected 129 with maximum number of items is 128; original classifier used upstream_rejected",
+    "attemptCorrelation": {
+      "publicApi": "lain attempts",
+      "total": 5,
+      "offset": 0,
+      "limit": 100,
+      "matchedBy": "explicit conversation and turn headers; successful response IDs",
+      "upstreamProviderCallCount": "not established; Cohere was rejected by local compatibility validation",
+      "items": [
+        {
+          "requestId": "8f8f131b-e0ae-4fd5-b805-1a34aa90425d",
+          "routeId": "route-d07e5cedd53d24c69b1f26f3e892dddb",
+          "requestedModel": "cmd-beam-free",
+          "statusCode": 400,
+          "state": "failed",
+          "turnId": "beam-129-tools",
+          "responseId": null
+        },
+        {
+          "requestId": "0476d34e-3f6f-42c3-9d47-a54a5b25423d",
+          "routeId": "route-d07e5cedd53d24c69b1f26f3e892dddb",
+          "requestedModel": "cmd-beam-free",
+          "statusCode": 200,
+          "state": "success",
+          "turnId": "beam-128-tools",
+          "responseId": "gen_01M5WDGFAHG9X21M0670K9FDA5"
+        },
+        {
+          "requestId": "9fef40ef-fb61-4be9-991d-82708ffcbea6",
+          "routeId": "route-7273812967201314fc261d1439b7f95e",
+          "requestedModel": "k3",
+          "statusCode": 200,
+          "state": "success",
+          "turnId": "kimi-auto-choice",
+          "responseId": "resp_Yv2rRkXaWckucBvIKqLieHE1"
+        },
+        {
+          "requestId": "6617c208-8928-4fd8-9062-4fc3dee01f17",
+          "routeId": "route-7273812967201314fc261d1439b7f95e",
+          "requestedModel": "k3",
+          "statusCode": 200,
+          "state": "success",
+          "turnId": "kimi-auto-choice",
+          "responseId": "resp_JLLFKIEMmbiMfc2m4sslISD3"
+        },
+        {
+          "requestId": "5057b296-0ff6-403b-bae8-50fb4e0bbe4f",
+          "routeId": "route-b5cd16ff67f035270a9ae7b3cd08bcf9",
+          "requestedModel": "command-a-plus-05-2026",
+          "statusCode": 400,
+          "state": "failed",
+          "turnId": "cohere-native-auto-output-default",
+          "responseId": null
+        }
+      ]
+    },
+    "rows": [
+      {
+        "alias": "command-a-plus-05-2026",
+        "calls": [
+          {
+            "durationMs": 7.085,
+            "finishedAt": "2026-10-26T15:33:11.031744+00:00",
+            "maxOutputTokens": null,
+            "requestBytes": 33978,
+            "requestSha256": "05a70c63fa96042cb853958d3e084e7b4dc0bf7b3010589235348a2ba857214a",
+            "startedAt": "2026-10-26T15:33:11.019115+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 7
+          }
+        ],
+        "category": "upstream_rejected",
+        "details": {
+          "diagnostic": {
+            "message": "request contains a field outside the supported Cohere compatibility subset",
+            "type": "invalid_request_error"
+          },
+          "diagnosticBytes": 129,
+          "diagnosticSha256": "b130c8fb05e9955294f8e7c26da589c4d49dd3ecfddd409719062e181bf40972"
+        },
+        "finishedAt": "2026-10-26T15:33:11.031764+00:00",
+        "firstRequestSha256": "05a70c63fa96042cb853958d3e084e7b4dc0bf7b3010589235348a2ba857214a",
+        "id": "cohere-native-auto-output-default",
+        "maximumRequests": 2,
+        "outputBudget": null,
+        "state": "failed",
+        "toolChoice": "auto",
+        "tools": 7
+      },
+      {
+        "alias": "k3",
+        "answerBytes": 448,
+        "answerSha256": "d1e7d076d4b049be0b4487d481a20b91a81fbf23ecd8c72c843612b547b85057",
+        "calls": [
+          {
+            "durationMs": 3648.842,
+            "finishedAt": "2026-10-26T15:33:14.927325+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "k3",
+            "requestBytes": 33987,
+            "requestSha256": "58fa416ab5d9df6d33986b259a34aeb772714ea505b27c72eaf284b98c28d8ed",
+            "responseBytes": 28358,
+            "responseId": "resp_JLLFKIEMmbiMfc2m4sslISD3",
+            "sseEvents": 19,
+            "startedAt": "2026-10-26T15:33:11.274642+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5524,
+              "output_tokens": 77,
+              "total_tokens": 5601
+            }
+          },
+          {
+            "durationMs": 4055.757,
+            "finishedAt": "2026-10-26T15:33:19.187878+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "k3",
+            "requestBytes": 35468,
+            "requestSha256": "d6d669cdb2efdc52818cedb9a240288b85067ded12c9300e404995bfaf99ff4a",
+            "responseBytes": 37467,
+            "responseId": "resp_Yv2rRkXaWckucBvIKqLieHE1",
+            "sseEvents": 54,
+            "startedAt": "2026-10-26T15:33:15.129050+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "continuation",
+            "tools": 7,
+            "usage": {
+              "input_tokens": 5808,
+              "output_tokens": 120,
+              "total_tokens": 5928
+            }
+          }
+        ],
+        "finishedAt": "2026-10-26T15:33:19.187925+00:00",
+        "firstRequestSha256": "58fa416ab5d9df6d33986b259a34aeb772714ea505b27c72eaf284b98c28d8ed",
+        "id": "kimi-auto-choice",
+        "maximumRequests": 2,
+        "outputBudget": 2048,
+        "state": "tool_roundtrip_completed",
+        "toolArgumentKeys": [
+          "cmd",
+          "workdir"
+        ],
+        "toolChoice": "auto",
+        "tools": 7
+      },
+      {
+        "alias": "cmd-beam-free",
+        "calls": [
+          {
+            "durationMs": 1165.905,
+            "finishedAt": "2026-10-26T15:33:20.549102+00:00",
+            "maxOutputTokens": 2048,
+            "reportedModel": "reflection/beam:free",
+            "requestBytes": 70590,
+            "requestSha256": "0c441de4ff18ed0200c94bde0089ec2a39479abac35e885b262e42df704fb613",
+            "responseBytes": 115149,
+            "responseId": "gen_01M5WDGFAHG9X21M0670K9FDA5",
+            "sseEvents": 16,
+            "startedAt": "2026-10-26T15:33:19.380186+00:00",
+            "state": "passed",
+            "statusCode": 200,
+            "step": "tool",
+            "tools": 128,
+            "usage": {
+              "input_tokens": 8911,
+              "output_tokens": 55,
+              "total_tokens": 8966
+            }
+          }
+        ],
+        "finishedAt": "2026-10-26T15:33:20.550214+00:00",
+        "firstRequestSha256": "0c441de4ff18ed0200c94bde0089ec2a39479abac35e885b262e42df704fb613",
+        "id": "beam-128-tools",
+        "maximumRequests": 1,
+        "outputBudget": 2048,
+        "state": "schema_accepted",
+        "toolChoice": "forced",
+        "toolCount": 128,
+        "tools": 128
+      },
+      {
+        "alias": "cmd-beam-free",
+        "calls": [
+          {
+            "durationMs": 441.298,
+            "finishedAt": "2026-10-26T15:33:21.183803+00:00",
+            "maxOutputTokens": 2048,
+            "requestBytes": 70892,
+            "requestSha256": "38822c64e59788bd9d5ec28ef06e39be555eb974ecab09f08fbd1e0b42d97c33",
+            "startedAt": "2026-10-26T15:33:20.739329+00:00",
+            "state": "failed",
+            "statusCode": 400,
+            "step": "tool",
+            "tools": 129
+          }
+        ],
+        "category": "upstream_rejected",
+        "details": {
+          "diagnostic": {
+            "message": "{\"error\":{\"message\":\"Invalid value for 'tools': maximum number of items is 128.\",\"type\":\"AI_APICallError\",\"param\":{\"error\":\"Invalid value for 'tools': maximum number of items is 128.\",\"statusCode\":400,\"name\":\"AI_APICallError\",\"message\":\"Invalid value for 'tools': maximum number of items is 128.\",\"isRetryable\":false,\"type\":\"AI_APICallError\"}},\"providerMetadata\":{\"gateway\":{\"routing\":{\"originalModelId\":\"reflection/beam-free\",\"resolvedProvider\":\"reflection\",\"fallbacksAvailable\":[],\"canonicalSlug\":\"reflection/beam\",\"modelAttemptCount\":1,\"modelAttempts\":[{\"canonicalSlug\":\"reflection/beam\",\"success\":false,\"providerAttemptCount\":1,\"providerAttempts\":[{\"provider\":\"reflection\",\"credentialType\":\"system\",\"success\":false,\"error\":\"Invalid value for 'tools': maximum number of items is 128.\",\"startTime\":",
+            "type": "invalid_request_error"
+          },
+          "diagnosticBytes": 1170,
+          "diagnosticSha256": "20afd61ad0fd5801daee9c11fd6eae1683eeb90e462baa64e2e38773c3e94cec"
+        },
+        "finishedAt": "2026-10-26T15:33:21.183821+00:00",
+        "firstRequestSha256": "38822c64e59788bd9d5ec28ef06e39be555eb974ecab09f08fbd1e0b42d97c33",
+        "id": "beam-129-tools",
+        "maximumRequests": 1,
+        "outputBudget": 2048,
+        "state": "failed",
+        "toolChoice": "forced",
+        "tools": 129
+      }
+    ]
+  },
+  "limits": [
+    "One bounded file-review task per concrete alias, at most two HTTP requests.",
+    "Seven captured native function tools; delegation, plugins, MCP, custom and namespace tools are not qualified.",
+    "Meaningful project context is synthetic; no personal project code or conversations are sent.",
+    "Output budget is explicitly 2048 tokens, not a test of unbounded native defaults.",
+    "A passed task establishes this payload only, not a maximum context size or full model certification.",
+    "No provider retry, paid fallback, login, profile apply or service restart by this harness.",
+    "Legacy report wording about provider retries is scoped to harness behavior; internal provider/gateway attempts are not proven.",
+    "Forced tool-choice errors do not establish failure with native automatic tool choice.",
+    "Strict fixture argument failures do not establish route incompatibility.",
+    "No profiles, accounts, models, budgets, plugin controls or running services were changed.",
+    "Shared summary omits account IDs and raw answers; exact executed source remains in private evidence."
+  ]
+}

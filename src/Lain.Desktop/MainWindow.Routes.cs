@@ -515,7 +515,7 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(visible, "Model access visible in client menu");
         AutomationProperties.SetName(pooled, "Model access uses explicit account pool");
         var selectedIds = route?.AccountIds ?? catalogModel?.AccountIds ?? (contextAccount is null ? [] : new[] { contextAccount.Id });
-        var choices = cfg.Accounts.Select(a => (Account: a, Box: new CheckBox { Content = Ui.Text($"{a.Name} · {a.Provider}"), IsChecked = selectedIds.Contains(a.Id), MinHeight = 30 })).ToArray();
+        var choices = cfg.Accounts.Select(a => (Account: a, Box: new CheckBox { Content = Ui.Text(AccountDisplayName(a)), IsChecked = selectedIds.Contains(a.Id), MinHeight = 30 })).ToArray();
         var accounts = new StackPanel { Spacing = 2 };
         foreach (var choice in choices)
         {

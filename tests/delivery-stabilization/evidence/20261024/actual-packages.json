@@ -1,0 +1,130 @@
+{
+  "format": 1,
+  "status": "passed",
+  "planOnly": false,
+  "packages": {
+    "monitor": {
+      "manifestSha256": "357f8c9951d892e651944e1b1894c54ba846de73408c543f69bc387032ae9801",
+      "coreSha256": null,
+      "sourceCommit": "793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+      "components": {
+        "cli": {
+          "sourceCommit": "793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+          "informationalVersion": "1.0.0+793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+          "assemblySha256": "fa39575a70cac506439b955516a8f73b4a9fbb0d11473f17d0da9b3611fb0996",
+          "lockfileSha256": "9167adf216697065cf0914f18dac6070e257457897b7d67d6f82fea6d3211109",
+          "localSharedAssemblies": {
+            "Lain.Client": "00c92d0b6016f3e6f17b180828f31145183919302a915126c0169d5e9ef8fab1",
+            "Lain.Core": "2bd98c593b1c1f290b8f4236703651d0019c374b82cc18817819883ea636ca4a"
+          }
+        },
+        "host": {
+          "sourceCommit": "793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+          "informationalVersion": "1.0.0+793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+          "assemblySha256": "3ab78ee50613ce4d96b7e67f878383a31e005cf1e62424a8588bebcea771881e",
+          "lockfileSha256": "1f34c5a9121183ed04ef8f3148198c89d166a297efc1df4e6ac59a7c69728ff8",
+          "localSharedAssemblies": {
+            "Lain.Core": "2bd98c593b1c1f290b8f4236703651d0019c374b82cc18817819883ea636ca4a"
+          }
+        },
+        "desktop": {
+          "sourceCommit": "793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+          "informationalVersion": "1.0.0+793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+          "assemblySha256": "5a68a42c2113b6093b4b678710a10ab4fd3f3efe1f3a6088a9e553a233d501ff",
+          "lockfileSha256": "2f6c02a41fc2da3aa162f7fe7bbf1f53bb2f6e8b69ba50912abaad3493896c56",
+          "localSharedAssemblies": {
+            "Lain.Client": "00c92d0b6016f3e6f17b180828f31145183919302a915126c0169d5e9ef8fab1",
+            "Lain.Core": "2bd98c593b1c1f290b8f4236703651d0019c374b82cc18817819883ea636ca4a"
+          }
+        }
+      },
+      "runtimeMode": "monitor"
+    },
+    "gateway": {
+      "manifestSha256": "f60ffb6e3be089fcceeca64b3cd6a6bbfb116a00500bb042a9722df818a1a418",
+      "coreSha256": "39c09202ca7c38c636cfb949abec3b71c6c9843dd2651cbc8bf44944c13c0629",
+      "releaseQualified": false,
+      "sourceCommit": "793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+      "components": {
+        "cli": {
+          "sourceCommit": "793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+          "informationalVersion": "1.0.0+793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+          "assemblySha256": "fa39575a70cac506439b955516a8f73b4a9fbb0d11473f17d0da9b3611fb0996",
+          "lockfileSha256": "9167adf216697065cf0914f18dac6070e257457897b7d67d6f82fea6d3211109",
+          "localSharedAssemblies": {
+            "Lain.Client": "00c92d0b6016f3e6f17b180828f31145183919302a915126c0169d5e9ef8fab1",
+            "Lain.Core": "2bd98c593b1c1f290b8f4236703651d0019c374b82cc18817819883ea636ca4a"
+          }
+        },
+        "host": {
+          "sourceCommit": "793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+          "informationalVersion": "1.0.0+793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+          "assemblySha256": "3ab78ee50613ce4d96b7e67f878383a31e005cf1e62424a8588bebcea771881e",
+          "lockfileSha256": "1f34c5a9121183ed04ef8f3148198c89d166a297efc1df4e6ac59a7c69728ff8",
+          "localSharedAssemblies": {
+            "Lain.Core": "2bd98c593b1c1f290b8f4236703651d0019c374b82cc18817819883ea636ca4a"
+          }
+        },
+        "desktop": {
+          "sourceCommit": "793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+          "informationalVersion": "1.0.0+793822c17a9bfa6a950bf82c8d2cdb6afa648d7c",
+          "assemblySha256": "5a68a42c2113b6093b4b678710a10ab4fd3f3efe1f3a6088a9e553a233d501ff",
+          "lockfileSha256": "2f6c02a41fc2da3aa162f7fe7bbf1f53bb2f6e8b69ba50912abaad3493896c56",
+          "localSharedAssemblies": {
+            "Lain.Client": "00c92d0b6016f3e6f17b180828f31145183919302a915126c0169d5e9ef8fab1",
+            "Lain.Core": "2bd98c593b1c1f290b8f4236703651d0019c374b82cc18817819883ea636ca4a"
+          }
+        }
+      },
+      "runtimeMode": "gateway"
+    },
+    "previous": {
+      "manifestSha256": "e7ea923310b6d02790a37a3229c3c19becfc0bddc5070cddc620c4d2b7461170",
+      "coreSha256": "a03e0ba2f4d2723a6a26fb10c89d838de75d6b14119b6ec4be3a2f1d7af4a185",
+      "releaseQualified": true,
+      "sourceCommit": "413588c44ee5ad730573baab2cd8f6dc328f48c5",
+      "components": {
+        "cli": {
+          "sourceCommit": "413588c44ee5ad730573baab2cd8f6dc328f48c5",
+          "informationalVersion": "1.0.0+413588c44ee5ad730573baab2cd8f6dc328f48c5",
+          "assemblySha256": "d72497f042511f960b19ef9b1a78e3e55799259ba56bb974c6217190eff3caf3",
+          "lockfileSha256": "9167adf216697065cf0914f18dac6070e257457897b7d67d6f82fea6d3211109",
+          "localSharedAssemblies": {
+            "Lain.Client": "39049b4d3233890e4489bcc4ccabce3ef0f9672f77014f6f1a3d55221e589b3b",
+            "Lain.Core": "55b447c1c99d0dfda0941cca5f158d4f6c7654f646d22845a02fc4228541b367"
+          }
+        },
+        "host": {
+          "sourceCommit": "413588c44ee5ad730573baab2cd8f6dc328f48c5",
+          "informationalVersion": "1.0.0+413588c44ee5ad730573baab2cd8f6dc328f48c5",
+          "assemblySha256": "b118a35600fc54e63f6a6eda51b29e2a07e62b071dbe462b81b2006d661e5f08",
+          "lockfileSha256": "1f34c5a9121183ed04ef8f3148198c89d166a297efc1df4e6ac59a7c69728ff8",
+          "localSharedAssemblies": {
+            "Lain.Core": "55b447c1c99d0dfda0941cca5f158d4f6c7654f646d22845a02fc4228541b367"
+          }
+        },
+        "desktop": {
+          "sourceCommit": "413588c44ee5ad730573baab2cd8f6dc328f48c5",
+          "informationalVersion": "1.0.0+413588c44ee5ad730573baab2cd8f6dc328f48c5",
+          "assemblySha256": "6e98a596121dd6b30bd6a4f38ae101ad48279573f0ceaef88df6b5a7f0f279ff",
+          "lockfileSha256": "2f6c02a41fc2da3aa162f7fe7bbf1f53bb2f6e8b69ba50912abaad3493896c56",
+          "localSharedAssemblies": {
+            "Lain.Client": "39049b4d3233890e4489bcc4ccabce3ef0f9672f77014f6f1a3d55221e589b3b",
+            "Lain.Core": "55b447c1c99d0dfda0941cca5f158d4f6c7654f646d22845a02fc4228541b367"
+          }
+        }
+      },
+      "runtimeMode": "gateway"
+    }
+  },
+  "checks": [
+    "fresh actual Monitor install/start/restart without Core; installed launcher help/status",
+    "actual Monitor-to-Gateway package update retains Monitor intent and leaves Core stopped",
+    "actual Gateway update starts updated Core preserving desired11/applied2 and historical81986/cursor2",
+    "bounded pinned old-new-old-new staged rollback; schema4-to3-to4; complete current grants preserved",
+    "original-home return promotes only prepared old app and schema3DB; original YAML/current grants/journal retained; app-only reupgrade restores schema4",
+    "full stopped snapshot restores history/identity; rotating grant quarantined, static account retained"
+  ],
+  "scope": "Isolated package/install/Host/Core/stopped restore; zero inference/provider reads/systemd/real-state access",
+  "historicalBinaryDowngradeRuntime": "passed-bounded-staged-conversion"
+}

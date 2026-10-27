@@ -1,0 +1,27 @@
+lain — Local AI Gateway
+Copyright (c) 2026 Tom Graßmann
+
+The original lain source code, documentation and skills are licensed under the
+Artistic License 2.0 (SPDX-License-Identifier: Artistic-2.0), except where an
+individual file or component states otherwise. See LICENSE for the full terms.
+
+Third-party software, fonts and other materials retain their respective
+copyright notices and licenses. See proxy/LICENSE.upstream, packaging/licenses,
+the bundled font notices, and the notices directory in binary distributions.
+The Artistic License does not replace any of those licenses or grant rights to
+third-party artwork, names or trademarks.
+
+Cat photograph: Alexander Huxel · Webentwicklung Huxel
+https://webentwicklung-huxel.de/
+https://flickr.com/people/204852984@N05/
+The supplied photograph was edited for the application logo. The project owner
+confirmed permission to use and publicly distribute the supplied artwork and
+its edited variant as part of lain on 26 October 2026, with this attribution.
+The photograph is not relicensed under the Artistic License. No general license
+for separate redistribution of the photograph is asserted. Brand provenance:
+src/Lain.Desktop/Assets/Brand/README.md.
+
+New binary distributions include source/lain-source.tar.gz, an archive of the
+exact tracked source revision used for the package. Source build instructions
+are included in that archive. Separately supplied upstream archives and client
+runtimes retain their own provenance and redistribution requirements.

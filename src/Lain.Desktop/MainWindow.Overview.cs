@@ -45,7 +45,7 @@ public sealed partial class MainWindow
         serviceFooter.Children.Add(revision);
         if (configuration is null)
         {
-            var check = Ui.Button("Check connection", () => _ = RefreshAsync(true));
+            var check = OverviewActions(ServiceStartupButton(), Ui.Button("Check connection", () => _ = RefreshAsync(true)));
             Grid.SetColumn(check, 1); serviceFooter.Children.Add(check);
         }
         else
@@ -61,7 +61,9 @@ public sealed partial class MainWindow
             service.Children.Add(Ui.Text(_hostAvailable ? status.Error : $"Last host error: {status.Error}", 12, Ui.Warning));
         panel.Children.Add(Ui.Card(service));
         if (!_hostAvailable)
-            panel.Children.Add(OverviewNext("Connect to the host", "Start the lain user service, then refresh to see the current state.", "Setup guide", "Setup"));
+            panel.Children.Add(Ui.Card(OverviewGroup("Connect to the host",
+                Ui.Text("Start the owned background service and wait for authenticated readiness.", 13, Ui.Muted),
+                OverviewActions(ServiceStartupButton(), Ui.Button("Startup settings", () => Navigate("Settings")), Ui.Button("Setup guide", () => Navigate("Setup"))))));
         else if (configuration is { Accounts.Length: 0 })
             panel.Children.Add(OverviewNext("Connect an account", "Add an API key, authorize Codex or import a supported configuration.", "Add account", "Accounts"));
         else if (configuration is not null && !configuration.Accounts.Any(x => x.Enabled))
@@ -73,6 +75,14 @@ public sealed partial class MainWindow
         else if (!IsMonitorMode && configuration is { Profiles.Length: 0 })
             panel.Children.Add(OverviewNext("Create a profile", "Select routes and export a separate configuration for your client.", "Profiles", "Profiles"));
         return panel;
+    }
+
+    private Button ServiceStartupButton()
+    {
+        var button = Ui.Button("Start background service", () => _ = RetryServiceStartupAsync());
+        AutomationProperties.SetName(button, "Start background service");
+        button.IsEnabled = _startupServices is not null && !_startupInProgress;
+        return button;
     }
 
     private void ConfirmProxyAction(string action)
@@ -96,8 +106,8 @@ public sealed partial class MainWindow
         return Ui.Stack(Ui.PageHeader("Getting started", "Connect an account, choose models and configure your client.", Ui.Button("Back to accounts", () => Navigate("Accounts"))),
             Ui.Card(OverviewGroup("1. Connect to the local host",
                 Ui.Text(hostState, 13, _hostAvailable ? Ui.Accent : Ui.Muted),
-                Ui.Text("Run lain service start in your terminal. The host keeps running when this window closes.", 13, Ui.Muted),
-                OverviewActions(Ui.Button("Check connection", () => _ = RefreshAsync(true))))),
+                Ui.Text("Start the background service here or change its independent startup choices in Settings. The host keeps running when this window closes.", 13, Ui.Muted),
+                OverviewActions(ServiceStartupButton(), Ui.Button("Check connection", () => _ = RefreshAsync(true)), Ui.Button("Startup settings", () => Navigate("Settings"))))),
             Ui.Card(OverviewGroup("2. Add an account",
                 Ui.Text(accountsState, 13, Ui.Muted),
                 Ui.Text("Authorize Codex, add an API key or import a supported local configuration.", 13, Ui.Muted),

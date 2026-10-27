@@ -150,6 +150,7 @@ public sealed partial class MainWindow
         ObjectCommand[] commands =
         [
             new("detail", "Account details", () => ShowAccountInspector(account.Id)),
+            new("rename", "Rename account…", () => ShowAccountRename(account.Id, revision)),
             new("refresh", IsAccountQuotaRefreshing(account.Id) ? "Refreshing quota…" : "Refresh quota",
                 () => _ = RefreshAccountQuotaAsync(account.Id), !IsAccountQuotaRefreshing(account.Id), "This account quota refresh is already running."),
             new("usage", "Recorded usage", () => ShowUsageForAccount(account.Id), HasHistory, "This host has no recorded history source."),
@@ -307,6 +308,28 @@ public sealed partial class MainWindow
             else if (_page.Content is Control current)
                 current.GetLogicalDescendants().OfType<Control>().FirstOrDefault(c => c is Button or TextBox && c.IsVisible && c.IsEnabled)?.Focus();
         }, DispatcherPriority.Loaded);
+    }
+
+    private void ShowAccountRename(string id, long revision)
+    {
+        if (_configuration?.Accounts.FirstOrDefault(a => a.Id == id) is not { } account) return;
+        CloseAccountInspector(false);
+        RegisterEditor(() => ShowAccountRename(id, _configuration?.Revision ?? revision), revision);
+        _editing = true;
+        _actions.Clear();
+        var name = new TextBox { Text = account.Name, MaxLength = 120, PlaceholderText = "Account name" };
+        AutomationProperties.SetName(name, "Account name");
+        var save = Action("Save name", async () => {
+            _configuration = await _client.RenameAccountAsync(revision, id, name.Text ?? "", _lifetime.Token);
+        }, "Account name saved.");
+        void Validate() => save.IsEnabled = _hostAvailable && !string.IsNullOrWhiteSpace(name.Text)
+            && !name.Text.Any(char.IsControl);
+        name.TextChanged += (_, _) => Validate();
+        Validate();
+        _page.Content = Ui.Stack(Ui.Title("Rename account"),
+                Ui.Text("With one account, lists show the provider name. With multiple accounts, names help you tell them apart.", 13, Ui.Muted),
+                name, OverviewActions(save, Ui.Button("Cancel", () => { _editing = false; Render(); })));
+        Dispatcher.UIThread.Post(() => { name.Focus(); name.SelectAll(); }, DispatcherPriority.Loaded);
     }
 
     private void ShowAccountRemoval(string id, long revision)

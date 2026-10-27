@@ -55,14 +55,14 @@
       "lain.cli": {
         "type": "Project",
         "dependencies": {
-          "Lain.Client": "[1.0.0, )",
-          "Lain.Core": "[1.0.0, )"
+          "Lain.Client": "[0.8.0, )",
+          "Lain.Core": "[0.8.0, )"
         }
       },
       "lain.client": {
         "type": "Project",
         "dependencies": {
-          "Lain.Core": "[1.0.0, )"
+          "Lain.Core": "[0.8.0, )"
         }
       },
       "lain.core": {
@@ -71,7 +71,7 @@
       "lain.host": {
         "type": "Project",
         "dependencies": {
-          "Lain.Core": "[1.0.0, )",
+          "Lain.Core": "[0.8.0, )",
           "Microsoft.Data.Sqlite": "[10.0.12, )",
           "YamlDotNet": "[16.3.0, )"
         }

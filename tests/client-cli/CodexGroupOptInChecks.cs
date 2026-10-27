@@ -27,7 +27,7 @@ internal static class CodexGroupOptInChecks
                 throw new Exception("Typed export must preserve explicit opt-in and revision");
             return new(HttpStatusCode.OK) { Content = JsonContent.Create(new CodexProfileArtifacts("lain.config.toml",
                 "model = \"model-a\"\nmodel_provider = \"lain\"\nmodel_catalog_json = \"/tmp/lain.models.json\"\n", "lain.models.json",
-                expected ? "{\"models\":[],\"lain_model_picker\":{\"schema_version\":1,\"groups\":[]}}" : "{\"models\":[]}",
+                expected ? "{\"models\":[{\"slug\":\"model-a\"}],\"lain_model_picker\":{\"schema_version\":1,\"groups\":[]}}" : "{\"models\":[{\"slug\":\"model-a\"}]}",
                 ["--no-daemon", "--profile", "lain"], 7, ProfileId: "host-work")) };
         };
         Check(!new CodexExportRequest(7, "/fixture/lain", "/fixture/models.json").EnableLainModelPicker, "Typed request defaults to the ordinary native export");
