@@ -326,6 +326,946 @@
           "checkedAt": "2026-10-24T00:00:00Z"
         }
       ]
+    },
+    {
+      "id": "synthetic:syn:large:text:subscription",
+      "model": "syn:large:text",
+      "name": "syn:large:text (subscription)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "go",
+        "standard",
+        "big"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "syn-large-text",
+      "manufacturer": "synthetic",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "subscription",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:syn:large:text:payg",
+      "model": "syn:large:text",
+      "name": "syn:large:text (PAYG)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "syn-large-text",
+      "manufacturer": "synthetic",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:syn:small:text:subscription",
+      "model": "syn:small:text",
+      "name": "syn:small:text (subscription)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "go",
+        "standard",
+        "big"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "syn-small-text",
+      "manufacturer": "synthetic",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "subscription",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:syn:small:text:payg",
+      "model": "syn:small:text",
+      "name": "syn:small:text (PAYG)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "syn-small-text",
+      "manufacturer": "synthetic",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:syn:large:vision:subscription",
+      "model": "syn:large:vision",
+      "name": "syn:large:vision (subscription)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "go",
+        "standard",
+        "big"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "syn-large-vision",
+      "manufacturer": "synthetic",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "subscription",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:syn:large:vision:payg",
+      "model": "syn:large:vision",
+      "name": "syn:large:vision (PAYG)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "syn-large-vision",
+      "manufacturer": "synthetic",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:syn:small:vision:subscription",
+      "model": "syn:small:vision",
+      "name": "syn:small:vision (subscription)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "go",
+        "standard",
+        "big"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "syn-small-vision",
+      "manufacturer": "synthetic",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "subscription",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:syn:small:vision:payg",
+      "model": "syn:small:vision",
+      "name": "syn:small:vision (PAYG)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "syn-small-vision",
+      "manufacturer": "synthetic",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:openai/gpt-oss-120b:subscription",
+      "model": "hf:openai/gpt-oss-120b",
+      "name": "gpt-oss-120b (subscription)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "go",
+        "standard",
+        "big"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "gpt-oss-120b",
+      "manufacturer": "openai",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "subscription",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:openai/gpt-oss-120b:payg",
+      "model": "hf:openai/gpt-oss-120b",
+      "name": "gpt-oss-120b (PAYG)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "gpt-oss-120b",
+      "manufacturer": "openai",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:zai-org/GLM-5.3:subscription",
+      "model": "hf:zai-org/GLM-5.3",
+      "name": "GLM-5.3 (subscription)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "go",
+        "standard",
+        "big"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "glm-5.3",
+      "manufacturer": "zai-org",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "subscription",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:zai-org/GLM-5.3:payg",
+      "model": "hf:zai-org/GLM-5.3",
+      "name": "GLM-5.3 (PAYG)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "glm-5.3",
+      "manufacturer": "zai-org",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:zai-org/GLM-5.3-Flash:subscription",
+      "model": "hf:zai-org/GLM-5.3-Flash",
+      "name": "GLM-5.3-Flash (subscription)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "go",
+        "standard",
+        "big"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "glm-5.3-flash",
+      "manufacturer": "zai-org",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "subscription",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:zai-org/GLM-5.3-Flash:payg",
+      "model": "hf:zai-org/GLM-5.3-Flash",
+      "name": "GLM-5.3-Flash (PAYG)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "glm-5.3-flash",
+      "manufacturer": "zai-org",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:deepseek-ai/DeepSeek-V4.1-Flash:subscription",
+      "model": "hf:deepseek-ai/DeepSeek-V4.1-Flash",
+      "name": "DeepSeek-V4.1-Flash (subscription)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "go",
+        "standard",
+        "big"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "deepseek-v4.1-flash",
+      "manufacturer": "deepseek-ai",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "subscription",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:deepseek-ai/DeepSeek-V4.1-Flash:payg",
+      "model": "hf:deepseek-ai/DeepSeek-V4.1-Flash",
+      "name": "DeepSeek-V4.1-Flash (PAYG)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "deepseek-v4.1-flash",
+      "manufacturer": "deepseek-ai",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:Qwen/Qwen3.8-27B:subscription",
+      "model": "hf:Qwen/Qwen3.8-27B",
+      "name": "Qwen3.8-27B (subscription)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "go",
+        "standard",
+        "big"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "qwen3.8-27b",
+      "manufacturer": "Qwen",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "subscription",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:Qwen/Qwen3.8-27B:payg",
+      "model": "hf:Qwen/Qwen3.8-27B",
+      "name": "Qwen3.8-27B (PAYG)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "qwen3.8-27b",
+      "manufacturer": "Qwen",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4:subscription",
+      "model": "hf:nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4",
+      "name": "NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4 (subscription)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "go",
+        "standard",
+        "big"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "nvidia-nemotron-3-super-120b-a12b-nvfp4",
+      "manufacturer": "nvidia",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "subscription",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
+    },
+    {
+      "id": "synthetic:hf:nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4:payg",
+      "model": "hf:nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4",
+      "name": "NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4 (PAYG)",
+      "baseUrl": "https://api.synthetic.new/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": null,
+        "structuredOutput": null
+      },
+      "modelFamily": "nvidia-nemotron-3-super-120b-a12b-nvfp4",
+      "manufacturer": "nvidia",
+      "inferenceProvider": "synthetic",
+      "pricingClass": "payg",
+      "freeOnlyEligible": false,
+      "restrictions": [
+        "The model may be removed during rotation; aliases do not switch automatically.",
+        "Model-specific tool, reasoning, and JSON capabilities are unverified."
+      ],
+      "sources": [
+        {
+          "url": "https://dev.synthetic.new/docs/api/models",
+          "title": "Models and context",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://dev.synthetic.new/docs/openai/chat-completions",
+          "title": "Chat SSE",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://api.synthetic.new/openai/v1/models",
+          "title": "Synthetic account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ]
     }
   ],
   "sources": [

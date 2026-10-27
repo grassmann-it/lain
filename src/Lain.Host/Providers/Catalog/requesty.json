@@ -126,6 +126,4868 @@
         "Snapshot price is documented, current endpoint metadata and account routing policy remain unqualified."
       ],
       "freeOnlyEnforcementKind": "provider_control_required"
+    },
+    {
+      "id": "requesty-openai-gpt-6.1-terra",
+      "model": "openai/gpt-6.1-terra",
+      "name": "openai/gpt-6.1-terra · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-moonshot-kimi-k3.1-pro",
+      "model": "moonshot/kimi-k3.1-pro",
+      "name": "moonshot/kimi-k3.1-pro · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 1048576,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "kimi",
+      "manufacturer": "moonshot",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-moonshot-kimi-k3.1-pro-highspeed",
+      "model": "moonshot/kimi-k3.1-pro-highspeed",
+      "name": "moonshot/kimi-k3.1-pro-highspeed · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 1048576,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "kimi",
+      "manufacturer": "moonshot",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-deepseek-deepseek-v4.1-flash-1017",
+      "model": "deepseek/deepseek-v4.1-flash-1017",
+      "name": "deepseek/deepseek-v4.1-flash-1017 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 384000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "deepseek",
+      "manufacturer": "deepseek",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-meta-muse-spark-1.3",
+      "model": "meta/muse-spark-1.3",
+      "name": "meta/muse-spark-1.3 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 943718,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "muse",
+      "manufacturer": "meta",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-meta-muse-wonder-1.0",
+      "model": "meta/muse-wonder-1.0",
+      "name": "meta/muse-wonder-1.0 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 943718,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "muse",
+      "manufacturer": "meta",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-haiku-5-5",
+      "model": "anthropic/claude-haiku-5-5",
+      "name": "anthropic/claude-haiku-5-5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-mistral-large-4",
+      "model": "mistral/mistral-large-4",
+      "name": "mistral/mistral-large-4 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 524288,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "mistral",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-6.1-sol",
+      "model": "openai/gpt-6.1-sol",
+      "name": "openai/gpt-6.1-sol · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-sonnet-5-5",
+      "model": "anthropic/claude-sonnet-5-5",
+      "name": "anthropic/claude-sonnet-5-5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-6-luna",
+      "model": "openai/gpt-6-luna",
+      "name": "openai/gpt-6-luna · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-6-sol",
+      "model": "openai/gpt-6-sol",
+      "name": "openai/gpt-6-sol · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-opus-5-5",
+      "model": "anthropic/claude-opus-5-5",
+      "name": "anthropic/claude-opus-5-5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-4.7",
+      "model": "xai/grok-4.7",
+      "name": "xai/grok-4.7 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 500000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-glm-5-3",
+      "model": "mistral/glm-5-3",
+      "name": "mistral/glm-5-3 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true
+      },
+      "modelFamily": "glm",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-deepseek-deepseek-v4.1-flash",
+      "model": "deepseek/deepseek-v4.1-flash",
+      "name": "deepseek/deepseek-v4.1-flash · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 384000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "deepseek",
+      "manufacturer": "deepseek",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-6-astra",
+      "model": "openai/gpt-6-astra",
+      "name": "openai/gpt-6-astra · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-fable-5.1",
+      "model": "anthropic/claude-fable-5.1",
+      "name": "anthropic/claude-fable-5.1 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-zai-glm-5.3-flash",
+      "model": "zai/glm-5.3-flash",
+      "name": "zai/glm-5.3-flash · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "glm",
+      "manufacturer": "zai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-alibaba-qwen3.8-flash",
+      "model": "alibaba/qwen3.8-flash",
+      "name": "alibaba/qwen3.8-flash · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 131072,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "qwen3.8",
+      "manufacturer": "alibaba",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-zai-glm-5.3",
+      "model": "zai/glm-5.3",
+      "name": "zai/glm-5.3 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "glm",
+      "manufacturer": "zai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-4.6",
+      "model": "xai/grok-4.6",
+      "name": "xai/grok-4.6 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 500000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-nvidia-nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "name": "nvidia/nemotron-3.5-lightning-30b-a3b · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65536,
+        "reasoning": true
+      },
+      "modelFamily": "nemotron",
+      "manufacturer": "nvidia",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-nvidia-muse-glimmer-30b",
+      "model": "nvidia/muse-glimmer-30b",
+      "name": "nvidia/muse-glimmer-30b · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 131072,
+        "maximumOutput": 20480,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "muse",
+      "manufacturer": "nvidia",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-alibaba-qwen3.8-max",
+      "model": "alibaba/qwen3.8-max",
+      "name": "alibaba/qwen3.8-max · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 131072,
+        "reasoning": true
+      },
+      "modelFamily": "qwen3.8",
+      "manufacturer": "alibaba",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-opus-5",
+      "model": "anthropic/claude-opus-5",
+      "name": "anthropic/claude-opus-5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-google-gemini-3.6-flash",
+      "model": "google/gemini-3.6-flash",
+      "name": "google/gemini-3.6-flash · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65535,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gemini",
+      "manufacturer": "google",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-google-gemini-3.5-flash-lite",
+      "model": "google/gemini-3.5-flash-lite",
+      "name": "google/gemini-3.5-flash-lite · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65535,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gemini",
+      "manufacturer": "google",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-moonshot-kimi-k3",
+      "model": "moonshot/kimi-k3",
+      "name": "moonshot/kimi-k3 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 1048576,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "kimi",
+      "manufacturer": "moonshot",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5.6-luna",
+      "model": "openai/gpt-5.6-luna",
+      "name": "openai/gpt-5.6-luna · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5.6-terra",
+      "model": "openai/gpt-5.6-terra",
+      "name": "openai/gpt-5.6-terra · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5.6-sol",
+      "model": "openai/gpt-5.6-sol",
+      "name": "openai/gpt-5.6-sol · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-4.5",
+      "model": "xai/grok-4.5",
+      "name": "xai/grok-4.5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 500000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-sonnet-5",
+      "model": "anthropic/claude-sonnet-5",
+      "name": "anthropic/claude-sonnet-5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-glm-5-2",
+      "model": "mistral/glm-5-2",
+      "name": "mistral/glm-5-2 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true
+      },
+      "modelFamily": "glm",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-zai-glm-5.2",
+      "model": "zai/glm-5.2",
+      "name": "zai/glm-5.2 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true
+      },
+      "modelFamily": "glm",
+      "manufacturer": "zai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-moonshot-kimi-k2.7-code",
+      "model": "moonshot/kimi-k2.7-code",
+      "name": "moonshot/kimi-k2.7-code · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 262144,
+        "maximumOutput": 262144,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "kimi",
+      "manufacturer": "moonshot",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-nvidia-nemotron-3-nano-omni-30b-a3b-reasoning",
+      "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+      "name": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 131072,
+        "maximumOutput": 20480,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "nemotron",
+      "manufacturer": "nvidia",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-fable-5",
+      "model": "anthropic/claude-fable-5",
+      "name": "anthropic/claude-fable-5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-nvidia-nemotron-3-ultra-550b-a55b",
+      "model": "nvidia/nemotron-3-ultra-550b-a55b",
+      "name": "nvidia/nemotron-3-ultra-550b-a55b · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65536,
+        "reasoning": true
+      },
+      "modelFamily": "nemotron",
+      "manufacturer": "nvidia",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-alibaba-qwen3.7-plus",
+      "model": "alibaba/qwen3.7-plus",
+      "name": "alibaba/qwen3.7-plus · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 131072,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "qwen3.7",
+      "manufacturer": "alibaba",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-opus-4-8",
+      "model": "anthropic/claude-opus-4-8",
+      "name": "anthropic/claude-opus-4-8 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-devstral-latest",
+      "model": "mistral/devstral-latest",
+      "name": "mistral/devstral-latest · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 256000,
+        "reasoning": true
+      },
+      "modelFamily": "devstral",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-leanstral-1-5",
+      "model": "mistral/leanstral-1-5",
+      "name": "mistral/leanstral-1-5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 262144,
+        "maximumOutput": 32768,
+        "reasoning": true
+      },
+      "modelFamily": "leanstral",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-alibaba-qwen3.7-max",
+      "model": "alibaba/qwen3.7-max",
+      "name": "alibaba/qwen3.7-max · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 131072,
+        "reasoning": true
+      },
+      "modelFamily": "qwen3.7",
+      "manufacturer": "alibaba",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-build-0.1",
+      "model": "xai/grok-build-0.1",
+      "name": "xai/grok-build-0.1 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 256000
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-google-gemini-3.5-flash",
+      "model": "google/gemini-3.5-flash",
+      "name": "google/gemini-3.5-flash · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65535,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gemini",
+      "manufacturer": "google",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-google-gemini-3.1-flash-lite",
+      "model": "google/gemini-3.1-flash-lite",
+      "name": "google/gemini-3.1-flash-lite · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65535,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gemini",
+      "manufacturer": "google",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-4.3",
+      "model": "xai/grok-4.3",
+      "name": "xai/grok-4.3 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-mistral-medium-3-5",
+      "model": "mistral/mistral-medium-3-5",
+      "name": "mistral/mistral-medium-3-5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 262144,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "mistral",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-mistral-medium-latest",
+      "model": "mistral/mistral-medium-latest",
+      "name": "mistral/mistral-medium-latest · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 131072,
+        "reasoning": true
+      },
+      "modelFamily": "mistral",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5.5-pro",
+      "model": "openai/gpt-5.5-pro",
+      "name": "openai/gpt-5.5-pro · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5.5",
+      "model": "openai/gpt-5.5",
+      "name": "openai/gpt-5.5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-deepseek-deepseek-v4-pro-0813",
+      "model": "deepseek/deepseek-v4-pro-0813",
+      "name": "deepseek/deepseek-v4-pro-0813 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 384000,
+        "reasoning": true
+      },
+      "modelFamily": "deepseek",
+      "manufacturer": "deepseek",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-moonshot-kimi-k2.6",
+      "model": "moonshot/kimi-k2.6",
+      "name": "moonshot/kimi-k2.6 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 262144,
+        "maximumOutput": 262144,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "kimi",
+      "manufacturer": "moonshot",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-opus-4-7",
+      "model": "anthropic/claude-opus-4-7",
+      "name": "anthropic/claude-opus-4-7 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-zai-glm-5.1",
+      "model": "zai/glm-5.1",
+      "name": "zai/glm-5.1 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 128000,
+        "reasoning": true
+      },
+      "modelFamily": "glm",
+      "manufacturer": "zai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-alibaba-qwen3.6-plus",
+      "model": "alibaba/qwen3.6-plus",
+      "name": "alibaba/qwen3.6-plus · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 65536,
+        "reasoning": true
+      },
+      "modelFamily": "qwen3.6",
+      "manufacturer": "alibaba",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-4.2-beta",
+      "model": "xai/grok-4.2-beta",
+      "name": "xai/grok-4.2-beta · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 2000000,
+        "images": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5.4-nano",
+      "model": "openai/gpt-5.4-nano",
+      "name": "openai/gpt-5.4-nano · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 400000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5.4-mini",
+      "model": "openai/gpt-5.4-mini",
+      "name": "openai/gpt-5.4-mini · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 400000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-mistral-small-2603",
+      "model": "mistral/mistral-small-2603",
+      "name": "mistral/mistral-small-2603 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 256000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "mistral",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-mistral-small-latest",
+      "model": "mistral/mistral-small-latest",
+      "name": "mistral/mistral-small-latest · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 256000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "mistral",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5.4-pro",
+      "model": "openai/gpt-5.4-pro",
+      "name": "openai/gpt-5.4-pro · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5.4",
+      "model": "openai/gpt-5.4",
+      "name": "openai/gpt-5.4 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1050000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5.3-codex",
+      "model": "openai/gpt-5.3-codex",
+      "name": "openai/gpt-5.3-codex · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 400000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-google-gemini-3-pro-preview",
+      "model": "google/gemini-3-pro-preview",
+      "name": "google/gemini-3-pro-preview · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65535,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gemini",
+      "manufacturer": "google",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-google-gemini-3.1-pro-preview",
+      "model": "google/gemini-3.1-pro-preview",
+      "name": "google/gemini-3.1-pro-preview · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65535,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gemini",
+      "manufacturer": "google",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-sonnet-4-6",
+      "model": "anthropic/claude-sonnet-4-6",
+      "name": "anthropic/claude-sonnet-4-6 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-zai-GLM-5",
+      "model": "zai/GLM-5",
+      "name": "zai/GLM-5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 128000,
+        "reasoning": true
+      },
+      "modelFamily": "GLM",
+      "manufacturer": "zai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-opus-4-6",
+      "model": "anthropic/claude-opus-4-6",
+      "name": "anthropic/claude-opus-4-6 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-moonshot-kimi-k2.5",
+      "model": "moonshot/kimi-k2.5",
+      "name": "moonshot/kimi-k2.5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 262144,
+        "maximumOutput": 262144,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "kimi",
+      "manufacturer": "moonshot",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-zai-GLM-4.7",
+      "model": "zai/GLM-4.7",
+      "name": "zai/GLM-4.7 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 128000,
+        "reasoning": true
+      },
+      "modelFamily": "GLM",
+      "manufacturer": "zai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-google-gemini-3-flash-preview",
+      "model": "google/gemini-3-flash-preview",
+      "name": "google/gemini-3-flash-preview · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65535,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gemini",
+      "manufacturer": "google",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5.2",
+      "model": "openai/gpt-5.2",
+      "name": "openai/gpt-5.2 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 400000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-mistral-large-latest",
+      "model": "mistral/mistral-large-latest",
+      "name": "mistral/mistral-large-latest · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 131072
+      },
+      "modelFamily": "mistral",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-opus-4-5",
+      "model": "anthropic/claude-opus-4-5",
+      "name": "anthropic/claude-opus-4-5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 64000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-4-1-fast-non-reasoning",
+      "model": "xai/grok-4-1-fast-non-reasoning",
+      "name": "xai/grok-4-1-fast-non-reasoning · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 2000000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-4-1-fast-reasoning",
+      "model": "xai/grok-4-1-fast-reasoning",
+      "name": "xai/grok-4-1-fast-reasoning · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 2000000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5.1",
+      "model": "openai/gpt-5.1",
+      "name": "openai/gpt-5.1 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 400000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-haiku-4-5",
+      "model": "anthropic/claude-haiku-4-5",
+      "name": "anthropic/claude-haiku-4-5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 64000,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5-pro",
+      "model": "openai/gpt-5-pro",
+      "name": "openai/gpt-5-pro · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 400000,
+        "maximumOutput": 272000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-zai-GLM-4.6",
+      "model": "zai/GLM-4.6",
+      "name": "zai/GLM-4.6 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 128000,
+        "reasoning": true
+      },
+      "modelFamily": "GLM",
+      "manufacturer": "zai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-anthropic-claude-sonnet-4-5",
+      "model": "anthropic/claude-sonnet-4-5",
+      "name": "anthropic/claude-sonnet-4-5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 64000,
+        "images": true
+      },
+      "modelFamily": "claude",
+      "manufacturer": "anthropic",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-alibaba-qwen3-max",
+      "model": "alibaba/qwen3-max",
+      "name": "alibaba/qwen3-max · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 262144,
+        "maximumOutput": 65536,
+        "images": true
+      },
+      "modelFamily": "qwen3",
+      "manufacturer": "alibaba",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-alibaba-qwen3-coder-plus",
+      "model": "alibaba/qwen3-coder-plus",
+      "name": "alibaba/qwen3-coder-plus · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65536
+      },
+      "modelFamily": "qwen3",
+      "manufacturer": "alibaba",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-4-fast",
+      "model": "xai/grok-4-fast",
+      "name": "xai/grok-4-fast · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 2000000,
+        "reasoning": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-4-fast-non-reasoning",
+      "model": "xai/grok-4-fast-non-reasoning",
+      "name": "xai/grok-4-fast-non-reasoning · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 2000000,
+        "reasoning": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-alibaba-qwen3-coder-flash",
+      "model": "alibaba/qwen3-coder-flash",
+      "name": "alibaba/qwen3-coder-flash · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65536,
+        "reasoning": true
+      },
+      "modelFamily": "qwen3",
+      "manufacturer": "alibaba",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-code-fast-1",
+      "model": "xai/grok-code-fast-1",
+      "name": "xai/grok-code-fast-1 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 256000,
+        "images": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5",
+      "model": "openai/gpt-5",
+      "name": "openai/gpt-5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 400000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5-nano",
+      "model": "openai/gpt-5-nano",
+      "name": "openai/gpt-5-nano · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 400000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-5-mini",
+      "model": "openai/gpt-5-mini",
+      "name": "openai/gpt-5-mini · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 400000,
+        "maximumOutput": 128000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-codestral-latest",
+      "model": "mistral/codestral-latest",
+      "name": "mistral/codestral-latest · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 131072
+      },
+      "modelFamily": "codestral",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-alibaba-qwen3-30b-a3b-instruct-2507",
+      "model": "alibaba/qwen3-30b-a3b-instruct-2507",
+      "name": "alibaba/qwen3-30b-a3b-instruct-2507 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 131072,
+        "maximumOutput": 65536,
+        "images": true
+      },
+      "modelFamily": "qwen3",
+      "manufacturer": "alibaba",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-zai-GLM-4.5",
+      "model": "zai/GLM-4.5",
+      "name": "zai/GLM-4.5 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 131072,
+        "maximumOutput": 98304,
+        "reasoning": true
+      },
+      "modelFamily": "GLM",
+      "manufacturer": "zai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-google-gemini-2.5-flash-lite",
+      "model": "google/gemini-2.5-flash-lite",
+      "name": "google/gemini-2.5-flash-lite · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65535,
+        "images": true
+      },
+      "modelFamily": "gemini",
+      "manufacturer": "google",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-devstral-small-latest",
+      "model": "mistral/devstral-small-latest",
+      "name": "mistral/devstral-small-latest · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 131072,
+        "reasoning": true
+      },
+      "modelFamily": "devstral",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-4",
+      "model": "xai/grok-4",
+      "name": "xai/grok-4 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 256000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-google-gemini-2.5-flash",
+      "model": "google/gemini-2.5-flash",
+      "name": "google/gemini-2.5-flash · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65535,
+        "images": true
+      },
+      "modelFamily": "gemini",
+      "manufacturer": "google",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-google-gemini-2.5-pro",
+      "model": "google/gemini-2.5-pro",
+      "name": "google/gemini-2.5-pro · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1048576,
+        "maximumOutput": 65535,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "gemini",
+      "manufacturer": "google",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o3-pro",
+      "model": "openai/o3-pro",
+      "name": "openai/o3-pro · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "o3",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o3",
+      "model": "openai/o3",
+      "name": "openai/o3 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "o3",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o4-mini",
+      "model": "openai/o4-mini",
+      "name": "openai/o4-mini · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true
+      },
+      "modelFamily": "o4",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o4-mini-high",
+      "model": "openai/o4-mini:high",
+      "name": "openai/o4-mini:high · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true
+      },
+      "modelFamily": "o4",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o4-mini-low",
+      "model": "openai/o4-mini:low",
+      "name": "openai/o4-mini:low · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true
+      },
+      "modelFamily": "o4",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o4-mini-medium",
+      "model": "openai/o4-mini:medium",
+      "name": "openai/o4-mini:medium · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true
+      },
+      "modelFamily": "o4",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-4.1",
+      "model": "openai/gpt-4.1",
+      "name": "openai/gpt-4.1 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1047576,
+        "maximumOutput": 32768,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-4.1-mini",
+      "model": "openai/gpt-4.1-mini",
+      "name": "openai/gpt-4.1-mini · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1047576,
+        "maximumOutput": 32768,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-4.1-nano",
+      "model": "openai/gpt-4.1-nano",
+      "name": "openai/gpt-4.1-nano · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1047576,
+        "maximumOutput": 32768,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-mistral-small-2503",
+      "model": "mistral/mistral-small-2503",
+      "name": "mistral/mistral-small-2503 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 32768,
+        "reasoning": true
+      },
+      "modelFamily": "mistral",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-3",
+      "model": "xai/grok-3",
+      "name": "xai/grok-3 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 131072,
+        "reasoning": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-3-mini",
+      "model": "xai/grok-3-mini",
+      "name": "xai/grok-3-mini · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 131072,
+        "reasoning": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-3-mini-high",
+      "model": "xai/grok-3-mini:high",
+      "name": "xai/grok-3-mini:high · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 131072,
+        "reasoning": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-xai-grok-3-mini-low",
+      "model": "xai/grok-3-mini:low",
+      "name": "xai/grok-3-mini:low · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 131072,
+        "reasoning": true
+      },
+      "modelFamily": "grok",
+      "manufacturer": "xai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-alibaba-qwen-plus",
+      "model": "alibaba/qwen-plus",
+      "name": "alibaba/qwen-plus · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 131072,
+        "reasoning": true
+      },
+      "modelFamily": "qwen",
+      "manufacturer": "alibaba",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o3-mini",
+      "model": "openai/o3-mini",
+      "name": "openai/o3-mini · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true
+      },
+      "modelFamily": "o3",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o3-mini-high",
+      "model": "openai/o3-mini:high",
+      "name": "openai/o3-mini:high · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true
+      },
+      "modelFamily": "o3",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o3-mini-low",
+      "model": "openai/o3-mini:low",
+      "name": "openai/o3-mini:low · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true
+      },
+      "modelFamily": "o3",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o3-mini-medium",
+      "model": "openai/o3-mini:medium",
+      "name": "openai/o3-mini:medium · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true
+      },
+      "modelFamily": "o3",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-alibaba-qwen-max",
+      "model": "alibaba/qwen-max",
+      "name": "alibaba/qwen-max · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 32768,
+        "reasoning": true
+      },
+      "modelFamily": "qwen",
+      "manufacturer": "alibaba",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-deepseek-deepseek-reasoner",
+      "model": "deepseek/deepseek-reasoner",
+      "name": "deepseek/deepseek-reasoner · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 384000,
+        "reasoning": true
+      },
+      "modelFamily": "deepseek",
+      "manufacturer": "deepseek",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-deepseek-deepseek-chat",
+      "model": "deepseek/deepseek-chat",
+      "name": "deepseek/deepseek-chat · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000,
+        "maximumOutput": 384000,
+        "reasoning": true
+      },
+      "modelFamily": "deepseek",
+      "manufacturer": "deepseek",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o1",
+      "model": "openai/o1",
+      "name": "openai/o1 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "o1",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o1-high",
+      "model": "openai/o1:high",
+      "name": "openai/o1:high · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "o1:high",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o1-low",
+      "model": "openai/o1:low",
+      "name": "openai/o1:low · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "o1:low",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-o1-medium",
+      "model": "openai/o1:medium",
+      "name": "openai/o1:medium · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 200000,
+        "maximumOutput": 100000,
+        "reasoning": true,
+        "images": true
+      },
+      "modelFamily": "o1:medium",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-4o",
+      "model": "openai/gpt-4o",
+      "name": "openai/gpt-4o · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 128000,
+        "maximumOutput": 16384,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-4o-2024-11-20",
+      "model": "openai/gpt-4o-2024-11-20",
+      "name": "openai/gpt-4o-2024-11-20 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 128000,
+        "maximumOutput": 16384,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-alibaba-qwen-turbo",
+      "model": "alibaba/qwen-turbo",
+      "name": "alibaba/qwen-turbo · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 1000000
+      },
+      "modelFamily": "qwen",
+      "manufacturer": "alibaba",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-4o-2024-08-06",
+      "model": "openai/gpt-4o-2024-08-06",
+      "name": "openai/gpt-4o-2024-08-06 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 128000,
+        "maximumOutput": 16384,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-4o-mini",
+      "model": "openai/gpt-4o-mini",
+      "name": "openai/gpt-4o-mini · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 128000,
+        "maximumOutput": 16384,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-openai-gpt-4o-2024-05-13",
+      "model": "openai/gpt-4o-2024-05-13",
+      "name": "openai/gpt-4o-2024-05-13 · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 128000,
+        "maximumOutput": 4096,
+        "images": true
+      },
+      "modelFamily": "gpt",
+      "manufacturer": "openai",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
+    },
+    {
+      "id": "requesty-mistral-open-mistral-7b",
+      "model": "mistral/open-mistral-7b",
+      "name": "mistral/open-mistral-7b · PAYG",
+      "baseUrl": "https://router.requesty.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": true,
+        "contextWindow": 32768
+      },
+      "modelFamily": "open",
+      "manufacturer": "mistral",
+      "inferenceProvider": null,
+      "gateway": "Requesty",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://router.requesty.ai/v1/models",
+          "title": "Requesty account model listing (pricing, context, tool support)",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Exact provider/model ID from the account listing; price and entitlement follow the Requesty billing of this key; no automatic fallback."
+      ],
+      "freeOnlyEnforcementKind": "unsupported"
     }
   ],
   "sources": [

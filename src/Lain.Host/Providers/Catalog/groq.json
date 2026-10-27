@@ -236,6 +236,114 @@
         "Context window does not guarantee that organization TPM accepts a prompt of that size.",
         "Built-in browser/code tools are provider features, not implied permission for arbitrary OpenAI options."
       ]
+    },
+    {
+      "id": "groq/allam-2-7b",
+      "model": "allam-2-7b",
+      "name": "allam-2-7b on Groq",
+      "baseUrl": "https://api.groq.com/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "developer"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": null
+      },
+      "modelFamily": "allam-2-7b",
+      "manufacturer": "Groq",
+      "inferenceProvider": "Groq",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://console.groq.com/docs/openai",
+          "title": "Official OpenAI-compatible API",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": "Compatibility is partial; unsupported OpenAI fields must not be assumed available."
+        },
+        {
+          "url": "https://console.groq.com/docs/models",
+          "title": "Current hosted model matrix",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": null
+        },
+        {
+          "url": "https://console.groq.com/docs/model/openai/gpt-oss-20b",
+          "title": "GPT-OSS 20B on Groq hosted capabilities",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.groq.com/openai/v1/models",
+          "title": "Groq account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Text input/output only on this model route.",
+        "The same model endpoint can be free or charged depending on the organization tier.",
+        "Context window does not guarantee that organization TPM accepts a prompt of that size.",
+        "Built-in browser/code tools are provider features, not implied permission for arbitrary OpenAI options."
+      ]
+    },
+    {
+      "id": "groq/qwen/qwen3.8-27b",
+      "model": "qwen/qwen3.8-27b",
+      "name": "qwen/qwen3.8-27b on Groq",
+      "baseUrl": "https://api.groq.com/openai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "developer"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "tools": null
+      },
+      "modelFamily": "qwen3.8-27b",
+      "manufacturer": "qwen",
+      "inferenceProvider": "Groq",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "sources": [
+        {
+          "url": "https://console.groq.com/docs/openai",
+          "title": "Official OpenAI-compatible API",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": "Compatibility is partial; unsupported OpenAI fields must not be assumed available."
+        },
+        {
+          "url": "https://console.groq.com/docs/models",
+          "title": "Current hosted model matrix",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": null
+        },
+        {
+          "url": "https://console.groq.com/docs/model/openai/gpt-oss-20b",
+          "title": "GPT-OSS 20B on Groq hosted capabilities",
+          "checkedAt": "2026-10-23T22:12:49Z",
+          "notes": null
+        },
+        {
+          "url": "https://api.groq.com/openai/v1/models",
+          "title": "Groq account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Text input/output only on this model route.",
+        "The same model endpoint can be free or charged depending on the organization tier.",
+        "Context window does not guarantee that organization TPM accepts a prompt of that size.",
+        "Built-in browser/code tools are provider features, not implied permission for arbitrary OpenAI options."
+      ]
     }
   ],
   "sources": [
