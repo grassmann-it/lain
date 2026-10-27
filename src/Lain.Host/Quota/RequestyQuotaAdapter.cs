@@ -53,14 +53,23 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
         if (account.Binding?.ResourceId is not null && !resourceVerified)
             return new([], "Requesty Self identity could not be verified for the bound resource.",
                 RequestyKeyOutcome: new(false, "Requesty Self identity could not be verified for the bound resource."));
-                // Fetch org wallet balance (USD) from the management API. Currently unused in the displayed output.
+        // Org wallet balance (USD) needs a key with manage permission. A missing permission or a failed
+        // read is reported instead of being swallowed; no balance is ever fabricated.
         string? orgBalance = null;
-        try
+        // Without manage permission the wallet is simply unsupported for this key; that is not a fetch failure.
+        if (metadata?.ManagePermission is not (null or "none"))
         {
-            using var orgDoc = await QuotaHttp.GetAsync(client, "https://api-v2.requesty.ai/v1/manage/org", credential, ct, userAgent: "lain/1.0");
-            var bal = JsonFields.Number(orgDoc.RootElement, "balance");
-            if (bal.HasValue) orgBalance = bal.Value.ToString("F2", CultureInfo.InvariantCulture);
-        } catch { }
+            try
+            {
+                using var orgDoc = await QuotaHttp.GetAsync(client, "https://api-v2.requesty.ai/v1/manage/org", credential, ct, userAgent: "lain/1.0");
+                var bal = JsonFields.Number(orgDoc.RootElement, "balance");
+                if (bal.HasValue) orgBalance = bal.Value.ToString("F2", CultureInfo.InvariantCulture);
+                else errors.Add("Requesty wallet balance missing from the organization response.");
+            }
+            catch (OperationCanceledException ex) when (!ct.IsCancellationRequested) { errors.Add("Requesty wallet unavailable. " + QuotaFetchException.SafeDiagnostic(ex)); }
+            catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
+            { errors.Add("Requesty wallet unavailable. " + QuotaFetchException.SafeDiagnostic(ex)); }
+        }
 
         // Explicit month-to-observation bounds; no all-time spend compared with a monthly cap.
         var usageUrl = Endpoint + "/usage?start=" + Uri.EscapeDataString(start.ToString("O", CultureInfo.InvariantCulture))
