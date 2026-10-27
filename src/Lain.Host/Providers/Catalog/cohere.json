@@ -50,6 +50,14 @@
         }
       ],
       "notes": "Published trial ceiling: 1,000 calls/month; remaining calls and exact reset are unknown. Newer Chat variants can retain trial limits on production keys. No paid upgrade or production approval is performed. Shared organization pooling is not qualified; do not aggregate key limits into an organization allowance."
+    },
+    {
+      "id": "payg",
+      "name": "Pay as you go / subscription",
+      "kind": "payg",
+      "scope": "billing-account",
+      "unit": "usd",
+      "notes": "Production access billed per use or by an existing subscription. Prices and entitlement for this account are not read by lain; no purchase is performed."
     }
   ],
   "routes": [
@@ -60,7 +68,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "tools": true,
@@ -96,7 +105,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -133,7 +143,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -170,7 +181,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -207,7 +219,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -244,7 +257,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -281,7 +295,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -318,7 +333,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -355,7 +371,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -392,7 +409,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -429,7 +447,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -466,7 +485,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -503,7 +523,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -540,7 +561,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -577,7 +599,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -614,7 +637,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -651,7 +675,8 @@
       "baseUrl": "https://api.cohere.ai/compatibility/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "evaluation"
+        "evaluation",
+        "payg"
       ],
       "capabilities": {
         "streaming": true

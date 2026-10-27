@@ -31,7 +31,7 @@ try
         Reject(() => ProviderTransportValidation.Prepare(catalog, id, null, route.BaseUrl));
         Reject(() => ProviderTransportValidation.Prepare(catalog, id, route.Id, "https://other.invalid/v1"));
         Reject(() => ProviderTransportValidation.Prepare(catalog, id, route.Id, route.BaseUrl + "/chat/completions"));
-        Reject(() => ProviderTransportValidation.Prepare(catalog, id, route.Id, route.BaseUrl, new Dictionary<string, string> { ["billingPlan"] = "payg" }));
+        if (id == "kilo") Reject(() => ProviderTransportValidation.Prepare(catalog, id, route.Id, route.BaseUrl, new Dictionary<string, string> { ["billingPlan"] = "payg" }));
         Reject(() => accounts.AddApi(repository.Snapshot.Revision, new(id, id, "synthetic-" + id, "https://other.invalid/v1", route.Id)));
         Check(repository.Snapshot.Accounts.Length == (id == "cohere" ? 0 : 1), "Rejected enrollment has no partial account");
         var state = accounts.AddApi(repository.Snapshot.Revision, new(id, id, "synthetic-" + id, route.BaseUrl, route.Id));
@@ -64,7 +64,7 @@ try
     var liquid = kilo.Routes.Single(r => r.Id == "kilo/liquid/lfm-2.5-2.6b:free");
     Check(liquid.Model == "liquid/lfm-2.5-2.6b:free" && !liquid.FreeOnlyEligible && liquid.FreeOnlyEnforcementKind == "unsupported", "Kilo Liquid does not borrow strict OpenRouter eligibility");
     var cohere = catalog.Find("cohere")!;
-    Check(cohere.BillingPlans.Single().Kind == "trial" && cohere.Routes[0].PricingClass == "trial" && cohere.Routes.Skip(1).All(r => r.PricingClass == "paid"), "Evaluation is not permanent free/production access");
+    Check(cohere.BillingPlans.Single(b => b.Id == "evaluation").Kind == "trial" && cohere.BillingPlans.Single(b => b.Id == "payg").Kind == "payg" && cohere.Routes[0].PricingClass == "trial" && cohere.Routes.Skip(1).All(r => r.PricingClass == "paid"), "Evaluation is not permanent free/production access");
 }
 finally { if (Directory.Exists(temporary)) Directory.Delete(temporary, true); }
 Console.WriteLine($"{checks} Cohere/Kilo synthetic catalog, account, policy and compiler assertions passed; no vendor requests.");

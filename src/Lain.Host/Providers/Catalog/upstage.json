@@ -43,6 +43,14 @@
       "expiresAt": null,
       "limits": [],
       "notes": "Official signup offer advertises $10. Granted amount, current balance, expiry and card requirement are unverified; no recurring free API allowance is claimed."
+    },
+    {
+      "id": "payg",
+      "name": "Pay as you go / subscription",
+      "kind": "payg",
+      "scope": "billing-account",
+      "unit": "usd",
+      "notes": "Production access billed per use or by an existing subscription. Prices and entitlement for this account are not read by lain; no purchase is performed."
     }
   ],
   "routes": [
@@ -53,7 +61,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "contextWindow": null,
@@ -110,7 +119,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -159,7 +169,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -208,7 +219,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -257,7 +269,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -306,7 +319,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -355,7 +369,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -404,7 +419,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -453,7 +469,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -502,7 +519,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -551,7 +569,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -600,7 +619,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -649,7 +669,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -698,7 +719,8 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
-        "signup-trial"
+        "signup-trial",
+        "payg"
       ],
       "capabilities": {
         "streaming": true
@@ -800,6 +822,7 @@
       "baseUrl": "https://api.upstage.ai/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
+        "payg",
         "signup-trial"
       ],
       "providerRouteIds": [
