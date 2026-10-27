@@ -9,6 +9,13 @@ zu lesen.
 
 ## Bestätigt
 
+- Releaseentscheidung 27.10.2026: Der erste Release heißt **0.8.0** (ohne
+  Beta-Suffix). Neue Quellen/Pakete entsprechend versionieren; historische
+  Prüfbelege und bereits installierte Versionen nicht umbenennen. Vorherige
+  Vorschläge0.8.0-beta.1 und1.0.0 sind damit für den ersten Release abgelöst.
+  Freiwilliger PayPal-Support auf About und im README verwendet den bestehenden
+  öffentlichen MeowChan-Spendenlink. Keine automatische Zahlungsaufforderung.
+
 - Das Produkt heißt **lain — Local AI Gateway** (Produktbezeichnung am
   24.10.2026 ausdrücklich bestätigt). Der Befehlsname ist `lain`. Der zunächst
   genannte Arbeitstitel/Ordner `multitool` wurde entsprechend umbenannt.
@@ -25,9 +32,21 @@ zu lesen.
   hat den bisherigen Kandidaten im Zuschnitt der Arbeitspakete konkret gewählt.
 - **Hintergrundbetrieb unabhängig von der UI** ist bestätigt: Usage wird weiter
   erfasst und Skills bleiben erreichbar, wenn das Fenster geschlossen ist.
+- Startup request, 27 October 2026: opening Lain should check and start its
+  background service when needed, and distinguish Host availability from Gateway
+  readiness. Login startup/setup should work on Linux, macOS and Windows.
+  The user confirmed background-service startup at sign-in enabled by default
+  during setup; login startup and startup when opening Lain remain independently
+  configurable in Settings.
+  The [lifecycle proposal](startup-and-autostart-work-packages.md) records the
+  current gaps and proposed implementation slices; platform mechanisms and
+  detailed recovery policy are still proposals, not implemented behavior.
 - **Linux zuerst** wird tatsächlich abgenommen; Windows/macOS werden bei der
   Architektur berücksichtigt. Erste echte Zugänge sind **Codex-/ChatGPT-Abo
   und Command Code**.
+- Ergänzung 26.10.2026: Auch für macOS und Windows sind Installer mit CLI
+  gewünscht; native GitHub-Prüfung nach öffentlicher Repositorybereitstellung.
+  [Lieferarbeit und Accountnamensregeln](account-names-and-platform-installers.md).
 - Entwicklung, Tests und paralleler Betrieb von lain sollen den **bestehenden
   persönlichen Proxy unangetastet lassen**. Eigene Prozesse, Ports, Konfiguration,
   Credentialspeicher und Usage-Erfassung sind dafür verbindlich. Gemeinsame
@@ -74,9 +93,96 @@ zu lesen.
 - Anime-/Manga-Referenzen zu Lain und Ghost in the Shell sind gestalterisch
   ausdrücklich erwünscht.
 
+## Product language — confirmed 27 October 2026
+
+Lain is **English-only**. The user explicitly chose English-only after considering
+English-first with German as a secondary language. This applies to first-party
+UI text, CLI help and messages, actionable errors, onboarding, bundled skill
+instructions, examples, and public user documentation, including the README,
+installation guide and release notes. New and revised user-facing copy must use
+consistent English terminology.
+
+The first release does not require a German locale, language selector or
+translation framework. User-entered names, prompts and content remain in the
+user's chosen language; upstream error text is preserved where required for
+diagnosis. Internal planning conversations and historical engineering notes may
+remain German. These notes must not substitute for English user documentation.
+
+This is an accepted product requirement, not a claim that existing content has
+already been translated. Before publishing downloads, review the complete
+installation-to-first-request flow and its failure paths for remaining German
+first-party copy. Keep command names, configuration keys and protocol contracts
+stable unless separately agreed.
+
 ## Aktueller erster Zuschnitt
 
+### Quotaabhängige Auto-Routen, 26.10.2026
+
+Ausdrücklich gewünscht: Auto-Gruppen sollen aktuelle, passende ausgeschöpfte
+Quota-Fenster aus dem vorhandenen Cache berücksichtigen und bei Quota-Ablehnung
+vor Antwortbeginn zum nächsten zulässigen Mitglied wechseln. Dies erweitert die
+bisherige feste Auswahl ohne Fallback. IT Sec erhält GPT-6 Luna als Reserve
+hinter Kimi und GLM. Frische Daten, Reset, Account-/Modellbezug, begrenzte
+Versuche und stabile Ausgabe-/Toolzuordnung sind Teil des
+[fortgeschriebenen Routingvertrags](collection-router-v1.md).
+Kein neuer Kauf, kein ungenehmigter kostenpflichtiger Ersatzanbieter, keine
+Quota-Ableitung aus bloßen lokalen Tokenzahlen. Umsetzung/Abnahme laufen;
+das Speichern von IT Sec in Revision58 ist noch keine Aktivierung des neuen Cores.
+
+### Lizenzentscheidung für 1.0.0, 26.10.2026
+
+Der Nutzer hat für den eigenen Lain-Code ausdrücklich **Artistic License2.0**
+gewählt. `LICENSE` und `NOTICE` halten Text und Geltungsbereich fest.
+Drittanbieterkomponenten behalten ihre Lizenzen. Neue Binärpakete sollen die
+Lizenzhinweise und die exakten eigenen Quellen mitliefern. Der Nutzer hat die
+öffentliche Nutzung des Katzenbilds ausdrücklich bestätigt: Urheber Alexander
+Huxel · Webentwicklung Huxel, mit Link auf
+<https://flickr.com/people/204852984@N05/>. Die Bildfreigabe und Attribution werden
+separat von der Softwarelizenz dokumentiert.
+
+### Reale Modellprüfung vor dem Release, 26.10.2026
+
+Der Nutzer verlangt vor dem Release eine echte Anfrage an jedes konfigurierte
+Modell unter realistischen Bedingungen. Die Abnahme berücksichtigt die konkrete
+Route und Clientdarstellung, projekttypischen Kontext, Tooldefinitionen und
+Toolfortsetzung. Gleichnamige Modelle über verschiedene Zugänge bleiben getrennt.
+Reine Erreichbarkeit, Katalogeinträge und synthetische Proxyantworten ersetzen
+diesen Nachweis nicht. Kontextgrenzen und die gemeldete Grenze von 128 Tools
+werden getrennt geprüft; ein Limit einer Route gilt nicht automatisch für alle.
+
+Der erste begrenzte Durchlauf deckt alle 59 konkreten Modellaliase ab, jedoch
+nur sieben native Funktionstools ohne die vollständige VS-Code-/Pluginoberfläche.
+Ergebnisse, Einschränkungen und weitere Releasearbeit stehen im
+[Live-Prüfbericht](model-live-qualification-2026-10-26.md). Ein bestandener Fall
+qualifiziert seinen konkreten Requestumfang; neue Oberflächen oder größere
+Kontexte benötigen passende weitere Belege.
+
+Der beauftragte Folgeumfang schärft Kimi-auto, Beam-Toolumfang, Cohere und
+unbrauchbare Antworten trotz HTTP 200 nach. Auf die Kontextfrage folgt eine
+explizite projektbezogene Wahl je Workerzweck: `contextMode: "native"` reduziert
+optionale Integrationen und automatische Skillanweisungen für reine Datei-/
+Shellaufgaben; fehlend/null bleibt `inherit`. Projektregeln bleiben erhalten,
+keine globale Abschaltung und kein stiller Kontextfallback. Technischer
+Turnerfolg wird von fachlicher Ergebnisprüfung getrennt. Dies erweitert den
+begrenzten CLI-Runner, nicht die nachgelagerte automatische Aufgabenverteilung.
+[Umsetzung und tatsächliche Nachweise](provider-tool-context-repair-2026-10-26.md).
+
 ### UI-Strukturpräzisierung vom 24.10.2026
+
+Die anschließende ausdrückliche [A/B/C-Auswahl](uxpilot-selection-2026-10-24.md)
+bestätigt Accounts mit einer Inventarspalte und benachbartem Detail: breit bei
+1120×780 ein reserviertes 400-px-Detail, auch schmal bei 800×560 weiterhin
+nebeneinander. Models verwenden Tabelle plus Detailpanel, Usage Ergebnistabelle
+plus Seitendetail. Für den bewusst gewählten kompakten Monitor ist die Tabelle
+aller Quotafenster mit integrierten Verbrauchsbalken gewählt; dies ersetzt dort
+die Kachelansicht, nicht pauschal die Gateway-Accounts. Guthaben ohne Nenner und
+unbekannte Werte erhalten keinen Prozentbalken. Die ausdrückliche Folgeauswahl
+bestätigt lange Balken unter den Zahlen innerhalb dieser Monitortabelle (A),
+eine feste Reviewfläche im Profildetail vor globalem Apply (B) und auch bei
+800×560 eine dauerhafte Requestliste links neben der Liveausgabe (A, Referenz
+200 px). Die Apply-Reviewfläche behält explizite Bestätigung, aktuelle Revision
+und Schutz vor Zielwechseln. Andere Vertiefungsentwürfe bleiben Vorschläge;
+die Designauswahl autorisiert hier keine Produktcodeänderungen.
 
 Der Nutzer bewertet das aktuelle Look and Feel positiv, beanstandet aber die
 doppelte Struktur, insbesondere die identischen Inhalte von Overview und Accounts.
@@ -89,6 +195,15 @@ mit ihrer Darstellung in Codex `/model`. Anbietergruppen entstehen weiterhin
 automatisch. Dies hat der Nutzer am 25.10.2026 ausdrücklich gewählt; Models bleibt
 das Modellinventar. Der aktuelle Anschlussauftrag steht in
 [N05/N06](next-work-packages-2026-10-25.md).
+Am 26.10.2026 hat der Nutzer nach der Planung ausdrücklich die Umsetzung beauftragt, diese gruppierte
+Modellauswahl auch in **Codex innerhalb von VS Code** bereitzustellen. Der
+[VS-Code-Plan](vscode-model-groups-plan-2026-10-26.md) arbeitet den Anschluss
+am bestehenden Dropdown aus. Lokaler Linuxanschluss, Erhalt der nativen
+Modell-/Reasoningauswahl und qualifizierte Installation/Rücknahme sind Teil
+des Auftrags; die laufende Sitzung wird nicht automatisch neu geladen.
+Die separat qualifizierte lokale Variante ist installiert; tatsächlicher Stand,
+Astra-Katalogreparatur und verbleibender Nutzerreload stehen im
+[Lieferbericht](vscode-model-groups-delivery-2026-10-26.md).
 Im anschließenden Sparring bestätigt der Nutzer fünf Hauptbereiche:
 **Accounts als Startseite, Models, Profiles, Usage und Live als Inspector**.
 **Anbieter entdecken** gehört innerhalb von Accounts. Der erste Blick soll
@@ -124,6 +239,43 @@ eigenen Befehl `lain history`. Explizit gefilterte bisherige Aufrufe wie
 Eine eigenständig im Browser nutzbare HTML-Datei sammelt belegte
 Referralprogramme, Bedingungen und offizielle Quellen; weitere relevante
 Anbieter werden separat recherchiert, ohne sie damit bereits zu integrieren.
+
+Für den weiteren Anbieterausbau bestätigt der Nutzer am 24.10.2026: breite,
+sinnvolle Auswahl und persönlich bezahlbare Integrationstests; keine Sammlung
+teurer Testaccounts. Mit Empfehlungen möchte der Entwickler möglichst selbst
+Geld oder nutzbares Anbieterguthaben erhalten; ein günstigerer Nutzereinstieg
+ist zusätzlich erwünscht. Konkretes Budget, Referralplatzierung und automatische
+Zuordnung sind noch nicht beschlossen. Die
+[priorisierten Arbeitspakete](provider-integration-work-packages-2026-10-24.md)
+sind ein Vorschlag, kein Implementierungs- oder Kaufauftrag. Die
+[zusätzliche Referralprüfung](provider-referrals-expansion-2026-10-24.md)
+trennt Geld, Credits, Aborabatt und Förderangebote.
+
+Weitere bestätigte Präzisierung: **Anbieter sollen modular und einfach ergänzbar
+sein.** Pro Anbieter werden Arbeitspakete mit Ergebnis, fehlenden Zugängen/
+Berechtigungen und optionalen eigenen Referrallinks geführt. Gateway, Monitor,
+externe History und Referral haben getrennte Voraussetzungen; ein fehlender
+Referrallink soll die technische Vorbereitung nicht blockieren. Das
+[Anbieterregister](provider-work-packages/README.md) enthält die Pakete und den
+am Bestand geprüften Vorschlag für den modularen Ausbau. Die konkrete technische
+Registrierungs-/Pluginform ist damit noch nicht gewählt.
+
+Nach den ersten Anbieteranmeldungen präzisiert der Nutzer: fehlende Anschlüsse
+als parallel bearbeitbare Pakete an den Main-Implementor übergeben; die
+[konkrete Folgeübergabe](provider-work-packages/parallel-handoff.md) trennt neue
+Gateways, Quotaquellen, Auth und gemeinsame Einrichtung. Accountzugänge sollen
+privat über die UI oder einen CLI-Wizard hinzugefügt werden können, ohne Tokens
+im Chat weiterzugeben. Standardnamen sollen kurz und verständlich sein; eigene
+Namen und bestehende Accountidentitäten bleiben erhalten.
+
+Die Quotaansicht soll mehr belastbare Quellen erschließen und fehlende
+Unterstützung verständlich von Abruffehlern trennen. Insbesondere soll geprüft
+werden, ob zusätzliche OAuthzugänge, Leserechte oder Managementtokens Werte
+liefern, die ein gewöhnlicher Inferenzkey nicht zugänglich macht; geeignete
+belegte Wege sollen ergänzt werden. Ein OAuthweg für NVIDIA oder Cloudflare ist
+damit noch nicht nachgewiesen. Technische Ausgestaltung und Credentialmodell
+werden am konkreten offiziellen Zugang zugeschnitten. Beobachtete Header,
+externe Quota-/Usagewerte und lokale Proxyhistorie bleiben unterscheidbar.
 
 ### Optionaler Betrieb ohne lokalen Proxy
 
@@ -188,6 +340,16 @@ die umfassende Kontingentoptimierung ist ausdrücklich nachgelagert.
 
 ## Noch zu entscheiden
 
+Der am 26.10.2026 ausdrücklich zur Umsetzung beauftragte erste Workerumfang
+konkretisiert die bisher vorgeschlagene Skill-Bibliothek: versionierte
+Projektregeln, erlaubte Routen je Zweck und begrenzte Batches ausdrücklich
+vorgegebener Teilaufgaben. Automatische Zerlegung, dynamische Verteilung und
+Quota-/Kostenoptimierung folgen später. Der konkrete Vertrag und seine
+technischen Grenzen stehen in [workers-v1.md](workers-v1.md); Sourceänderungen
+und tatsächlich ausgeführte Prüfungen im [Lieferbericht](release-workers-2026-10-26.md).
+Die gewünschte Produktbezeichnung bleibt `lain:workers`; der eigenständige
+Codexskill heißt technisch `lain-workers`.
+
 - Welche konkreten Clientbuilds qualifiziert der erste Nachweis? Codex CLI ist
   als erster Referenz-Harness vorgeschlagen; weitere Harnesse folgen demselben Vertrag.
 - Gewählter CLIProxyAPI-Build und dauerhafter Usage-Anschluss samt Accountidentität
@@ -197,9 +359,20 @@ die umfassende Kontingentoptimierung ist ausdrücklich nachgelagert.
 - Linux-Installation, Update-/Rückwechselverfahren und spätere Betriebssystemadapter.
 - Prioritäten einer späteren Auswahlregel: Qualität, erste Partei, verfallendes
   Kontingent, Kosten, Latenz; erlaubte Modellwechsel und Fortsetzungsgrenzen.
-- Lizenz/Veröffentlichungsform des eigenen Produkts.
+- Öffentlicher Veröffentlichungskanal und Client-Lieferform; die eigene Lizenz
+  ist inzwischen als Artistic-2.0 festgelegt (oben).
 
 Der ursprüngliche Auftrag umfasste Repositoryeinrichtung, Bestandsaufnahme und
 Sparring. Die danach ausdrücklich beauftragte Implementierung und Erweiterung
 sind in den oben verlinkten aktuellen Unterlagen dokumentiert. Die neue
 UI-Strukturprüfung ist zunächst Sparring, kein Auftrag zur Veröffentlichung.
+
+## Native OpenAI-Usage innerhalb von Lain (26.10.2026)
+
+Ausdrücklich bestätigt: Die originale Codex-`/usage` soll direkt in einer
+Lain-Sitzung die native OpenAI-/ChatGPT-Nutzung anzeigen. Kein separates
+OpenAI-Profil erforderlich; andere Anbieter bleiben in `lain usage`.
+Die native ChatGPT-Anmeldung und Lains Inferenzauthentifizierung sind unabhängig.
+Die Kontingentanzeige darf weder den Inferenzprovider noch dessen Zugang ändern.
+Der Nutzer hat den nativen ChatGPT-Login selbst erfolgreich durchgeführt.
+Implementierungs-/Lieferstand: [native-openai-usage-delivery-2026-10-26.md](native-openai-usage-delivery-2026-10-26.md).

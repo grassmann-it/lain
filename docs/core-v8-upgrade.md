@@ -1,88 +1,85 @@
-# CLIProxyAPI v8.0.41: Upgrade und externe Abhängigkeit
+# CLIProxyAPI v8.0.41: upgrade and external dependency
 
-Der Nutzer hat am 24.10.2026 das direkte Upgrade beauftragt: möglichst unveränderte
-CLIProxyAPI-Software verwenden und bestehende lain-Funktionen erhalten. Damit ist
-die v7-Pinnung der ersten Lieferung für diesen Folgeauftrag aufgehoben.
+On 24 October 2026 the user commissioned a direct upgrade: use CLIProxyAPI with
+as few changes as possible and preserve existing lain features. This supersedes
+the first delivery's v7 pin for that follow-up task.
 
-## Implementierung
+## Implementation
 
-CLIProxyAPI wird aus dem offiziellen, gehashten v8.0.41-Modularchiv mit Commit
-`8289ec4c71ad914d0612c2776352b76ba3d355a6` bezogen. Der vollständige vendorte
-Quellbaum entfällt. `proxy/adapter` enthält den eigenen Launcher, Accountbindungen,
-das dauerhafte Journal, den begrenzten Inspector und die Login-Eigentumsregeln.
-Providerimplementierungen und Protokollübersetzung kommen weiter aus CLIProxyAPI.
+CLIProxyAPI is obtained from the official hashed v8.0.41 module archive at commit
+`8289ec4c71ad914d0612c2776352b76ba3d355a6`. The complete vendored source tree is
+removed. `proxy/adapter` contains Lain's launcher, account bindings, durable
+journal, bounded Inspector, and login ownership rules. Provider implementations
+and protocol translation still come from CLIProxyAPI.
 
-Ein unverändertes offizielles Binary kann die vorhandenen Garantien nicht liefern:
-Usage gelangt zunächst in eine RAM-Queue; Executorregistrierung, Feldanwesenheit
-und einige bestehende Transportparameter benötigen zusätzliche Hooks. Diese
-Erweiterungen werden offen als Patchdateien geführt. Das Buildmanifest trägt
-`upstreamSourceModified: true`; der Upstream-Modulcache bleibt unverändert.
-Die genaue Abgrenzung steht in [proxy/README.md](../proxy/README.md), Herkunft und
-Dateihashes in [proxy/upstream.json](../proxy/upstream.json).
+An unchanged official binary cannot supply existing guarantees: usage initially
+enters a RAM queue; executor registration, field presence, and some existing
+transport parameters require additional hooks. These extensions are openly
+maintained as patch files. The build manifest records
+`upstreamSourceModified: true`; the upstream module cache remains unchanged.
+Exact boundaries are in [proxy/README.md](../proxy/README.md), provenance and file
+hashes in [proxy/upstream.json](../proxy/upstream.json).
 
-Die Host-Produktionsquellen brauchen für dieses Upgrade keine Änderung. Seine
-Startflags, `/lain/*`-Schnittstellen und das Journalformat bleiben erhalten.
-Die Auslieferung ersetzt ausschließlich Core, Go-Lizenznachweise und begrenzte
-Core-Provenienz/Metadaten. Host, CLI, Desktop, Konfiguration, Secrets und offene
-Profiländerungen behalten ihren Stand.
+Host production sources need no change for this upgrade. Startup flags,
+`/lain/*` interfaces, and journal format remain. Delivery replaces only Core,
+Go license evidence, and bounded Core provenance/metadata. Host, CLI, Desktop,
+configuration, secrets, and pending profile changes retain their state.
 
-Eine bewusst geschlossene Nebenfunktion ist native serverseitige Bildgenerierung:
-Ihr zusätzlicher modellbezogener Usage-Datensatz passte schon im v7-Stand nicht in
-den qualifizierten Ein-Versuch-/Primärusage-Vertrag. Explizite native Bildtools
-werden deshalb vor Versand klar abgewiesen, automatische Injektion deaktiviert
-und Payload-Overrides am letzten HTTP-Sendepunkt geprüft. Normale Function-Tools
-und Bildeingaben zur Analyse bleiben erhalten. Das ist eine transparente
-Einschränkung des zuvor ungeprüften Pfads, keine behauptete neue Bildunterstützung.
+One deliberately closed side feature is native server-side image generation:
+its additional model-specific usage record already conflicted with the qualified
+single-attempt/primary-usage contract in v7. Explicit native image tools are
+therefore clearly rejected before sending, automatic injection is disabled,
+and payload overrides are checked at the final HTTP send point. Ordinary function
+tools and image inputs for analysis remain supported. This is a transparent
+restriction of a previously untested path, not a claim of new image support.
 
-## Abnahme
+## Acceptance
 
-Der Core ist installiert und nach kontrolliertem lain-Neustart abgenommen.
-Auslieferungsquelle: `734d7471703054496e7dc0361c4990bab38f6afd`.
-Binary-SHA-256:
+The Core was installed and accepted after a controlled lain restart.
+Delivery source: `734d7471703054496e7dc0361c4990bab38f6afd`.
+Binary SHA-256:
 `e39e141daaca6c1946d93866e4d67e93651a07ff9664edf03078d4a9c49b6fe6`.
-Source-Manifest-SHA-256:
+Source manifest SHA-256:
 `c5ff7548dcf72a0dd40b9c9a389799303bd7efebb7d1d30835aec13b1349d0cb`.
 
-| Getrennte Prüfung | Ergebnis |
+| Separate check | Result |
 | --- | --- |
-| Adapter-/Hookregressionen und unabhängiges Quellenreview | 69 Adaptertests; fünf gezielte Upstream-Testfälle einschließlich Subtests; keine offenen Befunde im geprüften Hookumfang. Zwei unabhängig vorbereitete Builds samt Sidecars bytegleich. |
-| Unabhängige Runtime | Alle acht Gruppen bestanden: Protokolle/Dauerhaftigkeit, Auth/Crash, Inspector, Upgradegrenzen, native Toolgrenze, Hostwriter, Versionswechsel, SQLite-Replay. Nur privater Loopback-Namespace und synthetische Anbieter. |
-| Vollständiges Journal zehnmal durch echten SQLite-Consumer | 200 Requests, 200 Versuche, 3.600 Tokens, zwei Accounts, Cursor 600; unbekannte Cache-/Reasoningmengen bleiben null. |
-| v7→v8→v7 | Alte Bytes, Ereignisse und Source-ID unverändert; neue Sequenzen schließen an. Gemischtes Journal zehnmal: vier Requests/Versuche und 72 Tokens. Kein echter Datenstand für den Test kopiert. |
-| Frischer Linux-Paketbau | Echter `publish-linux.sh`-Lauf, 59 gelinkte Go-Module ohne fehlende Root-Lizenznachweise, 40 NuGet-/Runtimepakete. Eigenständige frische App-Builds wurden nicht installiert oder pauschal releasequalifiziert. |
-| Core-only-Installer | Exaktes Paket auf vollständiger privater Appkopie; absichtlicher Fehler nach zwei Swaps stellt alle ursprünglichen Bytes wieder her. Anschließende Installation entspricht dem vollständigen Paketmanifest. |
-| Echte Installation | Zusammengehöriges App-/Statebackup im gestoppten Zustand; ausschließlich lain gestoppt/gestartet. Fünf Accounts, 45 aktive Modellaliase, Revision 4/2, bestehende Credentials und Runtime unverändert. Journalbytes/Source-ID und Historie mit 81.986 Tokens/Cursor 2 erhalten. |
-| Installierte UI/CLI | 166 Prüfungen der unveränderten Desktopassemblies gegen den aktualisierten Dienst auf privatem Xvfb. CLI aus `/tmp`: 20 kompakte gegenüber 99 vollständigen Zeilen, identisches JSON, unveränderte historische Zahlen. |
-| Isolation | Persönlicher Proxydienst samt geschützten Dateien, normale Codex-Konfiguration, separate lain-Clientintegration, Icon und UI-Präferenzen unverändert. Keine echte Inferenz ausgelöst. |
+| Adapter/hook regressions and independent source review | 69 adapter tests; five targeted upstream cases including subtests; no open findings within the reviewed hook scope. Two independently prepared builds and sidecars were byte-identical. |
+| Independent runtime | All eight groups passed: protocols/durability, auth/crash, Inspector, upgrade boundaries, native tool boundary, Host writer, version switching, SQLite replay. Only private loopback namespace and synthetic providers. |
+| Complete journal through real SQLite consumer ten times | 200 requests, 200 attempts, 3,600 tokens, two accounts, cursor 600; unknown cache/reasoning quantities remain null. |
+| v7→v8→v7 | Old bytes, events, and source ID unchanged; new sequences continue. Mixed journal ten times: four requests/attempts and 72 tokens. No real state copied for the test. |
+| Fresh Linux package build | Actual `publish-linux.sh` run, 59 linked Go modules with no missing root license evidence, 40 NuGet/runtime packages. Fresh independent application builds were not installed or given blanket release qualification. |
+| Core-only installer | Exact package on a complete private app copy; intentional failure after two swaps restores all original bytes. Subsequent installation matches the complete package manifest. |
+| Real installation | Consistent app/state backup while stopped; only lain stopped/started. Five accounts, 45 active model aliases, revision 4/2, existing credentials and runtime unchanged. Journal bytes/source ID and history with 81,986 tokens/cursor 2 preserved. |
+| Installed UI/CLI | 166 checks of unchanged Desktop assemblies against updated service on private Xvfb. CLI from `/tmp`: 20 compact versus 99 full lines, identical JSON, unchanged historical numbers. |
+| Isolation | Personal proxy service and protected files, normal Codex configuration, separate lain client integration, icon, and UI preferences unchanged. No real inference triggered. |
 
-Der vollständige vendorte Baum mit 1.476 Dateien entfällt. Die zwei expliziten
-Patches betreffen 16 Upstreampfade; 576 Patchzeilen enthalten auch die zugehörigen
-Regressionstests. Die Paketprovenienz bewahrt ursprüngliche App-Pins und frühere
-Gatebelege; nur Core/Go-Notices und ausdrücklich begrenzte Metadaten wurden ersetzt.
+The complete vendored tree of 1,476 files is removed. Two explicit patches affect
+16 upstream paths; 576 patch lines also include associated regression tests.
+Package provenance preserves original app pins and earlier gate evidence;
+only Core/Go notices and explicitly bounded metadata were replaced.
 
-Private zusammengehörige Sicherung:
+Private consistent backup:
 `~/.local/share/lain/upgrade-backups/core-v8-20261024T142030Z`.
-Das abschließend geprüfte Paket liegt unter
-`artifacts/lain-linux-x64-0.1.0-core-v8-20261024.tar.gz`; sämtliche 1.205 Dateien
-entsprechen der versiegelten Installation. `releaseQualified` und
-`coreRefreshQualified` sind für genau diesen Stand gesetzt.
-Keine Datenbankmigration war nötig. Der Versionsrollback wurde synthetisch gelesen;
-eine tatsächliche Rückkehr der Benutzerinstallation wurde nicht ausgeführt.
+The finally verified package is at
+`artifacts/lain-linux-x64-0.1.0-core-v8-20261024.tar.gz`; all 1,205 files match the
+sealed installation. `releaseQualified` and `coreRefreshQualified` are set for
+exactly that state. No database migration was needed. Version rollback was
+checked synthetically; the user's installation was not actually reverted.
 
-Belege: [Quell-/Unitgates](../tests/acceptance/evidence/core-v8-source.json),
-[unabhängige Runtime](../tests/acceptance/evidence/core-v8/acceptance.json),
-[frischer Paketbau](../tests/acceptance/evidence/core-v8-fresh-package.json),
-[Installer](../tests/acceptance/evidence/core-v8-installer.json),
-[Installation](../tests/acceptance/evidence/core-v8-installed.json),
+Evidence: [source/unit gates](../tests/acceptance/evidence/core-v8-source.json),
+[independent runtime](../tests/acceptance/evidence/core-v8/acceptance.json),
+[fresh package build](../tests/acceptance/evidence/core-v8-fresh-package.json),
+[installer](../tests/acceptance/evidence/core-v8-installer.json),
+[installation](../tests/acceptance/evidence/core-v8-installed.json),
 [UI](../tests/acceptance/evidence/core-v8-installed-ui.json),
 [CLI](../tests/acceptance/evidence/core-v8-cli.json),
-[finaler Lieferbeleg](../tests/acceptance/evidence/core-v8-release-final.json).
+[final delivery evidence](../tests/acceptance/evidence/core-v8-release-final.json).
 
-Ausführbare Matrix: [Backendqualifikation](backend-upgrade-qualification.md).
-Staging-/Installationsvertrag: [Core-only-Auslieferung](core-upgrade-delivery.md).
+Executable matrix: [backend qualification](backend-upgrade-qualification.md).
+Staging/installation contract: [Core-only delivery](core-upgrade-delivery.md).
 
-Neue Upstreamfeatures sind durch einen Versionswechsel nicht automatisch in lain
-freigeschaltet oder live qualifiziert. Der bestehende Endpointumfang bleibt
-bestehen. Reale OAuth-Rotation, neue Anbieterzugänge und neue Upstreamfähigkeiten
-brauchen gesonderte Nachweise. Der persönliche Bestandsproxy und seine Queue
-gehören nicht zu den Upgradeprüfungen.
+A version change does not automatically enable or live-qualify new upstream
+features in lain. Existing endpoint scope remains. Real OAuth rotation, new
+provider access, and new upstream capabilities require separate evidence.
+The personal existing proxy and its queue are outside upgrade verification.

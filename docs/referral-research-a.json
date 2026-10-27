@@ -3,15 +3,15 @@
     "provider": "OpenAI / Codex",
     "id": "codex",
     "status": "public_referral",
-    "benefit": "Angebotsabhängige Nutzungsvorteile, etwa Nutzungsguthaben, ein Limit-Reset oder zusätzliche Nutzung; kein allgemein zugesagter Geldbetrag.",
+    "benefit": "Offer-dependent usage benefits, such as usage credits, a limit reset or additional usage; no generally promised cash amount.",
     "eligibility": [
-      "Nur berechtigte Konten mit einem angezeigten Einladungsangebot; Verfügbarkeit hängt von Tarif, Workspace, Region und Aktion ab.",
-      "Der eingeladene Nutzer muss das Angebot annehmen und die darin geforderte Handlung abschließen; diese kann Chat, Work oder Codex betreffen."
+      "Only eligible accounts shown an invitation offer; availability depends on plan, workspace, region and promotion.",
+      "The invited user must accept the offer and complete the required action, which may involve Chat, Work or Codex."
     ],
     "limitations": [
-      "Maßgeblich sind Prämie, Voraussetzungen, Obergrenzen und Ablaufdatum im konkreten Einladungsdialog.",
-      "Guthaben sind nicht automatisch API-Guthaben und grundsätzlich nicht auszahlbar, übertragbar oder verkäuflich.",
-      "Selbsteinladungen und Mehrfachkonten qualifizieren nicht; Enterprise ist laut Preisübersicht derzeit nicht enthalten."
+      "The reward, requirements, caps and expiration date in the specific invitation dialog are authoritative.",
+      "Credits are not automatically API credits and generally cannot be cashed out, transferred or sold.",
+      "Self-referrals and multiple accounts do not qualify; Enterprise is currently excluded according to the pricing overview."
     ],
     "officialSources": [
       { "label": "ChatGPT Desktop referral promotions", "url": "https://help.openai.com/en/articles/20001271-chatgpt-desktop-referral-promotions" },
@@ -20,8 +20,8 @@
     ],
     "checkedAt": "2026-10-24",
     "notes": [
-      "Öffentlich dokumentierte In-App-Referrals; kein hier belegtes allgemeines Codex- oder API-Affiliateprogramm mit Barauszahlung.",
-      "Ein eigener Link setzt die tatsächliche Freischaltung im eigenen Konto voraus. Frühere zeitlich begrenzte Free-Kampagnen sind kein Nachweis einer heutigen Berechtigung."
+      "Publicly documented in-app referrals; no general Codex or API affiliate program with cash payouts is established here.",
+      "A personal link requires actual access to the offer in your account. Earlier limited-time Free campaigns do not establish current eligibility."
     ]
   },
   {
@@ -29,104 +29,104 @@
     "id": "commandcode",
     "status": "not_confirmed",
     "benefit": null,
-    "eligibility": ["Keine konkreten Teilnahmevoraussetzungen eines aktuellen öffentlichen Referral- oder Affiliateprogramms bestätigt."],
-    "limitations": ["Die Nutzungsbedingungen erwähnen mögliche Referral-Boni unter zeitlich begrenzten Aktionen, nennen aber kein aktuell nutzbares Programm mit Prämie, Bedingungen und Einstieg."],
+    "eligibility": ["No specific eligibility requirements for a current public referral or affiliate program confirmed."],
+    "limitations": ["The terms mention possible referral bonuses under limited-time promotions but do not identify a currently usable program with rewards, terms and an entry point."],
     "officialSources": [
-      { "label": "Command Code: Nutzungsbedingungen", "url": "https://commandcode.ai/terms" },
-      { "label": "Command Code: Preise", "url": "https://commandcode.ai/pricing" },
+      { "label": "Command Code: Terms of use", "url": "https://commandcode.ai/terms" },
+      { "label": "Command Code: Pricing", "url": "https://commandcode.ai/pricing" },
       { "label": "Command Code", "url": "https://commandcode.ai/" }
     ],
     "checkedAt": "2026-10-24",
     "notes": [
-      "Öffentliche Website, Preisseite, Bedingungen und Sitemap geprüft; die bloße Erwähnung möglicher Referral-Boni reicht nicht als Programmbeleg.",
-      "Nicht bestätigt bedeutet nicht, dass kein kontobezogenes oder später gestartetes Angebot existiert."
+      "Public website, pricing page, terms and sitemap checked; merely mentioning possible referral bonuses is insufficient evidence of a program.",
+      "Unconfirmed does not mean that no account-specific or subsequently launched offer exists."
     ]
   },
   {
     "provider": "Z.ai / GLM",
     "id": "zai",
     "status": "public_referral",
-    "benefit": "Einladender: 10 % der ersten tatsächlichen Zahlung als Plattform-Credits; Eingeladener: 10 % Rabatt auf die erste GLM-Coding-Bestellung. Je 30 gültige Empfehlungen zusätzlich 10 % ihrer gemeinsamen Erstzahlungen als Credits.",
+    "benefit": "Referrer: 10 % of the first actual payment as platform credits; invitee: 10 % off the first GLM Coding order. Every 30 valid referrals earn an additional 10 % of their combined first payments as credits.",
     "eligibility": [
-      "Eingeladene sind neue Nutzer oder bestehende Nutzer ohne bisherige bezahlte Mitgliedschaft.",
-      "Erster GLM-Coding-Abschluss innerhalb von 72 Stunden nach Zuordnung über Link oder Code. Bei mehreren gültigen Verweisen gilt der letzte.",
-      "Auszahlung der Credits wird erst mit drei gültigen zahlenden Empfehlungen freigeschaltet; die ersten drei werden dann gemeinsam berücksichtigt."
+      "Invitees must be new users or existing users with no previous paid membership.",
+      "The first GLM Coding purchase must be completed within 72 hours of attribution through a link or code. If multiple valid referrals exist, the last one applies.",
+      "Credit disbursement is unlocked only after three valid paying referrals; the first three are then counted together."
     ],
     "limitations": [
-      "Keine Barauszahlung oder Übertragung; Credits sind für Abos, Ressourcenpakete und API-Nutzung verwendbar.",
-      "Rabatt gilt nicht für Verlängerung, Upgrade oder Downgrade und ist nicht mit gleichartigen Erstbestellungsangeboten kombinierbar; Mindestzahlung bei Stripe 0,50 USD.",
-      "Missbräuchliche und eigene Mehrfachkonten sind ausgeschlossen; Anbieter kann Regeln ändern."
+      "No cash payout or transfer; credits can be used for subscriptions, resource packages and API usage.",
+      "The discount does not apply to renewals, upgrades or downgrades and cannot be combined with similar first-order offers; minimum Stripe payment is 0.50 USD.",
+      "Abusive accounts and multiple accounts belonging to the same person are excluded; the provider may change the rules."
     ],
     "officialSources": [
       { "label": "GLM Coding: Credit campaign rules", "url": "https://docs.z.ai/devpack/credit-campaign-rules" },
-      { "label": "GLM Coding: Abonnement-Einstieg", "url": "https://z.ai/subscribe" }
+      { "label": "GLM Coding: Subscription signup", "url": "https://z.ai/subscribe" }
     ],
     "checkedAt": "2026-10-24",
     "notes": [
-      "Regelseite zuletzt mit 15. März 2026 datiert. Es handelt sich um Plattform-Credits, nicht um eine auszahlbare Affiliateprovision.",
-      "Ältere kurzfristige Sonderaktionen werden nicht als aktuelle Regel übernommen."
+      "The rules page was last dated March 15, 2026. These are platform credits, not a cash-redeemable affiliate commission.",
+      "Earlier short-term special promotions are not treated as current rules."
     ]
   },
   {
     "provider": "Kimi / Moonshot AI",
     "id": "kimi",
     "status": "public_referral",
-    "benefit": "Nach erfolgreichem Erstabo erhalten beide Beteiligten je eine Gewinnchance auf Guthaben im Gegenwert von Kimi-Go-Mitgliedschaftsleistungen; kein garantierter fester Gutscheinwert.",
+    "benefit": "After a successful first subscription, both participants each receive a chance to win credits equivalent to Kimi Go membership benefits; no guaranteed fixed voucher value.",
     "eligibility": [
-      "Für persönliche Kimi-Nutzer; Einladungsbereich im Konto bzw. auf der Aktionsseite.",
-      "Freund bestätigt die Zuordnung über Link oder QR-Code und bezahlt innerhalb von 24 Stunden ein qualifizierendes erstes Abonnement."
+      "For personal Kimi users; invitation area in the account or on the promotion page.",
+      "The friend confirms attribution through a link or QR code and pays for a qualifying first subscription within 24 hours."
     ],
     "limitations": [
-      "Nur die erste erfolgreiche Mitgliedschaft je Freund zählt, zugerechnet zum ersten Einladenden; keine weiteren Chancen durch Verlängerung oder Upgrade.",
-      "Enterprise-Konten ausgeschlossen; die frühere Aufgabe für reine Registrierungen ist beendet.",
-      "Gewinne sind Guthaben statt einer garantierten Mitgliedschaftsdauer, nicht übertragbar oder auszahlbar; aktuelle Regeln nennen den 31. Dezember 2026 als Gültigkeitsende, maßgeblich ist die Anzeige unter My Prizes."
+      "Only the first successful membership per friend counts, attributed to the first referrer; renewals or upgrades provide no additional chances.",
+      "Enterprise accounts are excluded; the earlier task for registrations alone has ended.",
+      "Prizes are credits rather than a guaranteed membership duration and cannot be transferred or cashed out; current rules specify December 31, 2026 as the expiration date, with the display under My Prizes authoritative."
     ],
     "officialSources": [
-      { "label": "Moon Companion Plan: offizielle Aktionsregeln", "url": "https://www.kimi.com/en/help/kimi-blackboard/moon-companion-plan" }
+      { "label": "Moon Companion Plan: Official promotion rules", "url": "https://www.kimi.com/en/help/kimi-blackboard/moon-companion-plan" }
     ],
     "checkedAt": "2026-10-24",
     "notes": [
-      "Regeln gelten seit 20. September 2026. Das Programm betrifft Kimi-Mitgliedschaften; daraus folgt kein Moonshot-API-Affiliateprogramm.",
-      "Die ähnlich benannte Website moonshot.com ist keine Quelle für Moonshot AI."
+      "The rules have applied since September 20, 2026. The program concerns Kimi memberships; it does not establish a Moonshot API affiliate program.",
+      "The similarly named website moonshot.com is not a source for Moonshot AI."
     ]
   },
   {
     "provider": "Xiaomi MiMo",
     "id": "xiaomi-mimo",
     "status": "public_referral",
-    "benefit": "Eingeladener: 10 % Rabatt beim ersten qualifizierenden Token-Plan-Kauf. Einladender: 10 % des Zahlbetrags als API-Guthaben; bestimmte höhere Abos erhalten 20 %.",
+    "benefit": "Invitee: 10 % off the first qualifying Token Plan purchase. Referrer: 10 % of the payment as API credits; certain higher subscriptions receive 20 %.",
     "eligibility": [
-      "Registrierte Nutzer können ihren persönlichen Link oder Code teilen. Neue Nutzer müssen ihn innerhalb von drei Tagen nach Registrierung zuordnen.",
-      "Der erste bezahlte Token Plan muss innerhalb von 30 Tagen nach Zuordnung gekauft werden; reine API-Aufladungen zählen nicht."
+      "Registered users can share their personal link or code. New users must associate it within three days of registration.",
+      "The first paid Token Plan must be purchased within 30 days of attribution; API top-ups alone do not count."
     ],
     "limitations": [
-      "Standardmäßig höchstens 30 zahlende Empfehlungen; Standard-Jahresabo, Pro-Jahresabo und alle Max-Laufzeiten erhalten 20 % ohne diese 30er-Grenze.",
-      "Guthaben wird drei Tage nach Zahlung vergeben und gilt 40 Tage: nur API-Nutzung, keine Token-Plan-Bezahlung, keine Barauszahlung oder Übertragung.",
-      "Ein vorheriger kostenloser Token Plan von mindestens einem Monat schließt die Einladungsvorteile aus; Rückerstattungen machen die Prämie ungültig.",
-      "Bloße Zuordnung des Codes löst keine hier belegte Sofortprämie aus."
+      "By default, a maximum of 30 paying referrals; Standard annual, Pro annual and all Max subscription durations receive 20 % without this 30-referral cap.",
+      "Credits are awarded three days after payment and remain valid for 40 days: API usage only, no Token Plan payments, cash payout or transfer.",
+      "A previous free Token Plan lasting at least one month excludes invitation benefits; refunds invalidate the reward.",
+      "Merely associating the code does not trigger any immediate reward established here."
     ],
     "officialSources": [
       { "label": "MiMo: Promotions FAQ", "url": "https://mimo.mi.com/docs/en-US/quick-start/faq/promotions" },
       { "label": "MiMo: Refer friends", "url": "https://mimo.mi.com/docs/en-US/quick-start/promotions/refer" }
     ],
     "checkedAt": "2026-10-24",
-    "notes": ["Die aktuelle FAQ ist maßgeblich; historische Anmeldeaktionen mit sofortigem Startguthaben werden nicht übernommen."]
+    "notes": ["The current FAQ is authoritative; historical signup promotions with immediate starting credits are not carried forward."]
   },
   {
     "provider": "OpenRouter",
     "id": "openrouter",
     "status": "not_confirmed",
     "benefit": null,
-    "eligibility": ["Kein öffentlich dokumentiertes allgemeines Referral- oder Affiliateprogramm mit überprüfbaren Bedingungen gefunden."],
-    "limitations": ["Öffentliche Support- und Dokumentationsquellen belegen keine Referral-Prämie; Inferenzanbieter-Onboarding ist kein Kunden-Affiliateprogramm."],
+    "eligibility": ["No publicly documented general referral or affiliate program with verifiable terms found."],
+    "limitations": ["Public support and documentation sources do not establish a referral reward; inference-provider onboarding is not a customer affiliate program."],
     "officialSources": [
       { "label": "OpenRouter: Support", "url": "https://openrouter.ai/support" },
-      { "label": "OpenRouter: offizieller Dokumentationsindex", "url": "https://openrouter.ai/docs/llms.txt" }
+      { "label": "OpenRouter: Official documentation index", "url": "https://openrouter.ai/docs/llms.txt" }
     ],
     "checkedAt": "2026-10-24",
     "notes": [
-      "Suche auf offizieller Domain sowie Support und Dokumentationsindex geprüft; fehlender öffentlicher Nachweis ist kein Beweis für das Nichtbestehen eines privaten Angebots.",
-      "Ähnlich benannte Fremddomains werden nicht als OpenRouter-Programmbeleg verwendet."
+      "Official-domain search, support and documentation index checked; lack of public evidence does not prove that no private offer exists.",
+      "Similarly named third-party domains are not used as evidence of an OpenRouter program."
     ]
   },
   {
@@ -134,25 +134,25 @@
     "id": "requesty",
     "status": "not_confirmed",
     "benefit": null,
-    "eligibility": ["Kein öffentlich dokumentiertes allgemeines Referral- oder Affiliateprogramm mit überprüfbaren Bedingungen gefunden."],
-    "limitations": ["Mitgliedereinladungen in der Teamverwaltung belegen kein vergütetes Empfehlungsprogramm."],
+    "eligibility": ["No publicly documented general referral or affiliate program with verifiable terms found."],
+    "limitations": ["Member invitations in team management do not establish a paid referral program."],
     "officialSources": [
       { "label": "Requesty: Support", "url": "https://www.requesty.ai/support" },
-      { "label": "Requesty: offizieller Dokumentationsindex", "url": "https://docs.requesty.ai/llms.txt" },
+      { "label": "Requesty: Official documentation index", "url": "https://docs.requesty.ai/llms.txt" },
       { "label": "Requesty", "url": "https://www.requesty.ai/" }
     ],
     "checkedAt": "2026-10-24",
-    "notes": ["Öffentliche Website, Support und Dokumentationsindex geprüft. Ohne konkrete offizielle Konditionen werden weder Prämien noch Teilnahmeberechtigung behauptet."]
+    "notes": ["Public website, support and documentation index checked. Without specific official terms, neither rewards nor eligibility are claimed."]
   },
   {
     "provider": "Poe",
     "id": "poe",
     "status": "not_confirmed",
     "benefit": null,
-    "eligibility": ["Kein aktuelles allgemeines Provider-Referral- oder Affiliateprogramm mit überprüfbaren öffentlichen Bedingungen bestätigt."],
+    "eligibility": ["No current general provider referral or affiliate program with verifiable public terms confirmed."],
     "limitations": [
-      "Poe dokumentiert Creator-Monetarisierung für Nachrichten an eigene veröffentlichte Bots. Dafür reicht ein allgemeiner Poe-Empfehlungslink nicht aus.",
-      "Die Einladung weiterer Mitglieder in ein vorhandenes Abonnement ist ebenfalls kein Nachweis einer Referral-Prämie."
+      "Poe documents creator monetization for messages to personally published bots. A general Poe referral link is insufficient for this.",
+      "Inviting additional members to an existing subscription also does not establish a referral reward."
     ],
     "officialSources": [
       { "label": "Poe: Creator Monetization FAQ", "url": "https://help.poe.com/hc/en-us/articles/21921312368020-Poe-Creator-Monetization-FAQs" },
@@ -160,7 +160,7 @@
       { "label": "Poe: Purchases FAQ", "url": "https://help.poe.com/hc/en-us/articles/19945140063636-Poe-Purchases-FAQs" }
     ],
     "checkedAt": "2026-10-24",
-    "notes": ["Die geprüfte Creator-FAQ vom 18. Juni 2026 und Bedingungen vom 21. August 2026 betreffen Bot-Vergütung. Historische Berichte über andere Monetarisierungsmodelle werden nicht als aktuelle Affiliatekonditionen übernommen."]
+    "notes": ["The reviewed creator FAQ dated June 18, 2026 and terms dated August 21, 2026 concern bot compensation. Historical reports of other monetization models are not treated as current affiliate terms."]
   },
   {
     "provider": "Synthetic",
@@ -168,20 +168,20 @@
     "status": "public_referral",
     "programState": "terms_need_confirmation",
     "benefit": null,
-    "eligibility": ["Ein persönlicher Empfehlungslink ist laut offizieller Ankündigung im Bereich /referrals erhältlich; dieser Bereich verlangt heute eine Anmeldung."],
+    "eligibility": ["According to the official announcement, a personal referral link is available under /referrals; this area currently requires login."],
     "limitations": [
-      "Aktuelle Prämienhöhe und vollständige heutige Bedingungen konnten ohne Anmeldung nicht bestätigt werden.",
-      "Die öffentlich dokumentierten Geldbeträge von 2025 dürfen nicht als zugesicherte heutige Vorteile dargestellt werden."
+      "Current reward amounts and complete current terms could not be confirmed without login.",
+      "The publicly documented amounts from 2025 must not be presented as guaranteed current benefits."
     ],
     "officialSources": [
-      { "label": "Synthetic: öffentliche Referral-Ankündigung vom 14. März 2025", "url": "https://synthetic.new/blog/referrals-launch" },
-      { "label": "Synthetic: Referral-Bereich, Anmeldung erforderlich", "url": "https://synthetic.new/referrals" },
-      { "label": "Synthetic: Billing-Update vom 16. November 2025", "url": "https://synthetic.new/blog/2025-11-15-updates" }
+      { "label": "Synthetic: Public referral announcement dated March 14, 2025", "url": "https://synthetic.new/blog/referrals-launch" },
+      { "label": "Synthetic: Referral area, login required", "url": "https://synthetic.new/referrals" },
+      { "label": "Synthetic: Billing update dated November 16, 2025", "url": "https://synthetic.new/blog/2025-11-15-updates" }
     ],
     "checkedAt": "2026-10-24",
     "notes": [
-      "Historische Konditionen vom 14. März 2025: Beide erhielten je 5 USD Synthetic-Guthaben, nachdem der geworbene neue Nutzer erstmals 10 USD ausgegeben hatte. Teilen mit Freunden und Followern wurde ausdrücklich beschrieben.",
-      "Im November 2025 wurde zusätzlich Aboguthaben aus dem Referral-Bereich erwähnt, ohne vollständige neue Programmregeln. Ein eigener Link und dessen aktuelle Bedingungen müssen im eigenen Konto nachgesehen werden."
+      "Historical terms dated March 14, 2025: both received 5 USD in Synthetic credits after the referred new user first spent 10 USD. Sharing with friends and followers was explicitly described.",
+      "In November 2025, subscription credits from the referral area were also mentioned, without complete new program rules. A personal link and its current terms must be checked in your own account."
     ]
   },
   {
@@ -190,17 +190,17 @@
     "status": "not_confirmed",
     "programState": "ended",
     "benefit": null,
-    "eligibility": ["Das frühere Referralprogramm ist offiziell beendet."],
-    "limitations": ["Referral-Links erzeugen laut aktuellem offiziellen Hinweis weder für Einladende noch für Eingeladene weiteres Guthaben."],
+    "eligibility": ["The previous referral program has officially ended."],
+    "limitations": ["According to the current official notice, referral links no longer generate credits for either referrers or invitees."],
     "officialSources": [
       { "label": "OpenCode Go", "url": "https://opencode.ai/go" },
-      { "label": "Offizieller Konsolenquelltext: Hinweis auf beendetes Referralprogramm", "url": "https://github.com/anomalyco/opencode/blob/dev/packages/console/app/src/routes/go/index.tsx" },
-      { "label": "Offizieller Wortlaut des Endehinweises", "url": "https://github.com/anomalyco/opencode/blob/dev/packages/console/app/src/i18n/en.ts" }
+      { "label": "Official console source: Notice of ended referral program", "url": "https://github.com/anomalyco/opencode/blob/dev/packages/console/app/src/routes/go/index.tsx" },
+      { "label": "Official wording of the program end notice", "url": "https://github.com/anomalyco/opencode/blob/dev/packages/console/app/src/i18n/en.ts" }
     ],
     "checkedAt": "2026-10-24",
     "notes": [
-      "Im vorgegebenen Statusschema gibt es keinen ended-Wert. Daher not_confirmed für ein aktuelles Programm plus programState=ended; in der Übersicht ausdrücklich als Beendet darstellen.",
-      "Der Hinweis erscheint auf der Go-Seite bei einem ref-Parameter. Für diese Dokumentation werden keine fremden oder erfundenen Empfehlungscodes übernommen. Go und Go Plus werden als ein Anbieter erfasst."
+      "The prescribed status schema has no ended value. Therefore, not_confirmed describes a current program, supplemented by programState=ended; explicitly display it as Ended in the overview.",
+      "The notice appears on the Go page with a ref parameter. No third-party or invented referral codes are used for this documentation. Go and Go Plus are recorded as one provider."
     ]
   }
 ]

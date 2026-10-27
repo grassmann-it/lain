@@ -1,0 +1,23 @@
+SYNTHETISCH | 15 Accounts | Europe/Berlin | 2026-10-25
+
+KONTINGENTE (6)                                                                                    | OHNE MESSWERTE (9)
+KONTO           FENSTER                    VERFUEGBAR          VERBRAUCH  RESET                    | KONTO         GRUND / NAECHSTER SCHRITT
+----------------------------------------------------------------------------------------------     | -----------------------------------------------------------
+Codex           5h                                66%  [###.....]    34%  10-25 19:00 +01:00       | NVIDIA        Keine verifizierte Kontoquelle;
+[geteilt]       7d                                26%  [######..]    74%  10-29 10:00 +01:00       |               Anbieterreferenz
+  Monatskontingent: --full                                                                         | MiMo          Consolesitzung verbinden
+Command Code    5h                     48 USD-Credits  [........]     0%  unbekannt                | Cohere        Reader fehlt in lain; Anbieter-Konsole
+[geteilt]       7d                      9 USD-Credits  [#######.] 81.25%  10-29 02:00 +01:00       | Kilo          FEHLER: Walletabruf; Rest unbekannt
+  Extra: 6 USD-Credits; Monatscredits: --full                                                      | SambaNova     Reader fehlt in lain; Anbieter-Konsole
+Z.ai [geteilt]  5h                      3,200 credits  [######..]    80%  10-25 21:00 +01:00       | Gemini        Projektmonitor verbinden
+                7d                     18,000 credits  [####....]    55%  10-30 19:00 +01:00       | Cloudflare    FEHLER: Dataset/Berechtigung pruefen; Quota
+Kimi            5h                               100%  [........]     0%  10-25 20:00 +01:00       |               unbekannt
+  Monatskontingent: --full                                                                         | Synthetic     Antwort ohne erkennbare Quota; Produktscope
+OpenRouter      Free models / day         30 requests  [###.....]    40%  10-26 01:00 +01:00       |               pruefen
+                Key spend cap                  17 USD  [#.......]    15%  unbekannt                | Upstage       Reader fehlt in lain; Anbieter-Konsole
+Groq            Tokens/min              17,600 tokens  [#.......]    12%  faellig                  |
+                Tokens/min: Letzter Stand                                                          |
+                Requests/day             800 requests  [##......]    20%  faellig                  |
+                Requests/day: Letzter Stand                                                        |
+
+Unbekannt ist nicht null. Geteilte Budgets nicht addieren. Details: lain usage --full

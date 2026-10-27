@@ -1,5 +1,10 @@
 # Groq, Gemini, Cloudflare and NVIDIA quota sources
 
+Follow-up: the [expanded quota/auth research](../quota-auth-research-2026-10-24.md)
+identifies direct Gemini model-quota metrics and concrete Cloudflare schema
+candidates. The adapters described below retain their existing scope; those
+new sources still require separate implementation and account qualification.
+
 Source qualification: 24 October 2026. Public official documentation only; no
 private credentials, authenticated provider queries, account browser sessions or
 inference calls were used. Source availability, implementation, installation and

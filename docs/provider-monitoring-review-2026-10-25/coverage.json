@@ -1,0 +1,120 @@
+{
+  "date": "2026-10-25",
+  "sourceCommit": "cbf083f",
+  "catalogProviderCount": 20,
+  "referenceProviderCount": 5,
+  "totalProviderCount": 25,
+  "basis": "GET-only installed catalog provider metadata and configured provider IDs; source/documentation review, no live provider account reads",
+  "providers": [
+    {
+      "providerId": "alibaba-model-studio",
+      "report": "cloud-regional.md"
+    },
+    {
+      "providerId": "cloudflare-workers-ai",
+      "report": "google-cloudflare.md"
+    },
+    {
+      "providerId": "codex",
+      "report": "subscriptions.md"
+    },
+    {
+      "providerId": "cohere",
+      "report": "api-providers.md"
+    },
+    {
+      "providerId": "commandcode",
+      "report": "subscriptions.md"
+    },
+    {
+      "providerId": "fireworks",
+      "report": "api-providers.md"
+    },
+    {
+      "providerId": "gemini-api",
+      "report": "google-cloudflare.md"
+    },
+    {
+      "providerId": "groq",
+      "report": "api-providers.md"
+    },
+    {
+      "providerId": "inception",
+      "report": "cloud-regional.md"
+    },
+    {
+      "providerId": "kilo",
+      "report": "kilo-openrouter.md"
+    },
+    {
+      "providerId": "kimi",
+      "report": "subscriptions.md"
+    },
+    {
+      "providerId": "mistral",
+      "report": "cloud-regional.md"
+    },
+    {
+      "providerId": "nebius",
+      "report": "cloud-regional.md"
+    },
+    {
+      "providerId": "nvidia-build",
+      "report": "api-providers.md"
+    },
+    {
+      "providerId": "opencode-go",
+      "report": "other-gateways.md"
+    },
+    {
+      "providerId": "openrouter",
+      "report": "kilo-openrouter.md"
+    },
+    {
+      "providerId": "poe",
+      "report": "other-gateways.md"
+    },
+    {
+      "providerId": "requesty",
+      "report": "other-gateways.md"
+    },
+    {
+      "providerId": "sambanova",
+      "report": "api-providers.md"
+    },
+    {
+      "providerId": "stepfun",
+      "report": "other-gateways.md"
+    },
+    {
+      "providerId": "synthetic",
+      "report": "subscriptions.md"
+    },
+    {
+      "providerId": "upstage",
+      "report": "api-providers.md"
+    },
+    {
+      "providerId": "xai",
+      "report": "api-providers.md"
+    },
+    {
+      "providerId": "xiaomi-mimo",
+      "report": "subscriptions.md"
+    },
+    {
+      "providerId": "zai",
+      "report": "subscriptions.md"
+    }
+  ],
+  "additionalCandidates": [
+    {
+      "providerId": "deepseek",
+      "report": "api-providers.md"
+    },
+    {
+      "providerId": "minimax",
+      "report": "api-providers.md"
+    }
+  ]
+}

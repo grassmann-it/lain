@@ -1,0 +1,41 @@
+SYNTHETISCH | 15 Accounts | Europe/Berlin | 2026-10-25 | Langnamen
+
+KONTINGENTE (6)
+FENSTER                    VERFUEGBAR   VERBR.  RESET
+--------------------------------------------------------------------
+Codex - Forschung mit einem bewusst langen Accountnamen [geteilt]
+5h                                66%      34%  10-25 19:00 +01:00
+7d                                26%      74%  10-29 10:00 +01:00
+  Monatskontingent: --full
+Command Code [geteilt]
+5h                     48 USD-Credits       0%  unbekannt
+7d                      9 USD-Credits   81.25%  10-29 02:00 +01:00
+  Extra: 6 USD-Credits; Monatscredits: --full
+Z.ai [geteilt]
+5h                      3,200 credits      80%  10-25 21:00 +01:00
+7d                     18,000 credits      55%  10-30 19:00 +01:00
+Kimi - Arbeitsbereich fuer eine besonders lange Projektbezeichnung
+5h                               100%       0%  10-25 20:00 +01:00
+  Monatskontingent: --full
+OpenRouter
+Free models / day         30 requests      40%  10-26 01:00 +01:00
+Key spend cap                  17 USD      15%  unbekannt
+Codex - Archiv [deaktiviert]
+5h                                 0%     100%  faellig
+  5h: Letzter Stand; leer
+
+OHNE MESSWERTE (9)
+KONTO         GRUND / NAECHSTER SCHRITT
+--------------------------------------------------------------------------------
+NVIDIA        Keine verifizierte Kontoquelle; Anbieterreferenz
+MiMo          Consolesitzung verbinden
+Cohere        Reader fehlt in lain; Anbieter-Konsole
+Kilo          FEHLER: Walletabruf; Rest unbekannt
+SambaNova     Reader fehlt in lain; Anbieter-Konsole
+Gemini        Projektmonitor verbinden
+Cloudflare    FEHLER: Dataset/Berechtigung pruefen; Quota unbekannt
+Synthetic     Antwort ohne erkennbare Quota; Produktscope pruefen
+Upstage       Reader fehlt in lain; Anbieter-Konsole
+
+Unbekannt ist nicht null. Geteilte Budgets nicht addieren. Details: lain usage
+--full
