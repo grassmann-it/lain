@@ -66,6 +66,11 @@ try
     Check(attached.Routes.Count(r => r.ProviderRouteId == synth.Id && r.AccountIds.SequenceEqual(new[]{synthAccount.Id})) == 1);
     var detached = accounts.AddApi(attached.Revision,new("Synthetic 2","synthetic","fake-synthetic-key-2",synth.BaseUrl,synth.Id,new Dictionary<string,string>{{"billingPlan","go"}}));
     Check(detached.Routes.Count(r => r.ProviderRouteId == synth.Id) == 1);
+    var fw = catalog.Find("fireworks")!.Routes.Take(3).ToArray();
+    var fwSettings = new Dictionary<string,string>{{"accountId","fixture-account"}};
+    var fwState = accounts.AddApi(detached.Revision,new("Fireworks","fireworks","fake-fireworks-key",fw[0].BaseUrl,null,new Dictionary<string,string>(fwSettings)));
+    foreach (var route in fw) fwState = accounts.AddApi(fwState.Revision,new("Fireworks","fireworks","fake-fireworks-key",route.BaseUrl,route.Id,new Dictionary<string,string>(fwSettings),AttachRoute:true));
+    Check(fwState.Routes.Count(r => r.Provider == "fireworks") == 3);
     var writer = new ProxyConfigurationWriter(paths,secrets,new ProviderCostPolicy(catalog));
     writer.Write(state);
     Check(writer.QualifiedProviderRouteIds.Contains("fixture-route"));
