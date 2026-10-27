@@ -12,7 +12,7 @@ using Lain.Host.Providers.NanoGpt;
 namespace Lain.Host.Accounts;
 
 public sealed record AddApiAccountRequest(string Name, string Provider, string ApiKey, string BaseUrl, string? ProviderRouteId = null, Dictionary<string, string>? Settings = null,
-    string? ProviderConnectionId = null, string[]? SelectedModelRouteIds = null)
+    string? ProviderConnectionId = null, string[]? SelectedModelRouteIds = null, bool AttachRoute = false)
 {
     public override string ToString() => "AddApiAccountRequest [redacted]";
 }
@@ -301,6 +301,8 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         {
             plan = input.ProviderRouteId is null ? null : ProviderTransportValidation.Prepare(registry, input.Provider, input.ProviderRouteId, input.BaseUrl, settings);
             permittedIds = input.ProviderRouteId is { } routeId ? [routeId] : [];
+            if (input.AttachRoute && input.ProviderRouteId is { } attachId)
+                selectedTemplates = [registry.FindRoute(input.Provider, attachId) ?? throw new ArgumentException("Select a concrete provider route before adding credentials.")];
         }
         var provider = registry.Find(input.Provider) is not null ? input.Provider : CanonicalProvider(input.Provider, input.BaseUrl);
         var id = "acct-" + Guid.NewGuid().ToString("N");
@@ -438,6 +440,17 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         }
         return null;
     }
+    public ConfigurationDto Rename(long revision, string id, string name)
+    {
+        if (string.IsNullOrWhiteSpace(name) || name.Length > 120 || name.Any(char.IsControl))
+            throw new ArgumentException("Account name must contain 1–120 characters without control characters.");
+        return configuration.Update(revision, state =>
+        {
+            RequireAccount(state, id);
+            return state with { Accounts = state.Accounts.Select(a => a.Id == id ? a with { Name = name.Trim() } : a).ToArray() };
+        });
+    }
+
     public ConfigurationDto SetEnabled(long revision, string id, bool enabled) => configuration.Update(revision, state =>
     {
         RequireAccount(state, id);

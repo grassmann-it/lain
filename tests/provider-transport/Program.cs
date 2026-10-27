@@ -60,6 +60,12 @@ try
         Check(sharedSecret.RootElement.GetProperty("transports").GetArrayLength() == 2);
     state = state with { Routes = [new("fixture-route","fixture-alias",descriptor.Model,"opencode-go",[directAccount.Id],ProviderRouteId:descriptor.Id),
         .. chats.Select((chat,index) => new RouteDto("chat-"+index,"chat-alias-"+index,chat.Model,"opencode-go",[directAccount.Id],ProviderRouteId:chat.Id))] };
+    var synth = catalog.Find("synthetic")!.Routes.First(r => r.BillingPlanIds.Contains("go"));
+    var attached = accounts.AddApi(state.Revision,new("Synthetic","synthetic","fake-synthetic-key",synth.BaseUrl,synth.Id,new Dictionary<string,string>{{"billingPlan","go"}},AttachRoute:true));
+    var synthAccount = attached.Accounts.Single(a => a.Provider == "synthetic");
+    Check(attached.Routes.Count(r => r.ProviderRouteId == synth.Id && r.AccountIds.SequenceEqual(new[]{synthAccount.Id})) == 1);
+    var detached = accounts.AddApi(attached.Revision,new("Synthetic 2","synthetic","fake-synthetic-key-2",synth.BaseUrl,synth.Id,new Dictionary<string,string>{{"billingPlan","go"}}));
+    Check(detached.Routes.Count(r => r.ProviderRouteId == synth.Id) == 1);
     var writer = new ProxyConfigurationWriter(paths,secrets,new ProviderCostPolicy(catalog));
     writer.Write(state);
     Check(writer.QualifiedProviderRouteIds.Contains("fixture-route"));

@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using Lain.Client;
+using Lain.Client.Lifecycle;
 using Lain.Core;
 
 namespace Lain.Cli;
@@ -26,8 +27,9 @@ public static partial class CliApplication
           accounts login-status|login-cancel|check ID [--json]
           accounts discover ID [--revision N] [--json]  Read the saved xAI key's team identity; no budget read
           accounts enable|disable|remove ID [--revision N] [--json]
+          accounts rename ID --name NAME [--revision N] [--json]
           accounts add-api --name NAME --provider PROVIDER --base-url URL
-                   (--key-env ENVNAME | --key-stdin) [--provider-route ID]
+                   (--key-env ENVNAME | --key-stdin | --key-prompt) [--provider-route ID]
                    [--setting NAME=VALUE ...] [--revision N] [--json]
           mode [monitor|gateway] [--revision N] [--json]
           profiles preview ID [--revision N] [--json]
@@ -43,6 +45,17 @@ public static partial class CliApplication
                 --cost configured|free_only --revision N [--json]
                 Group IDs: collection:ID, provider:ID, account:ID, policy:free. Saving does not apply or export.
           routers delete ID --revision N [--json]
+          workers init --project DIR --profile ID [--json]
+          workers install-skill --project DIR [--json]
+          workers validate --project DIR [--revision N] [--json]
+          workers plan|run --project DIR --tasks FILE [--revision N] [--json]
+                run requires --client /absolute/codex; optional --timeout-seconds 1..3600.
+          workers status --project DIR [--json]
+          skills list [--json]
+          skills install NAME --project DIR [--json]
+                Project-local bundled skills; preserves existing targets. No Host required.
+          doctor [--target codex-cli|codex-vscode] [--project DIR] [--profile ID] [--json]
+                Read-only service and client diagnostics; no inference or automatic repair.
           import CONFIG [--auth-dir DIR] [--revision N] [--json]
           history [--today] [--from ISO] [--to ISO] [--timezone IANA]
                 [--account ID] [--model ID] [--status HTTP] [--json]
@@ -62,48 +75,60 @@ public static partial class CliApplication
           providers routes [--provider ID] [--json]
           providers check-free ROUTE_ID [--json]
           auth token --audience codex
-          service start|stop|restart|status [--json]
+          service ensure|start|stop|restart|status|enable|disable [--json]
+          service autostart on|off [--json]  Change future sign-in startup independently
           ui
         Exit codes: 0 success; 1 unexpected; 2 usage; 3 unavailable;
                     4 authorization; 5 request rejected.
         """;
 
     public static async Task<int> RunAsync(string[] args, TextWriter output, TextWriter error,
-        Func<LainApiClient>? clientFactory = null, CancellationToken ct = default, TextReader? input = null, IAccountWizardTerminal? wizardTerminal = null)
+        Func<LainApiClient>? clientFactory = null, CancellationToken ct = default, TextReader? input = null, IAccountWizardTerminal? wizardTerminal = null,
+        Func<IUserHostLifecycle>? lifecycleFactory = null)
     {
         try
         {
             if (args.Length == 0 || args[0] is "help" or "--help" or "-h")
             { await WriteHelp(output); return 0; }
+            if (args[0] == "doctor")
+                return await Diagnostics.DoctorCommand.RunAsync(args[1..], output, error, clientFactory, ct);
             var options = Options.Parse(args[1..]);
             var command = args[0];
+            if (command == "skills") return await Skills(options, output);
+            if (command == "workers")
+                return await Workers(options, output, error, clientFactory, ct);
             if (command == "ui")
             {
                 options.RequireOnly(); options.RequirePositionals(0);
-                var executable = Path.GetFullPath(Path.Combine(LocalDiscovery.StateDirectory, "app", "desktop", "Lain.Desktop"));
-                if (!File.Exists(executable)) throw new IOException("lain desktop is not installed. Run the lain installer first.");
-                Process.Start(new ProcessStartInfo(executable) { UseShellExecute = false });
+                using var admission = LifecycleCoordination.AcquireOperation();
+                var installation = InstallationDiscovery.Discover();
+                var start = new ProcessStartInfo(installation.DesktopPath) { UseShellExecute = false };
+                start.Environment["LAIN_HOME"] = LocalDiscovery.StateDirectory;
+                if (installation.ProxyPath is { } proxy) start.Environment["LAIN_PROXY_PATH"] = proxy;
+                Process.Start(start);
                 return 0;
             }
-            if (command == "service" && options.Positionals.FirstOrDefault() is "start" or "stop" or "restart")
+            if (command == "service")
             {
-                options.RequireOnly("json"); options.RequirePositionals(1);
-                var action = options.Positionals[0];
-                using var process = Process.Start(new ProcessStartInfo("systemctl") {
-                    UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true,
-                    ArgumentList = { "--user", action, "lain.service" }
-                }) ?? throw new IOException("Could not launch the user service manager.");
-                var stdout = process.StandardOutput.ReadToEndAsync(ct);
-                var stderr = process.StandardError.ReadToEndAsync(ct);
-                await process.WaitForExitAsync(ct); await stdout;
-                var diagnostic = await stderr;
-                if (process.ExitCode != 0)
-                {
-                    await error.WriteLineAsync("lain: user service action failed." + (string.IsNullOrWhiteSpace(diagnostic) ? "" : " " + diagnostic.Trim()));
-                    return 3;
-                }
-                await Write(output, new { service = "lain.service", action, state = "completed" }, options.Json);
-                return 0;
+                options.RequireOnly("json");
+                var action = options.Positionals.FirstOrDefault();
+                options.RequirePositionals(action == "autostart" ? 2 : 1);
+                if (action is not ("ensure" or "start" or "stop" or "restart" or "status" or "enable" or "disable" or "autostart")
+                    || action == "autostart" && options.Positionals[1] is not ("on" or "off"))
+                    throw new ArgumentException("Use service ensure, start, stop, restart, status, enable, disable, or autostart on|off.");
+                var lifecycle = lifecycleFactory?.Invoke() ?? UserHostLifecycle.CreateLocal(clientFactory);
+                var lifecycleResult = action switch {
+                    "ensure" => await lifecycle.EnsureRunningAsync(ct),
+                    "start" => await lifecycle.StartAsync(ct),
+                    "stop" => await lifecycle.StopAsync(ct),
+                    "restart" => await lifecycle.RestartAsync(ct),
+                    "enable" => await lifecycle.SetLoginAutostartAsync(true, ct),
+                    "disable" => await lifecycle.SetLoginAutostartAsync(false, ct),
+                    "autostart" => await lifecycle.SetLoginAutostartAsync(options.Positionals[1] == "on", ct),
+                    _ => await lifecycle.InspectAsync(ct)
+                };
+                await Write(output, lifecycleResult, options.Json);
+                return (action is "ensure" or "start" or "restart") && lifecycleResult.HostState != "ready" ? 3 : 0;
             }
             // Validate the command before discovery, so misspellings work even when the host is stopped.
             if (command is not ("status" or "accounts" or "import" or "models" or "profiles" or "collections" or "routers" or "usage" or "history" or "attempts" or "quotas" or "auth" or "service" or "providers" or "inspector" or "mode"))
@@ -124,7 +149,7 @@ public static partial class CliApplication
             switch (command)
             {
                 case "status":
-                case "service": result = await client.StatusAsync(ct); break;
+                    result = await client.StatusAsync(ct); break;
                 case "mode":
                     if (options.Positionals.Count == 0) result = await client.StatusAsync(ct);
                     else
@@ -263,12 +288,12 @@ public static partial class CliApplication
             }
             if (action == "add-api")
             {
-                options.RequireOnly("json", "revision", "name", "provider", "base-url", "key-env", "key-stdin", "provider-route", "setting");
+                options.RequireOnly("json", "revision", "name", "provider", "base-url", "key-env", "key-stdin", "key-prompt", "provider-route", "setting");
                 options.RequirePositionals(1);
                 foreach (var required in new[] { "name", "provider", "base-url" })
                     if (string.IsNullOrWhiteSpace(options.Get(required))) throw new ArgumentException($"--{required} is required.");
-                if (options.Has("key-env") == options.Has("key-stdin"))
-                    throw new ArgumentException("Specify exactly one of --key-env ENVNAME or --key-stdin. API keys cannot be passed as command arguments.");
+                if (new[] { options.Has("key-env"), options.Has("key-stdin"), options.Has("key-prompt") }.Count(x => x) != 1)
+                    throw new ArgumentException("Specify exactly one of --key-env ENVNAME, --key-stdin or --key-prompt. API keys cannot be passed as command arguments.");
                 if (options.Has("key-env") && string.IsNullOrWhiteSpace(options.Get("key-env")))
                     throw new ArgumentException("--key-env requires a nonempty environment variable name.");
                 if (options.Has("provider-route") && string.IsNullOrWhiteSpace(options.Get("provider-route")))
@@ -283,9 +308,16 @@ public static partial class CliApplication
                     options.RequireOnly("json", "revision", "method", "purpose", "account", "name");
                     if (options.Get("purpose") is { } purposes && purposes.Split(',', StringSplitOptions.TrimEntries).Any(p => p is not ("quota" or "inference" or "cost" or "models"))) throw new ArgumentException("Unknown connection purpose.");
                 }
+                else if (action == "rename")
+                {
+                    options.RequireOnly("json", "revision", "name");
+                    var name = options.Get("name");
+                    if (string.IsNullOrWhiteSpace(name) || name.Length > 120 || name.Any(char.IsControl))
+                        throw new ArgumentException("--name requires 1–120 characters without control characters.");
+                }
                 else if (action is "enable" or "disable" or "remove" or "discover") options.RequireOnly("json", "revision");
                 else if (action is "check" or "login-status" or "login-cancel") options.RequireOnly("json");
-                else throw new ArgumentException("Account action must be add, add-api, monitor, login, login-status, login-cancel, enable, disable, remove, discover or check.");
+                else throw new ArgumentException("Account action must be add, add-api, monitor, login, login-status, login-cancel, rename, enable, disable, remove, discover or check.");
             }
             if (options.Get("revision") is { } revision) _ = ParseLong(revision, "revision");
             return;
@@ -347,7 +379,8 @@ public static partial class CliApplication
         string? apiKey = null;
         if (action == "add-api")
         {
-            apiKey = options.Has("key-stdin") ? await input.ReadLineAsync(ct) :
+            apiKey = options.Has("key-prompt") ? await new ConsoleAccountWizardTerminal(Console.Out).ReadAsync("API key (hidden)", true, ct) :
+                options.Has("key-stdin") ? await input.ReadLineAsync(ct) :
                 Environment.GetEnvironmentVariable(options.Get("key-env")!);
             if (string.IsNullOrWhiteSpace(apiKey) || apiKey.Any(char.IsWhiteSpace))
                 throw new ArgumentException("The API key source is empty or contains whitespace.");
@@ -365,11 +398,12 @@ public static partial class CliApplication
         }
         return action switch
         {
+            "rename" => await client.RenameAccountAsync(revision, options.Positionals[1], options.Get("name")!, ct),
             "enable" => await client.SetAccountEnabledAsync(revision, options.Positionals[1], true, ct),
             "disable" => await client.SetAccountEnabledAsync(revision, options.Positionals[1], false, ct),
             "remove" => await client.RemoveAccountAsync(revision, options.Positionals[1], ct),
             "add-api" => await client.AddApiAccountAsync(revision, new AddApiAccountRequest(options.Get("name")!, options.Get("provider")!, apiKey!, options.Get("base-url")!,
-                options.Get("provider-route"), settings), ct),
+                options.Get("provider-route"), settings, AttachRoute: options.Get("provider-route") is not null), ct),
             _ => throw new ArgumentException("Unsupported account action.")
         };
     }
@@ -429,6 +463,16 @@ public static partial class CliApplication
         if (json) { await output.WriteLineAsync(JsonSerializer.Serialize(value, value.GetType(), Json)); return; }
         switch (value)
         {
+            case UserHostLifecycleStatus lifecycle:
+                await output.WriteLineAsync($"Installation: {Cell(lifecycle.InstallationState)}");
+                await output.WriteLineAsync($"Manager: {Cell(lifecycle.Manager.Manager)}; registration {Cell(lifecycle.Manager.RegistrationState)}; state {Cell(lifecycle.Manager.State)}");
+                await output.WriteLineAsync($"Start at sign-in: {(lifecycle.Manager.LoginAutostart is true ? "on" : lifecycle.Manager.LoginAutostart is false ? "off" : "unknown")}");
+                await output.WriteLineAsync($"Host: {Cell(lifecycle.HostState)}; Core: {Cell(lifecycle.CoreState)}");
+                if (lifecycle.Host is { } host)
+                    await output.WriteLineAsync($"Revision: {host.Revision}; applied: {host.AppliedRevision}; mode: {Cell(host.RuntimeMode)}");
+                if (lifecycle.Manager.Error is { } managerError) await HumanTable.WriteTextAsync(output, managerError);
+                if (lifecycle.Error is { } lifecycleError) await HumanTable.WriteTextAsync(output, lifecycleError);
+                break;
             case CollectionListResult collections: await WriteCollections(output, collections); break;
             case CollectionChangeResult collection: await WriteCollectionChange(output, collection); break;
             case RouterListResult routers: await WriteRouters(output, routers); break;
@@ -502,7 +546,7 @@ public static partial class CliApplication
                 if (name.Length == 0 || name.Contains('=')) throw new ArgumentException("Use options as '--name value'.");
                 if (options.values.ContainsKey(name) && name != "setting") throw new ArgumentException($"Duplicate option --{name}.");
                 string? value = null;
-                if (name is not ("json" or "full" or "today" or "key-stdin" or "token-stdin" or "model-groups"))
+                if (name is not ("json" or "full" or "today" or "key-stdin" or "key-prompt" or "token-stdin" or "model-groups" or "help"))
                 {
                     if (++i >= args.Length || args[i].StartsWith("--", StringComparison.Ordinal)) throw new ArgumentException($"--{name} requires a value.");
                     value = args[i];
