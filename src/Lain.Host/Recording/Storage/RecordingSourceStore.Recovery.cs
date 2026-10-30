@@ -6,7 +6,7 @@ public sealed partial class RecordingSourceStore
 {
     private bool recoveryUncertain;
 
-    private void Recover()
+    private void Recover(CancellationToken ct = default)
     {
         PrivateArchiveFiles.Directory(PayloadDirectory);
         if (File.Exists(ControlPath)) {
@@ -28,15 +28,16 @@ public sealed partial class RecordingSourceStore
         }
         RefreshVisibility();
         PrivateArchiveFiles.Directory(GenerationDirectory);
-        if (control.ClearPending) { CompleteClear(); return; }
+        if (control.ClearPending) { CompleteClear(ct); return; }
         var files = System.IO.Directory.EnumerateFiles(GenerationDirectory, "journal-*.rec").Order(StringComparer.Ordinal).ToArray();
         for (var index = 0; index < files.Length; index++) {
+            ct.ThrowIfCancellationRequested();
             var path = files[index];
             using var stream = PrivateArchiveFiles.Open(path, FileMode.Open, FileAccess.ReadWrite);
             try {
                 while (stream.Position < stream.Length) {
                     var start = stream.Position;
-                    var item = RecordingFrames.Read(stream, options.MaximumRecordBytes, out var torn);
+                    var item = RecordingFrames.Read(stream, options.MaximumRecordBytes, out var torn, ct);
                     if (torn) {
                         if (index != files.Length - 1) throw new InvalidDataException("Sealed recording segment has an incomplete frame.");
                         QuarantineTail(stream, start, path);
@@ -51,7 +52,7 @@ public sealed partial class RecordingSourceStore
                         throw new InvalidDataException("Recording source identity is repeated.");
                     records.Add(location);
                     control = control with { HighWatermark = Math.Max(control.HighWatermark, item.Cursor) };
-                    if (!IsHidden(item)) { visibleRecords.Add(location); _ = Materialize(location); } // Validate referenced payload before exposing a committed prefix.
+                    if (!IsHidden(item)) { visibleRecords.Add(location); _ = Materialize(location, ct); } // Validate referenced payload before exposing a committed prefix.
                 }
             }
             catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or ArgumentException) {
@@ -63,8 +64,8 @@ public sealed partial class RecordingSourceStore
         recoveryUncertain |= records.Count != 0;
         if (error is null) {
             SaveControl();
-            if (control.PurgePending) CompactHidden();
-            if (!control.PurgePending) CleanupUnreferenced();
+            if (control.PurgePending) CompactHidden(ct);
+            if (!control.PurgePending) CleanupUnreferenced(ct);
         }
     }
 
@@ -88,17 +89,19 @@ public sealed partial class RecordingSourceStore
         stream.Flush(true);
     }
 
-    private void CleanupUnreferenced()
+    private void CleanupUnreferenced(CancellationToken ct = default)
     {
         var reachable = records.Where(r => !IsHidden(r.Record)).Select(r => r.Record.PayloadFile).Where(p => p is not null).ToHashSet(StringComparer.Ordinal);
         foreach (var path in System.IO.Directory.EnumerateFiles(PayloadDirectory)) {
+            ct.ThrowIfCancellationRequested();
             PrivateArchiveFiles.RejectLinks(path);
             if (!reachable.Contains(Path.GetFileName(path))) DeleteTrackedFile(path);
         }
         // A generation not named by durable control cannot become active after a crash or restore.
         foreach (var path in System.IO.Directory.EnumerateDirectories(directory)) {
+            ct.ThrowIfCancellationRequested();
             PrivateArchiveFiles.RejectLinks(path);
-            if (Guid.TryParseExact(Path.GetFileName(path), "N", out _) && path != GenerationDirectory) DeletePrivateTree(path);
+            if (Guid.TryParseExact(Path.GetFileName(path), "N", out _) && path != GenerationDirectory) DeletePrivateTree(path, ct);
         }
         PrivateArchiveFiles.SyncDirectory(directory);
     }

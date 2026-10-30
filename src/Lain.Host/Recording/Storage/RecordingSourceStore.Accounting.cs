@@ -41,7 +41,7 @@ public sealed partial class RecordingSourceStore
 
     // Full reconciliation belongs to recovery, scheduled maintenance and failure recovery only.
     // Commit/health track owned writes and sample at most the four optional SQLite files.
-    private void ReconcileDiskUsage()
+    private void ReconcileDiskUsage(CancellationToken ct = default)
     {
         Interlocked.Increment(ref diskReconciliations);
         var found = new Dictionary<string, long>(StringComparer.Ordinal);
@@ -49,6 +49,7 @@ public sealed partial class RecordingSourceStore
         var pending = new Stack<string>(); pending.Push(directory);
         while (pending.TryPop(out var folder)) {
             foreach (var path in System.IO.Directory.EnumerateFileSystemEntries(folder)) {
+                ct.ThrowIfCancellationRequested();
                 Interlocked.Increment(ref directoryEntriesScanned);
                 PrivateArchiveFiles.RejectLinks(path);
                 if (System.IO.Directory.Exists(path)) pending.Push(path);

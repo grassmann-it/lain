@@ -25,13 +25,16 @@ internal static class RecordingFrames
         return result.ToArray();
     }
 
-    public static byte[] Decompress(Stream input, int maximum)
+    public static byte[] Decompress(Stream input, int maximum, CancellationToken ct = default)
     {
         using var decompressor = new BrotliStream(input, CompressionMode.Decompress, true);
         using var output = new MemoryStream();
         var buffer = new byte[8192];
         int count;
-        while ((count = decompressor.Read(buffer)) != 0) {
+        while (true) {
+            ct.ThrowIfCancellationRequested();
+            count = decompressor.Read(buffer);
+            if (count == 0) break;
             if (output.Length + count > maximum) throw new InvalidDataException("Recording expansion limit exceeded.");
             output.Write(buffer, 0, count);
         }
@@ -51,9 +54,10 @@ internal static class RecordingFrames
 
     // A partial header/body is a torn append only on the final active segment.
     // A complete frame with a bad checksum is corruption even at the active tail.
-    public static StoredObservation? Read(FileStream input, int maximum, out bool torn)
+    public static StoredObservation? Read(FileStream input, int maximum, out bool torn, CancellationToken ct = default)
     {
         torn = false;
+        ct.ThrowIfCancellationRequested();
         var header = new byte[HeaderSize];
         var count = input.ReadAtLeast(header, HeaderSize, false);
         if (count == 0) return null;
@@ -66,7 +70,7 @@ internal static class RecordingFrames
         if (!CryptographicOperations.FixedTimeEquals(SHA256.HashData(bytes), header.AsSpan(8, 32)))
             throw new InvalidDataException("Recording frame checksum mismatch.");
         using var body = new MemoryStream(bytes, false);
-        var item = JsonSerializer.Deserialize<StoredObservation>(Decompress(body, maximum + 65536), Json)
+        var item = JsonSerializer.Deserialize<StoredObservation>(Decompress(body, maximum + 65536, ct), Json)
             ?? throw new InvalidDataException("Recording frame is invalid.");
         if (item.Metadata.SchemaVersion != RecordingContract.Version || item.Cursor <= 0)
             throw new InvalidDataException("Recording frame schema is unsupported.");

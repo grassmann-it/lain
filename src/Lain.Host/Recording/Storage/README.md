@@ -4,8 +4,12 @@
 implements `IRecordingStore` and `IAsyncDisposable`. Construction never enables capture.
 A new store initializes lazily on the first valid commit. Construction, health,
 reads and clear on a disabled installation without an archive create no files.
-Existing-archive open failures become `archive_unavailable` health, never a Host
-startup exception; a second writer is refused through that same fixed code.
+Existing-archive recovery is one owned background task. The constructor acquires
+the fresh source gate without blocking before starting it; health immediately
+returns `recovering` until it completes. Reads, maintenance and the bounded
+writer wait behind the same gate, so no unverified prefix is exposed. Existing
+archive/open failures become fixed health codes rather than a Host startup
+exception; a second writer is refused through `archive_unavailable`.
 Only `SanitizedObservation` crosses this boundary. Redaction states must match the
 current policy sanitizer; failed/omitted bodies cannot carry content. The writer
 rechecks revision/stop generation after compression and before source publication.
@@ -141,10 +145,11 @@ shared-volume free space is still sampled before writes.
 `ApplyRetentionAsync` performs the scheduled full reconciliation for externally
 added/changed archive files. It must remain background maintenance, never part
 of an inference or UI callback. Recovery and maintenance scans are bounded by
-the configured retained-record/disk archive bounds, but remain synchronous;
-large existing archives can still make startup/reconciliation slow. Startup
-recovery was deliberately not converted to an asynchronous state machine in
-this patch.
+the configured retained-record/disk archive bounds. Existing-archive recovery
+runs on its own background task, keeping constructor/Host startup and recovery
+health polling responsive. A large archive still takes time to validate; reads
+and commits remain unavailable until full validation finishes. Scheduled
+maintenance reconciliation remains synchronous background maintenance.
 
 Visible records have a cached ordered reference list, and capture tombstones
 use a hash set. Health count/first cursor are constant work. Replay binary
@@ -156,3 +161,13 @@ counts. `Diagnostics` exposes content-free counters (`DiskReconciliations`,
 Synthetic resource tests assert repeated health performs no scan/hydration,
 commits avoid rescanning, late-cursor reads seek logarithmically, and accounting
 matches actual retained file lengths after maintenance, purge and clear.
+
+Recovery cancellation is checked between filesystem entries, journal frames,
+compaction records, and 8192-byte decompression chunks. `DisposeAsync` cancels
+recovery and observes recovery/writer/cleanup failures. It waits up to five
+seconds for cleanup; a filesystem syscall itself cannot safely be force-aborted,
+so an overlong operation retains owned background cleanup rather than turning
+shutdown into an unlimited wait or closing a descriptor still being used.
+Queued uncommitted work is rejected if disposal cancels unfinished recovery.
+The internal pre-recovery delay hook exists only for deterministic startup/
+cancellation qualification and is absent from public construction.
