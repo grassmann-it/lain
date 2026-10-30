@@ -28,6 +28,25 @@ unready proxy. Monitor does not start Core/inference or apply/export profiles,
 but can read available saved history. Missing Gateway features are not a Monitor
 health failure. Keep operating mode separate from UI information level/density.
 
+## Explicit route selection and optional strict cost policy
+
+When the user requests a concrete route such as `openrouter/free`, use the
+configured route and its actual applied policy. Do not turn the word "free" or a
+free model name into a request for Lain's separate `free_only` enforcement mode.
+Do not require `providers check-free` as an availability gate for an ordinary
+explicitly chosen route. That command asks whether a stricter policy is qualified;
+its rejection does not establish that the configured route cannot run or that the
+provider charges for that model.
+
+Keep worker/project costPolicy `configured` unless the user explicitly requests
+Lain's strict `free_only` mode. If the user explicitly rejects that extra mode,
+update only the authorized project preference to `configured`, preserving the
+requested model/route and existing provider budget settings. Do not select a
+paid substitute, change a provider key's spending cap or add fallback routes.
+Provider prices, availability and actual usage remain facts to observe, not a
+cost guarantee inferred from this workflow choice. Existing explicitly enabled
+route-level guards are not silently removed by selecting a worker.
+
 Supported read operations:
 
 ```sh

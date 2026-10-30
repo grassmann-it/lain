@@ -102,9 +102,22 @@ and `lain.models.json` must match that profile/revision too; selecting a default
 client provider is insufficient. Do not refresh/apply/install them merely to
 make a status or plan request succeed.
 
-`free_only` needs actual runtime enforcement. The project flag, route name,
-quota reading or plan is not a spending guard. Preserve unknown cost and quota
-values as unknown; `configured` does not mean unlimited spending authority.
+Use `costPolicy: "configured"` for ordinary worker delegation, including an
+explicit user choice of `openrouter/free` or another free-model route. Do not
+infer Lain's separate `free_only` mode from the word "free", and do not run
+`providers check-free` as a mandatory availability test for that route. The check
+qualifies an optional stricter policy; failure is not provider unavailability.
+
+Only select `free_only` when the user explicitly requests that additional Lain
+runtime-enforcement mode. If the user rejects the extra mode, change only the
+authorized project policy to `configured`, preserving route IDs, model selection,
+provider budgets and task boundaries. Do not substitute a paid model, modify a
+key's cap or add fallback routes. A route-level guard explicitly enabled in the
+applied runtime still remains in force; do not remove it implicitly.
+
+For explicitly requested `free_only`, runtime enforcement is required. Preserve
+unknown cost/usage as unknown. `configured` uses existing routing/account policy;
+it does not authorize arbitrary spending or certify a provider's current price.
 
 ## Plan explicit tasks
 

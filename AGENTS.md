@@ -55,3 +55,13 @@ Kläre tragende Architekturkonflikte vor der betroffenen Umsetzung. Bestehende
 Projektregeln und der konkrete Auftrag gelten weiterhin; dieser Hinweis startet
 kein vollständiges Sparring und autorisiert keine zusätzlichen Dateiänderungen.
 <!-- architecture-sparring:end -->
+
+## Explicit worker route selection (30 October 2026)
+
+The user rejects automatically introducing Lain's `free_only` mode when requesting
+a free endpoint such as `openrouter/free`. Ordinary worker delegation uses the
+configured route with `costPolicy: "configured"`. `providers check-free` is optional
+strict-policy qualification, not a mandatory route-availability check. Keep the
+requested model, existing provider spending caps and no-paid-substitution request;
+do not add a fallback or silently change an applied route-level guard. Do not infer
+extra cost-policy requirements merely from the model's free label.

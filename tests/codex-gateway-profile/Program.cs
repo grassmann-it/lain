@@ -78,6 +78,7 @@ assertions += PickerCases.Run();
 assertions += AccountPickerCases.Run();
 assertions += RouterExportCases.Run();
 assertions += ReasoningExportCases.Run();
+assertions += InputModalityCases.Run();
 Console.WriteLine($"{assertions} Codex Gateway profile export assertions passed; no installed config or provider access.");
 
 void Reject(Action action, string name)

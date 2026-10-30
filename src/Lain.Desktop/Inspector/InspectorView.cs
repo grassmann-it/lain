@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -21,6 +22,8 @@ namespace Lain.Desktop.Inspector;
 public sealed class InspectorView : UserControl, IPresentationView
 {
     private const int DisplayEventLimit = 500;
+    private const int TextLayoutChunkLimit = 4096;
+    private const int OutputPageCharacters = 8192;
     private const int DisplayCharacterLimit = 262144;
     private static readonly HashSet<string> EvidenceSources = new(StringComparer.Ordinal)
         { "route_binding", "harness_header", "request_body", "provider_response", "core" };
@@ -54,6 +57,8 @@ public sealed class InspectorView : UserControl, IPresentationView
     private readonly Grid _page = new() { RowDefinitions = new RowDefinitions("Auto,Auto,*,Auto"), RowSpacing = 8 };
     private readonly TextBlock _listStatus = Ui.Text("Requests from the current bounded source", 11, Ui.Muted);
     private readonly Dictionary<EventDetailKey, Border> _eventAnchors = [];
+    private readonly Dictionary<EventDetailKey, RenderedEvent> _renderedEvents = [];
+    private readonly Dictionary<string, string> _groupContentKeys = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Vector> _requestOffsets = new(StringComparer.Ordinal);
     private readonly Dictionary<string, bool> _streamDetailOverrides = new(StringComparer.Ordinal);
     private static readonly JsonSerializerOptions TechnicalJson = new() { WriteIndented = true };
@@ -151,6 +156,14 @@ public sealed class InspectorView : UserControl, IPresentationView
         _layout.Children.Add(_sidebar);
         _identityScroll.Content = new StackPanel { Spacing = 7, Children = { _navigation, _identityFacts } };
         _identity.Content = _identityScroll;
+        _identity.PropertyChanged += (_, args) =>
+        {
+            if (args.Property == Expander.IsExpandedProperty)
+            {
+                if (_identity.IsExpanded) RenderSelection();
+                else _identityFacts.Content = null;
+            }
+        };
         ToolTip.SetTip(_identity, "Request identities, measurement sources and related Account, Models and Usage views.");
         _eventScroll = new ScrollViewer { Content = _eventList, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         AutomationProperties.SetName(_eventScroll, "Live output viewport");
@@ -161,7 +174,13 @@ public sealed class InspectorView : UserControl, IPresentationView
                 && _eventScroll.Offset.Y + _eventScroll.Viewport.Height < _eventScroll.Extent.Height - 4)
                 _follow.IsChecked = false;
         };
-        _follow.IsCheckedChanged += (_, _) => ScheduleFollowOutput();
+        _follow.IsCheckedChanged += (_, _) =>
+        {
+            if (_follow.IsChecked == true)
+                foreach (var rendered in _renderedEvents.Values)
+                { rendered.PageStart = null; UpdateRenderedOutput(rendered); }
+            ScheduleFollowOutput();
+        };
         _details = new Grid { RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*,Auto"), RowSpacing = 8 };
         _details.Children.Add(_selection);
         _requestField = Ui.Field("Request within this group", _request);
@@ -472,7 +491,20 @@ public sealed class InspectorView : UserControl, IPresentationView
     private void RenderGroups()
     {
         if (_snapshot is null) return;
-        var grouped = _snapshot.Streams.GroupBy(GroupKey).Select(group =>
+        // Index relationships once per snapshot, rather than rescanning every stream
+        // at each hop of every request's parent chain on the UI thread.
+        var requestsById = _snapshot.Streams.ToLookup(stream => stream.RequestId, StringComparer.Ordinal);
+        var requestsByResponse = _snapshot.Streams
+            .Select(stream => (Stream: stream, Response: KnownIdentity(stream.Dimensions, "responseId", stream.Dimensions?.ResponseId)))
+            .Where(item => item.Response is not null).ToLookup(item => item.Response!, item => item.Stream.RequestId, StringComparer.Ordinal);
+        var groupKeys = new Dictionary<string, string>(StringComparer.Ordinal);
+        string Key(InspectorStreamDto stream)
+        {
+            if (!groupKeys.TryGetValue(stream.RequestId, out var key))
+                groupKeys[stream.RequestId] = key = GroupKey(stream, requestsById, requestsByResponse);
+            return key;
+        }
+        var grouped = _snapshot.Streams.GroupBy(Key).Select(group =>
         {
             var streams = group.ToArray();
             var label = group.Key.StartsWith("conversation:", StringComparison.Ordinal) ? "Conversation " + Short(group.Key[13..])
@@ -482,7 +514,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         _groups.Clear();
         foreach (var group in grouped) _groups[group.Key] = group;
         foreach (var key in _groupButtons.Keys.Where(key => !_groups.ContainsKey(key)).ToArray())
-        { _groupList.Children.Remove(_groupButtons[key]); _groupButtons.Remove(key); }
+        { _groupList.Children.Remove(_groupButtons[key]); _groupButtons.Remove(key); _groupContentKeys.Remove(key); }
         var search = _search.Text?.Trim() ?? "";
         var visible = new List<GroupChoice>();
         foreach (var group in grouped)
@@ -510,10 +542,17 @@ public sealed class InspectorView : UserControl, IPresentationView
             button.IsVisible = matches;
             button.Background = group.Key == _selectedGroup ? Ui.AccentSurface : Ui.Surface;
             button.BorderBrush = group.Key == _selectedGroup ? Ui.Accent : Ui.Edge;
-            button.Content = new StackPanel { Spacing = 4, Children = { Ui.Text(group.Name, 13),
-                Ui.Text($"{group.Streams.Select(x => x.RequestId).Distinct().Count()} requests · {group.Streams.Length} streams · {StateLabel(group.Streams)}", 11, Ui.Muted),
-                Ui.Text(string.Join(" · ", group.Streams.Select(x => x.Model ?? x.RequestedModel ?? "Model unknown").Distinct()), 11, Ui.Muted) } };
-            ToolTip.SetTip(button, string.Join("\n", group.Streams.Select(stream => $"Request {stream.RequestId} · {stream.Provider ?? "Provider unknown"} · {stream.State}")));
+            var detail = $"{group.Streams.Select(x => x.RequestId).Distinct().Count()} requests · {group.Streams.Length} streams · {StateLabel(group.Streams)}";
+            var models = string.Join(" · ", group.Streams.Select(x => x.Model ?? x.RequestedModel ?? "Model unknown").Distinct());
+            var tip = string.Join("\n", group.Streams.Select(stream => $"Request {stream.RequestId} · {stream.Provider ?? "Provider unknown"} · {stream.State}"));
+            var contentKey = string.Join("\n", group.Name, detail, models, tip);
+            if (_groupContentKeys.GetValueOrDefault(group.Key) != contentKey)
+            {
+                _groupContentKeys[group.Key] = contentKey;
+                button.Content = new StackPanel { Spacing = 4, Children = { Ui.Text(group.Name, 13),
+                    Ui.Text(detail, 11, Ui.Muted), Ui.Text(models, 11, Ui.Muted) } };
+                ToolTip.SetTip(button, tip);
+            }
         }
         _updatingChoices = true;
         if (!_conversation.IsKeyboardFocusWithin)
@@ -549,13 +588,13 @@ public sealed class InspectorView : UserControl, IPresentationView
         return streams.All(IsTerminal) ? errors ? "Finished · error" : "Finished / retained" : "State unknown";
     }
 
-    private string GroupKey(InspectorStreamDto stream)
+    private string GroupKey(InspectorStreamDto stream, ILookup<string, InspectorStreamDto> requests, ILookup<string, string> responses)
     {
         var current = stream.RequestId;
         var visited = new HashSet<string>(StringComparer.Ordinal);
         while (visited.Add(current))
         {
-            var attempts = _snapshot!.Streams.Where(candidate => candidate.RequestId == current).ToArray();
+            var attempts = requests[current].ToArray();
             var conversations = attempts
                 .Select(candidate => KnownIdentity(candidate.Dimensions, "conversationId", candidate.Dimensions?.ConversationId))
                 .OfType<string>().Distinct(StringComparer.Ordinal).ToArray();
@@ -565,7 +604,7 @@ public sealed class InspectorView : UserControl, IPresentationView
                 .OfType<string>().Distinct(StringComparer.Ordinal);
             foreach (var previous in previousResponses)
             {
-                var matches = _snapshot!.Streams.Where(candidate => KnownIdentity(candidate.Dimensions, "responseId", candidate.Dimensions?.ResponseId) == previous).Select(x => x.RequestId).Distinct().ToArray();
+                var matches = responses[previous].Distinct(StringComparer.Ordinal).ToArray();
                 if (matches.Length > 1) return "request:" + stream.RequestId;
                 if (matches.Length == 1) parents.Add(matches[0]);
             }
@@ -629,16 +668,20 @@ public sealed class InspectorView : UserControl, IPresentationView
         _selection.Text = $"{streams.First().Model ?? streams.First().RequestedModel ?? "Model unknown"} · {stateLabel} · {streams.Length} observed streams";
         RenderNavigation(streams);
         ToolTip.SetTip(_selection, _selection.Text + " · request " + _selectedRequest);
-        if (_identity.IsKeyboardFocusWithin) return;
+        if (!_identity.IsExpanded || _identity.IsKeyboardFocusWithin) return;
         var facts = new StackPanel { Spacing = 7 };
         facts.Children.Add(Selectable($"Source {_snapshot.SourceId} · snapshot cursor {_snapshot.Cursor} · earliest cursor {_snapshot.EarliestCursor} · dropped {_snapshot.DroppedEvents} · complete {_snapshot.Complete}"));
-        var sourceFacts = JsonSerializer.SerializeToNode(_snapshot, TechnicalJson)!.AsObject();
-        sourceFacts.Remove(nameof(InspectorSnapshotDto.Streams));
-        sourceFacts["ReportedStreamCount"] = _snapshot.Streams.Length;
-        var sourceDetails = new Expander { Header = "Source and cursor attributes", HorizontalContentAlignment = HorizontalAlignment.Stretch,
-            IsExpanded = _sourceDetailsExpanded,
-            Content = new StackPanel { Spacing = 5, Children = { Selectable(sourceFacts.ToJsonString(TechnicalJson)),
-                Selectable(_eventPageFacts?.RequestId == _selectedRequest ? JsonSerializer.Serialize(_eventPageFacts, TechnicalJson) : "No event-page metadata received for this request yet.") } } };
+        var snapshot = _snapshot;
+        var pageFacts = _eventPageFacts;
+        var sourceDetails = LazyDetails("Source and cursor attributes", () =>
+        {
+            // Exclude Streams before serializing, not after allocating its JSON tree.
+            var sourceFacts = JsonSerializer.Serialize(new { snapshot.ContractVersion, snapshot.SourceId, snapshot.ObservedAt,
+                snapshot.State, snapshot.Complete, snapshot.Cursor, snapshot.EarliestCursor, snapshot.DroppedEvents,
+                snapshot.Limits, snapshot.Error, ReportedStreamCount = snapshot.Streams.Length }, TechnicalJson);
+            return new StackPanel { Spacing = 5, Children = { Selectable(sourceFacts),
+                Selectable(pageFacts?.RequestId == _selectedRequest ? JsonSerializer.Serialize(pageFacts, TechnicalJson) : "No event-page metadata received for this request yet.") } };
+        }, _sourceDetailsExpanded);
         sourceDetails.PropertyChanged += (_, args) =>
         { if (args.Property == Expander.IsExpandedProperty) _sourceDetailsExpanded = sourceDetails.IsExpanded; };
         facts.Children.Add(sourceDetails);
@@ -663,10 +706,10 @@ public sealed class InspectorView : UserControl, IPresentationView
                         + (EvidenceSources.Contains(evidence.Source) ? "" : " · unsupported provenance; not used for grouping"), 10, Ui.Muted));
             }
             else facts.Children.Add(Ui.Text("Conversation, turn and worker identities are unknown.", 11, Ui.Muted));
-            var attributes = new Expander { Header = "Complete stream attributes", HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                IsExpanded = _streamDetailOverrides.GetValueOrDefault(stream.Id),
-                Content = new StackPanel { Spacing = 5, Children = { Selectable(JsonSerializer.Serialize(stream, TechnicalJson)),
-                    Ui.Button("Copy complete stream attributes", () => CopyText(JsonSerializer.Serialize(stream, TechnicalJson))) } } };
+            var attributes = LazyDetails("Complete stream attributes", () =>
+                new StackPanel { Spacing = 5, Children = { Selectable(JsonSerializer.Serialize(stream, TechnicalJson)),
+                    Ui.Button("Copy complete stream attributes", () => CopyText(JsonSerializer.Serialize(stream, TechnicalJson))) } },
+                _streamDetailOverrides.GetValueOrDefault(stream.Id));
             attributes.PropertyChanged += (_, args) =>
             { if (args.Property == Expander.IsExpandedProperty) _streamDetailOverrides[stream.Id] = attributes.IsExpanded; };
             facts.Children.Add(attributes);
@@ -729,8 +772,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         if (_restoreRequestOffset && _events.Count > 0 && _selectedRequest is { } request && _requestOffsets.TryGetValue(request, out var offset))
         { viewport = new(_sourceId, request, offset, null, 0); _restoreRequestOffset = false; }
         _renderPending = false;
-        CloseEventMenus();
-        _eventList.Children.Clear(); _eventAnchors.Clear();
+        _eventAnchors.Clear();
         _lastOutput = null;
         _eventTimes.Clear(); _eventDetails.Clear(); _eventSurfaces.Clear();
         var summary = ContentSummary();
@@ -747,70 +789,50 @@ public sealed class InspectorView : UserControl, IPresentationView
                 && previous.First.Kind == entry.Kind && previous.First.Scope == entry.Scope && previous.First.State == entry.State && previous.First.StatusCode == entry.StatusCode
                 && previous.First.Dimensions?.TurnId == entry.Dimensions?.TurnId && previous.First.Dimensions?.WorkerId == entry.Dimensions?.WorkerId
                 && previous.First.RedactionState == entry.RedactionState && !entry.Truncated && entry.GapReason is null && !previous.Truncated)
-            { previous.Text += entry.Text; previous.Entries.Add(entry); }
+            { previous.Append(entry); }
             else blocks.Add(new EventBlock(entry, channel));
         }
+        var retained = blocks.Select(block => EventKey(block.First)).ToHashSet();
+        foreach (var key in _renderedEvents.Keys.Where(key => !retained.Contains(key)).ToArray())
+        {
+            var removed = _renderedEvents[key];
+            foreach (var control in removed.Surface.GetVisualDescendants().OfType<Control>().Prepend(removed.Surface))
+                control.ContextMenu?.Close();
+            _eventList.Children.Remove(removed.Surface);
+            _renderedEvents.Remove(key);
+        }
+        // A placeholder is the only child which has no retained event key.
+        if (_renderedEvents.Count == 0) _eventList.Children.Clear();
+        var blockIndex = 0;
         foreach (var block in blocks)
         {
-            var entry = block.First;
-            var label = block.Channel switch { "text" or "output" or "assistant" => "Assistant", "reasoning" => "Reasoning", "tool" or "tool_call" or "tool_result" => "Tool",
-                _ => entry.Kind switch { "attempt_started" => "Attempt started", "attempt_finished" => "Attempt finished", "metadata" => "Metadata", _ => "Status" } };
-            if (entry.ToolName is not null) label += " · " + entry.ToolName;
-            var metadata = new List<string> { entry.ObservedAt.ToLocalTime().ToString("HH:mm:ss", CultureInfo.CurrentCulture) + " local" };
-            if (entry.AttemptId is not null) metadata.Add("attempt " + Short(entry.AttemptId));
-            if (KnownIdentity(entry.Dimensions, "turnId", entry.Dimensions?.TurnId) is { } turn) metadata.Add("turn " + Short(turn));
-            if (KnownIdentity(entry.Dimensions, "workerId", entry.Dimensions?.WorkerId) is { } worker) metadata.Add("worker " + Short(worker));
-            var time = Ui.Text(metadata[0], 10, Ui.Muted);
-            _eventTimes.Add(time);
-            var eventHeader = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 8 };
-            eventHeader.Children.Add(new StackPanel { Spacing = 3, Children = { Ui.Text(label, 13), time } });
-            var content = new StackPanel { Spacing = 5, Children = { eventHeader } };
-            if (!string.IsNullOrEmpty(block.Text))
+            var key = EventKey(block.First);
+            if (!_renderedEvents.TryGetValue(key, out var rendered))
             {
-                _lastOutput = Selectable(block.Text, 13);
-                content.Children.Add(_lastOutput);
+                rendered = new RenderedEvent(block);
+                rendered.Surface = BuildEventSurface(rendered);
+                _renderedEvents.Add(key, rendered);
+                _eventList.Children.Insert(blockIndex, rendered.Surface);
             }
-            else content.Children.Add(Ui.Text(entry.State ?? entry.GapReason ?? "Metadata event", 12, Ui.Muted));
-            if (entry.Truncated || entry.GapReason is not null) content.Children.Add(Ui.Text("Partial event · " + (entry.GapReason ?? "content truncated"), 11, Ui.Warning));
-            if (entry.RedactionState is not null and not "none") content.Children.Add(Ui.Text("Content policy: " + entry.RedactionState, 10, Ui.Muted));
-            var technical = new StackPanel { Spacing = 5, Children =
+            else if (rendered.Block.Entries.Count != block.Entries.Count)
             {
-                Selectable(string.Join(" · ", metadata)),
-                Selectable($"Request {entry.RequestId} · attempt {entry.AttemptId ?? "unknown"} · {block.Entries.Count:N0} source events")
-            } };
-            foreach (var sourceEvent in block.Entries)
-            {
-                // Content remains above; every constituent event retains its complete typed metadata.
-                technical.Children.Add(Selectable(EventMetadata(sourceEvent)));
-                technical.Children.Add(Ui.Text($"Event {sourceEvent.Cursor:N0} · {sourceEvent.Text?.Length ?? 0:N0} text characters shown above", 10, Ui.Muted));
-                var sourceKey = EventKey(sourceEvent);
-                technical.Children.Add(Ui.Button("Copy complete event " + sourceEvent.Cursor,
-                    () => CopyRetainedText(sourceKey, () => JsonSerializer.Serialize(sourceEvent, TechnicalJson))));
+                rendered.Block = block;
+                UpdateRenderedOutput(rendered);
+                // Closed metadata is discarded and never rebuilt by the stream poll.
+                rendered.Details.Content = rendered.Details.IsExpanded
+                    ? BuildEventDetails(block, EventIdentityMetadata(block.First), key) : null;
             }
-            var detailKey = EventKey(entry);
-            var details = new Expander { Header = "Event details", Content = technical,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                IsExpanded = _eventDetailOverrides.GetValueOrDefault(detailKey, false) };
-            details.PropertyChanged += (_, args) =>
+            if (_eventList.Children.IndexOf(rendered.Surface) != blockIndex)
             {
-                if (args.Property == Expander.IsExpandedProperty
-                    && detailKey.SourceId == _sourceId && detailKey.RequestId == _selectedRequest
-                    && _eventReceived.ContainsKey(detailKey.Cursor))
-                    _eventDetailOverrides[detailKey] = details.IsExpanded;
-            };
-            var identities = $"Request {entry.RequestId} · attempt {entry.AttemptId ?? "unknown"} · event {entry.Cursor}";
-            void CopyIdentities() => CopyRetainedText(detailKey, () => identities);
-            technical.Children.Add(Ui.Button("Copy full identities", CopyIdentities));
-            ObjectCommand[] commands = [new("details", "Event details", () => details.IsExpanded = !details.IsExpanded),
-                new("copy", "Copy full identities", CopyIdentities), new("copy-output", "Copy displayed output", () => CopyRetainedText(detailKey, () => block.Text), block.Text.Length > 0)];
-            var commandMenu = ObjectCommands.Menu(commands);
-            var more = Ui.Button("⋯", () => commandMenu.Open());
-            more.ContextMenu = commandMenu;
-            AutomationProperties.SetName(more, "Live event actions " + entry.Cursor);
-            ToolTip.SetTip(more, "Event details and copy actions; also available with the context menu key.");
-            Grid.SetColumn(more, 1); eventHeader.Children.Add(more);
-            content.Children.Add(details); _eventDetails.Add((details, detailKey));
-            var surface = Surface(content); surface.ContextMenu = ObjectCommands.Menu(commands); _eventSurfaces.Add(surface); _eventAnchors[detailKey] = surface; _eventList.Children.Add(surface);
+                _eventList.Children.Remove(rendered.Surface);
+                _eventList.Children.Insert(blockIndex, rendered.Surface);
+            }
+            blockIndex++;
+            _eventTimes.Add(rendered.Time);
+            _eventDetails.Add((rendered.Details, key));
+            _eventSurfaces.Add(rendered.Surface);
+            _eventAnchors[key] = rendered.Surface;
+            if (rendered.Output is not null) _lastOutput = rendered.Output;
         }
         if (blocks.Count == 0) _eventList.Children.Add(Ui.Text("No retained content for this request. Metadata may be available before the first output or after content expires.", 12, Ui.Muted));
         ApplyPresentation();
@@ -818,9 +840,183 @@ public sealed class InspectorView : UserControl, IPresentationView
         else RestoreOutputViewport(viewport);
     }
 
+    private Border BuildEventSurface(RenderedEvent rendered)
+    {
+        var block = rendered.Block;
+        var entry = block.First;
+        var label = block.Channel switch { "text" or "output" or "assistant" => "Assistant", "reasoning" => "Reasoning", "tool" or "tool_call" or "tool_result" => "Tool",
+            _ => entry.Kind switch { "attempt_started" => "Attempt started", "attempt_finished" => "Attempt finished", "metadata" => "Metadata", _ => "Status" } };
+        if (entry.ToolName is not null) label += " · " + entry.ToolName;
+        var metadata = EventIdentityMetadata(entry);
+        var time = Ui.Text(metadata[0], 10, Ui.Muted);
+        var eventHeader = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 8 };
+        eventHeader.Children.Add(new StackPanel { Spacing = 3, Children = { Ui.Text(label, 13), time } });
+        var content = new StackPanel { Spacing = 5, Children = { eventHeader } };
+        if (!string.IsNullOrEmpty(block.Text))
+        {
+            rendered.OutputPanel = new StackPanel { Spacing = 0 };
+            rendered.PageLabel = Ui.Text("", 11, Ui.Muted);
+            var earlier = Ui.Button("Earlier output", () =>
+            {
+                _follow.IsChecked = false;
+                rendered.PageStart = Math.Max(0, rendered.LastPageStart - OutputPageCharacters);
+                UpdateRenderedOutput(rendered);
+            });
+            var later = Ui.Button("Later output", () =>
+            {
+                rendered.PageStart = Math.Min(Math.Max(0, rendered.Block.Text.Length - OutputPageCharacters), rendered.LastPageStart + OutputPageCharacters);
+                UpdateRenderedOutput(rendered);
+            });
+            var latest = Ui.Button("Latest output", () =>
+            {
+                rendered.PageStart = null;
+                _follow.IsChecked = true;
+                UpdateRenderedOutput(rendered);
+                ScheduleFollowOutput();
+            });
+            rendered.PageControls = new StackPanel { Spacing = 4, Children = { rendered.PageLabel,
+                new WrapPanel { Children = { earlier, later, latest } } } };
+            rendered.Earlier = earlier; rendered.Later = later;
+            UpdateRenderedOutput(rendered);
+            content.Children.Add(rendered.PageControls);
+            content.Children.Add(rendered.OutputPanel);
+        }
+        else content.Children.Add(Ui.Text(entry.State ?? entry.GapReason ?? "Metadata event", 12, Ui.Muted));
+        if (entry.Truncated || entry.GapReason is not null) content.Children.Add(Ui.Text("Partial event · " + (entry.GapReason ?? "content truncated"), 11, Ui.Warning));
+        if (entry.RedactionState is not null and not "none") content.Children.Add(Ui.Text("Content policy: " + entry.RedactionState, 10, Ui.Muted));
+        var detailKey = EventKey(entry);
+        var details = LazyDetails("Event details", () => BuildEventDetails(rendered.Block, metadata, detailKey),
+            _eventDetailOverrides.GetValueOrDefault(detailKey, false));
+        rendered.Details = details;
+        details.PropertyChanged += (_, args) =>
+        {
+            if (args.Property == Expander.IsExpandedProperty
+                && detailKey.SourceId == _sourceId && detailKey.RequestId == _selectedRequest
+                && _eventReceived.ContainsKey(detailKey.Cursor))
+                _eventDetailOverrides[detailKey] = details.IsExpanded;
+        };
+        var identities = $"Request {entry.RequestId} · attempt {entry.AttemptId ?? "unknown"} · event {entry.Cursor}";
+        void CopyIdentities() => CopyRetainedText(detailKey, () => identities);
+        ObjectCommand[] commands = [new("details", "Event details", () => details.IsExpanded = !details.IsExpanded),
+            new("copy", "Copy full identities", CopyIdentities), new("copy-output", "Copy full retained output", () => CopyRetainedText(detailKey, () => rendered.Block.Text), block.Text.Length > 0)];
+        var commandMenu = ObjectCommands.Menu(commands);
+        var more = Ui.Button("⋯", () => commandMenu.Open());
+        more.ContextMenu = commandMenu;
+        AutomationProperties.SetName(more, "Live event actions " + entry.Cursor);
+        ToolTip.SetTip(more, "Event details and copy actions; also available with the context menu key.");
+        Grid.SetColumn(more, 1); eventHeader.Children.Add(more);
+        content.Children.Add(details);
+        rendered.Time = time;
+        var surface = Surface(content); surface.ContextMenu = ObjectCommands.Menu(commands);
+        return surface;
+    }
+
+    private void UpdateRenderedOutput(RenderedEvent rendered)
+    {
+        if (rendered.OutputPanel is null) return;
+        var complete = rendered.Block.Text;
+        if (_follow.IsChecked != true && rendered.PageStart is null && rendered.Outputs.Count > 0)
+            rendered.PageStart = rendered.LastPageStart;
+        var start = Math.Clamp(rendered.PageStart ?? Math.Max(0, complete.Length - OutputPageCharacters), 0, Math.Max(0, complete.Length - 1));
+        if (start > 0 && char.IsLowSurrogate(complete[start]) && char.IsHighSurrogate(complete[start - 1])) start--;
+        var lengthToShow = Math.Min(OutputPageCharacters, complete.Length - start);
+        if (start + lengthToShow < complete.Length && char.IsHighSurrogate(complete[start + lengthToShow - 1]) && char.IsLowSurrogate(complete[start + lengthToShow])) lengthToShow--;
+        rendered.LastPageStart = start;
+        rendered.PageControls!.IsVisible = complete.Length > OutputPageCharacters;
+        rendered.PageLabel!.Text = $"Showing characters {start + 1:N0}–{start + lengthToShow:N0} of {complete.Length:N0} · copy action includes the full retained output";
+        rendered.Earlier!.IsEnabled = start > 0;
+        rendered.Later!.IsEnabled = start + lengthToShow < complete.Length;
+        var text = complete.Substring(start, lengthToShow);
+        var offset = 0;
+        var index = 0;
+        // Text layout is cached per small selectable section. A growing response
+        // must never make Avalonia reshape the entire 262K-character buffer.
+        while (offset < text.Length)
+        {
+            var length = Math.Min(TextLayoutChunkLimit, text.Length - offset);
+            if (offset + length < text.Length)
+            {
+                var newline = text.LastIndexOf('\n', offset + length - 1, length);
+                if (newline >= offset + length / 2) length = newline - offset + 1;
+                if (char.IsHighSurrogate(text[offset + length - 1]) && char.IsLowSurrogate(text[offset + length])) length--;
+            }
+            var part = text.Substring(offset, length);
+            if (index == rendered.Outputs.Count)
+            {
+                var output = Selectable(part, 13);
+                rendered.Outputs.Add(output);
+                rendered.OutputPanel.Children.Add(output);
+            }
+            else if (rendered.Outputs[index].Text != part) rendered.Outputs[index].Text = part;
+            offset += length;
+            index++;
+        }
+        while (rendered.Outputs.Count > index)
+        {
+            rendered.OutputPanel.Children.Remove(rendered.Outputs[^1]);
+            rendered.Outputs.RemoveAt(rendered.Outputs.Count - 1);
+        }
+    }
+
+    private static List<string> EventIdentityMetadata(InspectorEventDto entry)
+    {
+        var metadata = new List<string> { entry.ObservedAt.ToLocalTime().ToString("HH:mm:ss", CultureInfo.CurrentCulture) + " local" };
+        if (entry.AttemptId is not null) metadata.Add("attempt " + Short(entry.AttemptId));
+        if (KnownIdentity(entry.Dimensions, "turnId", entry.Dimensions?.TurnId) is { } turn) metadata.Add("turn " + Short(turn));
+        if (KnownIdentity(entry.Dimensions, "workerId", entry.Dimensions?.WorkerId) is { } worker) metadata.Add("worker " + Short(worker));
+        return metadata;
+    }
+
+    private Control BuildEventDetails(EventBlock block, List<string> metadata, EventDetailKey key)
+    {
+        var entry = block.First;
+        var technical = new StackPanel { Spacing = 5, Children =
+        {
+            Selectable(string.Join(" · ", metadata)),
+            Selectable($"Request {entry.RequestId} · attempt {entry.AttemptId ?? "unknown"} · {block.Entries.Count:N0} source events")
+        } };
+        // Inspect long streams in bounded metadata pages; don't create 1500 hidden
+        // controls just to expose 500 constituent deltas.
+        var offset = 0;
+        var page = new StackPanel { Spacing = 5 };
+        var next = new Button { Content = "Next 25 source events" };
+        void ShowPage()
+        {
+            page.Children.Clear();
+            foreach (var sourceEvent in block.Entries.Skip(offset).Take(25))
+            {
+                page.Children.Add(Selectable(EventMetadata(sourceEvent)));
+                page.Children.Add(Ui.Text($"Event {sourceEvent.Cursor:N0} · {sourceEvent.Text?.Length ?? 0:N0} text characters shown above", 10, Ui.Muted));
+                var sourceKey = EventKey(sourceEvent);
+                page.Children.Add(Ui.Button("Copy complete event " + sourceEvent.Cursor,
+                    () => CopyRetainedText(sourceKey, () => JsonSerializer.Serialize(sourceEvent, TechnicalJson))));
+            }
+            next.IsVisible = block.Entries.Count > 25;
+            next.Content = offset + 25 < block.Entries.Count ? "Next 25 source events" : "First 25 source events";
+        }
+        next.Click += (_, _) => { offset = offset + 25 < block.Entries.Count ? offset + 25 : 0; ShowPage(); };
+        ShowPage(); technical.Children.Add(page); technical.Children.Add(next);
+        technical.Children.Add(Ui.Button("Copy full identities", () => CopyRetainedText(key,
+            () => $"Request {entry.RequestId} · attempt {entry.AttemptId ?? "unknown"} · event {entry.Cursor}")));
+        return technical;
+    }
+
+    private static Expander LazyDetails(string header, Func<Control> build, bool expanded = false)
+    {
+        var details = new Expander { Header = header, HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch, IsExpanded = expanded };
+        details.PropertyChanged += (_, args) =>
+        {
+            if (args.Property != Expander.IsExpandedProperty) return;
+            details.Content = details.IsExpanded ? build() : null;
+        };
+        if (expanded) details.Content = build();
+        return details;
+    }
+
     private static string EventMetadata(InspectorEventDto entry)
     {
-        var metadata = JsonSerializer.SerializeToNode(entry, TechnicalJson)!.AsObject();
+        var metadata = JsonSerializer.SerializeToNode(entry with { Text = null }, TechnicalJson)!.AsObject();
         metadata.Remove(nameof(InspectorEventDto.Text));
         metadata["TextCharacters"] = entry.Text?.Length;
         return metadata.ToJsonString(TechnicalJson);
@@ -855,7 +1051,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         foreach (var key in _eventDetailOverrides.Keys.Where(key => !retained.Contains(key)).ToArray())
             _eventDetailOverrides.Remove(key);
     }
-    private void ClearEvents() { CloseEventMenus(); _eventPageFacts = null; _events.Clear(); _eventReceived.Clear(); _eventDetailOverrides.Clear(); }
+    private void ClearEvents() { CloseEventMenus(); _renderedEvents.Clear(); _eventList.Children.Clear(); _eventPageFacts = null; _events.Clear(); _eventReceived.Clear(); _eventDetailOverrides.Clear(); }
     private void ResetDetachedState()
     {
         _lastDetachedSource = _sourceId; _lastDetachedRequest = _selectedRequest; _lastDetachedGroup = _selectedGroup;
@@ -866,7 +1062,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         _after = 0; _nextSnapshot = 0; _refreshOnce = false; _renderPending = false; _lastOutput = null;
         ClearEvents(); _eventList.Children.Clear(); _eventTimes.Clear(); _eventDetails.Clear(); _eventSurfaces.Clear(); _eventAnchors.Clear();
         _streamDetailOverrides.Clear(); _sourceDetailsExpanded = false; _localLimitNotice = null; _localExpiryNotice = null;
-        _groups.Clear(); _groupButtons.Clear(); _groupList.Children.Clear();
+        _groups.Clear(); _groupButtons.Clear(); _groupContentKeys.Clear(); _groupList.Children.Clear();
         _updatingChoices = true;
         _conversation.ItemsSource = Array.Empty<GroupChoice>(); _request.ItemsSource = Array.Empty<RequestChoice>();
         _updatingChoices = false;
@@ -881,7 +1077,7 @@ public sealed class InspectorView : UserControl, IPresentationView
         _sourceId = sourceId; _selectedGroup = null; _selectedRequest = null; _after = 0;
         _lastDetachedSource = null; _lastDetachedRequest = null; _lastDetachedGroup = null;
         _requestOffsets.Clear(); _streamDetailOverrides.Clear(); _sourceDetailsExpanded = false; _localLimitNotice = null; _localExpiryNotice = null;
-        ClearEvents(); _groups.Clear(); _groupButtons.Clear(); _groupList.Children.Clear();
+        ClearEvents(); _groups.Clear(); _groupButtons.Clear(); _groupContentKeys.Clear(); _groupList.Children.Clear();
         _navigation.Children.Clear(); _navigationKey = null;
         _updatingChoices = true; _conversation.ItemsSource = Array.Empty<GroupChoice>(); _request.ItemsSource = Array.Empty<RequestChoice>(); _updatingChoices = false;
         _identityFacts.Content = Ui.Text("Waiting for identities from the new live source", 12, Ui.Muted);
@@ -901,6 +1097,22 @@ public sealed class InspectorView : UserControl, IPresentationView
     private sealed record OutputViewport(string? SourceId, string? RequestId, Vector Offset, EventDetailKey? Anchor, double RelativeY);
     private sealed record EventPageFacts(string RequestId, long RequestedAfter, string SourceId, long NextCursor,
         long HighWatermark, long EarliestCursor, long DroppedEvents, bool Truncated, string? GapReason);
+    private sealed class RenderedEvent(EventBlock block)
+    {
+        public EventBlock Block { get; set; } = block;
+        public Border Surface { get; set; } = null!;
+        public TextBlock Time { get; set; } = null!;
+        public int? PageStart { get; set; }
+        public int LastPageStart { get; set; }
+        public StackPanel? PageControls { get; set; }
+        public TextBlock? PageLabel { get; set; }
+        public Button? Earlier { get; set; }
+        public Button? Later { get; set; }
+        public StackPanel? OutputPanel { get; set; }
+        public List<SelectableTextBlock> Outputs { get; } = [];
+        public SelectableTextBlock? Output => Outputs.LastOrDefault();
+        public Expander Details { get; set; } = null!;
+    }
     private sealed class EventBlock(InspectorEventDto first, string channel)
     {
         public InspectorEventDto First { get; } = first;
@@ -909,6 +1121,9 @@ public sealed class InspectorView : UserControl, IPresentationView
         public string? AttemptId => First.AttemptId;
         public string? ToolCallId => First.ToolCallId;
         public bool Truncated => First.Truncated;
-        public string Text { get; set; } = first.Text ?? "";
+        private readonly StringBuilder _text = new(first.Text ?? "");
+        private string? _cachedText;
+        public string Text => _cachedText ??= _text.ToString();
+        public void Append(InspectorEventDto entry) { _text.Append(entry.Text); _cachedText = null; Entries.Add(entry); }
     }
 }
