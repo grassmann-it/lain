@@ -30,26 +30,8 @@ public sealed partial class RecordingView
         if (!record.Complete || record.GapReason is not null)
             panel.Children.Add(Ui.Text($"Incomplete / gap: {record.GapReason ?? "source did not establish completeness"}", 12, Ui.Warning));
         if (record.FinishReason is not null) panel.Children.Add(Ui.Text($"Finish: {record.FinishReason}", 11, Ui.Muted));
-        foreach (var message in record.Messages)
-        {
-            panel.Children.Add(Ui.Text($"{message.Role} · {message.State ?? "observed"}{(message.Complete ? "" : " · incomplete")}", 13));
-            if (message.GapReason is not null) panel.Children.Add(Ui.Text(message.GapReason, 12, Ui.Warning));
-            foreach (var part in message.Parts)
-            {
-                if (part.Text is not null) panel.Children.Add(new RecordingText(part.Text, $"Message {message.Id}"));
-                if (part.ToolName is not null || part.ToolCallId is not null)
-                    panel.Children.Add(Ui.Text($"Requested tool: {part.ToolName ?? "unknown"} · call {part.ToolCallId ?? "unknown"} · {part.Evidence}", 12));
-                if (part.Arguments is not null) panel.Children.Add(LazyText("Tool arguments", part.Arguments));
-                if (part.Result is not null)
-                {
-                    panel.Children.Add(Ui.Text("Result supplied by client; local execution is not established by this record.", 12, Ui.Muted));
-                    panel.Children.Add(LazyText("Client-supplied tool result", part.Result));
-                }
-                if (part.Text is null && part.Arguments is null && part.Result is null && part.ToolName is null)
-                    panel.Children.Add(Ui.Text($"{part.Kind} · unsupported or omitted content · {part.Evidence}", 12, Ui.Warning));
-                if (!part.Complete) panel.Children.Add(Ui.Text("Content part incomplete", 11, Ui.Warning));
-            }
-        }
+        if (record.Messages.Length > 0)
+            panel.Children.Add(new RecordingPages<RecordingMessage>(record.Messages, 8, "messages", record.Id, MessageContent));
         if (record.WorkerId is not null)
         {
             var worker = new Expander { Header = $"Worker {record.WorkerId} (evidenced)", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
@@ -74,9 +56,42 @@ public sealed partial class RecordingView
             api.Content = details;
         };
         panel.Children.Add(api);
+        // Metadata-only lifecycle observations stay compact and do not create a full conversation card.
+        if (record.Messages.Length == 0)
+        {
+            panel.Spacing = 3; Name(panel, $"Timeline record {record.Id}"); _timeline.Children.Add(panel); return;
+        }
         var surface = Ui.Card(panel); surface.Padding = new Thickness(10);
         Name(surface, $"Timeline record {record.Id}");
         _timeline.Children.Add(surface);
+    }
+    private static Control MessageContent(RecordingMessage message)
+    {
+        var panel = new StackPanel { Spacing = 5 };
+        panel.Children.Add(Ui.Text($"{message.Role} · {message.State ?? "observed"}{(message.Complete ? "" : " · incomplete")}", 13));
+        if (message.GapReason is not null) panel.Children.Add(Ui.Text(message.GapReason, 12, Ui.Warning));
+        panel.Children.Add(new RecordingPages<RecordingContentPart>(message.Parts, 4, "parts", message.Id, PartContent));
+        var sources = new Expander { Header = $"Message source references ({message.Sources.Length})" };
+        sources.PropertyChanged += (_, e) => { if (e.Property == Expander.IsExpandedProperty && sources.IsExpanded && sources.Content is null) sources.Content = SourcePages(message.Sources); };
+        panel.Children.Add(sources);
+        return panel;
+    }
+    private static Control PartContent(RecordingContentPart part)
+    {
+        var panel = new StackPanel { Spacing = 5 };
+        if (part.Text is not null) panel.Children.Add(new RecordingText(part.Text, "Retained message text page"));
+        if (part.ToolName is not null || part.ToolCallId is not null)
+            panel.Children.Add(Ui.Text($"Requested tool: {part.ToolName ?? "unknown"} · call {part.ToolCallId ?? "unknown"} · {part.Evidence}", 12));
+        if (part.Arguments is not null) panel.Children.Add(LazyText("Tool arguments", part.Arguments));
+        if (part.Result is not null)
+        {
+            panel.Children.Add(Ui.Text("Result supplied by client; local execution is not established by this record.", 12, Ui.Muted));
+            panel.Children.Add(LazyText("Client-supplied tool result", part.Result));
+        }
+        if (part.Text is null && part.Arguments is null && part.Result is null && part.ToolName is null)
+            panel.Children.Add(Ui.Text($"{part.Kind} · unsupported or omitted content · {part.Evidence}", 12, Ui.Warning));
+        if (!part.Complete) panel.Children.Add(Ui.Text("Content part incomplete", 11, Ui.Warning));
+        return panel;
     }
     private static string Number(long? value) => value?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "unknown";
     private static Expander LazyText(string title, string value)

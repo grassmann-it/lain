@@ -97,6 +97,14 @@ internal static class Probe
         Click(Button("Load more saved conversations")); await Wait(() => Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Open saved conversation child"));
         Click(Button("Open saved conversation child")); await Wait(() => Text.Contains("Worker child history"));
         Check(!Text.Contains("Synthetic first turn"), "selection cancels and replaces the prior conversation display");
+        Click(Button("Open saved conversation stress")); await Wait(() => Text.Contains("messages: 1–8 of 1000"));
+        Check(Text.Contains("parts: 1–4 of 1000") && Controls<SelectableTextBlock>().Count() <= 11, "1000-message history and 1000-part message build only 8 messages and 4 parts per page");
+        Click(Button("Next parts page stress-message-0"));
+        Check(Controls<SelectableTextBlock>().Any(t => t.Text == "Stress part 4") && !Controls<SelectableTextBlock>().Any(t => t.Text == "Stress part 0"), "part pagination unloads prior text and copy surfaces");
+        Click(Button("Next messages page stress-record"));
+        Check(Text.Contains("messages: 9–16 of 1000") && Controls<SelectableTextBlock>().Count() == 8 && !Controls<SelectableTextBlock>().Any(t => t.Text == "Stress part 4"), "message pagination unloads off-page content and preserves complete known count");
+        Click(Button("Previous messages page stress-record"));
+        Check(Text.Contains("messages: 1–8 of 1000") && Controls<SelectableTextBlock>().Any(t => t.Text == "Stress part 0"), "previous message page can reconstruct retained content explicitly");
         window.Content = null; await Task.Delay(50);
         window.Content = new RecordingView(client);
         await Wait(() => Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Open saved conversation root"));
@@ -142,12 +150,14 @@ internal sealed class Fixture : HttpMessageHandler
             if (Deleted) return new HttpResponseMessage(HttpStatusCode.NotFound) { Content = JsonContent.Create(new { code = "not_found", message = "synthetic" }) };
             var id = path.Split('/').Last();
             var records = id == "child" ? new[] { Record(99, "Worker child history") } : query["cursor"] is not null ? Enumerable.Range(3, 25).Select(i => Record(i, $"Synthetic small tool block {i}")).ToArray() : Enumerable.Range(0, 3).Select(i => Record(i, i == 0 ? "Synthetic first turn\n" + new string('L', 20000) : $"Synthetic turn {i + 1}")).ToArray();
+            if (id == "stress") records = [new RecordingNormalizedRecord("stress-record", "stress-capture", "stress-request", null, Time, "responses",
+                Enumerable.Range(0, 1000).Select(n => new RecordingMessage($"stress-message-{n}", "user", n == 0 ? Enumerable.Range(0, 1000).Select(p => new RecordingContentPart("text", $"Stress part {p}")).ToArray() : [new("text", $"Stress message {n}")], [new("stress-epoch", n + 1, $"stress-event-{n}")])).ToArray(), [new("stress-epoch", 1, "stress-event-0")])];
             result = new RecordingConversationDetail(Summary(id), records, NextCursor: id == "root" && query["cursor"] is null ? "timeline-2" : null, HasMore: id == "root" && query["cursor"] is null, Runs: [new("run-a", "skill-v1", "revision-a", SkillHash: "configured-hash", Evidence: "configured"), new("run-b", "skill-v2", ObservedInstructionHash: "observed-hash", Evidence: "observed")]);
         }
         else if (path.EndsWith("conversations"))
         {
             ListReads++;
-            result = Deleted ? new RecordingConversationPage([]) : query["cursor"] is null ? new RecordingConversationPage([Summary("root")], "page-2", true) : new RecordingConversationPage([Summary("child", "worker-a")]);
+            result = Deleted ? new RecordingConversationPage([]) : query["cursor"] is null ? new RecordingConversationPage([Summary("root"), Summary("stress")], "page-2", true) : new RecordingConversationPage([Summary("child", "worker-a")]);
         }
         else result = new RecordingHealthDto(1, Policy, SourceUnavailable ? "source_unavailable" : "off", Storage: new(RecordCount: 3), ErrorCode: SourceUnavailable ? "source_unavailable" : null);
         return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(result) };
