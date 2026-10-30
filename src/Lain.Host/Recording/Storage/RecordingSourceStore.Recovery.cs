@@ -1,0 +1,101 @@
+using System.Text.Json;
+
+namespace Lain.Host.Recording.Storage;
+
+public sealed partial class RecordingSourceStore
+{
+    private bool recoveryUncertain;
+
+    private void Recover()
+    {
+        PrivateArchiveFiles.Directory(PayloadDirectory);
+        if (File.Exists(ControlPath)) {
+            using var stream = PrivateArchiveFiles.Open(ControlPath, FileMode.Open, FileAccess.Read);
+            if (stream.Length > 1024 * 1024) throw new InvalidDataException("Recording control state exceeds its bound.");
+            control = JsonSerializer.Deserialize<ArchiveControl>(stream, RecordingFrames.Json)
+                ?? throw new InvalidDataException("Recording control state is invalid.");
+            if (control.Version != 1) throw new InvalidDataException("Recording control state version is unsupported; preserve the archive.");
+            if (!Guid.TryParseExact(control.Generation, "N", out _) || control.HighWatermark < 0 || control.InvalidatedThrough < 0)
+                throw new InvalidDataException("Recording control state is invalid.");
+        }
+        else {
+            // Never invent a new generation over an existing archive with a missing manifest.
+            if (System.IO.Directory.EnumerateDirectories(directory).Any(p => Path.GetFileName(p) != "payloads") || System.IO.Directory.EnumerateFiles(PayloadDirectory).Any())
+                throw new InvalidDataException("Recording control state is missing; preserve the archive.");
+            control = new(1, Guid.NewGuid().ToString("N"));
+            PrivateArchiveFiles.Directory(GenerationDirectory);
+            SaveControl();
+        }
+        PrivateArchiveFiles.Directory(GenerationDirectory);
+        if (control.ClearPending) { CompleteClear(); return; }
+        var files = System.IO.Directory.EnumerateFiles(GenerationDirectory, "journal-*.rec").Order(StringComparer.Ordinal).ToArray();
+        for (var index = 0; index < files.Length; index++) {
+            var path = files[index];
+            using var stream = PrivateArchiveFiles.Open(path, FileMode.Open, FileAccess.ReadWrite);
+            try {
+                while (stream.Position < stream.Length) {
+                    var start = stream.Position;
+                    var item = RecordingFrames.Read(stream, options.MaximumRecordBytes, out var torn);
+                    if (torn) {
+                        if (index != files.Length - 1) throw new InvalidDataException("Sealed recording segment has an incomplete frame.");
+                        QuarantineTail(stream, start);
+                        recoveryUncertain = true;
+                        break;
+                    }
+                    if (item is null) break;
+                    if (records.Count >= options.MaximumRecords || (records.Count != 0 && item.Cursor <= records[^1].Record.Cursor))
+                        throw new InvalidDataException("Recording source order or bound is invalid.");
+                    var location = new StoredLocation(item, Path.GetFileName(path), start);
+                    if (!identities.TryAdd((item.Metadata.SourceEpoch, item.Metadata.Sequence), location))
+                        throw new InvalidDataException("Recording source identity is repeated.");
+                    records.Add(location);
+                    control = control with { HighWatermark = Math.Max(control.HighWatermark, item.Cursor) };
+                    if (!IsHidden(item)) _ = Materialize(location); // Validate referenced payload before exposing a committed prefix.
+                }
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or ArgumentException) {
+                error = "source_corrupt";
+                // Preserve all damaged material, never silently truncate checksum failures/interior corruption.
+                break;
+            }
+        }
+        recoveryUncertain |= records.Count != 0;
+        if (error is null) {
+            SaveControl();
+            if (control.PurgePending) CompactHidden();
+            if (!control.PurgePending) CleanupUnreferenced();
+        }
+    }
+
+    private void QuarantineTail(FileStream stream, long offset)
+    {
+        var length = stream.Length - offset;
+        if (length > options.MaximumRecordBytes + 65536L || !HasSpace(length + 4096))
+            throw new InvalidDataException("Recording recovery workspace is exhausted.");
+        var recovery = Path.Combine(directory, "recovery");
+        PrivateArchiveFiles.Directory(recovery);
+        using (var target = PrivateArchiveFiles.Open(Path.Combine(recovery, Guid.NewGuid().ToString("N") + ".tail"), FileMode.CreateNew, FileAccess.Write, FileShare.None)) {
+            stream.Position = offset;
+            stream.CopyTo(target);
+            target.Flush(true);
+        }
+        PrivateArchiveFiles.SyncDirectory(recovery);
+        stream.SetLength(offset);
+        stream.Flush(true);
+    }
+
+    private void CleanupUnreferenced()
+    {
+        var reachable = records.Where(r => !IsHidden(r.Record)).Select(r => r.Record.PayloadFile).Where(p => p is not null).ToHashSet(StringComparer.Ordinal);
+        foreach (var path in System.IO.Directory.EnumerateFiles(PayloadDirectory)) {
+            PrivateArchiveFiles.RejectLinks(path);
+            if (!reachable.Contains(Path.GetFileName(path))) File.Delete(path);
+        }
+        // A generation not named by durable control cannot become active after a crash or restore.
+        foreach (var path in System.IO.Directory.EnumerateDirectories(directory)) {
+            PrivateArchiveFiles.RejectLinks(path);
+            if (Guid.TryParseExact(Path.GetFileName(path), "N", out _) && path != GenerationDirectory) DeletePrivateTree(path);
+        }
+        PrivateArchiveFiles.SyncDirectory(directory);
+    }
+}
