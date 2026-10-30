@@ -54,7 +54,7 @@ public sealed partial class RecordingSourceStore
         if (string.IsNullOrWhiteSpace(captureId) || captureId.Length > 1024) throw new ArgumentException("Invalid recording capture identifier.");
         await gate.WaitAsync(ct);
         try { if (initialized) MarkAndPurge([captureId]); }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { error = "purge_pending"; throw new IOException("recording_purge_failed"); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { if (error is not ("source_corrupt" or "archive_unavailable")) error = "purge_pending"; throw new IOException("recording_purge_failed"); }
         finally { gate.Release(); }
     }
 
@@ -63,14 +63,15 @@ public sealed partial class RecordingSourceStore
     {
         await gate.WaitAsync(ct);
         try {
-            if (!initialized) return;
+            if (!initialized || error is "source_corrupt" or "archive_unavailable") return;
             var now = clock.GetUtcNow();
-            var expired = records.Where(r => r.Record.Metadata.ObservedAt <= now.AddDays(-options.MetadataRetentionDays) ||
-                (r.Record.PayloadFile is not null && r.Record.Metadata.ObservedAt <= now.AddDays(-options.ContentRetentionDays)))
+            var limits = RetentionLimits();
+            var expired = records.Where(r => r.Record.Metadata.ObservedAt <= now.AddDays(-limits.MetadataDays) ||
+                (r.Record.PayloadFile is not null && r.Record.Metadata.ObservedAt <= now.AddDays(-limits.ContentDays)))
                 .Select(r => r.Record.Metadata.CaptureId).Distinct().ToArray();
             if (expired.Length != 0 || control.PurgePending) MarkAndPurge(expired);
         }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { error = "purge_pending"; throw new IOException("recording_retention_failed"); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { if (error is not ("source_corrupt" or "archive_unavailable")) error = "purge_pending"; throw new IOException("recording_retention_failed"); }
         finally { gate.Release(); }
     }
 

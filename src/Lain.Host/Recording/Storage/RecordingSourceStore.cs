@@ -67,10 +67,11 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         ct.ThrowIfCancellationRequested();
         if (disposed) return Task.FromResult(new RecordingCommitResult(false, ErrorCode: "store_closed"));
         // UTF8 counting is bounded by the already sanitized input boundary. Do not serialize raw content here.
-        var bytes = (long)Encoding.UTF8.GetByteCount(observation.Body ?? "") + 4096;
-        if (bytes > options.MaximumRecordBytes || !ValidMetadata(observation))
+        var bodyBytes = Encoding.UTF8.GetByteCount(observation.Body ?? "");
+        var bytes = (long)bodyBytes + 4096;
+        if (bodyBytes > MaximumAcceptedRecordBytes || !ValidMetadata(observation))
             return Task.FromResult(new RecordingCommitResult(false, ErrorCode: "invalid_or_oversize_record"));
-        if (Interlocked.Add(ref queuedBytes, bytes) > options.QueueBytes) {
+        if (Interlocked.Add(ref queuedBytes, bytes) > MaximumQueuedBytes) {
             Interlocked.Add(ref queuedBytes, -bytes); Interlocked.Increment(ref dropped);
             return Task.FromResult(new RecordingCommitResult(false, ErrorCode: "queue_full"));
         }
@@ -108,7 +109,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         if (!policy.IsCurrent(observation.PolicyRevision, observation.StopGeneration)) return new(false, ErrorCode: "policy_stopped_or_changed");
         if ((control.HiddenCaptures ?? []).Contains(observation.CaptureId, StringComparer.Ordinal)) return new(false, ErrorCode: "capture_deleted");
         var serialized = JsonSerializer.SerializeToUtf8Bytes(observation, RecordingFrames.Json);
-        if (serialized.Length > options.MaximumRecordBytes) return new(false, ErrorCode: "record_too_large");
+        if (serialized.Length > MaximumAcceptedRecordBytes) return new(false, ErrorCode: "record_too_large");
         var hash = RecordingFrames.Hash(serialized);
         if (identities.TryGetValue((observation.SourceEpoch, observation.Sequence), out var duplicate)) {
             if (duplicate.Record.ContentHash != hash) return new(false, ErrorCode: "source_identity_conflict");
@@ -211,7 +212,9 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
 
     private bool HasSpace(long required)
     {
-        if (DiskBytes() + required > options.MaximumDiskBytes) return false;
+        var maximum = SourceDiskBudget;
+        var existing = DiskBytes();
+        if (required < 0 || existing > maximum || required > maximum - existing) return false;
         var drive = new DriveInfo(Path.GetPathRoot(directory)!);
         // DriveInfo('/') is not correct for every separate mount; locate the longest containing mount on Linux.
         if (OperatingSystem.IsLinux()) {
@@ -245,7 +248,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
     {
         if (o.QueueCount <= 0 || o.MaximumRecordBytes < 4096 || o.MaximumRecordBytes > 64 * 1024 * 1024 || o.QueueBytes < 4096 ||
             o.MaximumRecords <= 0 || o.MaximumDiskBytes < 65536 || o.MinimumFreeDiskBytes < 0 || o.SegmentBytes < 4096 || o.ReplayBatchSize <= 0 ||
-            o.ContentRetentionDays <= 0 || o.MetadataRetentionDays < o.ContentRetentionDays)
+            o.ContentRetentionDays <= 0 || o.MetadataRetentionDays < o.ContentRetentionDays || o.ExternalReservedBytes < 0)
             throw new ArgumentOutOfRangeException(nameof(o));
     }
 

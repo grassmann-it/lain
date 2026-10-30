@@ -46,12 +46,30 @@ segment before publishing its first frame. No provider callback performs this I/
 The queue is bounded by count and UTF-8 body bytes plus a metadata allowance.
 Metadata is serialized only on the writer and checked against the record bound.
 An archive may retain at most `MaximumRecords` descriptors/identity keys. Replay
-and payload hydration are capped by record size and `ReplayBatchSize`. Defaults
-are configurable experimental choices, not performance acceptance results. Store
-options default to 256 queued records/16 MiB, 16 MiB records, 100,000 retained
-records, 5 GiB total archive, 64 MiB shared-volume headroom, 16 MiB segments and
-100-record replay pages. The policy's limits should be passed into the store
-options by the integrator when configured. Disk accounting includes every file
+and payload hydration are capped by record size and `ReplayBatchSize`. The current policy's record, queue-byte, total-disk and retention limits are read
+at admission, commit and maintenance rather than frozen at construction. Each is
+bounded by its constructor ceiling. Existing source decoding continues to use the
+constructor record ceiling, so a lower policy limit cannot turn valid retained
+history into an apparent corrupt frame. Queue admission counts UTF-8 body bytes
+plus a conservative 4096-byte metadata allowance; the writer checks the actual
+serialized observation against the record limit.
+
+Constructor defaults remain configurable experimental choices: 256 queued
+records/16 MiB, 16 MiB records, 100,000 retained records, 5 GiB total archive,
+64 MiB shared-volume headroom, 16 MiB segments and 100-record replay pages.
+`RecordingStoreOptions.SuggestedProductionOptions(externalReservedBytes)` raises
+only the hard ceilings to the policy service's supported range: 64 MiB records,
+1 GiB queue, 1 TiB disk, and 3650-day retention. It does not enlarge the policy's
+current default limits or enable capture.
+
+`ExternalReservedBytes` defaults to zero. The source budget is
+`max(0, min(policy.DiskBytes, options.MaximumDiskBytes) - ExternalReservedBytes)`.
+It reserves part of the total recording budget for derived files kept outside
+this source directory. For a 128 MiB index plus rollback journal and a private
+1 MiB label file, the Host can reserve 261 MiB (260 MiB index workspace + 1 MiB
+labels). The reservation is a conservative bound, not an additional allocation
+or a report of actual external file sizes. Invalid negative reservations are
+rejected at construction. Disk accounting includes every file
 under this directory, including payloads, SQLite/WAL/SHM, recovery, temporary
 and old generations. Compression/compaction reserve workspace before writes;
 quota refusal returns a capture error. External writes to the same volume can
@@ -92,7 +110,8 @@ exhaustion requires an explicit clear instead of dropping deletion decisions.
 `ApplyRetentionAsync` must be called by the Host maintenance worker (and is safe
 to invoke repeatedly). A whole capture expires when any retained body is older
 than `ContentRetentionDays`, or any metadata exceeds `MetadataRetentionDays`.
-Experimental defaults are seven and thirty days. This can delete newer records
+Current policy values are bounded by the constructor's retention ceilings; defaults
+are seven and thirty days. This can delete newer records
 in that same capture; the whole-capture deletion unit is intentional. Automatic
 backup/import/offsite restore is absent. For manual restore: stop/disable capture,
 close source and index, restore only a compatible private archive, and preserve
