@@ -1,0 +1,18 @@
+{
+  "kind": "lain.recording.acceptance.resource-metrics",
+  "version": 1,
+  "synthetic": true,
+  "providerCallsMade": 0,
+  "notes": "Empty samples are deliberate. Replace only with measured local synthetic integration data.",
+  "runs": [
+    {"phase":"baseline","concurrency":1,"samples":[]},
+    {"phase":"baseline","concurrency":4,"samples":[]},
+    {"phase":"baseline","concurrency":8,"samples":[]},
+    {"phase":"off","concurrency":1,"samples":[]},
+    {"phase":"off","concurrency":4,"samples":[]},
+    {"phase":"off","concurrency":8,"samples":[]},
+    {"phase":"on","concurrency":1,"samples":[]},
+    {"phase":"on","concurrency":4,"samples":[]},
+    {"phase":"on","concurrency":8,"samples":[]}
+  ]
+}

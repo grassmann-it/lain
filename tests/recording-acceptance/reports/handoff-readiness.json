@@ -1,0 +1,66 @@
+{
+  "blockingIntegration": [
+    "publish sharedRecordingContracts.cs and official fixture API",
+    "implement a contract-owned adapter without treating harness IDs as provider IDs",
+    "run real integration tests in the root serial lane after source wiring"
+  ],
+  "checks": [
+    {
+      "detail": "real data is not permitted",
+      "name": "explicit-synthetic-fixture",
+      "passed": true
+    },
+    {
+      "detail": "lain.recording.acceptance.synthetic-validation-report",
+      "name": "report-kind",
+      "passed": true
+    },
+    {
+      "detail": "scope must stay bounded",
+      "name": "report-synthetic-scope",
+      "passed": true
+    },
+    {
+      "detail": "83a7fab699c19238368f18de156e8ae83df644de3b886fa9d3c649fee2b8b446",
+      "name": "report-fixture-hash",
+      "passed": true
+    },
+    {
+      "detail": "harness pass cannot become integration evidence",
+      "name": "validation-passed-but-not-integration",
+      "passed": true
+    },
+    {
+      "detail": "counts, variants and ten case tags match",
+      "name": "coverage-schema",
+      "passed": true
+    },
+    {
+      "detail": "17 required checks",
+      "name": "validation-report-schema",
+      "passed": true
+    },
+    {
+      "detail": "no failed causal checks",
+      "name": "all-reported-checks-passed",
+      "passed": true
+    },
+    {
+      "detail": "no synthetic canary value in report or fixture",
+      "name": "explicit-input-leak-canaries",
+      "passed": true
+    }
+  ],
+  "inputs": {
+    "fixture": "/home/tomka/.cache/lain-implementation-20261030/worktrees/glm-acceptance/tests/recording-acceptance/fixtures/synthetic-recording-v1.json",
+    "fixtureSha256": "83a7fab699c19238368f18de156e8ae83df644de3b886fa9d3c649fee2b8b446",
+    "report": "/home/tomka/.cache/lain-implementation-20261030/worktrees/glm-acceptance/tests/recording-acceptance/reports/synthetic-validation-report.json",
+    "scanBoundary": "explicit --report and --fixture only"
+  },
+  "integrationReady": false,
+  "integrationStatus": "not_run",
+  "kind": "lain.recording.acceptance.handoff-readiness-report",
+  "passed": true,
+  "readyFor": "contract-adapter handoff only",
+  "version": 1
+}
