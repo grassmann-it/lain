@@ -11,7 +11,7 @@ namespace Lain.Host.Recording.Projection;
 /// (storage owner); body data stays in the source journal. Place this database outside the source
 /// archive directory so source retention never unlinks an open SQLite database.
 /// </summary>
-public sealed class RecordingIndexedProjection : IRecordingProjection, IDisposable
+public sealed class RecordingIndexedProjection : IRecordingProjection, IRecordingProjectionRecovery, IDisposable
 {
     private readonly IRecordingStore _store;
     private readonly IRecordingNormalizer _normalizer;
@@ -37,10 +37,16 @@ public sealed class RecordingIndexedProjection : IRecordingProjection, IDisposab
         try { await SynchronizeAsync(false, ct); }
         finally { _gate.Release(); }
     }
+    public async Task RecoverAsync(CancellationToken ct = default)
+    {
+        await _gate.WaitAsync(ct);
+        try { if ((await _store.HealthAsync(ct)).RecordCount != 0 || File.Exists(_path)) await SynchronizeAsync(false, ct); }
+        finally { _gate.Release(); }
+    }
     public async Task RebuildAsync(CancellationToken ct = default)
     {
         await _gate.WaitAsync(ct);
-        try { await SynchronizeAsync(true, ct); }
+        try { if ((await _store.HealthAsync(ct)).RecordCount != 0 || File.Exists(_path)) await SynchronizeAsync(true, ct); }
         finally { _gate.Release(); }
     }
 
@@ -49,6 +55,7 @@ public sealed class RecordingIndexedProjection : IRecordingProjection, IDisposab
         await _gate.WaitAsync(ct);
         try
         {
+            if ((await _store.HealthAsync(ct)).RecordCount == 0 && !File.Exists(_path)) return new([]);
             var health = await SynchronizeAsync(false, ct);
             var stamp = Stamp(health);
             var scope = "list:" + RecordingProtocolNormalizer.Identity(query.Model, query.RouteId, query.WorkerId);
@@ -80,6 +87,7 @@ public sealed class RecordingIndexedProjection : IRecordingProjection, IDisposab
         await _gate.WaitAsync(ct);
         try
         {
+            if ((await _store.HealthAsync(ct)).RecordCount == 0 && !File.Exists(_path)) return null;
             var health = await SynchronizeAsync(false, ct);
             var stamp = Stamp(health);
             if (!ReadCursor(cursor, stamp, conversationId, out var after)) return ErrorDetail(conversationId, "stale_cursor");
@@ -222,10 +230,10 @@ public sealed class RecordingIndexedProjection : IRecordingProjection, IDisposab
                 ("$id", r.Id), ("$epoch", o.SourceEpoch), ("$sequence", o.Sequence), ("$event", o.EventId));
             SaveRun(o, conversation, source.Cursor, transaction);
             if (r.WorkerId is not null && r.ParentWorkerId is not null)
-                SaveEdge(r.CaptureId, r.WorkerId, r.ParentWorkerId, "worker_parent", o, transaction);
+                SaveEdge(r.IdentityScope ?? r.CaptureId, r.WorkerId, r.ParentWorkerId, "worker_parent", o, transaction);
             if (r.ParentConversationId is not null)
-                SaveEdge(r.CaptureId, conversation, RecordingProtocolNormalizer.Identity("conversation", r.CaptureId, r.ParentConversationId), "conversation_parent", o, transaction);
-            if (r.ParentRequestId is not null) SaveEdge(r.CaptureId, r.RequestId, r.ParentRequestId, "request_parent", o, transaction);
+                SaveEdge(r.IdentityScope ?? r.CaptureId, conversation, RecordingProtocolNormalizer.Identity("conversation", r.IdentityScope ?? r.CaptureId, r.ParentConversationId), "conversation_parent", o, transaction);
+            if (r.ParentRequestId is not null) SaveEdge(r.IdentityScope ?? r.CaptureId, r.RequestId, r.ParentRequestId, "request_parent", o, transaction);
         }
     }
 

@@ -35,11 +35,11 @@ public sealed class RecordingProtocolNormalizer(RecordingNormalizerLimits? limit
             Usage: o.Tokens is { } t ? new(t.Input, t.Output, t.Cached, t.Reasoning, t.Total, "source_reported") : null,
             Complete: o.Complete && !o.Truncated && o.GapReason is null, GapReason: o.GapReason,
             ReasoningEffort: Dim("reasoningEffort", d?.ReasoningEffort),
-            EffectiveReasoningEffort: Dim("effectiveReasoningEffort", d?.EffectiveReasoningEffort));
+            EffectiveReasoningEffort: Dim("effectiveReasoningEffort", d?.EffectiveReasoningEffort), IdentityScope: o.IdentityScope);
         if (o.Body is null)
         {
             if (o.RedactionState == "no_body" && o.GapReason is null && o.Kind is
-                "attempt_started" or "attempt_finished" or "request_started" or "metadata" or "chunk_metadata" or "response_complete") return [record];
+                "attempt_started" or "attempt_finished" or "request_started" or "metadata" or "chunk_metadata" or "usage" or "response_complete") return [record];
             return [record with { Complete = false, GapReason = o.GapReason ?? "content_unavailable" }];
         }
         if (o.RedactionState is not ("sanitized" or "redacted" or "clean"))

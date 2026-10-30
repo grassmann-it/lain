@@ -8,7 +8,7 @@ public sealed partial class RecordingView
     private Control ArchiveDeletionControls()
     {
         var confirmation = new CheckBox { Content = "Delete all retained recording conversations and payloads", IsChecked = false };
-        Name(confirmation, "Confirm deletion of all retained recording data");
+        SetName(confirmation, "Confirm deletion of all retained recording data");
         var remove = Ui.Button("Delete retained recording archive", async () =>
         {
             var lifetime = _lifetime;
@@ -35,7 +35,7 @@ public sealed partial class RecordingView
         });
         remove.IsEnabled = false;
         confirmation.IsCheckedChanged += (_, _) => remove.IsEnabled = confirmation.IsChecked == true;
-        Name(remove, "Delete retained recording archive");
+        SetName(remove, "Delete retained recording archive");
         return new Expander { Header = "Archive deletion…", Content = new StackPanel { Spacing = 6, Children = {
             Ui.Text("This removes the saved recording archive. Turning capture off preserves history; pausing the display only affects this view. No control here stops inference.", 12, Ui.Muted), confirmation, remove } } };
     }

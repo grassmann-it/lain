@@ -54,11 +54,11 @@ public sealed partial class RecordingView : UserControl, IPresentationView
     public RecordingView(LainApiClient client)
     {
         _client = client;
-        Name(_status, "Recording status"); Name(_notice, "Recording notice"); Name(_model, "Filter saved conversations by model");
-        Name(_consent, "Opt in to local recording for all models"); Name(_mode, "Recording content mode");
-        Name(_enable, "Enable recording"); Name(_stop, "Turn capture off"); Name(_pause, "Pause archive display");
-        Name(_back, "Back to saved conversations"); Name(_follow, "Follow appended archive records");
-        Name(_more, "Load more saved conversations"); Name(_moreTimeline, "Load more timeline records");
+        SetName(_status, "Recording status"); SetName(_notice, "Recording notice"); SetName(_model, "Filter saved conversations by model");
+        SetName(_consent, "Opt in to local recording for all models"); SetName(_mode, "Recording content mode");
+        SetName(_enable, "Enable recording"); SetName(_stop, "Turn capture off"); SetName(_pause, "Pause archive display");
+        SetName(_back, "Back to saved conversations"); SetName(_follow, "Follow appended archive records");
+        SetName(_more, "Load more saved conversations"); SetName(_moreTimeline, "Load more timeline records");
         _consent.IsCheckedChanged += (_, _) => UpdateControls();
         _enable.Click += async (_, _) => await ChangeCaptureAsync(true);
         _stop.Click += async (_, _) => await ChangeCaptureAsync(false);
@@ -69,28 +69,28 @@ public sealed partial class RecordingView : UserControl, IPresentationView
         ToolTip.SetTip(_pause, "Pauses automatic updates in this view. Capture and inference continue independently.");
         ToolTip.SetTip(_stop, "Stops capture admission and discards pending uncommitted capture. Retained conversations remain readable; inference continues.");
         var refresh = Ui.Button("Refresh", async () => { await RefreshStatusAsync(); if (!_paused) { await LoadListAsync(true); if (_conversationId is not null) await LoadTimelineAsync(true); } });
-        Name(refresh, "Refresh recording archive");
+        SetName(refresh, "Refresh recording archive");
         var filter = Ui.Button("Apply filter", async () => { _modelFilter = string.IsNullOrWhiteSpace(_model.Text) ? null : _model.Text.Trim(); await LoadListAsync(true); });
-        Name(filter, "Apply saved conversation filter");
+        SetName(filter, "Apply saved conversation filter");
         var controls = new Expander
         {
             Header = "Recording controls (explicit opt-in)", HorizontalAlignment = HorizontalAlignment.Stretch,
             Content = new StackPanel { Spacing = 7, Children = { Ui.Text("New installations default off. Files are stored locally without encryption under your OS permissions. Reading does not require training approval.", 12, Ui.Muted), _scope, _mode, _consent, Wrap(_enable, _stop), ArchiveDeletionControls() } }
         };
         controls.Content = new ScrollViewer { Content = controls.Content, MaxHeight = 200, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-        Name(controls, "Recording controls");
+        SetName(controls, "Recording controls");
         var listGrid = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto"), RowSpacing = 6 };
         listGrid.Children.Add(Ui.Text("Saved conversations", 14));
         var listScroll = new ScrollViewer { Content = _list, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-        Name(listScroll, "Saved conversation inventory"); Grid.SetRow(listScroll, 1); listGrid.Children.Add(listScroll);
+        SetName(listScroll, "Saved conversation inventory"); Grid.SetRow(listScroll, 1); listGrid.Children.Add(listScroll);
         Grid.SetRow(_more, 2); listGrid.Children.Add(_more);
         _inventory = Ui.Card(listGrid); _inventory.Padding = new Thickness(10);
         _columns.Children.Add(_inventory);
         _scroll = new ScrollViewer { Content = _timeline, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-        Name(_scroll, "Saved conversation timeline");
+        SetName(_scroll, "Saved conversation timeline");
         _scroll.ScrollChanged += (_, e) => { if (!_adjustingScroll && e.OffsetDelta.Y < -1 && e.ExtentDelta.Y == 0) _follow.IsChecked = false; };
         _variantPanel = new Expander { Header = "Run and skill / prompt variants", Content = new ScrollViewer { Content = _variants, MaxHeight = 160, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }, HorizontalAlignment = HorizontalAlignment.Stretch };
-        Name(_variantPanel, "Run variant manifests");
+        SetName(_variantPanel, "Run variant manifests");
         _variantPanel.PropertyChanged += async (_, e) => { if (e.Property == Expander.IsExpandedProperty && _variantPanel.IsExpanded) await LoadManifestsAsync(); };
         _detail.Children.Add(Wrap(_back, _selected));
         Grid.SetRow(_variantPanel, 1); _detail.Children.Add(_variantPanel);
@@ -138,7 +138,7 @@ public sealed partial class RecordingView : UserControl, IPresentationView
         _timeline.Spacing = _presentation.Density == ViewDensity.Compact ? 4 : 8;
         _variantPanel.MaxHeight = narrow ? 140 : 220;
     }
-    private static void Name(Control control, string name) => AutomationProperties.SetName(control, name);
+    private static void SetName(Control control, string name) => AutomationProperties.SetName(control, name);
     private static WrapPanel Wrap(params Control[] controls)
     {
         var panel = new WrapPanel { Orientation = Orientation.Horizontal };

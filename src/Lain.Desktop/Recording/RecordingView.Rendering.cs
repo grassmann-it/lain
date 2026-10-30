@@ -17,7 +17,7 @@ public sealed partial class RecordingView
         button.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch;
         button.HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Left;
         button.Content = Ui.Text(text, 12);
-        Name(button, $"Open saved conversation {item.Id}");
+        SetName(button, $"Open saved conversation {item.Id}");
         _choices.Add(item.Id, button); _list.Children.Add(button);
     }
     private void AppendRecord(RecordingNormalizedRecord record)
@@ -29,13 +29,16 @@ public sealed partial class RecordingView
             panel.Children.Add(Ui.Text($"Requested model: {record.RequestedModel}. Observed model revision: {record.ModelRevision ?? "unknown"}.", 12, Ui.Muted));
         if (!record.Complete || record.GapReason is not null)
             panel.Children.Add(Ui.Text($"Incomplete / gap: {record.GapReason ?? "source did not establish completeness"}", 12, Ui.Warning));
+        var routing = new Expander { Header = "Observed routing", HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        routing.PropertyChanged += (_, e) => { if (e.Property == Expander.IsExpandedProperty && routing.IsExpanded && routing.Content is null) routing.Content = Lain.Desktop.Presentation.RouteSelectionSummary.From(record).CreateControl(); };
+        panel.Children.Add(routing);
         if (record.FinishReason is not null) panel.Children.Add(Ui.Text($"Finish: {record.FinishReason}", 11, Ui.Muted));
         if (record.Messages.Length > 0)
             panel.Children.Add(new RecordingPages<RecordingMessage>(record.Messages, 8, "messages", record.Id, MessageContent));
         if (record.WorkerId is not null)
         {
             var worker = new Expander { Header = $"Worker {record.WorkerId} (evidenced)", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
-            Name(worker, $"Worker evidence {record.WorkerId}");
+            SetName(worker, $"Worker evidence {record.WorkerId}");
             worker.PropertyChanged += (_, e) =>
             {
                 if (e.Property != Expander.IsExpandedProperty || !worker.IsExpanded || worker.Content is not null) return;
@@ -44,7 +47,7 @@ public sealed partial class RecordingView
             panel.Children.Add(worker);
         }
         var api = new Expander { Header = "API observation and source details", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
-        Name(api, $"API source details {record.Id}");
+        SetName(api, $"API source details {record.Id}");
         api.PropertyChanged += (_, e) =>
         {
             if (e.Property != Expander.IsExpandedProperty || !api.IsExpanded || api.Content is not null) return;
@@ -59,13 +62,13 @@ public sealed partial class RecordingView
         // Metadata-only lifecycle observations stay compact and do not create a full conversation card.
         if (record.Messages.Length == 0)
         {
-            panel.Spacing = 3; Name(panel, $"Timeline record {record.Id}"); _timeline.Children.Add(panel); return;
+            panel.Spacing = 3; SetName(panel, $"Timeline record {record.Id}"); _timeline.Children.Add(panel); return;
         }
         var surface = Ui.Card(panel); surface.Padding = new Thickness(10);
-        Name(surface, $"Timeline record {record.Id}");
+        SetName(surface, $"Timeline record {record.Id}");
         _timeline.Children.Add(surface);
     }
-    private static Control MessageContent(RecordingMessage message)
+    private Control MessageContent(RecordingMessage message)
     {
         var panel = new StackPanel { Spacing = 5 };
         panel.Children.Add(Ui.Text($"{message.Role} · {message.State ?? "observed"}{(message.Complete ? "" : " · incomplete")}", 13));
@@ -100,7 +103,7 @@ public sealed partial class RecordingView
         control.PropertyChanged += (_, e) => { if (e.Property == Expander.IsExpandedProperty && control.IsExpanded && control.Content is null) control.Content = new RecordingText(value, title); };
         return control;
     }
-    private static Control SourcePages(RecordingSourceReference[] sources)
+    private Control SourcePages(RecordingSourceReference[] sources)
     {
         var body = new StackPanel { Spacing = 4 };
         var rows = new StackPanel { Spacing = 3 };
@@ -110,7 +113,11 @@ public sealed partial class RecordingView
         void Render()
         {
             rows.Children.Clear();
-            foreach (var source in sources.Skip(offset).Take(25)) rows.Children.Add(Ui.Text($"{source.SourceEpoch} · sequence {source.Sequence} · event {source.EventId}", 11, Ui.Muted));
+            foreach (var source in sources.Skip(offset).Take(25))
+            {
+                rows.Children.Add(Ui.Text($"{source.SourceEpoch} · sequence {source.Sequence} · event {source.EventId}", 11, Ui.Muted));
+                rows.Children.Add(new RecordingSourceText(_client, source));
+            }
             previous.IsEnabled = offset > 0; more.IsEnabled = offset + 25 < sources.Length;
         }
         previous.Click += (_, _) => { offset = Math.Max(0, offset - 25); Render(); };

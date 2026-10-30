@@ -23,6 +23,7 @@ public static class RecordingEndpoints
             provider.GetRequiredService<IRecordingPolicy>(), provider.GetRequiredService<IRecordingStore>(),
             provider.GetRequiredService<IRecordingProjection>(), provider.GetRequiredService<ILogger<RecordingCollector>>(), shouldCollect));
         services.AddHostedService(provider => provider.GetRequiredService<RecordingCollector>());
+        services.AddHostedService<RecordingMaintenance>();
         return services;
     }
     public static IEndpointRouteBuilder MapRecordingEndpoints(this IEndpointRouteBuilder endpoints)
@@ -61,6 +62,28 @@ public static class RecordingEndpoints
             return result is null ? (IResult)Results.NotFound(new ApiError("not_found", "The saved conversation does not exist.")) : Results.Ok(BoundedDetail(result with { Runs = labels.List(id) }));
         });
         // Bodies appear only on this explicit bounded selected-record read; conversation lists contain summaries.
+        endpoints.MapGet(Prefix + "/sources/{sourceEpoch}/{sequence:long}", async (string sourceEpoch, long sequence,
+            HttpRequest request, IRecordingStore store, CancellationToken ct) =>
+        {
+            RecordingArguments.Identity(sourceEpoch); RecordingArguments.QueryKeys(request, "eventId", "offset", "characters");
+            var eventId = RecordingArguments.Value(request, "eventId") ?? throw new ArgumentException("Source event identity required.");
+            RecordingArguments.Identity(eventId);
+            var offset = 0; var characters = 8192;
+            if (RecordingArguments.Value(request, "offset") is { } offsetText && (!int.TryParse(offsetText, out offset) || offset < 0)) throw new ArgumentException("Invalid source offset.");
+            if (RecordingArguments.Value(request, "characters") is { } sizeText && (!int.TryParse(sizeText, out characters) || characters is < 1 or > 32768)) throw new ArgumentException("Invalid source page size.");
+            if (sequence < 1 || store is not IRecordingSourceLookup lookup) return Failure("source_lookup_unavailable");
+            var source = new RecordingSourceReference(sourceEpoch, sequence, eventId);
+            var found = await lookup.FindSourceAsync(source, ct);
+            if (found is null) return Results.NotFound(new ApiError("not_found", "The retained source is no longer available."));
+            var observation = found.Observation; var text = observation.Body;
+            if (offset > (text?.Length ?? 0)) return Failure("cursor_expired");
+            if (text is not null && offset > 0 && offset < text.Length && char.IsLowSurrogate(text[offset]) && char.IsHighSurrogate(text[offset - 1])) offset--;
+            var count = Math.Min(characters, (text?.Length ?? 0) - offset);
+            if (text is not null && count > 0 && offset + count < text.Length && char.IsHighSurrogate(text[offset + count - 1])) count--;
+            return Results.Ok(new RecordingSourceTextPage(source, observation.Boundary, observation.Protocol,
+                text?.Substring(offset, count), offset, text?.Length ?? 0, offset + count < (text?.Length ?? 0),
+                observation.RedactionState, found.ContentHash, observation.GapReason));
+        });
         endpoints.MapGet(Prefix + "/events", async (HttpRequest request, IRecordingStore store, IRecordingPolicy policy, CancellationToken ct) =>
         {
             RecordingArguments.QueryKeys(request, "after", "limit");

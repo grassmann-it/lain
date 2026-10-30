@@ -13,7 +13,7 @@ public sealed class RecordingPolicyService : IRecordingPolicy
     private readonly object _gate = new();
     private readonly string? _directory;
     private readonly RecordingSanitizer _sanitizer = new();
-    private CapturePolicySnapshot _snapshot = new();
+    private CapturePolicySnapshot _snapshot = new(IdentityScope: Guid.NewGuid().ToString("N"));
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     public string? LastErrorCode { get; private set; }
 
@@ -32,9 +32,10 @@ public sealed class RecordingPolicyService : IRecordingPolicy
             if (info.Length > 64 * 1024) { LastErrorCode = "policy_file_invalid"; return; }
             var loaded = JsonSerializer.Deserialize<CapturePolicySnapshot>(File.ReadAllBytes(path), Json);
             if (loaded is null || Validate(loaded.Mode, loaded.Scope, loaded.RouteIds, loaded.EffectiveLimits) is not null ||
-                loaded.Revision < 0 || loaded.StopGeneration < 0)
+                loaded.Revision < 0 || loaded.StopGeneration < 0 ||
+                loaded.IdentityScope is not null && !Guid.TryParseExact(loaded.IdentityScope, "N", out _))
             { LastErrorCode = "policy_file_invalid"; return; }
-            _snapshot = Copy(loaded);
+            _snapshot = Copy(loaded with { IdentityScope = loaded.IdentityScope ?? _snapshot.IdentityScope });
             PrivateFile(path);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
@@ -59,7 +60,7 @@ public sealed class RecordingPolicyService : IRecordingPolicy
             if (_snapshot.Revision == long.MaxValue || _snapshot.StopGeneration == long.MaxValue)
                 return new(false, Copy(_snapshot), "revision_exhausted");
             var next = new CapturePolicySnapshot(_snapshot.Revision + 1, update.Enabled, update.Mode,
-                update.Scope, _snapshot.StopGeneration + 1, update.RouteIds?.ToArray(), limits);
+                update.Scope, _snapshot.StopGeneration + 1, update.RouteIds?.ToArray(), limits, _snapshot.IdentityScope);
             // Disabling is immediate even if the subsequent control-file write fails.
             if (!next.Enabled) _snapshot = next;
             try { Save(next); }
@@ -94,8 +95,8 @@ public sealed class RecordingPolicyService : IRecordingPolicy
             return "invalid_route_filter";
         if (routeIds is not null && routeIds.Distinct(StringComparer.Ordinal).Count() != routeIds.Length)
             return "duplicate_route_filter";
-        if (limits.MaxRecordBytes is < 1024 or > 64 * 1024 * 1024 ||
-            limits.QueueBytes < limits.MaxRecordBytes || limits.QueueBytes > 1024L * 1024 * 1024 ||
+        if (limits.MaxRecordBytes is < 1024 or > 16 * 1024 * 1024 ||
+            limits.QueueBytes < 2L * limits.MaxRecordBytes + 8192 || limits.QueueBytes > 256L * 1024 * 1024 ||
             limits.DiskBytes < limits.MaxRecordBytes || limits.DiskBytes > 1024L * 1024 * 1024 * 1024 ||
             limits.ContentRetentionDays is < 1 or > 3650 ||
             limits.MetadataRetentionDays < limits.ContentRetentionDays || limits.MetadataRetentionDays > 3650 ||

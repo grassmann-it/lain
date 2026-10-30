@@ -339,6 +339,13 @@
               "minimum": 0
             }
           }
+        },
+        "identityScope": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
         }
       }
     },
@@ -685,6 +692,21 @@
             "omitted_unsupported",
             "omitted_invalid"
           ]
+        },
+        "identityScope": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "trainingPermission": {
+          "type": "string",
+          "default": "unknown_not_approved"
+        },
+        "sourceLicense": {
+          "type": "string",
+          "default": "unknown"
         }
       }
     }

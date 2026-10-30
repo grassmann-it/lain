@@ -18,7 +18,8 @@ public sealed class RecordingSanitizer
         Pattern(@"\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b"),
         Pattern(@"\b(?:sk-|gh[pousr]_|github_pat_|xox[baprs]-|AKIA|AIza)[A-Za-z0-9_\-]{6,}\b"),
         Pattern(@"(?im)\b[A-Z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD|PASSWD|PRIVATE_KEY|CREDENTIAL)[A-Z0-9_]*\s*[:=]\s*[^\s,;]+"),
-        Pattern(@"(?i)\b(?:api[-_]?key|access[-_]?token|refresh[-_]?token|password|passwd|secret)\s*[:=]\s*[""']?[^\s,""';}]+"),
+        Pattern(@"(?i)\b(?:api[-_]?key|access[-_]?token|refresh[-_]?token|id[-_]?token|password|passwd|secret|cookie|authorization)[\""']*\s*[:=]\s*[\""']*[^\s,""';}]+"),
+        Pattern(@"(?im)\b(?:Authorization|Proxy-Authorization|Set-Cookie|Cookie)\s*:\s*[^\r\n]+"),
         Pattern(@"https?://[^\s/@:]+:[^\s/@]+@[^\s]+"),
         Pattern(@"(?i)([?&](?:api[-_]?key|token|access_token|secret|password|auth|signature)=)[^&#\s]+")
     ];
@@ -32,7 +33,8 @@ public sealed class RecordingSanitizer
         if (!policy.Enabled || policy.Scope != RecordingContract.OwnedGatewayScope ||
             source.SchemaVersion != RecordingContract.Version || source.Sequence < 0 ||
             source.PolicyRevision != policy.Revision || source.StopGeneration != policy.StopGeneration ||
-            (policy.RouteIds is { Length: > 0 } routes && !routes.Contains(source.RouteId, StringComparer.Ordinal))) return null;
+            (source.IdentityScope is not null && source.IdentityScope != policy.IdentityScope) ||
+            (source.Kind != "source_gap" && policy.RouteIds is { Length: > 0 } routes && !routes.Contains(source.RouteId, StringComparer.Ordinal))) return null;
         // Never rewrite correlation IDs into misleading joins. Unsafe identity makes this observation inadmissible.
         if (!SafeId(source.SourceEpoch) || !SafeId(source.EventId) || !SafeId(source.CaptureId) || !SafeId(source.RequestId) ||
             !SafeOptionalId(source.AttemptId) || !SafeOptionalId(source.RouteId) || !SafeOptionalId(source.AccountId)) return null;
@@ -56,6 +58,9 @@ public sealed class RecordingSanitizer
                 {
                     // Strict UTF-8 and JSON: no best-effort replacement or partially parsed retention.
                     var text = new UTF8Encoding(false, true).GetString(bytes);
+                    var reader = new Utf8JsonReader(bytes, new JsonReaderOptions { MaxDepth = policy.EffectiveLimits.MaxBodyDepth });
+                    var jsonTokens = 0;
+                    while (reader.Read()) if (++jsonTokens > 200000) throw new BodyLimitException();
                     using var document = JsonDocument.Parse(text, new JsonDocumentOptions { MaxDepth = policy.EffectiveLimits.MaxBodyDepth });
                     using var output = new LimitedMemoryStream(policy.EffectiveLimits.MaxRecordBytes);
                     using (var writer = new Utf8JsonWriter(output)) WriteSanitized(writer, document.RootElement);
@@ -82,7 +87,7 @@ public sealed class RecordingSanitizer
             SafeLabel(source.Provider), SafeLabel(source.Model), SafeLabel(source.RequestedModel),
             SanitizeDimensions(source.Dimensions), encoding, body, complete, source.Truncated, gap,
             source.StatusCode is >= 100 and <= 599 ? source.StatusCode : null, source.Tokens,
-            source.MonotonicNanoseconds);
+            source.MonotonicNanoseconds, IdentityScope: policy.IdentityScope);
     }
 
     private static bool IsFragment(SourceObservation s) =>

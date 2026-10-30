@@ -39,6 +39,11 @@ public sealed partial class LainApiClient
         if (expectedRevision < 0) throw new ArgumentException("Recording revision must be nonnegative.");
         return Send<RecordingClearResult>(HttpMethod.Delete, $"recording/archive?expectedRevision={expectedRevision.ToString(CultureInfo.InvariantCulture)}", null, ct);
     }
+    public Task<RecordingSourceTextPage> RecordingSourceTextAsync(RecordingSourceReference source, int offset = 0, int characters = 8192, CancellationToken ct = default)
+    {
+        if (source.Sequence < 1 || offset < 0 || characters is < 1 or > 32768) throw new ArgumentException("Invalid source page.");
+        return Get<RecordingSourceTextPage>($"recording/sources/{RecordingId(source.SourceEpoch)}/{source.Sequence.ToString(CultureInfo.InvariantCulture)}?eventId={RecordingId(source.EventId)}&offset={offset.ToString(CultureInfo.InvariantCulture)}&characters={characters.ToString(CultureInfo.InvariantCulture)}", ct);
+    }
     private static void CheckRecordingLimit(int limit)
     { if (limit is < 1 or > 500) throw new ArgumentException("Recording pages require 1..500 items and remain subject to policy limits."); }
     private static string RecordingId(string value)

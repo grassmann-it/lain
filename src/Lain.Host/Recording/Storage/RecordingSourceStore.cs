@@ -155,8 +155,19 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
             if (after != 0 && after <= control.InvalidatedThrough) return new([], 0, control.HighWatermark, false, "cursor_invalidated");
             var pageSize = Math.Clamp(limit, 1, options.ReplayBatchSize);
             var selected = records.Where(r => r.Record.Cursor > after && !IsHidden(r.Record)).Take(pageSize + 1).ToArray();
-            var page = selected.Take(pageSize).Select(Materialize).ToArray();
-            return new(page, page.LastOrDefault()?.Cursor ?? Math.Max(after, control.InvalidatedThrough), control.HighWatermark, selected.Length > pageSize,
+            var pageItems = new List<CommittedObservation>();
+            long retainedBytes = 0;
+            var byteLimit = Math.Min(64L * 1024 * 1024, Math.Max(options.MaximumRecordBytes, MaximumQueuedBytes));
+            foreach (var item in selected.Take(pageSize))
+            {
+                // Stop before materializing another payload, not after allocating an unbounded page.
+                var nextBytes = item.Record.OriginalBytes;
+                if (pageItems.Count > 0 && retainedBytes + nextBytes > byteLimit) break;
+                pageItems.Add(Materialize(item)); retainedBytes += nextBytes;
+            }
+            var page = pageItems.ToArray();
+
+            return new(page, page.LastOrDefault()?.Cursor ?? Math.Max(after, control.InvalidatedThrough), control.HighWatermark, selected.Length > page.Length,
                 recoveryUncertain ? "recovered_commit_uncertain" : null);
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or ArgumentException) { error = "source_corrupt"; return new([], after, control.HighWatermark, false, "source_corrupt"); }

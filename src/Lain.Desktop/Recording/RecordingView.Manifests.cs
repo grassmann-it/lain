@@ -24,13 +24,13 @@ public sealed partial class RecordingView
     }
     private Control ManifestEditor(string conversation, long generation)
     {
-        var run = Ui.Input(hint: "Explicit run ID"); Name(run, "Manual run identity");
-        var variant = Ui.Input(hint: "Variant label"); Name(variant, "Manual variant label");
-        var revision = Ui.Input(hint: "Configured skill revision (optional)"); Name(revision, "Configured skill revision");
-        var skillHash = Ui.Input(hint: "Configured skill hash (optional)"); Name(skillHash, "Configured skill hash");
-        var promptHash = Ui.Input(hint: "Configured prompt hash (optional)"); Name(promptHash, "Configured prompt hash");
+        var run = Ui.Input(hint: "Explicit run ID"); SetName(run, "Manual run identity");
+        var variant = Ui.Input(hint: "Variant label"); SetName(variant, "Manual variant label");
+        var revision = Ui.Input(hint: "Configured skill revision (optional)"); SetName(revision, "Configured skill revision");
+        var skillHash = Ui.Input(hint: "Configured skill hash (optional)"); SetName(skillHash, "Configured skill hash");
+        var promptHash = Ui.Input(hint: "Configured prompt hash (optional)"); SetName(promptHash, "Configured prompt hash");
         var save = new Button { Content = "Save configured run label" };
-        Name(save, "Save configured run label");
+        SetName(save, "Save configured run label");
         save.Click += async (_, _) =>
         {
             var policy = _policy;

@@ -188,11 +188,17 @@ public sealed class RecordingStorageTests : IDisposable
     [Fact]
     public async Task SerializedSourceAndPayloadAreCompressedBeforePrivateWrite()
     {
-        var marker = "only-the-retained-body-contains-this-distinct-message-39282939";
+        var marker = string.Concat(Enumerable.Repeat("ordinary retained content, not an encryption test; ", 200));
+        var body = "{\"message\":\"" + marker + "\"}";
         await using var store = new RecordingSourceStore(PathFor(), policy, Options);
-        await store.CommitAsync(Event(body: "{\"message\":\"" + marker + "\"}"));
-        foreach (var path in System.IO.Directory.GetFiles(PathFor(), "*", SearchOption.AllDirectories).Where(p => !p.EndsWith("writer.lock", StringComparison.Ordinal)))
-            Assert.DoesNotContain(marker, Encoding.UTF8.GetString(await File.ReadAllBytesAsync(path)));
+        var result = await store.CommitAsync(Event(body: body));
+        Assert.True(result.Committed);
+        var payload = Assert.Single(System.IO.Directory.GetFiles(PathFor(), "*.br", SearchOption.AllDirectories));
+        Assert.True(new FileInfo(payload).Length < Encoding.UTF8.GetByteCount(body));
+        using var input = File.OpenRead(payload);
+        Assert.Equal(body, Encoding.UTF8.GetString(RecordingFrames.Decompress(input, 1024 * 1024)));
+        Assert.Equal(body, (await store.ReadCommittedAsync()).Records.Single().Observation.Body);
+
     }
 
     public void Dispose() { if (System.IO.Directory.Exists(root)) System.IO.Directory.Delete(root, true); }

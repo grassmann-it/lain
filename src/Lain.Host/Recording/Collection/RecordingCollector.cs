@@ -42,7 +42,7 @@ public sealed class RecordingCollector(RecordingSourceClient source, IRecordingP
                 configuredRevision = snapshot.Revision; configuredEnabled = true;
                 assembler.Reset();
             }
-            if (projectionDirty) { await projection.RebuildAsync(ct); projectionDirty = false; }
+            if (projectionDirty) { if (projection is IRecordingProjectionRecovery recovery) await recovery.RecoverAsync(ct); else await projection.RebuildAsync(ct); projectionDirty = false; }
             State = "collecting";
             for (var pass = 0; pass < 8; pass++)
             {
@@ -51,7 +51,7 @@ public sealed class RecordingCollector(RecordingSourceClient source, IRecordingP
                 ValidateBatch(batch, snapshot);
                 if (epoch != batch.SourceEpoch)
                 {
-                    UnknownLoss = true; // A process-local feed cannot prove absence of crash loss.
+                    UnknownLoss |= epoch is not null || (await store.HealthAsync(ct)).RecordCount > 0;
                     assembler.Reset();
                     epoch = batch.SourceEpoch;
                     cursor = await FindDurableCursorAsync(epoch, ct);
@@ -78,7 +78,7 @@ public sealed class RecordingCollector(RecordingSourceClient source, IRecordingP
                 {
                     if (observation.Sequence <= cursor) continue;
                     if (!policy.IsCurrent(snapshot.Revision, snapshot.StopGeneration)) { State = "stopping"; return true; }
-                    var gap = observation.Sequence != previous + 1 || batch.UnknownLoss || batch.DroppedCount > 0;
+                    var gap = observation.Sequence != previous + 1;
                     var candidate = gap ? observation with { Complete = false, GapReason = "source_gap" } : observation;
                     // The sanitizer rejects unassembled SSE/delta/fragment bodies. Only complete JSON or
                     // upstream assembled representations may cross the durable persistence boundary.
@@ -108,6 +108,7 @@ public sealed class RecordingCollector(RecordingSourceClient source, IRecordingP
 
     private async Task<long> FindDurableCursorAsync(string sourceEpoch, CancellationToken ct)
     {
+        if (store is IRecordingSourceCheckpoint checkpoint) return await checkpoint.CommittedSequenceAsync(sourceEpoch, ct);
         long after = 0, found = 0;
         while (true)
         {

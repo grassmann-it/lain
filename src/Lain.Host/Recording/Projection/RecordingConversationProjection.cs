@@ -124,7 +124,7 @@ public sealed class RecordingConversationProjection(IRecordingStore store, IReco
             foreach (var m in r.Messages)
                 foreach (var p in m.Parts.Where(p => p.Kind == "tool_request" && p.ToolCallId is not null))
                 {
-                    var key = (r.CaptureId, r.ConversationId, r.WorkerId, p.ToolCallId!);
+                    var key = (r.IdentityScope ?? r.CaptureId, r.ConversationId, r.WorkerId, p.ToolCallId!);
                     if (!requests.TryGetValue(key, out var ids)) requests[key] = ids = [];
                     ids.Add(m.Id);
                 }
@@ -133,7 +133,7 @@ public sealed class RecordingConversationProjection(IRecordingStore store, IReco
                 foreach (var p in m.Parts.Where(p => p.Kind == "tool_result"))
                 {
                     var provenScope = r.ConversationId is not null;
-                    var found = p.ToolCallId is not null && provenScope && requests.TryGetValue((r.CaptureId, r.ConversationId, r.WorkerId, p.ToolCallId), out var ids) ? ids : null;
+                    var found = p.ToolCallId is not null && provenScope && requests.TryGetValue((r.IdentityScope ?? r.CaptureId, r.ConversationId, r.WorkerId, p.ToolCallId), out var ids) ? ids : null;
                     results.Add(new(p.ToolCallId, found is { Count: 1 } ? found[0] : null, m.Id,
                         found is { Count: > 1 } ? "ambiguous" : found is { Count: 1 } ? "client_reported" : "unresolved", false));
                 }
@@ -167,7 +167,7 @@ public sealed class RecordingConversationProjection(IRecordingStore store, IReco
     }
 
     public static string ConversationId(RecordingNormalizedRecord record, CommittedObservation source) =>
-        record.ConversationId is { } id ? RecordingProtocolNormalizer.Identity("conversation", record.CaptureId, id) :
+        record.ConversationId is { } id ? RecordingProtocolNormalizer.Identity("conversation", record.IdentityScope ?? record.CaptureId, id) :
         RecordingProtocolNormalizer.Identity("unassigned_request", record.CaptureId, source.Observation.SourceEpoch, record.RequestId);
 
     private static RecordingRunManifest? ReadManifest(SanitizedObservation o)
@@ -228,7 +228,7 @@ public sealed class RecordingConversationProjection(IRecordingStore store, IReco
                 if (sourceKind == "normalized_stream_body") _pending.Remove(streamKey);
             }
             if (r.FinishReason is not null) _finish = r.FinishReason;
-            Merge("parent", r.ParentConversationId is null ? null : RecordingProtocolNormalizer.Identity("conversation", r.CaptureId, r.ParentConversationId)); Merge("worker", r.WorkerId); Merge("parentWorker", r.ParentWorkerId);
+            Merge("parent", r.ParentConversationId is null ? null : RecordingProtocolNormalizer.Identity("conversation", r.IdentityScope ?? r.CaptureId, r.ParentConversationId)); Merge("worker", r.WorkerId); Merge("parentWorker", r.ParentWorkerId);
             _title ??= title ?? r.Messages.Where(m => m.Role == "user").SelectMany(m => m.Parts).FirstOrDefault(p => p.Kind == "text")?.Text;
             if (_title?.Length > 120) _title = _title[..120];
         }

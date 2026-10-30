@@ -19,10 +19,12 @@ public sealed record RecordingLimitsDto(
 public sealed record CapturePolicySnapshot(
     long Revision = 0, bool Enabled = false, string Mode = RecordingContract.MetadataOnly,
     string Scope = RecordingContract.OwnedGatewayScope, long StopGeneration = 0,
-    string[]? RouteIds = null, RecordingLimitsDto? Limits = null)
+    string[]? RouteIds = null, RecordingLimitsDto? Limits = null, string? IdentityScope = null)
 {
     [System.Text.Json.Serialization.JsonIgnore]
     public RecordingLimitsDto EffectiveLimits => Limits ?? new();
+    /// <summary>Transient local transport only; raw frames are assembled/redacted before persistence.</summary>
+    public bool HandoffStreamFrames => Enabled && Mode == RecordingContract.Content;
 }
 
 public sealed record RecordingPolicyUpdate(long ExpectedRevision, bool Enabled,
@@ -39,7 +41,7 @@ public sealed record SourceObservation(
     AttemptDimensionsDto? Dimensions = null, string? BodyEncoding = null, byte[]? Body = null,
     bool Complete = true, bool Truncated = false, string? GapReason = null,
     int? StatusCode = null, TokenCounts? Tokens = null, long? MonotonicNanoseconds = null,
-    int SchemaVersion = RecordingContract.Version, long PolicyRevision = 0, long StopGeneration = 0);
+    int SchemaVersion = RecordingContract.Version, long PolicyRevision = 0, long StopGeneration = 0, string? IdentityScope = null);
 
 public sealed record SourceObservationBatch(string SourceEpoch, SourceObservation[] Observations,
     long DroppedCount = 0, bool UnknownLoss = false, string? GapReason = null);
@@ -55,7 +57,8 @@ public sealed record SanitizedObservation(
     AttemptDimensionsDto? Dimensions = null, string? BodyEncoding = null, string? Body = null,
     bool Complete = true, bool Truncated = false, string? GapReason = null,
     int? StatusCode = null, TokenCounts? Tokens = null, long? MonotonicNanoseconds = null,
-    int SchemaVersion = RecordingContract.Version);
+    int SchemaVersion = RecordingContract.Version, string? IdentityScope = null,
+    string TrainingPermission = "unknown_not_approved", string SourceLicense = "unknown");
 
 public sealed record CommittedObservation(SanitizedObservation Observation, long Cursor,
     string JournalId, long JournalOffset, string ContentHash, int JournalVersion = 1);
@@ -97,7 +100,7 @@ public sealed record RecordingNormalizedRecord(string Id, string CaptureId, stri
     string? PreviousResponseId = null, string? FinishReason = null, RecordingUsage? Usage = null,
     bool Complete = true, string? GapReason = null, string? ReasoningEffort = null,
     string? EffectiveReasoningEffort = null, long? ContextWindow = null, string? ModelRevision = null,
-    int ProjectionVersion = 1);
+    int ProjectionVersion = 1, string? IdentityScope = null);
 
 public interface IRecordingNormalizer
 {
@@ -138,3 +141,16 @@ public sealed record RecordingHealthDto(int ContractVersion, CapturePolicySnapsh
     string[]? Coverage = null, string? ErrorCode = null);
 public sealed record RecordingClearRequest(long ExpectedRevision);
 public sealed record RecordingClearResult(bool Cleared, string? ErrorCode = null);
+
+public interface IRecordingSourceLookup
+{
+    Task<CommittedObservation?> FindSourceAsync(RecordingSourceReference source, CancellationToken ct = default);
+}
+public sealed record RecordingSourceTextPage(RecordingSourceReference Source, string Boundary, string Protocol,
+    string? Text, int Offset, int TotalCharacters, bool HasMore, string RedactionState,
+    string? ContentHash = null, string? GapReason = null);
+
+public interface IRecordingMaintenance { Task ApplyRetentionAsync(CancellationToken ct = default); }
+
+public interface IRecordingSourceCheckpoint { Task<long> CommittedSequenceAsync(string sourceEpoch, CancellationToken ct = default); }
+public interface IRecordingProjectionRecovery { Task RecoverAsync(CancellationToken ct = default); }
