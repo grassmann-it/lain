@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Lain.Core/Lain.Core.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Compile Include="../../src/Lain.Host/Recording/Api/*.cs" Link="Api/%(Filename)%(Extension)" />
+    <Compile Include="../../src/Lain.Host/Recording/Collection/*.cs" Link="Collection/%(Filename)%(Extension)" />
+    <Compile Include="../../src/Lain.Host/Recording/Policy/*.cs" Link="Policy/%(Filename)%(Extension)" />
+    <Compile Include="../../src/Lain.Host/Recording/Normalization/*.cs" Link="Normalization/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
