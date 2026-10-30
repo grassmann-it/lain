@@ -78,6 +78,7 @@ func TestContextBoundarySmallUnrelatedErrorsAreByteExact(t *testing.T) {
 		`{"error":{"code":"context_length_exceeded"},"error":{"code":"other"}}`,
 		`{"error":{"code":"context_length_exceeded"}} trailing`,
 		`{"error":{"message":"Your input is too long"}}`,
+		`{"type":"response.output_text.delta","delta":{"error":{"code":"context_length_exceeded"}}}`,
 		"not JSON\xff",
 	} {
 		source := &contextBoundaryBody{Reader: strings.NewReader(body)}
@@ -90,6 +91,39 @@ func TestContextBoundarySmallUnrelatedErrorsAreByteExact(t *testing.T) {
 		_ = response.Body.Close()
 		if err != nil || string(actual) != body || source.closes != 1 || response.ContentLength != -1 || response.Header.Get("Content-Type") != "text/plain" {
 			t.Fatal("unrelated or ambiguous diagnostic changed")
+		}
+	}
+}
+
+func TestContextBoundaryCanonicalizesBothAllowlistedHTTPFailures(t *testing.T) {
+	fixtures := map[string]struct {
+		param    string
+		message  string
+		nested   bool
+		contains string
+	}{
+		"context_length_exceeded":   {param: "messages", message: "provider fixture secret", contains: "context limit was exceeded"},
+		"invalid_encrypted_content": {param: "reasoning.encrypted_content", message: "provider fixture secret", nested: true, contains: "encrypted content"},
+	}
+	for code, fixture := range fixtures {
+		var body []byte
+		if fixture.nested {
+			body, _ = json.Marshal(map[string]any{"type": "response.failed", "response": map[string]any{"status": "failed", "error": map[string]any{"code": code, "param": fixture.param, "message": fixture.message, "debug": "fixture-secret"}}})
+		} else {
+			body, _ = json.Marshal(map[string]any{"error": map[string]any{"type": "invalid_request_error", "code": code, "param": fixture.param, "message": fixture.message, "debug": "fixture-secret"}})
+		}
+		response := &http.Response{StatusCode: 400, Body: io.NopCloser(bytes.NewReader(body)), ContentLength: int64(len(body))}
+		boundRequestErrorResponse(response)
+		actual, err := io.ReadAll(response.Body)
+		_ = response.Body.Close()
+		var envelope struct {
+			Error struct{ Type, Code, Message, Param string }
+		}
+		if err != nil || !json.Valid(actual) || json.Unmarshal(actual, &envelope) != nil || envelope.Error.Code != code || envelope.Error.Param != fixture.param || envelope.Error.Type != "invalid_request_error" || !strings.Contains(envelope.Error.Message, fixture.contains) {
+			t.Fatalf("known HTTP diagnostic was not canonicalized: %s", actual)
+		}
+		if strings.Contains(string(actual), "fixture-secret") || len(actual) > 1024 {
+			t.Fatal("known HTTP diagnostic retained provider details or exceeded fixed bound")
 		}
 	}
 }
@@ -127,8 +161,8 @@ func TestContextBoundaryExactDiagnosticAndParameterLimits(t *testing.T) {
 			t.Fatalf("diagnostic byte boundary size=%d was not exact", size)
 		}
 	}
-	for _, param := range []any{"", "messages", strings.Repeat("🐈", 32), strings.Repeat("🐈", 33), strings.Repeat("\x00", 128), nil, 7} {
-		body, _ := json.Marshal(map[string]any{"error": map[string]any{"code": "context_length_exceeded", "param": param}})
+	for _, param := range []any{"", "messages", "input", "reasoning.encrypted_content", strings.Repeat("🐈", 32), strings.Repeat("sk-live-fixture-secret", 12), "error", strings.Repeat("\x00", 128), nil, 7, map[string]any{"code": "context_length_exceeded"}} {
+		body, _ := json.Marshal(map[string]any{"error": map[string]any{"code": "context_length_exceeded", "param": param, "message": "fixture provider secret"}})
 		response := &http.Response{StatusCode: 400, Body: io.NopCloser(bytes.NewReader(body))}
 		boundRequestErrorResponse(response)
 		actual, _ := io.ReadAll(response.Body)
@@ -136,10 +170,10 @@ func TestContextBoundaryExactDiagnosticAndParameterLimits(t *testing.T) {
 		var envelope struct{ Error map[string]any }
 		_ = json.Unmarshal(actual, &envelope)
 		text, isString := param.(string)
-		wantParam := isString && len(text) <= 128
+		wantParam := isString && (text == "messages" || text == "input" || text == "reasoning.encrypted_content")
 		got, hasParam := envelope.Error["param"]
-		if len(actual) > 1024 || !utf8.Valid(actual) || !json.Valid(actual) || hasParam != wantParam || (wantParam && got != param) {
-			t.Fatal("parameter limit split UTF-8, retained an invalid parameter or lost a bounded field name")
+		if len(actual) > 1024 || !utf8.Valid(actual) || !json.Valid(actual) || hasParam != wantParam || (wantParam && got != text) || strings.Contains(string(actual), "provider secret") {
+			t.Fatal("unsafe parameter or provider message survived the exact diagnostic-field allowlist")
 		}
 	}
 }
