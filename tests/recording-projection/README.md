@@ -69,12 +69,27 @@ change during a query/rebuild rejects the snapshot.
 The index uses 0600 files/0700 directory, DELETE journals, memory temporary tables,
 a 128 MiB page cap and the same source/query work limits. Index quota accounting
 is independent from the source archive quota; the integrator must include both
-when presenting total recording disk use. Current summary updates scan metadata
-for the changed conversation; this does not hydrate payloads, but a very large
-single conversation still has linear metadata update work. No live latency/RSS
-acceptance follows from these synthetic tests.
+when presenting total recording disk use. Changed conversations use the bounded metadata cache described below; cold cache
+misses hydrate indexed metadata only. No live latency/RSS acceptance follows from
+these synthetic tests.
 
 The test project accepts `-p:RecordingSchemaSource=/path/to/RecordingSchema.cs`
 while integrating separate worktrees; the default is the committed storage-owner
 file in this checkout. This only links the authoritative schema for fixtures and
 does not copy or modify migration content.
+
+Conversation summaries now use a metadata-only LRU cache capped at
+`MaxConversations`. A cold conversation is rehydrated once from indexed metadata
+before its new record is inserted. Each later append updates its cached state
+and SQLite summary row directly; no accumulated conversation history is rescanned.
+Cache entries contain counts, IDs, model/route sets, pending-state metadata and a
+bounded title, never message/tool payloads. Eviction reloads only the affected
+conversation on its next append. Any aborted transaction, source deletion,
+explicit rebuild or projector version change clears the cache. Cold replay orders
+metadata by its durable source cursor so rebuild and incremental append agree.
+`SummaryMetadataScans`, `SummaryMetadataRowsRead`, `SummaryCacheEvictions` and
+`CachedSummaryCount` expose content-free qualification counters. Fixtures include
+150 appends to a 200-record conversation with zero additional metadata history
+scans, one cold reload after restart, rollback/retry, rebuild/deletion and LRU
+capacity behavior. Persisting a summary still serializes its distinct model list;
+its cost follows summary size rather than accumulated message/record history.

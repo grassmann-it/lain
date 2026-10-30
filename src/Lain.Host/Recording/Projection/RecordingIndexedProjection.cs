@@ -22,14 +22,24 @@ public sealed class RecordingIndexedProjection : IRecordingProjection, IRecordin
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private const string SnapshotScope = "__recording_projection";
     private const long MaximumIndexBytes = 128L * 1024 * 1024;
+    // Metadata only. Each mutable summary is valid for exactly the current index transaction/generation.
+    private readonly Dictionary<string, CachedSummary> _summaries = new(StringComparer.Ordinal);
+    private readonly LinkedList<string> _summaryLru = new();
+    private long _summaryScans, _summaryRows, _summaryEvictions;
+    private int _summaryCount;
+    public long SummaryMetadataScans => Interlocked.Read(ref _summaryScans);
+    public long SummaryMetadataRowsRead => Interlocked.Read(ref _summaryRows);
+    public long SummaryCacheEvictions => Interlocked.Read(ref _summaryEvictions);
+    public int CachedSummaryCount => Volatile.Read(ref _summaryCount);
 
     public RecordingIndexedProjection(IRecordingStore store, IRecordingNormalizer normalizer,
         string databasePath, string schemaSql, RecordingProjectionLimits? limits = null)
     {
         _store = store; _normalizer = normalizer; _limits = limits ?? new();
+        if (_limits.MaxConversations < 1) throw new ArgumentOutOfRangeException(nameof(limits), "conversation_cache_capacity");
         _path = Path.GetFullPath(databasePath); _schema = schemaSql;
     }
-    public void Dispose() { _connection?.Dispose(); _gate.Dispose(); }
+    public void Dispose() { InvalidateSummaries(); _connection?.Dispose(); _gate.Dispose(); }
 
     public async Task ApplyAsync(CommittedObservation observation, CancellationToken ct = default)
     {
@@ -153,6 +163,18 @@ public sealed class RecordingIndexedProjection : IRecordingProjection, IRecordin
 
     private async Task<RecordingStorageHealthDto> SynchronizeAsync(bool rebuild, CancellationToken ct)
     {
+        try { return await SynchronizeCoreAsync(rebuild, ct); }
+        catch
+        {
+            // Summary objects may contain updates from an aborted transaction. Never reuse them after rollback.
+            InvalidateSummaries();
+            _normalizer.Reset();
+            throw;
+        }
+    }
+
+    private async Task<RecordingStorageHealthDto> SynchronizeCoreAsync(bool rebuild, CancellationToken ct)
+    {
         var health = await _store.HealthAsync(ct);
         Open();
         var saved = SavedSnapshot();
@@ -163,6 +185,7 @@ public sealed class RecordingIndexedProjection : IRecordingProjection, IRecordin
         using var transaction = _connection!.BeginTransaction();
         if (!incremental)
         {
+            InvalidateSummaries();
             Execute("DELETE FROM recording_runs; DELETE FROM recording_evidence; DELETE FROM recording_records; DELETE FROM recording_occurrences; DELETE FROM recording_entities; DELETE FROM recording_edges;", transaction);
             _normalizer.Reset();
         }
@@ -183,7 +206,6 @@ public sealed class RecordingIndexedProjection : IRecordingProjection, IRecordin
             if (!page.HasMore) break;
         }
         if (Stamp(await _store.HealthAsync(ct)) != Stamp(health)) throw new SourceChangedException();
-        foreach (var id in touched) Summarize(id, transaction, ct);
         Execute("""
             INSERT INTO recording_entities(scope,kind,entity_id,native_id,provenance,state)
             VALUES($scope,'snapshot','source',$versionText,$json,'ready')
@@ -219,6 +241,8 @@ public sealed class RecordingIndexedProjection : IRecordingProjection, IRecordin
             if (title?.Length > 120) title = title[..120];
             var metadata = r with { Messages = [], Sources = [new(o.SourceEpoch, o.Sequence, o.EventId)] };
             var index = new IndexRecord(metadata, source.Cursor, o.Kind, r.Messages.Length, title);
+            // Load existing indexed metadata before inserting this occurrence, then add it exactly once.
+            var summary = SummaryFor(conversation, metadata.ObservedAt, transaction, ct);
             Execute("""
                 INSERT INTO recording_records(id,capture_id,request_id,attempt_id,conversation_id,parent_conversation_id,worker_id,parent_worker_id,parent_request_id,observed_ms,model,requested_model,route_id,provider,account_id,response_id,previous_response_id,complete,gap_reason,projection_version,record_json)
                 VALUES($id,$capture,$request,$attempt,$conversation,$parent,$worker,$parentworker,$parentrequest,$time,$model,$requested,$route,$provider,$account,$response,$previous,$complete,$gap,$version,$json)
@@ -228,6 +252,8 @@ public sealed class RecordingIndexedProjection : IRecordingProjection, IRecordin
                 ("$complete", r.Complete), ("$gap", r.GapReason), ("$version", r.ProjectionVersion), ("$json", JsonSerializer.Serialize(index, Json)));
             Execute("INSERT INTO recording_evidence(record_id,source_epoch,sequence,event_id) VALUES($id,$epoch,$sequence,$event)", transaction,
                 ("$id", r.Id), ("$epoch", o.SourceEpoch), ("$sequence", o.Sequence), ("$event", o.EventId));
+            summary.Add(index.Record, index.Kind, index.MessageCount, index.Title);
+            PersistSummary(conversation, summary, transaction);
             SaveRun(o, conversation, source.Cursor, transaction);
             if (r.WorkerId is not null && r.ParentWorkerId is not null)
                 SaveEdge(r.IdentityScope ?? r.CaptureId, r.WorkerId, r.ParentWorkerId, "worker_parent", o, transaction);
@@ -237,19 +263,48 @@ public sealed class RecordingIndexedProjection : IRecordingProjection, IRecordin
         }
     }
 
-    private void Summarize(string id, SqliteTransaction transaction, CancellationToken ct)
+    private RecordingConversationProjection.Summary SummaryFor(string id, DateTimeOffset observedAt,
+        SqliteTransaction transaction, CancellationToken ct)
     {
+        if (_summaries.TryGetValue(id, out var cached))
+        {
+            _summaryLru.Remove(cached.Node);
+            _summaryLru.AddLast(cached.Node);
+            return cached.Summary;
+        }
         RecordingConversationProjection.Summary? summary = null;
-        using var command = Command("SELECT record_json FROM recording_records WHERE conversation_id=$id ORDER BY observed_ms,id", transaction, ("$id", id));
+        Interlocked.Increment(ref _summaryScans);
+        using var command = Command("""
+            SELECT r.record_json FROM recording_records r
+            JOIN recording_evidence e ON e.record_id=r.id
+            JOIN recording_occurrences o ON o.source_epoch=e.source_epoch AND o.sequence=e.sequence
+            WHERE r.conversation_id=$id ORDER BY o.cursor,r.id
+            """, transaction, ("$id", id));
         using (var reader = command.ExecuteReader())
             while (reader.Read())
             {
                 ct.ThrowIfCancellationRequested();
+                Interlocked.Increment(ref _summaryRows);
                 var item = JsonSerializer.Deserialize<IndexRecord>(reader.GetString(0), Json)!;
                 summary ??= new(id, item.Record.ObservedAt);
                 summary.Add(item.Record, item.Kind, item.MessageCount, item.Title);
             }
-        if (summary is null) return;
+        summary ??= new(id, observedAt);
+        if (_summaries.Count >= _limits.MaxConversations)
+        {
+            var oldest = _summaryLru.First!;
+            _summaries.Remove(oldest.Value);
+            _summaryLru.RemoveFirst();
+            Interlocked.Increment(ref _summaryEvictions);
+        }
+        var node = _summaryLru.AddLast(id);
+        _summaries.Add(id, new(summary, node));
+        Volatile.Write(ref _summaryCount, _summaries.Count);
+        return summary;
+    }
+
+    private void PersistSummary(string id, RecordingConversationProjection.Summary summary, SqliteTransaction transaction)
+    {
         var value = summary.Freeze();
         Execute("""
             INSERT INTO recording_entities(scope,kind,entity_id,native_id,provenance,state)
@@ -257,6 +312,12 @@ public sealed class RecordingIndexedProjection : IRecordingProjection, IRecordin
             ON CONFLICT(scope,kind,entity_id) DO UPDATE SET provenance=excluded.provenance,state=excluded.state
             """, transaction, ("$scope", SnapshotScope), ("$id", id), ("$json", JsonSerializer.Serialize(value, Json)), ("$state", value.State));
     }
+    private void InvalidateSummaries()
+    {
+        _summaries.Clear(); _summaryLru.Clear(); Volatile.Write(ref _summaryCount, 0);
+    }
+    private sealed record CachedSummary(RecordingConversationProjection.Summary Summary, LinkedListNode<string> Node);
+
     private void SaveRun(SanitizedObservation observation, string conversation, long cursor, SqliteTransaction transaction)
     {
         if (observation.Kind is not ("run_manifest" or "run_annotation") || observation.Body is null) return;

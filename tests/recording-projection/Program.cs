@@ -100,6 +100,81 @@ try
     if (!OperatingSystem.IsWindows()) Check(File.GetUnixFileMode(databasePath) == (UnixFileMode.UserRead | UnixFileMode.UserWrite), "SQLite index file remains 0600");
 }
 finally { if (Directory.Exists(indexDirectory)) Directory.Delete(indexDirectory, true); }
+var performanceDirectory = Path.Combine(Path.GetTempPath(), "lain-recording-summary-cache-" + Guid.NewGuid().ToString("N"));
+try
+{
+    var conversationStore = new MemoryStore();
+    for (var i = 1; i <= 200; i++) conversationStore.Add(Record(i, "long-conversation", "same-model"));
+    var path = Path.Combine(performanceDirectory, "long.db");
+    using (var indexed = new RecordingIndexedProjection(conversationStore, new RecordingProtocolNormalizer(), path, RecordingSchema.Sql))
+    {
+        await indexed.RebuildAsync();
+        Check(indexed.SummaryMetadataRowsRead == 0 && indexed.SummaryMetadataScans == 1,
+            "rebuild constructs cached summary incrementally without rescan of inserted metadata");
+        var scans = indexed.SummaryMetadataScans;
+        var rows = indexed.SummaryMetadataRowsRead;
+        for (var i = 201; i <= 350; i++)
+        {
+            var appended = Record(i, "long-conversation", "same-model");
+            conversationStore.Add(appended); await indexed.ApplyAsync(appended);
+        }
+        Check(indexed.SummaryMetadataScans == scans && indexed.SummaryMetadataRowsRead == rows,
+            "150 repeated appends perform zero conversation history metadata scans");
+        Check((await indexed.ListAsync(new())).Items.Single().RequestCount == 350,
+            "cached summary retains exact request counts after repeated append");
+    }
+    using (var reopened = new RecordingIndexedProjection(conversationStore, new RecordingProtocolNormalizer(), path, RecordingSchema.Sql))
+    {
+        var first = Record(351, "long-conversation", "same-model");
+        conversationStore.Add(first); await reopened.ApplyAsync(first);
+        Check(reopened.SummaryMetadataScans == 1 && reopened.SummaryMetadataRowsRead == 350,
+            "first append after restart rehydrates prior metadata once");
+        var next = Record(352, "long-conversation", "same-model");
+        conversationStore.Add(next); await reopened.ApplyAsync(next);
+        Check(reopened.SummaryMetadataScans == 1 && reopened.SummaryMetadataRowsRead == 350,
+            "append after cold summary load does not reread history");
+        var duplicate = Record(353, "long-conversation", "same-model");
+        conversationStore.Add(duplicate);
+        conversationStore.AfterNextRead = () => conversationStore.Add(Record(354, "long-conversation", "same-model"));
+        var invalidated = await reopened.ListAsync(new());
+        Check(invalidated.ErrorCode == "stale_cursor" && reopened.CachedSummaryCount == 0,
+            "source mutation rolls back transaction and invalidates modified summary cache");
+        await reopened.ApplyAsync(Record(354, "long-conversation", "same-model"));
+        Check((await reopened.ListAsync(new())).Items.Single().RequestCount == 354,
+            "retry after rollback cannot double count aborted summary updates");
+        await reopened.RebuildAsync();
+        Check((await reopened.ListAsync(new())).Items.Single().RequestCount == 354,
+            "full rebuild discards old cache before adding source rows");
+        var rowsBeforeVersionReset = reopened.SummaryMetadataRowsRead;
+        var scansBeforeVersionReset = reopened.SummaryMetadataScans;
+        using (var schemaConnection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + path))
+        {
+            schemaConnection.Open();
+            using var oldVersion = schemaConnection.CreateCommand();
+            oldVersion.CommandText = "UPDATE recording_entities SET native_id='old-projector-version' WHERE kind='snapshot'";
+            oldVersion.ExecuteNonQuery();
+        }
+        Check((await reopened.ListAsync(new())).Items.Single().RequestCount == 354 &&
+            reopened.SummaryMetadataScans == scansBeforeVersionReset + 1 && reopened.SummaryMetadataRowsRead == rowsBeforeVersionReset,
+            "projector version invalidation discards cached state before deterministic replay");
+        conversationStore.RemoveCapture(); await reopened.RebuildAsync();
+        Check(reopened.CachedSummaryCount == 0 && (await reopened.ListAsync(new())).Items.Length == 0,
+            "source deletion clears cached summaries and persisted conversation rows");
+    }
+    var evictingStore = new MemoryStore();
+    using (var bounded = new RecordingIndexedProjection(evictingStore, new RecordingProtocolNormalizer(),
+        Path.Combine(performanceDirectory, "bounded.db"), RecordingSchema.Sql, new(MaxConversations: 1)))
+    {
+        var a = Record(1, "a", "a"); evictingStore.Add(a); await bounded.ApplyAsync(a);
+        var b = Record(2, "b", "b"); evictingStore.Add(b); await bounded.ApplyAsync(b);
+        var again = Record(3, "a", "a"); evictingStore.Add(again); await bounded.ApplyAsync(again);
+        Check(bounded.CachedSummaryCount == 1 && bounded.SummaryCacheEvictions == 2 && bounded.SummaryMetadataRowsRead == 1,
+            "metadata LRU stays within conversation cache cap and loads evicted history once");
+        Check((await bounded.ListAsync(new())).Items.Sum(i => i.RequestCount) == 3,
+            "summary cache eviction preserves persistent counts");
+    }
+}
+finally { if (Directory.Exists(performanceDirectory)) Directory.Delete(performanceDirectory, true); }
 Console.WriteLine($"{checks} recording projection checks passed");
 
 sealed class MemoryStore : IRecordingStore
@@ -107,6 +182,7 @@ sealed class MemoryStore : IRecordingStore
     private readonly List<CommittedObservation> _records = [];
     private long _high;
     public int ReadCalls;
+    public Action? AfterNextRead;
     public void Add(CommittedObservation record) { _records.Add(record); _high = Math.Max(_high, record.Cursor); }
     public void RemoveCapture() { _records.Clear(); }
     public Task<RecordingCommitResult> CommitAsync(SanitizedObservation observation, CancellationToken ct = default) => throw new NotSupportedException();
@@ -115,6 +191,7 @@ sealed class MemoryStore : IRecordingStore
         ct.ThrowIfCancellationRequested(); ReadCalls++;
         var page = _records.Where(r => r.Cursor > after).OrderBy(r => r.Cursor).Take(limit).ToArray();
         var next = page.LastOrDefault()?.Cursor ?? _high;
+        var callback = AfterNextRead; AfterNextRead = null; callback?.Invoke();
         return Task.FromResult(new RecordingCommitPage(page, next, _high, _records.Any(r => r.Cursor > next)));
     }
     public Task<RecordingStorageHealthDto> HealthAsync(CancellationToken ct = default) => Task.FromResult(new RecordingStorageHealthDto(RecordCount: _records.Count, HighWatermark: _high));
