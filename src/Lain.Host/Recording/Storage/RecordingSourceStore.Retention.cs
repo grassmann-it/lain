@@ -14,7 +14,7 @@ public sealed partial class RecordingSourceStore
             SaveControl();
             CompleteClear();
         }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { error = "purge_pending"; throw new IOException("recording_clear_failed"); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { error = "purge_pending"; ReconcileAfterFailure(); throw new IOException("recording_clear_failed"); }
         finally { gate.Release(); }
     }
 
@@ -28,22 +28,22 @@ public sealed partial class RecordingSourceStore
             if (name is "writer.lock" or "control.json") continue;
             PrivateArchiveFiles.RejectLinks(path);
             if (System.IO.Directory.Exists(path)) DeletePrivateTree(path);
-            else File.Delete(path);
+            else DeleteTrackedFile(path);
         }
         control = control with { Generation = Guid.NewGuid().ToString("N"), HiddenCaptures = [], ClearPending = false, PurgePending = false };
         PrivateArchiveFiles.Directory(GenerationDirectory);
         PrivateArchiveFiles.Directory(PayloadDirectory);
-        records.Clear(); identities.Clear(); error = null;
+        records.Clear(); identities.Clear(); RefreshVisibility(); error = null;
         PrivateArchiveFiles.SyncDirectory(directory);
         SaveControl();
     }
 
-    private static void DeletePrivateTree(string path)
+    private void DeletePrivateTree(string path)
     {
         PrivateArchiveFiles.RejectLinks(path);
         foreach (var child in System.IO.Directory.EnumerateFileSystemEntries(path)) {
             PrivateArchiveFiles.RejectLinks(child);
-            if (System.IO.Directory.Exists(child)) DeletePrivateTree(child); else File.Delete(child);
+            if (System.IO.Directory.Exists(child)) DeletePrivateTree(child); else DeleteTrackedFile(child);
         }
         System.IO.Directory.Delete(path);
     }
@@ -54,7 +54,7 @@ public sealed partial class RecordingSourceStore
         if (string.IsNullOrWhiteSpace(captureId) || captureId.Length > 1024) throw new ArgumentException("Invalid recording capture identifier.");
         await gate.WaitAsync(ct);
         try { if (initialized) MarkAndPurge([captureId]); }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { if (error is not ("source_corrupt" or "archive_unavailable")) error = "purge_pending"; throw new IOException("recording_purge_failed"); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { if (error is not ("source_corrupt" or "archive_unavailable")) error = "purge_pending"; ReconcileAfterFailure(); throw new IOException("recording_purge_failed"); }
         finally { gate.Release(); }
     }
 
@@ -64,6 +64,7 @@ public sealed partial class RecordingSourceStore
         await gate.WaitAsync(ct);
         try {
             if (!initialized || error is "source_corrupt" or "archive_unavailable") return;
+            ReconcileDiskUsage(); // Scheduled maintenance is the deliberate reconciliation boundary.
             var now = clock.GetUtcNow();
             var limits = RetentionLimits();
             var expired = records.Where(r => r.Record.Metadata.ObservedAt <= now.AddDays(-limits.MetadataDays) ||
@@ -71,7 +72,7 @@ public sealed partial class RecordingSourceStore
                 .Select(r => r.Record.Metadata.CaptureId).Distinct().ToArray();
             if (expired.Length != 0 || control.PurgePending) MarkAndPurge(expired);
         }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { if (error is not ("source_corrupt" or "archive_unavailable")) error = "purge_pending"; throw new IOException("recording_retention_failed"); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { if (error is not ("source_corrupt" or "archive_unavailable")) error = "purge_pending"; ReconcileAfterFailure(); throw new IOException("recording_retention_failed"); }
         finally { gate.Release(); }
     }
 
@@ -81,6 +82,7 @@ public sealed partial class RecordingSourceStore
         var hidden = (control.HiddenCaptures ?? []).Concat(captures).Distinct(StringComparer.Ordinal).ToArray();
         if (hidden.Length > options.MaximumRecords) throw new IOException("Recording deletion-control bound exceeded.");
         control = control with { HiddenCaptures = hidden, InvalidatedThrough = control.HighWatermark, PurgePending = true };
+        RefreshVisibility();
         SaveControl();
         try { CompactHidden(); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { error = "purge_pending"; throw new IOException("Recording physical purge remains pending."); }
@@ -111,6 +113,7 @@ public sealed partial class RecordingSourceStore
                     segment = PrivateArchiveFiles.Open(Path.Combine(destination, name), FileMode.CreateNew, FileAccess.Write);
                 }
                 var offset = segment.Position;
+                TrackFileLength(Path.Combine(destination, name!), segment.Length + frame.Length);
                 segment.Write(frame);
                 updated.Add(new(retained, name!, offset));
             }
@@ -121,7 +124,7 @@ public sealed partial class RecordingSourceStore
         // New generation is authoritative before removing old source material. Pending=true survives any following crash.
         control = control with { Generation = nextGeneration, HighWatermark = nextCursor, InvalidatedThrough = Math.Max(control.InvalidatedThrough, control.HighWatermark) };
         SaveControl();
-        records.Clear(); records.AddRange(updated);
+        records.Clear(); records.AddRange(updated); RefreshVisibility();
         identities.Clear();
         foreach (var item in records) identities.Add((item.Record.Metadata.SourceEpoch, item.Record.Metadata.Sequence), item);
         CleanupUnreferenced();
@@ -129,7 +132,7 @@ public sealed partial class RecordingSourceStore
         foreach (var file in new[] { "projection.db", "projection.db-wal", "projection.db-shm", "projection.db-journal" }) {
             var path = Path.Combine(directory, file);
             PrivateArchiveFiles.RejectLinks(path);
-            if (File.Exists(path)) File.Delete(path);
+            if (File.Exists(path)) DeleteTrackedFile(path);
         }
         var recovery = Path.Combine(directory, "recovery");
         if (System.IO.Directory.Exists(recovery)) DeletePrivateTree(recovery);

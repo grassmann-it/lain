@@ -125,3 +125,34 @@ A future projection migration must check `user_version`, refuse newer versions
 unchanged, and rebuild a disposable index from the source. Do not attach this
 schema to the Usage migration chain. Checksums detect accidental corruption,
 not adversarial authenticity. Normal health/error codes contain no body snippets.
+
+## Resource accounting and replay work
+
+Commit and health do not recursively walk the archive. A tracked file-size map
+is populated during recovery, then updated for each owned append, atomic
+replacement, temporary file, truncation and deletion. An atomic replacement
+reserves the complete new temporary file alongside its existing destination.
+Failed writes retain conservative accounting and trigger a cold reconciliation;
+quota checks reject writes while accounting is invalid. The four optional
+`projection.db`/WAL/SHM/journal paths are sampled directly with constant work,
+so an in-directory SQLite consumer remains counted. Mount discovery is cached;
+shared-volume free space is still sampled before writes.
+
+`ApplyRetentionAsync` performs the scheduled full reconciliation for externally
+added/changed archive files. It must remain background maintenance, never part
+of an inference or UI callback. Recovery and maintenance scans are bounded by
+the configured retained-record/disk archive bounds, but remain synchronous;
+large existing archives can still make startup/reconciliation slow. Startup
+recovery was deliberately not converted to an asynchronous state machine in
+this patch.
+
+Visible records have a cached ordered reference list, and capture tombstones
+use a hash set. Health count/first cursor are constant work. Replay binary
+searches that visible list, then opens/decompresses only the requested page,
+checking its aggregate byte budget before the next payload is hydrated. The
+extra list and tracked-file map are bounded by managed archive file/record
+counts. `Diagnostics` exposes content-free counters (`DiskReconciliations`,
+`DirectoryEntriesScanned`, `ReplaySearchSteps`, `PayloadReads`) without doing I/O.
+Synthetic resource tests assert repeated health performs no scan/hydration,
+commits avoid rescanning, late-cursor reads seek logarithmically, and accounting
+matches actual retained file lengths after maintenance, purge and clear.

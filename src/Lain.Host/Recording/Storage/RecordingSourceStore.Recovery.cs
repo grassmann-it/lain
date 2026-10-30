@@ -26,6 +26,7 @@ public sealed partial class RecordingSourceStore
             PrivateArchiveFiles.Directory(GenerationDirectory);
             SaveControl();
         }
+        RefreshVisibility();
         PrivateArchiveFiles.Directory(GenerationDirectory);
         if (control.ClearPending) { CompleteClear(); return; }
         var files = System.IO.Directory.EnumerateFiles(GenerationDirectory, "journal-*.rec").Order(StringComparer.Ordinal).ToArray();
@@ -38,7 +39,7 @@ public sealed partial class RecordingSourceStore
                     var item = RecordingFrames.Read(stream, options.MaximumRecordBytes, out var torn);
                     if (torn) {
                         if (index != files.Length - 1) throw new InvalidDataException("Sealed recording segment has an incomplete frame.");
-                        QuarantineTail(stream, start);
+                        QuarantineTail(stream, start, path);
                         recoveryUncertain = true;
                         break;
                     }
@@ -50,7 +51,7 @@ public sealed partial class RecordingSourceStore
                         throw new InvalidDataException("Recording source identity is repeated.");
                     records.Add(location);
                     control = control with { HighWatermark = Math.Max(control.HighWatermark, item.Cursor) };
-                    if (!IsHidden(item)) _ = Materialize(location); // Validate referenced payload before exposing a committed prefix.
+                    if (!IsHidden(item)) { visibleRecords.Add(location); _ = Materialize(location); } // Validate referenced payload before exposing a committed prefix.
                 }
             }
             catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or ArgumentException) {
@@ -67,20 +68,23 @@ public sealed partial class RecordingSourceStore
         }
     }
 
-    private void QuarantineTail(FileStream stream, long offset)
+    private void QuarantineTail(FileStream stream, long offset, string journalPath)
     {
         var length = stream.Length - offset;
         if (length > options.MaximumRecordBytes + 65536L || !HasSpace(length + 4096))
             throw new InvalidDataException("Recording recovery workspace is exhausted.");
         var recovery = Path.Combine(directory, "recovery");
         PrivateArchiveFiles.Directory(recovery);
-        using (var target = PrivateArchiveFiles.Open(Path.Combine(recovery, Guid.NewGuid().ToString("N") + ".tail"), FileMode.CreateNew, FileAccess.Write, FileShare.None)) {
+        var targetPath = Path.Combine(recovery, Guid.NewGuid().ToString("N") + ".tail");
+        TrackFileLength(targetPath, length);
+        using (var target = PrivateArchiveFiles.Open(targetPath, FileMode.CreateNew, FileAccess.Write, FileShare.None)) {
             stream.Position = offset;
             stream.CopyTo(target);
             target.Flush(true);
         }
         PrivateArchiveFiles.SyncDirectory(recovery);
         stream.SetLength(offset);
+        TrackFileLength(journalPath, offset);
         stream.Flush(true);
     }
 
@@ -89,7 +93,7 @@ public sealed partial class RecordingSourceStore
         var reachable = records.Where(r => !IsHidden(r.Record)).Select(r => r.Record.PayloadFile).Where(p => p is not null).ToHashSet(StringComparer.Ordinal);
         foreach (var path in System.IO.Directory.EnumerateFiles(PayloadDirectory)) {
             PrivateArchiveFiles.RejectLinks(path);
-            if (!reachable.Contains(Path.GetFileName(path))) File.Delete(path);
+            if (!reachable.Contains(Path.GetFileName(path))) DeleteTrackedFile(path);
         }
         // A generation not named by durable control cannot become active after a crash or restore.
         foreach (var path in System.IO.Directory.EnumerateDirectories(directory)) {

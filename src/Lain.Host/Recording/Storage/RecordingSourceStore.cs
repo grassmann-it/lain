@@ -57,7 +57,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
     {
         PrivateArchiveFiles.Directory(directory);
         writerLock = PrivateArchiveFiles.Open(Path.Combine(directory, "writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-        try { Recover(); initialized = true; }
+        try { ReconcileDiskUsage(); Recover(); initialized = true; }
         catch { active?.Dispose(); writerLock.Dispose(); writerLock = null; throw; }
     }
 
@@ -94,7 +94,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
                 pending.Completion.TrySetResult(result);
             }
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or InvalidOperationException or ArgumentException or PlatformNotSupportedException) {
-                error = "archive_write_failed";
+                error = "archive_write_failed"; ReconcileAfterFailure();
                 Interlocked.Increment(ref dropped);
                 pending.Completion.TrySetResult(new(false, ErrorCode: error));
             }
@@ -107,7 +107,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         if (control.PurgePending) return new(false, ErrorCode: "purge_pending");
         if (error is not null) return new(false, ErrorCode: error);
         if (!policy.IsCurrent(observation.PolicyRevision, observation.StopGeneration)) return new(false, ErrorCode: "policy_stopped_or_changed");
-        if ((control.HiddenCaptures ?? []).Contains(observation.CaptureId, StringComparer.Ordinal)) return new(false, ErrorCode: "capture_deleted");
+        if (hiddenCaptures.Contains(observation.CaptureId)) return new(false, ErrorCode: "capture_deleted");
         var serialized = JsonSerializer.SerializeToUtf8Bytes(observation, RecordingFrames.Json);
         if (serialized.Length > MaximumAcceptedRecordBytes) return new(false, ErrorCode: "record_too_large");
         var hash = RecordingFrames.Hash(serialized);
@@ -127,19 +127,20 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         var required = (payload?.Length ?? 0L) + frame.Length + 65536L;
         if (!HasSpace(required)) return new(false, ErrorCode: "disk_budget_exhausted");
         if (payload is not null) {
-            PrivateArchiveFiles.AtomicWrite(Path.Combine(PayloadDirectory, payloadName!), payload);
+            WriteTrackedAtomic(Path.Combine(PayloadDirectory, payloadName!), payload);
         }
         // Recheck after compression/fsync and before source publication. Any rejected payload is an orphan, never an event.
         if (!policy.IsCurrent(observation.PolicyRevision, observation.StopGeneration)) {
-            if (payloadName is not null) File.Delete(Path.Combine(PayloadDirectory, payloadName));
+            if (payloadName is not null) DeleteTrackedFile(Path.Combine(PayloadDirectory, payloadName));
             return new(false, ErrorCode: "policy_stopped_or_changed");
         }
         EnsureSegment(frame.Length, cursor);
         var offset = active!.Position;
+        TrackFileLength(Path.Combine(GenerationDirectory, activeName!), active.Length + frame.Length);
         active.Write(frame);
         active.Flush(true);
         var location = new StoredLocation(item, activeName!, offset);
-        records.Add(location);
+        records.Add(location); visibleRecords.Add(location);
         identities.Add((observation.SourceEpoch, observation.Sequence), location);
         // Journal is authoritative; the cached manifest watermark may lag a crash and is repaired by replay.
         control = control with { HighWatermark = cursor };
@@ -154,20 +155,20 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
             if (error is not null && error != "purge_pending") return new([], after, control.HighWatermark, false, error);
             if (after != 0 && after <= control.InvalidatedThrough) return new([], 0, control.HighWatermark, false, "cursor_invalidated");
             var pageSize = Math.Clamp(limit, 1, options.ReplayBatchSize);
-            var selected = records.Where(r => r.Record.Cursor > after && !IsHidden(r.Record)).Take(pageSize + 1).ToArray();
-            var pageItems = new List<CommittedObservation>();
+            var start = FirstVisibleAfter(after);
+            var pageItems = new List<CommittedObservation>(Math.Min(pageSize, visibleRecords.Count - start));
             long retainedBytes = 0;
             var byteLimit = Math.Min(64L * 1024 * 1024, Math.Max(options.MaximumRecordBytes, MaximumQueuedBytes));
-            foreach (var item in selected.Take(pageSize))
-            {
-                // Stop before materializing another payload, not after allocating an unbounded page.
+            var index = start;
+            for (; index < visibleRecords.Count && pageItems.Count < pageSize; index++) {
+                var item = visibleRecords[index];
+                // Check the page byte budget before opening/decompressing the next payload.
                 var nextBytes = item.Record.OriginalBytes;
                 if (pageItems.Count > 0 && retainedBytes + nextBytes > byteLimit) break;
                 pageItems.Add(Materialize(item)); retainedBytes += nextBytes;
             }
             var page = pageItems.ToArray();
-
-            return new(page, page.LastOrDefault()?.Cursor ?? Math.Max(after, control.InvalidatedThrough), control.HighWatermark, selected.Length > page.Length,
+            return new(page, page.LastOrDefault()?.Cursor ?? Math.Max(after, control.InvalidatedThrough), control.HighWatermark, index < visibleRecords.Count,
                 recoveryUncertain ? "recovered_commit_uncertain" : null);
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or ArgumentException) { error = "source_corrupt"; return new([], after, control.HighWatermark, false, "source_corrupt"); }
@@ -177,12 +178,12 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
     public async Task<RecordingStorageHealthDto> HealthAsync(CancellationToken ct = default)
     {
         await gate.WaitAsync(ct);
-        try { return new(initialized ? DiskBytes() : 0, records.Count(r => !IsHidden(r.Record)), control.HighWatermark,
-            records.FirstOrDefault(r => !IsHidden(r.Record))?.Record.Cursor ?? 0,
+        try { if (initialized) SampleProjectionFiles(); return new(initialized ? DiskBytes() : 0, visibleRecords.Count, control.HighWatermark,
+            visibleRecords.Count > 0 ? visibleRecords[0].Record.Cursor : 0,
             control.PurgePending ? "purge_pending" : error is null ? "ready" : "degraded", error, Interlocked.Read(ref dropped)); }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) {
             error = "archive_unavailable";
-            return new(RecordCount: records.Count, HighWatermark: control.HighWatermark, State: "degraded", ErrorCode: error, DroppedRecords: Interlocked.Read(ref dropped));
+            return new(RecordCount: visibleRecords.Count, HighWatermark: control.HighWatermark, State: "degraded", ErrorCode: error, DroppedRecords: Interlocked.Read(ref dropped));
         }
         finally { gate.Release(); }
     }
@@ -193,6 +194,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         var observation = item.Metadata;
         if (item.PayloadFile is not null) {
             if (Path.GetFileName(item.PayloadFile) != item.PayloadFile) throw new InvalidDataException("Invalid recording payload locator.");
+            Interlocked.Increment(ref payloadReads);
             using var file = PrivateArchiveFiles.Open(Path.Combine(PayloadDirectory, item.PayloadFile), FileMode.Open, FileAccess.Read);
             var bytes = RecordingFrames.Decompress(file, options.MaximumRecordBytes);
             if (bytes.Length != item.PayloadBytes || RecordingFrames.Hash(bytes) != item.PayloadHash) throw new InvalidDataException("Recording payload integrity failure.");
@@ -201,7 +203,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         return new(observation, item.Cursor, control.Generation + "/" + location.Journal, location.Offset, item.ContentHash);
     }
 
-    private bool IsHidden(StoredObservation item) => (control.HiddenCaptures ?? []).Contains(item.Metadata.CaptureId, StringComparer.Ordinal);
+    private bool IsHidden(StoredObservation item) => hiddenCaptures.Contains(item.Metadata.CaptureId);
     private string PayloadDirectory => Path.Combine(directory, "payloads");
     private string GenerationDirectory => Path.Combine(directory, control.Generation);
     private string ControlPath => Path.Combine(directory, "control.json");
@@ -209,7 +211,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
     {
         var bytes = JsonSerializer.SerializeToUtf8Bytes(control, RecordingFrames.Json);
         if (bytes.Length > 1024 * 1024) throw new IOException("Recording control state exceeds its bound.");
-        PrivateArchiveFiles.AtomicWrite(ControlPath, bytes);
+        WriteTrackedAtomic(ControlPath, bytes);
     }
 
     private void EnsureSegment(int length, long cursor)
@@ -218,36 +220,19 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         active?.Flush(true); active?.Dispose();
         activeName = $"journal-{cursor:D20}.rec";
         active = PrivateArchiveFiles.Open(Path.Combine(GenerationDirectory, activeName), FileMode.CreateNew, FileAccess.ReadWrite);
+        TrackFileLength(Path.Combine(GenerationDirectory, activeName), 0);
         PrivateArchiveFiles.SyncDirectory(GenerationDirectory);
     }
 
     private bool HasSpace(long required)
     {
+        if (!diskAccountingValid) return false; // Reconcile only at a recovery/maintenance/error boundary.
+        SampleProjectionFiles();
         var maximum = SourceDiskBudget;
         var existing = DiskBytes();
         if (required < 0 || existing > maximum || required > maximum - existing) return false;
-        var drive = new DriveInfo(Path.GetPathRoot(directory)!);
-        // DriveInfo('/') is not correct for every separate mount; locate the longest containing mount on Linux.
-        if (OperatingSystem.IsLinux()) {
-            var candidate = DriveInfo.GetDrives().Where(d => directory == d.Name.TrimEnd('/') || directory.StartsWith(d.Name.TrimEnd('/') + "/", StringComparison.Ordinal))
-                .OrderByDescending(d => d.Name.Length).FirstOrDefault();
-            if (candidate is not null) drive = candidate;
-        }
-        return drive.AvailableFreeSpace - required >= options.MinimumFreeDiskBytes;
-    }
-
-    private long DiskBytes()
-    {
-        long bytes = 0;
-        var pending = new Stack<string>(); pending.Push(directory);
-        while (pending.TryPop(out var folder)) {
-            foreach (var path in System.IO.Directory.EnumerateFileSystemEntries(folder)) {
-                PrivateArchiveFiles.RejectLinks(path);
-                if (System.IO.Directory.Exists(path)) pending.Push(path);
-                else if (File.Exists(path)) bytes = checked(bytes + new FileInfo(path).Length);
-            }
-        }
-        return bytes;
+        archiveDrive ??= FindArchiveDrive();
+        return archiveDrive.AvailableFreeSpace - required >= options.MinimumFreeDiskBytes;
     }
 
     private static bool ValidMetadata(SanitizedObservation o) =>
