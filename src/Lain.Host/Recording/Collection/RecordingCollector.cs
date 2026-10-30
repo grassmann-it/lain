@@ -28,6 +28,7 @@ public sealed class RecordingCollector(RecordingSourceClient source, IRecordingP
         try
         {
             var snapshot = policy.Snapshot;
+            if (!snapshot.Enabled || snapshot.Revision != configuredRevision) assembler.Reset();
             if (shouldCollect?.Invoke() == false)
             { State = snapshot.Enabled ? "source_unavailable" : "off"; LastErrorCode = snapshot.Enabled ? "source_unavailable" : null; return true; }
             if (!snapshot.Enabled)
