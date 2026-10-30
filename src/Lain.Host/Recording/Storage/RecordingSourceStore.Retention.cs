@@ -9,6 +9,7 @@ public sealed partial class RecordingSourceStore
         await gate.WaitAsync(ct);
         try {
             Interlocked.Increment(ref storeEpoch);
+            if (!initialized) { if (error is not null) throw new IOException("Recording archive is unavailable."); return; }
             control = control with { InvalidatedThrough = control.HighWatermark, PurgePending = true, ClearPending = true };
             SaveControl();
             CompleteClear();
@@ -51,7 +52,7 @@ public sealed partial class RecordingSourceStore
     {
         if (string.IsNullOrWhiteSpace(captureId) || captureId.Length > 1024) throw new ArgumentException("Invalid recording capture identifier.");
         await gate.WaitAsync(ct);
-        try { MarkAndPurge([captureId]); }
+        try { if (initialized) MarkAndPurge([captureId]); }
         finally { gate.Release(); }
     }
 
@@ -60,6 +61,7 @@ public sealed partial class RecordingSourceStore
     {
         await gate.WaitAsync(ct);
         try {
+            if (!initialized) return;
             var now = clock.GetUtcNow();
             var expired = records.Where(r => r.Record.Metadata.ObservedAt <= now.AddDays(-options.MetadataRetentionDays) ||
                 (r.Record.PayloadFile is not null && r.Record.Metadata.ObservedAt <= now.AddDays(-options.ContentRetentionDays)))

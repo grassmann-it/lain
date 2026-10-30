@@ -2,6 +2,10 @@
 
 `RecordingSourceStore(directory, IRecordingPolicy, RecordingStoreOptions?, TimeProvider?)`
 implements `IRecordingStore` and `IAsyncDisposable`. Construction never enables capture.
+A new store initializes lazily on the first valid commit. Construction, health,
+reads and clear on a disabled installation without an archive create no files.
+Existing-archive open failures become `archive_unavailable` health, never a Host
+startup exception; a second writer is refused through that same fixed code.
 Only `SanitizedObservation` crosses this boundary. Redaction states must match the
 current policy sanitizer; failed/omitted bodies cannot carry content. The writer
 rechecks revision/stop generation after compression and before source publication.

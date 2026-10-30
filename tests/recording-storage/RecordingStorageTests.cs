@@ -16,6 +16,19 @@ public sealed class RecordingStorageTests : IDisposable
             RecordingContract.RedactionVersion, body is null ? "metadata_only" : "sanitized", BodyEncoding: body is null ? null : "utf8_json", Body: body);
 
     [Fact]
+    public async Task DisabledConstructionHealthAndClearCreateNoArchiveFiles()
+    {
+        policy.Enabled = false;
+        await using (var store = new RecordingSourceStore(PathFor(), policy, Options)) {
+            Assert.Equal(0, (await store.HealthAsync()).RecordCount);
+            await store.ClearAsync();
+            Assert.Empty((await store.ReadCommittedAsync()).Records);
+            Assert.False(System.IO.Directory.Exists(PathFor()));
+        }
+        Assert.False(System.IO.Directory.Exists(PathFor()));
+    }
+
+    [Fact]
     public async Task DurableRestartPreservesOccurrencesAndRejectsConflictingIdentity()
     {
         await using (var store = new RecordingSourceStore(PathFor(), policy, Options)) {
@@ -114,10 +127,11 @@ public sealed class RecordingStorageTests : IDisposable
     public async Task DiskBudgetIncludesManagedProjectionAndStopsBeforeAppend()
     {
         await using var store = new RecordingSourceStore(PathFor(), policy, Options with { MaximumDiskBytes = 131072 });
+        await store.CommitAsync(Event(1, body: null));
         await File.WriteAllBytesAsync(Path.Combine(PathFor(), "projection.db"), new byte[100000]);
-        var result = await store.CommitAsync(Event());
+        var result = await store.CommitAsync(Event(2));
         Assert.Equal("disk_budget_exhausted", result.ErrorCode);
-        Assert.Empty((await store.ReadCommittedAsync()).Records);
+        Assert.Single((await store.ReadCommittedAsync()).Records);
     }
 
     [Fact]
@@ -160,13 +174,15 @@ public sealed class RecordingStorageTests : IDisposable
         if (!OperatingSystem.IsLinux()) return;
         await using var store = new RecordingSourceStore(PathFor(), policy, Options);
         await store.CommitAsync(Event());
-        Assert.Throws<IOException>(() => new RecordingSourceStore(PathFor(), policy, Options));
+        await using (var other = new RecordingSourceStore(PathFor(), policy, Options))
+            Assert.Equal("archive_unavailable", (await other.HealthAsync()).ErrorCode);
         foreach (var dir in System.IO.Directory.GetDirectories(PathFor(), "*", SearchOption.AllDirectories).Prepend(PathFor()))
             Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(dir));
         foreach (var file in System.IO.Directory.GetFiles(PathFor(), "*", SearchOption.AllDirectories))
             Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(file));
         var link = PathFor("link"); System.IO.Directory.CreateSymbolicLink(link, PathFor());
-        Assert.Throws<IOException>(() => new RecordingSourceStore(link, policy, Options));
+        await using var linked = new RecordingSourceStore(link, policy, Options);
+        Assert.Equal("archive_unavailable", (await linked.HealthAsync()).ErrorCode);
     }
 
     [Fact]

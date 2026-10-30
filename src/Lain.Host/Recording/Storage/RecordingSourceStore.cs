@@ -13,7 +13,8 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
     private readonly IRecordingPolicy policy;
     private readonly RecordingStoreOptions options;
     private readonly TimeProvider clock;
-    private readonly FileStream writerLock;
+    private FileStream? writerLock;
+    private bool initialized;
     private readonly SemaphoreSlim gate = new(1, 1);
     private readonly Channel<Pending> queue;
     private readonly Task writer;
@@ -33,17 +34,31 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         this.options = options ?? new();
         this.clock = clock ?? TimeProvider.System;
         ValidateOptions(this.options);
-        PrivateArchiveFiles.Directory(this.directory);
-        writerLock = PrivateArchiveFiles.Open(Path.Combine(this.directory, "writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-        try {
-            Recover();
-            queue = Channel.CreateBounded<Pending>(new BoundedChannelOptions(this.options.QueueCount) {
-                SingleReader = true, SingleWriter = false, FullMode = BoundedChannelFullMode.Wait,
-                AllowSynchronousContinuations = false
-            });
-            writer = Task.Run(WriteLoopAsync);
+        control = new(1, Guid.NewGuid().ToString("N"));
+        // A disabled/new installation is inert: no journal, payload or lock creation on construction/health.
+        if (System.IO.Directory.Exists(this.directory)) {
+            try {
+                PrivateArchiveFiles.RejectLinks(this.directory);
+                if (System.IO.Directory.EnumerateFileSystemEntries(this.directory).Any()) Initialize();
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException or PlatformNotSupportedException) {
+                active?.Dispose(); active = null; writerLock?.Dispose(); writerLock = null;
+                error = "archive_unavailable";
+            }
         }
-        catch { active?.Dispose(); writerLock.Dispose(); throw; }
+        queue = Channel.CreateBounded<Pending>(new BoundedChannelOptions(this.options.QueueCount) {
+            SingleReader = true, SingleWriter = false, FullMode = BoundedChannelFullMode.Wait,
+            AllowSynchronousContinuations = false
+        });
+        writer = Task.Run(WriteLoopAsync);
+    }
+
+    private void Initialize()
+    {
+        PrivateArchiveFiles.Directory(directory);
+        writerLock = PrivateArchiveFiles.Open(Path.Combine(directory, "writer.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        try { Recover(); initialized = true; }
+        catch { active?.Dispose(); writerLock.Dispose(); writerLock = null; throw; }
     }
 
     public Task<RecordingCommitResult> CommitAsync(SanitizedObservation observation, CancellationToken ct = default)
@@ -77,7 +92,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
                 if (!result.Committed) Interlocked.Increment(ref dropped);
                 pending.Completion.TrySetResult(result);
             }
-            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or InvalidOperationException or ArgumentException) {
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or InvalidOperationException or ArgumentException or PlatformNotSupportedException) {
                 error = "archive_write_failed";
                 Interlocked.Increment(ref dropped);
                 pending.Completion.TrySetResult(new(false, ErrorCode: error));
@@ -91,6 +106,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         if (control.PurgePending) return new(false, ErrorCode: "purge_pending");
         if (error is not null) return new(false, ErrorCode: error);
         if (!policy.IsCurrent(observation.PolicyRevision, observation.StopGeneration)) return new(false, ErrorCode: "policy_stopped_or_changed");
+        if (!initialized) Initialize();
         if ((control.HiddenCaptures ?? []).Contains(observation.CaptureId, StringComparer.Ordinal)) return new(false, ErrorCode: "capture_deleted");
         var serialized = JsonSerializer.SerializeToUtf8Bytes(observation, RecordingFrames.Json);
         if (serialized.Length > options.MaximumRecordBytes) return new(false, ErrorCode: "record_too_large");
@@ -149,7 +165,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
     public async Task<RecordingStorageHealthDto> HealthAsync(CancellationToken ct = default)
     {
         await gate.WaitAsync(ct);
-        try { return new(DiskBytes(), records.Count(r => !IsHidden(r.Record)), control.HighWatermark,
+        try { return new(initialized ? DiskBytes() : 0, records.Count(r => !IsHidden(r.Record)), control.HighWatermark,
             records.FirstOrDefault(r => !IsHidden(r.Record))?.Record.Cursor ?? 0,
             control.PurgePending ? "purge_pending" : error is null ? "ready" : "degraded", error, Interlocked.Read(ref dropped)); }
         finally { gate.Release(); }
@@ -235,7 +251,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         disposed = true; queue.Writer.TryComplete();
         await writer;
         await gate.WaitAsync();
-        try { active?.Flush(true); active?.Dispose(); SaveControl(); writerLock.Dispose(); }
+        try { active?.Flush(true); active?.Dispose(); if (initialized) SaveControl(); writerLock?.Dispose(); }
         finally { gate.Release(); }
     }
 }
