@@ -46,3 +46,35 @@ automatic grades, instruction scan or filesystem prompt intervention exists.
 Additional checks cover explicit fork-parent resolution, conflict-to-unknown
 worker dimensions, cursor filter binding and complete conversation counts when
 filtering on one model in a multi-model conversation.
+
+## SQLite production index
+
+`RecordingIndexedProjection(store, normalizer, databasePath, schemaSql, limits)`
+is the production implementation. Pass `RecordingSchema.Sql` from the storage
+owner, and place the index outside the source archive (for example
+`recording/index.sqlite`). It uses the existing recording schema without a
+second migration chain. The earlier `RecordingConversationProjection` remains a
+source-replay fallback and pure query fixture implementation.
+
+SQLite stores normalized metadata, at most 120 characters of an approved title,
+source occurrence/evidence locators, supplied causal edges, summaries and explicit
+run manifests. It does not duplicate message text, tool arguments or results.
+Lists read only indexed summaries; selected detail pages hydrate only exact source
+cursors from the index. A durable snapshot prevents repeated startup/list replay;
+new source records are applied transactionally with the projection checkpoint.
+Rebuild/retention invalidation clears and recreates the index in one transaction,
+using SQLite secure_delete plus VACUUM to remove deleted preview bytes. A source
+change during a query/rebuild rejects the snapshot.
+
+The index uses 0600 files/0700 directory, DELETE journals, memory temporary tables,
+a 128 MiB page cap and the same source/query work limits. Index quota accounting
+is independent from the source archive quota; the integrator must include both
+when presenting total recording disk use. Current summary updates scan metadata
+for the changed conversation; this does not hydrate payloads, but a very large
+single conversation still has linear metadata update work. No live latency/RSS
+acceptance follows from these synthetic tests.
+
+The test project accepts `-p:RecordingSchemaSource=/path/to/RecordingSchema.cs`
+while integrating separate worktrees; the default is the committed storage-owner
+file in this checkout. This only links the authoritative schema for fixtures and
+does not copy or modify migration content.

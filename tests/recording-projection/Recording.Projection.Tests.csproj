@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <PropertyGroup><OutputType>Exe</OutputType><RecordingSchemaSource Condition="'$(RecordingSchemaSource)' == ''">../../src/Lain.Host/Recording/Storage/RecordingSchema.cs</RecordingSchemaSource></PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
     <ProjectReference Include="../../src/Lain.Core/Lain.Core.csproj" />
+    <Compile Include="$(RecordingSchemaSource)" Link="Storage/RecordingSchema.cs" />
     <Compile Include="../../src/Lain.Host/Recording/Normalization/*.cs" Link="Normalization/%(Filename)%(Extension)" />
     <Compile Include="../../src/Lain.Host/Recording/Projection/*.cs" Link="Projection/%(Filename)%(Extension)" />
   </ItemGroup>

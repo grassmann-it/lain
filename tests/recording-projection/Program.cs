@@ -2,6 +2,7 @@ using System.Text.Json;
 using Lain.Core;
 using Lain.Host.Recording.Normalization;
 using Lain.Host.Recording.Projection;
+using Lain.Host.Recording.Storage;
 
 var checks = 0;
 void Check(bool value, string name) { if (!value) throw new InvalidOperationException(name); checks++; Console.WriteLine("PASS " + name); }
@@ -70,18 +71,48 @@ var conflictStore = new MemoryStore();
 conflictStore.Add(Record(1, "conflict", "a", "worker-a")); conflictStore.Add(Record(2, "conflict", "a", "worker-b"));
 var conflicted = (await new RecordingConversationProjection(conflictStore, new RecordingProtocolNormalizer()).ListAsync(new())).Items.Single();
 Check(conflicted.WorkerId is null && !conflicted.Complete, "conflicting supplied worker identity stays unknown");
+var indexDirectory = Path.Combine(Path.GetTempPath(), "lain-recording-index-fixture-" + Guid.NewGuid().ToString("N"));
+try
+{
+    var databasePath = Path.Combine(indexDirectory, "projection.db");
+    using (var indexed = new RecordingIndexedProjection(limited, new RecordingProtocolNormalizer(), databasePath, RecordingSchema.Sql))
+    {
+        await indexed.RebuildAsync();
+        var beforeReads = limited.ReadCalls;
+        var indexedPage = await indexed.ListAsync(new(Limit: 1));
+        Check(indexedPage.Items.Length == 1 && indexedPage.HasMore, "SQLite summaries page from persisted metadata");
+        Check(limited.ReadCalls == beforeReads, "repeated indexed list performs zero source payload reads");
+        var indexedDetails = await indexed.GetAsync(indexedPage.Items[0].Id, limit: 2);
+        Check(indexedDetails!.Records.Length == 2 && limited.ReadCalls - beforeReads <= 2, "indexed detail hydrates only selected source records");
+        var sqliteCount = (await indexed.ListAsync(new(Limit: 100))).Items.Sum(i => i.RequestCount);
+        Check(sqliteCount == 200, "SQLite index preserves synthetic 200 request graph");
+    }
+    using (var reopened = new RecordingIndexedProjection(limited, new RecordingProtocolNormalizer(), databasePath, RecordingSchema.Sql))
+    {
+        var beforeReads = limited.ReadCalls;
+        Check((await reopened.ListAsync(new())).Items.Length == 3 && limited.ReadCalls == beforeReads, "SQLite restart reuses durable index without archive replay");
+        limited.Add(Record(201, "new-conversation", "new-model"));
+        await reopened.ApplyAsync(Record(201, "new-conversation", "new-model"));
+        Check((await reopened.ListAsync(new())).Items.Sum(i => i.RequestCount) == 201, "committed incremental source indexes transactionally");
+        limited.RemoveCapture();
+        Check((await reopened.ListAsync(new())).Items.Length == 0, "deletion invalidates and securely rebuilds SQLite derivatives");
+    }
+    if (!OperatingSystem.IsWindows()) Check(File.GetUnixFileMode(databasePath) == (UnixFileMode.UserRead | UnixFileMode.UserWrite), "SQLite index file remains 0600");
+}
+finally { if (Directory.Exists(indexDirectory)) Directory.Delete(indexDirectory, true); }
 Console.WriteLine($"{checks} recording projection checks passed");
 
 sealed class MemoryStore : IRecordingStore
 {
     private readonly List<CommittedObservation> _records = [];
     private long _high;
+    public int ReadCalls;
     public void Add(CommittedObservation record) { _records.Add(record); _high = Math.Max(_high, record.Cursor); }
     public void RemoveCapture() { _records.Clear(); }
     public Task<RecordingCommitResult> CommitAsync(SanitizedObservation observation, CancellationToken ct = default) => throw new NotSupportedException();
     public Task<RecordingCommitPage> ReadCommittedAsync(long after = 0, int limit = 100, CancellationToken ct = default)
     {
-        ct.ThrowIfCancellationRequested();
+        ct.ThrowIfCancellationRequested(); ReadCalls++;
         var page = _records.Where(r => r.Cursor > after).OrderBy(r => r.Cursor).Take(limit).ToArray();
         var next = page.LastOrDefault()?.Cursor ?? _high;
         return Task.FromResult(new RecordingCommitPage(page, next, _high, _records.Any(r => r.Cursor > next)));

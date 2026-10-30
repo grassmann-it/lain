@@ -199,7 +199,7 @@ public sealed class RecordingConversationProjection(IRecordingStore store, IReco
     private static RecordingConversationDetail ErrorDetail(string id, string gap) =>
         new(new(id, DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch, 0, 0, [], Complete: false), [], GapReason: gap);
 
-    private sealed class Summary(string id, DateTimeOffset started)
+    internal sealed class Summary(string id, DateTimeOffset started)
     {
         public string Id => id;
         private DateTimeOffset _started = started, _updated = started;
@@ -211,7 +211,7 @@ public sealed class RecordingConversationProjection(IRecordingStore store, IReco
         private string? _title;
         private string? _finish;
         private readonly HashSet<string> _pending = new(StringComparer.Ordinal);
-        public void Add(RecordingNormalizedRecord r, string sourceKind)
+        public void Add(RecordingNormalizedRecord r, string sourceKind, int? messageCount = null, string? title = null)
         {
             _started = r.ObservedAt < _started ? r.ObservedAt : _started;
             _updated = r.ObservedAt > _updated ? r.ObservedAt : _updated;
@@ -219,7 +219,7 @@ public sealed class RecordingConversationProjection(IRecordingStore store, IReco
                 _requests.Add(r.Sources.FirstOrDefault()?.SourceEpoch + ":" + r.RequestId);
             if (r.RouteId is not null) _routes.Add(r.RouteId);
             if (r.Model is not null) _models.Add(r.Model);
-            _messages += r.Messages.Length;
+            _messages += messageCount ?? r.Messages.Length;
             var streamKey = r.RequestId + ":" + r.AttemptId;
             if (r.GapReason == "stream_content_deferred") _pending.Add(streamKey);
             else
@@ -229,7 +229,7 @@ public sealed class RecordingConversationProjection(IRecordingStore store, IReco
             }
             if (r.FinishReason is not null) _finish = r.FinishReason;
             Merge("parent", r.ParentConversationId is null ? null : RecordingProtocolNormalizer.Identity("conversation", r.CaptureId, r.ParentConversationId)); Merge("worker", r.WorkerId); Merge("parentWorker", r.ParentWorkerId);
-            _title ??= r.Messages.Where(m => m.Role == "user").SelectMany(m => m.Parts).FirstOrDefault(p => p.Kind == "text")?.Text;
+            _title ??= title ?? r.Messages.Where(m => m.Role == "user").SelectMany(m => m.Parts).FirstOrDefault(p => p.Kind == "text")?.Text;
             if (_title?.Length > 120) _title = _title[..120];
         }
         private void Merge(string field, string? value)
