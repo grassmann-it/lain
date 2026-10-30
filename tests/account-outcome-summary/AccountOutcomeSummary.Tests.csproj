@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><RestorePackagesWithLockFile>false</RestorePackagesWithLockFile></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Lain.Client/Lain.Client.csproj" />
+    <Compile Include="../../src/Lain.Desktop/Presentation/AccountOutcomeSummary.cs" Link="AccountOutcomeSummary.cs" />
+  </ItemGroup>
+</Project>
