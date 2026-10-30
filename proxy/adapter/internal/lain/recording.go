@@ -9,6 +9,7 @@ import (
 	"errors"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unicode/utf8"
 
@@ -43,6 +44,17 @@ type RecordingPolicy struct {
 	Limits         RecordingLimits `json:"limits"`
 }
 
+// RecordingTokenCounts mirrors the nullable shared TokenCounts contract. An
+// observed zero remains a zero; absent provider measurements remain nil.
+type RecordingTokenCounts struct {
+	Input         *int64 `json:"input,omitempty"`
+	Output        *int64 `json:"output,omitempty"`
+	Cached        *int64 `json:"cached,omitempty"`
+	Reasoning     *int64 `json:"reasoning,omitempty"`
+	Total         *int64 `json:"total,omitempty"`
+	CacheCreation *int64 `json:"cacheCreation,omitempty"`
+}
+
 type RecordingContent struct {
 	Body           string `json:"body"`
 	Encoding       string `json:"encoding"`
@@ -51,35 +63,37 @@ type RecordingContent struct {
 }
 
 type RecordingObservation struct {
-	SchemaVersion         int               `json:"schemaVersion"`
-	SourceEpoch           string            `json:"sourceEpoch"`
-	Sequence              int64             `json:"sequence"`
-	EventID               string            `json:"eventId"`
-	ObservedAt            time.Time         `json:"observedAt"`
-	MonotonicNanoseconds  int64             `json:"monotonicNanoseconds"`
-	PolicyRevision        int64             `json:"policyRevision"`
-	StopGeneration        int64             `json:"stopGeneration"`
-	RequestID             string            `json:"requestId"`
-	AttemptID             string            `json:"attemptId,omitempty"`
-	Boundary              string            `json:"boundary"`
-	Protocol              string            `json:"protocol"`
-	Kind                  string            `json:"kind"`
-	RequestedModel        string            `json:"requestedModel,omitempty"`
-	Model                 string            `json:"model,omitempty"`
-	RouteID               *string           `json:"routeId,omitempty"`
-	AccountID             string            `json:"accountId,omitempty"`
-	Provider              string            `json:"provider,omitempty"`
-	Dimensions            *Dimensions       `json:"dimensions,omitempty"`
-	Content               *RecordingContent `json:"-"`
-	CaptureID             string            `json:"captureId"`
-	BodyEncoding          string            `json:"bodyEncoding,omitempty"`
-	Body                  []byte            `json:"body,omitempty"`
-	Complete              bool              `json:"complete"`
-	Truncated             bool              `json:"truncated"`
-	ContentOmissionReason string            `json:"gapReason,omitempty"`
-	ChunkCount            int64             `json:"chunkCount,omitempty"`
-	ByteCount             int64             `json:"byteCount,omitempty"`
-	Outcome               string            `json:"outcome,omitempty"`
+	SchemaVersion         int                   `json:"schemaVersion"`
+	SourceEpoch           string                `json:"sourceEpoch"`
+	Sequence              int64                 `json:"sequence"`
+	EventID               string                `json:"eventId"`
+	ObservedAt            time.Time             `json:"observedAt"`
+	MonotonicNanoseconds  int64                 `json:"monotonicNanoseconds"`
+	PolicyRevision        int64                 `json:"policyRevision"`
+	StopGeneration        int64                 `json:"stopGeneration"`
+	RequestID             string                `json:"requestId"`
+	AttemptID             string                `json:"attemptId,omitempty"`
+	Boundary              string                `json:"boundary"`
+	Protocol              string                `json:"protocol"`
+	Kind                  string                `json:"kind"`
+	RequestedModel        string                `json:"requestedModel,omitempty"`
+	Model                 string                `json:"model,omitempty"`
+	RouteID               *string               `json:"routeId,omitempty"`
+	AccountID             string                `json:"accountId,omitempty"`
+	Provider              string                `json:"provider,omitempty"`
+	Dimensions            *Dimensions           `json:"dimensions,omitempty"`
+	StatusCode            *int                  `json:"statusCode,omitempty"`
+	Tokens                *RecordingTokenCounts `json:"tokens,omitempty"`
+	Content               *RecordingContent     `json:"-"`
+	CaptureID             string                `json:"captureId"`
+	BodyEncoding          string                `json:"bodyEncoding,omitempty"`
+	Body                  []byte                `json:"body,omitempty"`
+	Complete              bool                  `json:"complete"`
+	Truncated             bool                  `json:"truncated"`
+	ContentOmissionReason string                `json:"gapReason,omitempty"`
+	ChunkCount            int64                 `json:"chunkCount,omitempty"`
+	ByteCount             int64                 `json:"byteCount,omitempty"`
+	Outcome               string                `json:"outcome,omitempty"`
 	raw                   []byte
 	stream                bool
 	rawSSE                bool
@@ -118,6 +132,7 @@ type RecordingStatus struct {
 	ActiveRequests   int             `json:"activeRequests"`
 	ActiveAttempts   int             `json:"activeAttempts"`
 	ActiveBytes      int             `json:"activeBytes"`
+	ContentionDrops  int64           `json:"contentionDrops"`
 	DroppedEvents    int64           `json:"droppedEvents"`
 	LatestSequence   int64           `json:"latestSequence"`
 	UnknownCrashLoss bool            `json:"unknownCrashLoss"`
@@ -134,10 +149,16 @@ type recordingAttempt struct {
 	content     bool
 	body        []byte
 	omitted     string
+	lost        atomic.Bool
 }
 
 type Recorder struct {
 	mu                       sync.Mutex
+	captureEnabled           atomic.Bool
+	contentionDrops          atomic.Int64
+	attemptIndex             sync.Map // attempt ID -> *recordingAttempt; bounded by MaxActive
+	cleanup                  chan recordingCleanup
+	cleanupOverflow          atomic.Bool
 	readGate                 chan struct{}
 	httpGate                 chan struct{}
 	epoch                    string
@@ -214,7 +235,7 @@ func normalizeRecordingPolicy(p RecordingPolicy) (RecordingPolicy, error) {
 	return p, nil
 }
 func NewRecorder() *Recorder {
-	return &Recorder{epoch: uuid.NewString(), started: time.Now(), readGate: make(chan struct{}, 1), httpGate: make(chan struct{}, 1), requests: map[string]recordingRequest{}, attempts: map[string]*recordingAttempt{}, policy: RecordingPolicy{SchemaVersion: 1, Mode: "metadata_only", Limits: defaultRecordingLimits()}}
+	return &Recorder{epoch: uuid.NewString(), started: time.Now(), cleanup: make(chan recordingCleanup, 512), readGate: make(chan struct{}, 1), httpGate: make(chan struct{}, 1), requests: map[string]recordingRequest{}, attempts: map[string]*recordingAttempt{}, policy: RecordingPolicy{SchemaVersion: 1, Mode: "metadata_only", Limits: defaultRecordingLimits()}}
 }
 
 // Configure is called by the independent configuration reader, never by a
@@ -242,11 +263,26 @@ func (r *Recorder) Configure(p RecordingPolicy) error {
 	r.policy, r.errorCode, r.stopped = p, "", false
 	if p.Enabled {
 		r.ring = make([]RecordingObservation, p.Limits.MaxEvents)
+		r.captureEnabled.Store(true)
 	}
 	return nil
 }
 func (r *Recorder) configFault(code string) { r.mu.Lock(); defer r.mu.Unlock(); r.disableLocked(code) }
 func (r *Recorder) clearLocked() {
+	r.captureEnabled.Store(false)
+	for id := range r.attempts {
+		r.attemptIndex.Delete(id)
+	}
+	for {
+		select {
+		case <-r.cleanup:
+			continue
+		default:
+			goto clearedCleanup
+		}
+	}
+clearedCleanup:
+	r.cleanupOverflow.Store(false)
 	r.dropped += int64(r.count)
 	r.ring = nil
 	r.head = 0
@@ -341,7 +377,9 @@ func (r *Recorder) WantsAdmission(model, routeID string) bool {
 	if r == nil {
 		return false
 	}
-	r.mu.Lock()
+	if !r.tryInferenceLock() {
+		return false
+	}
 	defer r.mu.Unlock()
 	return r.policy.Enabled && !r.closed && r.acceptsModel(model) && r.acceptsRoute(routeID)
 }
@@ -352,7 +390,9 @@ func (r *Recorder) Admit(requestID, protocol, model, routeID string, body []byte
 	if r == nil {
 		return
 	}
-	r.mu.Lock()
+	if !r.tryInferenceLock() {
+		return
+	}
 	defer r.mu.Unlock()
 	if !r.policy.Enabled || r.closed || !r.acceptsModel(model) || !r.acceptsRoute(routeID) {
 		return
@@ -386,9 +426,12 @@ func (r *Recorder) CompleteRequest(requestID string) {
 	if r == nil {
 		return
 	}
-	r.mu.Lock()
+	if !r.tryInferenceLock() {
+		r.deferCleanup(recordingCleanup{requestID: requestID})
+		return
+	}
 	defer r.mu.Unlock()
-	delete(r.requests, requestID)
+	r.completeRequestLocked(requestID)
 }
 
 // BeginAttempt receives a content-free, allowlisted Usage identity fact. In
@@ -397,7 +440,9 @@ func (r *Recorder) BeginAttempt(e Event) {
 	if r == nil {
 		return
 	}
-	r.mu.Lock()
+	if !r.tryInferenceLock() {
+		return
+	}
 	defer r.mu.Unlock()
 	request, ok := r.requests[e.RequestID]
 	if len(e.RequestedModel) > 192 || len(e.Model) > 192 || len(e.AccountID) > 192 || len(e.Provider) > 192 || (e.RouteID != nil && len(*e.RouteID) > 192) {
@@ -415,7 +460,9 @@ func (r *Recorder) BeginAttempt(e Event) {
 	if e.RouteID != nil {
 		o.RouteID = ptr(*e.RouteID)
 	}
-	r.attempts[e.AttemptID] = &recordingAttempt{observation: o, content: request.content}
+	a := &recordingAttempt{observation: o, content: request.content}
+	r.attempts[e.AttemptID] = a
+	r.attemptIndex.Store(e.AttemptID, a)
 	r.enqueue(o)
 }
 
@@ -425,7 +472,10 @@ func (r *Recorder) ObserveOutput(attemptID string, payload []byte, stream bool) 
 	if r == nil {
 		return
 	}
-	r.mu.Lock()
+	if !r.tryInferenceLock() {
+		r.markAttemptLost(attemptID)
+		return
+	}
 	defer r.mu.Unlock()
 	a := r.attempts[attemptID]
 	if a == nil || !r.policy.Enabled {
@@ -439,6 +489,11 @@ func (r *Recorder) ObserveOutput(attemptID string, payload []byte, stream bool) 
 		chunk.Kind = "chunk_metadata"
 		chunk.ByteCount = int64(len(payload))
 		r.enqueue(chunk)
+	}
+	if a.lost.Load() {
+		r.activeBytes -= cap(a.body)
+		a.body = nil
+		a.omitted = "observer_contention"
 	}
 	if !a.content || a.omitted != "" {
 		return
@@ -479,13 +534,18 @@ func (r *Recorder) FinishAttempt(attemptID, outcome string) {
 	if r == nil {
 		return
 	}
-	r.mu.Lock()
+	if !r.tryInferenceLock() {
+		r.markAttemptLost(attemptID)
+		r.deferCleanup(recordingCleanup{attemptID: attemptID})
+		return
+	}
 	defer r.mu.Unlock()
 	a := r.attempts[attemptID]
 	if a == nil {
 		return
 	}
 	delete(r.attempts, attemptID)
+	r.attemptIndex.Delete(attemptID)
 	r.activeBytes -= cap(a.body)
 	o := a.observation
 	o.Kind = "response"
@@ -498,6 +558,10 @@ func (r *Recorder) FinishAttempt(attemptID, outcome string) {
 	o.raw = a.body
 	o.rawSSE = r.policy.CaptureRawSSE
 	o.ContentOmissionReason = a.omitted
+	if a.lost.Load() {
+		o.raw = nil
+		o.ContentOmissionReason = "observer_contention"
+	}
 	if !a.content {
 		o.ContentOmissionReason = "metadata_only"
 	} else if len(o.raw) == 0 && o.ContentOmissionReason == "" {
@@ -511,6 +575,7 @@ func (r *Recorder) Status() RecordingStatus {
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	r.maintainLocked()
 	state := "off"
 	if r.policy.Enabled {
 		state = "on"
@@ -518,7 +583,8 @@ func (r *Recorder) Status() RecordingStatus {
 	if r.errorCode != "" {
 		state = "unavailable"
 	}
-	return RecordingStatus{SchemaVersion: 1, SourceEpoch: r.epoch, Enabled: r.policy.Enabled, Mode: r.policy.Mode, PolicyRevision: r.policy.Revision, StopGeneration: r.policy.StopGeneration, State: state, ErrorCode: r.errorCode, QueuedEvents: r.count, QueuedBytes: r.queuedBytes, ActiveRequests: len(r.requests), ActiveAttempts: len(r.attempts), ActiveBytes: r.activeBytes, DroppedEvents: r.dropped, LatestSequence: r.sequence, UnknownCrashLoss: true, Limits: r.policy.Limits}
+	contention := r.contentionDrops.Load()
+	return RecordingStatus{SchemaVersion: 1, SourceEpoch: r.epoch, Enabled: r.policy.Enabled, Mode: r.policy.Mode, PolicyRevision: r.policy.Revision, StopGeneration: r.policy.StopGeneration, State: state, ErrorCode: r.errorCode, QueuedEvents: r.count, QueuedBytes: r.queuedBytes, ActiveRequests: len(r.requests), ActiveAttempts: len(r.attempts), ActiveBytes: r.activeBytes, DroppedEvents: r.dropped + contention, ContentionDrops: contention, LatestSequence: r.sequence, UnknownCrashLoss: true, Limits: r.policy.Limits}
 }
 
 var ErrRecordingReadBusy = errors.New("recording_read_busy")
@@ -536,6 +602,7 @@ func (r *Recorder) Read(epoch string, after int64, limit int) (RecordingBatch, e
 		return RecordingBatch{}, ErrRecordingReadBusy
 	}
 	r.mu.Lock()
+	r.maintainLocked()
 	if epoch != "" && epoch != r.epoch {
 		r.mu.Unlock()
 		return RecordingBatch{}, errors.New("recording_epoch_changed")
@@ -548,7 +615,10 @@ func (r *Recorder) Read(epoch string, after int64, limit int) (RecordingBatch, e
 	if r.count > 0 {
 		oldest = r.ring[r.head].Sequence
 	}
-	batch := RecordingBatch{SchemaVersion: 1, SourceEpoch: r.epoch, AfterSequence: after, NextSequence: after, OldestSequence: oldest, LatestSequence: r.sequence, Events: []RecordingObservation{}, DroppedCount: r.dropped, UnknownLoss: true}
+	batch := RecordingBatch{SchemaVersion: 1, SourceEpoch: r.epoch, AfterSequence: after, NextSequence: after, OldestSequence: oldest, LatestSequence: r.sequence, Events: []RecordingObservation{}, DroppedCount: r.dropped + r.contentionDrops.Load(), UnknownLoss: true}
+	if r.contentionDrops.Load() > 0 {
+		batch.GapReason = "observer_contention"
+	}
 	if after+1 < oldest {
 		batch.GapReason = "source_evicted_or_discarded"
 		batch.Gap = &RecordingGap{FromSequence: after + 1, ThroughSequence: oldest - 1, Reason: "source_evicted_or_discarded"}
@@ -569,6 +639,10 @@ func (r *Recorder) Read(epoch string, after int64, limit int) (RecordingBatch, e
 	}
 	r.mu.Unlock()
 	for n := range batch.Events {
+		batch.Events[n].Tokens = copyRecordingTokens(batch.Events[n].Tokens)
+		if batch.Events[n].StatusCode != nil {
+			batch.Events[n].StatusCode = ptr(*batch.Events[n].StatusCode)
+		}
 		batch.Events[n].Dimensions = copyDimensions(batch.Events[n].Dimensions)
 		if batch.Events[n].RouteID != nil {
 			batch.Events[n].RouteID = ptr(*batch.Events[n].RouteID)

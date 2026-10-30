@@ -49,6 +49,7 @@ func OpenRecording(path string) (*Recorder, func()) {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
+				r.maintain()
 				previous = reload(previous)
 			}
 		}

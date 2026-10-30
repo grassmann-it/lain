@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 )
 
 func recordingTestPolicy() RecordingPolicy {
@@ -275,5 +276,154 @@ func TestRecordingAuthenticationGateDoesNotInventClientIdentity(t *testing.T) {
 	}
 	if NewRecorder().WantsAdmission("model", "route") {
 		t.Fatal("disabled path requests dimensions work")
+	}
+}
+
+func TestRecordingHeldLockNeverBlocksInferenceCallbacks(t *testing.T) {
+	r := recordingTestRecorder(t)
+	recordingTestAttempt(r, "request", "attempt")
+	r.ObserveOutput("attempt", []byte(`{"before":"partial"}`), true)
+	r.mu.Lock()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_ = r.WantsAdmission("model", "route")
+		r.Admit("other", "responses", "model", "route", []byte(`{}`))
+		r.BeginAttempt(Event{RequestID: "other", AttemptID: "other"})
+		r.ObserveOutput("attempt", []byte(`{"missing":"part"}`), true)
+		r.ObserveUsage(Event{RequestID: "request", AttemptID: "attempt", OutputTokens: ptr(int64(0))})
+		r.FinishAttempt("attempt", "success")
+		r.CompleteRequest("request")
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		r.mu.Unlock()
+		<-done
+		t.Fatal("callback blocked waiting for recorder lock")
+	}
+	r.mu.Unlock()
+	status := r.Status() // drains deferred cleanup on the control path
+	if status.ActiveRequests != 0 || status.ActiveAttempts != 0 || status.ActiveBytes != 0 {
+		t.Fatalf("cleanup leaked capacity: %+v", status)
+	}
+	if status.ContentionDrops != 7 || status.DroppedEvents < 7 {
+		t.Fatalf("contention loss not counted: %+v", status)
+	}
+	b := recordingReadAll(t, r)
+	if b.DroppedCount < status.ContentionDrops {
+		t.Fatal("batch dropped count regressed")
+	}
+	last := b.Events[len(b.Events)-1]
+	if last.Kind != "gap" || last.Body != nil || last.ContentOmissionReason == "" || last.Complete {
+		t.Fatalf("missed finish did not publish a content-free gap: %+v", last)
+	}
+}
+
+func TestRecordingMissedOutputCannotMasqueradeAsCompleteResponse(t *testing.T) {
+	r := recordingTestRecorder(t)
+	recordingTestAttempt(r, "r", "a")
+	r.ObserveOutput("a", []byte(`{"output":[]}`), false)
+	r.mu.Lock()
+	r.ObserveOutput("a", []byte(`{"secret_fragment":"missing"}`), false)
+	r.mu.Unlock()
+	r.FinishAttempt("a", "success")
+	r.CompleteRequest("r")
+	b := recordingReadAll(t, r)
+	last := b.Events[len(b.Events)-1]
+	if last.Body != nil || last.ContentOmissionReason != "observer_contention" || last.Complete {
+		t.Fatal("partially observed body was exposed as complete")
+	}
+}
+
+func TestRecordingCleanupOverflowAndConcurrentDropsRemainBounded(t *testing.T) {
+	r := recordingTestRecorder(t)
+	for n := 0; n < 16; n++ {
+		id := fmt.Sprint(n)
+		recordingTestAttempt(r, id, id)
+		r.ObserveOutput(id, []byte(`{"output":[]}`), false)
+	}
+	r.mu.Lock()
+	var wg sync.WaitGroup
+	const workers, iterations = 8, 200
+	for w := 0; w < workers; w++ {
+		wg.Add(1)
+		go func(w int) {
+			defer wg.Done()
+			for n := 0; n < iterations; n++ {
+				id := fmt.Sprint(n % 16)
+				r.ObserveOutput(id, []byte("missed"), true)
+				r.FinishAttempt(id, "success")
+				r.CompleteRequest(id)
+			}
+		}(w)
+	}
+	done := make(chan struct{})
+	go func() { wg.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		r.mu.Unlock()
+		<-done
+		t.Fatal("cleanup producers blocked")
+	}
+	if len(r.cleanup) > cap(r.cleanup) || !r.cleanupOverflow.Load() {
+		r.mu.Unlock()
+		t.Fatal("cleanup did not use bounded overflow path")
+	}
+	r.mu.Unlock()
+	s := r.Status()
+	if s.ActiveRequests != 0 || s.ActiveAttempts != 0 || s.ActiveBytes != 0 {
+		t.Fatalf("overflow leaked active capacity: %+v", s)
+	}
+	if s.ContentionDrops != workers*iterations*3 || s.DroppedEvents < s.ContentionDrops {
+		t.Fatal("racing increments lost dropped-count updates")
+	}
+	b := recordingReadAll(t, r)
+	if b.DroppedCount < s.DroppedEvents {
+		t.Fatal("batch dropped count regressed")
+	}
+	recordingTestAttempt(r, "new", "new")
+	r.ObserveOutput("new", []byte(`{"output":[]}`), false)
+	r.FinishAttempt("new", "success")
+	r.CompleteRequest("new")
+	if r.Status().ActiveAttempts != 0 || r.Status().ActiveRequests != 0 {
+		t.Fatal("capture did not recover capacity after maintenance")
+	}
+}
+
+func TestRecordingUsagePreservesNullableZeroAndNoCredentialFields(t *testing.T) {
+	r := recordingTestRecorder(t)
+	recordingTestAttempt(r, "request", "attempt")
+	input, zero, total, status := int64(12), int64(0), int64(12), 200
+	e := Event{RequestID: "request", AttemptID: "attempt", CredentialID: "CREDENTIAL_MUST_NOT_LEAVE_EVENT", InputTokens: &input, OutputTokens: &zero, TotalTokens: &total, StatusCode: &status}
+	r.ObserveUsage(e)
+	// Source owns its nullable measurements after the callback returns.
+	input = 999
+	zero = 999
+	total = 999
+	status = 500
+	r.ObserveUsage(Event{RequestID: "wrong", AttemptID: "attempt", OutputTokens: ptr(int64(66))})
+	r.ObserveOutput("attempt", []byte(`{"output":[]}`), false)
+	r.FinishAttempt("attempt", "success")
+	r.CompleteRequest("request")
+	b := recordingReadAll(t, r)
+	o := b.Events[len(b.Events)-1]
+	if o.Tokens == nil || o.Tokens.Input == nil || *o.Tokens.Input != 12 || o.Tokens.Output == nil || *o.Tokens.Output != 0 || o.Tokens.Total == nil || *o.Tokens.Total != 12 || o.Tokens.Cached != nil || o.Tokens.CacheCreation != nil || o.Tokens.Reasoning != nil || o.StatusCode == nil || *o.StatusCode != 200 {
+		t.Fatalf("nullable tokens/status corrupted: %+v", o)
+	}
+	encoded, err := json.Marshal(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(encoded, []byte("CREDENTIAL_MUST_NOT_LEAVE_EVENT")) || bytes.Contains(encoded, []byte("credentialId")) {
+		t.Fatal("usage copied credential fields")
+	}
+	*o.Tokens.Input = 111
+	*o.StatusCode = 599
+	again := recordingReadAll(t, r)
+	last := again.Events[len(again.Events)-1]
+	if *last.Tokens.Input != 12 || *last.StatusCode != 200 {
+		t.Fatal("read mutated retained nullable fields")
 	}
 }
