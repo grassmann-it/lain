@@ -1,0 +1,692 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lain.local/contracts/recording-event-v1",
+  "title": "Lain Recording Event v1",
+  "description": "Source is transient; only SanitizedObservation may cross the durable storage boundary. No arbitrary header/auth objects. Unknown usage/context stay null.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SourceObservation"
+    },
+    {
+      "$ref": "#/$defs/SanitizedObservation"
+    }
+  ],
+  "$defs": {
+    "SourceObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceEpoch",
+        "sequence",
+        "eventId",
+        "captureId",
+        "requestId",
+        "observedAt",
+        "boundary",
+        "protocol",
+        "kind"
+      ],
+      "properties": {
+        "sourceEpoch": {
+          "type": "string"
+        },
+        "eventId": {
+          "type": "string"
+        },
+        "captureId": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "boundary": {
+          "type": "string"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "attemptId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "routeId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "accountId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "requestedModel": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bodyEncoding": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "body": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "contentEncoding": "base64",
+          "description": "Transient source bytes; trusted loopback transport only. Never persist this object."
+        },
+        "gapReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "policyRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stopGeneration": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "statusCode": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 100,
+          "maximum": 599
+        },
+        "monotonicNanoseconds": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "dimensions": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "modelFamily": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "manufacturer": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "inferenceProvider": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "gateway": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "billingAccountId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "reasoningEffort": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mode": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "conversationId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "turnId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "workerId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "parentWorkerId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "parentRequestId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "toolCallId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "harness": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "profileId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "responseId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "previousResponseId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "effectiveReasoningEffort": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "evidence": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "field",
+                  "source"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string"
+                  },
+                  "key": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tokens": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "input": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "output": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "cached": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "reasoning": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "total": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "cacheCreation": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "SanitizedObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceEpoch",
+        "sequence",
+        "eventId",
+        "captureId",
+        "requestId",
+        "observedAt",
+        "boundary",
+        "protocol",
+        "kind",
+        "policyRevision",
+        "stopGeneration",
+        "redactionVersion",
+        "redactionState"
+      ],
+      "properties": {
+        "sourceEpoch": {
+          "type": "string"
+        },
+        "eventId": {
+          "type": "string"
+        },
+        "captureId": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "boundary": {
+          "type": "string"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "attemptId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "routeId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "accountId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "requestedModel": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bodyEncoding": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "body": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gapReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "policyRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stopGeneration": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "statusCode": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 100,
+          "maximum": 599
+        },
+        "monotonicNanoseconds": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "dimensions": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "modelFamily": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "manufacturer": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "inferenceProvider": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "gateway": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "billingAccountId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "reasoningEffort": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mode": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "conversationId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "turnId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "workerId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "parentWorkerId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "parentRequestId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "toolCallId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "harness": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "profileId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "responseId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "previousResponseId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "effectiveReasoningEffort": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "evidence": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "field",
+                  "source"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string"
+                  },
+                  "key": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tokens": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "input": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "output": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "cached": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "reasoning": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "total": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "cacheCreation": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "redactionVersion": {
+          "const": "recording_secrets_v1"
+        },
+        "redactionState": {
+          "enum": [
+            "sanitized",
+            "metadata_only",
+            "no_body",
+            "omitted_oversize",
+            "omitted_fragment",
+            "omitted_unsupported",
+            "omitted_invalid"
+          ]
+        }
+      }
+    }
+  }
+}

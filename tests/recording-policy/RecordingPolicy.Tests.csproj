@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Lain.Core/Lain.Core.csproj" />
+    <Compile Include="../../src/Lain.Host/Recording/Policy/*.cs" Link="Policy/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
