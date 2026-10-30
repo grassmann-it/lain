@@ -106,7 +106,6 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         if (control.PurgePending) return new(false, ErrorCode: "purge_pending");
         if (error is not null) return new(false, ErrorCode: error);
         if (!policy.IsCurrent(observation.PolicyRevision, observation.StopGeneration)) return new(false, ErrorCode: "policy_stopped_or_changed");
-        if (!initialized) Initialize();
         if ((control.HiddenCaptures ?? []).Contains(observation.CaptureId, StringComparer.Ordinal)) return new(false, ErrorCode: "capture_deleted");
         var serialized = JsonSerializer.SerializeToUtf8Bytes(observation, RecordingFrames.Json);
         if (serialized.Length > options.MaximumRecordBytes) return new(false, ErrorCode: "record_too_large");
@@ -116,6 +115,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
             return new(true, Materialize(duplicate));
         }
         if (records.Count >= options.MaximumRecords) return new(false, ErrorCode: "record_limit");
+        if (!initialized) Initialize();
         var cursor = checked(control.HighWatermark + 1);
         var body = observation.Body is null ? null : Encoding.UTF8.GetBytes(observation.Body);
         var payload = body is null ? null : RecordingFrames.Compress(body);
@@ -150,7 +150,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         if (after < 0) throw new ArgumentOutOfRangeException(nameof(after));
         await gate.WaitAsync(ct);
         try {
-            if (error is "source_corrupt" or "unsupported_archive_version") return new([], after, control.HighWatermark, false, error);
+            if (error is not null && error != "purge_pending") return new([], after, control.HighWatermark, false, error);
             if (after != 0 && after <= control.InvalidatedThrough) return new([], 0, control.HighWatermark, false, "cursor_invalidated");
             var pageSize = Math.Clamp(limit, 1, options.ReplayBatchSize);
             var selected = records.Where(r => r.Record.Cursor > after && !IsHidden(r.Record)).Take(pageSize + 1).ToArray();
