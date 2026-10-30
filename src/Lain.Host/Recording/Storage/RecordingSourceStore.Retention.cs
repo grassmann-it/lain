@@ -14,6 +14,7 @@ public sealed partial class RecordingSourceStore
             SaveControl();
             CompleteClear();
         }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { error = "purge_pending"; throw new IOException("recording_clear_failed"); }
         finally { gate.Release(); }
     }
 
@@ -53,6 +54,7 @@ public sealed partial class RecordingSourceStore
         if (string.IsNullOrWhiteSpace(captureId) || captureId.Length > 1024) throw new ArgumentException("Invalid recording capture identifier.");
         await gate.WaitAsync(ct);
         try { if (initialized) MarkAndPurge([captureId]); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { error = "purge_pending"; throw new IOException("recording_purge_failed"); }
         finally { gate.Release(); }
     }
 
@@ -68,6 +70,7 @@ public sealed partial class RecordingSourceStore
                 .Select(r => r.Record.Metadata.CaptureId).Distinct().ToArray();
             if (expired.Length != 0 || control.PurgePending) MarkAndPurge(expired);
         }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { error = "purge_pending"; throw new IOException("recording_retention_failed"); }
         finally { gate.Release(); }
     }
 

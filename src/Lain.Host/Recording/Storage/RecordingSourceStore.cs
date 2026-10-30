@@ -168,6 +168,10 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         try { return new(initialized ? DiskBytes() : 0, records.Count(r => !IsHidden(r.Record)), control.HighWatermark,
             records.FirstOrDefault(r => !IsHidden(r.Record))?.Record.Cursor ?? 0,
             control.PurgePending ? "purge_pending" : error is null ? "ready" : "degraded", error, Interlocked.Read(ref dropped)); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) {
+            error = "archive_unavailable";
+            return new(RecordCount: records.Count, HighWatermark: control.HighWatermark, State: "degraded", ErrorCode: error, DroppedRecords: Interlocked.Read(ref dropped));
+        }
         finally { gate.Release(); }
     }
 
@@ -251,7 +255,8 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         disposed = true; queue.Writer.TryComplete();
         await writer;
         await gate.WaitAsync();
-        try { active?.Flush(true); active?.Dispose(); if (initialized) SaveControl(); writerLock?.Dispose(); }
-        finally { gate.Release(); }
+        try { active?.Flush(true); if (initialized) SaveControl(); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { error = "archive_write_failed"; }
+        finally { active?.Dispose(); writerLock?.Dispose(); gate.Release(); }
     }
 }
