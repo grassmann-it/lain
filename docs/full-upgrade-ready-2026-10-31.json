@@ -103,5 +103,32 @@
       }
     },
     "actualCurrentReadOnlyPlan": "ready:true, baseline924/applied917,target925; no production --execute"
+  },
+  "snapshotFailureFix": {
+    "actualFailure": "Full backup refused two pre-existing managed Codex upgrade symlinks; old Host restarted, no repair commit or app exchange occurred.",
+    "helper": "/home/tomka/.cache/lain-full-upgrade-20261031/snapshot-helper.py",
+    "helperSha256": "155ce93fb987a286cfeb5e9c917aadca01d13f211f1e85bad1b2ef4e6ad2d3b6",
+    "behavior": "Retains only two exact managed link shapes/targets as metadata; never follows either target. Captures every regular file. Rejects foreign/changed links and tampered backup. Format2 restore rebases only captured internal dispatch link and retains reconnect quarantine.",
+    "combinedQualificationSha256": "88eb9a0578aad5c6f2bc993cd2b7b9da6b79f52c296d356e804100e240765d1d",
+    "actualCombinedFlow": "PASS924->925 with both actual managed link shapes present",
+    "focusedChecks": {
+      "result": "PASS",
+      "checks": [
+        "two exact managed link roles retained without following external target",
+        "restore rebases internal link and retains reconnect quarantine",
+        "foreign symlink refused",
+        "tampered source rejected before restoration"
+      ],
+      "productionMutation": false
+    }
+  },
+  "automaticExecution": {
+    "state": "started_waiting_for_current_requests",
+    "processPid": 1362645,
+    "statusFile": "/home/tomka/.cache/lain-full-upgrade-20261031/waiting-upgrade.json",
+    "logFile": "/home/tomka/.cache/lain-full-upgrade-20261031/automatic-upgrade.log",
+    "waitLimitSeconds": 900,
+    "execute": "Same qualified full upgrade after three zero-active-request observations; never stops active streams",
+    "productionUpgradeCompleted": false
   }
 }
