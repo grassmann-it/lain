@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-31",
+  "scope": "Single full local upgrade authorized by user, including content recording ON",
+  "state": "ready_not_executed",
+  "productionStatus": {
+    "version": "1.0.0+835d2e2260dfa3f1b072eb8fcc1541c33c6dd665",
+    "state": "pending-application",
+    "revision": 923,
+    "appliedRevision": 917,
+    "proxyReady": true
+  },
+  "targetSource": "80dcf135da1f48d27e573afa668fe2b698c22070",
+  "targetComponents": {
+    "cli": "0.8.0+80dcf135da1f48d27e573afa668fe2b698c22070",
+    "host": "0.8.0+80dcf135da1f48d27e573afa668fe2b698c22070",
+    "desktop": "0.8.0+80dcf135da1f48d27e573afa668fe2b698c22070"
+  },
+  "targetCoreSha256": "9ff114d8af5e58b1bf6fe64c20e7613ef4eb861d705555286b50dff49b7b6de5",
+  "package": {
+    "path": "/home/tomka/.cache/lain-full-upgrade-20261031/package",
+    "manifestSha256": "2529d5f51bf0839716fd8239ca1e0b8aac92570b26c24223efbe02e4f4885371",
+    "archiveSha256": "2d3f4496ec5d805ceb65d6dae22b4512d7b8d8fa5d5f203b530ec69723b1b4da",
+    "backendQualified": true,
+    "publicReleaseQualified": false
+  },
+  "oneCommand": "bash /home/tomka/.cache/lain-full-upgrade-20261031/upgrade.sh",
+  "operatorSha256": "ff241f4082541f419b4b3f60ca10438c3f28b388dd34b1f924be74af8c780352",
+  "launcherSha256": "0e9db408f220c9bec77258d72de1dee391488105c7cbb1adbf2b8f8b261d7ce6",
+  "steps": [
+    "fresh preservation pins and quiet owned Core drain",
+    "stopped full state snapshot plus retained original application",
+    "SDK current-key transport metadata repair, no old-key authentication fallback",
+    "exact full Host/CLI/Core/Desktop app transaction preserving existing app.previous",
+    "new Host start with stale Core auto-resume suppressed",
+    "normal Apply924 and current-model/default preservation",
+    "new CLI catalog export and sole owned root catalog pointer update; auth unchanged",
+    "content recording enable for all owned Gateway routes and Host/Core acknowledgement"
+  ],
+  "qualification": {
+    "backendFullGates": "passed; actual Core4/Core6/Core4 continuation, independent auth/crash, streaming, tools, journal, SQLite replays",
+    "nativeRecording": 23,
+    "nativeInspector": 123,
+    "actualCliHostPolicy": 10,
+    "actualHostCoreRecorder": 10,
+    "combinedSharedOperator": {
+      "sdkStageRenewCommit": true,
+      "exactFullAppExchange": true,
+      "newHostNormalApply": true,
+      "newClientCatalogAndRootPointer": true,
+      "recordingEnableAndCapture": true,
+      "binaryRollbackKeepsCurrentCredentials": true
+    },
+    "failureAndRecoveryReports": {
+      "combined-runtime-evidence.json": "2f131e67ccf8a5ac1997840f66239966c92e9781a0fd4fa4974b5c1d4970f9f5",
+      "fault-snapshot-evidence.json": "b5663529624b0760ca5cb21e1c8cfc6d8462921e8e4770689d24b36a7540c77a",
+      "fault-install-evidence.json": "92888dc827b43101ff7da9b3e7c04067aab2d86add301768831a2b3a9f790e1d",
+      "fault-start-evidence.json": "4dcb3f5670b4df104e5aa584cb3c47c2e3828563f47de55edeb822fe1e1950da",
+      "fault-enable-evidence.json": "d37ea2e18cfbd4c814cb09e3daaf1b3a68a1dd3151b3e0e27562c85f90cec3ee",
+      "component-evidence.json": "2ded510df6ba1c8af11cfecc13f5d4d2b095f260aabf18567aa82e7e9268c9d4"
+    },
+    "launcherCompletionGuards": {
+      "result": "PASS",
+      "checks": 7,
+      "scope": "Critical completion-replay guard only; no production mutation"
+    }
+  },
+  "rollback": "Explicit binary-only rollback mode retains current credentials, metadata and all history/archive; capture is disabled before return, stale Core auto-resume is suppressed. Full state snapshots are retained for reviewed recovery, never automatically restored.",
+  "constraints": [
+    "Do not run the obsolete repair-only activation command for this full upgrade.",
+    "Finish model requests and close lain UI before executing. Active streams are preserved on drain timeout.",
+    "No extra paid/provider probe, credential reset, automatic chat import or public publication.",
+    "Source default capture remains off for new installations; this user has explicitly opted into content capture on this installation."
+  ],
+  "privateEvidenceRoot": "/home/tomka/.cache/lain-full-upgrade-20261031",
+  "actualProductionPreflight": "PASS (read-only --plan) against installed service/unit, processes, manifests, 923/917 and user client pointers",
+  "cleanup": "14GiB of owned synthetic workspaces removed; receipts preserved."
+}

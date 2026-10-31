@@ -1,3 +1,22 @@
+AKTUELLER AUFTRAG: vollständiges Upgrade von Host, CLI, Core und UI; danach lokale Inhaltsaufnahme aktivieren. Die alten Anweisungen zum separaten repair-only-Befehl unten sind historisch und werden durch diesen gemeinsamen Ablauf ersetzt.
+
+Einziger neuer Startbefehl nach Ende laufender Modellanfragen und Schließen der lain-UI:
+bash /home/tomka/.cache/lain-full-upgrade-20261031/upgrade.sh
+
+Status/Belege: /home/tomka/Desktop/lain/docs/full-upgrade-ready-2026-10-31.json
+Ablauf und alle erfolgreichen echten privaten Tests: /home/tomka/.cache/lain-full-upgrade-20261031/operator-qualification-summary.json
+Frisches vollständiges Paket: /home/tomka/.cache/lain-full-upgrade-20261031/package/ (Source80dcf13, inkl4fa-Keyfix, echte Corequalifikation vorhanden). Der ältere Recorderkandidat10734a4 soll nicht installiert werden.
+
+Das Upgrade verwendet ausschließlich den aktuell beabsichtigten NEUEN CommandCode-Key, stellt dessen drei Transportdefinitionen wieder her und publiziert924 per gestopptem SDK-CAS. Dann werden sämtliche App-Komponenten ausgetauscht, neues normales Apply924 ausgeführt, der Codex-Katalog samt einziger eigener Root-Pointereinstellung aktualisiert und Aufnahme(content, owned_gateway, alle Routen) eingeschaltet. Es werden keine alten Chats importiert und keine Provider-Testkosten erzeugt.
+
+Tatsächliche Ausführung IMMER zuerst aus /home/tomka/.cache/lain-full-upgrade-20261031/last-run.json und dem dort genannten transaction/upgrade.json lesen. Vor Ausführung war der echte Dienst923gespeichert/917aktiv/ready; es ist noch kein Produktivupgrade erfolgt. --plan ist ausdrücklich keine Ausführung. Der erfolgreiche private Gesamttest und vier Fehlerfälle sind keine Behauptung eines erfolgten Produktivupgrades.
+
+Bei Fehlern keine alten Keys oder Datenbankstände blind zurückspielen. Der bestehende Operator hat expliziten --rollback-binaries-Modus mit den exakten last-run-Inputs: nur App-Bytes zurück, aktuelle Credentials/Zustand/Archive bleiben, Aufnahme vorher aus und Core-Autostart gesperrt. Danach aktuelle sichere Apply-/Startlage prüfen. Vollständige gestoppte Sicherung liegt im jeweiligen Transaktionsordner; eine Vollwiederherstellung braucht eigenständige Prüfung und quarantiniert rotierende Grants.
+
+Der Nutzer hat die Inhaltsaufnahme nun ausdrücklich freigegeben. Nach erfolgreichem Upgrade darf sie daher an sein; bei fehlgeschlagener Übernahme wird sie kompensierend ausgeschaltet. Du arbeitest für die Diagnose weiterhin über deinen direkten Claude-Zugang.
+
+--- Frühere Diagnose und zusätzliche technische Grenzen ---
+
 Du bist mein unabhängiger Recovery-Assistent für lain. Deine Claude-Anmeldung läuft direkt und darf zur Diagnose nicht über lain umgeleitet werden.
 
 Arbeitskopie: /home/tomka/Desktop/lain
