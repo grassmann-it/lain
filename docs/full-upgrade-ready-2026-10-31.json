@@ -24,8 +24,8 @@
     "publicReleaseQualified": false
   },
   "oneCommand": "bash /home/tomka/.cache/lain-full-upgrade-20261031/upgrade.sh",
-  "operatorSha256": "ff241f4082541f419b4b3f60ca10438c3f28b388dd34b1f924be74af8c780352",
-  "launcherSha256": "0e9db408f220c9bec77258d72de1dee391488105c7cbb1adbf2b8f8b261d7ce6",
+  "operatorSha256": "e55f05936cc0770a0a405f51a0c1f30efaf1159fbff1a222d68ff31e496aa0e2",
+  "launcherSha256": "5f6d31b61a5b877d836a6d25a4e43cd74edf94d884d10eec1d770fe5ae5d32ce",
   "steps": [
     "fresh preservation pins and quiet owned Core drain",
     "stopped full state snapshot plus retained original application",
@@ -51,12 +51,12 @@
       "binaryRollbackKeepsCurrentCredentials": true
     },
     "failureAndRecoveryReports": {
-      "combined-runtime-evidence.json": "2f131e67ccf8a5ac1997840f66239966c92e9781a0fd4fa4974b5c1d4970f9f5",
-      "fault-snapshot-evidence.json": "b5663529624b0760ca5cb21e1c8cfc6d8462921e8e4770689d24b36a7540c77a",
-      "fault-install-evidence.json": "92888dc827b43101ff7da9b3e7c04067aab2d86add301768831a2b3a9f790e1d",
-      "fault-start-evidence.json": "4dcb3f5670b4df104e5aa584cb3c47c2e3828563f47de55edeb822fe1e1950da",
-      "fault-enable-evidence.json": "d37ea2e18cfbd4c814cb09e3daaf1b3a68a1dd3151b3e0e27562c85f90cec3ee",
-      "component-evidence.json": "2ded510df6ba1c8af11cfecc13f5d4d2b095f260aabf18567aa82e7e9268c9d4"
+      "combined-runtime-evidence.json": "82c441d5f591497e374504853b848a987fac299a6f1d5d4d98bdfc480dd7910f",
+      "fault-snapshot-evidence.json": "f192ae5598a79e32cee5d9a7be4a15ca0096df7af5bbc430f056a6527b0f90a9",
+      "fault-install-evidence.json": "92b14bd40503c9dda0ce766d89df0ea4c6b1c1953233181ae3ab8896e5d29599",
+      "fault-start-evidence.json": "59fa016bfd01ad0412d1641c7fb53f6bcefd4d96cd3c979dad4162afff31de4e",
+      "fault-enable-evidence.json": "0a4defd8f018c3045f2ee3e4d4afa66607612e2f17575f67220d43205883f9fc",
+      "component-evidence.json": "d15b43bb6fda995f3ef55751c48f2a28a2ddcece7c872c10b6210690444b7ef6"
     },
     "launcherCompletionGuards": {
       "result": "PASS",
@@ -72,6 +72,8 @@
     "Source default capture remains off for new installations; this user has explicitly opted into content capture on this installation."
   ],
   "privateEvidenceRoot": "/home/tomka/.cache/lain-full-upgrade-20261031",
-  "actualProductionPreflight": "PASS (read-only --plan) against installed service/unit, processes, manifests, 923/917 and user client pointers",
-  "cleanup": "14GiB of owned synthetic workspaces removed; receipts preserved."
+  "actualProductionPreflight": "PASS again with final operator e55f0593, refreshed inputs and current service; no --execute",
+  "cleanup": "14GiB of owned synthetic workspaces removed; receipts preserved.",
+  "shellLauncherSha256": "866ea5789025ed4225d0d7f4f84c32f5b316b260525ea816ad41c71c59ad263e",
+  "launcherBehavior": "Fresh runtime pins, detached qualified operator, phase progress, full verified completion required; no manifest-only completion shortcut."
 }

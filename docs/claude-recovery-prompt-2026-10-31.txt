@@ -4,6 +4,8 @@ Einziger neuer Startbefehl nach Ende laufender Modellanfragen und Schließen der
 bash /home/tomka/.cache/lain-full-upgrade-20261031/upgrade.sh
 
 Status/Belege: /home/tomka/Desktop/lain/docs/full-upgrade-ready-2026-10-31.json
+Finaler Operator: e55f05936cc0770a0a405f51a0c1f30efaf1159fbff1a222d68ff31e496aa0e2. Auch bei proxyReady=false darf ein laufender Core vor Binärrückweg nur nach bestätigtem Drain gestoppt werden. Der Launcher meldet Erfolg erst bei verified-Transaktion plus aktiver Inhaltsaufnahme und aktuellem Katalog; passende App-Dateien allein reichen nicht.
+
 Ablauf und alle erfolgreichen echten privaten Tests: /home/tomka/.cache/lain-full-upgrade-20261031/operator-qualification-summary.json
 Frisches vollständiges Paket: /home/tomka/.cache/lain-full-upgrade-20261031/package/ (Source80dcf13, inkl4fa-Keyfix, echte Corequalifikation vorhanden). Der ältere Recorderkandidat10734a4 soll nicht installiert werden.
 
