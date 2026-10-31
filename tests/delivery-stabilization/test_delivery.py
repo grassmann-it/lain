@@ -60,6 +60,13 @@ with tempfile.TemporaryDirectory(prefix='lain-delivery-') as temporary:
     run(*install, str(gateway), str(prefix), env=env)
     assert (home / 'app/proxy/lain-proxy').exists()
     assert (home / 'app.previous/.lain-package').exists()
+    # Installation metadata describes the installed binary capabilities. Monitor
+    # intent and user state stay unchanged when a Gateway-capable app is added,
+    # but its Core executable path must become discoverable for a later mode switch.
+    prior_installation = json.loads(before['installation.json'])
+    expected_installation = dict(prior_installation, proxyPath=str(home / 'app/proxy/lain-proxy'))
+    assert json.loads((home / 'installation.json').read_text()) == expected_installation
+    before['installation.json'] = (home / 'installation.json').read_bytes()
     assert all((home / name).read_bytes() == data for name, data in before.items())
     run(*install, str(monitor), str(prefix), env=env, ok=False)
     assert (home / 'app/proxy/lain-proxy').exists()
