@@ -358,7 +358,70 @@
   },
   "productionPackageInstalled": false,
   "recordingEnabledByThisWork": false,
-  "nextRequiredWork": "Repair and verify CommandCode credential-to-transport association without disabling its working routes, changing protocol or reverting credential generations. All 30 selected CommandCode routes fail current stored preflight; 15 other selected accounts pass. Then obtain fresh preview and perform guarded Apply; package deployment remains a separate operation.",
+  "nextRequiredWork": "Finish active requests, then run the independent reviewed key-repair operator from a normal terminal. The prepared metadata repair uses the intended current new key, and can publish924/apply924 without replacing the application. Fresh product package with4fa7ed3 is separate.",
   "claudeRecoveryPrompt": "docs/claude-recovery-prompt-2026-10-31.txt",
-  "evidenceRoot": "/home/tomka/.cache/lain-update-20261031"
+  "evidenceRoot": "/home/tomka/.cache/lain-update-20261031",
+  "commandCodeKeyRotation": {
+    "userIntent": "Same CommandCode account; current NEW API key must be retained. Historical material is selected only for the transport definitions, never old authentication.",
+    "diagnosis": {
+      "currentTransportCount": 1,
+      "importedMappedTransportCount": 3,
+      "mappedIdentitiesPresent": 0,
+      "affectedRoutes": 30,
+      "originalProtocols": {
+        "responses": 24,
+        "anthropic": 4,
+        "openai": 2
+      }
+    },
+    "permanentSourceFix": {
+      "commit": "4fa7ed3",
+      "focusedAssertions": 47,
+      "foundationAssertions": 415,
+      "installed": false
+    },
+    "livePreparation": {
+      "result": "PREPARED_NOT_ACTIVE",
+      "currentRevision": 923,
+      "appliedRevision": 917,
+      "currentKeyRetained": true,
+      "transportDefinitions": 3,
+      "protocolsPreserved": 30,
+      "oldAuthenticationUsed": false
+    },
+    "operatorVerification": {
+      "result": "PASS",
+      "checks": {
+        "result": "PASS",
+        "revision": 924,
+        "appliedRevision": 917,
+        "generation": 2,
+        "transports": 3,
+        "routeCount": 30,
+        "defaultRouteId": "fixture-0",
+        "currentKeyRetained": true,
+        "oldKeyActive": false
+      },
+      "stageRenewUnpublished": true,
+      "evidenceSha256": "357999e668eb5368e1314264751bf4f2fa31c58bf547da6b7f511bae4842726d"
+    },
+    "activationAttempt": {
+      "phase": "draining",
+      "applicationReplacement": false,
+      "providerProbe": false,
+      "checks": [],
+      "before": {
+        "version": "1.0.0+835d2e2260dfa3f1b072eb8fcc1541c33c6dd665",
+        "revision": 923,
+        "appliedRevision": 917,
+        "proxyReady": true
+      },
+      "admissionRestored": true
+    },
+    "currentState": "desired923/applied917; service ready; prepared repair is unpublished. Active requests prevented graceful drain, which was reverted successfully.",
+    "runAfterRequestsFinish": "python3 /home/tomka/.cache/lain-update-20261031/key-repair/activate.py",
+    "runScope": "Revalidate intended current key and all30 protocols; guarded drain; stop own service; configuration backup; stopped-host SDK CAS to924; automatic service start; normal Host Apply924. No application replacement or provider inference probe.",
+    "resume": "Preparation is revalidated/renewed on each run, matching the same public configuration hash, current key and protocols. Changed account/configuration causes refusal; never force revision or replace key. Keep cache/key-repair and its prepared metadata until completed.",
+    "candidateNotice": "The earlier10734a4 recording candidate predates the permanent rotation fix. Build a fresh candidate before installing the product update."
+  }
 }
