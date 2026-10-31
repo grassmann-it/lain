@@ -1,4 +1,4 @@
-# Private local recording source, storage version 1
+# Private local recording source, frame version 1 / control version 2
 
 `RecordingSourceStore(directory, IRecordingPolicy, RecordingStoreOptions?, TimeProvider?)`
 implements `IRecordingStore` and `IAsyncDisposable`. Construction never enables capture.
@@ -108,8 +108,14 @@ archive's physical-removal promise; close readers before reporting purge to a us
 Survivors receive a new monotonic cursor range while preserving source identity,
 observation bytes and payload identity. Old nonzero cursors up to the deletion
 watermark get `cursor_invalidated` and must restart from zero. Source identity
-conflicts are never overwritten. Tombstones remain bounded by MaximumRecords;
-exhaustion requires an explicit clear instead of dropping deletion decisions.
+conflicts are never overwritten. Capture deletion decisions use fixed 64-character
+SHA-256 tombstones, bounded by the smaller of MaximumRecords and 100,000. They
+remain durable after physical purge; no reclamation silently re-enables replay.
+The 8 MiB control limit accommodates all 100,000 hashes and the small manifest.
+A new deletion beyond capacity is rejected before changing visible/control state
+with `recording_deletion_capacity`; capture of new occurrences stops with
+`deletion_capacity` until explicit clear. Existing committed repeats and reads
+remain available. Exhaustion does not itself set `purge_pending`.
 
 `ApplyRetentionAsync` must be called by the Host maintenance worker (and is safe
 to invoke repeatedly). A whole capture expires when any retained body is older
@@ -171,3 +177,17 @@ shutdown into an unlimited wait or closing a descriptor still being used.
 Queued uncommitted work is rejected if disposal cancels unfinished recovery.
 The internal pre-recovery delay hook exists only for deterministic startup/
 cancellation qualification and is absent from public construction.
+
+Control version 2 replaces variable-length raw capture-ID tombstones with fixed
+hashes. A version-1 control is read and migrated before further control writes;
+its deletion decisions are preserved. Frame and payload formats stay at version 1.
+Older readers reject version 2 rather than ignore a deletion field and allow
+resurrection. Rollback therefore requires a compatible reader; never replace the
+latest control file with an older backup. The 8 MiB input bound also applies to
+legacy controls, and unsupported newer control versions remain unchanged.
+
+Compaction reserves the exact encoded remapped metadata frame lengths in a
+bounded first pass, plus the next control publication's temporary file and
+64 KiB working headroom. Existing compressed payloads remain in place and are
+not charged again at their uncompressed OriginalBytes size. The second pass
+encodes/writes one frame at a time, avoiding an archive-sized in-memory buffer.

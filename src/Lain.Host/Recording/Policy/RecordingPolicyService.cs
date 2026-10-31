@@ -95,7 +95,7 @@ public sealed class RecordingPolicyService : IRecordingPolicy
             return "invalid_route_filter";
         if (routeIds is not null && routeIds.Distinct(StringComparer.Ordinal).Count() != routeIds.Length)
             return "duplicate_route_filter";
-        if (limits.MaxRecordBytes is < 1024 or > 16 * 1024 * 1024 ||
+        if (limits.MaxRecordBytes is < 32768 or > 16 * 1024 * 1024 ||
             limits.QueueBytes < 2L * limits.MaxRecordBytes + 8192 || limits.QueueBytes > 256L * 1024 * 1024 ||
             limits.DiskBytes < limits.MaxRecordBytes || limits.DiskBytes > 1024L * 1024 * 1024 * 1024 ||
             limits.ContentRetentionDays is < 1 or > 3650 ||

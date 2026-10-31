@@ -415,6 +415,16 @@ public sealed partial class MainWindow
         var more = Ui.Button("More account actions…", () => menu.Open()); more.ContextMenu = menu;
         actions.Children.Add(more);
         content.Children.Add(actions);
+        var capabilities = new Expander { Header = "Connection capabilities and observations", HorizontalContentAlignment = HorizontalAlignment.Stretch };
+        capabilities.PropertyChanged += (_, e) =>
+        {
+            if (e.Property != Expander.IsExpandedProperty || !capabilities.IsExpanded || capabilities.Content is not null) return;
+            var summary = AccountOutcomeSummary.Build(account, _configuration?.Routes ?? [], quotas, _status, DateTimeOffset.UtcNow);
+            var rows = new StackPanel { Spacing = 4 };
+            foreach (var row in summary.Rows) { rows.Children.Add(Ui.Text(row.Label + ": " + row.Value, 12)); rows.Children.Add(Ui.Text(row.Detail, 11, Ui.Muted)); }
+            capabilities.Content = rows;
+        };
+        content.Children.Add(capabilities);
 
         if (account.Provider == "xai")
         {

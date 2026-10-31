@@ -41,7 +41,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         this.options = options ?? new();
         this.clock = clock ?? TimeProvider.System;
         ValidateOptions(this.options);
-        control = new(1, Guid.NewGuid().ToString("N"));
+        control = new(ArchiveControlVersion, Guid.NewGuid().ToString("N"));
         var hasArchive = false;
         // A disabled/new installation is inert: no journal, payload or lock creation on construction/health.
         if (System.IO.Directory.Exists(this.directory)) {
@@ -139,7 +139,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         if (control.PurgePending) return new(false, ErrorCode: "purge_pending");
         if (error is not null) return new(false, ErrorCode: error);
         if (!policy.IsCurrent(observation.PolicyRevision, observation.StopGeneration)) return new(false, ErrorCode: "policy_stopped_or_changed");
-        if (hiddenCaptures.Contains(observation.CaptureId)) return new(false, ErrorCode: "capture_deleted");
+        if (IsCaptureHidden(observation.CaptureId)) return new(false, ErrorCode: "capture_deleted");
         var serialized = JsonSerializer.SerializeToUtf8Bytes(observation, RecordingFrames.Json);
         if (serialized.Length > MaximumAcceptedRecordBytes) return new(false, ErrorCode: "record_too_large");
         var hash = RecordingFrames.Hash(serialized);
@@ -147,6 +147,7 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
             if (duplicate.Record.ContentHash != hash) return new(false, ErrorCode: "source_identity_conflict");
             return new(true, Materialize(duplicate));
         }
+        if (hiddenCaptures.Count >= DeletionCapacity) return new(false, ErrorCode: "deletion_capacity");
         if (records.Count >= options.MaximumRecords) return new(false, ErrorCode: "record_limit");
         if (!initialized) Initialize();
         var cursor = checked(control.HighWatermark + 1);
@@ -237,14 +238,14 @@ public sealed partial class RecordingSourceStore : IRecordingStore, IAsyncDispos
         return new(observation, item.Cursor, control.Generation + "/" + location.Journal, location.Offset, item.ContentHash);
     }
 
-    private bool IsHidden(StoredObservation item) => hiddenCaptures.Contains(item.Metadata.CaptureId);
+    private bool IsHidden(StoredObservation item) => IsCaptureHidden(item.Metadata.CaptureId);
     private string PayloadDirectory => Path.Combine(directory, "payloads");
     private string GenerationDirectory => Path.Combine(directory, control.Generation);
     private string ControlPath => Path.Combine(directory, "control.json");
     private void SaveControl()
     {
         var bytes = JsonSerializer.SerializeToUtf8Bytes(control, RecordingFrames.Json);
-        if (bytes.Length > 1024 * 1024) throw new IOException("Recording control state exceeds its bound.");
+        if (bytes.Length > MaximumControlBytes) throw new IOException("Recording control state exceeds its bound.");
         WriteTrackedAtomic(ControlPath, bytes);
     }
 

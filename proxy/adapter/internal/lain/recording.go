@@ -32,16 +32,18 @@ type RecordingLimits struct {
 // inference profile. Only the explicit shared-connection scope is supported.
 // Inference bearer tokens and User-Agent are deliberately not client identities.
 type RecordingPolicy struct {
-	SchemaVersion  int             `json:"schemaVersion"`
-	Revision       int64           `json:"revision"`
-	Enabled        bool            `json:"enabled"`
-	Mode           string          `json:"mode"`
-	Scope          string          `json:"scope"`
-	RouteIDs       []string        `json:"routeIds,omitempty"`
-	Models         []string        `json:"models,omitempty"`
-	StopGeneration int64           `json:"stopGeneration"`
-	CaptureRawSSE  bool            `json:"captureRawSse"`
-	Limits         RecordingLimits `json:"limits"`
+	SchemaVersion       int             `json:"schemaVersion"`
+	IdentityScope       string          `json:"identityScope,omitempty"`
+	Revision            int64           `json:"revision"`
+	Enabled             bool            `json:"enabled"`
+	Mode                string          `json:"mode"`
+	Scope               string          `json:"scope"`
+	RouteIDs            []string        `json:"routeIds,omitempty"`
+	Models              []string        `json:"models,omitempty"`
+	StopGeneration      int64           `json:"stopGeneration"`
+	HandoffStreamFrames bool            `json:"handoffStreamFrames"`
+	CaptureRawSSE       bool            `json:"captureRawSse"`
+	Limits              RecordingLimits `json:"limits"`
 }
 
 // RecordingTokenCounts mirrors the nullable shared TokenCounts contract. An
@@ -63,6 +65,7 @@ type RecordingContent struct {
 }
 
 type RecordingObservation struct {
+	IdentityScope         string                `json:"identityScope,omitempty"`
 	SchemaVersion         int                   `json:"schemaVersion"`
 	SourceEpoch           string                `json:"sourceEpoch"`
 	Sequence              int64                 `json:"sequence"`
@@ -341,8 +344,9 @@ func (r *Recorder) stamp(o RecordingObservation) RecordingObservation {
 	r.sequence++
 	now := time.Now()
 	o.SchemaVersion = 1
+	o.IdentityScope = r.policy.IdentityScope
 	o.CaptureID = o.RequestID
-	o.Complete = o.ContentOmissionReason == ""
+	o.Complete = o.ContentOmissionReason == "" && (o.Kind != "response" || o.Outcome == "success")
 	o.Truncated = o.ContentOmissionReason == "body_limit" || o.ContentOmissionReason == "assembly_capacity"
 	o.SourceEpoch = r.epoch
 	o.Sequence = r.sequence
@@ -395,6 +399,9 @@ func (r *Recorder) Admit(requestID, protocol, model, routeID string, body []byte
 	}
 	defer r.mu.Unlock()
 	if !r.policy.Enabled || r.closed || !r.acceptsModel(model) || !r.acceptsRoute(routeID) {
+		return
+	}
+	if _, exists := r.requests[requestID]; exists {
 		return
 	}
 	if len(requestID) > 192 || len(protocol) > 64 || len(model) > 192 || len(routeID) > 192 || requestID == "" {
@@ -556,7 +563,7 @@ func (r *Recorder) FinishAttempt(attemptID, outcome string) {
 		o.Outcome = "unknown"
 	}
 	o.raw = a.body
-	o.rawSSE = r.policy.CaptureRawSSE
+	o.rawSSE = r.policy.CaptureRawSSE || r.policy.HandoffStreamFrames
 	o.ContentOmissionReason = a.omitted
 	if a.lost.Load() {
 		o.raw = nil
@@ -615,7 +622,7 @@ func (r *Recorder) Read(epoch string, after int64, limit int) (RecordingBatch, e
 	if r.count > 0 {
 		oldest = r.ring[r.head].Sequence
 	}
-	batch := RecordingBatch{SchemaVersion: 1, SourceEpoch: r.epoch, AfterSequence: after, NextSequence: after, OldestSequence: oldest, LatestSequence: r.sequence, Events: []RecordingObservation{}, DroppedCount: r.dropped + r.contentionDrops.Load(), UnknownLoss: true}
+	batch := RecordingBatch{SchemaVersion: 1, SourceEpoch: r.epoch, AfterSequence: after, NextSequence: after, OldestSequence: oldest, LatestSequence: r.sequence, Events: []RecordingObservation{}, DroppedCount: r.dropped + r.contentionDrops.Load(), UnknownLoss: false}
 	if r.contentionDrops.Load() > 0 {
 		batch.GapReason = "observer_contention"
 	}

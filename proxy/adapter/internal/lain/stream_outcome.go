@@ -25,25 +25,15 @@ func (e *streamOutcomeError) Error() string {
 	return "upstream stream returned a terminal error payload"
 }
 
-// A terminal payload does not preserve the successful HTTP status. These two
-// allowlisted request faults, however, can safely expose a canonical 400 so
-// the journal and pinned clients categorize them instead of reconnecting.
-func (e *streamOutcomeError) StatusCode() int {
-	if e != nil && e.classification != nil {
-		return http.StatusBadRequest
-	}
-	return 0
-}
 func (*streamOutcomeError) IsRequestScoped() bool { return true }
 
-// The pinned execution layer recognizes this optional interface. Only a known
-// classification gets a direct fixed body; unknown and missing-terminal errors
-// retain their existing text-only behavior.
-func (e *streamOutcomeError) DirectResponse() bool { return e != nil && e.classification != nil }
-func (e *streamOutcomeError) ResponseBody() []byte {
-	if e == nil || e.classification == nil {
-		return nil
-	}
+// Only a classified error exposes status/body interfaces. Generic streamOutcomeError
+// must not acquire StatusCode=0, which would alter unknown-failure serialization.
+type classifiedStreamOutcomeError struct{ *streamOutcomeError }
+
+func (*classifiedStreamOutcomeError) StatusCode() int      { return http.StatusBadRequest }
+func (*classifiedStreamOutcomeError) DirectResponse() bool { return true }
+func (e *classifiedStreamOutcomeError) ResponseBody() []byte {
 	return canonicalUpstreamErrorJSON(e.classification)
 }
 
@@ -138,6 +128,11 @@ func classifyUpstreamErrorObject(raw []byte, eventKind string) *upstreamErrorCla
 	if detail, exists := fields["error"]; exists && string(bytes.TrimSpace(detail)) != "null" {
 		return classifyUpstreamErrorDetail(detail)
 	}
+	if terminalKind {
+		if direct := classifyUpstreamErrorDetail(raw); direct != nil {
+			return direct
+		}
+	}
 	response, exists := fields["response"]
 	if !exists || string(bytes.TrimSpace(response)) == "null" {
 		return nil
@@ -159,14 +154,14 @@ func classifyUpstreamErrorObject(raw []byte, eventKind string) *upstreamErrorCla
 // The executor first establishes that a protocol terminal failed, then may use
 // this classifier to replace only an unambiguous allowlisted cause. Content in
 // delta/output fields, prose and malformed or oversized diagnostics stay unknown.
-func classifyUpstreamStreamError(payload []byte) *streamOutcomeError {
+func classifyUpstreamStreamError(payload []byte) *classifiedStreamOutcomeError {
 	if len(payload) > maxRequestErrorBytes {
 		return nil
 	}
 	eventKind := ""
 	for _, line := range bytes.Split(payload, []byte("\n")) {
 		line = bytes.TrimSpace(line)
-		if line == "" {
+		if len(line) == 0 {
 			eventKind = ""
 			continue
 		}
@@ -185,7 +180,7 @@ func classifyUpstreamStreamError(payload []byte) *streamOutcomeError {
 			continue
 		}
 		if classification := classifyUpstreamErrorObject(data, eventKind); classification != nil {
-			return &streamOutcomeError{classification: classification}
+			return &classifiedStreamOutcomeError{&streamOutcomeError{classification: classification}}
 		}
 	}
 	return nil

@@ -31,7 +31,7 @@ public sealed partial class RecordingSourceStore
             if (System.IO.Directory.Exists(path)) DeletePrivateTree(path, ct);
             else DeleteTrackedFile(path);
         }
-        control = control with { Generation = Guid.NewGuid().ToString("N"), HiddenCaptures = [], ClearPending = false, PurgePending = false };
+        control = control with { Generation = Guid.NewGuid().ToString("N"), Version = ArchiveControlVersion, HiddenCaptures = null, HiddenCaptureHashes = [], ClearPending = false, PurgePending = false };
         PrivateArchiveFiles.Directory(GenerationDirectory);
         PrivateArchiveFiles.Directory(PayloadDirectory);
         records.Clear(); identities.Clear(); RefreshVisibility(); error = null;
@@ -56,6 +56,7 @@ public sealed partial class RecordingSourceStore
         if (string.IsNullOrWhiteSpace(captureId) || captureId.Length > 1024) throw new ArgumentException("Invalid recording capture identifier.");
         await gate.WaitAsync(ct);
         try { if (initialized) MarkAndPurge([captureId]); }
+        catch (RecordingDeletionCapacityException) { throw; }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { if (error is not ("source_corrupt" or "archive_unavailable")) error = "purge_pending"; ReconcileAfterFailure(); throw new IOException("recording_purge_failed"); }
         finally { gate.Release(); }
     }
@@ -74,6 +75,7 @@ public sealed partial class RecordingSourceStore
                 .Select(r => r.Record.Metadata.CaptureId).Distinct().ToArray();
             if (expired.Length != 0 || control.PurgePending) MarkAndPurge(expired);
         }
+        catch (RecordingDeletionCapacityException) { throw; }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { if (error is not ("source_corrupt" or "archive_unavailable")) error = "purge_pending"; ReconcileAfterFailure(); throw new IOException("recording_retention_failed"); }
         finally { gate.Release(); }
     }
@@ -81,9 +83,15 @@ public sealed partial class RecordingSourceStore
     private void MarkAndPurge(IEnumerable<string> captures)
     {
         if (error == "source_corrupt") throw new IOException("Recording source requires recovery before physical purge.");
-        var hidden = (control.HiddenCaptures ?? []).Concat(captures).Distinct(StringComparer.Ordinal).ToArray();
-        if (hidden.Length > options.MaximumRecords) throw new IOException("Recording deletion-control bound exceeded.");
-        control = control with { HiddenCaptures = hidden, InvalidatedThrough = control.HighWatermark, PurgePending = true };
+        var hidden = new HashSet<string>(hiddenCaptures, StringComparer.Ordinal);
+        foreach (var capture in captures) {
+            var hash = CaptureTombstone(capture);
+            if (!hidden.Contains(hash) && hidden.Count >= DeletionCapacity)
+                throw new RecordingDeletionCapacityException();
+            hidden.Add(hash);
+        }
+        // Capacity failure happens before changing visible state or PurgePending.
+        control = control with { Version = ArchiveControlVersion, HiddenCaptures = null, HiddenCaptureHashes = hidden.ToArray(), InvalidatedThrough = control.HighWatermark, PurgePending = true };
         RefreshVisibility();
         SaveControl();
         try { CompactHidden(); }
@@ -94,9 +102,20 @@ public sealed partial class RecordingSourceStore
     {
         active?.Flush(true); active?.Dispose(); active = null;
         var survivors = records.Where(r => !IsHidden(r.Record)).ToArray();
-        var estimated = survivors.Sum(r => r.Record.OriginalBytes + 128);
-        if (!HasSpace(estimated + 65536)) throw new IOException("Recording purge workspace is exhausted.");
         var nextGeneration = Guid.NewGuid().ToString("N");
+        // Only source metadata frames are rewritten. Payloads remain in place; their
+        // uncompressed OriginalBytes are not compaction workspace. Measure each exact
+        // remapped frame in a bounded first pass without retaining all encoded frames.
+        long frameBytes = 0;
+        var estimateCursor = control.HighWatermark;
+        foreach (var survivor in survivors) {
+            ct.ThrowIfCancellationRequested();
+            var retained = survivor.Record with { Cursor = checked(++estimateCursor) };
+            frameBytes = checked(frameBytes + RecordingFrames.Encode(retained).LongLength);
+        }
+        var publication = control with { Generation = nextGeneration, HighWatermark = estimateCursor, InvalidatedThrough = Math.Max(control.InvalidatedThrough, control.HighWatermark) };
+        var controlBytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(publication, RecordingFrames.Json).LongLength;
+        if (!HasSpace(checked(frameBytes + controlBytes + 65536))) throw new IOException("Recording purge workspace is exhausted.");
         var destination = Path.Combine(directory, nextGeneration);
         PrivateArchiveFiles.Directory(destination);
         var updated = new List<StoredLocation>(survivors.Length);

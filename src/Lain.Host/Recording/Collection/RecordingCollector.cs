@@ -42,7 +42,7 @@ public sealed class RecordingCollector(RecordingSourceClient source, IRecordingP
                 configuredRevision = snapshot.Revision; configuredEnabled = true;
                 assembler.Reset();
             }
-            if (projectionDirty) { if (projection is IRecordingProjectionRecovery recovery) await recovery.RecoverAsync(ct); else await projection.RebuildAsync(ct); projectionDirty = false; }
+            if (projectionDirty) { State = "indexing"; if (projection is IRecordingProjectionRecovery recovery) await recovery.RecoverAsync(ct); else await projection.RebuildAsync(ct); projectionDirty = false; }
             State = "collecting";
             for (var pass = 0; pass < 8; pass++)
             {
@@ -51,10 +51,11 @@ public sealed class RecordingCollector(RecordingSourceClient source, IRecordingP
                 ValidateBatch(batch, snapshot);
                 if (epoch != batch.SourceEpoch)
                 {
-                    UnknownLoss |= epoch is not null || (await store.HealthAsync(ct)).RecordCount > 0;
+                    var durable = await FindDurableCursorAsync(batch.SourceEpoch, ct);
+                    UnknownLoss |= epoch is not null || durable == 0 && (await store.HealthAsync(ct)).RecordCount > 0;
                     assembler.Reset();
                     epoch = batch.SourceEpoch;
-                    cursor = await FindDurableCursorAsync(epoch, ct);
+                    cursor = durable;
                     // The probe did not use the durable cursor of this source generation.
                     continue;
                 }
@@ -163,8 +164,12 @@ public sealed class RecordingCollector(RecordingSourceClient source, IRecordingP
                 LastErrorCode = error switch { RecordingSourceException e => e.Code,
                     UnauthorizedAccessException => "storage_unavailable", IOException => "storage_unavailable", _ => "collection_failed" };
                 State = LastErrorCode.StartsWith("source_", StringComparison.Ordinal) ? "source_unavailable" : "paused";
-                UnknownLoss = true;
-                logger.LogWarning("Recording collection paused ({Code}); retrying from durable source cursor", LastErrorCode);
+                if (LastErrorCode == "source_policy_pending") State = "starting";
+                else
+                {
+                    UnknownLoss = true;
+                    logger.LogWarning("Recording collection paused ({Code}); retrying from durable source cursor", LastErrorCode);
+                }
             }
             try { await Task.Delay(caughtUp ? TimeSpan.FromSeconds(1) : TimeSpan.FromMilliseconds(25), stoppingToken); }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }

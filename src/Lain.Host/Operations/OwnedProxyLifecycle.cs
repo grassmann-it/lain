@@ -103,6 +103,7 @@ public sealed class OwnedProxyLifecycle(OwnStatePaths paths, SecretStore secrets
                 WorkingDirectory = paths.Proxy, UseShellExecute = false, RedirectStandardError = true, RedirectStandardOutput = true,
                 RedirectStandardInput = true, CreateNoWindow = true
             };
+            start.Environment["LAIN_RECORDING_CONFIG"] = Path.Combine(paths.Root, "recording", "policy.json");
             start.ArgumentList.Add("--config"); start.ArgumentList.Add(inputs?.Configuration ?? paths.ProxyConfig);
             start.ArgumentList.Add("--parent-stdin");
             start.ArgumentList.Add("--owned-auth-dir"); start.ArgumentList.Add(paths.OwnedAuth);

@@ -77,7 +77,8 @@ public sealed partial class RecordingView : UserControl, IPresentationView
             Header = "Recording controls (explicit opt-in)", HorizontalAlignment = HorizontalAlignment.Stretch,
             Content = new StackPanel { Spacing = 7, Children = { Ui.Text("New installations default off. Files are stored locally without encryption under your OS permissions. Reading does not require training approval.", 12, Ui.Muted), _scope, _mode, _consent, Wrap(_enable, _stop), ArchiveDeletionControls() } }
         };
-        controls.Content = new ScrollViewer { Content = controls.Content, MaxHeight = 200, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        var controlsBody = controls.Content; controls.Content = null;
+        controls.Content = new ScrollViewer { Content = controlsBody, MaxHeight = 200, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         SetName(controls, "Recording controls");
         var listGrid = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto"), RowSpacing = 6 };
         listGrid.Children.Add(Ui.Text("Saved conversations", 14));
@@ -103,7 +104,12 @@ public sealed partial class RecordingView : UserControl, IPresentationView
         Grid.SetRow(toolbar, 2); page.Children.Add(toolbar); Grid.SetRow(_notice, 3); page.Children.Add(_notice);
         Grid.SetRow(_columns, 4); page.Children.Add(_columns); Content = page;
         SizeChanged += (_, _) => ArrangeView();
-        AttachedToVisualTree += (_, _) => { if (_lifetime is null) { _lifetime = new(); _ = StartAsync(_lifetime.Token); } };
+        AttachedToVisualTree += (_, _) =>
+        {
+            if (_lifetime is not null) return;
+            _lifetime = new(); var token = _lifetime.Token;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (!token.IsCancellationRequested) _ = StartAsync(token); }, Avalonia.Threading.DispatcherPriority.Loaded);
+        };
         DetachedFromVisualTree += (_, _) => { _generation++; _selectionLifetime?.Cancel(); _selectionLifetime?.Dispose(); _selectionLifetime = null; _lifetime?.Cancel(); _lifetime?.Dispose(); _lifetime = null; };
         ArrangeView();
     }

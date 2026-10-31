@@ -80,7 +80,7 @@ public sealed class RecordingSanitizer
                 { state = "omitted_invalid"; gap = "redaction_failed"; complete = false; }
             }
         }
-        return new(source.SourceEpoch, source.Sequence, source.EventId, source.CaptureId, source.RequestId,
+        var retained = new SanitizedObservation(source.SourceEpoch, source.Sequence, source.EventId, source.CaptureId, source.RequestId,
             source.ObservedAt, SafeCode(source.Boundary) ?? "unknown", SafeCode(source.Protocol) ?? "unknown",
             SafeCode(source.Kind) ?? "unknown", policy.Revision, policy.StopGeneration,
             RecordingContract.RedactionVersion, state, source.AttemptId, source.RouteId, source.AccountId,
@@ -88,6 +88,11 @@ public sealed class RecordingSanitizer
             SanitizeDimensions(source.Dimensions), encoding, body, complete, source.Truncated, gap,
             source.StatusCode is >= 100 and <= 599 ? source.StatusCode : null, source.Tokens,
             source.MonotonicNanoseconds, IdentityScope: policy.IdentityScope);
+        // Account for the serialized envelope/string escaping as well as body bytes.
+        // An oversized single record becomes a safe omission, never a poison cursor retry loop.
+        if (retained.Body is not null && JsonSerializer.SerializeToUtf8Bytes(retained).Length + 4096 > policy.EffectiveLimits.MaxRecordBytes)
+            retained = retained with { Body = null, BodyEncoding = null, RedactionState = "omitted_oversize", Complete = false, Truncated = true, GapReason = "record_envelope_limit" };
+        return retained;
     }
 
     private static bool IsFragment(SourceObservation s) =>

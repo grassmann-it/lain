@@ -70,8 +70,7 @@ public sealed class RecordingProtocolNormalizer(RecordingNormalizerLimits? limit
                     Complete = record.Complete && assembled.Complete, GapReason = assembled.GapReason ?? record.GapReason }];
             }
             if (o.Kind is "run_manifest" or "run_annotation") return [record];
-            if (o.Protocol.ToLowerInvariant() is not ("responses" or "openai-responses" or "chat" or "chat_completions" or
-                "openai-chat" or "openai" or "anthropic" or "claude" or "gemini"))
+            if (ProtocolFamily(o.Protocol) is null)
                 return [record with { Complete = false, GapReason = "unsupported_protocol" }];
             var reader = new BodyReader(record, source, _limits, o.Dimensions?.Evidence,
                 o.Boundary is "client_ingress" or "normalized_request" or "provider_request");
@@ -81,6 +80,20 @@ public sealed class RecordingProtocolNormalizer(RecordingNormalizerLimits? limit
         catch (InvalidOperationException) { return [record with { Complete = false, GapReason = "invalid_protocol_shape" }]; }
         catch (NormalizationLimitException) { return [record with { Messages = [], Complete = false, GapReason = "normalization_limit" }]; }
     }
+
+    // The observer supplies the actual admitted endpoint path, while synthetic/adapted sources may
+    // use a protocol name. Recognize only supported endpoint forms; retain the original Protocol as
+    // source provenance rather than rewriting it into a different observed representation.
+    private static string? ProtocolFamily(string protocol) => protocol.ToLowerInvariant() switch
+    {
+        "responses" or "openai-responses" or "/responses" or "/v1/responses" or
+            "responses/compact" or "/responses/compact" or "/v1/responses/compact" => "responses",
+        "chat" or "chat_completions" or "openai-chat" or "openai" or
+            "chat/completions" or "/chat/completions" or "/v1/chat/completions" => "chat",
+        "anthropic" or "claude" or "messages" or "/messages" or "/v1/messages" => "anthropic",
+        "gemini" => "gemini",
+        _ => null
+    };
 
     internal static string Identity(params string?[] parts) => "rec_" + Convert.ToHexStringLower(
         SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(parts))));
@@ -134,8 +147,10 @@ public sealed class RecordingProtocolNormalizer(RecordingNormalizerLimits? limit
                 RequestedModel = isRequest ? S(root, "model") ?? _record.RequestedModel : _record.RequestedModel };
             var status = S(root, "status");
             Finish(S(root, "stop_reason") ?? status);
-            if (status is "incomplete" or "failed" or "cancelled" or "canceled" || root.TryGetProperty("error", out _))
-                _record = _record with { Complete = false, GapReason = status ?? "provider_error" };
+            var failedStatus = status is "incomplete" or "failed" or "cancelled" or "canceled";
+            var hasError = root.TryGetProperty("error", out var error) && error.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined);
+            if (failedStatus || hasError)
+                _record = _record with { Complete = false, GapReason = failedStatus ? status : "provider_error" };
             return _record with { Messages = _messages.ToArray(), Complete = _record.Complete && !_unsupported,
                 GapReason = _record.GapReason ?? (_unsupported ? "unsupported_content" : null) };
         }

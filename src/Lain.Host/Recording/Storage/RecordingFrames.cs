@@ -9,7 +9,7 @@ namespace Lain.Host.Recording.Storage;
 internal sealed record StoredObservation(SanitizedObservation Metadata, long Cursor, string ContentHash,
     string? PayloadFile, int PayloadBytes, string? PayloadHash, long OriginalBytes);
 internal sealed record ArchiveControl(int Version, string Generation, long HighWatermark = 0,
-    long InvalidatedThrough = 0, string[]? HiddenCaptures = null, bool PurgePending = false, bool ClearPending = false);
+    long InvalidatedThrough = 0, string[]? HiddenCaptures = null, bool PurgePending = false, bool ClearPending = false, string[]? HiddenCaptureHashes = null);
 internal sealed record StoredLocation(StoredObservation Record, string Journal, long Offset);
 
 internal static class RecordingFrames

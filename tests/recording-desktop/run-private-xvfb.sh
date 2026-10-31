@@ -48,6 +48,13 @@ mkdir -p "$runtime/home" "$runtime/xdg" "$runtime/lain"
 export HOME="$runtime/home" XDG_CONFIG_HOME="$runtime/home/config" XDG_DATA_HOME="$runtime/home/data"
 export XDG_RUNTIME_DIR="$runtime/xdg" LAIN_HOME="$runtime/lain"
 export LAIN_TEST_XVFB_PID="$xvfb_pid" LAIN_TEST_DISPLAY="$DISPLAY" LAIN_TEST_OUTPUT="$output"
+# D-Bus-activated descendants can outlive the client; a pipe through tee would
+# wait for their inherited stdout indefinitely. A regular private log has no such wait.
+set +e
 timeout --signal=TERM --kill-after=5s 360s dbus-run-session -- dotnet \
-  "$repo/tests/recording-desktop/bin/Debug/net10.0/linux-x64/Recording.Desktop.Tests.dll" "$@" 2>&1 | tee "$output/run.log"
+  "$repo/tests/recording-desktop/bin/Debug/net10.0/linux-x64/Recording.Desktop.Tests.dll" "$@" >"$output/run.log" 2>&1
+result=$?
+set -e
+cat "$output/run.log"
 echo "Desktop evidence: $output"
+exit "$result"

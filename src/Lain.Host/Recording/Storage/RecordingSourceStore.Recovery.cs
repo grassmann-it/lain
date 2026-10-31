@@ -11,10 +11,10 @@ public sealed partial class RecordingSourceStore
         PrivateArchiveFiles.Directory(PayloadDirectory);
         if (File.Exists(ControlPath)) {
             using var stream = PrivateArchiveFiles.Open(ControlPath, FileMode.Open, FileAccess.Read);
-            if (stream.Length > 1024 * 1024) throw new InvalidDataException("Recording control state exceeds its bound.");
+            if (stream.Length > MaximumControlBytes) throw new InvalidDataException("Recording control state exceeds its bound.");
             control = JsonSerializer.Deserialize<ArchiveControl>(stream, RecordingFrames.Json)
                 ?? throw new InvalidDataException("Recording control state is invalid.");
-            if (control.Version != 1) throw new InvalidDataException("Recording control state version is unsupported; preserve the archive.");
+            if (control.Version is not (1 or ArchiveControlVersion)) throw new InvalidDataException("Recording control state version is unsupported; preserve the archive.");
             if (!Guid.TryParseExact(control.Generation, "N", out _) || control.HighWatermark < 0 || control.InvalidatedThrough < 0)
                 throw new InvalidDataException("Recording control state is invalid.");
         }
@@ -22,10 +22,11 @@ public sealed partial class RecordingSourceStore
             // Never invent a new generation over an existing archive with a missing manifest.
             if (System.IO.Directory.EnumerateDirectories(directory).Any(p => Path.GetFileName(p) != "payloads") || System.IO.Directory.EnumerateFiles(PayloadDirectory).Any())
                 throw new InvalidDataException("Recording control state is missing; preserve the archive.");
-            control = new(1, Guid.NewGuid().ToString("N"));
+            control = new(ArchiveControlVersion, Guid.NewGuid().ToString("N"));
             PrivateArchiveFiles.Directory(GenerationDirectory);
             SaveControl();
         }
+        UpgradeDeletionControl();
         RefreshVisibility();
         PrivateArchiveFiles.Directory(GenerationDirectory);
         if (control.ClearPending) { CompleteClear(ct); return; }

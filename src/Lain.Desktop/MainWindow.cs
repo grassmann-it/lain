@@ -9,6 +9,8 @@ using Lain.Core;
 using Lain.Desktop.Usage;
 using Lain.Desktop.Providers;
 using Lain.Desktop.Inspector;
+using Lain.Desktop.Recording;
+using Lain.Desktop.Diagnostics;
 using Avalonia.Platform.Storage;
 using System.Text.Json;
 using Lain.Desktop.Presentation;
@@ -43,6 +45,9 @@ public sealed partial class MainWindow : Window
     private string? _renderedPageState;
     private readonly UsageView _usage;
     private readonly InspectorView _inspector;
+    private readonly RecordingView _recording;
+    private readonly DiagnosticsView _diagnostics;
+    private readonly Grid _live;
     private readonly ProviderCatalogView _providers;
     private ProviderCatalogDto? _providerCatalog;
     private bool _providerLoading;
@@ -58,6 +63,12 @@ public sealed partial class MainWindow : Window
         _preferencesStore = new WorkspacePreferencesStore(preferencesPath);
         _usage = new UsageView(client);
         _inspector = new InspectorView(client);
+        _recording = new RecordingView(client);
+        _diagnostics = new DiagnosticsView(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "cli", OperatingSystem.IsWindows() ? "Lain.Cli.exe" : "Lain.Cli")));
+        _live = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 6 };
+        var saved = Ui.Button("Saved conversations", () => Navigate("Recordings"));
+        AutomationProperties.SetName(saved, "Open saved conversations");
+        _live.Children.Add(saved); Grid.SetRow(_inspector, 1); _live.Children.Add(_inspector);
         _providers = new ProviderCatalogView(uri => _ = OpenProviderLinkAsync(uri), BeginProviderSetup);
         _usage.NavigateRequested = NavigateTo;
         _inspector.NavigateRequested = NavigateTo;
@@ -360,7 +371,7 @@ public sealed partial class MainWindow : Window
             CloseAccountInspector();
             _notice.Text = "The selected account is no longer configured. Historical usage remains available.";
         }
-        if (_editing || _accountRemovalVisible || _openObjectMenus > 0 || _section is "Usage" or "Live" or "Providers" or "Settings" or "About") return;
+        if (_editing || _accountRemovalVisible || _openObjectMenus > 0 || _section is "Usage" or "Live" or "Recordings" or "Diagnostics" or "Providers" or "Settings" or "About") return;
         if (_inspectedAccountId is not null && !explicitRefresh && _accountInspector.IsKeyboardFocusWithin) return;
         // Polling updates the shell immediately, but must not remove the control being
         // used with the keyboard. A changed snapshot remains pending until focus leaves
@@ -398,7 +409,8 @@ public sealed partial class MainWindow : Window
         _page.Content = _section switch
         {
             "Accounts" => AccountsPage(), "Models" => RoutesPage(), "Profiles" => ProfilesPage(),
-            "Providers" => ProviderDiscoveryPage(), "Live" => _inspector,
+            "Providers" => ProviderDiscoveryPage(), "Live" => _live,
+            "Recordings" => _recording, "Diagnostics" => _diagnostics,
             "Usage" => _usage, "Setup" => SetupPage(), "Service" => ServicePage(),
             "Settings" => SettingsPage(), "About" => AboutPage(), _ => AccountsPage()
         };
@@ -412,7 +424,7 @@ public sealed partial class MainWindow : Window
     private void UpdateWorkspaceScrolling()
     {
         if (_workspace is null) return;
-        var bounded = _page.Content is WorkspacePage || ReferenceEquals(_page.Content, _usage) || ReferenceEquals(_page.Content, _inspector);
+        var bounded = _page.Content is WorkspacePage || ReferenceEquals(_page.Content, _usage) || ReferenceEquals(_page.Content, _live) || ReferenceEquals(_page.Content, _recording) || ReferenceEquals(_page.Content, _diagnostics);
         _workspace.VerticalScrollBarVisibility = bounded
             ? Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled
             : Avalonia.Controls.Primitives.ScrollBarVisibility.Auto;

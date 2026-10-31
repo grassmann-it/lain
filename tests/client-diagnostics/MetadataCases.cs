@@ -1,3 +1,4 @@
+using Lain.Cli;
 using System.Text.Json;
 using Lain.Cli.Diagnostics;
 using Lain.Core;

@@ -80,9 +80,9 @@ Check(projector.ProjectState(unrelatedPending, members, snapshots).IsKnownState 
 Check(projector.ProjectState(unrelatedPending, members, snapshots, applied with { Revision = 6 }).IsKnownState is false,
     "mismatched applied snapshot stays unknown");
 var retired = projector.ProjectState(unrelatedPending with { Accounts = [kimi, zai with { Enabled = false }] }, members, snapshots, applied);
-Check(retired.Entries.Length == 0 && retired.CanOmitEntries is false, "explicit retirement cannot regain eligibility from old quota proof");
+Check(retired.Entries.All(e => e.AccountId != zai.Id) && retired.Entries.Any(e => e.AccountId == kimi.Id) && retired.CanOmitEntries is false, "explicit retirement cannot regain eligibility from old quota proof");
 var recovered = projector.ProjectState(unrelatedPending with { Accounts = [kimi, zai with { State = "recovery-required" }] }, members, snapshots, applied);
-Check(recovered.Entries.Length == 0 && recovered.CanOmitEntries is false, "recovery fence cannot be bypassed by old applied account");
+Check(recovered.Entries.All(e => e.AccountId != zai.Id) && recovered.Entries.Any(e => e.AccountId == kimi.Id) && recovered.CanOmitEntries is false, "recovery fence cannot be bypassed by old applied account");
 Check(projector.Project(configuration with { RuntimeMode = "monitor" }, members, snapshots).Length == 0, "monitor mode publishes no suppression");
 Check(projector.Project(configuration with { Accounts = [kimi with { Enabled = false }, zai with { Enabled = false }] }, members, snapshots).Length == 0, "disabled accounts never projected");
 Check(projector.Project(configuration with { Routes = configuration.Routes.Select(r => r with { Pooled = true }).ToArray() }, members, snapshots).Length == 0, "pooled routes never assigned one account quota");

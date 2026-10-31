@@ -154,6 +154,7 @@ func (e *boundExecutor) Execute(ctx context.Context, a *auth.Auth, req executor.
 	response, err := e.inner.Execute(ctx, a, req, opts)
 	routerDispatchFor(ctx).finish(err)
 	if err == nil {
+		e.integration.Recording.ObserveOutput(usage.ExecutionRequestIDFromContext(ctx), response.Payload, false)
 		e.integration.Observe(ctx, response.Payload, false)
 	}
 	if end := e.integration.After(ctx, err); end != nil {
@@ -241,12 +242,17 @@ func (e *boundExecutor) ExecuteStream(ctx context.Context, a *auth.Auth, req exe
 			if terminal != nil || canceled || overflow {
 				continue
 			}
+			e.integration.Recording.ObserveOutput(usage.ExecutionRequestIDFromContext(ctx), chunk.Payload, true)
 			responseTerminal, payloadFailed := responseStreamOutcome(chunk.Payload)
 			sawResponseTerminal = sawResponseTerminal || responseTerminal
 			if payloadFailed {
 				observeRouterQuotaPayload(ctx, chunk.Payload)
 				if terminal == nil {
-					terminal = &streamOutcomeError{}
+					if classified := classifyUpstreamStreamError(chunk.Payload); classified != nil {
+						terminal = classified
+					} else {
+						terminal = &streamOutcomeError{}
+					}
 				}
 				continue
 			}

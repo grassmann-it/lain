@@ -11,6 +11,11 @@ using Lain.Host.Accounts.CliConnections;
 using Lain.Host.Accounts.ConsoleConnections.MiMo;
 using Lain.Host.Accounts.Monitoring;
 using Lain.Host.Inspector;
+using Lain.Host.Recording.Api;
+using Lain.Host.Recording.Policy;
+using Lain.Host.Recording.Storage;
+using Lain.Host.Recording.Normalization;
+using Lain.Host.Recording.Projection;
 using Lain.Host.Models;
 using Lain.Host.Operations;
 using Lain.Host.Providers;
@@ -199,6 +204,15 @@ builder.Services.AddSingleton<JournalUsageCollector>(sp => {
 });
 builder.Services.AddHostedService(sp => sp.GetRequiredService<JournalUsageCollector>());
 builder.Services.AddInspector(managementToken, coreAddress: new Uri($"http://127.0.0.1:{paths.GatewayPort}/"), shouldCollect: CollectCore);
+var recordingDirectory = Path.Combine(paths.Root, "recording");
+builder.Services.AddSingleton<IRecordingPolicy>(_ => new RecordingPolicyService(recordingDirectory));
+builder.Services.AddSingleton<RecordingSourceStore>(sp => new(Path.Combine(recordingDirectory, "archive"), sp.GetRequiredService<IRecordingPolicy>(),
+    RecordingStoreOptions.SuggestedProductionOptions(externalReservedBytes: 261L * 1024 * 1024)));
+builder.Services.AddSingleton<IRecordingStore>(sp => sp.GetRequiredService<RecordingSourceStore>());
+builder.Services.AddSingleton<IRecordingProjection>(sp => new RecordingIndexedProjection(sp.GetRequiredService<IRecordingStore>(),
+    new RecordingProtocolNormalizer(), Path.Combine(recordingDirectory, "index.sqlite"), RecordingSchema.Sql));
+builder.Services.AddRecordingCollection(recordingDirectory, new Uri($"http://127.0.0.1:{paths.GatewayPort}/"), managementToken, CollectCore);
+
 var providerHttp = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(20) };
 builder.Services.AddSingleton(sp => new XaiKeyMetadataService(repository, secrets,
  sp.GetRequiredService<AccountService>(), providerHttp, mutations));
@@ -382,6 +396,7 @@ app.MapModelEndpoints();
 app.MapWorkerEndpoints();
 app.MapProviderCatalogEndpoints();
 app.MapInspectorEndpoints();
+app.MapRecordingEndpoints();
 app.MapGet(Api.Prefix + "/profiles/{id}/preview", (string id, long revision) => application.Preview(id, revision));
 app.MapPost(Api.Prefix + "/profiles/{id}/apply", async (string id, ApplyRequest request, CancellationToken ct) => {
  RequireGateway();
@@ -430,7 +445,8 @@ var quotaLoop = referenceWithoutQuota ? Task.CompletedTask : quota.RunAsync(shut
 // Cached quota publication is independent of provider refresh and usage collection.
 var routerAvailability = new RouterAvailabilityPublisher(quotaCoreHttp, () => repository.Snapshot,
  quota.GetRouterAvailabilitySnapshotsAsync,
- ct => RouterAvailabilityBindings.ReadAsync(new RouteBindingsWriter(paths).BindingsPath, ct), canPublish: CollectCore);
+ ct => RouterAvailabilityBindings.ReadAsync(new RouteBindingsWriter(paths).BindingsPath, ct), canPublish: CollectCore,
+ getAppliedSnapshot: ct => new RouterAvailabilityAppliedSnapshotReader(paths, () => repository.Snapshot).ReadAsync(ct));
 var routerAvailabilityLoop = referenceWithoutQuota ? Task.CompletedTask : routerAvailability.RunAsync(shutdown.Token);
 var credentialRefreshLoop = referenceWithoutQuota ? Task.CompletedTask :
  app.Services.GetRequiredService<OwnedCredentialRefreshService>().RunAsync(shutdown.Token);

@@ -75,14 +75,9 @@ public static class RecordingEndpoints
             var source = new RecordingSourceReference(sourceEpoch, sequence, eventId);
             var found = await lookup.FindSourceAsync(source, ct);
             if (found is null) return Results.NotFound(new ApiError("not_found", "The retained source is no longer available."));
-            var observation = found.Observation; var text = observation.Body;
-            if (offset > (text?.Length ?? 0)) return Failure("cursor_expired");
-            if (text is not null && offset > 0 && offset < text.Length && char.IsLowSurrogate(text[offset]) && char.IsHighSurrogate(text[offset - 1])) offset--;
-            var count = Math.Min(characters, (text?.Length ?? 0) - offset);
-            if (text is not null && count > 0 && offset + count < text.Length && char.IsHighSurrogate(text[offset + count - 1])) count--;
-            return Results.Ok(new RecordingSourceTextPage(source, observation.Boundary, observation.Protocol,
-                text?.Substring(offset, count), offset, text?.Length ?? 0, offset + count < (text?.Length ?? 0),
-                observation.RedactionState, found.ContentHash, observation.GapReason));
+            if (!RecordingSourcePaging.TryCreate(found, source, offset, characters, out var page))
+                return Failure("cursor_expired");
+            return Results.Ok(page);
         });
         endpoints.MapGet(Prefix + "/events", async (HttpRequest request, IRecordingStore store, IRecordingPolicy policy, CancellationToken ct) =>
         {

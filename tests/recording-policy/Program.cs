@@ -40,6 +40,10 @@ retained = policy.Sanitize(Bound(JsonSerializer.Serialize(secrets)), snapshot)!;
 foreach (var canary in new[] { "synthetic-auth-canary", "synthetic-cookie-canary", "synthetic-api-canary", "synthetic-access-canary", "synthetic-password-canary", "synthetic-private-canary", "synthetic-header-canary", "synthetic-env-canary", "synthetic-args-canary", "syntheticbearercanary", "syntheticcanary123", "syntheticurlcanary", "syntheticquerycanary", "syntheticpemcanary", "c3ludGhldGlj", "syntheticassignmentcanary", "syntheticfilecanary" })
     Check(!JsonSerializer.Serialize(retained).Contains(canary, StringComparison.Ordinal), "canary excluded: " + canary);
 Check(retained.Body!.Contains("keep ordinary text") && retained.Body.Contains("echo safe"), "ordinary messages and tool code preserved");
+var nestedResult = policy.Sanitize(Bound(JsonSerializer.Serialize(new { output = "{\"apiKey\":\"quoted-output-canary\",\"cookie\":\"quoted-cookie-canary\"}" })), snapshot)!;
+Check(!nestedResult.Body!.Contains("quoted-output-canary") && !nestedResult.Body.Contains("quoted-cookie-canary"), "quoted JSON tool result secrets excluded");
+var headerResult = policy.Sanitize(Bound(JsonSerializer.Serialize(new { output = "HTTP/1.1 200 OK\nSet-Cookie: session=header-cookie-canary; HttpOnly\nX-Safe: yes" })), snapshot)!;
+Check(!headerResult.Body!.Contains("header-cookie-canary") && headerResult.Body.Contains("X-Safe"), "tool-result cookie header excluded without losing unrelated lines");
 var badArgs = policy.Sanitize(Bound("""{"arguments":"{\"token\":\"unfinished"}"""), snapshot)!;
 Check(!badArgs.Body!.Contains("unfinished"), "malformed arguments omitted");
 Check(policy.Sanitize(Bound("{bad"), snapshot)!.RedactionState == "omitted_invalid", "malformed document omitted");
@@ -49,8 +53,8 @@ Check(policy.Sanitize(Bound("{}") with { Complete = false }, snapshot)!.Body is 
 Check(policy.Sanitize(Bound("{}") with { BodyEncoding = "bytes" }, snapshot)!.GapReason == "unsupported_encoding", "unknown representation visible");
 Check(policy.Sanitize(Bound("{}") with { EventId = "Bearer unsafe" }, snapshot) is null, "unsafe correlation ID rejected rather than changed");
 var tiny = new RecordingPolicyService();
-var tinySnapshot = tiny.Update(new(0, true, "content", Limits: new(MaxRecordBytes: 1024))).Policy;
-var oversize = Source(JsonSerializer.Serialize(new { text = new string('x', 1500) })) with { PolicyRevision = tinySnapshot.Revision, StopGeneration = tinySnapshot.StopGeneration };
+var tinySnapshot = tiny.Update(new(0, true, "content", Limits: new(MaxRecordBytes: 32768))).Policy;
+var oversize = Source(JsonSerializer.Serialize(new { text = new string('x', 40000) })) with { PolicyRevision = tinySnapshot.Revision, StopGeneration = tinySnapshot.StopGeneration };
 Check(tiny.Sanitize(oversize, tinySnapshot)!.GapReason == "body_oversize", "oversize before parse");
 var metadata = policy.Update(new(snapshot.Revision, true)).Policy;
 Check(policy.Sanitize(Source("{secret}") with { PolicyRevision = metadata.Revision, StopGeneration = metadata.StopGeneration }, metadata)!.Body is null, "metadata mode never parses body");

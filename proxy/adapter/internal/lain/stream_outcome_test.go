@@ -80,11 +80,11 @@ func TestUpstreamStreamClassifierLeavesUnknownsAndModelContentAlone(t *testing.T
 	}
 	unknown := &streamOutcomeError{}
 	var status interface{ StatusCode() int }
-	if !errors.As(unknown, &status) || status.StatusCode() != 0 || unknown.Error() != "upstream stream returned a terminal error payload" || unknown.DirectResponse() || unknown.ResponseBody() != nil {
+	if errors.As(unknown, &status) || unknown.Error() != "upstream stream returned a terminal error payload" {
 		t.Fatal("unknown terminal behavior changed")
 	}
 	missing := &streamOutcomeError{missingTerminal: true}
-	if missing.StatusCode() != 0 || missing.Error() != "Responses stream closed before a terminal response event" {
+	if errors.As(missing, &status) || missing.Error() != "Responses stream closed before a terminal response event" {
 		t.Fatal("missing-terminal behavior changed")
 	}
 }

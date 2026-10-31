@@ -19,7 +19,7 @@ public sealed partial class RecordingSourceStore
     private void RefreshVisibility()
     {
         hiddenCaptures.Clear();
-        foreach (var capture in control.HiddenCaptures ?? []) hiddenCaptures.Add(capture);
+        foreach (var hash in control.HiddenCaptureHashes ?? []) hiddenCaptures.Add(hash);
         visibleRecords.Clear();
         foreach (var record in records) if (!IsHidden(record.Record)) visibleRecords.Add(record);
     }

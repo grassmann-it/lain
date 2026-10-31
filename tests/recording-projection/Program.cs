@@ -175,6 +175,19 @@ try
     }
 }
 finally { if (Directory.Exists(performanceDirectory)) Directory.Delete(performanceDirectory, true); }
+var namespaces = new MemoryStore();
+var nativeOne = Record(901, "stable-native-conversation", "model-a");
+var nativeTwo = Record(902, "stable-native-conversation", "model-b");
+namespaces.Add(nativeOne with { Observation = nativeOne.Observation with { CaptureId = "request-one", IdentityScope = "owned-instance-a" } });
+namespaces.Add(nativeTwo with { Observation = nativeTwo.Observation with { CaptureId = "request-two", IdentityScope = "owned-instance-a" } });
+var sameNativeDifferentOwner = Record(903, "stable-native-conversation", "model-c");
+namespaces.Add(sameNativeDifferentOwner with { Observation = sameNativeDifferentOwner.Observation with { CaptureId = "request-three", IdentityScope = "owned-instance-b" } });
+var scopeProjection = new RecordingConversationProjection(namespaces, new RecordingProtocolNormalizer());
+var namespaceList = await scopeProjection.ListAsync(new());
+Check(namespaceList.Items.Length == 2 && namespaceList.Items.Single(c => c.Models.Contains("model-a")).RequestCount == 2,
+    "stable trusted identity scope joins native conversations across per-request capture IDs and model switches");
+Check(namespaceList.Items.Single(c => c.Models.Contains("model-c")).RequestCount == 1,
+    "same native identifier in another identity scope cannot merge with the first conversation");
 Console.WriteLine($"{checks} recording projection checks passed");
 
 sealed class MemoryStore : IRecordingStore

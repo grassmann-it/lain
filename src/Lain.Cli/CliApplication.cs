@@ -74,6 +74,7 @@ public static partial class CliApplication
           providers onboarding ID [--json]
           providers routes [--provider ID] [--json]
           providers check-free ROUTE_ID [--json]
+          recording status|config|enable|off|list|show|events|runs|run-label|delete [--json]
           auth token --audience codex
           service ensure|start|stop|restart|status|enable|disable [--json]
           service autostart on|off [--json]  Change future sign-in startup independently
@@ -131,7 +132,7 @@ public static partial class CliApplication
                 return (action is "ensure" or "start" or "restart") && lifecycleResult.HostState != "ready" ? 3 : 0;
             }
             // Validate the command before discovery, so misspellings work even when the host is stopped.
-            if (command is not ("status" or "accounts" or "import" or "models" or "profiles" or "collections" or "routers" or "usage" or "history" or "attempts" or "quotas" or "auth" or "service" or "providers" or "inspector" or "mode"))
+            if (command is not ("status" or "accounts" or "import" or "models" or "profiles" or "collections" or "routers" or "usage" or "history" or "attempts" or "quotas" or "auth" or "service" or "providers" or "inspector" or "recording" or "mode"))
                 throw new ArgumentException($"Unknown command '{command}'. Run 'lain help'.");
             Validate(command, options);
             if (command == "accounts" && (options.Positionals.FirstOrDefault() == "add"
@@ -148,6 +149,7 @@ public static partial class CliApplication
             object result;
             switch (command)
             {
+                case "recording": result = await Recording(client, options, ct); break;
                 case "status":
                     result = await client.StatusAsync(ct); break;
                 case "mode":
@@ -249,6 +251,7 @@ public static partial class CliApplication
 
     private static void Validate(string command, Options options)
     {
+        if (command == "recording") { ValidateRecording(options); return; }
         if (command == "collections") { ValidateCollections(options); return; }
         if (command == "routers") { ValidateRouters(options); return; }
         if (command == "mode")

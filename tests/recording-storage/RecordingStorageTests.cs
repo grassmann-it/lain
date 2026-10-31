@@ -72,8 +72,8 @@ public sealed class RecordingStorageTests : IDisposable
         }
         var bytes = await File.ReadAllBytesAsync(journal); bytes[^1] ^= 0x11; await File.WriteAllBytesAsync(journal, bytes);
         await using (var store = new RecordingSourceStore(PathFor(), policy, Options)) {
-            Assert.Equal("source_corrupt", (await store.HealthAsync()).ErrorCode);
             Assert.Empty((await store.ReadCommittedAsync()).Records);
+            Assert.Equal("source_corrupt", (await store.HealthAsync()).ErrorCode);
             Assert.Equal(bytes.Length, new FileInfo(journal).Length);
             await store.ClearAsync();
             Assert.Equal("ready", (await store.HealthAsync()).State);
@@ -174,14 +174,17 @@ public sealed class RecordingStorageTests : IDisposable
         if (!OperatingSystem.IsLinux()) return;
         await using var store = new RecordingSourceStore(PathFor(), policy, Options);
         await store.CommitAsync(Event());
-        await using (var other = new RecordingSourceStore(PathFor(), policy, Options))
+        await using (var other = new RecordingSourceStore(PathFor(), policy, Options)) {
+            _ = await other.ReadCommittedAsync();
             Assert.Equal("archive_unavailable", (await other.HealthAsync()).ErrorCode);
+        }
         foreach (var dir in System.IO.Directory.GetDirectories(PathFor(), "*", SearchOption.AllDirectories).Prepend(PathFor()))
             Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(dir));
         foreach (var file in System.IO.Directory.GetFiles(PathFor(), "*", SearchOption.AllDirectories))
             Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(file));
         var link = PathFor("link"); System.IO.Directory.CreateSymbolicLink(link, PathFor());
         await using var linked = new RecordingSourceStore(link, policy, Options);
+        _ = await linked.ReadCommittedAsync();
         Assert.Equal("archive_unavailable", (await linked.HealthAsync()).ErrorCode);
     }
 

@@ -70,6 +70,51 @@ var context = new DefaultHttpContext(); context.Request.QueryString = new("?limi
 try { _ = RecordingArguments.Limit(context.Request, 100); throw new Exception("Expected duplicate limit rejection"); } catch (ArgumentException) { count++; }
 var bodyRecord = store.Records[0] with { Observation = store.Records[0].Observation with { Body = new string('a', RecordingEndpoints.MaximumContentResponseBytes + 1) } };
 Check(RecordingEndpoints.BoundedEvents(new([bodyRecord], 1, 1, false)).Records.Single().Observation is { Body: null, GapReason: "api_body_limit" }, "body response cap is explicit");
+var pagingSource = new RecordingSourceReference("emoji-epoch", 1, "emoji-event");
+var emojiRecord = store.Records[0] with { Observation = store.Records[0].Observation with { Body = "😀🙂" } };
+foreach (var characters in new[] { 1, 2, RecordingSourcePaging.MaximumCharacters })
+{
+    var offset = 0;
+    var reconstructed = new StringBuilder();
+    var pages = 0;
+    while (true)
+    {
+        Check(RecordingSourcePaging.TryCreate(emojiRecord, pagingSource, offset, characters, out var page) && page is not null,
+            "UTF16 source page exists at size " + characters);
+        var value = page!;
+        Check(value.Offset == offset && value.Text is { Length: > 0 } && value.Text.Length <= RecordingSourcePaging.MaximumCharacters &&
+            !char.IsLowSurrogate(value.Text[0]) && !char.IsHighSurrogate(value.Text[^1]),
+            "UTF16 emoji page preserves both surrogate boundaries at size " + characters);
+        reconstructed.Append(value.Text);
+        var next = value.Offset + value.Text!.Length;
+        Check(next > offset, "nonterminal one-unit emoji paging always advances");
+        offset = next;
+        if (!value.HasMore) break;
+        if (++pages > emojiRecord.Observation.Body!.Length) throw new Exception("UTF16 page failed to advance");
+    }
+    Check(reconstructed.ToString() == "😀🙂" && offset == 4, "UTF16 emoji pages reconstruct exact source at size " + characters);
+}
+Check(RecordingSourcePaging.TryCreate(emojiRecord, pagingSource, 1, 1, out var lowSurrogatePage) &&
+    lowSurrogatePage is { Offset: 0, Text: "😀", TotalCharacters: 4, HasMore: true },
+    "offset on a low surrogate rewinds to the complete scalar and advances past it");
+Check(RecordingSourcePaging.TryCreate(emojiRecord, pagingSource, 4, 1, out var endPage) &&
+    endPage is { Offset: 4, Text: "", TotalCharacters: 4, HasMore: false }, "exact source end returns an empty terminal page");
+Check(!RecordingSourcePaging.TryCreate(emojiRecord, pagingSource, 5, 1, out var expiredPage) && expiredPage is null,
+    "source cursor past exact end remains expired");
+var maximumRecord = emojiRecord with { Observation = emojiRecord.Observation with {
+    Body = new string('a', RecordingSourcePaging.MaximumCharacters - 1) + "😀z" } };
+Check(RecordingSourcePaging.TryCreate(maximumRecord, pagingSource, 0, RecordingSourcePaging.MaximumCharacters, out var maximumPage) &&
+    maximumPage is { Offset: 0, HasMore: true } && maximumPage.Text!.Length == RecordingSourcePaging.MaximumCharacters - 1 &&
+    maximumPage.Text.All(c => c == 'a'), "maximum source window backs off a trailing high surrogate without exceeding its cap");
+Check(RecordingSourcePaging.TryCreate(maximumRecord, pagingSource, maximumPage!.Text!.Length, RecordingSourcePaging.MaximumCharacters, out var tailPage) &&
+    tailPage is { Text: "😀z", HasMore: false }, "maximum source window resumes with the complete trailing emoji");
+Check(endPage!.Source == pagingSource && endPage.Boundary == emojiRecord.Observation.Boundary &&
+    endPage.Protocol == emojiRecord.Observation.Protocol && endPage.RedactionState == emojiRecord.Observation.RedactionState &&
+    endPage.ContentHash == emojiRecord.ContentHash, "UTF16 paging preserves selected source identity and retention metadata");
+var unavailableRecord = emojiRecord with { Observation = emojiRecord.Observation with { Body = null, GapReason = "content_unavailable" } };
+Check(RecordingSourcePaging.TryCreate(unavailableRecord, pagingSource, 0, 1, out var unavailablePage) &&
+    unavailablePage is { Text: null, TotalCharacters: 0, HasMore: false, GapReason: "content_unavailable" },
+    "unavailable retained text remains null with its explicit gap");
 Console.WriteLine($"PASS {count} recording API/collector assertions");
 
 sealed class FixtureSource : HttpMessageHandler

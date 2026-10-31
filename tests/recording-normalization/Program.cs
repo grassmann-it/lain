@@ -155,6 +155,41 @@ expiring.Push(Raw("data: {\"choices\":[{\"index\":0,\"delta\":{\"content\":\"exp
 expiryClock.Advance(2);
 Check(expiring.Push(Raw("", 2, kind: "attempt_finished") with { Body = null }) is { Body: null, GapReason: "assembly_expired" }, "idle parser buffers expire with explicit partial coverage");
 Check(normalizer.Normalize(Committed("{\"input\":\"visible raw but unqualified protocol\"}", "unsupported-new-protocol")).Single() is { Messages.Length: 0, GapReason: "unsupported_protocol" }, "unsupported protocol never claims semantic completeness");
+// Recording.Admit emits admitted endpoint paths; accepted aliases must keep the same semantics.
+foreach (var endpoint in new[] { "/v1/responses", "/responses", "/v1/responses/compact", "/responses/compact" })
+{
+    var observed = normalizer.Normalize(Committed("{\"input\":\"endpoint input\"}", endpoint)).Single();
+    Check(observed is { Complete: true, GapReason: null, Messages.Length: 1 } &&
+        observed.Messages[0].Parts[0].Text == "endpoint input" && observed.Protocol == endpoint,
+        "Responses endpoint form is readable and keeps original source protocol: " + endpoint);
+}
+foreach (var endpoint in new[] { "/v1/chat/completions", "/chat/completions", "chat/completions" })
+{
+    var observed = normalizer.Normalize(Committed("{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"endpoint answer\"},\"finish_reason\":\"stop\"}]}", endpoint)).Single();
+    Check(observed is { Complete: true, GapReason: null, Messages.Length: 1 } && observed.Messages[0].Parts[0].Text == "endpoint answer",
+        "Chat Completions endpoint form is readable: " + endpoint);
+}
+foreach (var endpoint in new[] { "/v1/messages", "/messages", "messages" })
+{
+    var observed = normalizer.Normalize(Committed("{\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"endpoint block\"}],\"stop_reason\":\"end_turn\"}", endpoint)).Single();
+    Check(observed is { Complete: true, GapReason: null, Messages.Length: 1 } && observed.Messages[0].Parts[0].Text == "endpoint block",
+        "Anthropic Messages endpoint form is readable: " + endpoint);
+}
+var compactEndpoint = normalizer.Normalize(Committed("{\"output\":[{\"type\":\"compaction\",\"id\":\"compacted\"}]}", "/v1/responses/compact")).Single();
+Check(compactEndpoint is { Complete: false, GapReason: "compacted_prefix_unavailable", Messages.Length: 1 } &&
+    compactEndpoint.Messages[0].Parts[0].Kind == "compaction", "compact endpoint retains explicit unavailable-prefix coverage");
+var nullError = normalizer.Normalize(Committed("""
+{"id":"response-null-error","status":"completed","error":null,"output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"completed answer"}]}]}
+""", "/v1/responses")).Single();
+Check(nullError is { Complete: true, GapReason: null, FinishReason: "completed", ResponseId: "response-null-error" } &&
+    nullError.Messages[0].Parts[0].Text == "completed answer", "completed Responses error null is not a provider failure");
+Check(normalizer.Normalize(Committed("{\"status\":\"failed\",\"error\":null}", "/v1/responses")).Single() is
+    { Complete: false, GapReason: "failed" }, "failure status remains failed when error is null");
+Check(normalizer.Normalize(Committed("{\"status\":\"completed\",\"error\":{\"code\":\"synthetic_failure\",\"message\":\"private body is not a diagnostic\"}}", "/v1/responses")).Single() is
+    { Complete: false, GapReason: "provider_error" }, "non-null provider error remains a safe failure despite completed status");
+foreach (var endpoint in new[] { "/v2/responses", "/v1/responses/unknown", "/v1/messages/count_tokens", "https://fixture.invalid/v1/responses" })
+    Check(normalizer.Normalize(Committed("{\"input\":\"unsupported endpoint\"}", endpoint)).Single() is
+        { Messages.Length: 0, Complete: false, GapReason: "unsupported_protocol" }, "unqualified endpoint does not match by suffix: " + endpoint);
 Console.WriteLine($"{checks} recording normalization checks passed");
 
 sealed class FixtureClock : TimeProvider
