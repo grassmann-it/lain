@@ -5,7 +5,7 @@
   "productionStatus": {
     "version": "1.0.0+835d2e2260dfa3f1b072eb8fcc1541c33c6dd665",
     "state": "pending-application",
-    "revision": 923,
+    "revision": 924,
     "appliedRevision": 917,
     "proxyReady": true
   },
@@ -25,7 +25,7 @@
   },
   "oneCommand": "bash /home/tomka/.cache/lain-full-upgrade-20261031/upgrade.sh",
   "operatorSha256": "e55f05936cc0770a0a405f51a0c1f30efaf1159fbff1a222d68ff31e496aa0e2",
-  "launcherSha256": "5f6d31b61a5b877d836a6d25a4e43cd74edf94d884d10eec1d770fe5ae5d32ce",
+  "launcherSha256": "392c44fe3f641cb4cdb24de72a6182b230d52501c3b18428a5b0cdf0e7ddcbeb",
   "steps": [
     "fresh preservation pins and quiet owned Core drain",
     "stopped full state snapshot plus retained original application",
@@ -75,5 +75,33 @@
   "actualProductionPreflight": "PASS again with final operator e55f0593, refreshed inputs and current service; no --execute",
   "cleanup": "14GiB of owned synthetic workspaces removed; receipts preserved.",
   "shellLauncherSha256": "866ea5789025ed4225d0d7f4f84c32f5b316b260525ea816ad41c71c59ad263e",
-  "launcherBehavior": "Fresh runtime pins, detached qualified operator, phase progress, full verified completion required; no manifest-only completion shortcut."
+  "launcherBehavior": "Fresh runtime pins, detached qualified operator, phase progress, full verified completion required; no manifest-only completion shortcut.",
+  "expectedTargetRevision": 925,
+  "baselineRefreshFix": {
+    "cause": "Non-target core-owned Codex2 credential refreshed from generation1 to2; only account credentials/capabilities/expiry/generation changed.",
+    "preserved": "same CommandCode current key, all route/profile/collection/router definitions and user settings",
+    "rule": "Rebase only after exact public configuration comparison and an owned non-target credential refresh whitelist. Target credential changes, access/name/resource changes, model/profile changes remain rejected.",
+    "checks": {
+      "result": "PASS",
+      "checks": 7,
+      "actualApprovedDelta": "Codex2 owned credential refresh only",
+      "rejected": "profile, route, access, target-account, identity and owner changes"
+    },
+    "repairOperatorSha256": "9bd161cd0c44470064e14a5dc9d751ba918340e590f3eeee1ece59980f08fe36",
+    "actualCombinedCases": {
+      "combined-runtime-923-evidence.json": {
+        "result": "PASS",
+        "sha256": "4877a1fefd0444296cd4f863b8f4a73ef681cba30e6c66bb8c413d4e53e429a6"
+      },
+      "combined-runtime-924-evidence.json": {
+        "result": "PASS",
+        "sha256": "94c3d8f5734132a960e8695834a594bf58768016fef12b7b768dd0eeded2c5f2"
+      },
+      "combined-runtime-924-rebase-evidence.json": {
+        "result": "PASS",
+        "sha256": "cedd2c718293ba2714b838778ee56734906adb88dff2b0be35c34053c1f73f59"
+      }
+    },
+    "actualCurrentReadOnlyPlan": "ready:true, baseline924/applied917,target925; no production --execute"
+  }
 }

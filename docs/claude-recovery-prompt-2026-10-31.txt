@@ -1,3 +1,5 @@
+AKTUALISIERUNG: Die Codex-2-Anmeldung wurde zwischenzeitlich regulär erneuert (Generation1→2). Daher jetzt924gespeichert/917aktiv. Modelle/Profile/CommandCode unverändert. Der Starter wurde geprüft dynamisch angepasst: ausschließlich fremde, core-/host-eigene Credential-Erneuerungen bei gleicher Identität/Purposes werden übernommen; alle sonstigen Änderungen bleiben gesperrt. SDK-Keyreparatur wird gegen diese frische Basis revalidiert. Erwarteter Abschluss derzeit925/925. Die früheren fixen923/924-Zahlen unten sind historische Ausgangswerte. Derselbe upgrade.sh-Befehl bleibt gültig. Echte kombinierte Fälle923→924,924→925 und923→CodexRefresh924→Rebase→925 sind geprüft. Readonly-Plan auf dem echten Stand ist wiederready:true; noch keineProduktivausführung.
+
 AKTUELLER AUFTRAG: vollständiges Upgrade von Host, CLI, Core und UI; danach lokale Inhaltsaufnahme aktivieren. Die alten Anweisungen zum separaten repair-only-Befehl unten sind historisch und werden durch diesen gemeinsamen Ablauf ersetzt.
 
 Einziger neuer Startbefehl nach Ende laufender Modellanfragen und Schließen der lain-UI:
