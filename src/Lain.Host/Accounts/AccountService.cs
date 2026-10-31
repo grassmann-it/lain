@@ -140,8 +140,54 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
                 baseUrl = request.BaseUrl, settings = request.Settings, sourceSection = "openai-compatibility", coreProvider = request.Connection.Provider })
             : JsonSerializer.Serialize(new { kind = "access-token-snapshot", accessToken = request.Secret, expiresAt = request.ExpiresAt,
                 provider = request.Connection.Provider, accountId = binding.Subject, baseUrl = request.BaseUrl, settings = request.Settings });
-        return Connect(revision, request.Connection, new(request.Kind == "api-key" ? "static-key" : "external-snapshot",
-            request.Connection.Purposes, binding, json, request.ExpiresAt));
+        var context = ReserveConnect(revision, request.Connection, "connect-" + Guid.NewGuid().ToString("N"), DateTimeOffset.UtcNow.AddMinutes(10));
+        if (request.Kind == "api-key" && request.Connection.AccountId is not null &&
+            request.Connection.Purposes.Any(p => p is "inference" or "models"))
+        {
+            var current = configuration.Snapshot;
+            var account = current.Accounts.SingleOrDefault(a => a.Id == context.AccountId);
+            if (current.Revision != context.Revision || account is null || account.Generation != context.AccountGeneration)
+                throw new InvalidOperationException("Account changed before API-key reconnect.");
+            var template = CurrentStaticTransportTemplate(account, request.Connection.Purposes);
+            if (template is not null)
+            {
+                StaticApiKeyRotation.ValidateReconnectOptions(template, request.BaseUrl, request.Settings);
+                json = StaticApiKeyRotation.Rotate(template, request.Secret);
+            }
+        }
+        var handle = secrets.Generations.Prepare(context.AccountId, new(request.Kind == "api-key" ? "static-key" : "external-snapshot",
+            request.Connection.Purposes, binding, json, request.ExpiresAt), context.OperationId);
+        try { return CommitPrepared(context, handle); }
+        catch { secrets.Generations.DiscardStaticPreparation(handle); throw; }
+    }
+
+    private string? CurrentStaticTransportTemplate(AccountDto account, string[] requestedPurposes)
+    {
+        var capabilities = EffectiveCapabilities(account);
+        var preferred = requestedPurposes.Contains("inference", StringComparer.Ordinal) ? "inference" : "models";
+        var selected = capabilities.LastOrDefault(c => c.Purpose == preferred)
+            ?? capabilities.LastOrDefault(c => c.Purpose == "inference")
+            ?? capabilities.LastOrDefault(c => c.Purpose == "models");
+        if (selected is null) return null; // Adding inference to a quota-only account has no inference template.
+        var handle = selected.CredentialId is { } id
+            ? account.Credentials?.SingleOrDefault(h => h.Id == id && h.Purposes.Contains(selected.Purpose, StringComparer.Ordinal))
+            : account.Credentials?.LastOrDefault(h => h.Purposes.Contains(selected.Purpose, StringComparer.Ordinal));
+        if (selected.CredentialId is not null && handle is null)
+            throw new InvalidDataException("Referenced API credential generation is missing.");
+        string template;
+        if (handle is not null)
+        {
+            if (handle.Owner != "static-key") return null;
+            if (secrets.Generations.IsRetired(handle)) throw new InvalidDataException("Credential recovery is required.");
+            template = secrets.Generations.Read(account.Id, handle).PrivateJson;
+        }
+        else
+        {
+            if (account.CredentialKind != "api-key") return null;
+            template = secrets.ReadAccountDescriptor(account.Id); // Only the existing legacy access rule; no history search.
+        }
+        using var document = JsonDocument.Parse(template);
+        return document.RootElement.TryGetProperty("kind", out var kind) && kind.GetString() == "api-key" ? template : null;
     }
 
     public ConfigurationDto ObserveBinding(string accountId, long expectedGeneration, ResourceBindingDto binding)
@@ -405,14 +451,11 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
             var account = state.Accounts.SingleOrDefault(a => a.Id == id) ?? throw new KeyNotFoundException("Account not found.");
             if (account.CredentialKind != "api-key") throw new InvalidOperationException("Only API key accounts support this operation.");
             if (FindDuplicate(state, account.Provider, apiKey, id) is not null) throw new ArgumentException("This credential already belongs to an account.");
-            var json = System.Text.Json.Nodes.JsonNode.Parse(secrets.ReadAccount(id))!.AsObject();
-            json["apiKey"] = apiKey;
-            if (json["transports"] is System.Text.Json.Nodes.JsonArray transports)
-                foreach (var transport in transports.OfType<System.Text.Json.Nodes.JsonObject>()) transport["apiKey"] = apiKey;
-            return PublishStaticReference(state, id, json.ToJsonString());
+            var json = StaticApiKeyRotation.Rotate(secrets.ReadAccount(id), apiKey);
+            return PublishStaticReference(state, id, json, rotateCohort: true);
         });
     }
-    private ConfigurationDto PublishStaticReference(ConfigurationDto state, string id, string privateJson, bool sameCredential = false)
+    private ConfigurationDto PublishStaticReference(ConfigurationDto state, string id, string privateJson, bool sameCredential = false, bool rotateCohort = false)
     {
         var account = state.Accounts.Single(a => a.Id == id);
         var binding = account.Binding ?? new ResourceBindingDto(account.Provider);
@@ -422,7 +465,10 @@ public sealed class AccountService(ConfigurationRepository configuration, Secret
         var inference = currentCapabilities.SingleOrDefault(c => c.Purpose == "inference");
         var quota = currentCapabilities.SingleOrDefault(c => c.Purpose == "quota");
         var replaceQuota = quota is null && account.Capabilities is null || quota is not null && quota.CredentialId == inference?.CredentialId;
-        var purposes = replaceQuota ? new[] { "inference", "quota" } : ["inference"];
+        var purposes = rotateCohort && inference is not null
+            ? currentCapabilities.Where(c => c.CredentialId == inference.CredentialId).Select(c => c.Purpose)
+                .Append("inference").Distinct(StringComparer.Ordinal).ToArray()
+            : replaceQuota ? new[] { "inference", "quota" } : ["inference"];
         var handle = secrets.Generations.Prepare(id, new("static-key", purposes, binding, privateJson));
         var capabilities = currentCapabilities.Where(c => !purposes.Contains(c.Purpose, StringComparer.Ordinal))
             .Concat(purposes.Select(p => new AccountCapabilityDto(p, "unverified", handle.Id))).ToArray();
