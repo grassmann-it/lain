@@ -1,6 +1,9 @@
 # First public release work packages
 
-30 October 2026 · **Prepared handoff, not implementation/publication authorization.**
+31 October 2026 · The later six-Sol/four-GLM implementation request authorized
+source work. This file retains the original package plan; current implementation
+and acceptance are in [execution ledger](../recording-execution-2026-10-30.md).
+Publication and the remaining release-scope decisions are still separate.
 Requested after the [public-preview review](../public-preview-review-2026-10-30.md).
 Reuse existing STAB/REC work, not a second competing stabilization implementation.
 Version, exact public platform/model support and first-release recorder inclusion

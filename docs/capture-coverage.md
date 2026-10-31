@@ -1,13 +1,30 @@
-# Capture coverage: current evidence and planned Sprint 1
+# Capture coverage: recorder implementation and qualification
 
-30 October 2026 · Planning matrix. **The new recorder is not implemented or enabled.**
-`forwarded`, `parsed in synthetic fixtures`, `recorded`, and `qualified end-to-end`
-are separate states. Current short-lived Inspector output is not durable content
-capture. No row below claims that a new archive is already collecting traffic.
+31 October 2026 · Candidate source implementation. **Not installed or enabled in
+production.** `forwarded`, `parsed in synthetic fixtures`, `recorded`, and
+`qualified end-to-end` are separate states. The durable Saved conversations view
+is separate from the short-lived Inspector. Actual results and source/artifact
+pins are in [execution evidence](recording-execution-2026-10-30.md).
+
+## Evidence in this increment
+
+- Real isolated candidate Host + candidate Core + local fake Chat provider:
+  Responses ingress, nonstream and SSE, fragmented tool arguments, client-reported
+  result continuation, model change, evidenced worker, nullable usage, secret
+  screening before persistence, selected-source identity/paging, off, restart and
+  archive clear. This is actual HTTP/process/storage behavior with synthetic data.
+- Pure normalization/assembly fixtures cover Responses, Chat Completions,
+  Anthropic and Gemini. These do not prove native live provider behavior.
+- Go adapter unit/race suites cover callbacks, pressure/drop handling and existing
+  inference behavior. .NET tests cover policy, source failure/recovery, projection,
+  API/CLI and bounded UI. Native and load receipts are separately identified.
+- Observed boundaries are client ingress and executor output. Final client-egress
+  bytes, exact provider wire requests and actual local tool execution are not
+  independently observed by this increment. No blanket full-protocol promise.
 
 ## Protocol/API matrix
 
-| Client-facing path/protocol | Current lain admission | Existing partial evidence | Planned recorder acceptance |
+| Client-facing path/protocol | Current lain admission | Existing partial evidence | Additional protocol acceptance boundary |
 | --- | --- | --- | --- |
 | POST `/v1/responses`, nonstream/SSE | Admitted | Durable attempts/usage, selected output and evidenced dimensions | First complete Codex/Responses path: request/response representations, tool deltas/results, completion/error/abort and repeat-history references |
 | POST `/v1/responses/compact` | Admitted by adapter | Some request/attempt dimensions | Explicit compaction event and payload coverage; no claim that missing earlier context was reconstructed |
@@ -53,7 +70,7 @@ formats still produce safe metadata/completeness states, never invented messages
   final message use distinct representation/source tags. Unsupported/partial data
   is not a complete chat, and a redacted record is not byte-original raw data.
 
-This file must later add actual source/artifact pins and test evidence per cell.
+Consult the execution ledger for exact source/artifact pins and actual test evidence.
 Synthetic examples must be labeled synthetic; a future 200-call/100-tool fixture
 proves graph mechanics, not real execution or rights to train on production data.
 

@@ -1,5 +1,7 @@
 # Implementation, release and recording status
 
+Historical pre-implementation snapshot; superseded by [31 October execution and evidence](recording-execution-2026-10-30.md).
+
 30 October 2026 · Read-only source/runtime reconciliation, no build or deployment.
 This ledger concerns the currently inspected working tree and installation;
 package descriptions aren't completion evidence and other branches aren't audited.

@@ -1,5 +1,15 @@
 # lain
 
+Aktueller Implementierungsstand 31.10.2026: lokaler opt-in Recorder und priorisierte
+Releasekorrekturen sind integriert. Sourcefreeze10734a4, Liefer-/Prüfgrenzen in
+`docs/recording-execution-2026-10-30.md`, Pins in
+`docs/recording-verification-2026-10-31.json`, Bedienung in
+`docs/recording-operations.md`. Linux-Prüfpaket gebaut und isoliert geprüft;
+kein produktiver Install/Apply und keine Aufnahme aktiviert. Public-/Backend-
+Liefergates nicht automatisch aus einzelnen Tests ableiten. Fremde CLI-Routen-WIP
+liegt weiter außerhalb des eingefrorenen Kandidaten. Ältere Plan-only- und
+Installiert-Angaben unten gelten für ihren jeweiligen historischen Bezug.
+
 Aktive Arbeitskopie 26.10.2026: Projektregeln und begrenzte Worker sind ausdrücklich
 zur parallelen Umsetzung beauftragt. Vertrag: `docs/workers-v1.md`, Liefer- und
 Prüfstand: `docs/release-workers-2026-10-26.md`. Automatische Zerlegung und
