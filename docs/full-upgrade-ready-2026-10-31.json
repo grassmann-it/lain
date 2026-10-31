@@ -123,12 +123,12 @@
     }
   },
   "automaticExecution": {
-    "state": "started_waiting_for_current_requests",
-    "processPid": 1362645,
+    "state": "waiting_for_current_requests_and_lain_ui_close",
+    "processPid": 1363804,
     "statusFile": "/home/tomka/.cache/lain-full-upgrade-20261031/waiting-upgrade.json",
     "logFile": "/home/tomka/.cache/lain-full-upgrade-20261031/automatic-upgrade.log",
     "waitLimitSeconds": 900,
-    "execute": "Same qualified full upgrade after three zero-active-request observations; never stops active streams",
+    "execute": "Wait for zero active inference requests and no open lain Desktop; then execute qualified full upgrade. No forced shutdown or discard.",
     "productionUpgradeCompleted": false
   }
 }
