@@ -1,97 +1,107 @@
-# lain — Account Monitor und Local AI Gateway
+# lain
 
-lain verwaltet lokale Provideraccounts, Kontingente und gespeicherte
-Nutzungsdaten für Linux x64. Desktop und CLI verwenden denselben privaten
-.NET-10-Host. Der Host kann unabhängig vom Fenster weiterlaufen.
+**Your AI accounts, quotas and models in one local app.**
 
-Eigener Code: [Artistic License 2.0](LICENSE), mit getrennten
-[Drittanbieter- und Bildhinweisen](NOTICE). Katzenfoto:
-[Alexander Huxel · Webentwicklung Huxel](https://webentwicklung-huxel.de/)
-[(Flickr)](https://flickr.com/people/204852984@N05/).
+lain combines an account dashboard with a local AI gateway. Check your remaining
+quotas, connect providers, organize models into groups and use them from your
+coding tools through one endpoint. A desktop app and CLI share a background
+service, so the gateway can keep running when you close the window.
 
-Im aktuellen **Quellstand** sind zwei ausdrückliche Betriebsarten implementiert:
-**Monitor** liest qualifizierte Accountkontingente und vorhandene lokale History
-ohne installierten oder gestarteten Proxy-Core. **Gateway** ergänzt Inferenz,
-Modelle, Profile und den eigenen gepinnten CLIProxyAPI-Core. Ein Proxyfehler
-schaltet einen Gateway nicht automatisch auf Monitor um. Informationsstufe
-Barebones / Simple / Advanced, lokale Dichte und Betriebsart bleiben getrennt.
+## What you can do
 
-**Quellstand, geprüfte Pakete und installierter Dienst sind getrennte Nachweise.**
-Die integrierten Account-/Stabilisierungs-/UXD-Änderungen sind durch den
-Umsetzungsauftrag autorisiert. Sie sind damit noch kein neu installiertes oder
-freigegebenes Release. Historische Installationsberichte und Screenshots gelten
-nur für die dort genannten Binärhashes; alte Prüfzähler beweisen den aktuellen
-Stand nicht. Die private Monitor-/Gateway-Paketabnahme und ein späterer
-Dienstwechsel folgen erst nach den integrierten Prüfungen.
+- **See account quotas and usage.** View the limits a provider actually reports,
+  including short windows, weekly allowances, credits and reset times. Missing
+  readings are explained rather than presented as zero.
+- **Connect different providers.** Use API keys, supported OAuth/device flows or
+  supported local CLI imports. Login and quota support vary by provider.
+- **Organize models and routes.** Build profiles and custom groups, choose a
+  specific provider account or use ordered automatic routing.
+- **Inspect requests.** Follow gateway traffic, responses, tool calls and usage
+  in the Live inspector. Capture depends on the protocol and client information
+  available to the gateway.
+- **Use a desktop app or terminal.** Avalonia Desktop and the CLI use the same
+  local configuration and service.
+
+## Choose a mode
+
+| Mode | Use it for |
+| --- | --- |
+| **Monitor** | Account quotas and existing local usage history, without running an inference proxy. |
+| **Gateway** | Everything in Monitor, plus model profiles, routing and a local inference endpoint backed by Lain's CLIProxyAPI integration. |
+
+The current packaging target is **Linux x64**. Windows and macOS installer work
+is still being validated. This is an early project; expect rough edges and
+provider-specific limitations.
+
+## Getting started
+
+See [Releases](https://github.com/grassmann-it/lain/releases) for any published
+packages. To build from source, use the pinned .NET SDK in `global.json`; Gateway
+builds also need the Go toolchain specified in `proxy/toolchain.json`.
 
 ```sh
-lain --help
+git clone https://github.com/grassmann-it/lain.git
+cd lain
+
+# Choose monitor or gateway. The output directory must not already exist.
+./scripts/publish-linux.sh --mode gateway "$HOME/lain-linux-x64"
+"$HOME/lain-linux-x64/install-linux.sh" "$HOME/lain-linux-x64"
+```
+
+Follow the [Linux installation guide](docs/install.md) for prerequisites, service
+setup, updates and recovery. After installation:
+
+```sh
+systemctl --user start lain.service
+lain ui
 lain status --json
-lain mode --json
 lain usage
 lain history --today --json
-lain accounts methods --json
 ```
 
-Diese Befehle gehören zum aktuellen Quellvertrag. Mit `lain --help` zuerst die
-Fähigkeiten der tatsächlich installierten CLI prüfen; Entwicklung aktualisiert
-keine Installation. `usage` zeigt gespeicherte Kontingentsnapshots, `history`
-zeichnet die vom Gateway erfassten Requests/Tokens aus. Unbekannte Werte bleiben
-unbekannt. Ein Login oder gespeicherter Key beweist keine Inferenz-/Quotarechte;
-öffentliche Recherche, synthetische Fixtures und echte Providerqualifikation
-werden getrennt ausgewiesen. Console-/OAuth-/CLI-Methoden benötigen ihren eigenen
-qualifizierten Client-/Sessionvertrag; reine Readerfixtures aktivieren keinen Login.
+Add an account in the app, select the models you want to use and apply your
+Gateway profile. A successful login does not necessarily grant API access or
+quota monitoring; the account's provider and plan determine those capabilities.
 
-Accounts sind der Einstieg. Die native Oberfläche erhält gemeldete Quotafenster,
-Accountidentitäten, Entwürfe, Kontextnavigation und unabhängige lokale
-Fensterpräferenzen. Genau ein Informationsmodusdropdown steht unten rechts.
-Settings enthält Dichte, Fenster/Benachrichtigungen und Hilfe/About; ein
-Monitor-/Gatewaywechsel ist eine eigene revisionsgebundene Hostaktion.
-About liest die echte Desktopassemblyversion und zeigt die gemeldete Hostversion
-getrennt. Originalkatze, Mint-/Grün-/Schwarzfarben und gebündelte Schriften bleiben.
+## Client integrations
 
-Gateway bindet CLIProxyAPI **v8.0.41** als verifizierte externe Abhängigkeit ein.
-Eigener Adapter und explizite Hookpatches erhalten Accountbindungen, Journal und
-Transportgarantien; dies ist kein unverändertes offizielles Releasebinary. Die
-exakte Patch-/Quell-/Buildidentität steht im Paket, nicht allein in dieser
-Upstreamversionsnummer. Monitorpakete enthalten diesen Core nicht.
+Gateway exposes a local inference endpoint at `http://127.0.0.1:18417` by default.
+Supported clients can connect to it with Lain's local authentication helper.
+Optional client adaptations add model-group menus:
 
-```sh
-scripts/publish-linux.sh --mode monitor /absolute/new/lain-monitor
-scripts/publish-linux.sh --mode gateway /absolute/new/lain-gateway
-```
+- [Codex CLI setup and grouped model picker](clients/codex/README.md)
+- [VS Code / Codex extension integration](clients/vscode/README.md)
 
-Publish erzeugt private Stagingartefakte mit Prüfsummen, Komponentenprovenienz
-und passenden Drittanbieternachweisen. `gate-status.json` trennt Backendprüfung
-von vollständiger Releaseabnahme. Kein Publisher wählt eine Anwendungslizenz,
-veröffentlicht extern oder aktiviert einen Dienst.
+These adaptations are version-specific. Follow their compatibility and recovery
+instructions when updating a client.
 
-- [Referralprogramme und Bezugsstellen eigener Links](docs/provider-referrals-overview-2026-10-26.md)
-- [Free-/Abovergleich aller Connectoren](docs/provider-recommendations-2026-10-26.md)
-- [OAuth-/Device-Logins: Bestand und nächste Integrationen](docs/oauth-provider-overview-2026-10-26.md)
-- [1.0-Kandidat: Lieferumfang und Installation](docs/release-1.0-distribution-readiness.md)
-- [Linuxinstallation](docs/install.md) und [Betriebsarten, Release und sichere Wiederherstellung](docs/linux-delivery-stabilization.md)
-- [Aktuelle Arbeitspakete und Nachweisgrenzen](docs/work-packages-execution-2026-10-24.md)
-- [UXD-Pakete](docs/ux-design-work-packages/README.md) und [Reviewreferenzen](docs/uxpilot-design-results-2026-10-24.md)
-- [CLI-Befehle](docs/cli-usage.md), [Tray](docs/desktop-tray.md), [API-Verträge](docs/service-contracts.md)
-- [Entwicklung](docs/development.md), [Backendqualifikation](docs/backend-qualification.md), [Architektur](docs/architecture.md)
-- [Historisch installierter v8-Core und Grenzen](docs/core-v8-upgrade.md)
-- [Isolierte Prüfung tatsächlicher Pakete](tests/delivery-stabilization/README.md)
+## Local data and recording
 
-Updates erhalten Accounts, eigene Namen, getrennte Credentials, History, Profile,
-Routen und gewünschte/aktive Revisionen. Ein synthetischer Bestand mit gewünschter
-Revision11 und angewandter Revision2 muss genau dieses Paar behalten; ein Update
-ist kein implizites Apply. `app.previous` allein ist kein Daten-/OAuthrollback.
-Konsistente gestoppte Snapshots werden explizit in einen neuen privaten Zustand
-wiederhergestellt. Verbrauchte OAuth-Refreshgrants bleiben bis zur gezielten
-Recovery bzw. zum Reconnect gesperrt; brauchbare statische Accounts und History
-bleiben zugänglich. Alte Hosts ohne diese Schutzverträge dürfen nicht blind mit
-wiederhergestellten Credentials gestartet werden.
+Accounts, configuration and history are stored locally. Credentials use a
+separate private store; provider requests still go to the selected provider.
+The Live inspector is a bounded view and does not promise a complete archive.
 
-Legacyproxy, fremde CLI-Profile und die normale Codexkonfiguration bleiben
-außerhalb dieses Besitzes. Lain verwendet eigene Dienste, Daten und Secrets.
-Codexintegration schreibt ihre separaten `lain.config.toml`/`lain.models.json`;
-der Authhelper liefert nur den lokalen Inferenzschlüssel. Kauf, Paid-Fallback,
-öffentliche Veröffentlichung und Anwendungslizenzwahl sind keine Nebenwirkung
-dieser Arbeit. Die Anwendungslizenz ist Artistic-2.0; Repoöffentlichkeit ist beauftragt.
-Ein öffentlicher Release mit Tag und Binärdownloads bleibt ein eigener Schritt.
+Persistent saved conversations and recording controls are being developed on
+[the recording-settings branch](https://github.com/grassmann-it/lain/tree/development/recording-settings-20261101).
+That work includes local message/tool capture, retention limits and explicit
+capture-gap reporting. Recording is separate from permission to export data for
+training or send it to an external evaluator.
+
+## Documentation
+
+- [CLI reference](docs/cli-usage.md)
+- [Provider signup and referral links](docs/provider-referrals-overview-2026-10-26.md)
+- [OAuth and device-login support](docs/oauth-provider-overview-2026-10-26.md)
+- [Development](docs/development.md) · [Architecture](docs/architecture.md)
+- [Issues and feature requests](https://github.com/grassmann-it/lain/issues)
+
+## License and credits
+
+First-party code is licensed under the [Artistic License 2.0](LICENSE).
+Dependencies and bundled assets retain their own licenses; see [NOTICE](NOTICE).
+The Gateway uses a pinned CLIProxyAPI build with Lain integration patches.
+
+Cat photo: [Alexander Huxel · Webentwicklung Huxel](https://webentwicklung-huxel.de/)
+([Flickr](https://flickr.com/people/204852984@N05/)).
+
+If lain is useful to you, you can [support development with a voluntary donation](https://www.paypal.com/donate/?hosted_button_id=5BR4MK748PDSQ).
