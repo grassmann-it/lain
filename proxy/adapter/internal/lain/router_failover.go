@@ -489,6 +489,7 @@ func (i *Integration) serveCollectionRouter(c *gin.Context, router CollectionRou
 		c.AbortWithStatusJSON(409, gin.H{"error": gin.H{"code": "router_unavailable", "message": err.Error()}})
 		return
 	}
+	defer i.Recording.CompleteRequest(c.GetString("lain.request_id"))
 	downstream := c.Handler()
 	template := c.Copy()
 	clientWriter := c.Writer
@@ -520,6 +521,9 @@ func (i *Integration) serveCollectionRouter(c *gin.Context, router CollectionRou
 			call.Set("lain.allowed_auth_ids", allowed)
 			call.Set("lain.selection", selection{Route: route, Alias: alias, Allowed: allowed})
 			call.Set("lain.original_request", original)
+			if i.Recording.WantsAdmission(alias, route.ID) {
+				i.Recording.Admit(call.GetString("lain.request_id"), "/v1/responses", alias, route.ID, original, requestDimensions(route, nil, headers, original))
+			}
 			state := &routerDispatch{}
 			call.Set("lain.router_dispatch", state)
 			writer := newRouterResponseWriter(clientWriter)

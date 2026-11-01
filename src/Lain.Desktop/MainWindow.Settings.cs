@@ -51,7 +51,12 @@ public sealed partial class MainWindow
         }
         SynchronizeSettingsSaveFeedback();
         if (_settingsSaveAttempt is { } pending && _settingsSaveFeedback.TryGetValue(pending.Key, out var feedback))
-            Dispatcher.UIThread.Post(() => feedback.Panel.BringIntoView(), DispatcherPriority.Loaded);
+            Dispatcher.UIThread.Post(() =>
+            {
+                feedback.Panel.UpdateLayout();
+                // Include the action when the new status section makes Settings scroll further.
+                feedback.Panel.Children.Last().BringIntoView();
+            }, DispatcherPriority.Loaded);
     }
 
     private void SynchronizeSettingsSaveFeedback()
@@ -144,9 +149,28 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(densityGroup, "View density settings");
         AutomationProperties.SetName(windowGroup, "Window and notification settings");
         AutomationProperties.SetName(helpGroup, "Help and application settings");
+        var saved = Ui.Button("Saved conversations", () => Navigate("Recordings"));
+        AutomationProperties.SetName(saved, "Open saved conversations from Settings");
+        var recordingStatus = Ui.Text("Loading recording status…", 12, Ui.Muted);
+        AutomationProperties.SetName(recordingStatus, "Recording setting status");
+        recordingStatus.AttachedToVisualTree += async (_, _) =>
+        {
+            try
+            {
+                var health = await _client.RecordingStatusAsync(_lifetime.Token);
+                recordingStatus.Text = $"Recording {(health.Policy.Enabled ? "on" : "off")} · {health.Policy.Mode} · {health.Storage?.RecordCount ?? 0} saved records";
+                if (health.ErrorCode is not null || health.UnknownLoss || health.DroppedRecords > 0)
+                    recordingStatus.Text += $" · capture incomplete ({health.ErrorCode ?? "recording gaps"})";
+            }
+            catch (OperationCanceledException) { }
+            catch { recordingStatus.Text = "Recording status unavailable. Open saved conversations to retry."; }
+        };
+        var recordingGroup = Ui.Section("Messages and recording", new StackPanel { Spacing = 5, Children = {
+            recordingStatus, Ui.Text("Messages and tool content are saved locally by default for new installations. Open the archive to see recording status, browse messages or turn capture off.", 12, Ui.Muted), saved } });
+        AutomationProperties.SetName(recordingGroup, "Message recording settings");
         var page = new StackPanel { Spacing = 18, Children = {
-            Heading("Settings", "Local window preferences. Changes are saved as you choose them."),
-            densityGroup, windowGroup, helpGroup } };
+            Heading("Settings", "Window preferences and independent background service startup choices."),
+            recordingGroup, densityGroup, windowGroup, helpGroup, StartupSettingsGroup() } };
         page.MaxWidth = 760;
         page.HorizontalAlignment = HorizontalAlignment.Stretch;
         AutomationProperties.SetName(page, "Settings page");
@@ -201,6 +225,7 @@ public sealed partial class MainWindow
             _settingsDensity.SelectedIndex = (int)preferences.Densities.GetValueOrDefault(_settingsDensitySection, ViewDensity.Normal);
             foreach (var (toggle, value) in _settingsToggles) toggle.IsChecked = value(preferences);
             SynchronizeSettingsSaveFeedback();
+            SynchronizeStartupSettings();
             if (_settingsTrayHint is not null)
                 _settingsTrayHint.Text = _trayController?.TrayAvailable == true
                     ? "Tray available. Minimize and close use your independent choices. Hiding or closing the UI does not stop the host."
@@ -228,6 +253,9 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(projectText, "Project repository");
         var project = Ui.Button("Open project repository", () => _ = OpenProviderLinkAsync(new Uri(repository)));
         AutomationProperties.SetName(project, "Open project repository");
+        var support = Ui.Button("Support development via PayPal", () =>
+            _ = OpenProviderLinkAsync(new Uri("https://www.paypal.com/donate/?hosted_button_id=5BR4MK748PDSQ")));
+        AutomationProperties.SetName(support, "Support development via PayPal");
         var licenses = Ui.Text(
             "Application license: Artistic License 2.0. Copyright © 2026 Tom Graßmann. " +
             "See LICENSE and NOTICE in the package; the exact source is included in source/lain-source.tar.gz.\n\n" +
@@ -248,6 +276,8 @@ public sealed partial class MainWindow
             Ui.Card(Ui.Stack(Ui.Row(logo, brand), Ui.Text("Desktop build", 12, Ui.Muted), versionText,
                 Ui.Text("Host version · reported by the connected host", 12, Ui.Muted), hostVersion)),
             Ui.Card(Ui.Stack(Ui.Text("Project", 15), projectText, project)),
+            Ui.Card(Ui.Stack(Ui.Text("Support lain", 15),
+                Ui.Text("If lain helps you, you can voluntarily support its development.", 13, Ui.Muted), support)),
             Ui.Card(Ui.Stack(Ui.Text("Licenses and credits", 15), licenses, Ui.Row(photographerWebsite, photographer))));
         page.MaxWidth = 820;
         page.HorizontalAlignment = HorizontalAlignment.Stretch;

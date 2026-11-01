@@ -1,81 +1,79 @@
-# Plattforminstaller: synthetische CI auf nativen Runnern
+# Platform installers: synthetic CI on native runners
 
-Der Workflow `.github/workflows/platform-installer-contracts.yml` führt die
-unveränderten `tests/platform-installers/test_contract.py` auf `ubuntu-latest`,
-`macos-latest` und `windows-latest` mit Python 3.12 aus. Die Matrix läuft seriell;
-ein Fehler verhindert nicht die Diagnose auf den anderen Betriebssystemen.
-PR und Push lösen nur bei Änderungen an Workflow, dieser Dokumentation,
-`packaging/platform-installers/**`, `tests/platform-installers/**` und den beiden
-Mac-/Windows-Entrypoints aus. Manueller Start ist ebenfalls möglich. Es gibt
-keinen Publish-, Installations- oder Releasejob.
+The `.github/workflows/platform-installer-contracts.yml` workflow runs the
+unchanged `tests/platform-installers/test_contract.py` on `ubuntu-latest`,
+`macos-latest`, and `windows-latest` with Python 3.12. The matrix runs serially;
+a failure does not prevent diagnostics on the other operating systems.
+PR and push triggers are limited to changes in the workflow, this documentation,
+`packaging/platform-installers/**`, `tests/platform-installers/**`, and the two
+Mac/Windows entry points. Manual runs are also available. There is no publish,
+installation, or release job.
 
-## Prüfungen und Isolation
+## Checks and isolation
 
-- Python-Engine und Contracttest werden mit `compile(..., 'exec')` im Speicher
-  kompiliert. `PYTHONDONTWRITEBYTECODE=1` verhindert Import-Pycache im Quellbaum.
-- Ubuntu und macOS prüfen `scripts/install-macos.sh` mit `bash -n`.
-- Windows parst `scripts/install-windows.ps1` über
-  `System.Management.Automation.Language.Parser.ParseFile`; Parserfehler sind
-  Fehler des Jobs. Der Entrypoint wird dabei nicht ausgeführt. Der Runner nutzt
-  PowerShell 7; dies ist kein eigener Nachweis für Windows PowerShell 5.1.
-- Die gesamte bestehende Suite läuft ohne Teständerung, Überspringen oder
-  erwartete Fehler. Leere Suites und übersprungene Tests lassen den Job scheitern.
-- Der temporäre Fixturebereich liegt unter dem kanonisch aufgelösten
-  `RUNNER_TEMP`. Das vermeidet macOS-Symlink-Vorfahren wie `/var`, ohne die
-  Sicherheitsprüfung `safe()` zu umgehen. Windows muss Dateisymlinks anlegen
-  können; eine vorgeschaltete Probe scheitert andernfalls explizit, ohne
-  Administratorrechte anzufordern oder den Symlinktest zu deaktivieren.
-- Die Lifecyclefälle ersetzen `layout`, `offline`, `architecture` und
-  `integration`; ihre echten Dateioperationen bleiben im temporären Testbereich.
-  Renderingfälle ersetzen `Path.home` und `APPDATA`. Kein Installerentrypoint,
-  echtes Paket, Prozessstart, Registry-/PATH-Eingriff oder Schreiben ins
-  Runnerhome ist Teil dieser Prüfung. Abschließend muss der Checkout sauber sein.
+- The Python engine and contract test are compiled in memory with
+  `compile(..., 'exec')`. `PYTHONDONTWRITEBYTECODE=1` prevents import pycache in
+  the source tree.
+- Ubuntu and macOS check `scripts/install-macos.sh` with `bash -n`.
+- Windows parses `scripts/install-windows.ps1` using
+  `System.Management.Automation.Language.Parser.ParseFile`; parser errors fail
+  the job. The entry point is not executed. The runner uses PowerShell 7; this
+  is not separate evidence for Windows PowerShell 5.1.
+- The complete existing suite runs without test changes, skips, or expected
+  failures. Empty suites and skipped tests fail the job.
+- Temporary fixtures reside under canonically resolved `RUNNER_TEMP`. This
+  avoids macOS symlink ancestors such as `/var` without bypassing `safe()`.
+  Windows must support file symlink creation; a preflight probe otherwise fails
+  explicitly, without requesting administrator rights or disabling the symlink test.
+- Lifecycle cases replace `layout`, `offline`, `architecture`, and `integration`;
+  their actual file operations stay in the temporary test area. Rendering cases
+  replace `Path.home` and `APPDATA`. No installer entry point, real package,
+  process launch, Registry/PATH change, or write to the runner home is part of
+  this check. The checkout must be clean afterward.
 
-Die Suite konstruiert synthetische Mach-O-/PE-Header und temporäre
-`native-qualification.json`-Fixtures mit positiven wie negativen Vertragswerten.
-Diese unveränderte Testmechanik ist kein erzeugter nativer Abnahmebeleg: Der
-Workflow stellt keinen eigenen `native-qualification`-Bericht aus, übernimmt
-keine Fixture als Releasebeleg und lädt keine Artefakte hoch.
+The suite constructs synthetic Mach-O/PE headers and temporary
+`native-qualification.json` fixtures with passing and failing contract values.
+This unchanged test mechanism is not generated native acceptance evidence: the
+workflow issues no `native-qualification` report, adopts no fixture as release
+evidence, and uploads no artifacts.
 
-## Berechtigungen und Pins
+## Permissions and pins
 
-Nur `contents: read`, keine Secrets oder persistenten Checkoutcredentials,
-kein `pull_request_target`, keine Paketinstallation, Caches oder Artefakttransfers.
-Die einzigen verwendeten Actions sind Checkout und Pythonsetup; deren reguläre
-Source-/Python-Beschaffung ist die einzige vorgesehene Downloadfunktion.
-Die Commit-Pins wurden am 26.10.2026 gegen die offiziellen GitHub-Repositories
-über `releases/latest` und die jeweiligen Git-Tag-Refs geprüft:
+Only `contents: read`; no secrets or persistent checkout credentials,
+`pull_request_target`, package installation, caches, or artifact transfers.
+The only Actions are checkout and Python setup; their normal source/Python
+retrieval is the only intended download behavior. Commit pins were checked on
+26 October 2026 against official GitHub repositories through `releases/latest`
+and the corresponding Git tag refs:
 
 | Action | Release | Commit |
 | --- | --- | --- |
 | [actions/checkout](https://github.com/actions/checkout/releases/tag/v7.0.1) | v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` |
 | [actions/setup-python](https://github.com/actions/setup-python/releases/tag/v7.1.0) | v7.1.0 | `6d4fd22b20465ccc0f7354476588e8df7c9ca0e0` |
 
-Runnerimages und die Python-3.12-Patchversion bleiben beweglich. Die Matrix
-behauptet keine Abdeckung aller vier Zielarchitekturen durch echte Binärausführung;
-die RID-/Modusmatrix ist synthetisch.
+Runner images and the Python 3.12 patch version remain floating. The matrix does
+not claim actual binary execution on all four target architectures; the RID/mode
+matrix is synthetic.
 
-## Lieferstand und offene native Grenzen
+## Delivery status and remaining native boundaries
 
-Lokal unter Linux am 26.10.2026: 13 unveränderte Contracttests bestanden, in der
-gemeinsamen `flock`-/systemd-Verifikationslane mit Speicher-/CPU-Limits. Python-
-Kompilierung, Bashsyntax und YAML-Struktur wurden separat geprüft. Keine
-Test-/Installerquelldatei wurde für diese Lieferung verändert.
+Locally on Linux, 26 October 2026: 13 unchanged contract tests passed in the
+shared `flock`/systemd verification lane with memory/CPU limits. Python compilation,
+Bash syntax, and YAML structure were checked separately. No test/installer source
+file was changed for that delivery.
 
-Die Quellprüfung zeigt keine zwingende OS-Blockade bei kanonischem temporärem
-Pfad und verfügbarer Symlinkfunktion. Insbesondere laufen Lifecyclefälle mit
-dem Zielargument `macos` auch auf Windows nur gegen ersetzte Integration; sie
-testen dort keinen echten macOS- oder Windows-Systemlebenszyklus. Fehlende
-Windows-Symlinkrechte oder andere native Dateisystemabweichungen bleiben harte
-CI-Fehler und müssen anhand des ersten echten Laufs untersucht werden.
+Source inspection shows no inherent OS blocker with a canonical temporary path
+and available symlink support. In particular, lifecycle cases with target `macos`
+also use replaced integration on Windows; they do not test a real macOS or Windows
+system lifecycle there. Missing Windows symlink rights and other native filesystem
+differences remain hard CI failures to investigate from the first actual run.
 
-Nachtrag: Der [erste GitHub-Lauf40416133877](https://github.com/grassmann-it/lain/actions/runs/40416133877)
-am Source8708650 besteht auf allen drei Runnern einschließlich der jeweiligen
-Shellsyntaxprüfung. Das Repo ist inzwischen öffentlich; der Lauf wurde durch
-den Sourcepush gestartet. Lokal wurden macOS/Windows nicht ausgeführt.
-Der grüne Lauf bestätigt nur Contracttests und Syntax auf den jeweiligen Runnern. Echte native Pakete, Host-/CLI-/GUI-Ausführung,
-Autostart/LaunchAgents, Benutzer-PATH, Updates/Uninstall im Benutzerkonto,
-Crash-Recovery, Signierung/Notarisierung und Windows-Coreportabilität bleiben
-separate offene Abnahmen. Keine native Paket-, GUI- oder Corefreigabe folgt
-aus diesem Workflow. Frühere Aussagen „kein Workflow“ im ursprünglichen
-Installerlieferbericht beschreiben dessen damaligen Stand.
+Update: the [first GitHub run 40416133877](https://github.com/grassmann-it/lain/actions/runs/40416133877)
+on source8708650 passed on all three runners, including their shell syntax checks.
+The repository is now public; the source push triggered the run. macOS/Windows
+were not executed locally. The green run confirms only contract tests and syntax
+on those runners. Real native packages, Host/CLI/GUI execution, autostart/LaunchAgents,
+user PATH, updates/uninstall in a user account, crash recovery, signing/notarization,
+and Windows Core portability remain separate open acceptance work. This workflow
+does not approve native packages, GUI, or Core. Earlier statements of “no workflow”
+in the original installer delivery report describe its state at that time.

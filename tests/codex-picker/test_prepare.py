@@ -33,6 +33,22 @@ class BundleVerification(unittest.TestCase):
                 self.assertTrue(result.stdout.strip(), "source patch has no changes")
 
 
+class EnglishPickerCopy(unittest.TestCase):
+    def test_added_picker_copy_is_english(self):
+        patch = (Path(__file__).resolve().parents[2] /
+                 "clients/codex/patches/0001-lain-model-picker.patch").read_text()
+        added = "\n".join(line[1:] for line in patch.splitlines()
+                          if line.startswith("+") and not line.startswith("+++"))
+        for label in ('"All"', '"Automatic"', '"Not configured yet"',
+                      '"Select model group"', '"Select a collection or provider."',
+                      '"{} · Select model"'):
+            self.assertIn(label, added)
+        for label in ("Alle", "Automatisch", "Noch nicht eingerichtet",
+                      "Modellgruppe wählen", "Modell wählen"):
+            self.assertNotIn(label, added)
+        self.assertIn('id: "all".to_string()', added)
+
+
 class NativeFixtureContracts(unittest.TestCase):
     def setUp(self):
         self.scratch = tempfile.TemporaryDirectory(prefix="lain-picker-offline-")

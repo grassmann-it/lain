@@ -204,7 +204,9 @@ def plan(config, fresh=True, installed="baseline"):
     common.check_core(package)
     for component in ('cli', 'host'):
         need(new_info['componentSourceCommits'][component] == source and
-             new_info['componentInformationalVersions'][component] == ('1.0.0+' + source if retained else config['componentInformationalVersions'][component]),
+             new_info['components'][component]['informationalVersion'] == new_info['componentInformationalVersions'][component] and
+             (new_info['componentInformationalVersions'][component].partition('+')[2] == source if retained else
+              new_info['componentInformationalVersions'][component] == config['componentInformationalVersions'][component]),
              'Host/CLI source or version differs')
     core = config['core']
     need(after['proxy/lain-proxy'] == core['sha256'], 'Exact staged Go Core differs')
@@ -632,7 +634,7 @@ def prepare_update_class(args, config, expected, common, before_files, after_fil
                     self.guard()
                     try:
                         status = self.cli(['status', '--json'])
-                        ready = status.get('version') == config.get('componentInformationalVersions', {}).get('host', '1.0.0+' + config['sourceCommit']) and status.get('proxyReady') is True
+                        ready = status.get('version') == common.load(Path(config['package']['path']) / 'build-info.json')['componentInformationalVersions']['host'] and status.get('proxyReady') is True
                         if ready: break
                     except (RuntimeError, json.JSONDecodeError): pass
                     time.sleep(.5)

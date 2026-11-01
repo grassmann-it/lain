@@ -1,0 +1,790 @@
+{
+  "fixtureVersion": 1,
+  "synthetic": true,
+  "observations": [
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 1,
+      "eventId": "synthetic-epoch-a:1",
+      "captureId": "capture-request-1",
+      "requestId": "request-1",
+      "observedAt": "2026-10-30T12:00:00Z",
+      "boundary": "client_request",
+      "protocol": "openai-chat",
+      "kind": "request_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJtZXNzYWdlcyI6W3sicm9sZSI6InVzZXIiLCJjb250ZW50IjoiU3ludGhldGljIGZpcnN0IHR1cm4ifV0sIm1vZGVsIjoibW9kZWwtYSJ9"
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 2,
+      "eventId": "synthetic-epoch-a:2",
+      "captureId": "capture-request-1",
+      "requestId": "request-1",
+      "observedAt": "2026-10-30T12:00:01Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "response_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJpZCI6InJlc3BvbnNlLTEiLCJjaG9pY2VzIjpbeyJtZXNzYWdlIjp7InJvbGUiOiJhc3Npc3RhbnQiLCJjb250ZW50IjoiU3ludGhldGljIHJlcGx5IDEifSwiZmluaXNoX3JlYXNvbiI6InN0b3AifV19"
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 3,
+      "eventId": "synthetic-epoch-a:3",
+      "captureId": "capture-request-2",
+      "requestId": "request-2",
+      "observedAt": "2026-10-30T12:00:02Z",
+      "boundary": "client_request",
+      "protocol": "openai-chat",
+      "kind": "request_body",
+      "model": "model-b",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJtZXNzYWdlcyI6W3sicm9sZSI6InVzZXIiLCJjb250ZW50IjoiU3ludGhldGljIGZpcnN0IHR1cm4ifSx7InJvbGUiOiJhc3Npc3RhbnQiLCJjb250ZW50IjoiU3ludGhldGljIHJlcGx5IDEifSx7InJvbGUiOiJ1c2VyIiwiY29udGVudCI6InNhbWUgYW1iaWd1b3VzIHRleHQifV0sIm1vZGVsIjoibW9kZWwtYiJ9"
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 4,
+      "eventId": "synthetic-epoch-a:4",
+      "captureId": "capture-request-2",
+      "requestId": "request-2",
+      "observedAt": "2026-10-30T12:00:03Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "response_body",
+      "model": "model-b",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJpZCI6InJlc3BvbnNlLTIiLCJjaG9pY2VzIjpbeyJtZXNzYWdlIjp7InJvbGUiOiJhc3Npc3RhbnQiLCJjb250ZW50IjoiU3ludGhldGljIHJlcGx5IDIifSwiZmluaXNoX3JlYXNvbiI6InN0b3AifV19"
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 5,
+      "eventId": "synthetic-epoch-a:5",
+      "captureId": "capture-request-3",
+      "requestId": "request-3",
+      "observedAt": "2026-10-30T12:00:04Z",
+      "boundary": "client_request",
+      "protocol": "openai-chat",
+      "kind": "request_body",
+      "model": "moving-alias",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJtZXNzYWdlcyI6W3sicm9sZSI6InVzZXIiLCJjb250ZW50IjoiU3ludGhldGljIGZpcnN0IHR1cm4ifSx7InJvbGUiOiJhc3Npc3RhbnQiLCJjb250ZW50IjoiU3ludGhldGljIHJlcGx5IDEifSx7InJvbGUiOiJ1c2VyIiwiY29udGVudCI6InNhbWUgYW1iaWd1b3VzIHRleHQifSx7InJvbGUiOiJhc3Npc3RhbnQiLCJjb250ZW50IjoiU3ludGhldGljIHJlcGx5IDIifSx7InJvbGUiOiJ1c2VyIiwiY29udGVudCI6InNhbWUgYW1iaWd1b3VzIHRleHQifV0sIm1vZGVsIjoibW92aW5nLWFsaWFzIn0="
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 6,
+      "eventId": "synthetic-epoch-a:6",
+      "captureId": "capture-request-3",
+      "requestId": "request-3",
+      "observedAt": "2026-10-30T12:00:05Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "response_body",
+      "model": "moving-alias",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJpZCI6InJlc3BvbnNlLTMiLCJjaG9pY2VzIjpbeyJtZXNzYWdlIjp7InJvbGUiOiJhc3Npc3RhbnQiLCJjb250ZW50IjoiU3ludGhldGljIHJlcGx5IDMifSwiZmluaXNoX3JlYXNvbiI6InN0b3AifV19"
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 7,
+      "eventId": "synthetic-epoch-a:7",
+      "captureId": "capture-request-fork",
+      "requestId": "request-fork",
+      "observedAt": "2026-10-30T12:00:06Z",
+      "boundary": "client_request",
+      "protocol": "openai-chat",
+      "kind": "request_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-fork",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJtZXNzYWdlcyI6W3sicm9sZSI6InVzZXIiLCJjb250ZW50IjoiU3ludGhldGljIGZpcnN0IHR1cm4ifSx7InJvbGUiOiJhc3Npc3RhbnQiLCJjb250ZW50IjoiU3ludGhldGljIHJlcGx5IDEifSx7InJvbGUiOiJ1c2VyIiwiY29udGVudCI6IlN5bnRoZXRpYyBmb3JrIn1dfQ=="
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 8,
+      "eventId": "synthetic-epoch-a:8",
+      "captureId": "capture-worker-a",
+      "requestId": "worker-a",
+      "observedAt": "2026-10-30T12:00:07Z",
+      "boundary": "client_request",
+      "protocol": "openai-chat",
+      "kind": "request_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "conversation-worker-a",
+        "evidence": [
+          {
+            "field": "workerId",
+            "source": "explicit_worker_manifest"
+          },
+          {
+            "field": "parentRequestId",
+            "source": "explicit_worker_manifest"
+          }
+        ],
+        "workerId": "worker-a",
+        "parentWorkerId": "worker-root",
+        "parentRequestId": "request-3"
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJtZXNzYWdlcyI6W3sicm9sZSI6InVzZXIiLCJjb250ZW50IjoiU3ludGhldGljIGRlbGVnYXRlZCB0YXNrIn1dfQ=="
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 9,
+      "eventId": "synthetic-epoch-a:9",
+      "captureId": "capture-worker-a",
+      "requestId": "worker-a",
+      "observedAt": "2026-10-30T12:00:08Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "response_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "conversation-worker-a",
+        "evidence": [
+          {
+            "field": "workerId",
+            "source": "explicit_worker_manifest"
+          },
+          {
+            "field": "parentRequestId",
+            "source": "explicit_worker_manifest"
+          }
+        ],
+        "workerId": "worker-a",
+        "parentWorkerId": "worker-root",
+        "parentRequestId": "request-3"
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJjaG9pY2VzIjpbeyJtZXNzYWdlIjp7InJvbGUiOiJhc3Npc3RhbnQiLCJjb250ZW50IjoiU3ludGhldGljIHdvcmtlciByZXBseSJ9fV19"
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 10,
+      "eventId": "synthetic-epoch-a:10",
+      "captureId": "capture-worker-b",
+      "requestId": "worker-b",
+      "observedAt": "2026-10-30T12:00:09Z",
+      "boundary": "client_request",
+      "protocol": "openai-chat",
+      "kind": "request_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "conversation-worker-b",
+        "evidence": [
+          {
+            "field": "workerId",
+            "source": "explicit_worker_manifest"
+          },
+          {
+            "field": "parentRequestId",
+            "source": "explicit_worker_manifest"
+          }
+        ],
+        "workerId": "worker-b",
+        "parentWorkerId": "worker-root",
+        "parentRequestId": "request-3"
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJtZXNzYWdlcyI6W3sicm9sZSI6InVzZXIiLCJjb250ZW50IjoiU3ludGhldGljIGRlbGVnYXRlZCB0YXNrIn1dfQ=="
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 11,
+      "eventId": "synthetic-epoch-a:11",
+      "captureId": "capture-worker-b",
+      "requestId": "worker-b",
+      "observedAt": "2026-10-30T12:00:10Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "response_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "conversation-worker-b",
+        "evidence": [
+          {
+            "field": "workerId",
+            "source": "explicit_worker_manifest"
+          },
+          {
+            "field": "parentRequestId",
+            "source": "explicit_worker_manifest"
+          }
+        ],
+        "workerId": "worker-b",
+        "parentWorkerId": "worker-root",
+        "parentRequestId": "request-3"
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJjaG9pY2VzIjpbeyJtZXNzYWdlIjp7InJvbGUiOiJhc3Npc3RhbnQiLCJjb250ZW50IjoiU3ludGhldGljIHdvcmtlciByZXBseSJ9fV19"
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 12,
+      "eventId": "synthetic-epoch-a:12",
+      "captureId": "capture-tools",
+      "requestId": "tools",
+      "observedAt": "2026-10-30T12:00:11Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "response_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJjaG9pY2VzIjpbeyJtZXNzYWdlIjp7InJvbGUiOiJhc3Npc3RhbnQiLCJ0b29sX2NhbGxzIjpbeyJpZCI6ImNhbGwtb25lIiwidHlwZSI6ImZ1bmN0aW9uIiwiZnVuY3Rpb24iOnsibmFtZSI6InNhbWVfdG9vbCIsImFyZ3VtZW50cyI6IntcIm5cIjoxfSJ9fSx7ImlkIjoiY2FsbC10d28iLCJ0eXBlIjoiZnVuY3Rpb24iLCJmdW5jdGlvbiI6eyJuYW1lIjoic2FtZV90b29sIiwiYXJndW1lbnRzIjoie1wiblwiOjJ9In19XX19XX0="
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 13,
+      "eventId": "synthetic-epoch-a:13",
+      "captureId": "capture-tool-result",
+      "requestId": "tool-result",
+      "observedAt": "2026-10-30T12:00:12Z",
+      "boundary": "client_request",
+      "protocol": "openai-chat",
+      "kind": "request_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJtZXNzYWdlcyI6W3sicm9sZSI6InRvb2wiLCJ0b29sX2NhbGxfaWQiOiJjYWxsLXR3byIsImNvbnRlbnQiOiJTeW50aGV0aWMgY2xpZW50LXJlcG9ydGVkIHJlc3VsdCJ9LHsicm9sZSI6InRvb2wiLCJ0b29sX2NhbGxfaWQiOiJjYWxsLW9uZSIsImNvbnRlbnQiOiJTeW50aGV0aWMgcmVqZWN0ZWQgcmVzdWx0In1dfQ=="
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 14,
+      "eventId": "synthetic-epoch-a:14",
+      "captureId": "capture-split-tool",
+      "requestId": "split-tool",
+      "observedAt": "2026-10-30T12:00:13Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "response_chunk",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": false,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_sse",
+      "body": "ZGF0YTogeyJpbmRleCI6MCwiYXJndW1lbnRzIjoie1widG9rZW5cIjpcInNrLSJ9Cgo="
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 15,
+      "eventId": "synthetic-epoch-a:15",
+      "captureId": "capture-split-tool",
+      "requestId": "split-tool",
+      "observedAt": "2026-10-30T12:00:14Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "response_chunk",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": false,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_sse",
+      "body": "ZGF0YTogeyJpbmRleCI6MSwiYXJndW1lbnRzIjoic3ludGhldGljY2FuYXJ5MTIzXCJ9In0KCg=="
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 16,
+      "eventId": "synthetic-epoch-a:16",
+      "captureId": "capture-retry",
+      "requestId": "retry",
+      "observedAt": "2026-10-30T12:00:15Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "response_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": false,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "attemptId": "attempt-1",
+      "gapReason": "timeout",
+      "bodyEncoding": "utf8_json",
+      "body": "eyJjaG9pY2VzIjpbeyJtZXNzYWdlIjp7InJvbGUiOiJhc3Npc3RhbnQiLCJjb250ZW50IjoicGFydGlhbCJ9fV19"
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 17,
+      "eventId": "synthetic-epoch-a:17",
+      "captureId": "capture-retry",
+      "requestId": "retry",
+      "observedAt": "2026-10-30T12:00:16Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "response_body",
+      "model": "model-b",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "attemptId": "attempt-2",
+      "bodyEncoding": "utf8_json",
+      "body": "eyJjaG9pY2VzIjpbeyJtZXNzYWdlIjp7InJvbGUiOiJhc3Npc3RhbnQiLCJjb250ZW50IjoiZmFsbGJhY2sgcmVzdWx0In19XSwidXNhZ2UiOnsicHJvbXB0X3Rva2VucyI6MCwiY29tcGxldGlvbl90b2tlbnMiOjAsInRvdGFsX3Rva2VucyI6MH19",
+      "tokens": {
+        "input": 0,
+        "output": 0,
+        "cached": null,
+        "reasoning": null,
+        "total": 0
+      }
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 18,
+      "eventId": "synthetic-epoch-a:18",
+      "captureId": "capture-cancelled",
+      "requestId": "cancelled",
+      "observedAt": "2026-10-30T12:00:17Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "gap",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": false,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "gapReason": "cancelled"
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 19,
+      "eventId": "synthetic-epoch-a:19",
+      "captureId": "capture-missing-terminal",
+      "requestId": "missing-terminal",
+      "observedAt": "2026-10-30T12:00:18Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "response_chunk",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": false,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_sse",
+      "body": "ZGF0YTogeyJ0ZXh0IjoidW5maW5pc2hlZCJ9Cgo="
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 20,
+      "eventId": "synthetic-epoch-a:20",
+      "captureId": "capture-resume",
+      "requestId": "resume",
+      "observedAt": "2026-10-30T12:00:19Z",
+      "boundary": "client_request",
+      "protocol": "openai-responses",
+      "kind": "request_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ],
+        "previousResponseId": "response-3",
+        "reasoningEffort": "high",
+        "effectiveReasoningEffort": "low"
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJwcmV2aW91c19yZXNwb25zZV9pZCI6InJlc3BvbnNlLTMiLCJpbnB1dCI6IlN5bnRoZXRpYyBjb21wYWN0ZWQgY29udGludWF0aW9uIn0="
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-a",
+      "sequence": 21,
+      "eventId": "synthetic-epoch-a:21",
+      "captureId": "capture-missing-native-id",
+      "requestId": "missing-native-id",
+      "observedAt": "2026-10-30T12:00:20Z",
+      "boundary": "client_request",
+      "protocol": "openai-chat",
+      "kind": "request_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": null,
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJtZXNzYWdlcyI6W3sicm9sZSI6InVzZXIiLCJjb250ZW50IjoiTm8gaW5mZXJyZWQgc2Vzc2lvbiBpZGVudGl0eSJ9XX0="
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-b",
+      "sequence": 1,
+      "eventId": "synthetic-epoch-b:1",
+      "captureId": "capture-lost-epoch",
+      "requestId": "lost-epoch",
+      "observedAt": "2026-10-30T12:00:21Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "gap",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": false,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "gapReason": "source_epoch_lost"
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-b",
+      "sequence": 2,
+      "eventId": "synthetic-epoch-b:2",
+      "captureId": "capture-dropped",
+      "requestId": "dropped",
+      "observedAt": "2026-10-30T12:00:22Z",
+      "boundary": "client_response",
+      "protocol": "openai-chat",
+      "kind": "gap",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": false,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "gapReason": "queue_overflow"
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-b",
+      "sequence": 3,
+      "eventId": "synthetic-epoch-b:3",
+      "captureId": "capture-invalid",
+      "requestId": "invalid",
+      "observedAt": "2026-10-30T12:00:23Z",
+      "boundary": "client_request",
+      "protocol": "openai-chat",
+      "kind": "request_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "e21hbGZvcm1lZA=="
+    },
+    {
+      "sourceEpoch": "synthetic-epoch-b",
+      "sequence": 4,
+      "eventId": "synthetic-epoch-b:4",
+      "captureId": "capture-secrets",
+      "requestId": "secrets",
+      "observedAt": "2026-10-30T12:00:24Z",
+      "boundary": "client_request",
+      "protocol": "openai-chat",
+      "kind": "request_body",
+      "model": "model-a",
+      "routeId": "synthetic-route",
+      "dimensions": {
+        "conversationId": "synthetic-conversation",
+        "evidence": [
+          {
+            "field": "conversationId",
+            "source": "native_request"
+          }
+        ]
+      },
+      "complete": true,
+      "schemaVersion": 1,
+      "policyRevision": 1,
+      "stopGeneration": 1,
+      "bodyEncoding": "utf8_json",
+      "body": "eyJhdXRob3JpemF0aW9uIjoiQmVhcmVyIHN5bnRoZXRpYy1jYW5hcnkiLCJwYXNzd29yZCI6InN5bnRoZXRpYy1wYXNzd29yZC1jYW5hcnkiLCJtZXNzYWdlcyI6W3sicm9sZSI6InVzZXIiLCJjb250ZW50Ijoib3JkaW5hcnkgY29kZSJ9XX0="
+    }
+  ],
+  "manifests": [
+    {
+      "id": "run-a",
+      "variant": "skill-a",
+      "configuredRevision": "fixture-v1",
+      "skillHash": "sha256:synthetic-a",
+      "evidence": "configured"
+    },
+    {
+      "id": "run-b",
+      "variant": "skill-b",
+      "configuredRevision": "fixture-v1",
+      "skillHash": "sha256:synthetic-b",
+      "evidence": "configured"
+    }
+  ],
+  "expected": {
+    "threeTurns": [
+      "request-1",
+      "request-2",
+      "request-3"
+    ],
+    "modelChange": true,
+    "fullHistoryResendsAreNotExtraMessages": true,
+    "ambiguousTextIsNotIdentity": true,
+    "explicitWorkers": [
+      "worker-a",
+      "worker-b"
+    ],
+    "distinctSameNameTools": [
+      "call-one",
+      "call-two"
+    ],
+    "toolResultEvidence": "client_reported",
+    "localExecutionEvidence": null,
+    "omittedBodies": [
+      "split-tool",
+      "retry:attempt-1",
+      "missing-terminal",
+      "invalid"
+    ],
+    "unknownUsage": null,
+    "zeroUsage": 0,
+    "movingAliasRevision": null,
+    "configuredSkillIsNotLoadedSkillProof": true
+  }
+}

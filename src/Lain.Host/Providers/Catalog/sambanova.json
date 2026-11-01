@@ -138,6 +138,316 @@
         "No standalone quota polling endpoint qualified; documented RPM/RPD response headers are not collected by this package. Local history covers only requests observed by lain.",
         "Follow current SambaCloud terms; API compatibility does not establish redistribution or high-volume production rights."
       ]
+    },
+    {
+      "id": "sambanova/DeepSeek-V3.1",
+      "model": "DeepSeek-V3.1",
+      "name": "DeepSeek-V3.1 on SambaNova",
+      "baseUrl": "https://api.sambanova.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "developer"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": false,
+        "structuredOutput": null,
+        "reasoningModes": null
+      },
+      "modelFamily": "deepseek-v3.1",
+      "manufacturer": "Meta",
+      "inferenceProvider": "SambaNova",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.sambanova.ai/docs/en/get-started/api-keys-urls",
+          "title": "SambaCloud keys and exact API URLs",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/models/sambacloud-models",
+          "title": "Current SambaCloud model IDs and context",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "Meta-Llama-3.3-70B-Instruct is a production text model with published 128k context; this is a catalog limit, not guaranteed account capacity."
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/features/function-calling",
+          "title": "Model-specific function calling",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "Explicitly lists Meta-Llama-3.3-70B-Instruct; function and tool-result example provided."
+        },
+        {
+          "url": "https://api.sambanova.ai/v1/models",
+          "title": "SambaNova account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Pinned text-only model Meta-Llama-3.3-70B-Instruct; published context is 128k. Exact context token integer and maximum output remain unverified.",
+        "Tools and streaming are documented for this model; no general Responses, reasoning, image or structured-output guarantee is made by this route.",
+        "Same endpoint can be free or paid according to the account tier. Confirm no linked payment method and actual remaining access before a free live probe.",
+        "No standalone quota polling endpoint qualified; documented RPM/RPD response headers are not collected by this package. Local history covers only requests observed by lain.",
+        "Follow current SambaCloud terms; API compatibility does not establish redistribution or high-volume production rights."
+      ]
+    },
+    {
+      "id": "sambanova/DeepSeek-V3.2",
+      "model": "DeepSeek-V3.2",
+      "name": "DeepSeek-V3.2 on SambaNova",
+      "baseUrl": "https://api.sambanova.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "developer"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": false,
+        "structuredOutput": null,
+        "reasoningModes": null
+      },
+      "modelFamily": "deepseek-v3.2",
+      "manufacturer": "Meta",
+      "inferenceProvider": "SambaNova",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.sambanova.ai/docs/en/get-started/api-keys-urls",
+          "title": "SambaCloud keys and exact API URLs",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/models/sambacloud-models",
+          "title": "Current SambaCloud model IDs and context",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "Meta-Llama-3.3-70B-Instruct is a production text model with published 128k context; this is a catalog limit, not guaranteed account capacity."
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/features/function-calling",
+          "title": "Model-specific function calling",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "Explicitly lists Meta-Llama-3.3-70B-Instruct; function and tool-result example provided."
+        },
+        {
+          "url": "https://api.sambanova.ai/v1/models",
+          "title": "SambaNova account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Pinned text-only model Meta-Llama-3.3-70B-Instruct; published context is 128k. Exact context token integer and maximum output remain unverified.",
+        "Tools and streaming are documented for this model; no general Responses, reasoning, image or structured-output guarantee is made by this route.",
+        "Same endpoint can be free or paid according to the account tier. Confirm no linked payment method and actual remaining access before a free live probe.",
+        "No standalone quota polling endpoint qualified; documented RPM/RPD response headers are not collected by this package. Local history covers only requests observed by lain.",
+        "Follow current SambaCloud terms; API compatibility does not establish redistribution or high-volume production rights."
+      ]
+    },
+    {
+      "id": "sambanova/MiniMax-M3.1-Flash",
+      "model": "MiniMax-M3.1-Flash",
+      "name": "MiniMax-M3.1-Flash on SambaNova",
+      "baseUrl": "https://api.sambanova.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "developer"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": false,
+        "structuredOutput": null,
+        "reasoningModes": null
+      },
+      "modelFamily": "minimax-m3.1-flash",
+      "manufacturer": "Meta",
+      "inferenceProvider": "SambaNova",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.sambanova.ai/docs/en/get-started/api-keys-urls",
+          "title": "SambaCloud keys and exact API URLs",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/models/sambacloud-models",
+          "title": "Current SambaCloud model IDs and context",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "Meta-Llama-3.3-70B-Instruct is a production text model with published 128k context; this is a catalog limit, not guaranteed account capacity."
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/features/function-calling",
+          "title": "Model-specific function calling",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "Explicitly lists Meta-Llama-3.3-70B-Instruct; function and tool-result example provided."
+        },
+        {
+          "url": "https://api.sambanova.ai/v1/models",
+          "title": "SambaNova account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Pinned text-only model Meta-Llama-3.3-70B-Instruct; published context is 128k. Exact context token integer and maximum output remain unverified.",
+        "Tools and streaming are documented for this model; no general Responses, reasoning, image or structured-output guarantee is made by this route.",
+        "Same endpoint can be free or paid according to the account tier. Confirm no linked payment method and actual remaining access before a free live probe.",
+        "No standalone quota polling endpoint qualified; documented RPM/RPD response headers are not collected by this package. Local history covers only requests observed by lain.",
+        "Follow current SambaCloud terms; API compatibility does not establish redistribution or high-volume production rights."
+      ]
+    },
+    {
+      "id": "sambanova/gemma-4-31B-it",
+      "model": "gemma-4-31B-it",
+      "name": "gemma-4-31B-it on SambaNova",
+      "baseUrl": "https://api.sambanova.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "developer"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": false,
+        "structuredOutput": null,
+        "reasoningModes": null
+      },
+      "modelFamily": "gemma-4-31b-it",
+      "manufacturer": "Meta",
+      "inferenceProvider": "SambaNova",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.sambanova.ai/docs/en/get-started/api-keys-urls",
+          "title": "SambaCloud keys and exact API URLs",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/models/sambacloud-models",
+          "title": "Current SambaCloud model IDs and context",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "Meta-Llama-3.3-70B-Instruct is a production text model with published 128k context; this is a catalog limit, not guaranteed account capacity."
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/features/function-calling",
+          "title": "Model-specific function calling",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "Explicitly lists Meta-Llama-3.3-70B-Instruct; function and tool-result example provided."
+        },
+        {
+          "url": "https://api.sambanova.ai/v1/models",
+          "title": "SambaNova account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Pinned text-only model Meta-Llama-3.3-70B-Instruct; published context is 128k. Exact context token integer and maximum output remain unverified.",
+        "Tools and streaming are documented for this model; no general Responses, reasoning, image or structured-output guarantee is made by this route.",
+        "Same endpoint can be free or paid according to the account tier. Confirm no linked payment method and actual remaining access before a free live probe.",
+        "No standalone quota polling endpoint qualified; documented RPM/RPD response headers are not collected by this package. Local history covers only requests observed by lain.",
+        "Follow current SambaCloud terms; API compatibility does not establish redistribution or high-volume production rights."
+      ]
+    },
+    {
+      "id": "sambanova/gpt-oss-120b",
+      "model": "gpt-oss-120b",
+      "name": "gpt-oss-120b on SambaNova",
+      "baseUrl": "https://api.sambanova.ai/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "free",
+        "developer"
+      ],
+      "capabilities": {
+        "contextWindow": null,
+        "maximumOutput": null,
+        "tools": null,
+        "streaming": true,
+        "reasoning": null,
+        "images": false,
+        "structuredOutput": null,
+        "reasoningModes": null
+      },
+      "modelFamily": "gpt-oss-120b",
+      "manufacturer": "Meta",
+      "inferenceProvider": "SambaNova",
+      "gateway": null,
+      "pricingClass": "unknown",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcement": null,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.sambanova.ai/docs/en/get-started/api-keys-urls",
+          "title": "SambaCloud keys and exact API URLs",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": null
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/models/sambacloud-models",
+          "title": "Current SambaCloud model IDs and context",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "Meta-Llama-3.3-70B-Instruct is a production text model with published 128k context; this is a catalog limit, not guaranteed account capacity."
+        },
+        {
+          "url": "https://docs.sambanova.ai/docs/en/features/function-calling",
+          "title": "Model-specific function calling",
+          "checkedAt": "2026-10-24T15:49:15Z",
+          "notes": "Explicitly lists Meta-Llama-3.3-70B-Instruct; function and tool-result example provided."
+        },
+        {
+          "url": "https://api.sambanova.ai/v1/models",
+          "title": "SambaNova account model listing",
+          "checkedAt": "2026-10-28T00:00:00+00:00",
+          "notes": "Account model listing; metadata only, not an inference or entitlement check."
+        }
+      ],
+      "restrictions": [
+        "Pinned text-only model Meta-Llama-3.3-70B-Instruct; published context is 128k. Exact context token integer and maximum output remain unverified.",
+        "Tools and streaming are documented for this model; no general Responses, reasoning, image or structured-output guarantee is made by this route.",
+        "Same endpoint can be free or paid according to the account tier. Confirm no linked payment method and actual remaining access before a free live probe.",
+        "No standalone quota polling endpoint qualified; documented RPM/RPD response headers are not collected by this package. Local history covers only requests observed by lain.",
+        "Follow current SambaCloud terms; API compatibility does not establish redistribution or high-volume production rights."
+      ]
     }
   ],
   "sources": [
@@ -202,7 +512,12 @@
         "developer"
       ],
       "providerRouteIds": [
-        "sambanova/Meta-Llama-3.3-70B-Instruct"
+        "sambanova/Meta-Llama-3.3-70B-Instruct",
+        "sambanova/DeepSeek-V3.1",
+        "sambanova/DeepSeek-V3.2",
+        "sambanova/MiniMax-M3.1-Flash",
+        "sambanova/gemma-4-31B-it",
+        "sambanova/gpt-oss-120b"
       ]
     }
   ],

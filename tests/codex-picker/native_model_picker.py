@@ -411,10 +411,21 @@ def inner():
             pump()
         raise AssertionError(f"timed out waiting for {label}\n{screen.text()}")
     def send(data): os.write(master, data.encode() if isinstance(data, str) else data)
-    menu_titles = ["Modellgruppe wählen", "Free · Modell wählen", "IT Sec · Modell wählen",
-                   "Provider · Modell wählen", "Alle · Modell wählen", "Select Model"]
+    menu_titles = ["Select model group", "Free · Select model", "IT Sec · Select model",
+                   "Provider · Select model", "All · Select model", "Select Model"]
     def menu(title):
+        # Qualified local packages have German labels; older pins used English.
+        # Keep raw captures untouched and normalize only this finite fixture UI.
         text = screen.text()
+        for original, translated in (
+            ("Modellgruppe wählen", "Select model group"),
+            ("Alle · Modell wählen", "All · Select model"),
+            (" · Modell wählen", " · Select model"),
+            ("Automatisch", "Automatic"),
+            ("Noch nicht eingerichtet", "Not configured yet"),
+            ("Alle", "All"),
+        ):
+            text = text.replace(original, translated)
         position = text.rfind(title)
         if position < 0: return ""
         if any(text.rfind(other) > position for other in menu_titles if other != title): return ""
@@ -465,19 +476,19 @@ def inner():
             # same non-inference slash command after the documented disabled/updating warning.
             startup_deadline = time.monotonic() + 40
             next_retry = time.monotonic() + 1
-            while not menu("Modellgruppe wählen") and not menu("Select Model"):
+            while not menu("Select model group") and not menu("Select Model"):
                 if time.monotonic() >= startup_deadline: raise AssertionError("model menu did not become ready")
                 pump()
                 warnings = ("Model selection is disabled until startup completes.", "Models are being updated;")
                 if time.monotonic() >= next_retry and any(warning in screen.text() for warning in warnings):
                     slash_model(); next_retry = time.monotonic() + 1
             if plan["grouped"]:
-                wait(lambda: has_menu("Modellgruppe wählen", "Free", "IT Sec", "Provider", "Alle"), "groups")
-                if any(label in menu("Modellgruppe wählen") for label in ("Visible Free", "Hidden Model")): raise AssertionError("members leaked into group list")
+                wait(lambda: has_menu("Select model group", "Free", "IT Sec", "Provider", "All"), "groups")
+                if any(label in menu("Select model group") for label in ("Visible Free", "Hidden Model")): raise AssertionError("members leaked into group list")
                 choose(0)
-                wait(lambda: has_menu("Free · Modell wählen", "Automatisch", "Noch nicht eingerichtet", "Visible Free", "Shared Model"), "free")
-                if any(label in menu("Free · Modell wählen") for label in ("Hidden Model", "Security Model")): raise AssertionError("free membership/visibility mismatch")
-                # Disabled Automatisch is skipped. First selectable model is Visible Free; next is Shared Model.
+                wait(lambda: has_menu("Free · Select model", "Automatic", "Not configured yet", "Visible Free", "Shared Model"), "free")
+                if any(label in menu("Free · Select model") for label in ("Hidden Model", "Security Model")): raise AssertionError("free membership/visibility mismatch")
+                # Disabled Automatic is skipped. First selectable model is Visible Free; next is Shared Model.
                 choose(1)
                 selected_file = home / ".codex" / selected_config_filename(plan["profile"])
                 wait(lambda: tomllib.loads(selected_file.read_text()).get("model") == "synthetic/shared", "wire-slug-persisted")
@@ -485,22 +496,22 @@ def inner():
                 report["persistedConfigFile"] = selected_file.name
                 report["selectedConfigSha256AfterSelection"] = digest(selected_file)
                 slash_model()
-                wait(lambda: has_menu("Modellgruppe wählen"), "groups-after-persist")
+                wait(lambda: has_menu("Select model group"), "groups-after-persist")
                 choose(1)
-                wait(lambda: has_menu("IT Sec · Modell wählen", "Shared Model", "Security Model"), "overlap")
-                if any(label in menu("IT Sec · Modell wählen") for label in ("Visible Free", "Hidden Model")): raise AssertionError("IT Sec membership mismatch")
+                wait(lambda: has_menu("IT Sec · Select model", "Shared Model", "Security Model"), "overlap")
+                if any(label in menu("IT Sec · Select model") for label in ("Visible Free", "Hidden Model")): raise AssertionError("IT Sec membership mismatch")
                 send(b"\x1b")
-                wait(lambda: has_menu("Modellgruppe wählen"), "escape-to-groups")
+                wait(lambda: has_menu("Select model group"), "escape-to-groups")
                 choose(2)
-                wait(lambda: has_menu("Provider · Modell wählen", "Visible Free", "Shared Model", "Security Model"), "provider")
+                wait(lambda: has_menu("Provider · Select model", "Visible Free", "Shared Model", "Security Model"), "provider")
                 send(b"\x1b")
-                wait(lambda: has_menu("Modellgruppe wählen"), "escape-provider")
+                wait(lambda: has_menu("Select model group"), "escape-provider")
                 choose(3)
-                wait(lambda: has_menu("Alle · Modell wählen", "Visible Free", "Shared Model", "Security Model", "Native review marker"), "all")
-                if "Hidden Model" in menu("Alle · Modell wählen"): raise AssertionError("hidden model appeared in Alle")
+                wait(lambda: has_menu("All · Select model", "Visible Free", "Shared Model", "Security Model", "Native review marker"), "all")
+                if "Hidden Model" in menu("All · Select model"): raise AssertionError("hidden model appeared in All")
             else:
                 wait(lambda: has_menu("Select Model", "All models", "Native review marker"), "upstream-quick-picker")
-                if menu("Modellgruppe wählen"): raise AssertionError("group extension escaped its provider/profile/metadata scope")
+                if menu("Select model group"): raise AssertionError("group extension escaped its provider/profile/metadata scope")
             if plan["nativeStartup"] and plan["profile"] is None:
                 report["privateDaemon"] = daemon_evidence(home, plan)
         report["status"] = "passed"

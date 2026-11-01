@@ -54,6 +54,7 @@ type Integration struct {
 	Login              *LoginManager
 	Journal            *Journal
 	Bindings           Bindings
+	Recording          *Recorder
 	Inspector          *Inspector
 	Quotas             *quotaObservations
 	mu                 sync.Mutex
@@ -183,6 +184,19 @@ func (i *Integration) Before(ctx context.Context, a *auth.Auth, req executor.Req
 	dimensions := requestDimensions(selected.Route, i.Bindings.AccountDimensions[accountID], headers, payload)
 	started := time.Now()
 	event := Event{Kind: "attempt_started", RequestID: requestID, AttemptID: attemptID, AccountID: accountID, CredentialID: a.ID, RouteID: &selected.Route.ID, ObservedAt: started.UTC(), Provider: provider, RequestedModel: selected.Alias, Model: req.Model, Dimensions: dimensions}
+	if i.Recording.WantsAdmission(selected.Alias, selected.Route.ID) {
+		original := payload
+		protocol := string(opts.SourceFormat)
+		if c, ok := ctx.Value("gin").(*gin.Context); ok && c != nil {
+			protocol = c.Request.URL.Path
+			if value, exists := c.Get("lain.original_request"); exists {
+				if body, ok := value.([]byte); ok {
+					original = body
+				}
+			}
+		}
+		i.Recording.Admit(requestID, protocol, selected.Alias, selected.Route.ID, original, dimensions)
+	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	i.pruneCapture(started)
@@ -197,6 +211,7 @@ func (i *Integration) Before(ctx context.Context, a *auth.Auth, req executor.Req
 	}
 	i.active[attemptID] = current
 	i.Inspector.append(liveEvent(event, "attempt_started"))
+	i.Recording.BeginAttempt(event)
 	if current.content == nil {
 		omitted := liveEvent(event, "metadata")
 		omitted.Text, omitted.Truncated = "[content omitted: capture capacity]", true
@@ -273,6 +288,7 @@ func (i *Integration) Publish(ctx context.Context, r usage.Record) error {
 	if err := i.Journal.Append(e); err != nil {
 		return closed(err)
 	}
+	i.Recording.ObserveUsage(e)
 	a.reported = true
 	a.usage = &e
 	a.event.Model = e.Model
@@ -314,7 +330,7 @@ func (i *Integration) After(ctx context.Context, resultErr error) error {
 			e.ErrorCategory = ptr(category)
 		}
 		var status interface{ StatusCode() int }
-		if errors.As(resultErr, &status) {
+		if errors.As(resultErr, &status) && status.StatusCode() >= 100 && status.StatusCode() <= 599 {
 			e.StatusCode = ptr(status.StatusCode())
 		}
 	}
@@ -333,9 +349,14 @@ func (i *Integration) After(ctx context.Context, resultErr error) error {
 		e.Kind, e.Outcome, e.StatusCode, e.ErrorCategory = "attempt_finished", nil, nil, nil
 	}
 	if err := i.Journal.Append(e); err != nil {
+		i.Recording.FinishAttempt(id, "failed")
 		final.Outcome = ptr("failed")
 		i.Inspector.append(final)
 		return closed(err)
+	}
+	i.Recording.ObserveUsage(e)
+	if e.CompletionState != nil {
+		i.Recording.FinishAttempt(id, *e.CompletionState)
 	}
 	for kind, buffer := range a.content {
 		for _, text := range buffer.consume("", true) {

@@ -58,13 +58,18 @@ configuration setting, environment variable, network lookup, or model-id naming 
 }
 ```
 
+The group picker is labelled **Choose model group**. The English presentation
+uses **Auto**, **All**, and **Not configured yet**; these documentation labels
+align with the source translation and do not establish fresh native qualification.
+Historical acceptance below remains bound to its recorded bytes.
+
 Group/member order follows the export. Collections may overlap. The optional `router_model`
 must reference a real existing catalog slug; the client cannot implement routing. It is shown as
-**Automatisch**, above specific models, and selection uses the unchanged model/effort/persistence
+**Auto**, above specific models, and selection uses the unchanged model/effort/persistence
 path with the exact wire slug. If absent or no longer visible, the top row is disabled and says
-**Noch nicht eingerichtet**. Selecting it cannot dispatch a model action.
+**Not configured yet**. Selecting it cannot dispatch a model action.
 
-**Alle** is appended if no group with id `all` is exported. It always shows the unfiltered visible
+**All** is appended if no group with id `all` is exported. It always shows the unfiltered visible
 inventory, including names starting with `codex-auto-`; its member list never filters the fallback.
 An explicit `all` group may supply a real router. Hidden/unavailable presets remain unselectable.
 Escape returns from a group to the group list. A completed selection dismisses both levels.
@@ -175,7 +180,7 @@ CLI hashes must match the installation manifest. All user configuration remains 
 Prepared: six Core tests cover optional routers/overlap, strict validation, unchanged legacy
 catalog loading, Unicode labels, exact profile/provider gating, and invalid extensions outside scope. Eight TUI
 tests cover both menu levels and Escape, real-router slug persistence, disabled missing router,
-unfiltered Alle, refresh after a router disappears, removed groups, Reserve restrictions,
+unfiltered All, refresh after a router disappears, removed groups, Reserve restrictions,
 provider opt-in, and missing/other profiles despite provider `lain`.
 
 **These Rust tests and the binary have not been compiled or run in this handoff.** No Rust

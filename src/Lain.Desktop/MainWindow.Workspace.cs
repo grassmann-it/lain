@@ -227,6 +227,7 @@ public sealed partial class MainWindow
         ConfigureTray();
         _usage.SetPresentation(PresentationFor("Usage"));
         _inspector.SetPresentation(PresentationFor("Live"));
+        _recording.SetPresentation(PresentationFor("Live"));
         _providers.SetPresentation(PresentationFor("Accounts"));
         SetProviderPresentation(PresentationFor("Accounts"));
         SynchronizeInformationLevel();
@@ -237,7 +238,7 @@ public sealed partial class MainWindow
                 ? new Thickness(14, 12) : new Thickness(20, 18);
         // Edit controls stay mounted: preferences cannot discard drafts or secrets.
         // Live/Usage have in-place presentation; detaching Live would clear its buffer.
-        if (render && !_editing && _section is not ("Usage" or "Live" or "Providers" or "Settings" or "About")) Render();
+        if (render && !_editing && _section is not ("Usage" or "Live" or "Recordings" or "Diagnostics" or "Providers" or "Settings" or "About")) Render();
     }
 
     private void SynchronizeInformationLevel()
@@ -271,7 +272,7 @@ public sealed partial class MainWindow
         try
         {
             var section = NormalizeSection(target.Section);
-            if (section is not ("Accounts" or "Models" or "Profiles" or "Usage" or "Live" or "Providers" or "Setup" or "Service" or "Settings" or "About")) return;
+            if (section is not ("Accounts" or "Models" or "Profiles" or "Usage" or "Live" or "Recordings" or "Diagnostics" or "Providers" or "Setup" or "Service" or "Settings" or "About")) return;
             // Late page-specific reads cannot reclaim a workspace the user has
             // left and revisited, even when both visits have the same section.
             _workspaceNavigationGeneration++;
@@ -394,7 +395,9 @@ public sealed partial class MainWindow
         }
         if (IsMonitorMode) return "Monitor · " + (status.Capabilities?.QuotaMonitoring == false ? "Quota monitoring unavailable" : "Account quotas")
             + (HasHistory ? " · Recorded history available" : "");
-        var text = status.ProxyReady ? "Proxy ready" : "Proxy " + status.State;
+        var text = status.ProxyReady ? "Proxy ready" : _startupServices is not null
+            ? DesktopStartupPresentation.Describe(_startupStatus, status, hostReady: true).Message
+            : "Proxy " + status.State;
         // Keep operational warnings before a user-controlled, potentially long name.
         if (status.Revision != status.AppliedRevision) text += $" · Changes pending ({status.Revision} / {status.AppliedRevision})";
         if (!string.IsNullOrWhiteSpace(status.Error)) text += " · Attention required";

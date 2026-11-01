@@ -9,6 +9,7 @@ using Avalonia.Automation;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using Avalonia.Input.Platform;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -144,7 +145,7 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         await CheckInspector(inspectorOnly: true);
         await File.WriteAllTextAsync(Path.Combine(Output, "inspector-evidence.json"), JsonSerializer.Serialize(new
         {
-            result = "PASS", scenario = "inspector-smoke", checks, screenshots, requests = fixture.Requests,
+            result = "PASS", scenario = "inspector-smoke", checks, screenshots, inspectorLayouts, requests = fixture.Requests,
             scope = "Production InspectorView on private Xvfb and private DBus; in-memory Host fixtures only. Source transitions, pause, selection, display failure recovery, expired selection and detach. No real providers, credentials or services."
         }, new JsonSerializerOptions { WriteIndented = true }));
         window.Close();
@@ -1582,7 +1583,15 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
             && HasGroup("request:request-conflict") && !HasGroup("request:request-a") && !HasGroup("request:request-b"),
             "only evidenced identities group requests; unsupported claims and conflicting retry parents remain separate");
         Check(HasText("Retained result", true), "Host success state renders a retained result");
-        var identities = Controls<Expander>().Single(control => Equals(control.Header, "Identities & measurement sources")); identities.IsExpanded = true;
+        var identities = Controls<Expander>().Single(control => Equals(control.Header, "Identities & measurement sources"));
+        var identityScroll = (ScrollViewer)identities.Content!;
+        var identityStack = (StackPanel)identityScroll.Content!;
+        Check(((ContentControl)identityStack.Children[1]).Content is null,
+            "closed identity section creates no technical controls or snapshot JSON");
+        var initialOutput = Named<StackPanel>("Inspector events").GetVisualDescendants().OfType<SelectableTextBlock>().Single(x => x.Text == "First answer continued.");
+        Check(Named<StackPanel>("Inspector events").GetVisualDescendants().OfType<Expander>().All(x => x.Content is null),
+            "closed event details retain no hidden technical controls");
+        identities.IsExpanded = true;
         await Task.Delay(100);
         Check(HasSelectable("Conversation: conversation-ui") && HasSelectable("Worker: worker-ui") && HasText("conversationId · harness_header", true),
             "Inspector exposes identities together with their evidence sources");
@@ -1604,6 +1613,7 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         });
         var eventDetail = Named<StackPanel>("Inspector events").GetVisualDescendants().OfType<Expander>().First(x => Equals(x.Header, "Event details"));
         eventDetail.IsExpanded = true;
+        Check(eventDetail.Content is not null, "opening event details materializes metadata on demand");
         await SelectPresentation(InformationLevel.Barebones);
         Check(eventDetail.IsExpanded, "manually opened live event details stay open when changing to Barebones");
         eventDetail.IsExpanded = false;
@@ -1614,8 +1624,14 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         await Wait(() => HasSelectable("Follow-up event after presentation change."), "live appends new output after a presentation change");
         var regeneratedDetail = Named<StackPanel>("Inspector events").GetVisualDescendants().OfType<Expander>().First(x => Equals(x.Header, "Event details"));
         Check(!regeneratedDetail.IsExpanded, "new live events preserve the explicit detail choice for retained source events");
+        Check(ReferenceEquals(eventDetail, regeneratedDetail)
+            && ReferenceEquals(initialOutput, Named<StackPanel>("Inspector events").GetVisualDescendants().OfType<SelectableTextBlock>().Single(x => x.Text == "First answer continued.")),
+            "appending live events preserves existing text and detail controls instead of rebuilding the conversation");
+        Check(Named<StackPanel>("Inspector events").GetVisualDescendants().OfType<Expander>().All(x => x.Content is null),
+            "stream updates never rebuild closed metadata");
         await SelectPresentation(InformationLevel.Simple);
         Check(!regeneratedDetail.IsExpanded, "returning to Simple preserves the explicit live detail choice");
+        await CheckInspectorBurst();
         requestPicker.SelectedIndex = 1;
         await Wait(() => HasSelectable("Fixture tool result.") && HasSelectable("Answer after tool. Still streaming."), "tool continuation stays within its selected request");
         Check(!HasSelectable("First answer continued.") && HasText("Tool · fixture_tool"), "switching request clears preceding output and labels tool content");
@@ -1718,6 +1734,63 @@ internal sealed partial class Scenario(IClassicDesktopStyleApplicationLifetime l
         var detached = fixture.InspectorCalls + fixture.InspectorEventCalls;
         await Task.Delay(550);
         Check(fixture.InspectorCalls + fixture.InspectorEventCalls == detached, "Inspector polling stops when detached");
+    }
+
+    private async Task CheckInspectorBurst()
+    {
+        var events = Named<StackPanel>("Inspector events");
+        var output = events.GetVisualDescendants().OfType<SelectableTextBlock>()
+            .Single(x => x.Text == "Follow-up event after presentation change.");
+        var cards = events.Children.ToArray();
+        var maximumDelay = 0d;
+        var previous = Stopwatch.GetTimestamp();
+        var heartbeat = new DispatcherTimer(TimeSpan.FromMilliseconds(25), DispatcherPriority.Input, (_, _) =>
+        {
+            var now = Stopwatch.GetTimestamp();
+            maximumDelay = Math.Max(maximumDelay, Stopwatch.GetElapsedTime(previous, now).TotalMilliseconds);
+            previous = now;
+        });
+        Named<CheckBox>("Follow live output").IsChecked = true;
+        fixture.InspectorBurstCount = 490;
+        heartbeat.Start();
+        try
+        {
+            var surface = output.GetVisualAncestors().OfType<Border>().First();
+            string RenderedText() => string.Concat(surface.GetVisualDescendants().OfType<SelectableTextBlock>().Select(x => x.Text));
+            var expected = "Follow-up event after presentation change." + string.Concat(Enumerable.Repeat(new string('x', 479) + "\n", 490));
+            await Wait(() => fixture.InspectorEventAfters.Contains(fixture.InspectorHighWater) && RenderedText() == expected[^8192..],
+                "490 streaming deltas show the exact latest 8,192 characters without laying out the entire retained response", milliseconds: 15000);
+            var copyOutput = surface.ContextMenu!.Items.OfType<MenuItem>().Single(x => Equals(x.Header, "Copy full retained output"));
+            copyOutput.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+            await Task.Delay(30);
+            Check(await window.Clipboard!.TryGetTextAsync() == expected, "copy output retains the complete 235,200-character stream despite bounded layout");
+            var earlier = surface.GetVisualDescendants().OfType<Button>().Single(x => Equals(x.Content, "Earlier output"));
+            earlier.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Check(RenderedText() == expected.Substring(expected.Length - 16384, 8192), "earlier output remains readable through explicit paging");
+            var latest = surface.GetVisualDescendants().OfType<Button>().Single(x => Equals(x.Content, "Latest output"));
+            latest.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Check(RenderedText() == expected[^8192..], "latest output resumes the live tail without losing retained text");
+            Check(surface.GetVisualDescendants().OfType<SelectableTextBlock>().All(x => x.Text?.Length <= 4096),
+                "no live text control exceeds 4,096 characters of layout work");
+            Check(cards.SequenceEqual(events.Children), "large live stream retains every existing message card");
+            Check(events.GetVisualDescendants().OfType<Expander>().All(x => x.Content is null),
+                "near-limit stream builds no hidden per-delta JSON controls");
+            var details = events.GetVisualDescendants().OfType<Expander>().Last();
+            details.IsExpanded = true;
+            Check(details.GetVisualDescendants().OfType<Button>().Count(x => x.Content?.ToString()?.StartsWith("Copy complete event ", StringComparison.Ordinal) == true) == 25,
+                "large event details materialize at most 25 source events per page");
+            var next = details.GetVisualDescendants().OfType<Button>().Single(x => Equals(x.Content, "Next 25 source events"));
+            next.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Check(details.GetVisualDescendants().OfType<Button>().Any(x => Equals(x.Content, "Copy complete event 39")),
+                "metadata pagination exposes later constituent events");
+            details.IsExpanded = false;
+            Check(details.Content is null, "closing technical details releases their controls");
+            await Task.Delay(150);
+            Check(maximumDelay < 2500, $"UI input heartbeat remains below 2.5s during near-limit streaming ({maximumDelay:N0}ms maximum)");
+            inspectorLayouts.Add(new { scenario = "490-delta-stream", characters = 490 * 480, maximumInputHeartbeatMs = maximumDelay,
+                retainedCards = events.Children.Count, hiddenTechnicalControls = 0 });
+        }
+        finally { heartbeat.Stop(); fixture.InspectorBurstCount = 0; }
     }
 
     private void CheckInspectorViewport(string page)

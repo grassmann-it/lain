@@ -81,11 +81,15 @@ Accounts, configuration and history are stored locally. Credentials use a
 separate private store; provider requests still go to the selected provider.
 The Live inspector is a bounded view and does not promise a complete archive.
 
-Persistent saved conversations and recording controls are being developed on
-[the recording-settings branch](https://github.com/grassmann-it/lain/tree/development/recording-settings-20261101).
-That work includes local message/tool capture, retention limits and explicit
-capture-gap reporting. Recording is separate from permission to export data for
-training or send it to an external evaluator.
+**Saved conversations** stores supported message and tool content locally. New
+installations enable recording by default; existing saved choices are preserved.
+Use **Settings → Saved conversations** to browse the archive or stop recording.
+Storage is sanitized, bounded and unencrypted. Unsupported or incomplete capture
+is shown as a gap. See the [recording guide](docs/recording-operations.md) for
+retention, controls and protocol coverage.
+
+Recording is separate from permission to export data for training or send it to
+an external evaluator.
 
 ## Documentation
 

@@ -53,6 +53,24 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
         if (account.Binding?.ResourceId is not null && !resourceVerified)
             return new([], "Requesty Self identity could not be verified for the bound resource.",
                 RequestyKeyOutcome: new(false, "Requesty Self identity could not be verified for the bound resource."));
+        // Org wallet balance (USD) needs a key with manage permission. A missing permission or a failed
+        // read is reported instead of being swallowed; no balance is ever fabricated.
+        string? orgBalance = null;
+        // Without manage permission the wallet is simply unsupported for this key; that is not a fetch failure.
+        if (metadata?.ManagePermission is not (null or "none"))
+        {
+            try
+            {
+                using var orgDoc = await QuotaHttp.GetAsync(client, "https://api-v2.requesty.ai/v1/manage/org", credential, ct, userAgent: "lain/1.0");
+                var bal = JsonFields.Number(orgDoc.RootElement, "balance");
+                if (bal.HasValue) orgBalance = bal.Value.ToString("F2", CultureInfo.InvariantCulture);
+                else errors.Add("Requesty wallet balance missing from the organization response.");
+            }
+            catch (OperationCanceledException ex) when (!ct.IsCancellationRequested) { errors.Add("Requesty wallet unavailable. " + QuotaFetchException.SafeDiagnostic(ex)); }
+            catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
+            { errors.Add("Requesty wallet unavailable. " + QuotaFetchException.SafeDiagnostic(ex)); }
+        }
+
         // Explicit month-to-observation bounds; no all-time spend compared with a monthly cap.
         var usageUrl = Endpoint + "/usage?start=" + Uri.EscapeDataString(start.ToString("O", CultureInfo.InvariantCulture))
             + "&end=" + Uri.EscapeDataString(now.ToString("O", CultureInfo.InvariantCulture));
@@ -65,6 +83,15 @@ public sealed class RequestyQuotaAdapter(HttpClient client) : IQuotaAdapter
         catch (Exception ex) when (ex is QuotaFetchException or HttpRequestException or JsonException or IOException or ArgumentException or FormatException)
         { errors.Add("Requesty Self usage unavailable. " + QuotaFetchException.SafeDiagnostic(ex)); }
         if (rows.Count == 0 && metadata is null && errors.Count == 0) errors.Add("Requesty Self quota unknown.");
+
+        // Append org wallet balance reading if we fetched it.
+        if (!string.IsNullOrEmpty(orgBalance))
+        {
+            rows.Add(new(Endpoint + "#wallet-usd", "USD", null, null, null,
+                InheritAccountPool: false, WindowLabel: "Org wallet balance (USD)", WindowId: "wallet-usd",
+                MeasurementKind: "wallet-usd", Scope: "api_key", ScopeId: metadata?.KeyId, SourceUrl: Endpoint,
+                WindowStart: start, WindowEnd: now));
+        }
         return new(rows, errors.Count == 0 ? null : string.Join(" ", errors), RequestyKey: metadata,
             RequestyKeyOutcome: new(metadata is not null, metadataError));
     }

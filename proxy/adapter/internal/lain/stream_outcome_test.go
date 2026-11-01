@@ -1,15 +1,93 @@
 package lain
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
+	"github.com/router-for-me/CLIProxyAPI/v8/sdk/api/handlers"
 	auth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	executor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/usage"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
 )
+
+func TestUpstreamStreamErrorsAreBoundedAndAllowlisted(t *testing.T) {
+	fixtures := []struct {
+		name                           string
+		payload                        []byte
+		wantCode, wantParam, forbidden string
+	}{
+		{
+			name:     "top-level terminal error",
+			payload:  []byte("event: error\ndata: {\"code\":\"context_length_exceeded\",\"param\":\"messages\",\"message\":\"fixture provider secret\"}\n\n"),
+			wantCode: "context_length_exceeded", wantParam: "messages", forbidden: "fixture provider secret",
+		},
+		{
+			name:     "Responses failed control",
+			payload:  []byte(`data: {"type":"response.failed","response":{"status":"failed","error":{"code":"invalid_encrypted_content","param":"reasoning.encrypted_content","message":"fixture provider secret"}}}`),
+			wantCode: "invalid_encrypted_content", wantParam: "reasoning.encrypted_content", forbidden: "fixture provider secret",
+		},
+		{
+			name:     "malicious parameter is not a field name",
+			payload:  []byte(`data: {"type":"error","code":"invalid_encrypted_content","param":"error:sk-live-fixture-secret","message":"fixture provider secret"}`),
+			wantCode: "invalid_encrypted_content", forbidden: "sk-live-fixture-secret",
+		},
+	}
+	for _, fixture := range fixtures {
+		t.Run(fixture.name, func(t *testing.T) {
+			outcome := classifyUpstreamStreamError(fixture.payload)
+			if outcome == nil {
+				t.Fatal("unambiguous terminal control was not classified")
+			}
+			body := outcome.Error()
+			if outcome.StatusCode() != 400 || !outcome.IsRequestScoped() || !outcome.DirectResponse() || !bytes.Equal(outcome.ResponseBody(), []byte(body)) {
+				t.Fatal("known terminal error lacks its canonical typed contract")
+			}
+			var envelope struct {
+				Error struct{ Type, Code, Message, Param string }
+			}
+			if !json.Valid([]byte(body)) || json.Unmarshal([]byte(body), &envelope) != nil || envelope.Error.Code != fixture.wantCode || envelope.Error.Type != "invalid_request_error" {
+				t.Fatalf("unsafe or wrong fixed JSON: %s", body)
+			}
+			if envelope.Error.Param != fixture.wantParam || strings.Contains(body, fixture.forbidden) {
+				t.Fatalf("parameter allowlist or fixed message failed: %s", body)
+			}
+			clientChunk := handlers.BuildOpenAIResponsesStreamFailedChunk(outcome.StatusCode(), body, 0)
+			if !json.Valid(clientChunk) || !strings.Contains(string(clientChunk), fixture.wantCode) || strings.Contains(string(clientChunk), fixture.forbidden) {
+				t.Fatalf("pinned client terminal event lost the safe classification: %s", clientChunk)
+			}
+		})
+	}
+}
+
+func TestUpstreamStreamClassifierLeavesUnknownsAndModelContentAlone(t *testing.T) {
+	for _, payload := range []string{
+		`data: {"type":"response.output_text.delta","delta":{"error":{"code":"context_length_exceeded","param":"messages"}}}`,
+		`data: {"type":"response.output_text.delta","delta":"event: error\ndata: {\"code\":\"context_length_exceeded\",\"param\":\"messages\"}}"}`,
+		`data: {"type":"response.output_text.delta","response":{"output":{"error":{"code":"invalid_encrypted_content"}}}}`,
+		`data: {"type":"error","code":"context_length_exceeded","code":"invalid_encrypted_content"}`,
+		`data: {"type":"response.failed","response":{"error":{"code":"context_length_exceeded","param":"messages"},"error":{"param":"messages"}}}`,
+		`data: {"type":"error","code":"provider_secret","param":"messages","message":"fixture provider secret"}`,
+		"data: error\ndata: " + strings.Repeat("x", maxRequestErrorBytes+1),
+	} {
+		if outcome := classifyUpstreamStreamError([]byte(payload)); outcome != nil {
+			t.Fatalf("model text, malformed duplicate control or oversized diagnostic was classified: %v", outcome)
+		}
+	}
+	unknown := &streamOutcomeError{}
+	var status interface{ StatusCode() int }
+	if errors.As(unknown, &status) || unknown.Error() != "upstream stream returned a terminal error payload" {
+		t.Fatal("unknown terminal behavior changed")
+	}
+	missing := &streamOutcomeError{missingTerminal: true}
+	if errors.As(missing, &status) || missing.Error() != "Responses stream closed before a terminal response event" {
+		t.Fatal("missing-terminal behavior changed")
+	}
+}
 
 func TestTerminalPayloadErrorCannotBecomeDurableSuccess(t *testing.T) {
 	for _, payload := range []string{

@@ -168,3 +168,22 @@ Codex/Sol-Attempts, aber unvollständige Ringabdeckung; daraus allein folgt kein
 vollständige Liste aller aktiven HTTP-Handler oder ein bewiesener Leak.
 Der vorbereitete Kandidat ist `bec078ea89623087e977768b44035a0a60fb294c`;
 die Main-Arbeitskopie mit vorhandenem WIP wird nicht pauschal eingecheckt.
+
+## Veröffentlichungsanschluss nach erfolgreicher Recherche
+
+Sauberer aktualisierter Cachecommit `8708650a1700d71a2cd7b3f4b95b3491a1cd479d`
+mit frischer Recherche liegt bereit; Link-/JSON-/Whitespaceprüfung und
+Secret-Scan ohne neue ungeklärte Treffer. HTTPS-Push verweigert wegen fehlendem
+OAuth-Scope `workflow`; vorhandener SSH-Zugang liest, darf aber nicht schreiben.
+Kein erfolgreicher Push/Visibilitywechsel, keine CI-Ausführung oder Release.
+Rückfrage zum GitHub-Anmeldefenster für zusätzliche Berechtigung ist offen.
+Die aktive Recherche und der alte lokale Dienst bleiben erhalten.
+
+## Abschluss Repositoryöffentlichkeit und CI
+
+Die Berechtigung workflow ist inzwischen für tkoschka freigegeben. Source8708650
+regulär hochgeladen, Repo PUBLIC, anonymer HTTP200 bestätigt. Erster
+Plattform-Contractlauf40416133877 auf allen drei Betriebssystemen bestanden.
+[Nachweis und Grenzen](repository-publication-2026-10-26.md). Frühere Netz-/
+Berechtigungsblocker oben sind historische Zwischenstände. Lokales Update und
+finale Modellmatrix bleiben offen; kein Tag/Release/Binärdownload veröffentlicht.

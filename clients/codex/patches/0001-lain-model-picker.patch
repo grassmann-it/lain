@@ -505,7 +505,7 @@ index aa5de8b..1c43fea 100644
 +            .map(|picker| picker.groups.clone()).unwrap_or_default();
 +        if !groups.iter().any(|group| group.id == "all") {
 +            groups.push(crate::legacy_core::config::lain_model_picker::LainModelGroup {
-+                id: "all".to_string(), name: "Alle".to_string(),
++                id: "all".to_string(), name: "All".to_string(),
 +                router_model: None, models: Vec::new(),
 +            });
 +        }
@@ -525,7 +525,7 @@ index aa5de8b..1c43fea 100644
 +            let group_id = group.id;
 +            SelectionItem {
 +                name: group.name,
-+                description: Some(format!("{count} Modelle")),
++                description: Some(format!("{count} models")),
 +                is_current,
 +                actions: vec![Box::new(move |tx| {
 +                    tx.send(AppEvent::OpenLainModelGroupPopup { group_id: group_id.clone() });
@@ -535,7 +535,7 @@ index aa5de8b..1c43fea 100644
 +                ..Default::default()
 +            }
 +        }).collect();
-+        let header = self.model_menu_header("Modellgruppe wählen", "Sammlung oder Anbieter auswählen.");
++        let header = self.model_menu_header("Select model group", "Select a collection or provider.");
 +        self.show_model_selection_view(model_ids, SelectionViewParams {
 +            view_id: Some(MODEL_SELECTION_VIEW_ID), items, header,
 +            ..SelectionViewParams::picker()
@@ -566,11 +566,11 @@ index aa5de8b..1c43fea 100644
 +            .find(|preset| &preset.model == model)).cloned();
 +        let missing_router = router.is_none();
 +        let mut presets = router.into_iter().map(|mut preset| {
-+            preset.display_name = "Automatisch".to_string();
++            preset.display_name = "Automatic".to_string();
 +            preset
 +        }).collect::<Vec<_>>();
 +        if group.id == "all" {
-+            // Alle is the unfiltered visible inventory; never infer routing from a name.
++            // All is the unfiltered visible inventory; never infer routing from a name.
 +            presets.extend(available.into_iter().filter(|preset|
 +                group.router_model.as_ref() != Some(&preset.model)));
 +        } else {
@@ -583,7 +583,7 @@ index aa5de8b..1c43fea 100644
 +            }
 +        }
 +        self.model_popup_group_id = Some(group.id);
-+        let title = format!("{} · Modell wählen", group.name);
++        let title = format!("{} · Select model", group.name);
 +        self.open_model_presets_popup(presets, LAIN_GROUP_SELECTION_VIEW_ID, &title, missing_router);
 +    }
 +
@@ -618,8 +618,8 @@ index aa5de8b..1c43fea 100644
 +        if missing_router {
 +            model_ids.push(String::new());
 +            items.push(SelectionItem {
-+                name: "Automatisch".to_string(),
-+                description: Some("Noch nicht eingerichtet".to_string()),
++                name: "Automatic".to_string(),
++                description: Some("Not configured yet".to_string()),
 +                is_disabled: true,
 +                ..Default::default()
 +            });
@@ -676,17 +676,17 @@ index 613c1b2..e222346 100644
 +    configure_lain_picker(&mut chat, false);
 +    chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
 +    let root = render_bottom_popup(&chat, 80);
-+    assert!(root.contains("Free") && root.contains("Alle"));
++    assert!(root.contains("Free") && root.contains("All"));
 +    assert!(!root.contains("Member A"));
 +    chat.handle_key_event(KeyCode::Enter.into());
 +    let group_id = assert_matches!(rx.try_recv(), Ok(AppEvent::OpenLainModelGroupPopup { group_id }) => group_id);
 +    assert_eq!(group_id, "free");
 +    chat.open_lain_model_group_popup(&group_id);
 +    let members = render_bottom_popup(&chat, 80);
-+    assert!(members.contains("Automatisch") && members.contains("Noch nicht eingerichtet"));
++    assert!(members.contains("Automatic") && members.contains("Not configured yet"));
 +    assert!(members.contains("Member A") && !members.contains("Member B"));
 +    chat.handle_key_event(KeyCode::Esc.into());
-+    assert!(render_bottom_popup(&chat, 80).contains("Modellgruppe wählen"));
++    assert!(render_bottom_popup(&chat, 80).contains("Select model group"));
 +    assert!(rx.try_recv().is_err());
 +}
 +
@@ -699,7 +699,7 @@ index 613c1b2..e222346 100644
 +    let group_id = assert_matches!(rx.try_recv(), Ok(AppEvent::OpenLainModelGroupPopup { group_id }) => group_id);
 +    chat.open_lain_model_group_popup(&group_id);
 +    let members = render_bottom_popup(&chat, 80);
-+    assert!(members.find("Automatisch").unwrap() < members.find("Member A").unwrap());
++    assert!(members.find("Automatic").unwrap() < members.find("Member A").unwrap());
 +    chat.handle_key_event(KeyCode::Home.into());
 +    chat.handle_key_event(KeyCode::Enter.into());
 +    let preset = assert_matches!(rx.try_recv(), Ok(AppEvent::OpenReasoningPopup { model }) => model);
@@ -733,7 +733,7 @@ index 613c1b2..e222346 100644
 +    Arc::make_mut(&mut chat.model_catalog).models.retain(|preset| preset.model != "router-free");
 +    chat.refresh_open_model_picker();
 +    let popup = render_bottom_popup(&chat, 80);
-+    assert!(popup.contains("Free · Modell wählen") && popup.contains("Noch nicht eingerichtet"));
++    assert!(popup.contains("Free · Select model") && popup.contains("Not configured yet"));
 +    assert!(popup.contains("Member A") && !popup.contains("Member B"));
 +}
 +
@@ -747,7 +747,7 @@ index 613c1b2..e222346 100644
 +        chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
 +        let popup = render_bottom_popup(&chat, 80);
 +        assert!(popup.contains("Select Model and Effort"));
-+        assert!(!popup.contains("Modellgruppe wählen"));
++        assert!(!popup.contains("Select model group"));
 +    }
 +}
 +
@@ -769,7 +769,7 @@ index 613c1b2..e222346 100644
 +        chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
 +        let popup = render_bottom_popup(&chat, 80);
 +        assert!(popup.contains("Select Model and Effort"));
-+        assert!(!popup.contains("Modellgruppe wählen"));
++        assert!(!popup.contains("Select model group"));
 +    }
 +}
 +
@@ -780,7 +780,7 @@ index 613c1b2..e222346 100644
 +    set_lain_test_profile(&mut chat, None);
 +    chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
 +    let groups = render_bottom_popup(&chat, 80);
-+    assert!(groups.contains("Modellgruppe wählen") && groups.contains("Free") && groups.contains("Alle"));
++    assert!(groups.contains("Select model group") && groups.contains("Free") && groups.contains("All"));
 +    assert!(!groups.contains("Member A"));
 +    chat.handle_key_event(KeyCode::Enter.into());
 +    let group_id = assert_matches!(rx.try_recv(), Ok(AppEvent::OpenLainModelGroupPopup { group_id }) => group_id);
@@ -789,7 +789,7 @@ index 613c1b2..e222346 100644
 +    let members = render_bottom_popup(&chat, 80);
 +    assert!(members.contains("Member A") && !members.contains("Member B"));
 +    chat.handle_key_event(KeyCode::Esc.into());
-+    assert!(render_bottom_popup(&chat, 80).contains("Modellgruppe wählen"));
++    assert!(render_bottom_popup(&chat, 80).contains("Select model group"));
 +    assert!(rx.try_recv().is_err());
 +}
 +
@@ -803,7 +803,7 @@ index 613c1b2..e222346 100644
 +        chat.open_model_popup_with_presets(chat.model_catalog.models.clone());
 +        let popup = render_bottom_popup(&chat, 80);
 +        assert!(popup.contains("Select Model and Effort"));
-+        assert!(!popup.contains("Modellgruppe wählen"));
++        assert!(!popup.contains("Select model group"));
 +    }
 +}
 +
@@ -816,8 +816,8 @@ index 613c1b2..e222346 100644
 +    chat.config.lain_model_picker.as_mut().unwrap().groups.clear();
 +    chat.refresh_open_model_picker();
 +    let popup = render_bottom_popup(&chat, 80);
-+    assert!(popup.contains("Modellgruppe wählen") && popup.contains("Alle"));
-+    assert!(!popup.contains("Member A") && !popup.contains("Automatisch"));
++    assert!(popup.contains("Select model group") && popup.contains("All"));
++    assert!(!popup.contains("Member A") && !popup.contains("Automatic"));
 +    chat.handle_key_event(KeyCode::Enter.into());
 +    assert_matches!(rx.try_recv(), Ok(AppEvent::OpenLainModelGroupPopup { group_id }) if group_id == "all");
 +}
@@ -836,5 +836,5 @@ index 613c1b2..e222346 100644
 +    chat.refresh_open_model_picker();
 +    let popup = render_bottom_popup(&chat, 80);
 +    assert!(popup.contains("Other models return when ordinary usage is available again."));
-+    assert!(!popup.contains("Member A") && !popup.contains("Automatisch"));
++    assert!(!popup.contains("Member A") && !popup.contains("Automatic"));
 +}

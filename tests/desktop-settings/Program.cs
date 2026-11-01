@@ -93,6 +93,10 @@ internal sealed class SettingsScenario(IClassicDesktopStyleApplicationLifetime l
     public async Task Run()
     {
         Directory.CreateDirectory(output); await Open();
+        Check(Named<TextBlock>("Recording setting status").Text?.Contains("Recording on · content · 3 saved records") == true,
+            "Settings shows live recording policy and saved record count");
+        Check(Named<Button>("Open saved conversations from Settings").IsEnabled,
+            "Settings offers direct saved-conversation navigation");
         var initialHost = JsonSerializer.Serialize(fixture.Config);
         var mutations = fixture.Requests.Count(x => !x.StartsWith("GET ", StringComparison.Ordinal));
         foreach (var group in new[] { "View density settings", "Window and notification settings", "Help and application settings" })
@@ -130,6 +134,13 @@ internal sealed class SettingsScenario(IClassicDesktopStyleApplicationLifetime l
         Check(Named<TextBlock>("Application version").Text == version, "About shows exact desktop assembly version");
         Check(!string.IsNullOrWhiteSpace(Named<TextBlock>("Reported host version").Text), "About separates reported host version");
         Capture("about-narrow");
+        var support = Named<Button>("Support development via PayPal");
+        support.BringIntoView(); await Task.Delay(100);
+        var supportPosition = support.TranslatePoint(default, window)!.Value;
+        Check(support.IsEffectivelyVisible && supportPosition.Y > 0
+            && supportPosition.Y + support.Bounds.Height < window.Bounds.Height - 80,
+            "voluntary support reachable in narrow About viewport");
+        Capture("about-narrow-support");
         await Click("Back"); await Click("Host operating mode…");
         Check(!window.GetVisualDescendants().OfType<ComboBox>().Any(c => AutomationProperties.GetName(c) == "Host operating mode"), "host mode has no ambiguous dropdown");
         await Click("Review host mode change"); await Click("Cancel");
@@ -150,7 +161,16 @@ internal sealed class SettingsScenario(IClassicDesktopStyleApplicationLifetime l
             Check(noticePosition.Y >= 0 && noticePosition.Y + errorNotice.Bounds.Height <= window.Bounds.Height,
                 "inline save failure is scrolled into the narrow viewport");
             var retry = Named<Button>("Retry saving Close to tray");
+            for (var attempt = 0; attempt < 100; attempt++)
+            {
+                window.UpdateLayout();
+                var current = retry.TranslatePoint(default, window)!.Value;
+                if (current.Y >= 0 && current.Y + retry.Bounds.Height < window.Bounds.Height - 30) break;
+                await Task.Delay(20);
+            }
             var retryPosition = retry.TranslatePoint(default, window)!.Value;
+            Capture("settings-retry-visibility");
+            File.WriteAllText(Path.Combine(output, "retry-position.json"), JsonSerializer.Serialize(new { y = retryPosition.Y, height = retry.Bounds.Height, windowHeight = window.Bounds.Height }));
             Check(retry.IsEffectivelyVisible && retry.IsEnabled && retryPosition.Y >= 0
                 && retryPosition.Y + retry.Bounds.Height < window.Bounds.Height - 30,
                 "explicit retry is reachable beside failed setting in the narrow viewport");

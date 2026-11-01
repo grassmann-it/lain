@@ -69,7 +69,20 @@ Unknown(Reading("zai") with { UsedPercent = double.NaN }, "nonfinite quantities 
 Unknown(Reading("zai") with { UsedPercent = 101 }, "invalid percentage rejected");
 Check(projector.Project(configuration, members, [new(Reading("zai"), null)]).Length == 0, "missing resource proof unknown");
 Check(projector.Project(configuration, members, [new(Reading("zai"), Proof("zai") with { AccountGeneration = 1 })]).Length == 0, "account generation mismatch unknown");
-Check(projector.Project(configuration with { AppliedRevision = 6 }, members, snapshots).Length == 0, "pending apply never attributed to active bindings");
+var applied = new RouterAvailabilityAppliedSnapshot(7, "synthetic-apply-generation", configuration);
+var unrelatedPending = configuration with { Revision = 8, Profiles = [new("profile-b", "Pending B", ["kimi-route"])] };
+var pendingProjection = projector.ProjectState(unrelatedPending, members, snapshots, applied);
+Check(pendingProjection.Entries.Length == 2 && pendingProjection.Entries.All(e => e.BlockedUntil == now.AddMinutes(5)),
+    "unrelated pending edit preserves proven applied exclusions");
+Check(pendingProjection.Entries.All(e => e.RouteId is "kimi-route" or "zai-route"), "pending projection cannot attribute desired bindings");
+Check(projector.ProjectState(unrelatedPending, members, snapshots).IsKnownState is false,
+    "pending edit without applied proof skips rather than manufacturing an empty state");
+Check(projector.ProjectState(unrelatedPending, members, snapshots, applied with { Revision = 6 }).IsKnownState is false,
+    "mismatched applied snapshot stays unknown");
+var retired = projector.ProjectState(unrelatedPending with { Accounts = [kimi, zai with { Enabled = false }] }, members, snapshots, applied);
+Check(retired.Entries.All(e => e.AccountId != zai.Id) && retired.Entries.Any(e => e.AccountId == kimi.Id) && retired.CanOmitEntries is false, "explicit retirement cannot regain eligibility from old quota proof");
+var recovered = projector.ProjectState(unrelatedPending with { Accounts = [kimi, zai with { State = "recovery-required" }] }, members, snapshots, applied);
+Check(recovered.Entries.All(e => e.AccountId != zai.Id) && recovered.Entries.Any(e => e.AccountId == kimi.Id) && recovered.CanOmitEntries is false, "recovery fence cannot be bypassed by old applied account");
 Check(projector.Project(configuration with { RuntimeMode = "monitor" }, members, snapshots).Length == 0, "monitor mode publishes no suppression");
 Check(projector.Project(configuration with { Accounts = [kimi with { Enabled = false }, zai with { Enabled = false }] }, members, snapshots).Length == 0, "disabled accounts never projected");
 Check(projector.Project(configuration with { Routes = configuration.Routes.Select(r => r with { Pooled = true }).ToArray() }, members, snapshots).Length == 0, "pooled routes never assigned one account quota");
@@ -141,8 +154,10 @@ http.DefaultRequestHeaders.Authorization = new("Bearer", "synthetic-auth");
 var currentConfiguration = configuration;
 var currentBindings = descriptors;
 var currentSnapshots = snapshots;
+var currentAppliedSnapshot = applied;
 var snapshotReads = 0;
 var bindingReads = 0;
+var appliedSnapshotReads = 0;
 Func<Task>? onSnapshot = null;
 var coreReady = true;
 var publisher = new RouterAvailabilityPublisher(http, () => currentConfiguration, async _ => {
@@ -150,7 +165,8 @@ var publisher = new RouterAvailabilityPublisher(http, () => currentConfiguration
     snapshotReads++;
     if (onSnapshot is not null) await onSnapshot();
     return currentSnapshots;
-}, _ => { bindingReads++; return Task.FromResult(currentBindings); }, clock, () => coreReady);
+}, _ => { bindingReads++; return Task.FromResult(currentBindings); }, clock, () => coreReady,
+    _ => { appliedSnapshotReads++; return Task.FromResult(currentAppliedSnapshot); });
 currentConfiguration = configuration with { RuntimeMode = "monitor" };
 Check(!await publisher.PublishOnceAsync() && fake.Requests == 0 && snapshotReads == 0 && bindingReads == 0,
     "monitor mode makes no Core requests or quota credential reads");
@@ -166,8 +182,23 @@ currentSnapshots = [];
 Check(await publisher.PublishOnceAsync() && fake.Last!.Entries.Length == 0 && fake.Sequence == 2, "empty snapshot replaces old blocks completely");
 currentSnapshots = snapshots;
 currentConfiguration = configuration with { Revision = 8 };
+currentAppliedSnapshot = null;
 var readsBefore = snapshotReads;
-Check(await publisher.PublishOnceAsync() && fake.Last!.Entries.Length == 0 && snapshotReads == readsBefore, "saved/unapplied config clears suppression without reading credentials");
+var postsBeforePending = fake.Posts;
+Check(!await publisher.PublishOnceAsync() && fake.Posts == postsBeforePending && snapshotReads == readsBefore,
+    "missing applied proof preserves the naturally expiring prior Core cache");
+currentAppliedSnapshot = applied;
+currentConfiguration = unrelatedPending;
+Check(await publisher.PublishOnceAsync() && fake.Last!.Entries.Length == 2, "pending unrelated edit republishes the applied exclusions");
+currentSnapshots = [];
+Check(await publisher.PublishOnceAsync() && fake.Last!.Entries.Length == 0, "known valid empty applied state still clears old blocks");
+currentSnapshots = snapshots;
+currentConfiguration = unrelatedPending;
+Check(await publisher.PublishOnceAsync() && fake.Last!.Entries.Length == 2, "restore first so retirement cannot be hidden by an already empty cache");
+currentConfiguration = unrelatedPending with { Accounts = [kimi, zai with { Enabled = false }] };
+var postsBeforeRetirement = fake.Posts;
+Check(!await publisher.PublishOnceAsync() && fake.Posts == postsBeforeRetirement && fake.Last!.Entries.Length == 2,
+    "explicit retirement skips replacement rather than replaying or regaining the old credential");
 currentConfiguration = configuration;
 onSnapshot = () => { currentConfiguration = configuration with { Accounts = [kimi with { Generation = 1 }, zai] }; return Task.CompletedTask; };
 var postsBefore = fake.Posts;

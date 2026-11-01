@@ -4,7 +4,7 @@ namespace Lain.Client;
 
 public sealed record AddApiAccountRequest(string Name, string Provider, string ApiKey, string BaseUrl,
     string? ProviderRouteId = null, Dictionary<string, string>? Settings = null,
-    string? ProviderConnectionId = null, string[]? SelectedModelRouteIds = null)
+    string? ProviderConnectionId = null, string[]? SelectedModelRouteIds = null, bool AttachRoute = false)
 {
     public override string ToString() => "AddApiAccountRequest [redacted]";
 }

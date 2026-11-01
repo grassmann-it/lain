@@ -1,0 +1,226 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "10734a4fd590fab0e1545b100ff0ea1b2e047f84",
+  "scope": "Local unencrypted opt-in recorder and prioritized correctness increments; candidate only, no production install or public release",
+  "compileInputsFrozen": true,
+  "artifacts": {
+    "archiveSha256": "b8c9e6f27c491a2d767d81f40e9d83a12b493dbddae7d89bb808f7ba9a0cf8c7",
+    "coreSha256": "9ff114d8af5e58b1bf6fe64c20e7613ef4eb861d705555286b50dff49b7b6de5",
+    "hostAssemblySha256": "d04192d1d61f1db6523ba4e2c58213ab1e381b504e39c981e27b49b30b9181a9",
+    "desktopAssemblySha256": "5b7d6e16dd0e157eee5c2a3df160ca3222dae495ec3b279f8454f238ce06c5d3",
+    "cliAssemblySha256": "08321db8e62376f847850885bcd53fbad9d212f8f95798f3340e157fc3d9f786",
+    "sourceManifestSha256": "cb55ee9aabc1fc77f1943799cf12b921d0111d251a4ae124bb870ac5f6aaf279"
+  },
+  "dotnetGroups": [
+    {
+      "case": "maintenance",
+      "exitCode": 0,
+      "seconds": 28.36
+    },
+    {
+      "case": "policy",
+      "exitCode": 0,
+      "seconds": 16.01
+    },
+    {
+      "case": "normalization",
+      "exitCode": 0,
+      "seconds": 17.36
+    },
+    {
+      "case": "storage",
+      "exitCode": 0,
+      "seconds": 24.56
+    },
+    {
+      "case": "projection",
+      "exitCode": 0,
+      "seconds": 24.77
+    },
+    {
+      "case": "api",
+      "exitCode": 0,
+      "seconds": 20.16
+    },
+    {
+      "case": "recording-cli",
+      "exitCode": 0,
+      "seconds": 43.07
+    },
+    {
+      "case": "doctor",
+      "exitCode": 0,
+      "seconds": 12.48
+    },
+    {
+      "case": "router-state",
+      "exitCode": 0,
+      "seconds": 35.13
+    },
+    {
+      "case": "diagnostics-ui",
+      "exitCode": 0,
+      "seconds": 13.44
+    },
+    {
+      "case": "account-outcomes",
+      "exitCode": 0,
+      "seconds": 13.15
+    },
+    {
+      "case": "routing-presentation",
+      "exitCode": 0,
+      "seconds": 32.27
+    },
+    {
+      "case": "client-export",
+      "exitCode": 0,
+      "seconds": 23.22
+    }
+  ],
+  "goGroups": [
+    {
+      "case": "go-unit",
+      "exitCode": 0,
+      "seconds": 25.64
+    },
+    {
+      "case": "go-recording-race",
+      "exitCode": 0,
+      "seconds": 114.87
+    },
+    {
+      "case": "go-build",
+      "exitCode": 0,
+      "seconds": 12.97
+    }
+  ],
+  "packagedBackendProtocolCases": 15,
+  "recordingNativeChecks": 23,
+  "inspectorRegressionChecks": 123,
+  "packagedHostCore": {
+    "result": "PASS",
+    "checks": [
+      "default-off real request, no retained records",
+      "real Core stream/tools pass through unredacted to synthetic client",
+      "redaction before journal/index read; no upstream credentials",
+      "selected-source exact-identity paging, bounded offsets, redacted reconstruction and credential exclusion",
+      "cross-request root/model-switch/tool result plus separate evidenced worker",
+      "real off/content HTTP load at concurrency 1/4/8 with latency, status, RSS, storage/drop observations and durable source catch-up",
+      "stop independent of inference",
+      "journal and SQLite survive real Host restart/UI absent",
+      "disabled archive clear invalidates index",
+      "cleared selected source cannot be fetched or replayed"
+    ],
+    "networkIsolation": "private user/network namespace, loopback only",
+    "toolExecutionObserved": false
+  },
+  "offlineInstall": {
+    "result": "PASS",
+    "scope": "Offline fresh install and same-candidate managed reinstall in disposable HOME; no user bus/service launched",
+    "sourceCommit": "10734a4fd590fab0e1545b100ff0ea1b2e047f84",
+    "checks": [
+      "package checksum inventory accepted",
+      "default recording remains absent/off",
+      "explicit test installation login autostart disabled",
+      "compiled packaged CLI exposes recording command",
+      "synthetic unrelated state preserved during managed reinstall",
+      "previous application retained with matching Core hash"
+    ],
+    "coreSha256": "9ff114d8af5e58b1bf6fe64c20e7613ef4eb861d705555286b50dff49b7b6de5",
+    "synthetic": true,
+    "distinctVersionRollbackQualified": false
+  },
+  "syntheticFullHttpLoad": [
+    {
+      "mode": "off",
+      "concurrency": 1,
+      "samples": 12,
+      "statuses": {
+        "200": 12
+      },
+      "p50Ms": 18.770248498185538,
+      "p95Ms": 29.09696800634265,
+      "sourceDropDelta": 0,
+      "unknownLoss": false
+    },
+    {
+      "mode": "off",
+      "concurrency": 4,
+      "samples": 12,
+      "statuses": {
+        "200": 12
+      },
+      "p50Ms": 22.25363349862164,
+      "p95Ms": 25.220013994839974,
+      "sourceDropDelta": 0,
+      "unknownLoss": false
+    },
+    {
+      "mode": "off",
+      "concurrency": 8,
+      "samples": 12,
+      "statuses": {
+        "200": 12
+      },
+      "p50Ms": 39.2941329992027,
+      "p95Ms": 50.18636799650267,
+      "sourceDropDelta": 0,
+      "unknownLoss": false
+    },
+    {
+      "mode": "content",
+      "concurrency": 1,
+      "samples": 12,
+      "statuses": {
+        "200": 12
+      },
+      "p50Ms": 12.184533006802667,
+      "p95Ms": 42.063636996317655,
+      "sourceDropDelta": 0,
+      "unknownLoss": false
+    },
+    {
+      "mode": "content",
+      "concurrency": 4,
+      "samples": 12,
+      "statuses": {
+        "200": 12
+      },
+      "p50Ms": 29.032413993263617,
+      "p95Ms": 46.195785005693324,
+      "sourceDropDelta": 1,
+      "unknownLoss": true
+    },
+    {
+      "mode": "content",
+      "concurrency": 8,
+      "samples": 12,
+      "statuses": {
+        "200": 12
+      },
+      "p50Ms": 67.51936349610332,
+      "p95Ms": 81.42415300244465,
+      "sourceDropDelta": 0,
+      "unknownLoss": true
+    }
+  ],
+  "performanceBudgetQualified": false,
+  "productionInstalled": false,
+  "productionRecordingEnabled": false,
+  "publicReleaseQualified": false,
+  "packageGate": {
+    "backendQualified": false,
+    "releaseQualified": false,
+    "status": "staged-awaiting-final-acceptance"
+  },
+  "limitations": [
+    "Best-effort capture with explicitly reported loss under contention",
+    "Only Responses ingress to loopback Chat provider qualified jointly; other protocol parsing tested in fixtures and backend suites separately",
+    "No native Gemini ingress/WebSocket capture qualification",
+    "No independent local shell/test/Git/approval adapter, import, anonymized exports, training pipeline or Memory",
+    "Existing full backend delivery/upgrade/rollback gates and Windows/macOS native acceptance not replaced by these tests",
+    "Public version/support/recorder-inclusion decisions remain open"
+  ],
+  "evidenceRoot": "~/.cache/lain-implementation-20261030/"
+}

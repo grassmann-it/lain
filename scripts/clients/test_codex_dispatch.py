@@ -270,7 +270,7 @@ class DefaultLainParsing(unittest.TestCase):
         document = json.loads(self.catalog.read_bytes())
         groups = document["lain_model_picker"]["groups"]
         groups[0]["router_model"] = "base-model"
-        groups.append(groups[0] | {"id": "all", "name": "Alle", "router_model": None})
+        groups.append(groups[0] | {"id": "all", "name": "All", "router_model": None})
         self.catalog_bytes(json.dumps(document).encode())
         self.assertTrue(dispatch.uses_lain([]))
 

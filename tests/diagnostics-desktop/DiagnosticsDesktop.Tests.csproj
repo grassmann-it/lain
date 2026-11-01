@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><RestorePackagesWithLockFile>false</RestorePackagesWithLockFile></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/Lain.Desktop/Diagnostics/DoctorPresentation.cs" Link="DoctorPresentation.cs" />
+    <Compile Include="../../src/Lain.Desktop/Diagnostics/DoctorCliSource.cs" Link="DoctorCliSource.cs" />
+  </ItemGroup>
+</Project>

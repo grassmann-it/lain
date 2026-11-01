@@ -29,6 +29,8 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         var compatibilityCatalog = compatibility ?? new ModelCompatibilityCatalog();
         var manifest = compatibilityCatalog.Manifest(routes);
         var reasoning = routes.ToDictionary(route => route.Id, route => compatibilityCatalog.ResolveReasoning(route), StringComparer.Ordinal);
+        var modalities = routes.ToDictionary(route => route.Id, route => compatibilityCatalog.ResolveInputModalities(route), StringComparer.Ordinal);
+        var contextWindows = routes.ToDictionary(route => route.Id, route => compatibilityCatalog.ResolveContextWindow(route), StringComparer.Ordinal);
         var selectable = routes.Where(route => !IsInternalReview(route)).ToArray();
         if (selectable.Length == 0 || routes.Any(route => route.Id == resolved.Profile.DefaultRouteId && IsInternalReview(route)))
             throw new ArgumentException("An internal Codex review model cannot be the profile's default model. Select a normal model.");
@@ -76,9 +78,9 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         var catalogDocument = new Dictionary<string, object>
         {
             ["models"] = routes.Select((route, index) => CatalogEntry(route.Alias, DisplayName(route, catalogRegistry, resolved.Configuration, selectable),
-                Description(route, catalogRegistry), IsInternalReview(route), index, reasoning[route.Id]))
+                Description(route, catalogRegistry), IsInternalReview(route), index, reasoning[route.Id], modalities[route.Id], contextWindows[route.Id]))
                 .Concat(routers.Select((router, index) => CatalogEntry(router.Alias, "Automatisch · " + RouterGroupName(router, resolved.Configuration, catalogRegistry), "Uses models in your configured order, skipping known exhausted quotas. Quota fallback is limited to requests before output begins.", false, routes.Length + index,
-                    RouterReasoning(router, reasoning)))).ToArray()
+                    RouterReasoning(router, reasoning), RouterInputModalities(router, modalities), RouterContextWindow(router, contextWindows)))).ToArray()
         };
         // Versioned lain client extension, not a native Codex catalog field. Callers opt in
         // only for the separately qualified patched CLI and its generated --profile lain.
@@ -90,7 +92,7 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         return new("lain.config.toml", config, Path.GetFileName(absoluteCatalogPath), catalog, ["--no-daemon", "--profile", "lain"], revision, manifest, profileId, generation);
     }
 
-    private static object CatalogEntry(string slug, string label, string description, bool hidden, int priority, ModelReasoningCompatibility reasoning) => new
+    private static object CatalogEntry(string slug, string label, string description, bool hidden, int priority, ModelReasoningCompatibility reasoning, string[] inputModalities, ModelContextCompatibility context) => new
     {
         slug, display_name = label, description,
         default_reasoning_level = reasoning.DefaultEffort,
@@ -99,8 +101,24 @@ public sealed class CodexProfileAdapter(ModelsService models, ModelCompatibility
         base_instructions = "You are a coding assistant.", supports_reasoning_summaries = false,
         support_verbosity = false, truncation_policy = new { mode = "tokens", limit = 10000 },
         supports_search_tool = false, tool_mode = (string?)null,
-        experimental_supported_tools = Array.Empty<string>(), input_modalities = new[] { "text" }
+        experimental_supported_tools = Array.Empty<string>(), input_modalities = inputModalities,
+        context_window = context.ContextWindow, max_context_window = context.MaximumContextWindow
     };
+
+    private ModelContextCompatibility RouterContextWindow(CollectionRouterDto router, IReadOnlyDictionary<string, ModelContextCompatibility> windows)
+    {
+        var members = routerProof!.Routers[router.Alias].RouteIds.Select(id => windows.GetValueOrDefault(id)).ToArray();
+        if (members.Length == 0 || members.Any(member => member?.ContextWindow is null)) return new(null, null);
+        return new(members.Min(member => member!.ContextWindow!.Value),
+            members.Min(member => member!.MaximumContextWindow ?? member.ContextWindow!.Value));
+    }
+
+    private string[] RouterInputModalities(CollectionRouterDto router, IReadOnlyDictionary<string, string[]> modalities)
+    {
+        var members = routerProof!.Routers[router.Alias].RouteIds;
+        return members.Length > 0 && members.All(id => modalities.TryGetValue(id, out var inputs) && inputs.Contains("image", StringComparer.Ordinal))
+            ? ["text", "image"] : ["text"];
+    }
 
     private ModelReasoningCompatibility RouterReasoning(CollectionRouterDto router, IReadOnlyDictionary<string, ModelReasoningCompatibility> reasoning)
     {

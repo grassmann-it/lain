@@ -1,5 +1,10 @@
 # Private monitor access
 
+Follow-up: the [eight-worker auth/quota review](../quota-auth-research-2026-10-24.md)
+found additional public login flows, official CLI bootstraps and reporting
+sources. This page retains the implemented capability baseline; the follow-up
+separates new source evidence from implementation and live qualification.
+
 Source review: 24 October 2026. No user credentials, authenticated provider
 requests, client registrations, logins or service-account provisioning were used.
 This describes authentication capabilities independently of whether a quota or

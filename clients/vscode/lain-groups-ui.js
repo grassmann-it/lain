@@ -1,6 +1,6 @@
 // Render within the existing menu using its native items and selection callback.
 // React and the menu primitives are provided by the pinned upstream bundle.
-const hint = 'Lain-Gruppen nicht verfügbar · native Modellauswahl';
+const hint = 'Lain groups unavailable · native model picker';
 
 export function groupedRows({jsx, React, Menu, options, renderOption}) {
   const metadata = options.find(option => option._lainGroups)?._lainGroups;
@@ -69,31 +69,31 @@ export function LainRows({jsx, React, Menu, options, renderOption, metadata}) {
 
   if (checked?.status !== 'ready') {
     return jsx('div', {ref: root, 'data-lain-groups': checked == null ? 'checking' : 'native', children: [
-      jsx('div', {role: 'status', className: 'px-3 py-1 text-xs text-token-description-foreground', children: checked == null ? 'Lain-Gruppen werden geprüft …' : hint}, 'hint'),
+      jsx('div', {role: 'status', className: 'px-3 py-1 text-xs text-token-description-foreground', children: checked == null ? 'Checking Lain groups …' : hint}, 'hint'),
       ...options.map(renderOption)
     ]});
   }
   const available = new Map(options.map(option => [option.id, option]));
   const groups = [...checked.groups.map(group => ({...group, key: `group:${group.id}`})),
-    {key: 'all:', name: 'Alle', models: [...available.keys()], all: true}];
+    {key: 'all:', name: 'All', models: [...available.keys()], all: true}];
   const group = groups.find(group => group.key === groupId);
   let rows;
   if (!group) {
     rows = groups.map(group => jsx(Menu.Item, {
       'data-lain-group-id': group.key,
       'aria-label': group.name,
-      SubText: `${group.models.filter(id => available.has(id)).length} Modelle`,
+      SubText: `${group.models.filter(id => available.has(id)).length} models`,
       RightIcon: group.models.some(id => available.get(id)?.selected) || available.get(group.router_model)?.selected ? () => '✓' : () => '›',
       onSelect: event => {event.preventDefault(); navigate(group.key);},
       children: group.name
     }, group.key));
   } else {
-    rows = [jsx(Menu.Item, {'aria-label': 'Zurück zu Gruppen', onSelect: event => {event.preventDefault(); navigate(null);}, children: '← Gruppen'}, '__back')];
+    rows = [jsx(Menu.Item, {'aria-label': 'Back to groups', onSelect: event => {event.preventDefault(); navigate(null);}, children: '← Groups'}, '__back')];
     rows.push(jsx('div', {className: 'px-3 py-1 text-xs text-token-description-foreground', children: group.name}, '__title'));
     if (!group.all) {
       const router = available.get(group.router_model);
-      rows.push(router ? renderOption({...router, label: 'Automatisch'}) : jsx(Menu.Item, {
-        disabled: true, SubText: 'Kein verfügbarer Gruppenrouter', children: 'Automatisch'
+      rows.push(router ? renderOption({...router, label: 'Automatic'}) : jsx(Menu.Item, {
+        disabled: true, SubText: 'No group router available', children: 'Automatic'
       }, '__router'));
     }
     const ids = new Set(group.models);

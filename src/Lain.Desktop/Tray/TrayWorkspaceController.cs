@@ -37,6 +37,7 @@ public sealed class TrayWorkspaceController : IDisposable
 
     public bool TrayAvailable { get; private set; }
     public event Action<bool>? AvailabilityChanged;
+    public event Action? Reopened;
     public event Action<bool>? NotificationsEnabledChanged;
 
     public TrayWorkspaceController(Window window, Action quitUi,
@@ -278,6 +279,7 @@ public sealed class TrayWorkspaceController : IDisposable
         _window.Show();
         _window.WindowState = _restoreState == WindowState.Minimized ? WindowState.Normal : _restoreState;
         _window.Activate();
+        Reopened?.Invoke();
     }
 
     private void Quit()

@@ -34,7 +34,7 @@ class RefreshFixtures(unittest.TestCase):
         self.base = self.root / 'baseline'
         self.base.mkdir()
         self.commit = 'a' * 40
-        self.version = '1.0.0+' + self.commit
+        self.version = getattr(self, 'release_version', '1.0.0') + '+' + self.commit
         self.out = self.root / 'staged'
         self.evidence = self.root / 'evidence'
         components = {}

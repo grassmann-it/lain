@@ -59,9 +59,9 @@
   ],
   "routes": [
     {
-      "id": "fireworks:glm-5p3-flash:serverless:chat",
-      "model": "accounts/fireworks/models/glm-5p3-flash",
-      "name": "GLM 5.3 Flash · serverless",
+      "id": "fireworks:glm-5p2-fast:router:chat",
+      "model": "accounts/fireworks/routers/glm-5p2-fast",
+      "name": "glm-5p2-fast · router",
       "baseUrl": "https://api.fireworks.ai/inference/v1",
       "protocol": "openai-chat",
       "billingPlanIds": [
@@ -70,10 +70,10 @@
       ],
       "capabilities": {
         "streaming": true,
-        "structuredOutput": true
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
       },
-      "modelFamily": "glm",
-      "manufacturer": "Z.ai",
       "inferenceProvider": "Fireworks",
       "pricingClass": "paid",
       "freeOnlyEligible": false,
@@ -88,13 +88,936 @@
           "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
           "title": "OpenAI-compatible chat and streaming usage",
           "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
         }
       ],
       "restrictions": [
-        "The full model resource ID is required. Current official quickstart documents this serverless model; availability on this account is unverified.",
-        "Starter credit is not an enforceable free-only route. No automatic fallback to another model or budget.",
-        "Tools and model context/output limits have not been qualified for this route."
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "glm",
+      "manufacturer": "Z.ai"
+    },
+    {
+      "id": "fireworks:minimax-m3:serverless:chat",
+      "model": "accounts/fireworks/models/minimax-m3",
+      "name": "minimax-m3 · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 512000,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "minimax",
+      "manufacturer": "MiniMax"
+    },
+    {
+      "id": "fireworks:gpt-oss-120b:serverless:chat",
+      "model": "accounts/fireworks/models/gpt-oss-120b",
+      "name": "gpt-oss-120b · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 131072,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "gpt-oss",
+      "manufacturer": "OpenAI"
+    },
+    {
+      "id": "fireworks:spot-deepseek-v4-flash:router:chat",
+      "model": "accounts/fireworks/routers/spot-deepseek-v4-flash",
+      "name": "spot-deepseek-v4-flash · router",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
       ]
+    },
+    {
+      "id": "fireworks:nemotron-3-ultra-nvfp4:serverless:chat",
+      "model": "accounts/fireworks/models/nemotron-3-ultra-nvfp4",
+      "name": "nemotron-3-ultra-nvfp4 · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 262144,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "nemotron",
+      "manufacturer": "NVIDIA"
+    },
+    {
+      "id": "fireworks:kimi-k3:serverless:chat",
+      "model": "accounts/fireworks/models/kimi-k3",
+      "name": "kimi-k3 · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "kimi",
+      "manufacturer": "Moonshot AI"
+    },
+    {
+      "id": "fireworks:kimi-k3-fast:router:chat",
+      "model": "accounts/fireworks/routers/kimi-k3-fast",
+      "name": "kimi-k3-fast · router",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "kimi",
+      "manufacturer": "Moonshot AI"
+    },
+    {
+      "id": "fireworks:kimi-k3-spot:router:chat",
+      "model": "accounts/fireworks/routers/kimi-k3-spot",
+      "name": "kimi-k3-spot · router",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "kimi",
+      "manufacturer": "Moonshot AI"
+    },
+    {
+      "id": "fireworks:qwen3p8-max:serverless:chat",
+      "model": "accounts/fireworks/models/qwen3p8-max",
+      "name": "qwen3p8-max · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "qwen",
+      "manufacturer": "Alibaba"
+    },
+    {
+      "id": "fireworks:glm-5p3:serverless:chat",
+      "model": "accounts/fireworks/models/glm-5p3",
+      "name": "glm-5p3 · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "glm",
+      "manufacturer": "Z.ai"
+    },
+    {
+      "id": "fireworks:glm-5p3-fast:router:chat",
+      "model": "accounts/fireworks/routers/glm-5p3-fast",
+      "name": "glm-5p3-fast · router",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "glm",
+      "manufacturer": "Z.ai"
+    },
+    {
+      "id": "fireworks:glm-5p3-spot:router:chat",
+      "model": "accounts/fireworks/routers/glm-5p3-spot",
+      "name": "glm-5p3-spot · router",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "glm",
+      "manufacturer": "Z.ai"
+    },
+    {
+      "id": "fireworks:glm-5p3-flash:serverless:chat",
+      "model": "accounts/fireworks/models/glm-5p3-flash",
+      "name": "glm-5p3-flash · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "glm",
+      "manufacturer": "Z.ai"
+    },
+    {
+      "id": "fireworks:deepseek-v4p1-flash:serverless:chat",
+      "model": "accounts/fireworks/models/deepseek-v4p1-flash",
+      "name": "deepseek-v4p1-flash · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "deepseek",
+      "manufacturer": "DeepSeek"
+    },
+    {
+      "id": "fireworks:deepseek-v4p1-flash-spot:router:chat",
+      "model": "accounts/fireworks/routers/deepseek-v4p1-flash-spot",
+      "name": "deepseek-v4p1-flash-spot · router",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "deepseek",
+      "manufacturer": "DeepSeek"
+    },
+    {
+      "id": "fireworks:ember-1:serverless:chat",
+      "model": "accounts/fireworks/models/ember-1",
+      "name": "ember-1 · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ]
+    },
+    {
+      "id": "fireworks:nemotron-lightning-3p5-30b-a3b:serverless:chat",
+      "model": "accounts/fireworks/models/nemotron-lightning-3p5-30b-a3b",
+      "name": "nemotron-lightning-3p5-30b-a3b · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 262144,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "nemotron",
+      "manufacturer": "NVIDIA"
+    },
+    {
+      "id": "fireworks:inkling:serverless:chat",
+      "model": "accounts/fireworks/models/inkling",
+      "name": "inkling · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ]
+    },
+    {
+      "id": "fireworks:deepseek-v4p1-flash-1017:serverless:chat",
+      "model": "accounts/fireworks/models/deepseek-v4p1-flash-1017",
+      "name": "deepseek-v4p1-flash-1017 · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "deepseek",
+      "manufacturer": "DeepSeek"
+    },
+    {
+      "id": "fireworks:deepseek-v4p1-flash-1017-spot:router:chat",
+      "model": "accounts/fireworks/routers/deepseek-v4p1-flash-1017-spot",
+      "name": "deepseek-v4p1-flash-1017-spot · router",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "deepseek",
+      "manufacturer": "DeepSeek"
+    },
+    {
+      "id": "fireworks:minimax-m3p1-flash:serverless:chat",
+      "model": "accounts/fireworks/models/minimax-m3p1-flash",
+      "name": "minimax-m3p1-flash · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 1048576,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "minimax",
+      "manufacturer": "MiniMax"
+    },
+    {
+      "id": "fireworks:qwen3p8-2p4t-a95b:serverless:chat",
+      "model": "accounts/fireworks/models/qwen3p8-2p4t-a95b",
+      "name": "qwen3p8-2p4t-a95b · serverless",
+      "baseUrl": "https://api.fireworks.ai/inference/v1",
+      "protocol": "openai-chat",
+      "billingPlanIds": [
+        "starter",
+        "payg"
+      ],
+      "capabilities": {
+        "streaming": true,
+        "structuredOutput": true,
+        "contextWindow": 262144,
+        "tools": true
+      },
+      "inferenceProvider": "Fireworks",
+      "pricingClass": "paid",
+      "freeOnlyEligible": false,
+      "freeOnlyEnforcementKind": "unsupported",
+      "sources": [
+        {
+          "url": "https://docs.fireworks.ai/getting-started/quickstart",
+          "title": "Serverless quickstart and API key setup",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/tools-sdks/openai-compatibility",
+          "title": "OpenAI-compatible chat and streaming usage",
+          "checkedAt": "2026-10-24T00:00:00Z"
+        },
+        {
+          "url": "https://docs.fireworks.ai/api-reference/list-models",
+          "title": "Account model listing (context length, tools, chat support)",
+          "checkedAt": "2026-10-27T00:00:00Z"
+        }
+      ],
+      "restrictions": [
+        "The full model resource ID is required. Availability and pricing on this account follow its Fireworks billing; no automatic fallback to another model or budget.",
+        "Output limits have not been qualified for this route."
+      ],
+      "modelFamily": "qwen",
+      "manufacturer": "Alibaba"
     }
   ],
   "sources": [

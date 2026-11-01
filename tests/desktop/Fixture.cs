@@ -34,7 +34,8 @@ internal sealed class Fixture : HttpMessageHandler
     public string InspectorReplacementRequest = "request-new";
     public bool AccountSortScenario;
     public int AccountSortPhase;
-    public long InspectorHighWater => InspectorRestarted ? 1 : InspectorAdditionalEvent ? 14 : 13;
+    public int InspectorBurstCount;
+    public long InspectorHighWater => InspectorRestarted ? 1 : InspectorBurstCount > 0 ? 14 + InspectorBurstCount : InspectorAdditionalEvent ? 14 : 13;
     public string? ActiveProfileId = "p2";
     public long? ActiveProfileRevision = 1;
     private readonly DateTimeOffset inspectorStarted = DateTimeOffset.UtcNow;
@@ -113,6 +114,7 @@ internal sealed class Fixture : HttpMessageHandler
             {
                 var p when p.StartsWith("/api/v1/accounts/login/") => CompleteLogin(p),
                 "/api/v1/status" => Status(),
+                "/api/v1/recording/status" => new RecordingHealthDto(1, new CapturePolicySnapshot(1, true, RecordingContract.Content), "recording", Storage: new(RecordCount: 3)),
                 "/api/v1/configuration" => Config,
                 "/api/v1/accounts" => Config.Accounts,
                 "/api/v1/routes" => Config.Routes,
@@ -369,8 +371,15 @@ internal sealed class Fixture : HttpMessageHandler
                 // Events can advance between snapshot polls; Clear must never return to the older snapshot cursor.
                 E(12, "request-b", "assistant", " Ahead-of-snapshot output."), E(13, "request-b", "assistant", " Still retained.") };
         if (!InspectorRestarted && InspectorAdditionalEvent) all = all.Append(E(14, "request-a", "assistant", "Follow-up event after presentation change.")).ToArray();
+        if (!InspectorRestarted && InspectorBurstCount > 0)
+            all = all.Concat(Enumerable.Range(15, InspectorBurstCount).Select(cursor =>
+                E(cursor, "request-a", "assistant", new string('x', 479) + "\n"))).ToArray();
         var high = InspectorHighWater;
-        return new(InspectorSource, all.Where(e => e.Cursor > (changed ? 0 : after) && e.RequestId == request).ToArray(), high, high, 1, 0,
+        var limit = int.TryParse(query.GetValueOrDefault("limit"), out var pageSize) ? pageSize : 100;
+        var matching = all.Where(e => e.Cursor > (changed ? 0 : after) && e.RequestId == request).ToArray();
+        var events = matching.Take(limit).ToArray();
+        var next = matching.Length > limit ? events[^1].Cursor : high;
+        return new(InspectorSource, events, next, high, 1, 0,
             Truncated: InspectorGap || changed && after > 0, GapReason: InspectorGap ? "retention_limit" : changed && after > 0 ? "source_changed" : null);
     }
 

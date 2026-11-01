@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -86,7 +87,8 @@ public sealed class DoctorEngine(IDoctorEnvironment environment)
                     var parsed = Parse(content);
                     layer = true;
                     if (parsed.GetValueOrDefault("") is { } overrides && overrides.Any(pair =>
-                        pair.Key is "model_provider" or "model_catalog_json" or "model" or "model_reasoning_effort" &&
+                        pair.Key is "model_provider" or "model_catalog_json" or "model" or "model_reasoning_effort" or
+                            "model_context_window" or "model_max_context_window" or "model_auto_compact_token_limit" &&
                         settings.GetValueOrDefault(pair.Key) != pair.Value))
                         add("workspace.override", "warning", "An observed workspace layer conflicts with the selected root/profile model binding; effective loading depends on trust.", "project ancestor configuration", "Review workspace overrides and confirm native effective configuration.");
                 }
@@ -109,10 +111,11 @@ public sealed class DoctorEngine(IDoctorEnvironment environment)
             helper is null ? "A supported helper declaration was not observed." : !helperExists ? "Declared helper file is missing or is not an absolute path." : !argsOk ? "Declared helper arguments differ from the qualified auth token contract." : "Helper file and auth arguments were observed; executable identity is unverified.", "root provider auth declaration", "Compare the helper identity with the installed Lain executable.");
         // Export identity and selected catalog validity are independent observations.
         if (catalogPath is not null && Path.IsPathFullyQualified(catalogPath))
-            DiagnoseCatalog(environment.ReadText(catalogPath), settings, add);
+            DiagnoseCatalog(environment.ReadText(catalogPath), settings, host, add);
     }
 
-    private static void DiagnoseCatalog(string? text, Dictionary<string, string> settings, Action<string, string, string, string, string> add)
+    private static void DiagnoseCatalog(string? text, Dictionary<string, string> settings, DoctorHost host,
+        Action<string, string, string, string, string> add)
     {
         if (text is null) throw new InvalidDataException();
         using var document = JsonDocument.Parse(text, new JsonDocumentOptions { MaxDepth = 32 });
@@ -131,6 +134,110 @@ public sealed class DoctorEngine(IDoctorEnvironment environment)
         var valid = effort is not null && levels.Contains(effort);
         add("client.effort", levels.Length == 0 ? "unknown" : valid ? "ok" : "blocked",
             levels.Length == 0 ? "Selected model has no qualified effort list; Auto effort compatibility is unverified." : valid ? "Selected static effort is advertised by the catalog." : "Selected static effort is missing or is not advertised by the catalog.", "selected catalog and root/profile configuration", "Choose an explicitly supported effort or prepare a qualified catalog.");
+        var configuredNativeCodex = IsSelectedConfiguredCodexRoute(host, selected);
+        DiagnoseInputModalities(model, configuredNativeCodex, add);
+        DiagnoseContextMetadata(model, settings, configuredNativeCodex, add);
+    }
+
+    private static bool IsSelectedConfiguredCodexRoute(DoctorHost host, string? selected)
+    {
+        if (host.Configuration is not { } configuration || string.IsNullOrEmpty(selected)) return false;
+        var routes = configuration.Routes.Where(route => route.Enabled && route.Visible && route.Alias == selected).ToArray();
+        if (host.Status?.ActiveProfileId is { } profileId)
+        {
+            var profile = configuration.Profiles.SingleOrDefault(candidate => candidate.Id == profileId);
+            if (profile is null) return false;
+            routes = routes.Where(route => profile.RouteIds.Contains(route.Id, StringComparer.Ordinal)).ToArray();
+        }
+        return routes.Length == 1 && routes[0].Provider == "codex";
+    }
+
+    private static void DiagnoseInputModalities(JsonElement model, bool configuredNativeCodex,
+        Action<string, string, string, string, string> add)
+    {
+        if (!model.TryGetProperty("input_modalities", out var metadata))
+        {
+            add("client.input_modalities", configuredNativeCodex ? "warning" : "unknown",
+                configuredNativeCodex ? "Configured native Codex route metadata omits image input; omission is not proof that images are unsupported." :
+                "Selected generic model has no input-modality metadata; image capability remains unknown.",
+                "selected catalog and enabled route scope", configuredNativeCodex ?
+                "Refresh or export the current qualified catalog; native client qualification is separately verified." :
+                "Use separately qualified route evidence before sending images.");
+            return;
+        }
+        if (metadata.ValueKind != JsonValueKind.Array || metadata.GetArrayLength() == 0)
+        { add("client.input_modalities", "blocked", "Selected model input-modality metadata is not a non-empty array.", "selected catalog", "Repair the selected catalog entry."); return; }
+        var values = new List<string>();
+        foreach (var value in metadata.EnumerateArray())
+        {
+            if (value.ValueKind != JsonValueKind.String || value.GetString() is not { } modality)
+            { add("client.input_modalities", "blocked", "Selected model input-modality metadata contains a non-string value.", "selected catalog", "Repair the selected catalog entry."); return; }
+            values.Add(modality);
+        }
+        if (values.Distinct(StringComparer.Ordinal).Count() != values.Count ||
+            values.Any(value => value is not ("text" or "image")) || !values.Contains("text", StringComparer.Ordinal))
+        { add("client.input_modalities", "blocked", "Selected model input-modality metadata has duplicate, unknown, or text-missing values.", "selected catalog", "Repair the selected catalog entry."); return; }
+        if (configuredNativeCodex)
+        {
+            var image = values.Contains("image", StringComparer.Ordinal);
+            add("client.input_modalities", image ? "ok" : "warning",
+                image ? "Configured native Codex route metadata advertises text and image input; this is catalog structure, not provider acceptance." :
+                "Configured native Codex route advertises text only; the known metadata regression remains a warning rather than an unsupported claim.",
+                "selected catalog and enabled route scope", "Refresh or export the current qualified catalog; qualify image behavior separately.");
+            return;
+        }
+        if (values.Count == 1 && values[0] == "text")
+        { add("client.input_modalities", "unknown", "Generic model text-only metadata is intentional and does not establish or deny image support.", "selected catalog", "Use separately qualified route evidence before sending images."); return; }
+        add("client.input_modalities", "ok", "Selected generic model has structurally valid text-and-image metadata; provider image acceptance remains unverified.", "selected catalog", "Qualify the concrete route before sending images.");
+    }
+
+    private enum PositiveNumberState { Missing, Positive, Invalid }
+    private readonly record struct OptionalPositiveNumber(PositiveNumberState State, long Value = 0);
+
+    private static void DiagnoseContextMetadata(JsonElement model, Dictionary<string, string> settings, bool configuredNativeCodex,
+        Action<string, string, string, string, string> add)
+    {
+        var context = SettingNumber(settings, "model_context_window");
+        if (context.State == PositiveNumberState.Missing) context = JsonNumber(model, "context_window");
+        var maximum = SettingNumber(settings, "model_max_context_window");
+        if (maximum.State == PositiveNumberState.Missing) maximum = JsonNumber(model, "max_context_window");
+        var explicitCompact = SettingNumber(settings, "model_auto_compact_token_limit");
+        if (explicitCompact.State == PositiveNumberState.Missing) explicitCompact = JsonNumber(model, "auto_compact_token_limit");
+        // A root/profile override is effective when present. A maximum is optional; when
+        // supplied it must be positive and no smaller than the effective context window.
+        var contextInvalid = context.State == PositiveNumberState.Invalid || maximum.State == PositiveNumberState.Invalid ||
+            (context.State == PositiveNumberState.Positive && maximum.State == PositiveNumberState.Positive && maximum.Value < context.Value);
+        var compactInvalid = explicitCompact.State == PositiveNumberState.Invalid;
+        add("client.context_window", contextInvalid ? "blocked" : context.State == PositiveNumberState.Positive ? "ok" : configuredNativeCodex ? "warning" : "unknown",
+            contextInvalid ? "Effective context metadata is structurally invalid: a value is non-positive or a supplied maximum is below the window." :
+            context.State == PositiveNumberState.Positive ? "A positive effective context window was observed; any supplied maximum is not smaller." :
+            configuredNativeCodex ? "Configured native Codex route metadata has no positive effective context window; no provider entitlement is inferred." :
+            "Generic model context remains unobserved; this is not a free-endpoint failure.",
+            "selected catalog and root/profile context overrides", "Repair the catalog or explicit context override when structurally invalid; otherwise retain a known window or explicit positive override.");
+        add("client.auto_compact", compactInvalid ? "blocked" : explicitCompact.State == PositiveNumberState.Positive ? "ok" :
+            contextInvalid ? "blocked" : context.State == PositiveNumberState.Positive ? "ok" : configuredNativeCodex ? "warning" : "unknown",
+            compactInvalid ? "An explicit automatic-compaction token limit is structurally invalid or non-positive." :
+            explicitCompact.State == PositiveNumberState.Positive ? "An explicit positive automatic-compaction limit was observed." :
+            contextInvalid ? "Automatic compaction cannot be derived while effective context metadata is structurally invalid." :
+            context.State == PositiveNumberState.Positive ? "A known effective context window can provide the client-derived compaction threshold." :
+            configuredNativeCodex ? "Configured native Codex route metadata supplies neither an explicit compaction limit nor a known derivable window." :
+            "Generic model compaction remains unknown; this is not a free-endpoint failure.",
+            "selected catalog and root/profile context overrides", "Retain an explicit positive compaction limit or a known context window.");
+    }
+
+    private static OptionalPositiveNumber SettingNumber(Dictionary<string, string> settings, string key)
+    {
+        if (!settings.TryGetValue(key, out var value)) return new(PositiveNumberState.Missing);
+        return long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) && number > 0 ?
+            new(PositiveNumberState.Positive, number) : new(PositiveNumberState.Invalid);
+    }
+
+    private static OptionalPositiveNumber JsonNumber(JsonElement model, string name)
+    {
+        if (!model.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null) return new(PositiveNumberState.Missing);
+        if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt64(out var number) || number <= 0)
+            return new(PositiveNumberState.Invalid);
+        return new(PositiveNumberState.Positive, number);
     }
 
     private static string StripComment(string value)
@@ -210,10 +317,17 @@ public sealed class DoctorEngine(IDoctorEnvironment environment)
                 continue;
             }
             var modelSection = section == "" || section.StartsWith("profiles.", StringComparison.Ordinal);
-            if (modelSection ? key is not ("model" or "model_provider" or "model_catalog_json" or "model_reasoning_effort" or "profile") :
+            if (modelSection ? key is not ("model" or "model_provider" or "model_catalog_json" or "model_reasoning_effort" or "profile" or
+                    "model_context_window" or "model_max_context_window" or "model_auto_compact_token_limit") :
                 section != "model_providers.lain.auth" || key is not ("command" or "args")) continue;
-            var value = key == "args" ? JsonSerializer.Serialize(JsonSerializer.Deserialize<string[]>(literal) ?? throw new InvalidDataException()) :
-                JsonSerializer.Deserialize<string>(literal) ?? throw new InvalidDataException();
+            string value;
+            if (key == "args") value = JsonSerializer.Serialize(JsonSerializer.Deserialize<string[]>(literal) ?? throw new InvalidDataException());
+            else if (key is "model_context_window" or "model_max_context_window" or "model_auto_compact_token_limit")
+            {
+                if (!long.TryParse(literal, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var integer)) throw new InvalidDataException();
+                value = integer.ToString(CultureInfo.InvariantCulture);
+            }
+            else value = JsonSerializer.Deserialize<string>(literal) ?? throw new InvalidDataException();
             if (!result[section].TryAdd(key, value)) throw new InvalidDataException();
         }
         return result;

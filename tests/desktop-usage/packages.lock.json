@@ -231,7 +231,7 @@
       "lain.client": {
         "type": "Project",
         "dependencies": {
-          "Lain.Core": "[1.0.0, )"
+          "Lain.Core": "[0.8.0, )"
         }
       },
       "lain.core": {
@@ -244,8 +244,8 @@
           "Avalonia.Fonts.Inter": "[12.1.4, )",
           "Irihi.Ursa": "[2.2.0, )",
           "Irihi.Ursa.Themes.Semi": "[2.2.0, )",
-          "Lain.Client": "[1.0.0, )",
-          "Lain.Core": "[1.0.0, )",
+          "Lain.Client": "[0.8.0, )",
+          "Lain.Core": "[0.8.0, )",
           "Semi.Avalonia": "[12.1.0.1, )"
         }
       }

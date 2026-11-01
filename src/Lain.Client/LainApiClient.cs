@@ -78,9 +78,11 @@ public sealed partial class LainApiClient : IDisposable
         Send<QuotaDto[]>(HttpMethod.Post, "quotas/refresh", new QuotaRefreshRequest(accountId), ct);
     public Task<StatusDto> ServiceAsync(string action, CancellationToken ct = default)
     {
-        if (action is not ("start" or "stop" or "restart")) throw new ArgumentException("Unknown service action.", nameof(action));
+        if (action is not ("start" or "stop" or "restart" or "ensure")) throw new ArgumentException("Unknown service action.", nameof(action));
         return Send<StatusDto>(HttpMethod.Post, $"service/{action}", null, ct);
     }
+    public Task ShutdownHostAsync(CancellationToken ct = default) =>
+        Send<object>(HttpMethod.Post, "host/shutdown", null, ct);
     public Task<TokenResponse> InferenceTokenAsync(string audience = "codex", CancellationToken ct = default) =>
         Get<TokenResponse>($"auth/token?audience={Id(audience)}", ct);
 

@@ -1,164 +1,155 @@
-# Gemeinsame Verträge für Host, UI und CLI
+# Shared contracts for Host, UI, and CLI
 
-Stand 23.10.2026. Fachliche Invarianten zur [Architektur](architecture.md).
-Die implementierten DTOs und der ausführbare Wirevertrag v1 sind unten sowie
-in `src/Lain.Core/Contracts.cs` und dem gemeinsamen API-Client festgehalten.
+Recorded 23 October 2026. Domain invariants for the [architecture](architecture.md).
+Implemented DTOs and the executable v1 wire contract are documented below and
+in `src/Lain.Core/Contracts.cs` and the shared API client.
 
-## Identität und Konfiguration
+## Identity and configuration
 
-| Begriff | Gemeinsame Bedeutung |
+| Term | Shared meaning |
 | --- | --- |
-| Account | Stabile lain-ID, Anzeigename, Anbieter, Zustand und Credentialreferenzen; zwei Accounts desselben Anbieters bleiben getrennt |
-| Credentialzuordnung | Versionierte Verbindung von lain-Account zu beobachteter Core-Credentialidentität; historische Zuordnung bleibt nachvollziehbar |
-| Budgetpool | Belegt gemeinsam genutztes Kontingent; mehrere Keys erzeugen nicht automatisch mehrere Budgets |
-| Modellroute | Stabile Route-ID zu Upstreammodell, Anbieter-/Endpointkonfiguration und Account oder ausdrücklich beschriebenem Accountpool; unterstützte Fähigkeiten |
-| Modellprofil | Name, gewählte Routen/Aliase, Sichtbarkeit und Zielclient; Export verwendet Accountplatzhalter ohne Secrets |
-| Clientbindung | Unterstützter Harness mit Version und Profil; Herkunft wird nur bei belastbarer Zuordnung ausgewertet |
+| Account | Stable lain ID, display name, provider, state, and credential references; two accounts from the same provider remain separate |
+| Credential binding | Versioned link from a lain account to an observed Core credential identity; historical bindings remain traceable |
+| Budget pool | Verified shared quota; multiple keys do not automatically create multiple budgets |
+| Model route | Stable route ID pointing to an upstream model, provider/endpoint configuration, and account or explicitly described account pool; supported capabilities |
+| Model profile | Name, selected routes/aliases, visibility, and target client; exports use account placeholders without secrets |
+| Client binding | Supported harness with version and profile; provenance is evaluated only with reliable attribution |
 
-Anzeigenamen dürfen wechseln. Entfernte Accounts/Routen verschwinden aus der
-aktiven Auswahl; historische Verbrauchsbelege behalten ihre Identität. Ein
-Account wird nicht durch dieselbe Credential als angeblich zweiter unabhängiger
-Account nachgewiesen. Ein strikt gewählter Account darf nicht unbemerkt durch
-Core-Retry zu einem anderen wechseln; Poolauswahl wird ausdrücklich kenntlich.
+Display names may change. Removed accounts/routes disappear from active selection;
+historical usage evidence retains its identity. Reusing a credential does not
+prove a second independent account. A strictly selected account must not silently
+switch to another through Core retry; pool selection is explicit.
 
-Konfigurationsänderungen haben eine Revision. Der Host validiert und wendet sie
-an; API-Antworten unterscheiden gewünschten und tatsächlich wirksamen Stand.
-Fehlgeschlagene Core-Anwendung ist kein erfolgreiches Speichern einer aktiven Route.
-Login/OAuth sind eigene abbrechbare Vorgänge mit Zustand; das Geheimnis gehört
-nicht in Statusantworten. Entfernung/Aktualisierung müssen laufende Requests und
-gespeicherte Historie berücksichtigen.
+Configuration changes have a revision. The Host validates and applies them;
+API responses distinguish desired and actually effective state. Failed Core
+application does not successfully save an active route. Login/OAuth are separate
+cancellable stateful operations; secrets do not belong in status responses.
+Removal/updates must account for running requests and stored history.
 
-## Request, Ausführungsversuch und Ereignis
+## Request, execution attempt, and event
 
-Ein logischer Clientrequest kann mehrere Upstreamversuche verursachen. Die
-Summen zählen Nutzerrequests und tatsächlich verbrauchte Versuche getrennt.
-Pro Versuch werden reale Modell-/Provider-/Accountidentität und bekannte Route
-erfasst. Gewünschtes Modell und tatsächlich verwendetes Modell sind unterscheidbar.
+One logical client request can cause multiple upstream attempts. Totals count
+user requests separately from actually consumed attempts. Each attempt records
+the real model/provider/account identity and known route. Requested and actually
+used models are distinguishable.
 
-Ereignisse benötigen eine dokumentierte Herkunft, eindeutige Deduplizierung und
-eine belastbare Verbindung zwischen Request und Versuch. Paket A entscheidet,
-welche Quell-IDs und normalisierten IDs dafür verwendet werden können. Eine
-zeitliche Näherung oder ein Modellpräfix ersetzt diese Verbindung nicht.
+Events require documented provenance, unambiguous deduplication, and a reliable
+request/attempt link. Package A determines usable source and normalized IDs.
+Approximate timing or a model prefix does not replace this link.
 
-Nur bereinigte Metadaten werden gespeichert; keine rohen Credentials, Headers
-oder vollständigen Request-/Responseinhalte für die Basisstatistik. Wiederholtes
-Einlesen desselben Ereignisses zählt nicht erneut. Bereits gespeicherte Daten
-überleben Neustarts. Bei nicht rekonstruierbaren Ereignisverlusten bleibt der
-Zeitraum als möglicherweise unvollständig markiert; keine Genauigkeitsgarantie
-für eine flüchtige Queue erfinden.
+Only sanitized metadata is stored for basic statistics, with no raw credentials,
+headers, or complete request/response bodies. Re-ingesting an event does not
+count it again. Stored data survives restarts. If event loss cannot be
+reconstructed, the period remains marked as potentially incomplete; do not
+invent accuracy guarantees for a volatile queue.
 
-## Mengen, Zeiten, Kontingente und Kosten
+## Quantities, times, quotas, and costs
 
-- Input-/Output-/Cache-/Reasoningwerte behalten die belegte Anbietersemantik;
-  Teilmengen werden nicht erneut zum Total addiert. Unbekannte Werte werden als JSON `null`, niemals als gemessene `0` ausgegeben.
-- Tagesgrenzen und Zeitraumfilter verwenden eine ausgewiesene Zeitzone. Späte
-  Ereignisse korrigieren betroffene Aggregate nachvollziehbar.
-- Latenz und Zeit bis zur ersten Ausgabe benötigen passende Zeitstempel. Tokens
-  pro Sekunde werden nur aus belegter Tokenzahl und benanntem Zeitintervall
-  berechnet; andernfalls bleibt die Kennzahl unbekannt.
-- Quota-Snapshots führen Einheit, Account-/Poolscope, Quelle, Beobachtungszeit,
-  Reset und Zustand. Veralteter letzter Erfolg bleibt von einer frischen Antwort
-  unterscheidbar. Ein Fehler eines Accounts verdeckt keine anderen Accounts.
-- `windowLabel` benennt das belegte Budgetfenster, `usedPercent` hält einen
-  ausdrücklich gemeldeten Verbrauchsprozentsatz unabhängig von Mengenwerten.
-  Fehlende Mengen werden nicht aus Prozentwerten als Tokens/Credits erfunden;
-  Prozentpunkte dürfen mit Einheit `percent` auf 100 normalisiert werden.
-- `unsupported` bedeutet, dass kein geprüfter Abruf für den Anbieter vorhanden
-  ist; es ist kein Verbindungsfehler. `error` und `stale` bleiben tatsächlichen
-  Abruffehlern beziehungsweise überalterten Beobachtungen vorbehalten.
-- Fenster werden nicht addiert. Eine Übersicht darf das knappste bekannte
-  Fenster hervorheben, muss dabei das Fenster und verbleibende Budgets nennen.
-- Aboentgelt, enthaltene Nutzung, gekaufte API-Credits, geschätzte Tokenkosten
-  und tatsächliche Abrechnung sind verschiedene Größen. Gemeinsame Budgets
-  werden in Gesamtansichten nur einmal berücksichtigt.
+- Input/output/cache/reasoning values retain verified provider semantics;
+  subsets are not added to the total again. Unknown values are JSON `null`,
+  never a measured `0`.
+- Day boundaries and period filters use a stated timezone. Late events update
+  affected aggregates traceably.
+- Latency and time to first output require suitable timestamps. Tokens per
+  second require a verified token count and named interval; otherwise the
+  metric remains unknown.
+- Quota snapshots include unit, account/pool scope, source, observation time,
+  reset, and state. A stale last success remains distinguishable from a fresh
+  response. One account's error does not hide other accounts.
+- `windowLabel` names the verified budget window; `usedPercent` retains an
+  explicitly reported consumption percentage independently of quantity values.
+  Missing amounts are not invented as tokens/credits from percentages;
+  percentage points may be normalized to 100 with unit `percent`.
+- `unsupported` means there is no verified reader for the provider; it is not a
+  connection error. `error` and `stale` are reserved for actual retrieval
+  failures and outdated observations respectively.
+- Windows are not added together. An overview may highlight the tightest known
+  window but must name that window and its remaining budgets.
+- Subscription fees, included usage, purchased API credits, estimated token
+  costs, and actual billing are different quantities. Shared budgets are counted
+  only once in overall views.
 
-## Gemeinsame Anwendungsfälle
+## Shared use cases
 
-| Bereich | Benötigte Operationen im ersten Stand |
+| Area | Required operations in the initial state |
 | --- | --- |
-| Dienst/Proxy | Status, Version, Bereitschaft, gewünschter/wirksamer Konfigurationsstand; kontrollierter Start/Stop/Neustart des eigenen Proxys |
-| Accounts | Auflisten, hinzufügen, Login beginnen/Status/Abbruch, Verbindung prüfen, aktivieren/deaktivieren, entfernen |
-| Modelle/Profile | Verfügbare Modelle lesen, konkrete Routen auswählen, Sichtbarkeit/Aliase setzen, benanntes Profil speichern und für den Referenzclient anwenden/exportieren |
-| Usage | Zeitraumübersicht, Tages-/Modell-/Accountaufteilung, Request-/Fehleransicht mit Filtern; nur belegte Harness-/Profildimensionen |
-| Quota | Snapshots lesen, Aktualisierung anfordern und laufenden/fehlgeschlagenen Abruf erkennen |
+| Service/proxy | Status, version, readiness, desired/effective configuration; controlled start/stop/restart of Lain's proxy |
+| Accounts | List, add, begin/check/cancel login, test connection, enable/disable, remove |
+| Models/profiles | Read available models, select concrete routes, set visibility/aliases, save a named profile and apply/export for the reference client |
+| Usage | Period overview, day/model/account breakdown, filtered request/error views; only verified harness/profile dimensions |
+| Quota | Read snapshots, request refresh, identify running/failed retrieval |
 
-Antworten enthalten Vertragsversion, Snapshot-/Revisionsbezug, Erfassungsstand und
-Abdeckungsangaben. GUI und CLI liefern für denselben Datenstand dieselben Zahlen.
-Die UI darf formatieren, aber keine abweichende Fachaggregation implementieren.
-Listen und Zeiträume sind begrenzt bzw. paginiert; eine Anfrage lädt nicht
-unbeschränkt die gesamte Historie in einen Client.
+Responses include contract version, snapshot/revision reference, collection
+state, and coverage. GUI and CLI return identical numbers for identical data.
+The UI may format but must not implement different domain aggregation. Lists
+and periods are bounded or paginated; one request does not load unlimited
+history into a client.
 
-CLI-Befehle bieten JSON auf stdout, Diagnose auf stderr und unterscheidbare
-Fehlerzustände. Ein Skill nutzt dokumentierte Befehle, kein TUI-Screenscraping.
-Hostausfall liefert eine verständliche Meldung, keinen stillen Ersatzcollector
-und keine direkt geöffnete Datenbank. Änderungen gehen denselben Prüf-/Anwendungsweg
-wie in Avalonia; Zugriff auf die CLI erweitert nicht die Autorisierung eines Skills.
+CLI commands provide JSON on stdout, diagnostics on stderr, and distinguishable
+error states. A skill uses documented commands, not TUI screen scraping. Host
+failure gives a clear message, with no silent replacement collector or directly
+opened database. Changes follow the same validation/application path as Avalonia;
+CLI access does not expand a skill's authorization.
 
-## Vertragsabnahme vor paralleler Umsetzung
+## Contract acceptance before parallel implementation
 
-Paket A liefert mindestens bereinigte Beispiele für Erfolg, 429/Retry, Abbruch,
-zwei Accounts, Replay und eine bekannte Abdeckungslücke. Danach werden API-/JSON-
-Beispiele und Felddefinitionen so festgehalten, dass Avalonia und CLI unabhängig
-gegen denselben Vertrag arbeiten können. Das Schema des Proxy-Cores bleibt
-hinter dessen Adapter; seine Version ist nicht die öffentliche lain-API-Version.
+Package A supplies at least sanitized examples of success, 429/retry, cancellation,
+two accounts, replay, and a known coverage gap. API/JSON examples and field
+definitions are then recorded so Avalonia and CLI can work independently against
+the same contract. The proxy Core schema stays behind its adapter; its version
+is not the public lain API version.
 
-## Implementierter Wirevertrag v1
+## Implemented v1 wire contract
 
-`src/Lain.Core/Contracts.cs` enthält die gemeinsamen DTOs;
-`src/Lain.Client/LainApiClient.cs` ist der typisierte Referenzclient.
-JSON verwendet camelCase und explizites null für unbekannte Messwerte.
-Die API bindet ausschließlich 127.0.0.1:18418 und verlangt ein eigenes
-Host-Bearertoken aus der privaten lain-Ablage. Inferenz- und Managementtoken
-sind getrennt. Alle Mutationen werden im Host serialisiert; überholte
-Revisionen liefern 409. Konfiguration beschreibt gewünschten und angewendeten
-Stand getrennt. Ein Profil wird erst nach erfolgreichem Start als angewendet
-markiert. Ungültige Runtimegenerationen dürfen nicht neu gestartet werden.
+`src/Lain.Core/Contracts.cs` contains shared DTOs;
+`src/Lain.Client/LainApiClient.cs` is the typed reference client. JSON uses
+camelCase and explicit null for unknown measurements. The API binds only
+127.0.0.1:18418 and requires its own Host bearer token from private lain storage.
+Inference and management tokens are separate. All mutations are serialized in
+the Host; stale revisions return 409. Configuration distinguishes desired and
+applied state. A profile is marked applied only after successful startup.
+Invalid runtime generations must not be restarted.
 
-Status ergänzt optional `activeProfileId` und `activeProfileRevision`. Diese
-benennen nur durch übereinstimmende Profil-/Runtime-Metadaten belegte Anwendung;
-Auswahl im Fenster und gewünschte Konfiguration sind keine Quelle dafür.
-Fehlende, alte oder unvollständig veröffentlichte Metadaten ergeben `null`.
-Ältere Installationen ohne die eindeutige Runtime-Profilkennung bleiben bis
-zu einer ausdrücklich ausgelösten erfolgreichen Profilanwendung unbekannt.
-Das UI-Update wendet keine ausstehende Konfiguration an, um die Anzeige zu füllen.
+Status optionally includes `activeProfileId` and `activeProfileRevision`. These
+identify application proven by matching profile/runtime metadata; window selection
+and desired configuration are not sources. Missing, old, or incompletely published
+metadata yields `null`. Older installations without the unique runtime profile
+identifier remain unknown until an explicitly triggered successful profile
+application. The UI update does not apply pending configuration to fill the display.
 
-Usage: GET `/api/v1/usage` und `/api/v1/attempts`, Parameter `from`, `to`,
-`timeZone`, `accountId`, `model`, `statusCode`, `offset`, `limit`. Intervalle
-sind höchstens 366 Tage, Requestseiten höchstens 500 Einträge. Die Endpunkte
-liefern dieselben Aggregate für GUI, CLI und Skill.
+Usage: GET `/api/v1/usage` and `/api/v1/attempts`, parameters `from`, `to`,
+`timeZone`, `accountId`, `model`, `statusCode`, `offset`, `limit`. Intervals are
+limited to 366 days, request pages to 500 entries. Endpoints return the same
+aggregates for GUI, CLI, and skills.
 
-Lokale Credentials und Anbieterfehler werden nicht als öffentliche API-Daten
-ausgegeben. `/api/v1/auth/token?audience=codex` liefert nach Hostauthentifizierung
-ausschließlich den lokalen Inferenzschlüssel.
+Local credentials and provider errors are not exposed as public API data.
+After Host authentication, `/api/v1/auth/token?audience=codex` supplies only
+the local inference key.
 
-## Additive Erweiterung vom 24.10.2026
+## Additive extension of 24 October 2026
 
-Die ausführbaren DTO-Ergänzungen und die abgestimmte Implementierungsgrenze
-stehen in [Observability- und Anbieterverträgen](observability-contracts.md).
-Die öffentliche Version bleibt v1; vorhandene DTO-Parameter und Endpunkte
-behalten ihre Semantik. Neue optionale Felder ersetzen keine unbekannten Werte
-durch Schätzungen.
+Executable DTO additions and the agreed implementation boundary are in
+[observability and provider contracts](observability-contracts.md). The public
+version remains v1; existing DTO parameters and endpoints retain their semantics.
+New optional fields do not replace unknown values with estimates.
 
-- `/api/v1/usage/analysis` ergänzt vollständige Hostaggregate für belegte
-  Modellfamilien, Anbieter/Gateway, Reasoning, Routen und Workerbezüge sowie
-  Performanceverteilungen mit Mess- und Grundgesamtheitszahlen. Die bisherigen
-  Usage-Antworten bleiben kompatibel.
-- `/api/v1/inspector` und `/api/v1/inspector/events` liefern ausschließlich eigene,
-  begrenzte flüchtige Streambeobachtungen mit eigenem Quell-/Cursorbezug,
-  Lebensdauer, Redaktionsstatus und sichtbaren Lücken. Inhalte werden nicht Teil
-  der dauerhaften Usage. Chats und Worker werden nur durch belegte Identitäten
-  verbunden.
-- Anbieterbeschreibungen, Einrichtung und Modellmatrix trennen geprüfte Quellen,
-  vorbereitete Adapter, fehlende Zugangsdaten und tatsächlich geprüfte
-  Verbindungen. Kontingente behalten Budgetart, Einheit und gemeinsamen Scope.
-- Routen-/Profilrichtlinien ergänzen explizite Fallbacks. `free_only` verwirft
-  kostenpflichtige, trial-/abogebundene und unbekannt bepreiste Alternativen und
-  verlangt tatsächlich umgesetzte Kostenkontrolle. Eine Katalogbehauptung allein
-  autorisiert keinen Dispatch.
+- `/api/v1/usage/analysis` adds complete Host aggregates for verified model
+  families, provider/gateway, reasoning, routes, and worker references, plus
+  performance distributions with measurement and population counts. Existing
+  usage responses remain compatible.
+- `/api/v1/inspector` and `/api/v1/inspector/events` supply only Lain's bounded,
+  volatile stream observations with their own source/cursor reference, lifetime,
+  redaction state, and visible gaps. Content does not become durable usage.
+  Chats and workers are linked only through verified identities.
+- Provider descriptions, setup, and the model matrix distinguish verified
+  sources, prepared adapters, missing credentials, and actually tested
+  connections. Quotas retain budget type, unit, and shared scope.
+- Route/profile policies add explicit fallbacks. `free_only` rejects paid,
+  trial/subscription-bound, and unknown-price alternatives and requires actual
+  cost enforcement. A catalog claim alone does not authorize dispatch.
 
-Ein früher Usage-Bericht und das tatsächliche Streamende können auseinanderliegen.
-Der additive Journalabschluss `attempt_finished` ergänzt Messung und
-`completionState`, ohne den ursprünglichen Token-/Usagebeleg umzuschreiben.
-Neue Analysefehler zählen den bekannten tatsächlichen Abschluss; der bisherige
-`/usage`-Fehlerzähler behält seine historische Grundlage. Migrationen und
-Replay-Kompatibilität liegen beim Usageadapter, nicht bei den Clients.
+An early usage report and the actual stream end may differ. The additive journal
+completion `attempt_finished` adds measurement and `completionState` without
+rewriting original token/usage evidence. New analysis errors count the known
+actual completion; the existing `/usage` error counter retains its historical
+basis. Migrations and replay compatibility belong to the usage adapter, not clients.

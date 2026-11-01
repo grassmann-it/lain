@@ -1,85 +1,86 @@
-# Linux-Auslieferung
+# Linux distribution
 
-Erster Zielstand: Linux x64, .NET SDK **10.0.111**, Self-contained Host, CLI und
-Avalonia Desktop. Der Build verwendet das `global.json`, explizite NuGet-Versionen
-und eingecheckte `packages.lock.json`; Locked Restore verweigert Änderungen am
-Abhängigkeitsgraph. Die Desktop-Laufzeit benötigt ein X11-/Wayland-Desktop-System
-mit den für Avalonia üblichen nativen Bibliotheken (insbesondere fontconfig/X11).
-Der gebündelte Proxy ist der verifizierte eigene Build aus dem externen, in
-`proxy/upstream.json` gepinnten CLIProxyAPI-Quellarchiv, dem Anschluss in
-`proxy/adapter` und den expliziten Hooks in `proxy/patches`, kein
-installierter Bestandsproxy. Seine Herkunft und Hashes liegen im Paket.
+Initial target: Linux x64, .NET SDK **10.0.111**, self-contained Host, CLI, and
+Avalonia Desktop. The build uses `global.json`, explicit NuGet versions, and
+committed `packages.lock.json` files; locked restore rejects dependency-graph
+changes. Desktop requires an X11/Wayland desktop system with Avalonia's usual
+native libraries (particularly fontconfig/X11). The bundled proxy is Lain's
+verified build of the external CLIProxyAPI source archive pinned in
+`proxy/upstream.json`, the integration in `proxy/adapter`, and explicit hooks
+in `proxy/patches`. It does not use an existing installed proxy. The package
+includes its provenance and hashes.
 
-## Monitor und Gateway im aktuellen Quellstand
+## Monitor and Gateway in the current source
 
-Die folgenden historischen Gateway-/Desktopabläufe sind kein Nachweis für eine
-neu installierte Version. Der aktuelle Publisher bietet explizite Pakete:
+The historical Gateway/Desktop procedures below do not prove a newly installed
+version. The current publisher offers explicit packages:
 
 ```sh
 ./scripts/publish-linux.sh --mode monitor /absolute/new/lain-monitor
 ./scripts/publish-linux.sh --mode gateway /absolute/new/lain-gateway
 ```
 
-Monitor enthält Host/CLI/Desktop und Anwendungsnotices, aber keinen Core,
-Corekatalog, Go-Build oder Go-Notice-Inventar. Gateway erhält sämtliche
-Core-Integritäts-/Quell-/Abnahmegarantien. `package-metadata.json` und
-`build-info.json` nennen die Betriebsart; `source-provenance/publish-properties`
-zeichnet `LainRuntimeMode` pro Komponente auf. Ein frischer Installer setzt nur
-den Initialwert, Bestandskonfiguration dominiert. Dienste werden nicht gestartet.
+Monitor contains Host/CLI/Desktop and application notices, but no Core, Core
+catalog, Go build, or Go notice inventory. Gateway retains all Core integrity,
+source, and acceptance guarantees. `package-metadata.json` and `build-info.json`
+record the mode; `source-provenance/publish-properties` records `LainRuntimeMode`
+for each component. A fresh installer sets only the initial value; existing
+configuration takes precedence. Services are not started.
 
-Der neue vollständige Ablauf einschließlich gesichertem Update, gestopptem
-Snapshot, rotierenden Credentials und Grenzen alter Hosts steht in
-[Linux-Delivery-Stabilisierung](linux-delivery-stabilization.md). Die tatsächliche
-Paketprobe unter `tests/delivery-stabilization/actual_packages.py` ist standardmäßig
-planend, benutzt bei expliziter Ausführung nur neue temporäre XDG-/LAIN_HOME-Pfade
-und niemals systemd oder bestehende Daten. Alle Build-/Runtimeslots koordiniert
-der Integrator. Erst die exakten geprüften Artefakte können eine neue Installation
-begründen.
+The complete new procedure, including guarded updates, stopped snapshots,
+rotating credentials, and old-Host limitations, is in
+[Linux delivery stabilization](linux-delivery-stabilization.md). The actual
+package probe at `tests/delivery-stabilization/actual_packages.py` defaults to
+planning. Explicit execution uses only new temporary XDG/LAIN_HOME paths and
+never systemd or existing data. The integrator coordinates all build/runtime
+slots. Only the exact verified artifacts can justify a new installation.
 
-## Gatewaypaket bauen (bisheriger Ablauf)
+## Build a Gateway package (earlier procedure)
 
-Vom Checkout aus, mit .NET SDK und der vom Proxy-Build geforderten Go-Version:
+From the checkout, with the .NET SDK and the Go version required by the proxy build:
 
 ```sh
 ./scripts/publish-linux.sh /absolute/path/lain-linux-x64
 ```
 
-Der Zielordner muss neu sein. Das Skript veröffentlicht `cli/Lain.Cli`,
-`host/Lain.Host`, `desktop/Lain.Desktop` und `proxy/lain-proxy`, Lizenz,
-Quellmanifeste, ein `notices/`-Inventar mit exakten NuGet-Lizenzmetadaten und
-verfügbaren Paket-/offiziellen Runtime-Lizenztexten sowie dem Inventar tatsächlich
-verlinkter Go-Module samt gecachten Root-Lizenzen und Go-Toolchain-Lizenz, statischen `proxy/codex-model-catalog.json`, CLI-Skill und Installer. `SHA256SUMS` schützt die Paketdateien;
-neben dem Ordner entstehen `.tar.gz` und dessen Prüfsumme. Das Archiv verwendet
-sortierte Dateinamen, feste Eigentümer und Commitzeit (`SOURCE_DATE_EPOCH`
-überschreibt diese). .NET baut deterministisch mit normalisierten Quellpfaden.
-`build-info.json` zeichnet Commit, SDK und uncommittierte Änderungen auf.
-Für einen vergleichbaren Releasebuild einen sauberen Commit und dieselben
-Toolchains verwenden. Die Manifestprüfung allein ersetzt die Backend-Abnahme
-nach `docs/execution.md` nicht. Ohne endgültigen Abnahmebeleg ist das Ergebnis
-nur ein Staging-Paket: `gate-status.json` enthält `releaseQualified: false` und
-es wird keine `qualification.json` erzeugt. Für ein backendabgenommenes Paket
-`LAIN_QUALIFICATION_FILE=/absolute/approved/qualification.json` setzen. Dieser
-Beleg muss `passed: true` und den exakten `sha256` des neu gebauten Proxys
-enthalten; ein abweichender Beleg lässt den Build fehlschlagen. Der Publisher
-setzt niemals selbst ein positives Abnahmeergebnis. Ein positiver Backendbeleg
-setzt nur `backendQualified: true`; `releaseQualified` bleibt bis zur getrennten
-Paket-, Desktop- und installierten Workflow-Abnahme `false`.
+The destination must be new. The script publishes `cli/Lain.Cli`, `host/Lain.Host`,
+`desktop/Lain.Desktop`, and `proxy/lain-proxy`, the license, source manifests,
+a `notices/` inventory with exact NuGet license metadata and available package
+and official runtime license texts, and an inventory of actually linked Go
+modules with cached root licenses and the Go toolchain license. It also includes
+the static `proxy/codex-model-catalog.json`, CLI skill, and installer.
+`SHA256SUMS` protects package files; a `.tar.gz` and its checksum are created
+beside the directory. The archive uses sorted filenames, fixed owners, and the
+commit timestamp (overridden by `SOURCE_DATE_EPOCH`). .NET builds deterministically
+with normalized source paths. `build-info.json` records the commit, SDK, and
+uncommitted changes. Use a clean commit and identical toolchains for a comparable
+release build.
 
-Falls der Lockstand bewusst aktualisiert werden muss:
+Manifest verification alone does not replace backend acceptance under
+`docs/execution.md`. Without final acceptance evidence, the result is only a
+staging package: `gate-status.json` contains `releaseQualified: false` and no
+`qualification.json` is generated. For a backend-accepted package, set
+`LAIN_QUALIFICATION_FILE=/absolute/approved/qualification.json`. This evidence
+must contain `passed: true` and the exact `sha256` of the newly built proxy;
+a mismatch fails the build. The publisher never assigns a passing result itself.
+Passing backend evidence sets only `backendQualified: true`; `releaseQualified`
+stays `false` until separate package, Desktop, and installed-workflow acceptance.
+
+If the lock state needs an intentional update:
 
 ```sh
 dotnet restore Lain.sln -r linux-x64 -p:SelfContained=true
 ```
 
-Die Änderungen an allen Lockdateien prüfen und einchecken, dann erneut publizieren.
-Die Release-Pipeline aktualisiert Lockdateien niemals automatisch.
+Review and commit changes to all lockfiles, then publish again. The release
+pipeline never updates lockfiles automatically.
 
-## Nur den Desktop neu paketieren
+## Repackage only Desktop
 
-Ein reines UI-Update verwendet den bereits qualifizierten Paketordner als
-Basis und wird zuerst in einem neuen Staging-Ordner aufgebaut.
-`publish-linux.sh` ist dafür ungeeignet: Es baut auch Host, CLI und Core neu.
-Den Desktop mit dem aktuellen Lockstand separat veröffentlichen:
+A UI-only update uses the already qualified package directory as its baseline
+and is assembled first in a new staging directory. `publish-linux.sh` is
+unsuitable: it also rebuilds Host, CLI, and Core. Publish Desktop separately
+with the current lock state:
 
 ```sh
 dotnet restore src/Lain.Desktop/Lain.Desktop.csproj --locked-mode -m:1 \
@@ -88,66 +89,61 @@ dotnet publish src/Lain.Desktop/Lain.Desktop.csproj --no-restore -m:1 \
   -p:BuildInParallel=false -nr:false -c Release -r linux-x64 --self-contained true \
   -o /absolute/new/desktop-staging -p:ContinuousIntegrationBuild=true \
   -p:Deterministic=true -p:DebugType=None -p:DebugSymbols=false \
-  -p:InformationalVersion=1.0.0+DESKTOP_COMMIT \
+  -p:InformationalVersion=0.8.0+DESKTOP_COMMIT \
   -p:PathMap="$PWD=/_/lain"
 ```
 
-Im kopierten Paket ausschließlich den gesamten `desktop/`-Ordner ersetzen;
-ein Überschreiben einzelner Dateien würde entfernte Abhängigkeiten erhalten.
-Host, CLI und `proxy/` vor und nach dem Kopieren anhand aller Dateihashes
-vergleichen. Die Live-Installation und den Dienst bis zur Desktopprüfung
-unverändert lassen.
+Replace only the complete `desktop/` directory in the copied package; replacing
+individual files would retain removed dependencies. Compare all Host, CLI, and
+`proxy/` file hashes before and after copying. Leave the live installation and
+service unchanged until Desktop verification.
 
-Das neue NuGet-Inventar muss aus dem aktuellen Restoregraph stammen. Vor
-`python3 scripts/collect-notices.py /absolute/new/package/notices` auch Host
-und CLI mit ihren unveränderten Lockdateien wiederherstellen und prüfen, dass
-deren inventarisierte Abhängigkeiten zum Basispaket passen. Einen frischen
-`notices/`-Ordner verwenden, damit keine entfernten Pakete zurückbleiben. Das
-Skript erfasst Semi, Ursa und transitive Pakete automatisch; `official/`
-ergänzt die Lizenztexte aus den in `sources.json` festgehaltenen
-Repository-Commits der NuGet-Pakete. Der alte Avalonia-11-Lizenztext bleibt als
-historischer Zusatz erhalten; das aktuelle Inventar benennt die exakte Version.
+The new NuGet inventory must come from the current restore graph. Before
+`python3 scripts/collect-notices.py /absolute/new/package/notices`, also restore
+Host and CLI with their unchanged lockfiles and verify their inventoried
+dependencies match the baseline package. Use a fresh `notices/` directory to
+avoid retaining removed packages. The script collects Semi, Ursa, and transitive
+packages automatically; `official/` adds license texts from the NuGet packages'
+repository commits recorded in `sources.json`. The old Avalonia 11 license text
+remains as a historical supplement; the current inventory names the exact version.
 
-In `build-info.json` ausschließlich Desktop-Provenienz und den neuen
-Paketierungsstand aktualisieren, die bisherigen Komponentenstände erhalten.
-Backendabnahme und ihre exakten Hashes bleiben bestehen; alte Desktopbelege
-gelten nur für ihren aufgezeichneten Stand. `releaseQualified` bleibt bis zur
-erneuten visuellen Abnahme `false`. Anschließend `SHA256SUMS` für alle
-Paketdateien sowie Archiv und Archivprüfsumme neu erzeugen. Erst das geprüfte
-Paket für eine getrennte Desktopaktualisierung der Installation verwenden;
-der normale Installer ersetzt die ganze Anwendung.
+Update only Desktop provenance and the new packaging state in `build-info.json`,
+preserving other component states. Backend acceptance and its exact hashes remain;
+old Desktop evidence applies only to its recorded state. `releaseQualified` stays
+`false` until renewed visual acceptance. Then regenerate `SHA256SUMS` for all
+package files, the archive, and its checksum. Use only the verified package for
+a separate Desktop update; the normal installer replaces the whole application.
 
-Diese Schritte automatisiert der Staging-Helfer nach dem Restore aller drei
-Projekte und dem separaten Desktop-Publish:
+After restoring all three projects and publishing Desktop separately, this
+staging helper automates those steps:
 
 ```sh
 python3 scripts/stage-desktop-refresh.py /absolute/baseline-package \
   /absolute/new/desktop-staging /absolute/new/lain-desktop-refresh \
   --desktop-source-commit DESKTOP_COMMIT \
-  --desktop-informational-version 1.0.0+DESKTOP_COMMIT
+  --desktop-informational-version 0.8.0+DESKTOP_COMMIT
 ```
 
-Er verweigert vorhandene Ausgaben, prüft das Basispaket, vergleicht die
-Nicht-Desktop-Abhängigkeiten, erhält Host/CLI/Proxy bytegenau und erzeugt neue
-Provenienz, Notices, Prüfsummen und Archiv. Fehler hinterlassen einen
-unvollständigen Staging-Ordner zur Untersuchung; diesen nicht installieren.
-Der Helfer startet weder Programme noch Dienste und schreibt in keine Installation.
+It rejects existing outputs, verifies the baseline, compares non-Desktop
+dependencies, preserves Host/CLI/Proxy byte for byte, and creates new provenance,
+notices, checksums, and an archive. Failures leave an incomplete staging directory
+for investigation; do not install it. The helper starts no programs or services
+and writes to no installation.
 
-Für die spätere Aktualisierung nur das GUI schließen; der Dienst bleibt aktiv.
-Vor jeder Installationsänderung die kompletten `cli/`, `host/` und `proxy/`
-Dateihashes von Installation und Staging vergleichen und bei einer Abweichung
-abbrechen. `desktop/` und `notices/` zunächst in neue Nachbarordner der
-Installation kopieren, die bisherigen Ordner in eindeutig benannte Backups
-außerhalb von `app/` verschieben und die vorbereiteten Ordner als `app/desktop`
-und `app/notices` einsetzen. Danach ausschließlich `build-info.json`,
-`gate-status.json` und `SHA256SUMS` aus dem geprüften Paket übernehmen und im
-installierten `app/` mit `sha256sum --check --quiet SHA256SUMS` prüfen. Launcher,
-Service-Datei und private Daten werden bei diesem Desktopwechsel nicht berührt;
-ein Dienstneustart ist nicht erforderlich.
+For the later update, close only the GUI; the service stays active. Before any
+installation change, compare all `cli/`, `host/`, and `proxy/` file hashes between
+installation and staging; abort on any difference. First copy `desktop/` and
+`notices/` into new sibling directories of the installation, move the old
+directories to uniquely named backups outside `app/`, and place the prepared
+directories at `app/desktop` and `app/notices`. Then copy only `build-info.json`,
+`gate-status.json`, and `SHA256SUMS` from the verified package and run
+`sha256sum --check --quiet SHA256SUMS` inside the installed `app/`. This Desktop
+switch leaves the launcher, service file, and private data untouched; no service
+restart is required.
 
-## Installieren und starten
+## Install and start
 
-Archivprüfsumme vor dem Entpacken prüfen; danach den absoluten Paketpfad angeben:
+Verify the archive checksum before extraction, then supply the absolute package path:
 
 ```sh
 /absolute/path/lain-linux-x64/install-linux.sh /absolute/path/lain-linux-x64
@@ -157,49 +153,48 @@ systemctl --user start lain.service
 ~/.local/bin/lain ui
 ```
 
-Der Installer startet oder aktiviert keinen Dienst. Optional aktiviert
-`systemctl --user enable lain.service` den Start bei der Benutzeranmeldung.
-Es wird kein Linger eingerichtet. Der Host läuft unabhängig vom GUI-Fenster,
-jedoch nur innerhalb der Lebensdauer des Benutzer-Service-Managers.
+The installer neither starts nor enables a service. Optionally,
+`systemctl --user enable lain.service` enables startup at user login. Linger is
+not configured. The Host runs independently of the GUI window, but only within
+the lifetime of the user service manager.
 
-Standardpfade:
+Default paths:
 
-| Zweck | Pfad |
+| Purpose | Path |
 | --- | --- |
 | Launcher | `~/.local/bin/lain` |
-| Desktop-Eintrag | `~/.local/share/applications/lain.desktop` |
-| Originales Logo | `~/.local/share/icons/lain.png` |
-| Private Daten | `~/.local/share/lain` (Modus 0700) |
-| Programme | `~/.local/share/lain/app/{cli,host,desktop,proxy}` |
+| Desktop entry | `~/.local/share/applications/lain.desktop` |
+| Original logo | `~/.local/share/icons/lain.png` |
+| Private data | `~/.local/share/lain` (mode 0700) |
+| Programs | `~/.local/share/lain/app/{cli,host,desktop,proxy}` |
 | Service | `~/.config/systemd/user/lain.service` |
 | Host API | `http://127.0.0.1:18418` |
-| Eigener Inference-Proxy | `http://127.0.0.1:18417` |
+| Dedicated inference proxy | `http://127.0.0.1:18417` |
 
-`lain` funktioniert aus jedem Arbeitsverzeichnis; `lain ui` startet die GUI,
-alle anderen Argumente gehen unverändert an die CLI. `LAIN_HOME` überschreibt
-das private Verzeichnis und muss absolut sein. Leerzeichen werden unterstützt;
-Anführungszeichen, Backslashes, Prozentzeichen und Tabs in `LAIN_HOME` verweigert
-der Installer vor jeder Änderung, da diese Pfade keine unterstützte systemd-
-Programmpfadform sind. Beim Installieren wird der gewählte
-Wert auch im Launcher und im Service festgehalten. Ein abweichendes
-Installationspräfix als zweites Argument ändert den Ort von `bin/lain`.
-Der aktuelle Installer legt zusätzlich `share/applications/lain.desktop` und
-`share/icons/lain.png` unter diesem Präfix ab; `LAIN_DESKTOP_DATA_DIR` kann
-den absoluten `share`-Pfad separat setzen. Der Desktop-Eintrag startet den
-absoluten Launcher mit `ui`, unabhängig von `PATH` und Arbeitsverzeichnis.
-Exec-Argumente und Desktop-Zeichenfolgen werden nach ihrer jeweiligen Syntax
-maskiert. Das originale transparente Katzenbild wird unverändert kopiert;
-der Desktop skaliert es für Menü und Taskleiste.
-Im Anwendungsmenü erscheint **lain — Local AI Gateway**. Der CLI-Befehl heißt
-weiterhin `lain`; bestehende Installationspfade ändern sich dadurch nicht.
-`LAIN_HOME/desktop-integration.json` zeichnet die geschriebenen Desktop-/Icon-
-Pfade und Hashes auf. Vorhandene fremde Dateien, Symlinks oder nachträglich
-angepasste Desktop-Einträge/Icons werden vor jeder Installationsänderung
-verweigert; eigene Anpassungen bleiben so erhalten.
-`LAIN_SYSTEMD_DIR` wählt das Verzeichnis für die Service-Datei, ansonsten gilt
-`$XDG_CONFIG_HOME/systemd/user` beziehungsweise `~/.config/systemd/user`.
+`lain` works from any working directory; `lain ui` launches the GUI, and all other
+arguments pass unchanged to the CLI. `LAIN_HOME` overrides the private directory
+and must be absolute. Spaces are supported; the installer rejects quotes,
+backslashes, percent signs, and tabs in `LAIN_HOME` before changing anything
+because these paths are not a supported systemd executable-path form. Installation
+records the selected value in both launcher and service. A different installation
+prefix as the second argument changes the location of `bin/lain`.
 
-Isolierter Installationstest ohne Systemänderungen oder Dienststart:
+The current installer also places `share/applications/lain.desktop` and
+`share/icons/lain.png` under that prefix; `LAIN_DESKTOP_DATA_DIR` can independently
+set the absolute `share` path. The desktop entry starts the absolute launcher
+with `ui`, independently of `PATH` and working directory. Exec arguments and
+desktop strings are escaped according to their respective syntax. The original
+transparent cat image is copied unchanged; the desktop scales it for menus and
+the taskbar. The application menu shows **lain — Local AI Gateway**. The CLI
+command remains `lain`; existing installation paths do not change.
+
+`LAIN_HOME/desktop-integration.json` records written desktop/icon paths and hashes.
+Existing foreign files, symlinks, or subsequently customized desktop entries/icons
+are rejected before any installation change, preserving customizations.
+`LAIN_SYSTEMD_DIR` selects the service-file directory; otherwise it uses
+`$XDG_CONFIG_HOME/systemd/user` or `~/.config/systemd/user`.
+
+Isolated installation test without system changes or service startup:
 
 ```sh
 LAIN_HOME=/tmp/lain-test/data LAIN_SYSTEMD_DIR=/tmp/lain-test/units \
@@ -208,45 +203,41 @@ cd /tmp
 /tmp/lain-test/prefix/bin/lain --help
 ```
 
-Bestandsproxy, vorhandene Proxy-Queues, OAuth-Credentials und die normale
-Codex-Konfiguration werden durch die Installation nicht verändert. Ein
-späterer lesender Import und der separate Codex-Anschluss sind explizite
-CLI-Aktionen. Der Skill wird mitgeliefert und nicht automatisch in die persönliche
-Skillbibliothek kopiert.
+Installation does not change an existing proxy, its queues, OAuth credentials,
+or normal Codex configuration. Later read-only import and separate Codex
+integration are explicit CLI actions. The skill is bundled and is not
+automatically copied into the personal skill library.
 
-## Aktualisieren und zurückwechseln
+## Update and switch back
 
-`systemctl --user stop lain.service`, dann neuen Paketordner mit denselben Pfaden
-installieren, `daemon-reload` und `start` ausführen. Daten bleiben außerhalb von
-`app`; die vorherige Anwendung liegt anschließend unter `app.previous`.
-Vor einer weiteren Aktualisierung diese Sicherung bewusst archivieren oder
-entfernen. Der Installer verweigert das Überschreiben eines fremden `app`-Ordners.
-Für einen Rückwechsel den Dienst stoppen, `app` archivieren und `app.previous`
-als `app` zurücksetzen. Eine Programm-Sicherung ersetzt keine Sicherung des
-Datenverzeichnisses; bei Datenbankschemaänderungen passende Daten sichern.
+Run `systemctl --user stop lain.service`, install the new package using the same
+paths, then run `daemon-reload` and `start`. Data stays outside `app`; the previous
+application then resides at `app.previous`. Before another update, intentionally
+archive or remove that backup. The installer refuses to overwrite a foreign
+`app` directory. To switch back, stop the service, archive `app`, and restore
+`app.previous` as `app`. An application backup does not replace a data-directory
+backup; preserve compatible data when database schemas change.
 
-Deinstallation: Dienst stoppen und deaktivieren, die ausgewiesene Service-Datei,
-den Launcher, den eigenen Desktop-Eintrag `share/applications/lain.desktop`,
-das eigene Icon `share/icons/lain.png` und den eigenen `app`-Ordner entfernen, anschließend
-`systemctl --user daemon-reload`. Private Daten nur auf ausdrücklichen Wunsch
-löschen. Das übergeordnete `LAIN_HOME` und `app.previous` bleiben erhalten;
-kein rekursives Löschen von `~/.local/share/lain` ausführen. Bei individuellen
-Pfaden die vom Installer ausgegebenen konkreten Dateien verwenden.
-Desktop-Eintrag und Icon nur entfernen, wenn Pfad und aktueller SHA-256 zu
-`desktop-integration.json` gehören; angepasste oder fremde Dateien behalten.
+To uninstall, stop and disable the service, remove the identified service file,
+launcher, owned desktop entry `share/applications/lain.desktop`, owned icon
+`share/icons/lain.png`, and owned `app` directory, then run
+`systemctl --user daemon-reload`. Delete private data only on explicit request.
+The parent `LAIN_HOME` and `app.previous` remain; do not recursively delete
+`~/.local/share/lain`. For custom paths, use the exact files reported by the
+installer. Remove desktop entry and icon only when their paths and current
+SHA-256 match `desktop-integration.json`; retain customized or foreign files.
 
-## Synthetisch prüfen
+## Synthetic verification
 
-`./scripts/verify.sh` baut seriell und prüft Accounts, CLI/Client, Modelle,
-Quota, SQLite-Usage, Installer und vorhandene Python-Unittests. Es führt keine
-realen Anbieterproben aus. Optional starten `--core /absolute/lain-proxy` und
-`--host /absolute/Lain.Host` zusätzlich synthetische Prozessprüfungen; der
-Hosttest benötigt den freien eigenen Port 18418. Backendberichte liegen im
-ausgegebenen temporären Verzeichnis. Diese Prüfungen ersetzen keine endgültige
-Abnahme für den exakten Lieferstand.
+`./scripts/verify.sh` builds serially and checks accounts, CLI/Client, models,
+quota, SQLite usage, installer, and existing Python unit tests. It makes no real
+provider probes. Optional `--core /absolute/lain-proxy` and
+`--host /absolute/Lain.Host` add synthetic process checks; the Host test requires
+Lain's port 18418 to be free. Backend reports reside in the reported temporary
+directory. These checks do not replace final acceptance for the exact delivery.
 
-Der isolierte Installer-Test `python3 packaging/test-install.py` prüft außerdem,
-dass nicht unterstützte Pfade keine Installationsänderungen hinterlassen.
-`LAIN_VERIFY_SYSTEMD=1 python3 packaging/test-install.py` prüft zusätzlich die
-erzeugten Units für Standard- und Leerzeichenpfade mit `systemd-analyze --user
-verify`, ohne Dienste zu starten oder zu ändern.
+The isolated installer test `python3 packaging/test-install.py` also verifies
+that unsupported paths leave no installation changes.
+`LAIN_VERIFY_SYSTEMD=1 python3 packaging/test-install.py` additionally verifies
+generated units for default and space-containing paths using
+`systemd-analyze --user verify`, without starting or changing services.

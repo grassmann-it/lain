@@ -58,17 +58,10 @@
       "lain.host": {
         "type": "Project",
         "dependencies": {
-          "Lain.Core": "[1.0.0, )",
+          "Lain.Core": "[0.8.0, )",
           "Microsoft.Data.Sqlite": "[10.0.12, )",
           "YamlDotNet": "[16.3.0, )"
         }
-      }
-    },
-    "net10.0/linux-x64": {
-      "SQLitePCLRaw.lib.e_sqlite3": {
-        "type": "Transitive",
-        "resolved": "2.1.12",
-        "contentHash": "fWi8Dbknuhgg72fWinIdjXVaqO1hHL4YBBwVLnr7e1c9TAZwJ0QE38j9syW1hwx6HaqEVTwI+O07WPdZn8Rp0w=="
       }
     }
   }

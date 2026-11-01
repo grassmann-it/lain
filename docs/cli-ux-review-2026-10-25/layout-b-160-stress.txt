@@ -1,0 +1,23 @@
+SYNTHETISCH | 15 Accounts | Europe/Berlin | 2026-10-25 | Langnamen
+
+KONTINGENTE (6)                                                                                    | OHNE MESSWERTE (9)
+KONTO           FENSTER                    VERFUEGBAR          VERBRAUCH  RESET                    | KONTO         GRUND / NAECHSTER SCHRITT
+----------------------------------------------------------------------------------------------     | -----------------------------------------------------------
+Codex - Forschung mit einem bewusst langen Accountnamen [geteilt]                                  | NVIDIA        Keine verifizierte Kontoquelle;
+                5h                                66%  [###.....]    34%  10-25 19:00 +01:00       |               Anbieterreferenz
+                7d                                26%  [######..]    74%  10-29 10:00 +01:00       | MiMo          Consolesitzung verbinden
+  Monatskontingent: --full                                                                         | Cohere        Reader fehlt in lain; Anbieter-Konsole
+Command Code    5h                     48 USD-Credits  [........]     0%  unbekannt                | Kilo          FEHLER: Walletabruf; Rest unbekannt
+[geteilt]       7d                      9 USD-Credits  [#######.] 81.25%  10-29 02:00 +01:00       | SambaNova     Reader fehlt in lain; Anbieter-Konsole
+  Extra: 6 USD-Credits; Monatscredits: --full                                                      | Gemini        Projektmonitor verbinden
+Z.ai [geteilt]  5h                      3,200 credits  [######..]    80%  10-25 21:00 +01:00       | Cloudflare    FEHLER: Dataset/Berechtigung pruefen; Quota
+                7d                     18,000 credits  [####....]    55%  10-30 19:00 +01:00       |               unbekannt
+Kimi - Arbeitsbereich fuer eine besonders lange Projektbezeichnung                                 | Synthetic     Antwort ohne erkennbare Quota; Produktscope
+                5h                               100%  [........]     0%  10-25 20:00 +01:00       |               pruefen
+  Monatskontingent: --full                                                                         | Upstage       Reader fehlt in lain; Anbieter-Konsole
+OpenRouter      Free models / day         30 requests  [###.....]    40%  10-26 01:00 +01:00       |
+                Key spend cap                  17 USD  [#.......]    15%  unbekannt                |
+Codex - Archiv  5h                                 0%  [########]   100%  faellig                  |
+                5h: deaktiviert; Letzter Stand; leer                                               |
+
+Unbekannt ist nicht null. Geteilte Budgets nicht addieren. Details: lain usage --full

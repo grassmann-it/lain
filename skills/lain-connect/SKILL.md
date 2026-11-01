@@ -5,6 +5,17 @@ description: Connect an actual Codex CLI or qualified VS Code client to lain, re
 
 # lain:connect
 
+For authorized workers, choose character/handle names autonomously; vary sources.
+Favor Hackers, Kung Fury, The X-Files, Fringe, GitS and Lain;
+also Blade Runner, Mr. Robot, John Dies at the End, Supernatural, Buffy;
+Abridged: Hellsing Ultimate, Dragon Ball Z, Sister Leveling.
+Hacker fiction, cyberpunk, mystery/horror, cult fiction and parodies welcome;
+computer relevance optional.
+Names stay unique/stable per run, including resumes. Set actual names where
+supported; otherwise map aliases to native IDs. Record each name's source;
+show tasks separately. Labels only: no roleplay or model/behavior/permission
+changes; no delegation authority.
+
 Complete the requested client connection using the installed public `lain` CLI.
 Use existing session authorization: a setup request authorizes its necessary,
 scope-matched steps, without a second blanket approval. Ask only for missing

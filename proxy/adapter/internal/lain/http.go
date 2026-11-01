@@ -27,6 +27,9 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 				c.AbortWithStatus(401)
 				return
 			}
+			if i.Recording != nil && i.Recording.HandleManagement(c) {
+				return
+			}
 			if i.Login != nil && i.Login.Handle(c) {
 				return
 			}
@@ -308,6 +311,12 @@ func (i *Integration) Middleware(managementToken string, manager *auth.Manager, 
 		// Keep caller controls before the SDK's handler/translator can normalize
 		// tools. This memory belongs only to the active HTTP request.
 		c.Set("lain.original_request", body)
+		// Recording admission requires the real inference bearer validation here;
+		// the SDK auth middleware runs after this adapter middleware.
+		if RecordingInferenceAuthorized(c.GetHeader("Authorization"), inferenceTokens) && i.Recording.WantsAdmission(alias, route.ID) {
+			i.Recording.Admit(c.GetString("lain.request_id"), path, alias, route.ID, body, requestDimensions(route, nil, c.Request.Header, body))
+		}
+		defer i.Recording.CompleteRequest(c.GetString("lain.request_id"))
 		// Do not forward internal selection metadata to an upstream provider.
 		c.Request.Header.Del("X-Lain-Account-ID")
 		c.Request.Header.Del("X-Lain-Selection")

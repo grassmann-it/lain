@@ -47,6 +47,10 @@ public sealed partial class MainWindow
                 menu.Items.Add(item);
             }
         }
+        var saved = new MenuItem { Header = "Saved conversations" };
+        saved.Click += (_, _) => Navigate("Recordings"); menu.Items.Add(saved);
+        var diagnosis = new MenuItem { Header = "Diagnostics" };
+        diagnosis.Click += (_, _) => Navigate("Diagnostics"); menu.Items.Add(diagnosis);
         var service = new MenuItem { Header = "Local service" };
         service.Click += (_, _) => Navigate("Service");
         menu.Items.Add(service);

@@ -1,103 +1,109 @@
-# Lain 1.0.0 – Lieferform und Linux-Betrieb
+# Lain 1.0.0 — historical distribution and Linux operations
 
-Stand: 26.10.2026. Geprüfter Kandidat: `882bdadd09235b35ca74c0ebdcff59e00061b2fe`, eingefrorene Source unter `/home/tomka/.cache/lain-release-1.0-source-20261026`.
-Die Main-Arbeitskopie enthält fremdes WIP und ist nicht die Buildquelle.
-Die folgenden Belege gelten für die exakten r4-Pakete; spätere Begleitdokumente
-ändern deren Sourcearchiv und Qualifikationsbindung nicht.
+Recorded state: 26 October 2026. Verified candidate:
+`882bdadd09235b35ca74c0ebdcff59e00061b2fe`, frozen source at
+`/home/tomka/.cache/lain-release-1.0-source-20261026`.
+The main working copy contains unrelated WIP and is not the build source.
+The evidence below applies to the exact r4 packages; later accompanying documents
+do not change their source archive or qualification binding.
 
-## Lieferumfang und Freigabestand
+This is a **historical 1.0.0 candidate record**. The selected prospective release
+is [0.8.0](release-0.8.0.md), requiring new bytes and evidence. The old hashes,
+versions, and paths below must not be presented as qualified 0.8.0 artifacts.
 
-Öffentliche Lieferform: je ein Linux-x64-Tararchiv für **Monitor** (Host,
-CLI, Desktop, Skills, ohne Inferenz-Core) und **Gateway** (zusätzlich eigener
-CLIProxyAPI-Build), jeweils mit externer SHA-256-Datei. Enthalten sind
-`LICENSE`, `NOTICE`, `notices/`, `SHA256SUMS`, Installer, Wartungshelfer,
-Build-/Quellprovenienz und `source/lain-source.tar.gz` mit der exakten Source.
-Kein modifizierter Codex-Binärclient und keine VSIX werden mitgeliefert.
-Bestandskonfiguration hat Vorrang vor dem Initialmodus. Ein Gatewaybestand
-kann nicht durch Installation des Monitorpakets stillschweigend reduziert werden.
+## Contents and approval state
 
-Die neuen Pakete liegen unter `/home/tomka/.cache/lain-release-candidate-r4-20261026/`:
+Public distribution format: one Linux x64 tar archive each for **Monitor** (Host,
+CLI, Desktop, skills, no inference Core) and **Gateway** (also Lain's CLIProxyAPI
+build), each with an external SHA-256 file. Contents include `LICENSE`, `NOTICE`,
+`notices/`, `SHA256SUMS`, installer, maintenance helpers, build/source provenance,
+and `source/lain-source.tar.gz` with the exact source. No modified Codex binary
+client or VSIX is included. Existing configuration takes precedence over the
+initial mode. Installing Monitor cannot silently reduce an existing Gateway state.
 
-| Datei | SHA-256 |
+The historical packages reside at
+`/home/tomka/.cache/lain-release-candidate-r4-20261026/`:
+
+| File | SHA-256 |
 | --- | --- |
 | `package-monitor.tar.gz` | `9dabf8e1913f72c39bf337b50d42b9390479cf7f5ed25be72e78ba6bc5127e93` |
 | `package-gateway.tar.gz` | `55a013bb1e35096e8cc2b8474182d24adf6c93cdb00008704428fa9c3ffce243` |
 
-Die gleichnamigen `.sha256`-Dateien referenzieren portable Dateinamen.
-Die Archive behalten beim Entpacken die Ordner `package-monitor` bzw.
-`package-gateway`. Bei Umbenennung für einen Download muss die äußere
-Hashdatei angepasst werden; Archivinhalt und innere Prüfsummen bleiben erhalten.
+The corresponding `.sha256` files reference portable filenames. Extraction
+retains the `package-monitor` and `package-gateway` directories. Renaming a
+same-version download requires updating its outer hash file; archive contents
+and internal checksums remain unchanged. This does not permit relabeling these
+historical archives as another release.
 
-**Noch kein öffentlich freigegebener Download.** Core, elf isolierte
-Vollpaketfälle, native Worker und Drain sowie die native Desktopmatrix sind
-geprüft: acht gepflegte UI-Läufe und zwei vollständige Defaultläufe mit je
-698 Checks. Noticekorrekturen sind im neu gebauten r4-Paket enthalten;
-[Packagingreview](../packaging/licenses/review-20261026.md).
-`releaseQualified: false` bleibt bestehen: Der lokale Dienst läuft weiterhin
-auf `ff5771c`, Revision58/57. Der eigene Updateversuch brach vor Dienststopp
-wegen aktiver Requests ab; Admission ist freigegeben. Der Nutzer möchte die
-laufende Recherche erhalten. Update, Apply/Katalogexport, Skillaktivierung und
-reale finale Modellmatrix warten auf ein ruhiges Zeitfenster.
-[Aktueller Ausführungsstand](release-1.0-execution-2026-10-26.md).
+**Not a publicly approved download.** Core, eleven isolated full-package cases,
+native workers and drain, and the native Desktop matrix were checked: eight
+maintained UI runs and two complete default runs with 698 checks each. The rebuilt
+r4 package includes notice corrections; see the
+[packaging review](../packaging/licenses/review-20261026.md).
+`releaseQualified: false` remains: at this handoff, the local service still ran
+`ff5771c`, revision 58/57. The own-update attempt aborted before service stop
+because requests were active; admission was released. The user wanted ongoing
+research preserved. Update, Apply/catalog export, skill activation, and the real
+final model matrix awaited a quiet window.
+[Recorded execution state](release-1.0-execution-2026-10-26.md).
 
-## Download und Source
+## Download and source
 
-Bei Veröffentlichung gehören beide Archive mit ihren Hashdateien, diese
-Anleitung, [Release Notes](release-1.0-release-notes.md) und Noticeprüfung in einen
-versionierten Releaseeintrag. Ein bestätigter öffentlicher HTTPS-Downloadkanal
-oder Signatur-Vertrauensanker ist noch nicht vorhanden. Keine Download-URL erfinden.
-Hashdateien schützen Integrität; aus derselben Quelle bezogene Hashes allein
-beweisen keine Herausgeberidentität. Die untenstehenden Befehle gelten nach
-Bezug aus dem bestätigten Releasekanal.
+At publication, both archives and hash files, this guide,
+[release notes](release-1.0-release-notes.md), and the notice review belong in a
+versioned release entry. At this recorded stage, there was no confirmed public
+HTTPS download channel or signature trust anchor. Do not invent a download URL.
+Hash files protect integrity; hashes obtained from the same source alone do not
+prove publisher identity. The following commands apply after obtaining files
+from the confirmed release channel.
 
 ```sh
 cd "$HOME/Downloads"
 sha256sum --check package-gateway.tar.gz.sha256
-# Für Monitor stattdessen package-monitor.tar.gz.sha256 verwenden.
+# For Monitor, use package-monitor.tar.gz.sha256 instead.
 ```
 
-Eigene Source steht unter Artistic-2.0, Fremdanteile unter ihren jeweiligen
-Lizenzen. Die Fotofreigabe gilt für Lain einschließlich bearbeitetem Logo;
-Attribution: Alexander Huxel · [Webentwicklung Huxel](https://webentwicklung-huxel.de/)
-([Flickr](https://flickr.com/people/204852984@N05/)). Keine allgemeine Fotolizenz.
-Das Sourcearchiv enthält gepinnte Fremdquellenreferenzen und Patchinputs,
-keinen vollständigen Offlinecache aller NuGet-/Go-/Rust-Abhängigkeiten oder
-separaten Upstreamarchive. Rebuild erfordert die jeweiligen Downloads.
+First-party source uses Artistic-2.0; third-party components retain their own
+licenses. Photo permission covers Lain, including the edited logo; attribution:
+Alexander Huxel · [Webentwicklung Huxel](https://webentwicklung-huxel.de/)
+([Flickr](https://flickr.com/people/204852984@N05/)). This is not a general photo
+license. The source archive includes pinned third-party source references and
+patch inputs, not a complete offline cache of all NuGet/Go/Rust dependencies or
+separate upstream archives. Rebuilding requires the corresponding downloads.
 
-## Optionale Clients: Source-/Patchlieferung
+## Optional clients: source and patches
 
-Der öffentliche Client-Lieferumfang besteht ausschließlich aus den im
-Sourcearchiv enthaltenen eigenen Patches, Transformern, Pins und Anleitungen.
-Lokale Clientqualifikation erteilt keine allgemeine Binär-Redistributionsfreigabe.
-Unveränderte Clients beziehen Nutzer selbst über den jeweiligen offiziellen
-Anbieterkanal. Gruppenmenü/native Usage-Erweiterungen benötigen den passenden
-lokalen Patchstand; gewöhnliche API-Kompatibilität garantiert diese UI nicht.
+Public client delivery consists exclusively of Lain's patches, transformers,
+pins, and instructions in the source archive. Local client qualification does
+not grant general binary redistribution permission. Users obtain unchanged
+clients through each vendor's official channel. Group menus/native usage
+extensions require the matching local patch state; ordinary API compatibility
+does not guarantee these UI features.
 
-Für Codex: Source in einen neuen Ordner entpacken, dort Pins in
-`clients/codex/upstream.json` sowie `clients/codex/README.md` prüfen. Python 3,
-Git und die Upstream-Buildabhängigkeiten sowie exakt Rust 1.99.1 bereitstellen.
-Die nachfolgenden Schritte bauen lokal und installieren nichts:
+For Codex: extract source into a new directory, then review pins in
+`clients/codex/upstream.json` and `clients/codex/README.md`. Provide Python 3,
+Git, upstream build dependencies, and exactly Rust 1.99.1. These steps build
+locally and install nothing:
 
 ```sh
 python3 scripts/prepare-codex-picker.py --fetch --output /absolute/new/codex-source
 scripts/build-codex-picker.sh /absolute/new/codex-source
 ```
 
-Der Preparer bindet Upstream 0.164.0, Archiv-/Patchhashes und Lockdatei;
-der Builder verwendet `--locked`, einen Job und baut **codex sowie
-codex-code-mode-host**. Ein nackter CLI-Binarytausch ist kein vollständiges
-Runtimepaket. Für flaglosen Daemonbetrieb sind zusätzlich die passenden,
-selbst bezogenen Upstream-Helfer/Ressourcen nötig; Zusammenstellung und
-Hashbindung nach `clients/codex/dispatcher.md` und `maintenance.md` prüfen.
-Keine Ressourcen aus einer fremden lokalen Installation öffentlich hochladen.
-Die darin vorhandenen LGPL-2.1-Texte sind kein Beleg für erfüllte Bedingungen
-aller betroffenen Runtimebibliotheken. Native Abnahme gilt nur für die exakt
-qualifizierten Bytes, nicht automatisch für einen eigenen Rebuild.
+The preparer binds upstream 0.164.0, archive/patch hashes, and the lockfile;
+the builder uses `--locked`, one job, and builds **codex and codex-code-mode-host**.
+Replacing only the CLI binary is not a complete runtime package. Flagless daemon
+operation additionally requires matching upstream helpers/resources obtained by
+the user; review assembly and hash binding in `clients/codex/dispatcher.md` and
+`maintenance.md`. Do not publicly upload resources from another local installation.
+Included LGPL-2.1 texts do not prove compliance with the conditions of every
+affected runtime library. Native acceptance covers only the exact qualified
+bytes, not automatically a user's rebuild.
 
-Für VS Code: Original `openai.chatgpt` 26.1021.22027 Linux x64 selbst vom
-Anbieter beziehen. Nur eigener Transformer wird geliefert; kein Originalbundle
-und keine modifizierte VSIX. Python 3.11+, vollständigen vertrauenswürdigen
-Original-Hashmanifest und die festen Pins des Helpers verwenden:
+For VS Code: obtain original `openai.chatgpt` 26.1021.22027 Linux x64 from the
+vendor. Only Lain's transformer is supplied, with no original bundle or modified
+VSIX. Use Python 3.11+, a complete trusted original hash manifest, and the
+helper's fixed pins:
 
 ```sh
 python3 scripts/clients/vscode_groups.py prepare \
@@ -106,31 +112,30 @@ python3 scripts/clients/vscode_groups.py prepare \
   --bundle /absolute/new-local-bundle
 ```
 
-Ziel ist die lokale Version 26.1021.22028. Vollständiges Manifestformat,
-Qualifikation, Installationsplan und Rollback stehen in
-`clients/vscode/maintenance.md`. Ohne vollständiges passendes Original und
-unabhängige Pins abbrechen; keine beliebige aktuelle Marketplaceversion anpassen.
-Erzeugte Bundles/VSIX bleiben lokal. Installation verlangt exakte native
-Qualifikation; Fensterreload erfolgt bewusst durch den Nutzer. Vor lokaler
-Anpassung gelten weiterhin die Bedingungen des Originalanbieters; diese
-Anleitung behauptet keine bestätigte Änderungs-/Weitergabeerlaubnis.
+The target local version is 26.1021.22028. Complete manifest format, qualification,
+installation planning, and rollback are in `clients/vscode/maintenance.md`.
+Without the complete matching original and independent pins, stop; do not adapt
+an arbitrary current Marketplace version. Generated bundles/VSIX stay local.
+Installation requires exact native qualification; the user explicitly reloads
+the window. The original vendor's terms still apply before local adaptation;
+this guide does not claim confirmed modification/redistribution permission.
 
-## Linux: Neuinstallation
+## Linux: fresh installation
 
-Voraussetzungen: Linux x86_64 mit kompatiblen nativen Laufzeitbibliotheken,
-Bash, Python 3, tar/gzip und sha256sum; für den dokumentierten Dienstbetrieb
-systemd als Benutzer-Service-Manager. Desktop benötigt eine grafische Sitzung
-und Avalonia-Native-Abhängigkeiten, unter anderem fontconfig/X11. Eine konkret
-abgenommene Distributions-/Paketliste ist noch nicht belegt. .NET SDK und Go
-sind für das fertige Self-contained-Paket nicht erforderlich.
+Requirements: Linux x86_64 with compatible native runtime libraries, Bash,
+Python 3, tar/gzip, and sha256sum; systemd as the user service manager for the
+documented service operation. Desktop requires a graphical session and native
+Avalonia dependencies, including fontconfig/X11. No specific accepted distribution
+or package list is recorded yet. The finished self-contained package needs
+neither the .NET SDK nor Go.
 
-Nach Erhalt eines final geprüften Archivs (Dateiname und Verzeichnis sind
-Beispiele, nicht vorhandene öffentliche Downloads):
+After obtaining a finally verified archive (filenames and directories are
+examples, not existing public downloads):
 
 ```sh
 cd "$HOME/Downloads"
 sha256sum package-gateway.tar.gz
-# Mit dem bestätigten Releasehash vergleichen, dann entpacken.
+# Compare with the confirmed release hash, then extract.
 tar -xzf package-gateway.tar.gz
 package="$HOME/Downloads/package-gateway"
 (cd "$package" && sha256sum --check SHA256SUMS)
@@ -141,37 +146,37 @@ systemctl --user start lain.service
 "$HOME/.local/bin/lain" ui
 ```
 
-Der Ordnername muss dem tatsächlichen Archivinhalt entsprechen. Installer
-prüft selbst sämtliche inventarisierten Paketdateien und verweigert zusätzliche
-Dateien, Symlinks, Pfadtraversal und fremde Desktopintegration. Er startet oder
-aktiviert keinen Dienst. Optional: `systemctl --user enable lain.service` für
-den Start bei Benutzeranmeldung; Linger wird nicht eingerichtet.
+The directory name must match the actual archive contents. The installer verifies
+all inventoried package files and rejects extra files, symlinks, path traversal,
+and foreign desktop integration. It neither starts nor enables a service.
+Optional: `systemctl --user enable lain.service` for startup at user login;
+linger is not configured.
 
-Standard: Daten und App unter `~/.local/share/lain`, Launcher
-`~/.local/bin/lain`, Unit `~/.config/systemd/user/lain.service`, Desktopdatei
-`~/.local/share/applications/lain.desktop`, Icon `~/.local/share/icons/lain.png`.
-`LAIN_HOME`, `LAIN_SYSTEMD_DIR`, `LAIN_DESKTOP_DATA_DIR` und das zweite
-Installerargument für das Präfix erlauben andere absolute Pfade. Für Updates
-dieselben Werte verwenden. Symlink-Pfade sind ausgeschlossen; LAIN_HOME darf
-keine Anführungszeichen, Backslashes, Prozentzeichen oder Tabs enthalten.
-Mitgelieferte Skills werden nicht automatisch in persönliche Skillverzeichnisse
-installiert. Das Archiv enthält keinen automatisch installierten Codex-Patchclient.
+Defaults: data and app at `~/.local/share/lain`, launcher `~/.local/bin/lain`,
+unit `~/.config/systemd/user/lain.service`, desktop file
+`~/.local/share/applications/lain.desktop`, icon `~/.local/share/icons/lain.png`.
+`LAIN_HOME`, `LAIN_SYSTEMD_DIR`, `LAIN_DESKTOP_DATA_DIR`, and the second installer
+argument for the prefix allow other absolute paths. Use the same values for
+updates. Symlink paths are excluded; LAIN_HOME must not contain quotes,
+backslashes, percent signs, or tabs. Bundled skills are not automatically
+installed into personal skill directories. The archive contains no automatically
+installed patched Codex client.
 
-## Linux: Update und Sicherung
+## Linux: update and backup
 
-Für ein vollständiges Offlineupdate zuerst Clients/Worker beenden, alle
-Aufträge abschließen und Desktop/Tray schließen. Der Installer selbst drainiert
-keine Anfragen und prüft keinen gestoppten Dienst. Erst dann:
+For a complete offline update, first stop clients/workers, finish all jobs,
+and close Desktop/tray. The installer itself neither drains requests nor checks
+for a stopped service. Only then:
 
 ```sh
 systemctl --user stop lain.service
 systemctl --user is-active lain.service
-# Erwartet inactive; auch separat gestartete Host-/Coreprozesse müssen beendet sein.
+# Expect inactive; separately started Host/Core processes must also be stopped.
 ```
 
-Anschließend mit dem Wartungshelfer aus einem geprüften Paket sichern. Die
-folgenden Variablen bezeichnen absolute, individuell zu wählende Pfade; der
-Snapshot darf noch nicht existieren und muss außerhalb von LAIN_HOME liegen:
+Then back up using the maintenance helper from a verified package. The variables
+below denote absolute paths to choose individually; the snapshot must not yet
+exist and must be outside LAIN_HOME:
 
 ```sh
 lain_state="$HOME/.local/share/lain"
@@ -181,16 +186,15 @@ python3 "$old_package/packaging/lain-maintenance.py" \
   backup "$lain_state" "$snapshot" --stopped
 ```
 
-Das ist ein vollständiger privater Dateisnapshot einschließlich App und
-Zugangsdaten, kein Export für Support oder öffentliche Releasebelege. Die
-Befehle werden hier nur dokumentiert, nicht ausgeführt. Der Helfer prüft
-Eigentum, Dateitypen, Hashes und unveränderte Bestände. Launcher, Unit und
-Desktopintegration außerhalb LAIN_HOME gehören nicht zum Snapshot und müssen
-für eine vollständige Wiederherstellung separat erhalten bleiben.
+This is a complete private file snapshot including app and credentials, not an
+export for support or public release evidence. These commands are documented,
+not executed here. The helper checks ownership, file types, hashes, and unchanged
+state. Launcher, unit, and desktop integration outside LAIN_HOME are not included;
+retain them separately for complete recovery.
 
-Ein vorhandenes `app.previous` vor dem nächsten Update außerhalb der Installation
-archivieren; der Installer überschreibt es nicht. Das neue Archiv wie oben
-prüfen und entpacken, `package` auf dessen absoluten Ordner setzen:
+Archive an existing `app.previous` outside the installation before another update;
+the installer does not overwrite it. Verify and extract the new archive as above,
+and set `package` to its absolute directory:
 
 ```sh
 bash "$package/install-linux.sh" "$package"
@@ -199,35 +203,35 @@ systemctl --user start lain.service
 "$HOME/.local/bin/lain" status --json
 ```
 
-Die vorherige App liegt danach in `app.previous`; Daten außerhalb `app` bleiben
-bestehen. Nach dem Start Version/Modus und die für diesen Release vorgesehenen
-Workflows prüfen. Ein erfolgreicher Installer ist kein Modell-/Clienttest.
+The previous app then resides at `app.previous`; data outside `app` persists.
+After startup, verify version/mode and the workflows intended for this release.
+A successful installer is not a model/client test.
 
-Für kontrollierte Gatewayupdates mit belegter Drain-/Prozess-/Generationsprüfung
-existiert zusätzlich [service-update.py](../scripts/service-update.py):
+[service-update.py](../scripts/service-update.py) additionally supports controlled
+Gateway updates with verified drain/process/generation checks:
 
 ```sh
 python3 scripts/service-update.py \
   --inputs /absolute/reviewed-update-inputs.json \
   --inputs-sha256 EXPECTED_INPUT_SHA256
-# Nach erfolgreicher Planung dieselben gebundenen Inputs mit --execute verwenden.
+# After successful planning, use the same bound inputs with --execute.
 ```
 
-Dieses Werkzeug benötigt installationsspezifische, hashgebundene Inputs und
-Qualifikationsbelege. Es ist kein universeller öffentlicher Einzeiler; der
-Publisher nimmt es derzeit nicht als eigenständigen Endnutzer-Updater ins Paket
-auf. Ein generierter öffentlicher Update-Feed ist damit nicht nachgewiesen.
+This tool needs installation-specific, hash-bound inputs and qualification
+evidence. It is not a universal public one-liner; the publisher does not currently
+include it as a standalone end-user updater. This does not establish a generated
+public update feed.
 
-## Linux: Recovery
+## Linux: recovery
 
-Ein Binarytausch über `app.previous` beweist weder Schemaverträglichkeit noch
-Gültigkeit rotierender OAuth-Grants. Nach einem fehlgeschlagenen Update Dienst
-stoppen und aus lassen, Desktop/Clients beenden und den Fehlerbestand erhalten.
-Nicht blind alte Programme gegen bereits migrierte Daten starten.
+Switching binaries using `app.previous` proves neither schema compatibility nor
+validity of rotating OAuth grants. After a failed update, stop the service and
+leave it stopped, close Desktop/clients, and preserve the failed state. Do not
+blindly run old programs against already migrated data.
 
-Den vollständigen Snapshot ausschließlich in ein **neues** Verzeichnis
-zurückspielen. Den Helfer aus dem separat behaltenen, geprüften Paket verwenden;
-Elternverzeichnis des Recoveryziels muss existieren:
+Restore the complete snapshot only into a **new** directory. Use the helper
+from the separately retained verified package; the recovery destination's
+parent directory must exist:
 
 ```sh
 recovery="$HOME/lain-recovery-1.0.0"
@@ -235,16 +239,15 @@ python3 "$package/packaging/lain-maintenance.py" \
   restore "$snapshot" "$recovery" --stopped
 ```
 
-Restore überschreibt keinen bestehenden Bestand und schreibt
-`restore-requires-reconnect`. Den Marker nicht manuell löschen. Vor einem
-Gatewaystart müssen rotierende Credentials ausdrücklich neu verbunden oder
-über die implementierte Generations-Recovery mit einer verifizierten aktuellen
-Generation abgeglichen werden. Alte Refresh-Tokens können serverseitig bereits
-verbraucht sein. Der Host hat dafür eine Quarantäne; der Dateirestore allein
-belegt keine erfolgreiche Konto-Recovery.
+Restore overwrites no existing state and writes `restore-requires-reconnect`.
+Do not manually delete this marker. Before starting Gateway, explicitly reconnect
+rotating credentials or reconcile them with a verified current generation using
+the implemented generation recovery. Old refresh tokens may already have been
+consumed server-side. The Host provides quarantine; file restore alone does not
+prove successful account recovery.
 
-Der zusätzliche Repohelfer [service-recovery.py](../scripts/service-recovery.py)
-verifiziert gepinnte Snapshot-/Helferhashes und plant standardmäßig:
+The additional repository helper [service-recovery.py](../scripts/service-recovery.py)
+verifies pinned snapshot/helper hashes and defaults to planning:
 
 ```sh
 python3 scripts/service-recovery.py \
@@ -252,21 +255,21 @@ python3 scripts/service-recovery.py \
   --snapshot-manifest-sha256 EXPECTED_SNAPSHOT_MANIFEST_SHA256 \
   --helper-sha256 EXPECTED_MAINTENANCE_HELPER_SHA256 \
   --destination /absolute/new-recovery-home
-# Erst für den bewusst gewählten Restore ergänzen: --execute --stopped
+# Add only for an intentionally selected restore: --execute --stopped
 ```
 
-Er ersetzt keine Installation, schaltet keine Unit um und startet keinen
-Backendprozess. Erst mit snapshotkompatibler App, abgeschlossener Credential-
-Recovery und geprüften Konten/History/Routen auf das Recoveryhome umstellen.
-Der konkrete produktionsreife Nutzerablauf für diese Konto-Recovery bleibt in
-der Endabnahme nachzuweisen; hier wird kein erfundener CLI-Befehl angegeben.
-Eine quarantänisierte Sicherung nicht mit einem historischen ungeschützten Host
-starten. Siehe [Recoveryvertrag](linux-delivery-stabilization.md).
+It replaces no installation, switches no unit, and starts no backend process.
+Switch to the recovery home only with a snapshot-compatible app, completed
+credential recovery, and verified accounts/history/routes. The concrete
+production-ready user workflow for account recovery remains to be demonstrated
+in final acceptance; no invented CLI command is given here. Do not start a
+quarantined backup with a historical unprotected Host. See the
+[recovery contract](linux-delivery-stabilization.md).
 
-## Linux: Entfernen
+## Linux: removal
 
-Zuerst alle Aufträge abschließen, Clients/Worker und Desktop/Tray schließen.
-Bei Standardinstallation anschließend:
+First finish all jobs and close clients/workers and Desktop/tray. For a default
+installation, then run:
 
 ```sh
 systemctl --user disable --now lain.service
@@ -277,26 +280,24 @@ rm -- "$HOME/.local/bin/lain" \
   "$HOME/.local/share/icons/lain.png"
 ```
 
-Vor dem Entfernen prüfen, dass diese Dateien zur eigenen Laininstallation
-gehören. Bei abweichenden Installationspfaden die tatsächlich verwendeten Werte
-für Präfix, LAIN_SYSTEMD_DIR und LAIN_DESKTOP_DATA_DIR verwenden. Separat
-laufende Host-/Coreprozesse müssen ebenfalls geordnet beendet sein.
-Daten unter `~/.local/share/lain` bleiben dabei erhalten. Nach gestoppter,
-privater Sicherung kann dieses Verzeichnis samt `app`/`app.previous` bewusst
-archiviert oder entfernt werden; es enthält private Accounts und History.
-Kein automatischer Purge und kein angeblicher Uninstaller. Separat installierte
-Skills, eigene Codexclients, VS-Code-Anpassungen und Providerzugänge werden
-hierdurch nicht entfernt oder widerrufen. Für VS Code den dokumentierten
-qualifizierten Rollback verwenden; für Codex den eigenen Dispatcher nach dessen
-Installationsbeleg zurücknehmen. Eine Dateilöschung widerruft keine Providergrants.
+Before removal, verify these files belong to your Lain installation. For custom
+installation paths, use the actual prefix, LAIN_SYSTEMD_DIR, and
+LAIN_DESKTOP_DATA_DIR values. Separately running Host/Core processes must also
+be stopped cleanly. Data under `~/.local/share/lain` remains. After a stopped
+private backup, intentionally archive or remove this directory with
+`app`/`app.previous`; it contains private accounts and history. There is no
+automatic purge or claimed uninstaller. Separately installed skills, custom
+Codex clients, VS Code adaptations, and provider access are not removed or
+revoked by this procedure. For VS Code, use the documented qualified rollback;
+for Codex, undo its dispatcher according to its installation receipt. Deleting
+files does not revoke provider grants.
 
-## Vor öffentlichem Upload
+## Before public upload
 
-Repoöffentlichkeit ist vom Nutzer beauftragt; ein öffentlicher 1.0-Release mit
-Tag und Downloads ist dadurch noch nicht veröffentlicht. Getrackte Historie,
-Kandidat und tatsächlicher Remotezustand werden vor dem Umschalten geprüft.
-Neue Begleitdokumente und CI-Verträge müssen auf einem getrennten sauberen
-Veröffentlichungsstand liegen; die laufende Main-Arbeitskopie bleibt erhalten.
-Die r4-Archive bleiben an Source882 gebunden. Gesamtfreigabe und tatsächliche
-Installation/Modellabnahme gesondert belegen; keine macOS-/Windowsproduktfreigabe
-von Installerfixtures ableiten.
+Making the repository public was authorized; that did not publish a public 1.0
+release with tag and downloads. Tracked history, candidate, and actual remote
+state are checked before switching visibility. New accompanying documents and
+CI contracts must live on a separate clean publication state; the ongoing main
+working copy is preserved. The r4 archives remain bound to source882. Document
+full approval and actual installation/model acceptance separately; do not derive
+macOS/Windows product approval from installer fixtures.

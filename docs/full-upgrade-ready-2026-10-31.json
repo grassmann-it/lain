@@ -1,0 +1,144 @@
+{
+  "date": "2026-10-31",
+  "scope": "Single full local upgrade authorized by user, including content recording ON",
+  "state": "ready_not_executed",
+  "productionStatus": {
+    "version": "1.0.0+835d2e2260dfa3f1b072eb8fcc1541c33c6dd665",
+    "state": "pending-application",
+    "revision": 924,
+    "appliedRevision": 917,
+    "proxyReady": true
+  },
+  "targetSource": "80dcf135da1f48d27e573afa668fe2b698c22070",
+  "targetComponents": {
+    "cli": "0.8.0+80dcf135da1f48d27e573afa668fe2b698c22070",
+    "host": "0.8.0+80dcf135da1f48d27e573afa668fe2b698c22070",
+    "desktop": "0.8.0+80dcf135da1f48d27e573afa668fe2b698c22070"
+  },
+  "targetCoreSha256": "9ff114d8af5e58b1bf6fe64c20e7613ef4eb861d705555286b50dff49b7b6de5",
+  "package": {
+    "path": "/home/tomka/.cache/lain-full-upgrade-20261031/package",
+    "manifestSha256": "2529d5f51bf0839716fd8239ca1e0b8aac92570b26c24223efbe02e4f4885371",
+    "archiveSha256": "2d3f4496ec5d805ceb65d6dae22b4512d7b8d8fa5d5f203b530ec69723b1b4da",
+    "backendQualified": true,
+    "publicReleaseQualified": false
+  },
+  "oneCommand": "bash /home/tomka/.cache/lain-full-upgrade-20261031/upgrade.sh",
+  "operatorSha256": "e55f05936cc0770a0a405f51a0c1f30efaf1159fbff1a222d68ff31e496aa0e2",
+  "launcherSha256": "392c44fe3f641cb4cdb24de72a6182b230d52501c3b18428a5b0cdf0e7ddcbeb",
+  "steps": [
+    "fresh preservation pins and quiet owned Core drain",
+    "stopped full state snapshot plus retained original application",
+    "SDK current-key transport metadata repair, no old-key authentication fallback",
+    "exact full Host/CLI/Core/Desktop app transaction preserving existing app.previous",
+    "new Host start with stale Core auto-resume suppressed",
+    "normal Apply924 and current-model/default preservation",
+    "new CLI catalog export and sole owned root catalog pointer update; auth unchanged",
+    "content recording enable for all owned Gateway routes and Host/Core acknowledgement"
+  ],
+  "qualification": {
+    "backendFullGates": "passed; actual Core4/Core6/Core4 continuation, independent auth/crash, streaming, tools, journal, SQLite replays",
+    "nativeRecording": 23,
+    "nativeInspector": 123,
+    "actualCliHostPolicy": 10,
+    "actualHostCoreRecorder": 10,
+    "combinedSharedOperator": {
+      "sdkStageRenewCommit": true,
+      "exactFullAppExchange": true,
+      "newHostNormalApply": true,
+      "newClientCatalogAndRootPointer": true,
+      "recordingEnableAndCapture": true,
+      "binaryRollbackKeepsCurrentCredentials": true
+    },
+    "failureAndRecoveryReports": {
+      "combined-runtime-evidence.json": "82c441d5f591497e374504853b848a987fac299a6f1d5d4d98bdfc480dd7910f",
+      "fault-snapshot-evidence.json": "f192ae5598a79e32cee5d9a7be4a15ca0096df7af5bbc430f056a6527b0f90a9",
+      "fault-install-evidence.json": "92b14bd40503c9dda0ce766d89df0ea4c6b1c1953233181ae3ab8896e5d29599",
+      "fault-start-evidence.json": "59fa016bfd01ad0412d1641c7fb53f6bcefd4d96cd3c979dad4162afff31de4e",
+      "fault-enable-evidence.json": "0a4defd8f018c3045f2ee3e4d4afa66607612e2f17575f67220d43205883f9fc",
+      "component-evidence.json": "d15b43bb6fda995f3ef55751c48f2a28a2ddcece7c872c10b6210690444b7ef6"
+    },
+    "launcherCompletionGuards": {
+      "result": "PASS",
+      "checks": 7,
+      "scope": "Critical completion-replay guard only; no production mutation"
+    }
+  },
+  "rollback": "Explicit binary-only rollback mode retains current credentials, metadata and all history/archive; capture is disabled before return, stale Core auto-resume is suppressed. Full state snapshots are retained for reviewed recovery, never automatically restored.",
+  "constraints": [
+    "Do not run the obsolete repair-only activation command for this full upgrade.",
+    "Finish model requests and close lain UI before executing. Active streams are preserved on drain timeout.",
+    "No extra paid/provider probe, credential reset, automatic chat import or public publication.",
+    "Source default capture remains off for new installations; this user has explicitly opted into content capture on this installation."
+  ],
+  "privateEvidenceRoot": "/home/tomka/.cache/lain-full-upgrade-20261031",
+  "actualProductionPreflight": "PASS again with final operator e55f0593, refreshed inputs and current service; no --execute",
+  "cleanup": "14GiB of owned synthetic workspaces removed; receipts preserved.",
+  "shellLauncherSha256": "866ea5789025ed4225d0d7f4f84c32f5b316b260525ea816ad41c71c59ad263e",
+  "launcherBehavior": "Fresh runtime pins, detached qualified operator, phase progress, full verified completion required; no manifest-only completion shortcut.",
+  "expectedTargetRevision": 925,
+  "baselineRefreshFix": {
+    "cause": "Non-target core-owned Codex2 credential refreshed from generation1 to2; only account credentials/capabilities/expiry/generation changed.",
+    "preserved": "same CommandCode current key, all route/profile/collection/router definitions and user settings",
+    "rule": "Rebase only after exact public configuration comparison and an owned non-target credential refresh whitelist. Target credential changes, access/name/resource changes, model/profile changes remain rejected.",
+    "checks": {
+      "result": "PASS",
+      "checks": 7,
+      "actualApprovedDelta": "Codex2 owned credential refresh only",
+      "rejected": "profile, route, access, target-account, identity and owner changes"
+    },
+    "repairOperatorSha256": "9bd161cd0c44470064e14a5dc9d751ba918340e590f3eeee1ece59980f08fe36",
+    "actualCombinedCases": {
+      "combined-runtime-923-evidence.json": {
+        "result": "PASS",
+        "sha256": "4877a1fefd0444296cd4f863b8f4a73ef681cba30e6c66bb8c413d4e53e429a6"
+      },
+      "combined-runtime-924-evidence.json": {
+        "result": "PASS",
+        "sha256": "94c3d8f5734132a960e8695834a594bf58768016fef12b7b768dd0eeded2c5f2"
+      },
+      "combined-runtime-924-rebase-evidence.json": {
+        "result": "PASS",
+        "sha256": "cedd2c718293ba2714b838778ee56734906adb88dff2b0be35c34053c1f73f59"
+      }
+    },
+    "actualCurrentReadOnlyPlan": "ready:true, baseline924/applied917,target925; no production --execute"
+  },
+  "snapshotFailureFix": {
+    "actualFailure": "Full backup refused two pre-existing managed Codex upgrade symlinks; old Host restarted, no repair commit or app exchange occurred.",
+    "helper": "/home/tomka/.cache/lain-full-upgrade-20261031/snapshot-helper.py",
+    "helperSha256": "155ce93fb987a286cfeb5e9c917aadca01d13f211f1e85bad1b2ef4e6ad2d3b6",
+    "behavior": "Retains only two exact managed link shapes/targets as metadata; never follows either target. Captures every regular file. Rejects foreign/changed links and tampered backup. Format2 restore rebases only captured internal dispatch link and retains reconnect quarantine.",
+    "combinedQualificationSha256": "88eb9a0578aad5c6f2bc993cd2b7b9da6b79f52c296d356e804100e240765d1d",
+    "actualCombinedFlow": "PASS924->925 with both actual managed link shapes present",
+    "focusedChecks": {
+      "result": "PASS",
+      "checks": [
+        "two exact managed link roles retained without following external target",
+        "restore rebases internal link and retains reconnect quarantine",
+        "foreign symlink refused",
+        "tampered source rejected before restoration"
+      ],
+      "productionMutation": false
+    }
+  },
+  "automaticExecution": {
+    "state": "waiting_for_current_requests_and_lain_ui_close",
+    "processPid": 1363804,
+    "statusFile": "/home/tomka/.cache/lain-full-upgrade-20261031/waiting-upgrade.json",
+    "logFile": "/home/tomka/.cache/lain-full-upgrade-20261031/automatic-upgrade.log",
+    "waitLimitSeconds": 900,
+    "execute": "Wait for zero active inference requests and no open lain Desktop; then execute qualified full upgrade. No forced shutdown or discard.",
+    "productionUpgradeCompleted": false
+  },
+  "currentStateReconciliation": {
+    "report": "docs/codex-client-recovery-2026-10-31.md",
+    "historicalPreparationFieldsBelow": true,
+    "installedSource": "80dcf135da1f48d27e573afa668fe2b698c22070",
+    "runtimeRevision": 926,
+    "appliedRevision": 926,
+    "originalUpgradeReceipt": "recovery-required; preserved, not rewritten",
+    "recording": "enabled; collection_failed, unknownLoss, incomplete",
+    "evidenceRoot": "/home/tomka/.cache/lain-codex-menu-repair-20261031"
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "canaryPolicy": {
+    "inputScope": "explicit generated fixture only",
+    "syntheticValuesLeaked": false
+  },
+  "checks": [
+    {
+      "detail": "lain.recording.acceptance.synthetic-fixture",
+      "name": "fixture-kind",
+      "passed": true
+    },
+    {
+      "detail": "real data must be absent",
+      "name": "synthetic-only",
+      "passed": true
+    },
+    {
+      "detail": "official contract remains pending",
+      "name": "no-shared-contract-claim",
+      "passed": true
+    },
+    {
+      "detail": "actual=200",
+      "name": "model-call-count",
+      "passed": true
+    },
+    {
+      "detail": "stable harness IDs are unique",
+      "name": "unique-model-call-ids",
+      "passed": true
+    },
+    {
+      "detail": "actual=100",
+      "name": "tool-request-count",
+      "passed": true
+    },
+    {
+      "detail": "actual=100",
+      "name": "reported-result-count",
+      "passed": true
+    },
+    {
+      "detail": "client reports are not local execution evidence",
+      "name": "no-execution-proof",
+      "passed": true
+    },
+    {
+      "detail": "sequence is dense and ascending",
+      "name": "ordered-model-sequences",
+      "passed": true
+    },
+    {
+      "detail": "no invented parent identity",
+      "name": "causal-parents-exist-or-explicit-gap",
+      "passed": true
+    },
+    {
+      "detail": "changes=199",
+      "name": "model-change",
+      "passed": true
+    },
+    {
+      "detail": "distinct=4",
+      "name": "at-least-three-models",
+      "passed": true
+    },
+    {
+      "detail": "conversation has >=3 logical turns",
+      "name": "at-least-three-turns",
+      "passed": true
+    },
+    {
+      "detail": "failed partial attempt remains distinct from complete retry",
+      "name": "retry-with-model-change",
+      "passed": true
+    },
+    {
+      "detail": "fork shares an explicit prefix parent",
+      "name": "explicit-fork",
+      "passed": true
+    },
+    {
+      "detail": "workers=['synthetic-worker-one', 'synthetic-worker-two']",
+      "name": "root-two-workers",
+      "passed": true
+    },
+    {
+      "detail": "same name has distinct IDs and fragmented arguments",
+      "name": "same-name-parallel-partial-tools",
+      "passed": true
+    },
+    {
+      "detail": "reported results occur after requests and reference calls",
+      "name": "tool-causality",
+      "passed": true
+    },
+    {
+      "detail": "stable harness tool IDs are unique",
+      "name": "unique-tool-ids",
+      "passed": true
+    },
+    {
+      "detail": "unknown remains null/not inferred",
+      "name": "unknown-ids-preserved",
+      "passed": true
+    },
+    {
+      "detail": "variants=['skill-v1', 'skill-v2']",
+      "name": "skills-v1-v2-without-loaded-claim",
+      "passed": true
+    },
+    {
+      "detail": "explicit synthetic canaries were omitted",
+      "name": "synthetic-canaries-absent",
+      "passed": true
+    },
+    {
+      "detail": "all requested harness cases declared",
+      "name": "expected-coverage-schema",
+      "passed": true
+    }
+  ],
+  "coverage": {
+    "canaryValuesEmitted": false,
+    "distinctRequestedModelsAtLeast": 3,
+    "forkCount": 1,
+    "modelCalls": 200,
+    "reportedToolResults": 100,
+    "requiredCaseTags": [
+      "model-change",
+      "fork",
+      "retry-model-change",
+      "root-two-workers",
+      "same-name-parallel-tools",
+      "partial-arguments",
+      "reported-results",
+      "unknown-ids",
+      "skills-v1-v2",
+      "secret-canaries"
+    ],
+    "retryGroupCount": 1,
+    "sameNameParallelPairs": 1,
+    "skillVariants": [
+      "skill-v1",
+      "skill-v2"
+    ],
+    "toolRequests": 100,
+    "unknownIdentityCountAtLeast": 1,
+    "workerCount": 2
+  },
+  "fixture": {
+    "path": "/home/tomka/.cache/lain-implementation-20261030/worktrees/glm-acceptance/tests/recording-acceptance/fixtures/synthetic-recording-v1.json",
+    "sha256": "83a7fab699c19238368f18de156e8ae83df644de3b886fa9d3c649fee2b8b446",
+    "synthetic": true
+  },
+  "integration": {
+    "blocker": "sharedRecordingContracts.cs / official fixture API is not published",
+    "clientStorageUiOrServiceClaimed": false,
+    "productionApiUsed": false,
+    "providerCalls": 0,
+    "status": "not_run"
+  },
+  "kind": "lain.recording.acceptance.synthetic-validation-report",
+  "passed": true,
+  "scope": "bounded fixture causality and synthetic leak checks only",
+  "synthetic": true,
+  "version": 1
+}

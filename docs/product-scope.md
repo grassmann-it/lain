@@ -9,6 +9,13 @@ zu lesen.
 
 ## Bestätigt
 
+- Releaseentscheidung 27.10.2026: Der erste Release heißt **0.8.0** (ohne
+  Beta-Suffix). Neue Quellen/Pakete entsprechend versionieren; historische
+  Prüfbelege und bereits installierte Versionen nicht umbenennen. Vorherige
+  Vorschläge0.8.0-beta.1 und1.0.0 sind damit für den ersten Release abgelöst.
+  Freiwilliger PayPal-Support auf About und im README verwendet den bestehenden
+  öffentlichen MeowChan-Spendenlink. Keine automatische Zahlungsaufforderung.
+
 - Das Produkt heißt **lain — Local AI Gateway** (Produktbezeichnung am
   24.10.2026 ausdrücklich bestätigt). Der Befehlsname ist `lain`. Der zunächst
   genannte Arbeitstitel/Ordner `multitool` wurde entsprechend umbenannt.
@@ -25,6 +32,15 @@ zu lesen.
   hat den bisherigen Kandidaten im Zuschnitt der Arbeitspakete konkret gewählt.
 - **Hintergrundbetrieb unabhängig von der UI** ist bestätigt: Usage wird weiter
   erfasst und Skills bleiben erreichbar, wenn das Fenster geschlossen ist.
+- Startup request, 27 October 2026: opening Lain should check and start its
+  background service when needed, and distinguish Host availability from Gateway
+  readiness. Login startup/setup should work on Linux, macOS and Windows.
+  The user confirmed background-service startup at sign-in enabled by default
+  during setup; login startup and startup when opening Lain remain independently
+  configurable in Settings.
+  The [lifecycle proposal](startup-and-autostart-work-packages.md) records the
+  current gaps and proposed implementation slices; platform mechanisms and
+  detailed recovery policy are still proposals, not implemented behavior.
 - **Linux zuerst** wird tatsächlich abgenommen; Windows/macOS werden bei der
   Architektur berücksichtigt. Erste echte Zugänge sind **Codex-/ChatGPT-Abo
   und Command Code**.
@@ -76,6 +92,27 @@ zu lesen.
   wird vom Nutzer als noch deutlich fehlerhaft beschrieben.
 - Anime-/Manga-Referenzen zu Lain und Ghost in the Shell sind gestalterisch
   ausdrücklich erwünscht.
+
+## Product language — confirmed 27 October 2026
+
+Lain is **English-only**. The user explicitly chose English-only after considering
+English-first with German as a secondary language. This applies to first-party
+UI text, CLI help and messages, actionable errors, onboarding, bundled skill
+instructions, examples, and public user documentation, including the README,
+installation guide and release notes. New and revised user-facing copy must use
+consistent English terminology.
+
+The first release does not require a German locale, language selector or
+translation framework. User-entered names, prompts and content remain in the
+user's chosen language; upstream error text is preserved where required for
+diagnosis. Internal planning conversations and historical engineering notes may
+remain German. These notes must not substitute for English user documentation.
+
+This is an accepted product requirement, not a claim that existing content has
+already been translated. Before publishing downloads, review the complete
+installation-to-first-request flow and its failure paths for remaining German
+first-party copy. Keep command names, configuration keys and protocol contracts
+stable unless separately agreed.
 
 ## Aktueller erster Zuschnitt
 

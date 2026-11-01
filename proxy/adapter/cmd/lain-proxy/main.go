@@ -10,6 +10,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy"
 	auth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
+	"github.com/router-for-me/CLIProxyAPI/v8/sdk/logging"
 	_ "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator/builtin"
 	"io"
 	"lain.local/proxy/internal/lain"
@@ -35,6 +36,7 @@ func run() error {
 	journalPath := flag.String("journal", "", "durable event journal path")
 	tokenPath := flag.String("management-token-file", "", "private management bearer token file")
 	ownedPath := flag.String("owned-auth-dir", "", "separate directory for credentials created by lain login")
+	recordingPath := flag.String("recording-config", "", "optional private recording-only policy snapshot JSON path")
 	parentStdin := flag.Bool("parent-stdin", false, "stop when the owning host closes standard input")
 	flag.Parse()
 	for _, p := range []string{*configPath, *bindingsPath, *journalPath, *tokenPath} {
@@ -98,6 +100,12 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	if *recordingPath == "" {
+		*recordingPath = os.Getenv("LAIN_RECORDING_CONFIG")
+	}
+	recorder, closeRecording := lain.OpenRecording(*recordingPath)
+	integration.Recording = recorder
+	defer closeRecording()
 	snapshotStore, err := lain.NewSnapshotStore(cfg.AuthDir)
 	if err != nil {
 		return err
@@ -132,7 +140,8 @@ func run() error {
 	if err = manager.SetExecutorDecorator(integration.ExecutorDecorator(ownedStore.Allowed)); err != nil {
 		return err
 	}
-	service, err := cliproxy.NewBuilder().WithConfig(cfg).WithConfigPath(*configPath).WithCoreAuthManager(manager).WithWatcherFactory(lain.SnapshotWatcher).WithServerOptions(api.WithMiddleware(integration.Middleware(managementToken, manager, cfg.APIKeys...))).Build()
+	service, err := cliproxy.NewBuilder().WithConfig(cfg).WithConfigPath(*configPath).WithCoreAuthManager(manager).WithWatcherFactory(lain.SnapshotWatcher).WithServerOptions(api.WithMiddleware(integration.Middleware(managementToken, manager, cfg.APIKeys...)),
+		api.WithRequestLoggerFactory(func(*config.Config, string) logging.RequestLogger { return nil })).Build()
 	if err != nil {
 		return err
 	}

@@ -10,7 +10,8 @@ public record RevisionRequest<T>(long Revision, T Value);
 public record AccountMetadataDiscoveryRequest(long ExpectedGeneration);
 public record StatusDto(int ContractVersion, string Version, string State, bool ProxyReady, long Revision, long AppliedRevision, DateTimeOffset ObservedAt, string? Error = null,
     string? ActiveProfileId = null, long? ActiveProfileRevision = null,
-    string RuntimeMode = "gateway", HostCapabilitiesDto? Capabilities = null, ProfileApplicationStatusDto? Application = null);
+    string RuntimeMode = "gateway", HostCapabilitiesDto? Capabilities = null, ProfileApplicationStatusDto? Application = null,
+    RuntimeLifecycleDto? RuntimeLifecycle = null);
 public record ApiError(string Code, string Message);
 public record PageDto<T>(T[] Items, int Offset, int Limit, long Total);
 public record UsageQuery(DateTimeOffset? From = null, DateTimeOffset? To = null, string TimeZone = "UTC", string? AccountId = null, string? Model = null, int? StatusCode = null, int Offset = 0, int Limit = 100,

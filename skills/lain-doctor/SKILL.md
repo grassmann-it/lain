@@ -5,6 +5,17 @@ description: Diagnose concrete lain/Codex errors through public doctor findings 
 
 # lain:doctor
 
+For authorized workers, choose character/handle names autonomously; vary sources.
+Favor Hackers, Kung Fury, The X-Files, Fringe, GitS and Lain;
+also Blade Runner, Mr. Robot, John Dies at the End, Supernatural, Buffy;
+Abridged: Hellsing Ultimate, Dragon Ball Z, Sister Leveling.
+Hacker fiction, cyberpunk, mystery/horror, cult fiction and parodies welcome;
+computer relevance optional.
+Names stay unique/stable per run, including resumes. Set actual names where
+supported; otherwise map aliases to native IDs. Record each name's source;
+show tasks separately. Labels only: no roleplay or model/behavior/permission
+changes; no delegation authority.
+
 Use the installed public `lain` CLI to explain a concrete failure and, when
 requested, repair its demonstrated cause. This standalone skill requires no
 other skill. Source code, a candidate package, the installed CLI/Host, exported

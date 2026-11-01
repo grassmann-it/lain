@@ -1,5 +1,31 @@
 # lain
 
+Aktueller Recording-Folgestand 01.11.2026: Default-on und Settings-Archivzugang
+implementiert/geprüft und vomNutzer installiert. Receiptverified, Host
+0.8.0+recording-settings-20261101,926/926ready, Archivliste lesbar. Historische
+Aufnahmelücken bleiben; Startstatus source_unavailable bestätigt keine durchgehende
+Erfassung. Beleg: `docs/recording-settings-delivery-2026-11-01.md`.
+VSCodeSnapAutoUpdate273→274 war beimShutdown06:13unterbrochen; snapdStart11:36
+vollendete es, VSCode1.144.0 wieder geöffnet. KeinLainUninstall.
+
+Aktueller lokaler Abgleich 31.10.2026 22:50: Vollpaket80dcf13 installiert und gegen
+1155 Paketdateien geprüft, Gateway926/926ready, Login-AutostartAN. Codexdispatcher
+repariert; normale Lainstarts patched0.164, Subcommands Original0.166. VSCode
+Produktionsstart/Resume wieder erfolgreich; sporadische Rendererursache offen.
+Aufnahme content AN, aber collection_failed/unknownLoss: nicht vollständig.
+Aktueller Beleg und Grenzen: `docs/codex-client-recovery-2026-10-31.md`. Ältere
+Nichtinstalliert-/Nichtaktiviertangaben unten sind historisch.
+
+Aktueller Implementierungsstand 31.10.2026: lokaler opt-in Recorder und priorisierte
+Releasekorrekturen sind integriert. Sourcefreeze10734a4, Liefer-/Prüfgrenzen in
+`docs/recording-execution-2026-10-30.md`, Pins in
+`docs/recording-verification-2026-10-31.json`, Bedienung in
+`docs/recording-operations.md`. Linux-Prüfpaket gebaut und isoliert geprüft;
+kein produktiver Install/Apply und keine Aufnahme aktiviert. Public-/Backend-
+Liefergates nicht automatisch aus einzelnen Tests ableiten. Fremde CLI-Routen-WIP
+liegt weiter außerhalb des eingefrorenen Kandidaten. Ältere Plan-only- und
+Installiert-Angaben unten gelten für ihren jeweiligen historischen Bezug.
+
 Aktive Arbeitskopie 26.10.2026: Projektregeln und begrenzte Worker sind ausdrücklich
 zur parallelen Umsetzung beauftragt. Vertrag: `docs/workers-v1.md`, Liefer- und
 Prüfstand: `docs/release-workers-2026-10-26.md`. Automatische Zerlegung und
@@ -55,3 +81,13 @@ Kläre tragende Architekturkonflikte vor der betroffenen Umsetzung. Bestehende
 Projektregeln und der konkrete Auftrag gelten weiterhin; dieser Hinweis startet
 kein vollständiges Sparring und autorisiert keine zusätzlichen Dateiänderungen.
 <!-- architecture-sparring:end -->
+
+## Explicit worker route selection (30 October 2026)
+
+The user rejects automatically introducing Lain's `free_only` mode when requesting
+a free endpoint such as `openrouter/free`. Ordinary worker delegation uses the
+configured route with `costPolicy: "configured"`. `providers check-free` is optional
+strict-policy qualification, not a mandatory route-availability check. Keep the
+requested model, existing provider spending caps and no-paid-substitution request;
+do not add a fallback or silently change an applied route-level guard. Do not infer
+extra cost-policy requirements merely from the model's free label.

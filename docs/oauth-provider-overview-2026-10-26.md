@@ -1,206 +1,207 @@
-# OAuth- und Loginübersicht der Provider
+# Provider OAuth and login overview
 
-Stand: 26.10.2026. Inventar der gelesenen Arbeitskopie bei HEAD
-`fef478f601f46b315939fa53f02caa9791086f1d` einschließlich vorhandenem WIP.
-**Implementiert, im Katalog angeboten, ausgeliefert und real am Provider geprüft
-sind verschiedene Zustände.** Diese Übersicht prüft Source und dokumentierte
-Nachweise, nicht die aktuelle private Installation. Kein Update vorgesehen.
+As of: 26.10.2026. Inventory of the reviewed working copy at HEAD
+`fef478f601f46b315939fa53f02caa9791086f1d`, including existing WIP.
+**Implemented, offered in the catalog, delivered and tested against the actual
+provider are different states.** This overview reviews source code and documented
+evidence, not the current private installation. No update is planned.
 
-## Einstieg: Welche Loginoptionen gibt es tatsächlich?
+## Starting point: which login options actually exist?
 
-I = Inferenz, M = Modelle, Q = Quota/Usage; Q verspricht keinen Geldsaldo.
-„Angeboten“ bezeichnet den Sourcekatalog, keine in dieser Recherche bestätigte
-Anbieteranmeldung. API-Keys bleiben als eigener Verbindungsweg erhalten.
+I = inference, M = models, Q = quota/usage; Q does not promise a monetary balance.
+“Offered” refers to the source catalog, not a provider login confirmed in this
+research. API keys remain a separate connection method.
 
-| Provider / Methode | Aktueller tatsächlicher Weg | Zweck / Erneuerung | Was die nächste Umsetzung oder Abnahme benötigt |
+| Provider / method | Actual current path | Purpose / renewal | What the next implementation or acceptance step requires |
 | --- | --- | --- | --- |
-| Codex `codex-owned` | Eigener Browserlogin über vorhandenen Gateway/Core | I/Q; Core besitzt den Grant | Vorhandenen Weg erhalten. Separater Standalone-Monitor braucht isolierten offiziellen app-server und eigenen Lifecycle-Nachweis. |
-| OpenRouter `browser` | Implementiertes öffentliches S256-PKCE → eigener API-Key | I/M/Q; statischer Key, kein OAuthrefresh | Reale Callback-/Key-/Reconnect-Abnahme; keine eigene Clientregistrierung nötig. |
-| Kilo `device` | Implementierter persönlicher Device-Keyflow | I/M/Q; `static-key`, bei Ablehnung Reconnect | Echter neuer Login, Identität und Transport/Quota prüfen; kein Client-ID-Setup. |
-| Kimi `kimi-device` | Implementierter Deviceflow, globale/CN-Region ausdrücklich wählen | **Q allein**; eigener Hostowner `kimi-oauth` | Echter Login, Neustart und Refresh samt `/me`-/Usage-Bindung; bestehende Inferenzkeys bleiben separat. Keine zusätzliche Registrierung im akzeptierten Toolkitvertrag. |
-| NanoGPT `browser` | Implementierter Shortcut-PKCE → appbezogener Inferenzkey | I/M; statischer Key, kein Refreshowner | Echte Ausgabe-/Reconnect-Abnahme. Q derzeit separat per Managementtoken; Same-Key-Q ist ein neues Paket. Keine manuelle Clientregistrierung für Shortcut. |
-| Google `official-cli` | Implementierter Login mit offizieller gcloud 584.0.0 in eigenem privaten Profil; lokal installationsabhängig | Q allein; CLI hält Refreshgrant, Hostowner `google-gcloud` projiziert Access | Passende gepinnte CLI und echte Login-/Projekt-/Renewal-/Monitoring-Abnahme. Keine eigene OAuthregistrierung für delegierten CLIweg. |
-| Google / Cloudflare `browser` | OAuthadapter implementiert, **Maintainergate**, keine nachgewiesene eigene Registrierung | Q allein; `google-oauth` / `cloudflare-oauth` | Eigene Clients, akzeptierte Scopes/Callbacks und echte Refresh-/Ressourcen-/Readabnahme; Details unten. |
-| Poe `browser` | PKCE-Keyadapter implementiert, **Registrierungs-/Callbackgate** | I/M/Q; ausgegebener API-Key, ggf. Ablauf, kein Refreshgrant | Eigener Poe-Client und exakter Releasecallback, echte Key-/Reconnect-Abnahme. |
-| Requesty `official-cli` | Allgemeiner Produktadapter **unavailable**; eine dokumentierte isolierte offizielle CLI-Anmeldung mit privatem Keyexport war erfolgreich | Übernommener statischer Key: I/M und Self-Q; kein lain-OAuthrefresh | Bewährten Operator als allgemeinen isolierten Adapter samt Recovery/Identitätsbindung produktisieren. Einzelfall aktiviert keinen Button. |
-| Fireworks `official-cli` | Konkreter Adapter implementiert, **produktiv hart gesperrt**, auch mit passender Binary | Geplant I/M/Q nach offizieller CLI-Anmeldung und sichtbarer neuer Keyanlage; statischer Key | firectl 1.8.19 bindet `:18000` an alle Interfaces. Callbackisolation zuerst lösen und prüfen, danach echte SSO-/Account-/Keyabnahme. |
-| MiMo `console-browser` | Eigene Consolesitzung implementiert; Linux/Browser/Desktop-Gate; **kein OAuthadapter** | Q allein; browsergebundene Sitzung, Reconnect nach Schließen/Neustart | Authentifizierte UID-/Regions-/Individual-Readabnahme fehlt; keine neue Browserautomation in diesem Vorhaben. |
-| Codex / Google Snapshot | Bewusster externer Access-Token-Snapshot mit Identität/Ressource und Ablauf | Q allein; **kein Refresh oder Revoke durch lain** | Nach Ablauf erneute bewusste Übergabe; niemals zu einem eigenen Grant umetikettieren. |
+| Codex `codex-owned` | Dedicated browser login through the existing gateway/core | I/Q; core owns the grant | Preserve the existing path. A separate standalone monitor needs an isolated official app-server and its own lifecycle evidence. |
+| OpenRouter `browser` | Implemented public S256-PKCE → dedicated API key | I/M/Q; static key, no OAuth refresh | Real callback/key/reconnect acceptance; no separate client registration required. |
+| Kilo `device` | Implemented personal device-key flow | I/M/Q; `static-key`, reconnect on rejection | Test a real new login, identity and transport/quota; no client-ID setup. |
+| Kimi `kimi-device` | Implemented device flow; explicitly choose global/CN region | **Q only**; dedicated host owner `kimi-oauth` | Real login, restart and refresh with `/me`/usage binding; existing inference keys stay separate. No additional registration under the accepted toolkit contract. |
+| NanoGPT `browser` | Implemented shortcut PKCE → app-specific inference key | I/M; static key, no refresh owner | Real key-issuance/reconnect acceptance. Q currently uses a separate management token; same-key Q is a new work package. No manual client registration for the shortcut. |
+| Google `official-cli` | Implemented login using official gcloud 584.0.0 in a dedicated private profile; depends on local installation | Q only; CLI holds the refresh grant, host owner `google-gcloud` projects access | Matching pinned CLI and real login/project/renewal/monitoring acceptance. No separate OAuth registration for the delegated CLI path. |
+| Google / Cloudflare `browser` | OAuth adapters implemented, **maintainer gate**, no evidenced registration of our own | Q only; `google-oauth` / `cloudflare-oauth` | Our own clients, accepted scopes/callbacks and real refresh/resource/read acceptance; details below. |
+| Poe `browser` | PKCE key adapter implemented, **registration/callback gate** | I/M/Q; issued API key, possibly with expiry, no refresh grant | Our own Poe client and exact release callback, real key/reconnect acceptance. |
+| Requesty `official-cli` | General product adapter **unavailable**; one documented isolated official CLI login with private key export succeeded | Adopted static key: I/M and self-Q; no lain OAuth refresh | Turn the proven operator procedure into a general isolated adapter with recovery/identity binding. One successful case does not enable a button. |
+| Fireworks `official-cli` | Specific adapter implemented, **hard-blocked in production**, even with a matching binary | Planned I/M/Q after official CLI login and visible creation of a new key; static key | firectl 1.8.19 binds `:18000` to all interfaces. Resolve and verify callback isolation first, then real SSO/account/key acceptance. |
+| MiMo `console-browser` | Dedicated console session implemented; Linux/browser/desktop gate; **not an OAuth adapter** | Q only; browser-bound session, reconnect after closing/restarting | Authenticated UID/region/individual-read acceptance is missing; no new browser automation in this effort. |
+| Codex / Google snapshot | Deliberate external access-token snapshot with identity/resource and expiry | Q only; **no refresh or revocation by lain** | Deliberate handoff again after expiry; never relabel it as an owned grant. |
 
-**Reale Nachweise:** Der [OAuth-Lieferbericht](oauth-login-implementation-2026-10-25.md)
-belegt Kilo/Kimi-Paketierung, native Offlineabnahme und damalige Installation,
-ausdrücklich keinen neuen echten Providerlogin/Refresh. Er dokumentiert separat
-den erfolgreichen Requesty-CLIlogin und einen automatischen Self-Read, keine
-Inferenz und keinen Organisationswalletsaldo. [EC1–EC4](evaluation-account-connections-2026-10-26.md)
-belegen NanoGPT/DeepSeek-Source und Paketabnahme, aber keine dort abgeschlossene
-Installation/Anbieteranmeldung; Fireworks blieb gesperrt. Der
-[gcloud-Nachweis](account-connect-qualification/cloud/google-gcloud-2026-10-25.md)
-ist eine Source-/Offlinequalifikation, kein echter Login-/Projektread.
-Der [native OpenAI-Usage-Nachweis](native-openai-usage-delivery-2026-10-26.md)
-belegt einen separaten nativen Codexlogin samt Usage; er qualifiziert nicht
-nachträglich einen neuen lain-Standalone-Owner.
+**Real evidence:** The [OAuth delivery report](oauth-login-implementation-2026-10-25.md)
+evidences Kilo/Kimi packaging, native offline acceptance and installation at that
+time, explicitly not a new real provider login/refresh. It separately documents
+the successful Requesty CLI login and an automatic self-read, not inference or an
+organization wallet balance. [EC1–EC4](evaluation-account-connections-2026-10-26.md)
+evidence NanoGPT/DeepSeek source and package acceptance, but no completed
+installation/provider login there; Fireworks remained blocked. The
+[gcloud evidence](account-connect-qualification/cloud/google-gcloud-2026-10-25.md)
+is source/offline qualification, not a real login/project read.
+The [native OpenAI usage evidence](native-openai-usage-delivery-2026-10-26.md)
+evidences a separate native Codex login with usage; it does not retroactively
+qualify a new lain standalone owner.
 
-## Maßgebliche Implementierung und Grenzen
+## Authoritative implementation and limits
 
-Die Wahrheit über angebotene Methoden steht in
-[`ConnectionMethodCatalog.cs`](../src/Lain.Host/Accounts/ConnectionMethodCatalog.cs),
-die tatsächlich registrierten Adapter/Refreshowner in
-[`Program.cs`](../src/Lain.Host/Program.cs). Historische
-[Account-Connect-Pakete](account-connect-work-packages/README.md) und ihre
-[Provider-Matrix](account-connect-work-packages/provider-map.md) beschreiben
-teilweise frühere Planungsstände. Insbesondere „Kilo Device später“, „Kimi
-unqualifiziert“ und „NanoGPT-Connector fehlt“ sind als heutiges Inventar überholt.
+The authoritative list of offered methods is in
+[`ConnectionMethodCatalog.cs`](../src/Lain.Host/Accounts/ConnectionMethodCatalog.cs);
+the adapters/refresh owners actually registered are in
+[`Program.cs`](../src/Lain.Host/Program.cs). Historical
+[Account Connect packages](account-connect-work-packages/README.md) and their
+[provider matrix](account-connect-work-packages/provider-map.md) partly describe
+earlier planning states. In particular, “Kilo Device later”, “Kimi unqualified”
+and “NanoGPT connector missing” are outdated as a current inventory.
 
-| Codebeleg relativ zu `src/Lain.Host/` | Einordnung |
+| Code evidence relative to `src/Lain.Host/` | Assessment |
 | --- | --- |
-| `Accounts/CodexOwnedLoginAdapter.cs`, `HttpCodexOwnedLoginBackend.cs` | Bestehender Corelogin; kein allgemeiner neuer Hostrefreshowner. Coreerneuerung aktiver angewandter Owned-Bindungen ist kein Beleg für routeunabhängiges Monitoring. |
-| `Accounts/PublicLogin/PublicBrowserLoginAdapter.cs`, `OpenRouterLoginAdapter.cs`, `NanoGptLoginAdapter.cs`, `PoeLoginAdapter.cs` | Gemeinsamer Browser-/Callback-/Checkpoint-Lifecycle; OAuth als Keybootstrap. Keine erfundenen Refreshgrants. NanoGPT bietet im Katalog nur I/M. |
-| `Accounts/Kilo/KiloDeviceLoginAdapter.cs`, `KiloTransportHandoff.cs` | Persönlicher Device-Key, Identitätsprüfung und bestandserhaltender Reconnect; Organisationskonten sind nicht pauschal unterstützt. |
-| `Accounts/Managed/KimiDeviceLoginAdapter.cs`, `KimiDeviceProtocol.cs` | Echter registrierter Deviceadapter und `ICredentialOwner`; allein Q. Die alte Kimi-Platzhalterklasse ist kein Gegenbeleg: der Katalog filtert deren Eintrag heraus. |
-| `Accounts/Cloud/CloudOAuthAdapter.cs`, `CloudMaintainerConfiguration.cs` | Vollständiger Code-/Refreshpfad hinter eigener qualifizierter Registrierung; `Program.cs` nimmt nur `Qualified`-Clients auf. |
-| `Accounts/Cloud/GoogleGcloudLoginAdapter.cs`, `GoogleGcloudProcess.cs` | Eigener isolierter offizieller CLI-Owner. Keine Übernahme fremder gcloud-/ADC-Stores; kein Export des CLIrefreshsecrets in einen zweiten Owner. Grant ist breit, nicht „read-only OAuth“. |
-| `Accounts/CliConnections/RequestyCliLoginAdapter.cs`, `CommandCodeCliLoginAdapter.cs`, `MistralVibeCliLoginAdapter.cs` | Gesperrte Klassen mit begrenzten Hilfsverträgen, keine freigegebenen Loginimplementierungen. |
-| `Accounts/CliConnections/AlibabaCliLoginAdapter.cs`, `QualifiedCliLoginAdapter.cs` | Vorbereiteter ausführbarer CLIpfad/Profilreader, aber weder im aktiven Adapterarray noch im Methodenkatalog freigeschaltet. Kein fertiger OAuthmonitor. |
-| `Accounts/CliConnections/FireworksCliLoginAdapter.cs`, `FireworksCliQualification.cs` | Registrierter, jedoch konkret blockierter Adapter. `Validate()` verweigert den Produktweg; ein Hash oder Availabilityflag beseitigt den Callbackblocker nicht. |
-| `Accounts/Managed/ManagedLoginQualification.cs`, `CodexStandaloneConnectAdapter.cs`, `ZaiConnectAdapter.cs` | Bewusst unbrauchbare Kandidaten/Protokollbausteine; kein Standalone-Codex- oder Z.ai-Produktlogin. |
-| `Accounts/Monitoring/MonitorAccessCatalog.cs` | Separate Monitorsecrets und externe Snapshots; ihre Existenz belegt keine OAuthmethode. |
+| `Accounts/CodexOwnedLoginAdapter.cs`, `HttpCodexOwnedLoginBackend.cs` | Existing core login; not a general new host refresh owner. Core renewal of active applied owned bindings does not evidence route-independent monitoring. |
+| `Accounts/PublicLogin/PublicBrowserLoginAdapter.cs`, `OpenRouterLoginAdapter.cs`, `NanoGptLoginAdapter.cs`, `PoeLoginAdapter.cs` | Shared browser/callback/checkpoint lifecycle; OAuth bootstraps a key. No invented refresh grants. NanoGPT offers only I/M in the catalog. |
+| `Accounts/Kilo/KiloDeviceLoginAdapter.cs`, `KiloTransportHandoff.cs` | Personal device key, identity verification and reconnect preserving existing state; organization accounts are not universally supported. |
+| `Accounts/Managed/KimiDeviceLoginAdapter.cs`, `KimiDeviceProtocol.cs` | Actual registered device adapter and `ICredentialOwner`; Q only. The old Kimi placeholder class is not counterevidence: the catalog filters out its entry. |
+| `Accounts/Cloud/CloudOAuthAdapter.cs`, `CloudMaintainerConfiguration.cs` | Complete code/refresh path gated by our own qualified registration; `Program.cs` accepts only `Qualified` clients. |
+| `Accounts/Cloud/GoogleGcloudLoginAdapter.cs`, `GoogleGcloudProcess.cs` | Dedicated isolated official CLI owner. No adoption of other gcloud/ADC stores; no export of the CLI refresh secret to a second owner. The grant is broad, not “read-only OAuth”. |
+| `Accounts/CliConnections/RequestyCliLoginAdapter.cs`, `CommandCodeCliLoginAdapter.cs`, `MistralVibeCliLoginAdapter.cs` | Blocked classes with limited helper contracts, not released login implementations. |
+| `Accounts/CliConnections/AlibabaCliLoginAdapter.cs`, `QualifiedCliLoginAdapter.cs` | Prepared executable CLI path/profile reader, but enabled in neither the active adapter array nor the method catalog. Not a finished OAuth monitor. |
+| `Accounts/CliConnections/FireworksCliLoginAdapter.cs`, `FireworksCliQualification.cs` | Registered but specifically blocked adapter. `Validate()` rejects the product path; a hash or availability flag does not remove the callback blocker. |
+| `Accounts/Managed/ManagedLoginQualification.cs`, `CodexStandaloneConnectAdapter.cs`, `ZaiConnectAdapter.cs` | Deliberately unusable candidates/protocol components; no standalone Codex or Z.ai product login. |
+| `Accounts/Monitoring/MonitorAccessCatalog.cs` | Separate monitor secrets and external snapshots; their existence does not evidence an OAuth method. |
 
-Ein statischer API-Key wird von lain gespeichert, aber nicht durch OAuthrefresh
-erneuert. Ein CLIexport eines solchen Keys ist kein rotierender OAuth-Snapshot.
-Bei delegierten erneuerbaren Grants besitzt die offizielle CLI den Refresh;
-der Host ruft nur den qualifizierten Helper im eigenen Profil auf. Externe
-Snapshots bleiben vollständig unter externer Refreshhoheit.
+lain stores a static API key but does not renew it through OAuth refresh. A CLI
+export of such a key is not a rotating OAuth snapshot. For delegated renewable
+grants, the official CLI owns refresh; the host only invokes the qualified helper
+in its dedicated profile. External snapshots remain entirely under external
+refresh ownership.
 
-## Vollständige Providerabdeckung
+## Complete provider coverage
 
-Abdeckung: 22 aktuelle Katalogdateien plus die fünf zusätzlichen
-Provider Codex, Command Code, Kimi, MiMo und Z.ai = **27 Provider**.
-Jede Zeile beschreibt die heutige Sourcefähigkeit, keine pauschale Liveabnahme.
-Für jeden gewöhnlichen Key gilt: kein OAuthrefresh; Ersatz/Reconnect über den
-Anbieter. Zusätzliche OAuthregistrierung ist für Keyeingabe nicht erforderlich.
-„Nicht belegt“ meint den geprüften Scope, keine weltweite Nichtexistenz.
+Coverage: 22 current catalog files plus the five additional providers Codex,
+Command Code, Kimi, MiMo and Z.ai = **27 providers**. Each row describes current
+source capabilities, not blanket live acceptance. Every ordinary key has no
+OAuth refresh; replacement/reconnect is through the provider. No additional
+OAuth registration is required for key entry. “Not evidenced” refers to the
+reviewed scope, not worldwide nonexistence.
 
-| Provider-ID | Loginstatus neben API-Key | Inferenz / Monitoring im heutigen Scope |
+| Provider ID | Login status beyond API keys | Inference / monitoring in the current scope |
 | --- | --- | --- |
-| `alibaba-model-studio` | Offizielle CLI vorbereitet, gesperrt; kein eigener OAuthclient | Regionaler Key für I/M; Console-/Coding-Plan-Monitoring kein allgemein freigegebener CLIlogin. |
-| `cloudflare-workers-ai` | Eigener Browser-OAuthadapter hinter Registrierungsgate | I/M über Accounttoken; Q mit Analyticsrecht/Dataset separat. OAuth derzeit Q, keine qualifizierte OAuth-Inferenz. Reale Datasetdiagnose ergab keine nutzbare Neuronzahl. |
-| `codex` | Core-eigener Browserlogin; externer Snapshot; Standalone nur Kandidat | Core I/Q; Snapshot Q und Ablauf; routeunabhängige Erneuerung offen. |
-| `cohere` | Key; Consolemethode unavailable | I/M; Evaluation/Trial/Production getrennt, kein qualifizierter OAuth-/Consolequotamonitor. |
-| `commandcode` | Key; offizieller CLIadapter unavailable | I/M und direkter Keyquotareader; Login-/Cache-/Exportvertrag nicht produktqualifiziert. |
-| `deepseek` | Key; kein OAuthadapter | I/M und Same-Key-Balance implementiert; native Währungen, keine Prozentquote. EC-Abnahme ist kein echter Saldoabruf. |
-| `fireworks` | Key; offizieller SSO-CLIadapter blockiert | I/M; Q mit berechtigtem Key und Account-ID. Ressourcenquotas sind kein Guthaben und kein Fire Pass. |
-| `gemini-api` | Key; gcloud implementiert; eigener Browser hinter Registrierung; externer Snapshot | I/M per Key; Googleprojekt-Q getrennt. OAuth-I für den konkreten Transport bleibt offen. Projektusage ist keine garantierte Restkapazität. |
-| `groq` | Key; kein OAuthadapter | I/M; passive Ratenheader, optional berechtigte Enterprise-Metrics. Weder kontoweiter Geldsaldo noch allgemeine Restquote zugesagt. |
-| `inception` | Key; kein OAuthadapter | I/M und lokal beobachtete Nutzung; kein qualifizierter autonomer Restquotaread. |
-| `kilo` | Implementierter Device-Keyflow | I/M/Q mit persönlichem Zugang; Wallet und Pass getrennt. Free-Modellfilter ist kein eigenes Loginprodukt. |
-| `kimi` | Implementierter eigener Device-OAuthowner | OAuth Q allein, Coding-Key für I/M und vorhandenen Keyreader erhalten; Moonshot Platform ist anderer Scope. |
-| `mistral` | Key; Vibe-CLIadapter unavailable | I/M; Vibeplan/Studio und Enterprise-Adminmonitor sind getrennte Zugänge, kein bestätigter universeller OAuthquotareader. |
-| `nanogpt` | Implementierter PKCE-Keybootstrap | I/M; heutiger Q-Reader verlangt getrennten `usage:read`-Managementtoken ohne Accountselector. Öffentlich belegter Same-Key-Read noch nicht implementiert. |
-| `nebius` | Token-Factory-Key; kein OAuthadapter | I/M, passive Ratenwerte soweit angebunden; Cloud-IAM/Dedicated-Observability kein allgemeiner Serverlesssaldo. |
-| `nvidia-build` | Public-Endpoint-Key; kein OAuthadapter | I/M; kein qualifizierter Kontorestreader. NGC-/Enterprise-Login ist kein Ersatzbeleg. |
-| `opencode-go` | Workspace-Key; kein lain-OAuthadapter | I/M; Go/Plus/PAYG getrennt. MCP-Client-OAuth belegt keinen Go-Quotatool oder Inferenzgrant. |
-| `openrouter` | Implementierter öffentlicher PKCE-Keybootstrap | I/M/Q; Keycap/Keyusage sind kein Accountwallet. Managementrechte separat. |
-| `poe` | Implementierter PKCE-Keyadapter hinter Maintainergate | I/M/Q über ausgegebenen Key; Punkte, Ablauf und Reset nur nach tatsächlichem Schema. |
-| `requesty` | Produkt-CLI unavailable; erfolgreicher offizieller Einzellogin dokumentiert | I/M per übernommenem Key, Self-Q belegt; Orgbalance/-rechte nicht daraus ableiten. |
-| `sambanova` | Key; Consolemethode unavailable | I/M; gebundene Consolecredits/-session nicht qualifiziert, kein neuer OAuthauftrag aus Portal-SSO. |
-| `stepfun` | PAYG-Key; Step-Plan-Login nur recherchierter Herstellerpfad | I/M; bestehender Q-Reader nur persönliches PAYG auf qualifizierter Basis, nicht Step Plan/Org/Projekt. |
-| `synthetic` | Key; kein OAuthadapter | I/M und Same-Key-Aboquota; PAYG-Geldsaldo kein Teil derselben Messgröße. |
-| `upstage` | Key; Consolemethode unavailable | I/M; Org-/Consoleusage und Credits ohne qualifizierte Sessionbrücke nicht als OAuth-Q anbieten. |
-| `xai` | API-Key; kein API-Team-OAuthadapter | I/M mit Teamdiscovery; Management-/Billingzugang separat. Grok-Consumer/Build-Sitzung ist anderes Produkt. |
-| `xiaomi-mimo` | Key plus implementierte eigene Consolesitzung, kein OAuth | I/M per Key; Q für gebundene Individual-Session vorbereitet, echter authentifizierter Read offen. Team/PAYG nicht gleichsetzen. |
-| `zai` | Coding-Key; Managed-Login unavailable | I/M/Q mit bestehendem internationalen Key; unabhängiger Client-/nicht anlegender CLIvertrag fehlt. PAT-Projektion/Discovery sind kein fertiger OAuthowner. |
+| `alibaba-model-studio` | Official CLI prepared, blocked; no OAuth client of our own | Regional key for I/M; console/coding-plan monitoring is not a generally released CLI login. |
+| `cloudflare-workers-ai` | Dedicated browser OAuth adapter behind a registration gate | I/M via account token; Q requires separate analytics permission/dataset. OAuth currently provides Q, no qualified OAuth inference. Real dataset diagnostics found no usable neuron count. |
+| `codex` | Core-owned browser login; external snapshot; standalone is only a candidate | Core I/Q; snapshot Q and expiry; route-independent renewal unresolved. |
+| `cohere` | Key; console method unavailable | I/M; evaluation/trial/production separate, no qualified OAuth/console quota monitor. |
+| `commandcode` | Key; official CLI adapter unavailable | I/M and direct key quota reader; login/cache/export contract not qualified for the product. |
+| `deepseek` | Key; no OAuth adapter | I/M and same-key balance implemented; native currencies, no percentage quota. EC acceptance is not a real balance read. |
+| `fireworks` | Key; official SSO CLI adapter blocked | I/M; Q with an authorized key and account ID. Resource quotas are neither credit nor Fire Pass. |
+| `gemini-api` | Key; gcloud implemented; dedicated browser behind registration; external snapshot | I/M by key; Google project Q separate. OAuth I for the specific transport remains unresolved. Project usage does not guarantee remaining capacity. |
+| `groq` | Key; no OAuth adapter | I/M; passive rate headers, optionally authorized enterprise metrics. Neither an account-wide monetary balance nor general remaining quota promised. |
+| `inception` | Key; no OAuth adapter | I/M and locally observed usage; no qualified autonomous remaining-quota read. |
+| `kilo` | Implemented device-key flow | I/M/Q with personal access; wallet and Pass separate. The free-model filter is not a separate login product. |
+| `kimi` | Implemented dedicated device OAuth owner | OAuth Q only; retain the coding key for I/M and the existing key reader; Moonshot Platform is a different scope. |
+| `mistral` | Key; Vibe CLI adapter unavailable | I/M; Vibe plan/Studio and enterprise admin monitoring are separate access paths, no confirmed universal OAuth quota reader. |
+| `nanogpt` | Implemented PKCE key bootstrap | I/M; current Q reader requires a separate `usage:read` management token without an account selector. Publicly evidenced same-key read not yet implemented. |
+| `nebius` | Token Factory key; no OAuth adapter | I/M, passive rate values where connected; Cloud IAM/Dedicated observability is not a general serverless balance. |
+| `nvidia-build` | Public-endpoint key; no OAuth adapter | I/M; no qualified account remaining-quota reader. NGC/enterprise login is not substitute evidence. |
+| `opencode-go` | Workspace key; no lain OAuth adapter | I/M; Go/Plus/PAYG separate. MCP client OAuth does not evidence a Go quota tool or inference grant. |
+| `openrouter` | Implemented public PKCE key bootstrap | I/M/Q; key cap/key usage are not an account wallet. Management rights separate. |
+| `poe` | Implemented PKCE key adapter behind maintainer gate | I/M/Q through issued key; points, expiry and reset only according to the actual schema. |
+| `requesty` | Product CLI unavailable; successful individual official login documented | I/M through adopted key, self-Q evidenced; do not infer organization balance/rights. |
+| `sambanova` | Key; console method unavailable | I/M; bound console credits/session not qualified, portal SSO does not create a new OAuth mandate. |
+| `stepfun` | PAYG key; Step Plan login is only a researched vendor path | I/M; existing Q reader covers only personal PAYG on a qualified basis, not Step Plan/organization/project. |
+| `synthetic` | Key; no OAuth adapter | I/M and same-key subscription quota; PAYG monetary balance is not part of the same metric. |
+| `upstage` | Key; console method unavailable | I/M; do not offer organization/console usage and credits as OAuth Q without a qualified session bridge. |
+| `xai` | API key; no API-team OAuth adapter | I/M with team discovery; management/billing access separate. Grok consumer/Build session is a different product. |
+| `xiaomi-mimo` | Key plus implemented dedicated console session, no OAuth | I/M by key; Q prepared for a bound individual session, real authenticated read unresolved. Do not equate team/PAYG access. |
+| `zai` | Coding key; managed login unavailable | I/M/Q with existing international key; independent client/non-creating CLI contract missing. PAT projection/discovery are not a finished OAuth owner. |
 
-## Eigene Registrierungen: konkret nötig oder nicht?
+## Our own registrations: specifically required or not?
 
-[Maintainerablauf](oauth-maintainer-registration-2026-10-25.md) und
+The [maintainer procedure](oauth-maintainer-registration-2026-10-25.md) and
 [`scripts/prepare-oauth-maintainer.py`](../scripts/prepare-oauth-maintainer.py)
-sind offline vorbereitet; Staging belässt alle Qualifikationsgates auf false.
-Keine Zugangsdaten oder Maintainerkonfiguration wurden hier gelesen.
+are prepared offline; staging leaves all qualification gates false. No credentials
+or maintainer configuration were read here.
 
-| Weg | Registrierungsarbeit und verbleibendes Gate |
+| Path | Registration work and remaining gate |
 | --- | --- |
-| Google direkt | Eigener Google-Auth-Platform-**Desktop**-Client, Branding/Consent, ggf. Produktions-/Scopereview; S256/IPv4-Loopback und echte Erneuerung prüfen. Aktueller Adapter verlangt `cloud-platform`, keinen schmalen Monitoringgrant. IAM/APIs/Billing werden nicht automatisch eingerichtet. |
-| Cloudflare direkt | Eigener accountgebundener Public Client (`none`, S256), reale OAuth-Scope-IDs und `offline_access`; feste Callbackregistrierung, ggf. Domainverifikation/öffentliche Freigabe. Registrierung erfordert Verwaltungsrecht; keine anonyme DCR. Neurondatenquelle bleibt eigenes Gate. |
-| Poe | Eigene App unter `poe.com/api/clients`; exakten Releasecallback registrieren/prüfen. Localhost-Ausnahme für Entwicklung qualifiziert nicht beliebige Release-URIs. `apikey:create` liefert einen Key, keinen Refreshgrant. |
-| OpenRouter / NanoGPT Shortcut / Kilo | Öffentlicher Keybootstrap ohne von Nutzern zu beschaffende Client-ID. NanoGPT Standard-OAuth unterstützt daneben Registrierung; der jetzige Shortcut braucht diese manuelle Vorarbeit nicht. |
-| Kimi | Projekt akzeptiert den veröffentlichten Toolkitclient mit ehrlicher lain-Hostidentität; keine zusätzliche eigene Registrierung als unbelegte Pflicht einführen. Individuelle Herstellerfreigabe/npm-Veröffentlichung wird nicht behauptet. |
-| Offizielle gcloud-/Requesty-/Fireworks-CLI | Originaltool führt seinen eigenen Flow aus. Eigene lain-Clientregistrierung ist dafür nicht nötig; Isolation, private Übergabe und Produkt-/Identitätsbindung bleiben nötig. Fremde Client-ID nicht zu eigenem Flow umbauen. |
-| Z.ai / Step Plan | Keine belegte allgemeine lain-Registrierungsanleitung. Weder Registrierung als sicher notwendig behaupten noch offizielle Appidentität kopieren. Erst unterstützten externen Vertrag bzw. echten CLI-Handoff nachweisen. |
-| OpenAI SIWC OSS | Separate dynamische Registrierung je Nutzer/Workspace und persistente Host-ID im dokumentierten Flow; keine Übernahme des Codex-Firstpartyclients. Nur als neue Integration prüfen. |
+| Google direct | Our own Google Auth Platform **Desktop** client, branding/consent, possibly production/scope review; verify S256/IPv4 loopback and real renewal. Current adapter requires `cloud-platform`, not a narrow monitoring grant. IAM/APIs/billing are not configured automatically. |
+| Cloudflare direct | Our own account-bound public client (`none`, S256), real OAuth scope IDs and `offline_access`; fixed callback registration, possibly domain verification/public approval. Registration requires administrative rights; no anonymous DCR. Neuron data source remains a separate gate. |
+| Poe | Our own app at `poe.com/api/clients`; register/verify the exact release callback. The localhost development exception does not qualify arbitrary release URIs. `apikey:create` returns a key, not a refresh grant. |
+| OpenRouter / NanoGPT Shortcut / Kilo | Public key bootstrap without users having to obtain a client ID. NanoGPT standard OAuth also supports registration; the current shortcut does not require that manual preparation. |
+| Kimi | The project accepts the published toolkit client with an honest lain host identity; do not introduce additional registration as an unevidenced requirement. No claim of individual vendor approval/npm publication. |
+| Official gcloud/Requesty/Fireworks CLI | Original tool performs its own flow. No lain client registration is needed for that; isolation, private handoff and product/identity binding remain necessary. Do not repurpose another client's ID for our own flow. |
+| Z.ai / Step Plan | No evidenced general lain registration instructions. Neither assert that registration is definitely required nor copy the official app identity. First evidence a supported external contract or real CLI handoff. |
+| OpenAI SIWC OSS | Separate dynamic registration per user/workspace and persistent host ID in the documented flow; no reuse of the Codex first-party client. Assess only as a new integration. |
 
-Z.ai bleibt konkret begrenzt: Der [Source-Handoff](providers/zai-managed-login-handoff-2026-10-25.md)
-belegt ZCodes eigenen Ablauf, aber keinen unabhängigen lain-Clientvertrag.
-Der offizielle Bootstrap kann vor erfolgreicher Rückgabe einen Key anlegen;
-`--no-browser` verhindert das nicht. Ein nicht anlegender Monitor benötigt einen
-anderen nachgewiesenen Vertrag. Endliche Sitzung plus Reconnect wäre zulässig;
-ein erfundener dauerhafter OAuthrefresh ist keine zusätzliche Mindestanforderung.
+Z.ai remains specifically limited: the [source handoff](providers/zai-managed-login-handoff-2026-10-25.md)
+evidences ZCode's own flow, but no independent lain client contract. The official
+bootstrap can create a key before returning successfully; `--no-browser` does
+not prevent this. A monitor that creates no key needs a different evidenced
+contract. A finite session plus reconnect would be acceptable; invented permanent
+OAuth refresh is not an additional minimum requirement.
 
-## Aktuelle offizielle Webprüfung und echte zusätzliche Chancen
+## Current official web review and real additional opportunities
 
-Die folgenden offiziellen Seiten wurden am 26.10.2026 tatsächlich geöffnet.
-Sie belegen öffentliche Verträge, keine funktionierende lain-Installation oder
-Liveanmeldung. Suchtreffer allein wurden nicht als Implementierungsbeleg benutzt.
+The following official pages were actually opened on 26.10.2026. They evidence
+public contracts, not a working lain installation or live login. Search results
+alone were not used as implementation evidence.
 
-| Primärquelle | Verifizierte Aussage / Folgerung |
+| Primary source | Verified statement / implication |
 | --- | --- |
-| [OpenRouter OAuth](https://openrouter.ai/docs/guides/overview/auth/oauth) | Öffentlicher PKCE-Keybootstrap; bestehender Adapter ist die passende Basis, kein neuer Refreshowner nötig. |
-| [NanoGPT PKCE](https://docs.nano-gpt.com/api-reference/miscellaneous/oauth-pkce) | Shortcut und Standard-OAuth liefern appbezogene API-Keys; Shortcut erzeugt/wiederverwendet serverseitig den Callbackclient. Bestehender Adapter deckt Shortcut ab. |
-| [NanoGPT CLI Device Login](https://docs.nano-gpt.com/integrations/cli-login) | Öffentlicher Start-/Poll-Vertrag mit eigener `client_name`, geheimem Gerätecode und sichtbarem Nutzercode; Ergebnis API-Key. **Zusätzlicher konkret implementierbarer Deviceweg**, bisher kein lain-Adapter. Kein Refreshgrant aus dem Namen „Device“ ableiten. |
-| [NanoGPT Subscription Usage](https://docs.nano-gpt.com/api-reference/endpoint/subscription-usage) | Dokumentierter Inferenzkey-Read auf `/api/subscription/v1/usage`, getrennt vom Managementpfad. **Same-Key-Monitoring ist eine echte zusätzliche Chance**, heute durch den Management-only-Reader nicht abgedeckt. |
-| [Google Desktop OAuth](https://developers.google.com/identity/protocols/oauth2/native-app) | Eigener Desktopclient, PKCE und Loopback sind öffentlich dokumentiert; bestehendes Registrierungspaket fortsetzen. |
-| [Cloudflare Client anlegen](https://developers.cloudflare.com/fundamentals/oauth/create-an-oauth-client/) | Accountrolle, Clientkonfiguration und Scopes sind nötig. Unterstützte Registrierung vorhanden, Reportingrechte damit nicht bewiesen. |
-| [Poe Sign-in](https://creator.poe.com/docs/external-applications/sign-in-with-poe) | Eigener Client und S256-Codeexchange zu API-Key dokumentiert; kein pauschaler Refresh. |
-| [Fireworks CLI Authentication](https://docs.fireworks.ai/tools-sdks/firectl/commands/authentication) | `firectl signin` für Google SSO, mit Accountargument für Custom SSO. Offizieller Weg existiert; Loopbackisolation ist dadurch nicht bewiesen. |
-| [Requesty CLI README, gepinnte Quelle](https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/README.md) | Offizieller Login und `auth token`-Integration; Ergebnis langlebiger Produktkey statt eigener lain-Refreshlogik. |
-| [Kimi Toolkit README, Pin](https://github.com/MoonshotAI/kimi-code/blob/743f140978bddaf8b6aa524765fcd578f7c22fc9/packages/oauth/README.md) | Hersteller stellt OAuth-Toolkit im öffentlichen MIT-Quellbaum bereit. Details/akzeptierte Cliententscheidung sind im lokalen [Kimi-Nachweis](providers/kimi-device-login-2026-10-25.md) gepinnt; kurze README allein ist kein Livezulassungsbeleg. |
-| [OpenAI Codex Auth](https://developers.openai.com/codex/auth/) | Offizielle CLI unterstützt Device-Code-Login; das qualifiziert keinen zusätzlichen lain-Core-Deviceadapter. |
-| [OpenAI app-server](https://developers.openai.com/codex/app-server/) | Dokumentiertes Account-/Rate-Limit-RPC erlaubt einen begrenzten Standalone-Monitorversuch; stabiler Accountscope und isolierte Erneuerung bleiben lokale Nachweise. |
-| [OpenAI SIWC für OSS/lokale Apps](https://developers.openai.com/siwc/token-sharing-open-source) | Dynamische Nutzer-/Workspaceregistrierung, stabile eigene Host-ID und ChatGPT-Plan-Inferenz über Responses sind dokumentiert. **Neue Integrationschance**, kein belegter Ersatz für den heutigen WHAM-Reader. |
-| [OpenCode Console API](https://opencode.ai/v2/docs/console/api/) | Workspacegebundene API-Keys und getrennte Usage-/Budgetrechte sind dokumentiert. Allgemeines [MCP-OAuth im Client](https://dev.opencode.ai/docs/mcp-servers/) beweist keinen geeigneten Console-Quotatool. |
+| [OpenRouter OAuth](https://openrouter.ai/docs/guides/overview/auth/oauth) | Public PKCE key bootstrap; existing adapter is the right foundation, no new refresh owner needed. |
+| [NanoGPT PKCE](https://docs.nano-gpt.com/api-reference/miscellaneous/oauth-pkce) | Shortcut and standard OAuth return app-specific API keys; shortcut creates/reuses the callback client server-side. Existing adapter covers the shortcut. |
+| [NanoGPT CLI Device Login](https://docs.nano-gpt.com/integrations/cli-login) | Public start/poll contract with our own `client_name`, secret device code and visible user code; result is an API key. **Additional device path that can concretely be implemented**, with no lain adapter yet. Do not infer a refresh grant from the name “Device”. |
+| [NanoGPT Subscription Usage](https://docs.nano-gpt.com/api-reference/endpoint/subscription-usage) | Documented inference-key read at `/api/subscription/v1/usage`, separate from the management path. **Same-key monitoring is a real additional opportunity**, not covered by today's management-only reader. |
+| [Google Desktop OAuth](https://developers.google.com/identity/protocols/oauth2/native-app) | Dedicated desktop client, PKCE and loopback are publicly documented; continue the existing registration package. |
+| [Create a Cloudflare client](https://developers.cloudflare.com/fundamentals/oauth/create-an-oauth-client/) | Account role, client configuration and scopes required. Supported registration exists; this does not prove reporting rights. |
+| [Poe Sign-in](https://creator.poe.com/docs/external-applications/sign-in-with-poe) | Dedicated client and S256 code exchange for an API key documented; no blanket refresh. |
+| [Fireworks CLI Authentication](https://docs.fireworks.ai/tools-sdks/firectl/commands/authentication) | `firectl signin` for Google SSO, with account argument for custom SSO. Official path exists; this does not prove loopback isolation. |
+| [Requesty CLI README, pinned source](https://github.com/requestyai/cli/blob/21809398e99d888565178d718186b637f3de4566/README.md) | Official login and `auth token` integration; result is a long-lived product key rather than lain-owned refresh logic. |
+| [Kimi Toolkit README, pinned](https://github.com/MoonshotAI/kimi-code/blob/743f140978bddaf8b6aa524765fcd578f7c22fc9/packages/oauth/README.md) | Vendor provides an OAuth toolkit in the public MIT source tree. Details/accepted client decision are pinned in the local [Kimi evidence](providers/kimi-device-login-2026-10-25.md); the short README alone does not evidence live approval. |
+| [OpenAI Codex Auth](https://developers.openai.com/codex/auth/) | Official CLI supports device-code login; this does not qualify an additional lain core device adapter. |
+| [OpenAI app-server](https://developers.openai.com/codex/app-server/) | Documented account/rate-limit RPC permits a limited standalone monitor experiment; stable account scope and isolated renewal still require local evidence. |
+| [OpenAI SIWC for OSS/local apps](https://developers.openai.com/siwc/token-sharing-open-source) | Dynamic user/workspace registration, stable dedicated host ID and ChatGPT-plan inference through Responses are documented. **New integration opportunity**, not an evidenced replacement for today's WHAM reader. |
+| [OpenCode Console API](https://opencode.ai/v2/docs/console/api/) | Workspace-bound API keys and separate usage/budget permissions documented. General [MCP OAuth in the client](https://dev.opencode.ai/docs/mcp-servers/) does not prove a suitable console quota tool. |
 
-**Recherchegrenze:** Step Codes konkrete Dokumentationsseite war in dieser Runde
-nicht abrufbar. Der ältere [Herstellerquellenbericht](account-connect-research/xai-stepfun-poe-synthetic.md)
-bleibt ein datierter Kandidatenbeleg, keine neu bestätigte Deployment-/Drittclientfreigabe.
-Für andere Provider wurde kein zusätzlicher allgemein nutzbarer OAuthvertrag in
-diesem begrenzten Scope bestätigt. Das ist keine Behauptung, alle Herstellerwebsites
-vollständig erneut untersucht zu haben. Portal-SSO, MCP-Clientfähigkeit, sichtbare
-Firstparty-Client-IDs und private Browserendpunkte ersetzen keinen Produktvertrag.
+**Research limit:** Step Code's specific documentation page could not be retrieved
+in this round. The older [vendor-source report](account-connect-research/xai-stepfun-poe-synthetic.md)
+remains dated candidate evidence, not newly confirmed deployment/third-party
+client approval. No additional generally usable OAuth contract was confirmed for
+other providers in this limited scope. This does not claim a complete renewed
+review of all vendor websites. Portal SSO, MCP client capabilities, visible
+first-party client IDs and private browser endpoints do not replace a product
+contract.
 
-## Konkrete nächste Pakete
+## Specific next work packages
 
-Vorschläge für spätere Umsetzung, **kein laufender Update-/Loginauftrag**.
-Vorhandene Arbeit weiterverwenden; je Paket ein eigenes überprüfbares Ergebnis.
+Proposals for later implementation, **not an active update/login instruction**.
+Reuse existing work; produce a separate reviewable result for each package.
 
-| Priorität / Paket | Begrenztes Ergebnis | Go-/Abnahmekriterium und Stopgrenze |
+| Priority / package | Bounded result | Go/acceptance criterion and stop boundary |
 | --- | --- | --- |
-| 1 — Bestehende öffentliche Flows qualifizieren | OpenRouter, Kilo, Kimi und NanoGPT einzeln entlang vorhandener Adapter abnehmen | Jeweils später bewusst autorisierter Login, Identität, persistente Adoption/Neustart, Reconnect; bei Kimi zusätzlich echte Erneuerung. Keine neue Route oder Inferenz als Loginsideeffekt. Offenes Providerergebnis blockiert nur seine Methode. |
-| 1 — Requesty produktisieren | Vorhandenen isolierten v0.1.16-Operator und gezielten privaten `auth token`-Export als allgemeinen Adapter integrieren | Gepinntes Artefakt, vollständige Store-/Keyringisolation, Keyanlageabsicht/Recovery, Account-/Gruppenbindung und gezielter Reconnect. Kein allgemeiner Configwizard, der andere Harnessdateien verändert; kein Orgbalanceversprechen. |
-| 1 — NanoGPT Same-Key-Q | Separater Reader für den dokumentierten Inferenzkey-Subscriptionpfad, bestehender Managementmonitor bleibt | Schema-/Einheiten-/Reset-/Degradationsfixtures; Credentialauswahl strikt nach Pfad. Danach optional ein autorisierter Read. Keine Managementtokens für Inferenz; keine automatische kostenpflichtige Ausweichroute aus `routing`-Hinweisen. |
-| 2 — NanoGPT Device | Neuer Start-/Poll-Keyadapter im bestehenden Loginoperation-Lifecycle | Timeout/Intervall, Cancel, Consume/Replay und Checkpoint vor Adoption; Gerätecode bleibt privat, keine doppelte Keyausgabe bei verlorener Antwort. Ergebnis zunächst I/M; Q nur nach eigener Readerqualifikation. |
-| 2 — Poe Registrierung abschließen | Vorbereiteten Maintainerplan mit eigener App und exaktem Callback vervollständigen | Tatsächliche Registrierung/Callback/Keyablauf und Reconnect separat belegen. Offlineplan oder Flag allein reichen nicht. |
-| 2 — Google direkter Monitor | Eigenen Desktopclient registrieren; bestehenden Cloudadapter und Discovery nutzen | Consent/Scopes, IAM/Projektbindung, Callback, Neustart, Refresh und echter Monitoringread; keine OAuth-Inferenz als Nebenpaket. Alternativ vorhandenen gcloud-Weg zuerst real qualifizieren. |
-| 2 — Fireworks Callbackisolation | Ausschließlich lokale Erreichbarkeit des unveränderten offiziellen Signinlisteners trotz Wildcardbindung gewährleisten | Netz-/Callbackdesign zunächst offline mit echtem Tool ohne Login und externem Erreichbarkeitstest prüfen; erst danach getrennte SSO-/Account-/einmalige Keyausgabeabnahme. Ohne Beleg bleibt hart gesperrt. |
-| 3 — Codex Standalone-Q | Isolierter offizieller app-server besitzt einen neuen eigenen Monitorgrant, dokumentiertes Rate-Limit-RPC | Ohne Core/Route: stabile Identität, Neustart, Ablauf/Erneuerung, Detach und keine fremden Caches. Bestehenden Coregrant niemals parallel refreshen. Kein privater WHAM-Neuadapter. |
-| 3 — OpenAI SIWC Inferenz | Begrenzter Protokoll-/Transportversuch für OSS/lokal dokumentierte Responses-Inferenz | Eigene dynamische Registrierung/Host-ID, Token-/Scopevalidierung, ein exklusiver Owner; unterstützte Modelle/Previewgrenzen und spätere bewusste End-to-End-Abnahme. Kein Quota-/WHAM-Versprechen und kein stiller Ersatz bestehender Codexaccounts. |
-| Nachrangig — Cloudflare | Registrierungsplan plus exakte Analytics-Scope-/Datasetzuordnung abschließen | Zuerst klären, ob der reale Account überhaupt eine verwertbare Neuronquelle hat. Erfolgreiches OAuth ohne Datenquelle rechtfertigt keinen verfügbaren Quota-Monitor. |
-| Erkenntnispaket — Step Plan / OpenCode / Z.ai | Jeweils nur öffentlichen externen Login-/Readvertrag ermitteln und pinnen | Step: Admission/Region/Deployment; OpenCode: konkretes autorisiertes Readtool; Z.ai: eigener Client oder nicht anlegender offizieller Handoff. Ohne diese Belege keine Implementierung privater Endpunkte oder Browserautomation. |
+| 1 — Qualify existing public flows | Accept OpenRouter, Kilo, Kimi and NanoGPT individually using existing adapters | Each needs a later deliberately authorized login, identity, persistent adoption/restart, reconnect; Kimi additionally needs real renewal. No new route or inference as a login side effect. An unresolved provider result blocks only its method. |
+| 1 — Productize Requesty | Integrate the existing isolated v0.1.16 operator procedure and targeted private `auth token` export as a general adapter | Pinned artifact, complete store/keyring isolation, key-creation intent/recovery, account/group binding and targeted reconnect. No general configuration wizard that changes other harness files; no organization balance promise. |
+| 1 — NanoGPT same-key Q | Separate reader for the documented inference-key subscription path, retaining the existing management monitor | Schema/unit/reset/degradation fixtures; select credentials strictly by path. Then optionally one authorized read. No management tokens for inference; no automatic paid fallback route based on `routing` hints. |
+| 2 — NanoGPT Device | New start/poll key adapter in the existing login-operation lifecycle | Timeout/interval, cancel, consume/replay and checkpoint before adoption; device code stays private, no duplicate key issuance after a lost response. Initially I/M; Q only after separate reader qualification. |
+| 2 — Complete Poe registration | Complete the prepared maintainer plan with our own app and exact callback | Separately evidence actual registration/callback/key expiry and reconnect. An offline plan or flag alone is insufficient. |
+| 2 — Google direct monitor | Register our own desktop client; use the existing cloud adapter and discovery | Consent/scopes, IAM/project binding, callback, restart, refresh and real monitoring read; no OAuth inference as an extra package. Alternatively qualify the existing gcloud path against the real provider first. |
+| 2 — Fireworks callback isolation | Ensure the unchanged official sign-in listener is reachable only locally despite its wildcard binding | First test network/callback design offline using the real tool without login and an external reachability check; only then separately accept SSO/account/one-time key issuance. Remains hard-blocked without evidence. |
+| 3 — Codex standalone Q | Isolated official app-server owns a new dedicated monitor grant, documented rate-limit RPC | Without core/route: stable identity, restart, expiry/renewal, detach and no other caches. Never refresh the existing core grant in parallel. No new private WHAM adapter. |
+| 3 — OpenAI SIWC inference | Bounded protocol/transport experiment for Responses inference documented for OSS/local apps | Dedicated dynamic registration/host ID, token/scope validation, one exclusive owner; supported models/preview limits and later deliberate end-to-end acceptance. No quota/WHAM promise and no silent replacement of existing Codex accounts. |
+| Lower priority — Cloudflare | Complete registration plan plus exact analytics scope/dataset mapping | First determine whether the real account has any usable neuron data source. Successful OAuth without a data source does not justify an available quota monitor. |
+| Research package — Step Plan / OpenCode / Z.ai | Only identify and pin each public external login/read contract | Step: admission/region/deployment; OpenCode: specific authorized read tool; Z.ai: dedicated client or non-creating official handoff. Without this evidence, no private-endpoint implementation or browser automation. |
 
-Alibaba, Command Code und Mistral bleiben getrennte CLIqualifikationen nach
-[AC-05](account-connect-work-packages/05-cli-connections.md), keine automatische
-Erweiterung des Requesty-Pakets. Consolelogin für SambaNova/Upstage/Cohere und
-weitere MiMo-Automation gehören nicht zu diesen OAuth-Chancen.
+Alibaba, Command Code and Mistral remain separate CLI qualifications under
+[AC-05](account-connect-work-packages/05-cli-connections.md), not automatic
+extensions of the Requesty package. Console login for SambaNova/Upstage/Cohere
+and further MiMo automation are outside these OAuth opportunities.
 
-## Prüfumfang dieses Dokuments
+## Review scope of this document
 
-Gelesen wurden Projektregeln und Architekturindex, aktuelle Adapterverdrahtung,
-Methoden-/Monitorkatalog, relevante Provideradapter und die oben verlinkten
-Implementierungs-, Maintainer-, Account-Connect- und Qualifikationsdokumente.
-OpenAI-Aussagen wurden mit dem OpenAI-Docs-Skill und offiziellen geöffneten
-Dokumentationsseiten abgeglichen. Die Webprüfung nutzte ausschließlich öffentliche
-Dokumentation/Herstellerquellen; keine authentifizierten API- oder Discoveryaufrufe.
+Project rules and architecture index, current adapter wiring, method/monitor
+catalog, relevant provider adapters and the implementation, maintainer, Account
+Connect and qualification documents linked above were read. OpenAI statements
+were checked using the OpenAI Docs skill and official documentation pages that
+were opened. The web review used only public documentation/vendor sources; no
+authenticated API or discovery calls.
 
-Nur diese Datei wurde für den Auftrag geschrieben. Keine Zugangsdaten gelesen,
-keine CLIanmeldung, Livequota/Inferenz, Clientregistrierung, Installation,
-Produktionsänderung oder Commits ausgeführt. Bereits bestehendes WIP und fremde
-Recherche bleiben erhalten. Prüfung: lokale Linkziele, vollständige Providerliste
-und Whitespace dieser Datei; kein Build/Testlauf für reine Dokumentation.
+Only this file was written for that research task. No credentials were read,
+and no CLI login, live quota/inference, client registration, installation,
+production change or commit was performed. Existing WIP and others' research
+remain intact. Checks: local link targets, complete provider list and whitespace
+in this file; no build/test run for documentation only.

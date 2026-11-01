@@ -803,6 +803,9 @@ public sealed partial class UsageView : UserControl, IPresentationView
                     Label($"Request {attempt.RequestId} · attempt {attempt.Id} · source {attempt.SourceId ?? "not supplied"}", Muted)
                 }
             };
+            var routing = new Expander { Header = "Observed routing", HorizontalContentAlignment = HorizontalAlignment.Stretch };
+            routing.PropertyChanged += (_, e) => { if (e.Property == Expander.IsExpandedProperty && routing.IsExpanded && routing.Content is null) routing.Content = Lain.Desktop.Presentation.RouteSelectionSummary.From(attempt).CreateControl(); };
+            details.Children.Add(routing);
             if (attempt.RequestedModel is { } requestedModel) details.Children.Add(Label("Requested model: " + requestedModel, Muted));
             if (attempt.Measurements is { } measured)
                 details.Children.Add(Label($"Owned-core measurements: first output {Milliseconds(measured.FirstOutputLatencyMs)} · total {Milliseconds(measured.TotalDurationMs)} · source {measured.Source ?? "not supplied"}", Muted));

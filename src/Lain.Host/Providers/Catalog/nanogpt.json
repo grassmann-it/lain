@@ -28,6 +28,11 @@
     {
       "title": "Choose optional model routes",
       "description": "Model templates do not establish subscription coverage. Check current coverage and key billing settings before routing requests; inference keys may spend balance."
+    },
+    {
+      "title": "Optional NanoGPT signup (referral)",
+      "description": "Lain's maintainer may receive referral rewards. Use this optional link for a new account; connect existing accounts through the normal connection methods. Current provider terms apply.",
+      "url": "https://nano-gpt.com/r/cJTE7kJm"
     }
   ],
   "billingPlans": [
