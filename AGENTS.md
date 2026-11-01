@@ -1,5 +1,21 @@
 # lain
 
+Aktueller Recording-Folgestand 01.11.2026: Default-on und Settings-Archivzugang
+implementiert/geprüft und vomNutzer installiert. Receiptverified, Host
+0.8.0+recording-settings-20261101,926/926ready, Archivliste lesbar. Historische
+Aufnahmelücken bleiben; Startstatus source_unavailable bestätigt keine durchgehende
+Erfassung. Beleg: `docs/recording-settings-delivery-2026-11-01.md`.
+VSCodeSnapAutoUpdate273→274 war beimShutdown06:13unterbrochen; snapdStart11:36
+vollendete es, VSCode1.144.0 wieder geöffnet. KeinLainUninstall.
+
+Aktueller lokaler Abgleich 31.10.2026 22:50: Vollpaket80dcf13 installiert und gegen
+1155 Paketdateien geprüft, Gateway926/926ready, Login-AutostartAN. Codexdispatcher
+repariert; normale Lainstarts patched0.164, Subcommands Original0.166. VSCode
+Produktionsstart/Resume wieder erfolgreich; sporadische Rendererursache offen.
+Aufnahme content AN, aber collection_failed/unknownLoss: nicht vollständig.
+Aktueller Beleg und Grenzen: `docs/codex-client-recovery-2026-10-31.md`. Ältere
+Nichtinstalliert-/Nichtaktiviertangaben unten sind historisch.
+
 Aktueller Implementierungsstand 31.10.2026: lokaler opt-in Recorder und priorisierte
 Releasekorrekturen sind integriert. Sourcefreeze10734a4, Liefer-/Prüfgrenzen in
 `docs/recording-execution-2026-10-30.md`, Pins in

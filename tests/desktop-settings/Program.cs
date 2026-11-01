@@ -93,6 +93,10 @@ internal sealed class SettingsScenario(IClassicDesktopStyleApplicationLifetime l
     public async Task Run()
     {
         Directory.CreateDirectory(output); await Open();
+        Check(Named<TextBlock>("Recording setting status").Text?.Contains("Recording on · content · 3 saved records") == true,
+            "Settings shows live recording policy and saved record count");
+        Check(Named<Button>("Open saved conversations from Settings").IsEnabled,
+            "Settings offers direct saved-conversation navigation");
         var initialHost = JsonSerializer.Serialize(fixture.Config);
         var mutations = fixture.Requests.Count(x => !x.StartsWith("GET ", StringComparison.Ordinal));
         foreach (var group in new[] { "View density settings", "Window and notification settings", "Help and application settings" })
@@ -157,7 +161,16 @@ internal sealed class SettingsScenario(IClassicDesktopStyleApplicationLifetime l
             Check(noticePosition.Y >= 0 && noticePosition.Y + errorNotice.Bounds.Height <= window.Bounds.Height,
                 "inline save failure is scrolled into the narrow viewport");
             var retry = Named<Button>("Retry saving Close to tray");
+            for (var attempt = 0; attempt < 100; attempt++)
+            {
+                window.UpdateLayout();
+                var current = retry.TranslatePoint(default, window)!.Value;
+                if (current.Y >= 0 && current.Y + retry.Bounds.Height < window.Bounds.Height - 30) break;
+                await Task.Delay(20);
+            }
             var retryPosition = retry.TranslatePoint(default, window)!.Value;
+            Capture("settings-retry-visibility");
+            File.WriteAllText(Path.Combine(output, "retry-position.json"), JsonSerializer.Serialize(new { y = retryPosition.Y, height = retry.Bounds.Height, windowHeight = window.Bounds.Height }));
             Check(retry.IsEffectivelyVisible && retry.IsEnabled && retryPosition.Y >= 0
                 && retryPosition.Y + retry.Bounds.Height < window.Bounds.Height - 30,
                 "explicit retry is reachable beside failed setting in the narrow viewport");

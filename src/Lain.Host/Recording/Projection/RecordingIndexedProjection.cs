@@ -21,7 +21,9 @@ public sealed class RecordingIndexedProjection : IRecordingProjection, IRecordin
     private readonly SemaphoreSlim _gate = new(1, 1);
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private const string SnapshotScope = "__recording_projection";
-    private const long MaximumIndexBytes = 128L * 1024 * 1024;
+    // The supported 100k-source archive can exceed 128 MiB of indexed metadata alone.
+    // Keep a finite ceiling and reserve both this file and its rollback journal in the source budget.
+    public const long MaximumIndexBytes = 512L * 1024 * 1024;
     // Metadata only. Each mutable summary is valid for exactly the current index transaction/generation.
     private readonly Dictionary<string, CachedSummary> _summaries = new(StringComparer.Ordinal);
     private readonly LinkedList<string> _summaryLru = new();

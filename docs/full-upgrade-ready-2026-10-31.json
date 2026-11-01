@@ -130,5 +130,15 @@
     "waitLimitSeconds": 900,
     "execute": "Wait for zero active inference requests and no open lain Desktop; then execute qualified full upgrade. No forced shutdown or discard.",
     "productionUpgradeCompleted": false
+  },
+  "currentStateReconciliation": {
+    "report": "docs/codex-client-recovery-2026-10-31.md",
+    "historicalPreparationFieldsBelow": true,
+    "installedSource": "80dcf135da1f48d27e573afa668fe2b698c22070",
+    "runtimeRevision": 926,
+    "appliedRevision": 926,
+    "originalUpgradeReceipt": "recovery-required; preserved, not rewritten",
+    "recording": "enabled; collection_failed, unknownLoss, incomplete",
+    "evidenceRoot": "/home/tomka/.cache/lain-codex-menu-repair-20261031"
   }
 }

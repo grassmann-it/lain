@@ -15,7 +15,7 @@ tests/recording-desktop/run-private-xvfb.sh /absolute/private/evidence-directory
 
 The fixture records `evidence.json` and 1120×780 / 800×560 screenshots. Its measured
 latency and process working set describe only this fixture and invocation, not a
-production capture or provider benchmark. It checks explicit default off, metadata
+production capture or provider benchmark. It checks preservation of a saved off policy, direct content enable/stop, metadata
 pagination, selected readable tool/message content, 8192/4096 text limits, lazy
 source/worker details, model/coverage markers, narrow Back navigation, close/reopen,
 source outage and source deletion invalidating content/copy surfaces.

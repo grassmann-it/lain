@@ -1,3 +1,20 @@
+AKTUELLER ABGLEICH 31.10.2026 22:50 Europe/Berlin — ersetzt die alten Handlungsanweisungen unten.
+Lies zuerst docs/codex-client-recovery-2026-10-31.md. Vollpaket80dcf13 ist installiert
+und vollständig gegen das Paketmanifest geprüft. Host/Core926/926ready, Profil lain,
+AutostartAN, automatische Corestarts nicht mehr unterdrückt. Der alte Operator blieb
+nach Appaustausch im Apply-/Clientexportschritt recovery-required; NICHT blind erneut
+ausführen oder die alte Transaktion als verified umschreiben.
+Normaler codex-Starter repariert: patched0.164 für Lain-Rootstarts, Original0.166 für
+Subcommands (auch codex resume) und andere Profile. Echter467/38Katalog nativ geprüft.
+VSCode Produktionsstart22:39:42 und Threadresume22:41:20 erfolgreich, genaueExtension
+und Katalog privat geprüft. Früherer Renderer-Timeout noch ohne bewiesene Ursache;
+keinen Cache/Auth/Workspacezustand prophylaktisch löschen.
+Aufnahme content ist AN, aber collection_failed/unknownLoss mit steigenden verworfenen
+Records. Nicht als vollständiges Archiv darstellen. Frische Belege unter
+/home/tomka/.cache/lain-codex-menu-repair-20261031/final-*-status.json.
+
+AB HIER HISTORISCHE VORBEREITUNG / FEHLVERSUCHE, KEINE AKTUELLE STARTANWEISUNG:
+
 NEUESTER STAND: Vollupgradeversuch20261031T202935Z-0a968cb4scheiterte vor Credentialcommit/Appaustausch an Backupverweigerung zweier verwalteter Codex-Symlinks. AlterHostwiederbereit924/917. Sicherungsfix cache/lain-full-upgrade-20261031/snapshot-helper.py erlaubt exakt die zwei geprüften Codexlinkrollen, bewahrt sie als Metadaten ohneTargetread;format2mitgeprüfterRestore-/Quarantäne. Gesamt924→925mitdiesenLinks erneutgrün; Paket/Operator unverändert.
 
 NutzerwillkeinenweiterenRetry. Ein unabhängiger Hintergrundprozess wartet biszu15Minuten aufNullaktiveRequests UNDgeschlossene lain-UI undstartetdannautomatisch upgrade.sh. Status: /home/tomka/.cache/lain-full-upgrade-20261031/waiting-upgrade.json, Log: automatic-upgrade.log imselbenVerzeichnis. NichtparallelzweitesUpgradestarten! ErstStatus/last-run/transactionprüfen. Prozess wurde mitPID1363804gestartet;PIDimmerüberaktuellenProzessidentitätsbelegprüfen,nichtraten. AbschlussistweiterhinNURverifiedTransaktion plusneueVersion925/925+AufnahmeAN,nichtbloßStartdesProzesses.

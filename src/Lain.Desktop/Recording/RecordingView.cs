@@ -18,8 +18,7 @@ public sealed partial class RecordingView : UserControl, IPresentationView
     private readonly TextBlock _selected = Ui.Text("Choose a saved conversation", 15);
     private readonly TextBlock _scope = Ui.Text("", 12, Ui.Muted);
     private readonly TextBox _model = new() { PlaceholderText = "Optional model filter", Width = 180 };
-    private readonly ComboBox _mode = new() { ItemsSource = new[] { "Metadata only", "Messages and tool content" }, SelectedIndex = 0, Width = 220 };
-    private readonly CheckBox _consent = new() { Content = "I opt in to local capture for all used models on this gateway", IsChecked = false };
+    private readonly ComboBox _mode = new() { ItemsSource = new[] { "Metadata only", "Messages and tool content" }, SelectedIndex = 1, Width = 220 };
     private readonly Button _enable = new() { Content = "Enable recording", IsEnabled = false };
     private readonly Button _stop = new() { Content = "Turn capture off", IsEnabled = false };
     private readonly Button _pause = new() { Content = "Pause display" };
@@ -55,11 +54,10 @@ public sealed partial class RecordingView : UserControl, IPresentationView
     {
         _client = client;
         SetName(_status, "Recording status"); SetName(_notice, "Recording notice"); SetName(_model, "Filter saved conversations by model");
-        SetName(_consent, "Opt in to local recording for all models"); SetName(_mode, "Recording content mode");
+        SetName(_mode, "Recording content mode");
         SetName(_enable, "Enable recording"); SetName(_stop, "Turn capture off"); SetName(_pause, "Pause archive display");
         SetName(_back, "Back to saved conversations"); SetName(_follow, "Follow appended archive records");
         SetName(_more, "Load more saved conversations"); SetName(_moreTimeline, "Load more timeline records");
-        _consent.IsCheckedChanged += (_, _) => UpdateControls();
         _enable.Click += async (_, _) => await ChangeCaptureAsync(true);
         _stop.Click += async (_, _) => await ChangeCaptureAsync(false);
         _pause.Click += (_, _) => { _paused = !_paused; _pause.Content = _paused ? "Resume display" : "Pause display"; };
@@ -74,8 +72,8 @@ public sealed partial class RecordingView : UserControl, IPresentationView
         SetName(filter, "Apply saved conversation filter");
         var controls = new Expander
         {
-            Header = "Recording controls (explicit opt-in)", HorizontalAlignment = HorizontalAlignment.Stretch,
-            Content = new StackPanel { Spacing = 7, Children = { Ui.Text("New installations default off. Files are stored locally without encryption under your OS permissions. Reading does not require training approval.", 12, Ui.Muted), _scope, _mode, _consent, Wrap(_enable, _stop), ArchiveDeletionControls() } }
+            Header = "Recording settings", HorizontalAlignment = HorizontalAlignment.Stretch,
+            Content = new StackPanel { Spacing = 7, Children = { Ui.Text("New installations save messages and tool content locally by default. You can turn recording off at any time. Files are not encrypted; your OS permissions protect them. Training approval is separate.", 12, Ui.Muted), _scope, _mode, Wrap(_enable, _stop), ArchiveDeletionControls() } }
         };
         var controlsBody = controls.Content; controls.Content = null;
         controls.Content = new ScrollViewer { Content = controlsBody, MaxHeight = 200, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
@@ -121,13 +119,13 @@ public sealed partial class RecordingView : UserControl, IPresentationView
         try
         {
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
-            while (await timer.WaitForNextTickAsync(ct)) if (!_paused) { await RefreshStatusAsync(); if (_conversationId is not null) await LoadTimelineAsync(true); }
+            while (await timer.WaitForNextTickAsync(ct)) if (!_paused) { await RefreshStatusAsync(); if (_conversationId is null && !_loadingList) await LoadListAsync(true); if (_conversationId is not null) await LoadTimelineAsync(true); }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
     }
     private void UpdateControls()
     {
-        _enable.IsEnabled = _policy is { Enabled: false } && _consent.IsChecked == true;
+        _enable.IsEnabled = _policy is { Enabled: false };
         _stop.IsEnabled = _policy?.Enabled == true;
         _mode.IsEnabled = _policy?.Enabled != true;
     }

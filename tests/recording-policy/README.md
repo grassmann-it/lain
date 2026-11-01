@@ -8,14 +8,17 @@ dotnet run --project tests/recording-policy/RecordingPolicy.Tests.csproj
 ```
 
 The executable links the policy source and references Core only; it adds no
-package dependency and does not build the Host. Checks cover default-off,
+package dependency and does not build the Host. Checks cover inert ephemeral policies, production first-install content defaults,
+persisted stops and invalid-policy fail-closed behavior,
 explicit all-model gateway scope, independent revisions, stale queue/stop gates,
 route filters, secret fields and patterns, nested tool arguments, malformed JSON,
 UTF-8, unsupported/split SSE, size limits, atomic policy persistence and symlinks.
 
 `RecordingPolicyService(string? directory = null)` implements `IRecordingPolicy`.
 Pass the dedicated recording directory in production. `null` is an ephemeral test
-policy. `Snapshot` returns a copy. `Update` has optimistic recording-only revision
+policy. Production passes `initializeContentCapture: true`: only an absent policy
+gets a persisted content-enabled revision 1. Existing off/invalid policies are
+never overwritten by that installation default. `Snapshot` returns a copy. `Update` has optimistic recording-only revision
 checks. Any successful change increments revision and stop generation. A disable
 closes admission under the policy lock before control-file I/O; a failed file save
 leaves this process off and reports `policy_save_failed`. A failed persistent stop

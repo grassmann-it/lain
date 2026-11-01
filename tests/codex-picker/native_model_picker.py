@@ -414,7 +414,18 @@ def inner():
     menu_titles = ["Select model group", "Free · Select model", "IT Sec · Select model",
                    "Provider · Select model", "All · Select model", "Select Model"]
     def menu(title):
+        # Qualified local packages have German labels; older pins used English.
+        # Keep raw captures untouched and normalize only this finite fixture UI.
         text = screen.text()
+        for original, translated in (
+            ("Modellgruppe wählen", "Select model group"),
+            ("Alle · Modell wählen", "All · Select model"),
+            (" · Modell wählen", " · Select model"),
+            ("Automatisch", "Automatic"),
+            ("Noch nicht eingerichtet", "Not configured yet"),
+            ("Alle", "All"),
+        ):
+            text = text.replace(original, translated)
         position = text.rfind(title)
         if position < 0: return ""
         if any(text.rfind(other) > position for other in menu_titles if other != title): return ""

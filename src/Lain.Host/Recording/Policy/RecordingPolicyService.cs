@@ -4,7 +4,7 @@ using Lain.Core;
 namespace Lain.Host.Recording.Policy;
 
 /// <summary>
-/// Explicit, persisted opt-in. Snapshot publication and admission stop share one lock. Existing bounded
+/// Persisted capture choice with optional first-install content initialization. Snapshot publication and admission stop share one lock. Existing bounded
 /// writes that passed their final gate may complete; queued observations from prior generations fail admission.
 /// No inference configuration, Apply operation, training eligibility or display state is consulted.
 /// </summary>
@@ -18,7 +18,7 @@ public sealed class RecordingPolicyService : IRecordingPolicy
     public string? LastErrorCode { get; private set; }
 
     /// <param name="directory">Dedicated private recording directory; null provides an ephemeral policy for tests.</param>
-    public RecordingPolicyService(string? directory = null)
+    public RecordingPolicyService(string? directory = null, bool initializeContentCapture = false)
     {
         _directory = directory is null ? null : Path.GetFullPath(directory);
         if (_directory is null) return;
@@ -27,7 +27,19 @@ public sealed class RecordingPolicyService : IRecordingPolicy
             EnsurePrivateDirectory(_directory);
             var path = Path.Combine(_directory, "policy.json");
             RejectLink(path);
-            if (!File.Exists(path)) return; // Default-off does not create a policy/content file.
+            if (!File.Exists(path))
+            {
+                // Only an absent policy receives the installation default. Explicit stops and invalid
+                // existing policies must never be turned back on by startup or a UI refresh.
+                if (initializeContentCapture)
+                {
+                    var initial = _snapshot with { Revision = 1, Enabled = true,
+                        Mode = RecordingContract.Content, StopGeneration = 1 };
+                    Save(initial);
+                    _snapshot = initial;
+                }
+                return;
+            }
             var info = new FileInfo(path);
             if (info.Length > 64 * 1024) { LastErrorCode = "policy_file_invalid"; return; }
             var loaded = JsonSerializer.Deserialize<CapturePolicySnapshot>(File.ReadAllBytes(path), Json);

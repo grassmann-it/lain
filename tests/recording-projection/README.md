@@ -67,7 +67,7 @@ using SQLite secure_delete plus VACUUM to remove deleted preview bytes. A source
 change during a query/rebuild rejects the snapshot.
 
 The index uses 0600 files/0700 directory, DELETE journals, memory temporary tables,
-a 128 MiB page cap and the same source/query work limits. Index quota accounting
+a 512 MiB page cap and the same source/query work limits. Index quota accounting
 is independent from the source archive quota; the integrator must include both
 when presenting total recording disk use. Changed conversations use the bounded metadata cache described below; cold cache
 misses hydrate indexed metadata only. No live latency/RSS acceptance follows from

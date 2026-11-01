@@ -8,6 +8,14 @@
       "version": "0.164.0",
       "grammarVersion": "codex-0.164.0",
       "platform": "x86_64-unknown-linux-musl"
+    },
+    "b8a11fedf24b2dfb59a70c9e52b030f9a508dcd49cd2dd0d41956f4c785156b8": {
+      "version": "0.166.0",
+      "grammarVersion": "codex-0.164.0",
+      "platform": "x86_64-unknown-linux-musl",
+      "scope": "Compatible root dispatch subset, original fallback only",
+      "evidence": "clients/codex/original-fallback-0.166.0.qualification.json",
+      "evidenceSha256": "40564ef545be211d8b3203f8a19f0c736613c6862f6a12d585d10168328d6567"
     }
   },
   "patched": {

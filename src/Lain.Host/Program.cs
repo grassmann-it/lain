@@ -205,9 +205,9 @@ builder.Services.AddSingleton<JournalUsageCollector>(sp => {
 builder.Services.AddHostedService(sp => sp.GetRequiredService<JournalUsageCollector>());
 builder.Services.AddInspector(managementToken, coreAddress: new Uri($"http://127.0.0.1:{paths.GatewayPort}/"), shouldCollect: CollectCore);
 var recordingDirectory = Path.Combine(paths.Root, "recording");
-builder.Services.AddSingleton<IRecordingPolicy>(_ => new RecordingPolicyService(recordingDirectory));
+builder.Services.AddSingleton<IRecordingPolicy>(_ => new RecordingPolicyService(recordingDirectory, initializeContentCapture: true));
 builder.Services.AddSingleton<RecordingSourceStore>(sp => new(Path.Combine(recordingDirectory, "archive"), sp.GetRequiredService<IRecordingPolicy>(),
-    RecordingStoreOptions.SuggestedProductionOptions(externalReservedBytes: 261L * 1024 * 1024)));
+    RecordingStoreOptions.SuggestedProductionOptions(externalReservedBytes: 2 * RecordingIndexedProjection.MaximumIndexBytes + 5L * 1024 * 1024)));
 builder.Services.AddSingleton<IRecordingStore>(sp => sp.GetRequiredService<RecordingSourceStore>());
 builder.Services.AddSingleton<IRecordingProjection>(sp => new RecordingIndexedProjection(sp.GetRequiredService<IRecordingStore>(),
     new RecordingProtocolNormalizer(), Path.Combine(recordingDirectory, "index.sqlite"), RecordingSchema.Sql));

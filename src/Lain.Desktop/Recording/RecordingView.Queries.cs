@@ -15,7 +15,7 @@ public sealed partial class RecordingView
             var health = await _client.RecordingStatusAsync(lifetime.Token);
             if (_lifetime != lifetime || lifetime.IsCancellationRequested) return;
             _policy = health.Policy;
-            if (_consent.IsChecked != true) _mode.SelectedIndex = health.Policy.Mode == RecordingContract.Content ? 1 : 0;
+            if (_policy.Enabled) _mode.SelectedIndex = health.Policy.Mode == RecordingContract.Content ? 1 : 0;
             var scope = health.Policy.RouteIds is { Length: > 0 } routes ? $"Only configured routes: {string.Join(", ", routes)}" : "All models used through the owned gateway; no model-family or training-rights veto";
             _scope.Text = $"Scope: {scope}. Content mode: {health.Policy.Mode}. Recording revision: {health.Policy.Revision}.";
             _status.Text = $"Recording {(health.Policy.Enabled ? "enabled" : "off")} · {health.State} · archive {health.Storage?.State ?? "unknown"} · {health.Storage?.RecordCount ?? 0} committed records · {health.DroppedRecords} dropped{(health.UnknownLoss ? " · unknown loss interval" : "")}";
@@ -29,7 +29,7 @@ public sealed partial class RecordingView
     {
         var lifetime = _lifetime;
         var policy = _policy;
-        if (lifetime is null || policy is null || (enabled && _consent.IsChecked != true)) return;
+        if (lifetime is null || policy is null) return;
         _enable.IsEnabled = false; _stop.IsEnabled = false;
         try
         {
@@ -38,8 +38,7 @@ public sealed partial class RecordingView
                 policy.Scope, enabled ? null : policy.RouteIds, policy.Limits), lifetime.Token);
             if (_lifetime != lifetime || lifetime.IsCancellationRequested) return;
             _policy = result;
-            _notice.Text = enabled ? "Recording explicitly enabled. Capture includes all used models through this gateway." : "Capture is off. Pending uncommitted observations are discarded; retained history and inference are independent.";
-            _consent.IsChecked = false;
+            _notice.Text = enabled ? "Local recording enabled for all models used through this gateway." : "Capture is off. Pending uncommitted observations are discarded; retained history and inference are independent.";
             await RefreshStatusAsync();
         }
         catch (Exception ex) { if (_lifetime == lifetime) { Error(ex); await RefreshStatusAsync(); } }
@@ -62,7 +61,7 @@ public sealed partial class RecordingView
             if (page.ErrorCode is not null) { _notice.Text = $"Conversation page unavailable ({page.ErrorCode}). Refresh the list."; return; }
             if (reset) { _list.Children.Clear(); _choices.Clear(); _summaries.Clear(); }
             foreach (var item in page.Items) AddConversation(item);
-            if (reset && page.Items.Length == 0) _list.Children.Add(Ui.Text("No retained conversations match this filter. Recording is off by default; source outages do not erase the archive.", 12, Ui.Muted));
+            if (reset && page.Items.Length == 0) _list.Children.Add(Ui.Text("No saved conversations match this filter. New messages appear here after they pass through the gateway and are indexed.", 12, Ui.Muted));
             _listCursor = page.NextCursor; _more.IsVisible = page.HasMore && page.NextCursor is not null;
         }
         catch (Exception ex) { if (_lifetime == lifetime && generation == _listGeneration) Error(ex); }

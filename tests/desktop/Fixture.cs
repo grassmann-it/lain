@@ -114,6 +114,7 @@ internal sealed class Fixture : HttpMessageHandler
             {
                 var p when p.StartsWith("/api/v1/accounts/login/") => CompleteLogin(p),
                 "/api/v1/status" => Status(),
+                "/api/v1/recording/status" => new RecordingHealthDto(1, new CapturePolicySnapshot(1, true, RecordingContract.Content), "recording", Storage: new(RecordCount: 3)),
                 "/api/v1/configuration" => Config,
                 "/api/v1/accounts" => Config.Accounts,
                 "/api/v1/routes" => Config.Routes,

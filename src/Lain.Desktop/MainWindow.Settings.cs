@@ -51,7 +51,12 @@ public sealed partial class MainWindow
         }
         SynchronizeSettingsSaveFeedback();
         if (_settingsSaveAttempt is { } pending && _settingsSaveFeedback.TryGetValue(pending.Key, out var feedback))
-            Dispatcher.UIThread.Post(() => feedback.Panel.BringIntoView(), DispatcherPriority.Loaded);
+            Dispatcher.UIThread.Post(() =>
+            {
+                feedback.Panel.UpdateLayout();
+                // Include the action when the new status section makes Settings scroll further.
+                feedback.Panel.Children.Last().BringIntoView();
+            }, DispatcherPriority.Loaded);
     }
 
     private void SynchronizeSettingsSaveFeedback()
@@ -144,9 +149,28 @@ public sealed partial class MainWindow
         AutomationProperties.SetName(densityGroup, "View density settings");
         AutomationProperties.SetName(windowGroup, "Window and notification settings");
         AutomationProperties.SetName(helpGroup, "Help and application settings");
+        var saved = Ui.Button("Saved conversations", () => Navigate("Recordings"));
+        AutomationProperties.SetName(saved, "Open saved conversations from Settings");
+        var recordingStatus = Ui.Text("Loading recording status…", 12, Ui.Muted);
+        AutomationProperties.SetName(recordingStatus, "Recording setting status");
+        recordingStatus.AttachedToVisualTree += async (_, _) =>
+        {
+            try
+            {
+                var health = await _client.RecordingStatusAsync(_lifetime.Token);
+                recordingStatus.Text = $"Recording {(health.Policy.Enabled ? "on" : "off")} · {health.Policy.Mode} · {health.Storage?.RecordCount ?? 0} saved records";
+                if (health.ErrorCode is not null || health.UnknownLoss || health.DroppedRecords > 0)
+                    recordingStatus.Text += $" · capture incomplete ({health.ErrorCode ?? "recording gaps"})";
+            }
+            catch (OperationCanceledException) { }
+            catch { recordingStatus.Text = "Recording status unavailable. Open saved conversations to retry."; }
+        };
+        var recordingGroup = Ui.Section("Messages and recording", new StackPanel { Spacing = 5, Children = {
+            recordingStatus, Ui.Text("Messages and tool content are saved locally by default for new installations. Open the archive to see recording status, browse messages or turn capture off.", 12, Ui.Muted), saved } });
+        AutomationProperties.SetName(recordingGroup, "Message recording settings");
         var page = new StackPanel { Spacing = 18, Children = {
             Heading("Settings", "Window preferences and independent background service startup choices."),
-            densityGroup, windowGroup, helpGroup, StartupSettingsGroup() } };
+            recordingGroup, densityGroup, windowGroup, helpGroup, StartupSettingsGroup() } };
         page.MaxWidth = 760;
         page.HorizontalAlignment = HorizontalAlignment.Stretch;
         AutomationProperties.SetName(page, "Settings page");

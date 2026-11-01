@@ -69,11 +69,12 @@ internal static class Probe
         window.Width = width; window.Height = height;
         var watch = Stopwatch.StartNew();
         var stable = 0;
-        while (watch.ElapsedMilliseconds < 3000)
+        while (watch.ElapsedMilliseconds < 6000)
         {
             // X11 configure and layout are asynchronous; a requested-size bitmap can silently crop an old wide window.
             await Task.Delay(40); window.UpdateLayout();
-            var matches = Math.Abs(window.Bounds.Width - width) < 2 && Math.Abs(window.Bounds.Height - height) < 2;
+            var matches = Math.Abs(window.Bounds.Width - width) < 2 && Math.Abs(window.Bounds.Height - height) < 2
+                && window.Content is Control view && Math.Abs(view.Bounds.Width - width) < 2 && Math.Abs(view.Bounds.Height - height) < 2;
             stable = matches ? stable + 1 : 0;
             if (stable >= 3) break;
         }
@@ -98,10 +99,16 @@ internal static class Probe
         await Wait(() => Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Open saved conversation root"));
         Check(fixture.PolicyWrites == 0 && !fixture.Policy.Enabled, "opening the production view leaves recording default off");
         var controls = Controls<Expander>().Single(e => AutomationProperties.GetName(e) == "Recording controls");
-        Check(!controls.IsExpanded, "recording opt-in controls begin collapsed");
+        Check(!controls.IsExpanded, "recording settings begin collapsed");
         controls.IsExpanded = true;
         await Wait(() => Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Enable recording"));
-        Check(!Button("Enable recording").IsEnabled, "enable requires explicit opt-in");
+        Check(Button("Enable recording").IsEnabled, "a saved off policy can be enabled directly without a second consent gate");
+        Click(Button("Enable recording"));
+        await Wait(() => fixture.Policy.Enabled);
+        Check(fixture.Policy.Mode == "content" && fixture.PolicyWrites == 1, "direct enable defaults to messages and tool content");
+        Click(Button("Turn capture off"));
+        await Wait(() => !fixture.Policy.Enabled);
+        Check(fixture.PolicyWrites == 2, "explicit stop remains available");
         controls.IsExpanded = false;
         Check(fixture.DetailReads == 0, "metadata list does not eagerly query conversations");
         var stopwatch = Stopwatch.StartNew(); Click(Button("Open saved conversation root"));
@@ -144,7 +151,7 @@ internal static class Probe
         window.Content = new RecordingView(client);
         await Wait(() => Controls<Button>().Any(b => AutomationProperties.GetName(b) == "Open saved conversation root"));
         Click(Button("Open saved conversation root")); await Wait(() => Text.Contains("Synthetic first turn"));
-        Check(fixture.PolicyWrites == 0, "close and reopen reads retained fixture archive without enabling capture");
+        Check(fixture.PolicyWrites == 2, "close and reopen preserves the saved stop without any automatic policy write");
         fixture.SourceUnavailable = true; Click(Button("Refresh recording archive")); await Wait(() => Text.Contains("source_unavailable"));
         Check(Text.Contains("Synthetic first turn"), "source failure preserves retained readable history");
         fixture.Deleted = true; Click(Button("Refresh recording archive")); await Wait(() => Text.Contains("deleted or expired"));

@@ -4,9 +4,10 @@
 
 ## Scope and defaults
 
-Recording is off by default and separate from accounts, Usage, profile Apply and
-transient Live inspection. Opening Saved conversations does not enable it.
-Explicit content opt-in covers all model routes on the owned local Gateway;
+New installations save sanitized messages and tool content by default, separately
+from accounts, Usage, profile Apply and transient Live inspection. Existing policies,
+including an explicit stop, are preserved. Opening Saved conversations never changes
+a saved policy. The default covers all model routes on the owned local Gateway;
 optional route filters are supported by the policy API. Client identity is evidence,
 not a verified per-user/per-application isolation boundary.
 
@@ -43,8 +44,9 @@ lain recording run-label CONVERSATION_ID RUN_ID --revision N --variant skill-v2
 lain recording off --revision N
 ```
 
-In Desktop, use **Live → Saved** or **More → Saved conversations**. Recording
-controls require explicit consent. Lists load metadata; opening a conversation
+In Desktop, use **Settings → Saved conversations**, **Live → Saved conversations**
+or **More → Saved conversations**. Recording settings offer direct enable/stop;
+there is no second consent checkbox. Lists load metadata; opening a conversation
 loads its timeline. Message, part, text and selected-source pages are bounded.
 Tool requests and client-reported tool results remain distinct; a recorded result
 does not establish local execution. Worker relationships appear only where IDs

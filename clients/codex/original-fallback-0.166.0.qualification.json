@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "scope": "Original fallback only; Lain interactive client remains separately qualified 0.164.0",
+  "originalVersion": "0.166.0",
+  "originalSha256": "b8a11fedf24b2dfb59a70c9e52b030f9a508dcd49cd2dd0d41956f4c785156b8",
+  "officialArchive": {
+    "url": "https://github.com/openai/codex/releases/download/rust-v0.166.0/codex-x86_64-unknown-linux-musl.zst",
+    "sha256": "5a2832a53f9366c5f57a1fee7639822d2a7b4527bc26cfb2ea67b00ef2bca87d",
+    "matchesInstalledBinary": true
+  },
+  "dispatchGrammar": "codex-0.164.0",
+  "rootClapDefinitionsUnchanged": true,
+  "tuiCliSourceIdentical": true,
+  "rootSourceHashes": {
+    "0.164.0": "ac51c153916132c0be2c37ea1136562685b832957bc2e43e53d71608d0b28a4a",
+    "0.166.0": "5ee91f58936c04cf1a7a666d583242273e9145484d7628b290ea9b033e210682"
+  },
+  "unknownOptionsAndAllSubcommands": "Forward unchanged to 0.166.0 original; no claims about native 0.166.0 submenu support",
+  "nativeEvidence": {
+    "native-staged-r2": {
+      "status": "passed",
+      "cases": [
+        {
+          "case": "default-native-flags",
+          "exitCode": 0,
+          "verified": true
+        },
+        {
+          "case": "lain-native-flags",
+          "exitCode": 0,
+          "verified": true
+        }
+      ]
+    },
+    "native-existing-166": {
+      "status": "passed",
+      "cases": [
+        {
+          "case": "default-native-flags",
+          "exitCode": 0,
+          "verified": true
+        }
+      ]
+    }
+  }
+}

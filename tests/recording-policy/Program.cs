@@ -88,6 +88,22 @@ try
     }
 }
 finally { if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
+// Production initialization applies only to a missing policy and never overrides a saved stop.
+var initialDirectory = Path.Combine(Path.GetTempPath(), "lain-recording-initial-" + Guid.NewGuid().ToString("N"));
+try
+{
+    var initial = new RecordingPolicyService(initialDirectory, initializeContentCapture: true);
+    Check(initial.Snapshot is { Enabled: true, Mode: RecordingContract.Content, Revision: 1, StopGeneration: 1 }, "new production installation starts content capture");
+    Check(File.Exists(Path.Combine(initialDirectory, "policy.json")), "installation default is persisted for Core handoff");
+    Check(initial.Update(new(1, false, "content")).Applied, "explicit stop is saved");
+    var savedStop = new RecordingPolicyService(initialDirectory, initializeContentCapture: true);
+    Check(!savedStop.Snapshot.Enabled && savedStop.Snapshot.Revision == 2, "startup preserves saved recording off");
+    File.WriteAllText(Path.Combine(initialDirectory, "policy.json"), "{invalid");
+    var invalid = new RecordingPolicyService(initialDirectory, initializeContentCapture: true);
+    Check(!invalid.Snapshot.Enabled && invalid.LastErrorCode == "policy_file_unavailable", "invalid existing policy fails closed without default reactivation");
+    Check(File.ReadAllText(Path.Combine(initialDirectory, "policy.json")) == "{invalid", "invalid policy evidence is preserved");
+}
+finally { if (Directory.Exists(initialDirectory)) Directory.Delete(initialDirectory, recursive: true); }
 Console.WriteLine($"Recording policy: {assertions} assertions passed (synthetic; no capture enabled in real installation).");
 
 SourceObservation Source(string json) => new("synthetic-epoch", 1, "synthetic-event-1", "capture-1", "request-1",
